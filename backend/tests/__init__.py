@@ -1,0 +1,1 @@
+# Tests pour Trading Journal

@@ -1,0 +1,47 @@
+# Configuration .htaccess pour httpd (Apache sur AlmaLinux 9)
+# Placez ce fichier dans le répertoire racine de votre site
+
+# Activer le module de réécriture
+RewriteEngine On
+
+# Redirection vers HTTPS (optionnel)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Proxy vers le frontend React
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_URI} !^/static/
+RewriteCond %{REQUEST_URI} !^/media/
+RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
+
+# Proxy vers l'API Django
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^api/(.*)$ http://localhost:8000/api/$1 [P,L]
+
+# Proxy pour les fichiers statiques Django
+RewriteCond %{REQUEST_URI} ^/static/
+RewriteRule ^static/(.*)$ http://localhost:8000/static/$1 [P,L]
+
+# Proxy pour les fichiers média Django
+RewriteCond %{REQUEST_URI} ^/media/
+RewriteRule ^media/(.*)$ http://localhost:8000/media/$1 [P,L]
+
+# Headers de sécurité
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Cache pour les fichiers statiques
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+</IfModule>

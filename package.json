@@ -1,0 +1,29 @@
+{
+  "name": "trading-journal",
+  "version": "1.0.0",
+  "description": "Application de journal de trading avec Django REST Framework et React",
+  "scripts": {
+    "start": "./start.sh",
+    "backend": "cd backend && source venv/bin/activate && python manage.py runserver",
+    "frontend": "cd frontend && npm start",
+    "test:backend": "cd backend && source venv/bin/activate && python manage.py test",
+    "test:frontend": "cd frontend && npm test",
+    "build:frontend": "cd frontend && npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "trading",
+    "journal",
+    "django",
+    "react",
+    "drf",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+
+
