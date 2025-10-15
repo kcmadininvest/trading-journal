@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { tradesService, TopStepTrade } from '../services/trades';
 import TradesStrategyModal from '../components/Strategy/TradesStrategyModal';
+import StrategyRespectChart from '../components/Strategy/StrategyRespectChart';
+import WinRateByStrategyChart from '../components/Strategy/WinRateByStrategyChart';
+import SessionWinRateChart from '../components/Strategy/SessionWinRateChart';
+import EmotionsChart from '../components/Strategy/EmotionsChart';
 
 interface DailyData {
   date: string;
@@ -27,38 +31,17 @@ interface CalendarData {
 function StrategyPage() {
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [loading, setLoading] = useState(false); // Commencer avec false pour afficher le calendrier immédiatement
+  // const [loading, setLoading] = useState(false); // Commencer avec false pour afficher le calendrier immédiatement
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showTradesModal, setShowTradesModal] = useState(false);
   const [dayTrades, setDayTrades] = useState<TopStepTrade[]>([]);
   const [strategyData, setStrategyData] = useState<{ [date: string]: any }>({});
   const [isUpdatingStrategy, setIsUpdatingStrategy] = useState(false);
 
-  useEffect(() => {
-    // Charger les données du calendrier au montage
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
-    fetchCalendarData(year, month);
-  }, []);
-
-  const fetchCalendarData = async (year: number, month: number) => {
-    try {
-      // Ne pas masquer le calendrier, juste charger les données
-      const data = await tradesService.getCalendarData(year, month);
-      setCalendarData(data);
-      
-      // Récupérer les données de stratégie pour le mois
-      await fetchStrategyData(year, month);
-    } catch (error) {
-      // Erreur silencieuse lors du chargement des données du calendrier
-      console.error('Erreur lors du chargement des données du calendrier:', error);
-    }
-  };
-
-  const fetchStrategyData = async (year: number, month: number) => {
+  const fetchStrategyData = useCallback(async (year: number, month: number) => {
     try {
       // Récupérer les données de stratégie pour chaque jour du mois
-      const startDate = new Date(year, month - 1, 1);
+      // const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0);
       
       const strategyPromises = [];
@@ -80,11 +63,32 @@ function StrategyPage() {
           const respectedCount = strategies.filter((s: any) => s.strategy_respected === true).length;
           const totalCount = strategies.length;
           
+          // Séparer les trades respectés et non respectés avec leurs PnL, TP et émotions
+          const respectedTrades = strategies
+            .filter((s: any) => s.strategy_respected === true)
+            .map((s: any) => ({ 
+              pnl: parseFloat(s.trade_info?.net_pnl || 0),
+              tp1_reached: s.tp1_reached || false,
+              tp2_plus_reached: s.tp2_plus_reached || false,
+              dominant_emotions: s.dominant_emotions || []
+            }));
+          
+          const notRespectedTrades = strategies
+            .filter((s: any) => s.strategy_respected === false)
+            .map((s: any) => ({ 
+              pnl: parseFloat(s.trade_info?.net_pnl || 0),
+              tp1_reached: s.tp1_reached || false,
+              tp2_plus_reached: s.tp2_plus_reached || false,
+              dominant_emotions: s.dominant_emotions || []
+            }));
+          
           strategyMap[date] = {
             total: totalCount,
             respected: respectedCount,
             notRespected: totalCount - respectedCount,
-            percentage: totalCount > 0 ? (respectedCount / totalCount) * 100 : 0
+            percentage: totalCount > 0 ? (respectedCount / totalCount) * 100 : 0,
+            respectedTrades,
+            notRespectedTrades
           };
         }
       });
@@ -93,7 +97,29 @@ function StrategyPage() {
     } catch (error) {
       console.error('Erreur lors du chargement des données de stratégie:', error);
     }
-  };
+  }, []);
+
+  const fetchCalendarData = useCallback(async (year: number, month: number) => {
+    try {
+      // Ne pas masquer le calendrier, juste charger les données
+      const data = await tradesService.getCalendarData(year, month);
+      setCalendarData(data);
+      
+      // Récupérer les données de stratégie pour le mois
+      await fetchStrategyData(year, month);
+    } catch (error) {
+      // Erreur silencieuse lors du chargement des données du calendrier
+      console.error('Erreur lors du chargement des données du calendrier:', error);
+    }
+  }, [fetchStrategyData]);
+
+  useEffect(() => {
+    // Charger les données du calendrier au montage
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    fetchCalendarData(year, month);
+  }, [currentDate, fetchCalendarData]);
+
 
   // Fonction pour mettre à jour les données de stratégie de manière transparente
   const updateStrategyDataSilently = async (year: number, month: number) => {
@@ -111,7 +137,7 @@ function StrategyPage() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
     fetchCalendarData(year, month);
-  }, [currentDate]);
+  }, [currentDate, fetchCalendarData]);
 
   // Écouter les événements de mise à jour des trades pour recharger le calendrier
   useEffect(() => {
@@ -123,7 +149,7 @@ function StrategyPage() {
 
     window.addEventListener('trades:updated', handleTradesUpdated);
     return () => window.removeEventListener('trades:updated', handleTradesUpdated);
-  }, [currentDate]);
+  }, [currentDate, fetchCalendarData]);
 
   const { dailyData, monthlyTotal } = useMemo(() => {
     if (!calendarData) {
@@ -345,7 +371,7 @@ function StrategyPage() {
 
   return (
     <div className="p-6 bg-gray-50">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-full mx-auto">
         {/* En-tête */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Stratégie de Trading</h1>
@@ -400,46 +426,81 @@ function StrategyPage() {
           </button>
         </div>
 
-        {/* Calendrier */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="flex">
-            {/* Calendrier principal */}
+        {/* Layout principal : Graphiques + Calendrier + Graphique Sessions */}
+        <div className="flex flex-col xl:flex-row gap-6">
+          {/* Graphiques de gauche */}
+          <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
+            {/* Graphique de respect de la stratégie */}
             <div className="flex-1">
-              {/* En-têtes des jours de la semaine */}
-              <div className="grid grid-cols-7 border-b border-gray-200">
-                {weekDays.map(day => (
-                  <div key={day} className="p-3 text-center text-sm font-medium text-gray-600 bg-gray-50">
-                    {day}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Indicateur de chargement initial si pas de données */}
-              {!calendarData && (
-                <div className="flex items-center justify-center h-64">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <div className="text-sm text-gray-600">Chargement du calendrier...</div>
-                  </div>
+              <StrategyRespectChart strategyData={strategyData} />
+            </div>
+            
+            {/* Graphique de win rate par stratégie */}
+            <div className="flex-1">
+              <WinRateByStrategyChart strategyData={strategyData} />
+            </div>
+          </div>
+          
+          {/* Calendrier */}
+          <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {/* En-têtes */}
+            <div className="grid grid-cols-7 border-b border-gray-200">
+              {weekDays.map((day, index) => (
+                <div key={day} className="p-3 text-center text-sm font-medium text-gray-600 bg-gray-50">
+                  {day}
                 </div>
-              )}
+              ))}
+            </div>
+            
+            {/* Indicateur de chargement initial si pas de données */}
+            {!calendarData && (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <div className="text-sm text-gray-600">Chargement du calendrier...</div>
+                </div>
+              </div>
+            )}
 
-              {/* Grille du calendrier - seulement si les données sont disponibles */}
-              {calendarData && (
-                <div className="grid grid-cols-7">
-                  {calendarDays.map((dayInfo, index) => {
+            {/* Grille du calendrier - seulement si les données sont disponibles */}
+            {calendarData && (
+              <div className="grid grid-cols-7">
+                {calendarDays.map((dayInfo, index) => {
                   const dayData = dayInfo.isCurrentMonth ? getDayData(dayInfo.day) : null;
                   const today = isToday(dayInfo);
+                  const isSaturday = index % 7 === 6; // Samedi est le 7ème jour (index 6)
+                  
+                  // Calculer le total de la semaine pour les samedis
+                  let weekTotal = 0;
+                  let weekTradeCount = 0;
+                  let hasCurrentMonthDays = false;
+                  
+                  if (isSaturday) {
+                    const weekStart = Math.floor(index / 7) * 7;
+                    const weekEnd = Math.min(weekStart + 7, calendarDays.length);
+                    const weekDays = calendarDays.slice(weekStart, weekEnd);
+                    
+                    weekDays.forEach(weekDayInfo => {
+                      if (weekDayInfo.isCurrentMonth) {
+                        hasCurrentMonthDays = true;
+                        const weekDayData = getDayData(weekDayInfo.day);
+                        if (weekDayData) {
+                          weekTotal += weekDayData.pnl;
+                          weekTradeCount += weekDayData.trade_count;
+                        }
+                      }
+                    });
+                  }
                   
                   return (
                     <div 
                       key={index} 
-                      className={`border-r border-b border-gray-200 min-h-[140px] p-2 cursor-pointer hover:bg-gray-50 transition-colors ${today ? 'bg-blue-50 border-blue-200' : ''}`}
+                      className={`border-r border-b border-gray-200 min-h-[140px] p-2 cursor-pointer hover:bg-gray-50 transition-colors ${today ? 'bg-violet-50 border-violet-200' : ''} ${isSaturday ? 'bg-violet-50' : ''}`}
                       onClick={() => handleDayClick(dayInfo)}
                     >
                       {dayInfo.isCurrentMonth ? (
                         <div className="h-full flex flex-col">
-                          <div className={`text-sm font-medium mb-1 ${today ? 'text-blue-600 font-bold' : 'text-gray-900'}`}>
+                          <div className={`text-base font-medium mb-1 ${today ? 'text-violet-600 font-bold' : 'text-gray-900'}`}>
                             {dayInfo.day}
                           </div>
                           
@@ -451,10 +512,10 @@ function StrategyPage() {
                                 return (
                                   <div className="flex flex-col items-center justify-center space-y-1">
                                     <div 
-                                      className={`w-6 h-6 rounded-full ${indicator.color}`}
+                                      className={`w-8 h-8 rounded-full ${indicator.color}`}
                                       title={indicator.text}
                                     ></div>
-                                    <div className="text-xs text-center leading-tight">
+                                    <div className="text-sm text-center leading-tight">
                                       <div className={`font-medium ${indicator.isRespected ? 'text-blue-600' : 'text-gray-600'}`}>
                                         {indicator.isRespected ? 'Respectée' : 'Non respectée'}
                                       </div>
@@ -466,92 +527,59 @@ function StrategyPage() {
                             })()}
                           </div>
 
-                          {/* Données de trading */}
-                          {dayData && dayData.trade_count > 0 && (
+                          {/* Données de trading ou total de semaine pour samedi */}
+                          {isSaturday ? (
                             <div className="mt-2 pt-2 border-t border-gray-100">
-                              <div className={`${getResponsiveTextSize(dayData.pnl)} font-bold ${dayData.pnl >= 0 ? 'text-blue-600' : 'text-gray-600'}`}>
-                                {formatCurrency(dayData.pnl)}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {dayData.trade_count} trade{dayData.trade_count > 1 ? 's' : ''}
-                              </div>
+                              <div className="text-xs text-gray-600 mb-1">Total semaine</div>
+                              {hasCurrentMonthDays && weekTradeCount > 0 ? (
+                                <>
+                                  <div className={`${getResponsiveTextSize(weekTotal)} font-bold ${weekTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {formatCurrency(weekTotal)}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {weekTradeCount} trade{weekTradeCount > 1 ? 's' : ''}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="text-sm text-gray-400">$0.00</div>
+                              )}
                             </div>
+                          ) : (
+                            dayData && dayData.trade_count > 0 && (
+                              <div className="mt-2 pt-2 border-t border-gray-100">
+                                <div className={`${getResponsiveTextSize(dayData.pnl)} font-bold ${dayData.pnl >= 0 ? 'text-blue-600' : 'text-gray-600'}`}>
+                                  {formatCurrency(dayData.pnl)}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {dayData.trade_count} trade{dayData.trade_count > 1 ? 's' : ''}
+                                </div>
+                              </div>
+                            )
                           )}
                         </div>
                       ) : (
                         <div className="h-full flex items-center justify-center">
-                          <div className="text-sm text-gray-300">{dayInfo.day}</div>
+                          <div className="text-base text-gray-300">{dayInfo.day}</div>
                         </div>
                       )}
                     </div>
                   );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Colonne Week à droite - seulement si les données sont disponibles */}
-            {calendarData && (
-              <div className="w-32 border-l border-gray-200">
-              {/* En-tête Week */}
-              <div className="p-3 text-center text-sm font-medium text-gray-600 bg-gray-50 border-b border-gray-200">
-                Week
-              </div>
-
-              {/* Cellules Week - une par semaine */}
-              {(() => {
-                const weeks = [];
-                const totalDays = calendarDays.length;
-                const numWeeks = Math.ceil(totalDays / 7);
-                
-                for (let weekIndex = 0; weekIndex < numWeeks; weekIndex++) {
-                  const weekStart = weekIndex * 7;
-                  const weekEnd = Math.min(weekStart + 7, totalDays);
-                  const weekDays = calendarDays.slice(weekStart, weekEnd);
-                  
-                  // Calculer le total de la semaine (seulement pour les jours du mois courant)
-                  let weekTotal = 0;
-                  let weekTradeCount = 0;
-                  let hasCurrentMonthDays = false;
-                  
-                  weekDays.forEach(dayInfo => {
-                    if (dayInfo.isCurrentMonth) {
-                      hasCurrentMonthDays = true;
-                      const dayData = getDayData(dayInfo.day);
-                      if (dayData) {
-                        weekTotal += dayData.pnl;
-                        weekTradeCount += dayData.trade_count;
-                      }
-                    }
-                  });
-                  
-                  weeks.push(
-                    <div key={`week-${weekIndex}`} className="border-b border-gray-200 min-h-[140px] p-2 bg-blue-50">
-                      <div className="h-full flex flex-col justify-center text-center">
-                        <div className="text-sm font-medium text-gray-900 mb-1">
-                          Week {weekIndex + 1}
-                        </div>
-                        {hasCurrentMonthDays && weekTradeCount > 0 ? (
-                          <>
-                            <div className={`${getResponsiveTextSize(weekTotal)} font-bold ${weekTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatCurrency(weekTotal)}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {weekTradeCount} trade{weekTradeCount > 1 ? 's' : ''}
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-sm text-gray-400">$0.00</div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-                
-                return weeks;
-              })()}
+                })}
               </div>
             )}
+          </div>
+          
+          {/* Graphiques de droite */}
+          <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
+            {/* Graphique de sessions gagnantes */}
+            <div className="flex-1">
+              <SessionWinRateChart strategyData={strategyData} />
+            </div>
+            
+            {/* Graphique d'émotions dominantes */}
+            <div className="flex-1">
+              <EmotionsChart strategyData={strategyData} />
+            </div>
           </div>
         </div>
 
