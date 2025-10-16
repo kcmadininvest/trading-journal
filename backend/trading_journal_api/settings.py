@@ -217,10 +217,10 @@ REST_FRAMEWORK = {
 
 # JWT Settings - Configuration sécurisée avec déconnexion automatique et blacklist
 SIMPLE_JWT = {
-    # Token d'accès court pour sécurité maximale (15 minutes)
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    # Token de rafraîchissement plus long mais raisonnable (2 heures)
-    'REFRESH_TOKEN_LIFETIME': timedelta(hours=2),
+    # Token d'accès équilibré pour UX et sécurité (1 heure)
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    # Token de rafraîchissement plus long mais raisonnable (4 heures)
+    'REFRESH_TOKEN_LIFETIME': timedelta(hours=4),
     # Rotation automatique des tokens de rafraîchissement
     'ROTATE_REFRESH_TOKENS': True,
     # Blacklist des anciens tokens après rotation

@@ -355,17 +355,17 @@ def session_info(request):
                     # Calculer les temps restants
                     now = datetime.now()
                     time_remaining = int((exp_datetime - now).total_seconds())
-                    warning_time_remaining = max(0, time_remaining - 300)  # 5 minutes avant expiration
+                    warning_time_remaining = max(0, time_remaining - 600)  # 10 minutes avant expiration
                     
                     return Response({
                         'access_token_expires_at': exp_datetime.isoformat(),
-                        'refresh_token_expires_at': (exp_datetime + timedelta(hours=1, minutes=45)).isoformat(),  # Approximation
-                        'session_expires_at': (exp_datetime + timedelta(hours=1, minutes=45)).isoformat(),
-                        'auto_logout_warning_at': (exp_datetime - timedelta(minutes=5)).isoformat(),
+                        'refresh_token_expires_at': (exp_datetime + timedelta(hours=3)).isoformat(),  # Approximation
+                        'session_expires_at': (exp_datetime + timedelta(hours=3)).isoformat(),
+                        'auto_logout_warning_at': (exp_datetime - timedelta(minutes=10)).isoformat(),
                         'time_remaining': max(0, time_remaining),
                         'warning_time_remaining': max(0, warning_time_remaining),
                         'is_expired': time_remaining <= 0,
-                        'needs_refresh': time_remaining <= 300,  # Besoin de rafraîchir si moins de 5 minutes
+                        'needs_refresh': time_remaining <= 600,  # Besoin de rafraîchir si moins de 10 minutes
                     })
                 except Exception:
                     pass
@@ -396,12 +396,12 @@ def extend_session(request):
         
         # Calculer les nouveaux temps d'expiration
         now = datetime.now()
-        access_expiry = now + timedelta(minutes=15)
-        refresh_expiry = now + timedelta(hours=2)
+        access_expiry = now + timedelta(hours=1)
+        refresh_expiry = now + timedelta(hours=4)
         
         # Calculer le temps restant en secondes
         time_remaining = int((refresh_expiry - now).total_seconds())
-        warning_time_remaining = max(0, time_remaining - 300)  # 5 minutes avant expiration
+        warning_time_remaining = max(0, time_remaining - 600)  # 10 minutes avant expiration
         
         return Response({
             'access': str(access_token),
@@ -410,7 +410,7 @@ def extend_session(request):
                 'access_token_expires_at': access_expiry.isoformat(),
                 'refresh_token_expires_at': refresh_expiry.isoformat(),
                 'session_expires_at': refresh_expiry.isoformat(),
-                'auto_logout_warning_at': (refresh_expiry - timedelta(minutes=5)).isoformat(),
+                'auto_logout_warning_at': (refresh_expiry - timedelta(minutes=10)).isoformat(),
                 'time_remaining': time_remaining,
                 'warning_time_remaining': warning_time_remaining,
                 'is_expired': False,

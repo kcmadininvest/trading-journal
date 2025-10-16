@@ -23,7 +23,8 @@ const SessionWarningModal: React.FC<SessionWarningModalProps> = ({
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
-          onDismiss();
+          // Quand le temps expire, forcer la déconnexion automatique
+          sessionManager.forceLogout();
           return 0;
         }
         return prev - 1;
@@ -31,7 +32,7 @@ const SessionWarningModal: React.FC<SessionWarningModalProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [onDismiss]);
+  }, []);
 
   const handleExtend = async () => {
     setIsExtending(true);

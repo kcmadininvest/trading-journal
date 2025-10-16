@@ -8,17 +8,17 @@ Le système de déconnexion automatique (session timeout) est implémenté pour 
 
 ### Durées de Session
 
-- **Token d'accès** : 15 minutes
-- **Token de rafraîchissement** : 2 heures
-- **Avertissement** : 5 minutes avant expiration
+- **Token d'accès** : 1 heure
+- **Token de rafraîchissement** : 4 heures
+- **Avertissement** : 10 minutes avant expiration
 - **Vérification** : Toutes les 30 secondes
 
 ### Configuration JWT
 
 ```python
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(hours=2),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(hours=4),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
@@ -71,7 +71,7 @@ SIMPLE_JWT = {
 ```
 Utilisateur se connecte
     ↓
-Token JWT généré (15 min)
+Token JWT généré (1 heure)
     ↓
 Informations de session stockées
     ↓
@@ -95,7 +95,7 @@ Avertissement nécessaire ? → Affichage du modal
 
 ### 3. Avertissement Utilisateur
 ```
-5 minutes avant expiration
+10 minutes avant expiration
     ↓
 Modal d'avertissement affiché
     ↓
@@ -112,7 +112,7 @@ Utilisateur clique "Étendre"
     ↓
 Nouveaux tokens générés
     ↓
-Session prolongée de 2 heures
+Session prolongée de 4 heures
     ↓
 Modal fermé
     ↓
@@ -123,9 +123,9 @@ Surveillance continue
 
 ### Bonnes Pratiques Implémentées
 
-1. **Durées de Vie Courtes**
-   - Token d'accès : 15 minutes (sécurité maximale)
-   - Token de rafraîchissement : 2 heures (équilibre sécurité/UX)
+1. **Durées de Vie Équilibrées**
+   - Token d'accès : 1 heure (équilibre sécurité/UX)
+   - Token de rafraîchissement : 4 heures (équilibre sécurité/UX)
 
 2. **Rotation des Tokens**
    - Nouveaux tokens à chaque rafraîchissement
