@@ -88,7 +88,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 text-2xl">📊</span>
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Statistiques Générales</h3>
@@ -120,7 +122,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                  <span className="text-emerald-600 text-2xl">💰</span>
+                  <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Gains vs Pertes</h3>
@@ -152,7 +156,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <span className="text-purple-600 text-2xl">💰</span>
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Performance & Coûts</h3>
@@ -178,7 +184,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
-                  <span className="text-cyan-600 text-2xl">⏱️</span>
+                  <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Volume & Durée</h3>
@@ -213,7 +221,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600 text-2xl">✅</span>
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Trades Gagnants</h3>
@@ -239,7 +249,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <span className="text-red-600 text-2xl">❌</span>
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Trades Perdants</h3>
@@ -265,7 +277,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <span className="text-yellow-600 text-2xl">📈</span>
+                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Contrat Favori</h3>
@@ -294,7 +308,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <span className="text-green-600 text-2xl">📈</span>
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Gains Quotidiens</h3>
@@ -326,7 +342,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <span className="text-red-600 text-2xl">📉</span>
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Pertes Quotidiennes</h3>
@@ -358,7 +376,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 text-2xl">✅</span>
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Trades Gagnants</h3>
@@ -390,7 +410,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <span className="text-gray-600 text-2xl">❌</span>
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Trades Perdants</h3>
@@ -422,7 +444,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <span className="text-purple-600 text-2xl">📊</span>
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Trades par Jour</h3>
@@ -448,7 +472,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <span className="text-indigo-600 text-2xl">🎯</span>
+                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Trades Individuels</h3>
@@ -474,7 +500,9 @@ function StatisticsPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <span className="text-orange-600 text-2xl">🔄</span>
+                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
                 </div>
                 <div>
                   <h3 className="text-base font-medium text-gray-500">Séquences</h3>
@@ -523,7 +551,9 @@ function StatisticsPage() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <span className="text-emerald-600 text-2xl">📈</span>
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="text-base font-medium text-gray-500">Performance Principale</h3>
@@ -585,7 +615,9 @@ function StatisticsPage() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <span className="text-blue-600 text-2xl">🛡️</span>
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="text-base font-medium text-gray-500">Récupération</h3>
@@ -631,7 +663,9 @@ function StatisticsPage() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <span className="text-purple-600 text-2xl">💰</span>
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="text-base font-medium text-gray-500">Efficacité Financière</h3>
@@ -677,7 +711,9 @@ function StatisticsPage() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
-                    <span className="text-cyan-600 text-2xl">⏱️</span>
+                    <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
                   <div>
                     <h3 className="text-base font-medium text-gray-500">Analyse Temporelle</h3>

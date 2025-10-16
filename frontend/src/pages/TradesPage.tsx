@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { toast } from 'react-hot-toast'
 import { tradesService, TradeStatistics } from '../services/trades'
-import StatCard from '../components/common/StatCard'
+import ModernStatCard from '../components/common/ModernStatCard'
 // Import déplacé vers le menu: l'UI d'import n'est plus ici
 import PerformanceChart from '../components/charts/PerformanceChart'
 import DurationDistributionChart from '../components/charts/DurationDistributionChart'
-import TradingMetricsDashboard from '../components/charts/TradingMetricsDashboard'
+import ModernTradingMetricsDashboard from '../components/charts/ModernTradingMetricsDashboard'
 import WaterfallChart from '../components/charts/WaterfallChart'
 import WeekdayPerformanceChart from '../components/charts/WeekdayPerformanceChart'
 import TradesTablePage from './TradesTablePage'
@@ -247,65 +247,89 @@ function TradesPage() {
           {/* Tableau de bord TOPSTEP TRADER PERFORMANCE TRACKER - Bas gauche */}
           <div>
             {!loading && trades.length > 0 && (
-              <TradingMetricsDashboard metrics={tradingMetrics} />
+              <ModernTradingMetricsDashboard metrics={tradingMetrics} />
             )}
           </div>
 
-          {/* Cartes - Bas droite - 2 lignes de 3 cartes */}
-          <div style={{ height: '350px' }}>
+          {/* Cartes - Bas droite - Grid uniforme */}
+          <div className="h-full">
             {statistics && !loading && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
-                {/* Première colonne */}
-                <div className="flex flex-col justify-between h-full gap-4">
-                  <StatCard
-                    label="Total Trades"
-                    value={statistics.total_trades}
-                    icon="📊"
-                    variant="info"
-                  />
-                  <StatCard
-                    label="Taux de réussite"
-                    value={`${parseFloat(statistics.win_rate.toString()).toFixed(1)}%`}
-                    icon="🎯"
-                    variant={parseFloat(statistics.win_rate.toString()) >= 50 ? 'success' : 'danger'}
-                    trend={parseFloat(statistics.win_rate.toString()) >= 50 ? 'up' : 'down'}
-                    trendValue={`${statistics.winning_trades}W / ${statistics.losing_trades}L`}
-                  />
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 h-full">
+                <ModernStatCard
+                  label="Total Trades"
+                  value={statistics.total_trades}
+                  icon={
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  }
+                  variant="info"
+                  size="small"
+                />
                 
-                {/* Deuxième colonne */}
-                <div className="flex flex-col justify-between h-full gap-4">
-                  <StatCard
-                    label="PnL Total"
-                    value={formatCurrency(statistics.total_pnl)}
-                    icon="💰"
-                    variant={typeof statistics.total_pnl === 'string' ? (parseFloat(statistics.total_pnl) >= 0 ? 'success' : 'danger') : (statistics.total_pnl >= 0 ? 'success' : 'danger')}
-                    trend={typeof statistics.total_pnl === 'string' ? (parseFloat(statistics.total_pnl) >= 0 ? 'up' : 'down') : (statistics.total_pnl >= 0 ? 'up' : 'down')}
-                    trendValue={formatCurrency(statistics.average_pnl) + ' moy'}
-                  />
-                  <StatCard
-                    label="Frais Totaux"
-                    value={formatCurrency(statistics.total_fees)}
-                    icon="💳"
-                    variant="warning"
-                  />
-                </div>
+                <ModernStatCard
+                  label="Taux de réussite"
+                  value={`${parseFloat(statistics.win_rate.toString()).toFixed(1)}%`}
+                  icon={
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
+                  variant={parseFloat(statistics.win_rate.toString()) >= 50 ? 'success' : 'danger'}
+                  trend={parseFloat(statistics.win_rate.toString()) >= 50 ? 'up' : 'down'}
+                  trendValue={`${statistics.winning_trades}W / ${statistics.losing_trades}L`}
+                  size="small"
+                />
                 
-                {/* Troisième colonne */}
-                <div className="flex flex-col justify-between h-full gap-4">
-                  <StatCard
-                    label="Meilleur Trade"
-                    value={formatCurrency(statistics.best_trade)}
-                    icon="🚀"
-                    variant="success"
-                  />
-                  <StatCard
-                    label="Pire Trade"
-                    value={formatCurrency(statistics.worst_trade)}
-                    icon="📉"
-                    variant="danger"
-                  />
-                </div>
+                <ModernStatCard
+                  label="PnL Total"
+                  value={formatCurrency(statistics.total_pnl)}
+                  icon={
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
+                  variant={typeof statistics.total_pnl === 'string' ? (parseFloat(statistics.total_pnl) >= 0 ? 'success' : 'danger') : (statistics.total_pnl >= 0 ? 'success' : 'danger')}
+                  trend={typeof statistics.total_pnl === 'string' ? (parseFloat(statistics.total_pnl) >= 0 ? 'up' : 'down') : (statistics.total_pnl >= 0 ? 'up' : 'down')}
+                  trendValue={formatCurrency(statistics.average_pnl) + ' moy'}
+                  size="small"
+                />
+                
+                <ModernStatCard
+                  label="Frais Totaux"
+                  value={formatCurrency(statistics.total_fees)}
+                  icon={
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  }
+                  variant="warning"
+                  size="small"
+                />
+                
+                <ModernStatCard
+                  label="Meilleur Trade"
+                  value={formatCurrency(statistics.best_trade)}
+                  icon={
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  }
+                  variant="success"
+                  size="small"
+                />
+                
+                <ModernStatCard
+                  label="Pire Trade"
+                  value={formatCurrency(statistics.worst_trade)}
+                  icon={
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                    </svg>
+                  }
+                  variant="danger"
+                  size="small"
+                />
               </div>
             )}
           </div>
@@ -318,4 +342,3 @@ function TradesPage() {
 }
 
 export default TradesPage
-

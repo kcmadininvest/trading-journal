@@ -5,6 +5,13 @@ import StrategyRespectChart from '../components/Strategy/StrategyRespectChart';
 import WinRateByStrategyChart from '../components/Strategy/WinRateByStrategyChart';
 import SessionWinRateChart from '../components/Strategy/SessionWinRateChart';
 import EmotionsChart from '../components/Strategy/EmotionsChart';
+import GlobalMetricsChart from '../components/Strategy/GlobalMetricsChart';
+import StrategyDistributionChart from '../components/Strategy/StrategyDistributionChart';
+import YearlyCalendar from '../components/Strategy/YearlyCalendar';
+import YearlyStrategyRespectChart from '../components/Strategy/YearlyStrategyRespectChart';
+import YearlyWinRateByStrategyChart from '../components/Strategy/YearlyWinRateByStrategyChart';
+import YearlySessionWinRateChart from '../components/Strategy/YearlySessionWinRateChart';
+import YearlyEmotionsChart from '../components/Strategy/YearlyEmotionsChart';
 
 interface DailyData {
   date: string;
@@ -38,6 +45,12 @@ function StrategyPage() {
   const [strategyData, setStrategyData] = useState<{ [date: string]: any }>({});
   const [isUpdatingStrategy, setIsUpdatingStrategy] = useState(false);
   const [isStrategyDataLoading, setIsStrategyDataLoading] = useState(false);
+  
+  // Nouvel état pour les onglets
+  const [activeTab, setActiveTab] = useState<'calendar' | 'global'>('calendar');
+  
+  // État pour l'année courante dans la vue globale
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const fetchStrategyData = useCallback(async (year: number, month: number) => {
     try {
@@ -290,6 +303,16 @@ function StrategyPage() {
     setCurrentDate(new Date());
   };
 
+  // Navigation par année pour la vue globale
+  const navigateYear = (direction: 'prev' | 'next') => {
+    const newYear = direction === 'prev' ? currentYear - 1 : currentYear + 1;
+    setCurrentYear(newYear);
+  };
+
+  const goToCurrentYear = () => {
+    setCurrentYear(new Date().getFullYear());
+  };
+
   const handleDayClick = async (dayInfo: any) => {
     if (dayInfo.isCurrentMonth) {
       setSelectedDate(dayInfo.date);
@@ -396,56 +419,100 @@ function StrategyPage() {
           <p className="text-gray-600">Planifiez et suivez vos stratégies de trading avec le calendrier intégré</p>
         </div>
 
-        {/* Navigation du calendrier */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigateMonth('prev')}
-              className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            
-            <h2 className="text-2xl font-bold text-gray-900">
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h2>
-            
-            <button
-              onClick={() => navigateMonth('next')}
-              className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+        {/* Onglets de navigation */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('calendar')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'calendar'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>Calendrier</span>
+                </div>
+              </button>
+              
+              
+              <button
+                onClick={() => setActiveTab('global')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'global'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Vue globale</span>
+                </div>
+              </button>
+            </nav>
           </div>
-          
-          <div className="flex items-center space-x-2">
-            <div className="text-sm text-gray-600">P/L Mensuel:</div>
-            <div className={`text-2xl font-bold ${monthlyTotal >= 0 ? 'text-blue-600' : 'text-gray-600'}`}>
-              {formatCurrency(monthlyTotal)}
-            </div>
-            {/* Indicateur de mise à jour en cours */}
-            {isUpdatingStrategy && (
-              <div className="flex items-center space-x-1 text-sm text-blue-600">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span>Mise à jour...</span>
-              </div>
-            )}
-          </div>
-          
-          <button
-            onClick={goToToday}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Aujourd'hui
-          </button>
         </div>
 
-        {/* Layout principal : Graphiques + Calendrier + Graphique Sessions */}
-        <div className="flex flex-col xl:flex-row gap-6">
+
+        {/* Contenu conditionnel selon l'onglet actif */}
+        {activeTab === 'calendar' && (
+          <>
+            {/* Navigation du calendrier - seulement visible pour l'onglet calendrier */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => navigateMonth('prev')}
+                  className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                </h2>
+                
+                <button
+                  onClick={() => navigateMonth('next')}
+                  className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <div className="text-sm text-gray-600">P/L Mensuel:</div>
+                <div className={`text-2xl font-bold ${monthlyTotal >= 0 ? 'text-blue-600' : 'text-gray-600'}`}>
+                  {formatCurrency(monthlyTotal)}
+                </div>
+                {/* Indicateur de mise à jour en cours */}
+                {isUpdatingStrategy && (
+                  <div className="flex items-center space-x-1 text-sm text-blue-600">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <span>Mise à jour...</span>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={goToToday}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Aujourd'hui
+              </button>
+            </div>
+
+            {/* Layout principal : Graphiques + Calendrier + Graphique Sessions */}
+            <div className="flex flex-col xl:flex-row gap-6">
           {/* Graphiques de gauche */}
           <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
             {/* Graphique de respect de la stratégie */}
@@ -600,6 +667,89 @@ function StrategyPage() {
             </div>
           </div>
         </div>
+          </>
+        )}
+
+
+        {/* Onglet Vue globale */}
+        {activeTab === 'global' && (
+          <>
+            {/* Navigation de l'année - seulement visible pour l'onglet global */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => navigateYear('prev')}
+                  className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Année {currentYear}
+                </h2>
+                
+                <button
+                  onClick={() => navigateYear('next')}
+                  className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+              
+              <button
+                onClick={goToCurrentYear}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Année Courante
+              </button>
+            </div>
+
+            {/* Layout principal : Graphiques + Calendrier Annuel + Graphiques */}
+            <div className="flex flex-col xl:flex-row gap-6">
+              {/* Graphiques de gauche */}
+              <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
+                {/* Graphique de respect de la stratégie */}
+                <div className="flex-1">
+                  <YearlyStrategyRespectChart year={currentYear} isLoading={isStrategyDataLoading} />
+                </div>
+                
+                {/* Graphique de win rate par stratégie */}
+                <div className="flex-1">
+                  <YearlyWinRateByStrategyChart year={currentYear} isLoading={isStrategyDataLoading} />
+                </div>
+              </div>
+              
+              {/* Calendrier Annuel */}
+              <div className="flex-1">
+                <YearlyCalendar 
+                  year={currentYear} 
+                  onMonthClick={(month, year) => {
+                    // Optionnel : naviguer vers le calendrier mensuel
+                    setActiveTab('calendar');
+                    setCurrentDate(new Date(year, month - 1, 1));
+                  }}
+                />
+              </div>
+              
+              {/* Graphiques de droite */}
+              <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
+                {/* Graphique de sessions gagnantes */}
+                <div className="flex-1">
+                  <YearlySessionWinRateChart year={currentYear} isLoading={isStrategyDataLoading} />
+                </div>
+                
+                {/* Graphique d'émotions dominantes */}
+                <div className="flex-1">
+                  <YearlyEmotionsChart year={currentYear} isLoading={isStrategyDataLoading} />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Modal pour les trades et stratégies */}
         <TradesStrategyModal

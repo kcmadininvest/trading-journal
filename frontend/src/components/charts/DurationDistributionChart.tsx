@@ -10,6 +10,7 @@ import {
 import { Bar } from 'react-chartjs-2'
 import { useBarChartConfig } from '../../hooks/useChartConfig'
 import { chartColors } from '../../config/chartConfig'
+import ChartCard from '../common/ChartCard'
 
 // Register Chart.js components
 ChartJS.register(
@@ -107,25 +108,27 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
   })
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-      <div className="h-6 flex items-center justify-center mb-1">
-        <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span className="text-lg font-semibold text-gray-900 uppercase">Répartition des trades par durée</span>
-      </div>
-      <div className="relative" style={{ height: 420 }}>
-        <div className="relative h-full w-full p-2">
-          {bins.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Pas de données disponibles
-            </div>
-          ) : (
-            <Bar data={chartData} options={options} />
-          )}
+    <ChartCard
+      title={(
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-50">
+            <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900">RÉPARTITION DES TRADES PAR DURÉE</h3>
         </div>
-      </div>
-    </div>
+      )}
+      height={420}
+    >
+      {bins.length === 0 ? (
+        <div className="flex items-center justify-center h-full text-gray-500">
+          Pas de données disponibles
+        </div>
+      ) : (
+        <Bar data={chartData} options={options} />
+      )}
+    </ChartCard>
   )
 }
 

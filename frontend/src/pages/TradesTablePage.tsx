@@ -230,14 +230,21 @@ function TradesTablePage() {
       <Card className="overflow-hidden">
         <div className="flex justify-between items-center mb-5 flex-wrap gap-4">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">💹</span>
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
             <h2 className="text-lg md:text-xl font-semibold text-gray-900">Historique des trades ({totalItems})</h2>
           </div>
 
           <div className="flex gap-3 flex-wrap items-center">
             {/* Totaux globaux */}
             <div className="flex items-center gap-4 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-md">
-              <span className="text-sm font-medium text-blue-800">🌍 Totaux globaux:</span>
+              <span className="text-sm font-medium text-blue-800 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Totaux globaux:
+              </span>
               <div className="flex items-center gap-3 text-sm">
                 <span className={`font-mono ${globalTotals.totalPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   PnL: {globalTotals.totalPnl >= 0 ? '+' : ''}{formatCurrency(globalTotals.totalPnl)}
@@ -296,7 +303,7 @@ function TradesTablePage() {
             </div>
 
             <button className="px-4 py-2.5 text-base text-gray-700 bg-transparent border border-gray-300 rounded-md hover:bg-gray-50 transition-colors" onClick={() => { setFilterType(''); setFilterContract(''); setStartDate(''); setEndDate('') }}>Réinitialiser</button>
-            <button className="px-4 py-2.5 text-base text-white bg-rose-600 hover:bg-rose-700 border border-rose-600 rounded-md transition-colors" onClick={handleClearAll}>Effacer l'historique</button>
+            <button className="px-4 py-2.5 text-base text-white bg-red-600 hover:bg-red-700 border border-red-600 rounded-md transition-colors" onClick={handleClearAll}>Effacer l'historique</button>
           </div>
         </div>
 
@@ -342,7 +349,18 @@ function TradesTablePage() {
                               ? 'bg-emerald-100 text-emerald-800' 
                               : 'bg-rose-100 text-rose-800'
                           }`}>
-                            {trade.trade_type === 'Long' ? '↗️' : '↘️'} {trade.trade_type}
+                            <span className="flex items-center gap-1">
+                              {trade.trade_type === 'Long' ? (
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                              ) : (
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                                </svg>
+                              )}
+                              {trade.trade_type}
+                            </span>
                           </span>
                         </td>
                         <td className="px-3 md:px-4 py-3 text-sm text-gray-900 hidden md:table-cell">{trade.size}</td>
@@ -370,7 +388,9 @@ function TradesTablePage() {
                       <tr className="bg-gray-50 border-t-2 border-gray-300">
                         <td className="px-3 md:px-4 py-3 text-sm font-semibold text-gray-700" colSpan={6}>
                           <span className="flex items-center gap-2">
-                            <span className="text-lg">📊</span>
+                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
                             <span>Totaux filtrés ({filteredTrades.length} trade{filteredTrades.length > 1 ? 's' : ''})</span>
                           </span>
                         </td>
@@ -447,5 +467,3 @@ function TradesTablePage() {
 }
 
 export default TradesTablePage
-
-

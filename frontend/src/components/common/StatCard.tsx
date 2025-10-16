@@ -4,7 +4,7 @@ import Card from './Card'
 interface StatCardProps {
   label: string
   value: string | number
-  icon?: string
+  icon?: string | React.ReactNode
   trend?: 'up' | 'down' | 'neutral'
   trendValue?: string
   variant?: 'default' | 'success' | 'danger' | 'warning' | 'info'
@@ -34,7 +34,15 @@ function StatCard({ label, value, icon, trend, trendValue, variant = 'default' }
   return (
     <Card className={`relative overflow-hidden hover:shadow-lg hover:scale-[1.02] transition-all duration-200 h-full flex flex-col bg-gradient-to-br from-white to-gray-50 ${variantClasses[variant]}`} padding="small">
       <div className="flex items-center gap-3 mb-4">
-        {icon && <span className="text-2xl md:text-3xl opacity-80">{icon}</span>}
+        {icon && (
+          <div className="text-2xl md:text-3xl opacity-80">
+            {typeof icon === 'string' ? (
+              <span>{icon}</span>
+            ) : (
+              icon
+            )}
+          </div>
+        )}
         <span className="text-sm md:text-base text-gray-500 font-semibold uppercase tracking-widest">{label}</span>
       </div>
       <div className="flex-1 flex flex-col justify-center">
@@ -51,4 +59,3 @@ function StatCard({ label, value, icon, trend, trendValue, variant = 'default' }
 }
 
 export default StatCard
-
