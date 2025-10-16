@@ -86,8 +86,8 @@ sudo find /var/www/html/trading_journal -type d -exec chmod 755 {} \;
 sudo find /var/www/html/trading_journal -type f -exec chmod 644 {} \;
 
 # Fichiers de configuration sensibles
-sudo chmod 640 /var/www/html/trading_journal/backend/.env
-sudo chmod 640 /var/www/html/trading_journal/frontend/.env.production
+sudo chmod 644 /var/www/html/trading_journal/backend/.env
+sudo chmod 644 /var/www/html/trading_journal/frontend/.env.production
 
 # Fichiers exécutables
 sudo chmod 755 /var/www/html/trading_journal/backend/manage.py

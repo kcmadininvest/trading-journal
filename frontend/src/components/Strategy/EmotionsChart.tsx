@@ -153,6 +153,26 @@ const EmotionsChart: React.FC<EmotionsChartProps> = ({ strategyData }) => {
     }
   };
 
+  // Vérifier si les données sont en cours de chargement
+  const isDataLoading = Object.keys(strategyData).length === 0;
+
+  if (isDataLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
+        <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
+        <div className="space-y-3">
+          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+        </div>
+        <div className="mt-6 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-sm text-gray-600">Chargement...</span>
+        </div>
+      </div>
+    );
+  }
+
   // Vérifier si nous avons des données d'émotions
   const hasEmotionData = Object.values(strategyData).some((dayData: any) => 
     (dayData.respectedTrades && Array.isArray(dayData.respectedTrades) && 
@@ -165,8 +185,8 @@ const EmotionsChart: React.FC<EmotionsChartProps> = ({ strategyData }) => {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex items-center justify-center">
         <div className="text-center text-gray-500">
-          <p className="text-lg font-semibold mb-2">Données d'émotions non disponibles</p>
-          <p className="text-sm">Les émotions dominantes ne sont pas encore chargées.</p>
+          <p className="text-lg font-semibold mb-2">Aucune donnée d'émotion pour ce mois</p>
+          <p className="text-sm">Ajoutez des émotions pour voir le graphique.</p>
         </div>
       </div>
     );

@@ -31,7 +31,7 @@ interface CalendarData {
 function StrategyPage() {
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  // const [loading, setLoading] = useState(false); // Commencer avec false pour afficher le calendrier immédiatement
+  const [loading, setLoading] = useState(true); // État de chargement initial
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showTradesModal, setShowTradesModal] = useState(false);
   const [dayTrades, setDayTrades] = useState<TopStepTrade[]>([]);
@@ -101,7 +101,7 @@ function StrategyPage() {
 
   const fetchCalendarData = useCallback(async (year: number, month: number) => {
     try {
-      // Ne pas masquer le calendrier, juste charger les données
+      setLoading(true);
       const data = await tradesService.getCalendarData(year, month);
       setCalendarData(data);
       
@@ -110,6 +110,8 @@ function StrategyPage() {
     } catch (error) {
       // Erreur silencieuse lors du chargement des données du calendrier
       console.error('Erreur lors du chargement des données du calendrier:', error);
+    } finally {
+      setLoading(false);
     }
   }, [fetchStrategyData]);
 
@@ -368,6 +370,19 @@ function StrategyPage() {
   ];
 
   const weekDays = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+  // Écran de chargement initial
+  if (loading && !calendarData) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Chargement des données de stratégie...</p>
+          <p className="text-gray-500 text-sm mt-2">Récupération des trades et analyses</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50">

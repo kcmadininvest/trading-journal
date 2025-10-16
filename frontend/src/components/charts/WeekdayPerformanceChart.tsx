@@ -62,9 +62,9 @@ function WeekdayPerformanceChart({ data }: WeekdayPerformanceChartProps) {
             value >= 0 ? '#3b82f6' : '#6b7280'
           ),
           borderColor: totalPnlValues.map(value => 
-            value >= 0 ? '#1d4ed8' : '#4b5563'
+            value >= 0 ? '#3b82f6' : '#6b7280'
           ),
-          borderWidth: 1,
+          borderWidth: 0,
           borderRadius: 0,
           borderSkipped: false,
           yAxisID: 'y',

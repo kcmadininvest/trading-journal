@@ -145,6 +145,26 @@ const StrategyRespectChart: React.FC<StrategyRespectChartProps> = ({ strategyDat
     }
   };
 
+  // Vérifier si les données sont en cours de chargement
+  const isDataLoading = Object.keys(strategyData).length === 0;
+
+  if (isDataLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
+        <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
+        <div className="space-y-3">
+          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+        </div>
+        <div className="mt-6 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          <span className="ml-2 text-sm text-gray-600">Chargement...</span>
+        </div>
+      </div>
+    );
+  }
+
   // Si pas de données, afficher un message
   if (chartData.totalTrades === 0) {
     return (

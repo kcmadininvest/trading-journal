@@ -57,7 +57,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" name="login-form" autoComplete="on">
+        {/* Champ caché pour aider les gestionnaires de mots de passe à identifier le contexte */}
+        <input type="hidden" name="form_type" value="login" />
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Email
@@ -69,7 +71,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             value={formData.email}
             onChange={handleChange}
             required
-            autoComplete="email"
+            autoComplete="username"
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="votre@email.com"
           />
@@ -124,6 +126,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           type="submit"
           disabled={loading}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Se connecter"
         >
           {loading ? 'Connexion...' : 'Se connecter'}
         </button>

@@ -68,9 +68,9 @@ function WaterfallChart({ data }: WaterfallChartProps) {
             d.isPositive ? '#3b82f6' : '#6b7280'
           ),
           borderColor: waterfallData.map(d => 
-            d.isPositive ? '#1d4ed8' : '#4b5563'
+            d.isPositive ? '#3b82f6' : '#6b7280'
           ),
-          borderWidth: 1,
+          borderWidth: 0,
           borderRadius: 0,
           borderSkipped: false,
           _waterfallData: waterfallData

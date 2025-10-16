@@ -44,8 +44,8 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
           label: 'Gagnants',
           data: successfulData,
           backgroundColor: '#3b82f6',
-          borderColor: '#1d4ed8',
-          borderWidth: 1,
+          borderColor: '#3b82f6',
+          borderWidth: 0,
           borderRadius: 0,
           borderSkipped: false,
         },
@@ -108,8 +108,11 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-      <div className="h-10 flex items-center justify-center mb-2">
-        <span className="text-xl font-semibold text-gray-900 uppercase">Répartition des trades par durée</span>
+      <div className="h-6 flex items-center justify-center mb-1">
+        <svg className="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span className="text-lg font-semibold text-gray-900 uppercase">Répartition des trades par durée</span>
       </div>
       <div className="relative" style={{ height: 420 }}>
         <div className="relative h-full w-full p-2">
@@ -127,5 +130,3 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
 }
 
 export default DurationDistributionChart
-
-
