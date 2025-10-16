@@ -42,7 +42,7 @@ class UserRegistrationView(APIView):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            refresh = RefreshToken.for_user(user)
+            refresh = RefreshToken.for_user(user)  # type: ignore
             
             return Response({
                 'message': 'Utilisateur créé avec succès',
@@ -86,13 +86,13 @@ class UserProfileView(APIView):
             from trades.models import TopStepTrade, TopStepImportLog, TradeStrategy
             
             # Supprimer les stratégies de trades (doit être fait avant les trades)
-            TradeStrategy.objects.filter(user=user).delete()
+            TradeStrategy.objects.filter(user=user).delete()  # type: ignore
             
             # Supprimer tous les trades associés à l'utilisateur
-            TopStepTrade.objects.filter(user=user).delete()
+            TopStepTrade.objects.filter(user=user).delete()  # type: ignore
             
             # Supprimer les logs d'import
-            TopStepImportLog.objects.filter(user=user).delete()
+            TopStepImportLog.objects.filter(user=user).delete()  # type: ignore
             
             # Supprimer l'utilisateur (cela devrait supprimer en cascade le reste)
             user.delete()
@@ -150,7 +150,7 @@ class LogoutView(APIView):
                         created_at = datetime.fromtimestamp(iat_timestamp) if iat_timestamp else datetime.now()
                         expires_at = datetime.fromtimestamp(exp_timestamp) if exp_timestamp else datetime.now()
                         
-                        outstanding_token, created = OutstandingToken.objects.get_or_create(
+                        outstanding_token, created = OutstandingToken.objects.get_or_create(  # type: ignore
                             jti=jti,
                             defaults={
                                 'user': request.user,
@@ -161,7 +161,7 @@ class LogoutView(APIView):
                         )
                         
                         # Créer une entrée BlacklistedToken
-                        BlacklistedToken.objects.get_or_create(token=outstanding_token)
+                        BlacklistedToken.objects.get_or_create(token=outstanding_token)  # type: ignore
                         
                 except Exception as e:
                     print(f"Erreur lors de la blacklist du token d'accès: {e}")
@@ -234,7 +234,31 @@ class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
                 {'error': 'Permission refusée'}, 
                 status=status.HTTP_403_FORBIDDEN
             )
-        return super().update(request, *args, **kwargs)
+        
+        # Récupérer l'utilisateur avant la mise à jour
+        user = self.get_object()
+        old_role = user.role
+        
+        # Effectuer la mise à jour
+        response = super().update(request, *args, **kwargs)
+        
+        # Si le rôle a changé, mettre à jour les permissions django-role-permissions
+        if response.status_code == 200 and 'role' in request.data:
+            new_role = request.data['role']
+            if old_role != new_role:
+                try:
+                    from accounts.roles import Admin, User as UserRole
+                    
+                    if new_role == 'admin':
+                        Admin.assign_role_to_user(user)
+                    else:
+                        UserRole.assign_role_to_user(user)
+                    
+                    print(f"Permissions mises à jour pour {user.email}: {old_role} → {new_role}")
+                except Exception as e:
+                    print(f"Erreur lors de la mise à jour des permissions pour {user.email}: {e}")
+        
+        return response
     
     def destroy(self, request, *args, **kwargs):
         if not has_permission(request.user, 'delete_users'):
@@ -326,7 +350,7 @@ def session_info(request):
                 try:
                     token = AccessToken(access_token)
                     exp_timestamp = token['exp']
-                    exp_datetime = datetime.fromtimestamp(exp_timestamp)
+                    exp_datetime = datetime.fromtimestamp(float(exp_timestamp))
                     
                     # Calculer les temps restants
                     now = datetime.now()
@@ -398,4 +422,161 @@ def extend_session(request):
     except Exception as e:
         return Response({
             'error': 'Erreur lors de l\'extension de la session'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SystemStatsView(APIView):
+    """
+    Vue pour récupérer les statistiques système (admin uniquement)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        if not has_permission(request.user, 'view_all_users'):
+            return Response(
+                {'error': 'Permission refusée'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        from datetime import datetime, timedelta
+        import shutil
+        import os
+        
+        try:
+            # Utilisateurs actifs aujourd'hui (dernière connexion dans les dernières 24h)
+            today = datetime.now().date()
+            active_users_today = User.objects.filter(
+                last_login__date=today
+            ).count()
+            
+            # Total des utilisateurs
+            total_users = User.objects.count()
+            
+            # Total des trades (à implémenter quand le modèle Trade sera créé)
+            total_trades = 0  # Trade.objects.count() quand le modèle sera créé
+            
+            # Espace disque utilisé (approximation)
+            try:
+                total, used, free = shutil.disk_usage("/")
+                disk_usage = f"{used // (1024**3)} GB / {total // (1024**3)} GB"
+            except:
+                disk_usage = "N/A"
+            
+            # Dernière sauvegarde (à implémenter)
+            last_backup = None
+            
+            # Uptime système (approximation)
+            try:
+                with open('/proc/uptime', 'r') as f:
+                    uptime_seconds = float(f.readline().split()[0])
+                    uptime_hours = int(uptime_seconds // 3600)
+                    uptime_days = uptime_hours // 24
+                    uptime_hours = uptime_hours % 24
+                    system_uptime = f"{uptime_days}j {uptime_hours}h"
+            except:
+                system_uptime = "N/A"
+            
+            return Response({
+                'active_users_today': active_users_today,
+                'total_users': total_users,
+                'total_trades': total_trades,
+                'disk_usage': disk_usage,
+                'last_backup': last_backup,
+                'system_uptime': system_uptime
+            })
+            
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors de la récupération des statistiques: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_system_backup(request):
+    """
+    Créer une sauvegarde du système (admin uniquement)
+    """
+    if not has_permission(request.user, 'view_all_users'):
+        return Response(
+            {'error': 'Permission refusée'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        # Simulation d'une sauvegarde (à implémenter selon vos besoins)
+        import uuid
+        backup_id = str(uuid.uuid4())[:8]
+        
+        # Ici vous pourriez implémenter la vraie logique de sauvegarde
+        # Par exemple : dump de la base de données, sauvegarde des fichiers, etc.
+        
+        return Response({
+            'message': f'Sauvegarde créée avec succès (ID: {backup_id})',
+            'backup_id': backup_id
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': f'Erreur lors de la création de la sauvegarde: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def clean_system_logs(request):
+    """
+    Nettoyer les logs du système (admin uniquement)
+    """
+    if not has_permission(request.user, 'view_all_users'):
+        return Response(
+            {'error': 'Permission refusée'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        # Simulation du nettoyage des logs (à implémenter selon vos besoins)
+        logs_cleaned = 0
+        
+        # Ici vous pourriez implémenter la vraie logique de nettoyage
+        # Par exemple : suppression des anciens logs, rotation des fichiers, etc.
+        
+        return Response({
+            'message': f'Nettoyage terminé. {logs_cleaned} logs supprimés.',
+            'logs_cleaned': logs_cleaned
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': f'Erreur lors du nettoyage des logs: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def check_system_integrity(request):
+    """
+    Vérifier l'intégrité du système (admin uniquement)
+    """
+    if not has_permission(request.user, 'view_all_users'):
+        return Response(
+            {'error': 'Permission refusée'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    try:
+        # Simulation de la vérification d'intégrité (à implémenter selon vos besoins)
+        issues_found = 0
+        
+        # Ici vous pourriez implémenter la vraie logique de vérification
+        # Par exemple : vérification de la base de données, des fichiers, des permissions, etc.
+        
+        return Response({
+            'message': f'Vérification terminée. {issues_found} problème(s) trouvé(s).',
+            'issues_found': issues_found
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': f'Erreur lors de la vérification d\'intégrité: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

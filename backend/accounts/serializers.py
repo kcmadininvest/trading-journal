@@ -174,8 +174,11 @@ class PasswordChangeSerializer(serializers.Serializer):
     
     def save(self, **kwargs):
         user = self.context['request'].user
-        user.set_password(self.validated_data['new_password'])
-        user.save()
+        if hasattr(self, 'validated_data') and self.validated_data and isinstance(self.validated_data, dict):
+            new_password = self.validated_data.get('new_password')
+            if new_password:
+                user.set_password(new_password)
+                user.save()
         return user
 
 
@@ -203,9 +206,21 @@ class AdminUserUpdateSerializer(serializers.ModelSerializer):
     """
     Sérialiseur pour la mise à jour des utilisateurs par l'admin
     """
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+    trades_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'username', 'role', 'is_active', 'is_verified')
+        fields = (
+            'id', 'email', 'username', 'first_name', 'last_name',
+            'full_name', 'role', 'is_verified', 'is_active',
+            'trades_count', 'created_at', 'last_login'
+        )
+        read_only_fields = ('id', 'email', 'created_at', 'last_login')
+    
+    def get_trades_count(self, obj):
+        # Cette méthode sera implémentée quand le modèle Trade sera créé
+        return 0
     
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
@@ -240,15 +255,19 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         # Ajouter des informations de session à la réponse
         refresh = self.get_token(self.user)
-        access_token = refresh.access_token
         
         # Calculer les temps d'expiration
         now = datetime.now()
         access_expiry = now + timedelta(minutes=15)  # Access token expire dans 15 minutes
         refresh_expiry = now + timedelta(hours=2)    # Refresh token expire dans 2 heures
         
-        data.update({
-            'user': {
+        # Créer un nouveau dictionnaire avec les données
+        result = {}
+        if isinstance(data, dict):
+            result.update(data)
+        
+        if self.user:
+            result['user'] = {
                 'id': self.user.id,
                 'email': self.user.email,
                 'username': self.user.username,
@@ -262,16 +281,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 'is_regular_user': self.user.is_regular_user,
                 'created_at': self.user.created_at.isoformat(),
                 'updated_at': self.user.updated_at.isoformat(),
-            },
-            'session_info': {
-                'access_token_expires_at': access_expiry.isoformat(),
-                'refresh_token_expires_at': refresh_expiry.isoformat(),
-                'session_expires_at': refresh_expiry.isoformat(),
-                'auto_logout_warning_at': (refresh_expiry - timedelta(minutes=5)).isoformat(),  # Avertissement 5 min avant
             }
-        })
+        result['session_info'] = {
+            'access_token_expires_at': access_expiry.isoformat(),
+            'refresh_token_expires_at': refresh_expiry.isoformat(),
+            'session_expires_at': refresh_expiry.isoformat(),
+            'auto_logout_warning_at': (refresh_expiry - timedelta(minutes=5)).isoformat(),  # Avertissement 5 min avant
+        }
         
-        return data
+        return result
 
 
 class SessionInfoSerializer(serializers.Serializer):
