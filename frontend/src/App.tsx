@@ -8,6 +8,7 @@ import TradesPage from './pages/TradesPage';
 import StatisticsPage from './pages/StatisticsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import StrategyPage from './pages/StrategyPage';
+import SettingsPage from './pages/SettingsPage';
 import { authService, User } from './services/auth';
 import sessionManager, { SessionWarning } from './services/sessionManager';
 
@@ -66,6 +67,8 @@ function App() {
         setCurrentPage('analytics');
       } else if (hash === '#strategy') {
         setCurrentPage('strategy');
+      } else if (hash === '#settings' || hash.startsWith('#settings-')) {
+        setCurrentPage('settings');
       } else {
         setCurrentPage('trades');
       }
@@ -88,6 +91,12 @@ function App() {
     setSessionWarning(null);
   };
 
+  const handleUserUpdate = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+    // Mettre à jour aussi le service d'authentification
+    authService.updateCurrentUser(updatedUser);
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'statistics':
@@ -96,6 +105,8 @@ function App() {
         return <AnalyticsPage />;
       case 'strategy':
         return <StrategyPage />;
+      case 'settings':
+        return <SettingsPage currentUser={currentUser!} onUserUpdate={handleUserUpdate} />;
       default:
         return <TradesPage />;
     }

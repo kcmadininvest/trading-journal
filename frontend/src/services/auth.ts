@@ -279,6 +279,14 @@ class AuthService {
   getRefreshToken(): string | null {
     return this.refreshToken;
   }
+
+  updateCurrentUser(updatedUser: User): void {
+    // Mettre à jour l'utilisateur dans le localStorage
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  }
 }
 
 export const authService = new AuthService();
