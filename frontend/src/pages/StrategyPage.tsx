@@ -37,9 +37,14 @@ function StrategyPage() {
   const [dayTrades, setDayTrades] = useState<TopStepTrade[]>([]);
   const [strategyData, setStrategyData] = useState<{ [date: string]: any }>({});
   const [isUpdatingStrategy, setIsUpdatingStrategy] = useState(false);
+  const [isStrategyDataLoading, setIsStrategyDataLoading] = useState(false);
 
   const fetchStrategyData = useCallback(async (year: number, month: number) => {
     try {
+      setIsStrategyDataLoading(true);
+      // Réinitialiser les données de stratégie pour éviter l'état de chargement persistant
+      setStrategyData({});
+      
       // Récupérer les données de stratégie pour chaque jour du mois
       // const startDate = new Date(year, month - 1, 1);
       const endDate = new Date(year, month, 0);
@@ -59,7 +64,7 @@ function StrategyPage() {
       const strategyMap: { [date: string]: any } = {};
       
       results.forEach(({ date, strategies }) => {
-        if (strategies.length > 0) {
+        if (strategies && strategies.length > 0) {
           const respectedCount = strategies.filter((s: any) => s.strategy_respected === true).length;
           const totalCount = strategies.length;
           
@@ -90,12 +95,17 @@ function StrategyPage() {
             respectedTrades,
             notRespectedTrades
           };
+          
         }
       });
       
       setStrategyData(strategyMap);
     } catch (error) {
       console.error('Erreur lors du chargement des données de stratégie:', error);
+      // En cas d'erreur, s'assurer que les données sont définies pour éviter l'état de chargement infini
+      setStrategyData({});
+    } finally {
+      setIsStrategyDataLoading(false);
     }
   }, []);
 
@@ -115,14 +125,6 @@ function StrategyPage() {
     }
   }, [fetchStrategyData]);
 
-  useEffect(() => {
-    // Charger les données du calendrier au montage
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
-    fetchCalendarData(year, month);
-  }, [currentDate, fetchCalendarData]);
-
-
   // Fonction pour mettre à jour les données de stratégie de manière transparente
   const updateStrategyDataSilently = async (year: number, month: number) => {
     try {
@@ -136,6 +138,7 @@ function StrategyPage() {
   };
 
   useEffect(() => {
+    // Charger les données du calendrier au montage et lors du changement de mois
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
     fetchCalendarData(year, month);
@@ -447,12 +450,12 @@ function StrategyPage() {
           <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
             {/* Graphique de respect de la stratégie */}
             <div className="flex-1">
-              <StrategyRespectChart strategyData={strategyData} />
+              <StrategyRespectChart strategyData={strategyData} isLoading={isStrategyDataLoading} />
             </div>
             
             {/* Graphique de win rate par stratégie */}
             <div className="flex-1">
-              <WinRateByStrategyChart strategyData={strategyData} />
+              <WinRateByStrategyChart strategyData={strategyData} isLoading={isStrategyDataLoading} />
             </div>
           </div>
           
@@ -588,12 +591,12 @@ function StrategyPage() {
           <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
             {/* Graphique de sessions gagnantes */}
             <div className="flex-1">
-              <SessionWinRateChart strategyData={strategyData} />
+              <SessionWinRateChart strategyData={strategyData} isLoading={isStrategyDataLoading} />
             </div>
             
             {/* Graphique d'émotions dominantes */}
             <div className="flex-1">
-              <EmotionsChart strategyData={strategyData} />
+              <EmotionsChart strategyData={strategyData} isLoading={isStrategyDataLoading} />
             </div>
           </div>
         </div>

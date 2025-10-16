@@ -7,9 +7,10 @@ ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 interface EmotionsChartProps {
   strategyData: { [date: string]: any };
+  isLoading?: boolean;
 }
 
-const EmotionsChart: React.FC<EmotionsChartProps> = ({ strategyData }) => {
+const EmotionsChart: React.FC<EmotionsChartProps> = ({ strategyData, isLoading = false }) => {
   // Calculer les données d'émotions dominantes
   const chartData = React.useMemo(() => {
     const emotionCounts: { [key: string]: number } = {};
@@ -154,9 +155,7 @@ const EmotionsChart: React.FC<EmotionsChartProps> = ({ strategyData }) => {
   };
 
   // Vérifier si les données sont en cours de chargement
-  const isDataLoading = Object.keys(strategyData).length === 0;
-
-  if (isDataLoading) {
+  if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
         <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>

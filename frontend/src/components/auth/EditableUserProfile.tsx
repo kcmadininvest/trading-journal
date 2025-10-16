@@ -212,7 +212,7 @@ const EditableUserProfile: React.FC<EditableUserProfileProps> = ({
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+    <div className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
       {/* Header fixe */}
       <div className="bg-gray-800 px-6 py-4 text-white">
         <div className="flex items-center justify-between">
@@ -266,10 +266,10 @@ const EditableUserProfile: React.FC<EditableUserProfileProps> = ({
             </div>
           )}
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Informations personnelles */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <div className="mb-4">
+            <div className="bg-gray-50 rounded-lg p-5">
+              <div className="mb-3">
                 <h3 className="font-medium text-gray-900">Informations personnelles</h3>
               </div>
               
@@ -337,10 +337,10 @@ const EditableUserProfile: React.FC<EditableUserProfileProps> = ({
 
             {/* Informations du compte - Modifiables par admin seulement */}
             {isCurrentUserAdmin && (
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h3 className="font-medium text-gray-900 mb-4">Gestion du compte (Admin)</h3>
+              <div className="bg-gray-50 rounded-lg p-5">
+                <h3 className="font-medium text-gray-900 mb-3">Gestion du compte (Admin)</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Rôle
@@ -426,8 +426,8 @@ const EditableUserProfile: React.FC<EditableUserProfileProps> = ({
             )}
 
             {/* Section de suppression du compte */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="font-medium text-gray-900 mb-4">Suppression du compte</h3>
+            <div className="bg-gray-50 rounded-lg p-5">
+              <h3 className="font-medium text-gray-900 mb-3">Suppression du compte</h3>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">
@@ -444,8 +444,8 @@ const EditableUserProfile: React.FC<EditableUserProfileProps> = ({
             </div>
 
             {/* Informations du compte */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="font-medium text-gray-900 mb-4">Informations du compte</h3>
+            <div className="bg-gray-50 rounded-lg p-5">
+              <h3 className="font-medium text-gray-900 mb-3">Informations du compte</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

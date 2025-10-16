@@ -7,9 +7,10 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 interface StrategyRespectChartProps {
   strategyData: { [date: string]: any };
+  isLoading?: boolean;
 }
 
-const StrategyRespectChart: React.FC<StrategyRespectChartProps> = ({ strategyData }) => {
+const StrategyRespectChart: React.FC<StrategyRespectChartProps> = ({ strategyData, isLoading = false }) => {
   // Calculer les données globales du mois
   const chartData = React.useMemo(() => {
     let totalTrades = 0;
@@ -146,9 +147,7 @@ const StrategyRespectChart: React.FC<StrategyRespectChartProps> = ({ strategyDat
   };
 
   // Vérifier si les données sont en cours de chargement
-  const isDataLoading = Object.keys(strategyData).length === 0;
-
-  if (isDataLoading) {
+  if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
         <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>

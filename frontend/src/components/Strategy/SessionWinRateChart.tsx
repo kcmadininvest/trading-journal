@@ -7,9 +7,10 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 interface SessionWinRateChartProps {
   strategyData: { [date: string]: any };
+  isLoading?: boolean;
 }
 
-const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData }) => {
+const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData, isLoading = false }) => {
   // Calculer les données de sessions gagnantes avec TP1 et TP2
   const chartData = React.useMemo(() => {
     let totalSessions = 0;
@@ -143,9 +144,7 @@ const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData 
   };
 
   // Vérifier si les données sont en cours de chargement
-  const isDataLoading = Object.keys(strategyData).length === 0;
-
-  if (isDataLoading) {
+  if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
         <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
@@ -164,7 +163,8 @@ const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData 
 
   // Vérifier si nous avons des données de sessions
   const hasSessionData = Object.values(strategyData).some((dayData: any) => 
-    (dayData.respectedTrades && Array.isArray(dayData.respectedTrades))
+    (dayData.respectedTrades && Array.isArray(dayData.respectedTrades)) ||
+    (dayData.notRespectedTrades && Array.isArray(dayData.notRespectedTrades))
   );
 
   if (!hasSessionData) {

@@ -7,9 +7,10 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 interface WinRateByStrategyChartProps {
   strategyData: { [date: string]: any };
+  isLoading?: boolean;
 }
 
-const WinRateByStrategyChart: React.FC<WinRateByStrategyChartProps> = ({ strategyData }) => {
+const WinRateByStrategyChart: React.FC<WinRateByStrategyChartProps> = ({ strategyData, isLoading = false }) => {
   // Calculer les données de win rate par respect de stratégie
   const chartData = React.useMemo(() => {
     let respectedTrades = 0;
@@ -147,9 +148,7 @@ const WinRateByStrategyChart: React.FC<WinRateByStrategyChartProps> = ({ strateg
   };
 
   // Vérifier si les données sont en cours de chargement
-  const isDataLoading = Object.keys(strategyData).length === 0;
-
-  if (isDataLoading) {
+  if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full">
         <div className="h-8 bg-gray-200 rounded animate-pulse mb-4"></div>
