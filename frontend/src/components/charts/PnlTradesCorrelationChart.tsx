@@ -82,11 +82,7 @@ function PnlTradesCorrelationChart({ data }: PnlTradesCorrelationChartProps) {
             const pnl = context.parsed.y;
             const tradeCount = context.parsed.x;
             const avgPnlPerTrade = context.raw.avgPnlPerTrade;
-            return [
-              `P/L: ${formatCurrency(pnl)}`,
-              `Trades: ${tradeCount}`,
-              `P/L moyen: ${formatCurrency(avgPnlPerTrade)}`
-            ];
+            return `${formatCurrency(pnl)} (${tradeCount} trades, moy: ${formatCurrency(avgPnlPerTrade)})`;
           }
         }
       },

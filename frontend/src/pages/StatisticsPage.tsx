@@ -210,7 +210,227 @@ function StatisticsPage() {
           </div>
         </div>
 
-        {/* Section 2: Analyse des Trades */}
+        {/* Section 2: Ratios de Performance */}
+        {statisticsData && (
+          <div className="mb-8">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Ratios de Performance</h2>
+              <p className="text-gray-600">Métriques avancées pour analyser votre stratégie de trading</p>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-6">
+              {/* Ratios de Performance Principaux */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium text-gray-500">Performance Principale</h3>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">Profit Factor</span>
+                      <Tooltip 
+                        content="Ratio entre les gains totaux et les pertes totales. > 1.0 = profitable, > 2.0 = excellent"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className={`text-base font-semibold ${statisticsData.profit_factor >= 1.0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {statisticsData.profit_factor.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">Win/Loss Ratio</span>
+                      <Tooltip 
+                        content="Ratio entre le nombre de trades gagnants et perdants. > 1.0 = plus de gains que de pertes"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className={`text-base font-semibold ${statisticsData.win_loss_ratio >= 1.0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {statisticsData.win_loss_ratio.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">Consistance</span>
+                      <Tooltip 
+                        content="Pourcentage de trades gagnants. > 50% = plus de la moitié des trades sont gagnants"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className={`text-base font-semibold ${statisticsData.consistency_ratio >= 50 ? 'text-green-600' : 'text-red-600'}`}>
+                      {statisticsData.consistency_ratio.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ratios de Récupération */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium text-gray-500">Récupération</h3>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">Ratio Récupération</span>
+                      <Tooltip 
+                        content="Ratio entre le meilleur trade et la pire perte. > 1.0 = le meilleur gain couvre la pire perte"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className={`text-base font-semibold ${statisticsData.recovery_ratio >= 1.0 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {statisticsData.recovery_ratio.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">P/L par Trade</span>
+                      <Tooltip 
+                        content="Gain ou perte moyen par trade. Indique la rentabilité moyenne de chaque opération"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className={`text-base font-semibold ${statisticsData.pnl_per_trade >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(statisticsData.pnl_per_trade)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ratios Financiers */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium text-gray-500">Efficacité Financière</h3>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">Ratio Frais</span>
+                      <Tooltip 
+                        content="Pourcentage des frais par rapport au P/L total. < 10% = frais raisonnables, > 20% = frais élevés"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className={`text-base font-semibold ${statisticsData.fees_ratio <= 0.1 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {(statisticsData.fees_ratio * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">Volume/P/L</span>
+                      <Tooltip 
+                        content="Efficacité du trading par unité de volume. Plus élevé = meilleure efficacité de capital"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className="text-base font-semibold text-gray-900">
+                      {statisticsData.volume_pnl_ratio.toFixed(6)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ratios Temporels */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-medium text-gray-500">Analyse Temporelle</h3>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">Fréquence</span>
+                      <Tooltip 
+                        content="Nombre moyen de trades par jour de trading. Indique l'activité et le style de trading"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className="text-base font-semibold text-cyan-600">
+                      {statisticsData.frequency_ratio.toFixed(1)} trades/jour
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-gray-500">Ratio Durée</span>
+                      <Tooltip 
+                        content="Ratio entre la durée moyenne des trades gagnants et perdants. > 1.0 = les trades gagnants durent plus longtemps que les perdants"
+                        placement="top"
+                      >
+                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                      </Tooltip>
+                    </div>
+                    <span className={`text-base font-semibold ${statisticsData.duration_ratio >= 1.0 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {statisticsData.duration_ratio.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 3: Analyse des Trades */}
         <div className="mb-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyse des Trades</h2>
@@ -297,7 +517,7 @@ function StatisticsPage() {
           </div>
         </div>
 
-        {/* Section 3: Analyses Avancées */}
+        {/* Section 4: Analyses Avancées */}
         <div className="mb-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyses Avancées</h2>
@@ -538,225 +758,6 @@ function StatisticsPage() {
           </div>
         </div>
 
-        {/* Section 4: Ratios de Performance */}
-        {statisticsData && (
-          <div className="mb-8">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Ratios de Performance</h2>
-              <p className="text-gray-600">Métriques avancées pour analyser votre stratégie de trading</p>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-6">
-              {/* Ratios de Performance Principaux */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-medium text-gray-500">Performance Principale</h3>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Profit Factor</span>
-                      <Tooltip 
-                        content="Ratio entre les gains totaux et les pertes totales. > 1.0 = profitable, > 2.0 = excellent"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className={`text-base font-semibold ${statisticsData.profit_factor >= 1.0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {statisticsData.profit_factor.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Win/Loss Ratio</span>
-                      <Tooltip 
-                        content="Ratio entre le nombre de trades gagnants et perdants. > 1.0 = plus de gains que de pertes"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className={`text-base font-semibold ${statisticsData.win_loss_ratio >= 1.0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {statisticsData.win_loss_ratio.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Consistance</span>
-                      <Tooltip 
-                        content="Pourcentage de trades gagnants. > 50% = plus de la moitié des trades sont gagnants"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className={`text-base font-semibold ${statisticsData.consistency_ratio >= 50 ? 'text-green-600' : 'text-red-600'}`}>
-                      {statisticsData.consistency_ratio.toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ratios de Récupération */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-medium text-gray-500">Récupération</h3>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Ratio Récupération</span>
-                      <Tooltip 
-                        content="Ratio entre le meilleur trade et la pire perte. > 1.0 = le meilleur gain couvre la pire perte"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className={`text-base font-semibold ${statisticsData.recovery_ratio >= 1.0 ? 'text-green-600' : 'text-orange-600'}`}>
-                      {statisticsData.recovery_ratio.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">P/L par Trade</span>
-                      <Tooltip 
-                        content="Gain ou perte moyen par trade. Indique la rentabilité moyenne de chaque opération"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className={`text-base font-semibold ${statisticsData.pnl_per_trade >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(statisticsData.pnl_per_trade)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ratios Financiers */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-medium text-gray-500">Efficacité Financière</h3>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Ratio Frais</span>
-                      <Tooltip 
-                        content="Pourcentage des frais par rapport au P/L total. < 10% = frais raisonnables, > 20% = frais élevés"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className={`text-base font-semibold ${statisticsData.fees_ratio <= 0.1 ? 'text-green-600' : 'text-orange-600'}`}>
-                      {(statisticsData.fees_ratio * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Volume/P/L</span>
-                      <Tooltip 
-                        content="Efficacité du trading par unité de volume. Plus élevé = meilleure efficacité de capital"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className="text-base font-semibold text-gray-900">
-                      {statisticsData.volume_pnl_ratio.toFixed(6)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Ratios Temporels */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-base font-medium text-gray-500">Analyse Temporelle</h3>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Fréquence</span>
-                      <Tooltip 
-                        content="Nombre moyen de trades par jour de trading. Indique l'activité et le style de trading"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className="text-base font-semibold text-cyan-600">
-                      {statisticsData.frequency_ratio.toFixed(1)} trades/jour
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Ratio Durée</span>
-                      <Tooltip 
-                        content="Ratio entre la durée moyenne des trades gagnants et perdants. > 1.0 = les trades gagnants durent plus longtemps que les perdants"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className={`text-base font-semibold ${statisticsData.duration_ratio >= 1.0 ? 'text-green-600' : 'text-orange-600'}`}>
-                      {statisticsData.duration_ratio.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   )

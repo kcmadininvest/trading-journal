@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { User as AuthUser } from '../../services/auth';
 import { usersService, User as ApiUser, UserFilters } from '../../services/users';
 import UserTable from './UserTable';
@@ -33,13 +33,7 @@ const UsersManagement: React.FC<UsersManagementProps> = ({ currentUser, onUserUp
   const canViewUsers = currentUser?.is_admin;
   const canEditUsers = currentUser?.is_admin;
 
-  useEffect(() => {
-    if (canViewUsers) {
-      fetchUsers();
-    }
-  }, [canViewUsers, filters]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const response = await usersService.getUsers(filters);
@@ -55,7 +49,13 @@ const UsersManagement: React.FC<UsersManagementProps> = ({ currentUser, onUserUp
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    if (canViewUsers) {
+      fetchUsers();
+    }
+  }, [canViewUsers, fetchUsers]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -363,4 +363,3 @@ const UsersManagement: React.FC<UsersManagementProps> = ({ currentUser, onUserUp
 };
 
 export default UsersManagement;
-

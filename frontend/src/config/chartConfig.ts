@@ -23,21 +23,26 @@ export const chartColors = {
 
 // Configuration globale des tooltips
 export const globalTooltipConfig = {
+  enabled: true,
   backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  titleColor: chartColors.gray[900],
-  bodyColor: chartColors.gray[700],
-  borderColor: chartColors.gray[200],
+  backdropFilter: 'blur(8px)',
+  titleColor: '#1f2937',
+  bodyColor: '#374151',
+  borderColor: 'rgba(229, 231, 235, 0.5)',
   borderWidth: 1,
   cornerRadius: 12,
   displayColors: false,
-  padding: 12,
   titleFont: {
+    family: 'system-ui, -apple-system, sans-serif',
     size: 14,
     weight: 'bold' as const
   },
   bodyFont: {
-    size: 13
-  }
+    family: 'system-ui, -apple-system, sans-serif',
+    size: 13,
+    weight: 'normal' as const
+  },
+  padding: 12
 }
 
 // Configuration globale des grilles

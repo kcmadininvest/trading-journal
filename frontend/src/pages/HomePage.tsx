@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { authService, User } from '../services/auth';
+// import { authService, User } from '../services/auth';
 import AuthModal from '../components/auth/AuthModal';
 
 const HomePage: React.FC = () => {

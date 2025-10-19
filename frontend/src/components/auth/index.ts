@@ -4,6 +4,5 @@ export { default as ForgotPasswordForm } from './ForgotPasswordForm';
 export { default as ChangePasswordForm } from './ChangePasswordForm';
 export { default as LogoutButton } from './LogoutButton';
 export { default as AuthModal } from './AuthModal';
-export { default as UserProfile } from './UserProfile';
 
 export {};

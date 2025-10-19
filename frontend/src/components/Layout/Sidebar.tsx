@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { User } from '../../services/auth';
 import UserProfileSection from './UserProfileSection';
-import LogoutButton from './LogoutButton';
+// import LogoutButton from './LogoutButton';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -150,4 +150,3 @@ const Sidebar: React.FC<SidebarProps> = ({
 };
 
 export default Sidebar;
-

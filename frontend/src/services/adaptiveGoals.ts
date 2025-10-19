@@ -131,7 +131,7 @@ class AdaptiveGoalsService {
    */
   private calculateWinRateTarget(performance: HistoricalPerformance): number {
     const current = performance.winRate
-    const best = performance.bestWinRate
+    // const best = performance.bestWinRate
     
     // Si le win rate actuel est déjà excellent (>= 60%), objectif plus ambitieux
     if (current >= 60) {

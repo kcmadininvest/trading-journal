@@ -70,10 +70,10 @@ function HourlyPerformanceChart({ data }: HourlyPerformanceChartProps) {
       return dataPoint ? dataPoint.pnl : 0;
     });
 
-    const tradeCountData = allHours.map(hour => {
-      const dataPoint = filteredData.find(item => item.hour === hour);
-      return dataPoint ? dataPoint.trade_count : 0;
-    });
+    // const tradeCountData = allHours.map(hour => {
+    //   const dataPoint = filteredData.find(item => item.hour === hour);
+    //   return dataPoint ? dataPoint.trade_count : 0;
+    // });
 
     return {
       labels,
@@ -87,8 +87,8 @@ function HourlyPerformanceChart({ data }: HourlyPerformanceChartProps) {
           borderColor: pnlData.map(pnl => 
             pnl >= 0 ? '#1d4ed8' : '#4b5563'
           ),
-          borderWidth: 1,
-          borderRadius: 4,
+          borderWidth: 0,
+          borderRadius: 0,
           borderSkipped: false,
         }
       ]
@@ -119,13 +119,9 @@ function HourlyPerformanceChart({ data }: HourlyPerformanceChartProps) {
             });
             
             if (dataPoint) {
-              return [
-                `P/L: ${formatCurrency(pnl)}`,
-                `Trades: ${dataPoint.trade_count}`,
-                `P/L moyen: ${formatCurrency(pnl / dataPoint.trade_count)}`
-              ];
+              return `${formatCurrency(pnl)} (${dataPoint.trade_count} trades, moy: ${formatCurrency(pnl / dataPoint.trade_count)})`;
             }
-            return [`P/L: ${formatCurrency(pnl)}`];
+            return `${formatCurrency(pnl)}`;
           }
         }
       },

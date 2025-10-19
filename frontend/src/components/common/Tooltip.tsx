@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface TooltipProps {
   content: string | React.ReactNode;
@@ -13,7 +13,7 @@ function Tooltip({ content, children, placement = 'top', className = '' }: Toolt
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  const updatePosition = () => {
+  const updatePosition = useCallback(() => {
     if (!triggerRef.current || !tooltipRef.current) return;
 
     const triggerRect = triggerRef.current.getBoundingClientRect();
@@ -52,13 +52,13 @@ function Tooltip({ content, children, placement = 'top', className = '' }: Toolt
     if (top + tooltipRect.height > viewportHeight - gutter) top = viewportHeight - gutter - tooltipRect.height;
 
     setPosition({ top, left });
-  };
+  }, [placement]);
 
   useEffect(() => {
     if (isVisible) {
       updatePosition();
     }
-  }, [isVisible, placement]);
+  }, [isVisible, placement, updatePosition]);
 
   const handleMouseEnter = () => {
     setIsVisible(true);

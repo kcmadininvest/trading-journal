@@ -86,13 +86,9 @@ function DrawdownChart({ data }: DrawdownChartProps) {
             );
             
             if (dataPoint) {
-              return [
-                `Drawdown: ${formatCurrency(drawdown)}`,
-                `P/L du jour: ${formatCurrency(dataPoint.pnl)}`,
-                `P/L cumulé: ${formatCurrency(dataPoint.cumulative_pnl)}`
-              ];
+              return `${formatCurrency(drawdown)} (P/L jour: ${formatCurrency(dataPoint.pnl)}, cumulé: ${formatCurrency(dataPoint.cumulative_pnl)})`;
             }
-            return [`Drawdown: ${formatCurrency(drawdown)}`];
+            return `${formatCurrency(drawdown)}`;
           }
         }
       },

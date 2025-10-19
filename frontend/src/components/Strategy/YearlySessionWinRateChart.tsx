@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -15,10 +15,10 @@ const YearlySessionWinRateChart: React.FC<YearlySessionWinRateChartProps> = ({ y
   const [strategyData, setStrategyData] = useState<{ [month: string]: any }>({});
   const [loading, setLoading] = useState(true);
 
-  const monthNames = [
-    'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-    'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
-  ];
+  // const monthNames = [
+  //   'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
+  //   'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+  // ];
 
   useEffect(() => {
     const fetchYearlySessionData = async () => {

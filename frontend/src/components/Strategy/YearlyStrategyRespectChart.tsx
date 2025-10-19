@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -15,10 +15,10 @@ const YearlyStrategyRespectChart: React.FC<YearlyStrategyRespectChartProps> = ({
   const [strategyData, setStrategyData] = useState<{ [month: string]: any }>({});
   const [loading, setLoading] = useState(true);
 
-  const monthNames = [
-    'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
-    'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
-  ];
+  // const monthNames = [
+  //   'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun',
+  //   'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'
+  // ];
 
   useEffect(() => {
     const fetchYearlyStrategyData = async () => {
@@ -224,7 +224,7 @@ const YearlyStrategyRespectChart: React.FC<YearlyStrategyRespectChartProps> = ({
 
   // Calculer les statistiques globales (utiliser chartData au lieu de recalculer)
   const totalTrades = chartData.totalTrades;
-  const respectRate = chartData.respectPercentage;
+  // const respectRate = chartData.respectPercentage;
 
   if (isLoading || loading) {
     return (

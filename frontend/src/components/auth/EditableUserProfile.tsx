@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User } from '../../services/auth';
 import ChangePasswordForm from './ChangePasswordForm';
 import authService from '../../services/auth';
