@@ -12,6 +12,8 @@ import YearlyStrategyRespectChart from '../components/Strategy/YearlyStrategyRes
 import YearlyWinRateByStrategyChart from '../components/Strategy/YearlyWinRateByStrategyChart';
 import YearlySessionWinRateChart from '../components/Strategy/YearlySessionWinRateChart';
 import YearlyEmotionsChart from '../components/Strategy/YearlyEmotionsChart';
+import StrategyProgressBar from '../components/Strategy/StrategyProgressBar';
+import api from '../services/api';
 
 interface DailyData {
   date: string;
@@ -45,6 +47,10 @@ function StrategyPage() {
   const [strategyData, setStrategyData] = useState<{ [date: string]: any }>({});
   const [isUpdatingStrategy, setIsUpdatingStrategy] = useState(false);
   const [isStrategyDataLoading, setIsStrategyDataLoading] = useState(false);
+  
+  // État pour les données globales de stratégie
+  const [globalStrategyData, setGlobalStrategyData] = useState<{ [date: string]: any }>({});
+  const [isGlobalStrategyDataLoading, setIsGlobalStrategyDataLoading] = useState(false);
   
   // Nouvel état pour les onglets
   const [activeTab, setActiveTab] = useState<'calendar' | 'global'>('calendar');
@@ -138,6 +144,35 @@ function StrategyPage() {
     }
   }, [fetchStrategyData]);
 
+  const fetchGlobalStrategyData = useCallback(async () => {
+    try {
+      setIsGlobalStrategyDataLoading(true);
+      const response = await api.get('/trades/trade-strategies/');
+      
+      // Gérer la pagination - l'API peut retourner {results: [...]} ou directement [...]
+      const strategies = response.data.results || response.data;
+      
+      // Calculer le pourcentage global
+      const totalStrategies = strategies.length;
+      const respectedStrategies = strategies.filter((s: any) => s.strategy_respected === true).length;
+      
+      // Créer un objet avec les données globales
+      const globalData = {
+        total: totalStrategies,
+        respected: respectedStrategies,
+        notRespected: totalStrategies - respectedStrategies,
+        percentage: totalStrategies > 0 ? (respectedStrategies / totalStrategies) * 100 : 0
+      };
+      
+      // Stocker dans globalStrategyData pour la compatibilité avec le composant
+      setGlobalStrategyData({ 'global': globalData });
+    } catch (error) {
+      console.error('Erreur lors du chargement des données globales de stratégie:', error);
+    } finally {
+      setIsGlobalStrategyDataLoading(false);
+    }
+  }, []);
+
   // Fonction pour mettre à jour les données de stratégie de manière transparente
   const updateStrategyDataSilently = async (year: number, month: number) => {
     try {
@@ -168,6 +203,11 @@ function StrategyPage() {
     window.addEventListener('trades:updated', handleTradesUpdated);
     return () => window.removeEventListener('trades:updated', handleTradesUpdated);
   }, [currentDate, fetchCalendarData]);
+
+  // Charger les données globales au chargement de la page
+  useEffect(() => {
+    fetchGlobalStrategyData();
+  }, [fetchGlobalStrategyData]);
 
   const { dailyData, monthlyTotal } = useMemo(() => {
     if (!calendarData) {
@@ -414,9 +454,21 @@ function StrategyPage() {
     <div className="p-6 bg-gray-50">
       <div className="max-w-full mx-auto">
         {/* En-tête */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Stratégie de Trading</h1>
-          <p className="text-gray-600">Planifiez et suivez vos stratégies de trading avec le calendrier intégré</p>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Stratégie de Trading</h1>
+            <p className="text-gray-600">Planifiez et suivez vos stratégies de trading avec le calendrier intégré</p>
+          </div>
+          
+          {/* Barre de progression du respect global de la stratégie */}
+          <div className="flex-shrink-0">
+            <StrategyProgressBar
+              respectPercentage={globalStrategyData.global?.percentage || 0}
+              totalTrades={globalStrategyData.global?.total || 0}
+              respectedTrades={globalStrategyData.global?.respected || 0}
+              isLoading={isGlobalStrategyDataLoading}
+            />
+          </div>
         </div>
 
         {/* Onglets de navigation */}

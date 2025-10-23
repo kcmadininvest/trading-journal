@@ -9,6 +9,8 @@ import ModernTradingMetricsDashboard from '../components/charts/ModernTradingMet
 import WaterfallChart from '../components/charts/WaterfallChart'
 import WeekdayPerformanceChart from '../components/charts/WeekdayPerformanceChart'
 import TradesTablePage from './TradesTablePage'
+import StrategyProgressBar from '../components/Strategy/StrategyProgressBar'
+import api from '../services/api'
 
 interface Trade {
   id: number
@@ -33,6 +35,7 @@ function TradesPage() {
   const [statistics, setStatistics] = useState<TradeStatistics | null>(null)
   const [cascadeData, setCascadeData] = useState<any[]>([])
   const [weekdayData, setWeekdayData] = useState<any[]>([])
+  const [strategyData, setStrategyData] = useState<{ [date: string]: any }>({})
   const [loading, setLoading] = useState(true)
   // Import CSV via modal dans le menu
 
@@ -51,11 +54,41 @@ function TradesPage() {
       setStatistics(statsData)
       setCascadeData(cascadeResponse)
       setWeekdayData(weekdayResponse)
+      
+      // Charger les données de stratégie pour le calcul du pourcentage global
+      await loadStrategyData()
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error)
       toast.error('Impossible de charger les données')
     } finally {
       setLoading(false)
+    }
+  }, [])
+
+  const loadStrategyData = useCallback(async () => {
+    try {
+      // Récupérer toutes les stratégies (pas seulement le mois en cours)
+      const response = await api.get('/trades/trade-strategies/')
+      
+      // Gérer la pagination - l'API peut retourner {results: [...]} ou directement [...]
+      const strategies = response.data.results || response.data
+      
+      // Calculer le pourcentage global
+      const totalStrategies = strategies.length
+      const respectedStrategies = strategies.filter((s: any) => s.strategy_respected === true).length
+      
+      // Créer un objet avec les données globales
+      const globalData = {
+        total: totalStrategies,
+        respected: respectedStrategies,
+        notRespected: totalStrategies - respectedStrategies,
+        percentage: totalStrategies > 0 ? (respectedStrategies / totalStrategies) * 100 : 0
+      }
+      
+      // Stocker dans strategyData pour la compatibilité avec le composant
+      setStrategyData({ 'global': globalData })
+    } catch (error) {
+      console.error('Erreur lors du chargement des données de stratégie:', error)
     }
   }, [])
 
@@ -117,6 +150,35 @@ function TradesPage() {
       avgLosingTrade: Math.round(avgLosingTrade)
     }
   }, [trades])
+
+  // Calculer le pourcentage global de respect de la stratégie
+  const strategyRespectMetrics = useMemo(() => {
+    // Si on a des données globales, les utiliser directement
+    if (strategyData.global) {
+      return {
+        totalTrades: strategyData.global.total,
+        respectedTrades: strategyData.global.respected,
+        respectPercentage: strategyData.global.percentage
+      }
+    }
+
+    // Sinon, calculer à partir des données par jour (fallback)
+    let totalTrades = 0
+    let respectedTrades = 0
+
+    Object.values(strategyData).forEach((dayData: any) => {
+      totalTrades += dayData.total || 0
+      respectedTrades += dayData.respected || 0
+    })
+
+    const respectPercentage = totalTrades > 0 ? (respectedTrades / totalTrades) * 100 : 0
+
+    return {
+      totalTrades,
+      respectedTrades,
+      respectPercentage
+    }
+  }, [strategyData])
 
   // Préparer les données pour le graphique (agrégation par jour)
   const chartData = useMemo(() => {
@@ -201,6 +263,16 @@ function TradesPage() {
             Journal de Trading
           </h1>
           <p className="text-sm md:text-base text-gray-600">Analysez vos performances et optimisez votre stratégie</p>
+        </div>
+        
+        {/* Barre de progression du respect de la stratégie */}
+        <div className="flex-shrink-0">
+          <StrategyProgressBar
+            respectPercentage={strategyRespectMetrics.respectPercentage}
+            totalTrades={strategyRespectMetrics.totalTrades}
+            respectedTrades={strategyRespectMetrics.respectedTrades}
+            isLoading={loading}
+          />
         </div>
       </div>
 

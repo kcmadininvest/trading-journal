@@ -1130,6 +1130,72 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=False, methods=['get'])
+    def strategy_data(self, request):
+        """Récupère les données de stratégie agrégées par date pour un mois donné."""
+        year = request.query_params.get('year')
+        month = request.query_params.get('month')
+        
+        if not year or not month:
+            return Response({'error': 'Paramètres year et month requis'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            year = int(year)
+            month = int(month)
+            
+            # Créer les dates de début et fin du mois
+            start_date = timezone.datetime(year, month, 1)
+            if month == 12:
+                end_date = timezone.datetime(year + 1, 1, 1)
+            else:
+                end_date = timezone.datetime(year, month + 1, 1)
+            
+            # Récupérer les stratégies du mois
+            strategies = TradeStrategy.objects.filter(  # type: ignore
+                user=self.request.user,
+                trade__trade_day__gte=start_date.strftime('%Y-%m-%d'),
+                trade__trade_day__lt=end_date.strftime('%Y-%m-%d')
+            ).select_related('trade')
+            
+            # Agréger par date
+            data_by_date = {}
+            
+            for strategy in strategies:
+                trade_day = strategy.trade.trade_day
+                
+                # Initialiser la date si elle n'existe pas
+                if trade_day not in data_by_date:
+                    data_by_date[trade_day] = {'strategies': [], 'total': 0, 'respected': 0}
+                
+                data_by_date[trade_day]['strategies'].append({
+                    'id': strategy.id,
+                    'strategy_respected': strategy.strategy_respected,
+                    'dominant_emotions': strategy.dominant_emotions,
+                    'tp1_reached': strategy.tp1_reached,
+                    'tp2_plus_reached': strategy.tp2_plus_reached,
+                    'trade_info': {
+                        'net_pnl': str(strategy.trade.net_pnl) if strategy.trade.net_pnl else '0'
+                    }
+                })
+                data_by_date[trade_day]['total'] += 1
+                if strategy.strategy_respected:
+                    data_by_date[trade_day]['respected'] += 1
+            
+            # Convertir en format attendu par le frontend
+            result = []
+            for date, data in data_by_date.items():
+                result.append({
+                    'date': date,
+                    'strategies': data['strategies']
+                })
+            
+            return Response(result)
+            
+        except ValueError:
+            return Response({'error': 'Format de date invalide'}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
         """Crée ou met à jour plusieurs stratégies de trades en une fois."""

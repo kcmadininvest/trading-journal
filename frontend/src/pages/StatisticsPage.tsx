@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { tradesService, TradeStatistics } from '../services/trades'
 import { formatCurrency } from '../config/chartConfig'
 import Tooltip from '../components/common/Tooltip'
+import StrategyProgressBar from '../components/Strategy/StrategyProgressBar'
+import api from '../services/api'
 
 interface AnalyticsData {
   daily_stats: {
@@ -35,6 +37,10 @@ function StatisticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
   const [statisticsData, setStatisticsData] = useState<TradeStatistics | null>(null)
   const [loading, setLoading] = useState(true)
+  
+  // État pour les données globales de stratégie
+  const [globalStrategyData, setGlobalStrategyData] = useState<{ [date: string]: any }>({})
+  const [isGlobalStrategyDataLoading, setIsGlobalStrategyDataLoading] = useState(false)
 
   const fetchAnalyticsData = async () => {
     try {
@@ -52,8 +58,38 @@ function StatisticsPage() {
     }
   }
 
+  const fetchGlobalStrategyData = async () => {
+    try {
+      setIsGlobalStrategyDataLoading(true)
+      const response = await api.get('/trades/trade-strategies/')
+      
+      // Gérer la pagination - l'API peut retourner {results: [...]} ou directement [...]
+      const strategies = response.data.results || response.data
+      
+      // Calculer le pourcentage global
+      const totalStrategies = strategies.length
+      const respectedStrategies = strategies.filter((s: any) => s.strategy_respected === true).length
+      
+      // Créer un objet avec les données globales
+      const globalData = {
+        total: totalStrategies,
+        respected: respectedStrategies,
+        notRespected: totalStrategies - respectedStrategies,
+        percentage: totalStrategies > 0 ? (respectedStrategies / totalStrategies) * 100 : 0
+      }
+      
+      // Stocker dans globalStrategyData pour la compatibilité avec le composant
+      setGlobalStrategyData({ 'global': globalData })
+    } catch (error) {
+      console.error('Erreur lors du chargement des données globales de stratégie:', error)
+    } finally {
+      setIsGlobalStrategyDataLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchAnalyticsData()
+    fetchGlobalStrategyData()
   }, [])
 
   if (loading) {
@@ -68,13 +104,53 @@ function StatisticsPage() {
     return value.toFixed(2)
   }
 
+  const formatVolume = (volume: string) => {
+    if (!volume) return 'N/A'
+    const num = parseFloat(volume)
+    
+    // Si le volume est très grand, utiliser une notation scientifique ou des unités
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`
+    } else if (num >= 1) {
+      return num.toFixed(0) // Pas de décimales pour les volumes entiers
+    } else {
+      return num.toFixed(2) // 2 décimales pour les petits volumes
+    }
+  }
+
+  const formatRatio = (ratio: number) => {
+    const absRatio = Math.abs(ratio)
+    
+    if (absRatio >= 1) {
+      return ratio.toFixed(2) // 2 décimales pour les ratios >= 1 (positifs ou négatifs)
+    } else if (absRatio >= 0.01) {
+      return ratio.toFixed(4) // 4 décimales pour les ratios entre 0.01 et 1
+    } else {
+      return ratio.toFixed(6) // 6 décimales pour les très petits ratios
+    }
+  }
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="w-full">
         {/* En-tête */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Statistiques Détaillées</h1>
-          <p className="text-gray-600">Métriques avancées de performance et statistiques de trading</p>
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Statistiques Détaillées</h1>
+            <p className="text-gray-600">Métriques avancées de performance et statistiques de trading</p>
+          </div>
+          
+          {/* Barre de progression du respect global de la stratégie */}
+          <div className="flex-shrink-0">
+            <StrategyProgressBar
+              respectPercentage={globalStrategyData.global?.percentage || 0}
+              totalTrades={globalStrategyData.global?.total || 0}
+              respectedTrades={globalStrategyData.global?.respected || 0}
+              isLoading={isGlobalStrategyDataLoading}
+            />
+          </div>
         </div>
 
         {/* Section 1: Vue d'ensemble */}
@@ -196,7 +272,7 @@ function StatisticsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Volume total</span>
                   <span className="text-base font-semibold text-cyan-600">
-                    {statisticsData ? statisticsData.total_volume : 'N/A'}
+                    {statisticsData ? formatVolume(statisticsData.total_volume) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -262,22 +338,6 @@ function StatisticsPage() {
                     </div>
                     <span className={`text-base font-semibold ${statisticsData.win_loss_ratio >= 1.0 ? 'text-green-600' : 'text-red-600'}`}>
                       {statisticsData.win_loss_ratio.toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Consistance</span>
-                      <Tooltip 
-                        content="Pourcentage de trades gagnants. > 50% = plus de la moitié des trades sont gagnants"
-                        placement="top"
-                      >
-                        <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </Tooltip>
-                    </div>
-                    <span className={`text-base font-semibold ${statisticsData.consistency_ratio >= 50 ? 'text-green-600' : 'text-red-600'}`}>
-                      {statisticsData.consistency_ratio.toFixed(1)}%
                     </span>
                   </div>
                 </div>
@@ -373,7 +433,7 @@ function StatisticsPage() {
                       </Tooltip>
                     </div>
                     <span className="text-base font-semibold text-gray-900">
-                      {statisticsData.volume_pnl_ratio.toFixed(6)}
+                      {formatRatio(statisticsData.volume_pnl_ratio)}
                     </span>
                   </div>
                 </div>
