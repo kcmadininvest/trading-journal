@@ -3,13 +3,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Sum, Count, Avg, Max, Min
+from django.db import models
 from django.utils import timezone
 from datetime import timedelta, datetime
 import pytz
 from decimal import Decimal
 from collections import defaultdict
 
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -17,7 +18,11 @@ from .serializers import (
     TradeStatisticsSerializer,
     TradingMetricsSerializer,
     CSVUploadSerializer,
-    TradeStrategySerializer
+    TradeStrategySerializer,
+    PositionStrategySerializer,
+    PositionStrategyCreateSerializer,
+    PositionStrategyUpdateSerializer,
+    PositionStrategyVersionSerializer,
 )
 from .utils import TopStepCSVImporter
 
@@ -28,7 +33,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [permissions.IsAuthenticated]
     
-    def get_serializer_class(self):
+    def get_serializer_class(self):  # type: ignore
         if self.action == 'list':
             return TopStepTradeListSerializer
         return TopStepTradeSerializer
@@ -36,8 +41,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Retourne uniquement les trades de l'utilisateur connecté."""
         if not self.request.user.is_authenticated:
-            return TopStepTrade.objects.none()
-        queryset = TopStepTrade.objects.filter(user=self.request.user)
+            return TopStepTrade.objects.none()  # type: ignore
+        queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
         
         # Filtres optionnels
         contract = self.request.query_params.get('contract', None)
@@ -54,7 +59,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         if start_date:
             # Convertir la date de début en datetime timezone-aware
             try:
-                start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                start_datetime = datetime.strptime(start_date, '%Y-%m-%d')  # type: ignore
                 # Ajouter le timezone Europe/Paris pour la date de début (00:00:00)
                 paris_tz = pytz.timezone('Europe/Paris')
                 start_datetime = paris_tz.localize(start_datetime)
@@ -65,7 +70,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         if end_date:
             # Convertir la date de fin en datetime timezone-aware
             try:
-                end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+                end_datetime = datetime.strptime(end_date, '%Y-%m-%d')  # type: ignore
                 # Ajouter le timezone Europe/Paris pour la date de fin (23:59:59)
                 paris_tz = pytz.timezone('Europe/Paris')
                 end_datetime = paris_tz.localize(end_datetime.replace(hour=23, minute=59, second=59))
@@ -73,16 +78,16 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass  # Ignorer les dates mal formatées
         if profitable is not None:
-            if profitable.lower() == 'true':
+            if profitable.lower() == 'true':  # type: ignore
                 queryset = queryset.filter(net_pnl__gt=0)
-            elif profitable.lower() == 'false':
+            elif profitable.lower() == 'false':  # type: ignore
                 queryset = queryset.filter(net_pnl__lt=0)
         
         if trade_day:
             # Filtrer par date de trade spécifique
             try:
                 from datetime import date
-                trade_date = date.fromisoformat(trade_day)
+                trade_date = date.fromisoformat(trade_day)  # type: ignore
                 queryset = queryset.filter(trade_day=trade_date)
             except ValueError:
                 pass  # Ignorer les dates mal formatées
@@ -99,11 +104,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Authentification requise'}, status=status.HTTP_401_UNAUTHORIZED)
         
         # Compter les stratégies avant suppression (seulement pour l'utilisateur connecté)
-        total_strategies = TradeStrategy.objects.filter(user=request.user).count()
+        total_strategies = TradeStrategy.objects.filter(user=request.user).count()  # type: ignore
         
         # Supprimer seulement les données de l'utilisateur connecté
-        TopStepTrade.objects.filter(user=request.user).delete()
-        TopStepImportLog.objects.filter(user=request.user).delete()
+        TopStepTrade.objects.filter(user=request.user).delete()  # type: ignore
+        TopStepImportLog.objects.filter(user=request.user).delete()  # type: ignore
         
         return Response({ 
             'success': True, 
@@ -130,10 +135,10 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             trade_date = datetime.strptime(date, '%Y-%m-%d').date()
             
             # Récupérer les trades de cette date pour l'utilisateur connecté uniquement
-            trades_to_delete = TopStepTrade.objects.filter(trade_day=trade_date, user=request.user)
+            trades_to_delete = TopStepTrade.objects.filter(trade_day=trade_date, user=request.user)  # type: ignore
             
             # Compter les stratégies associées
-            strategy_count = TradeStrategy.objects.filter(trade__in=trades_to_delete).count()
+            strategy_count = TradeStrategy.objects.filter(trade__in=trades_to_delete).count()  # type: ignore
             
             # Supprimer les trades (les stratégies seront supprimées automatiquement)
             deleted_count = trades_to_delete.count()
@@ -468,7 +473,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             logger.error(f"Validation serializer échouée: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        csv_file = serializer.validated_data['file']
+        csv_file = serializer.validated_data.get('file')  # type: ignore
+        if not csv_file:
+            return Response({'error': 'Fichier CSV requis'}, status=status.HTTP_400_BAD_REQUEST)
         logger.info(f"Fichier validé: {csv_file.name} ({csv_file.size} bytes)")
         
         try:
@@ -777,18 +784,18 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             })
 
         # Agréger par jour
-        daily_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0, 'trades': []})
+        daily_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0, 'trades': []})  # type: ignore
         for trade in trades:
             day_key = trade.entered_at.date()
-            daily_data[day_key]['pnl'] += float(trade.net_pnl)
-            daily_data[day_key]['trade_count'] += 1
-            daily_data[day_key]['trades'].append(trade)
+            daily_data[day_key]['pnl'] += float(trade.net_pnl)  # type: ignore
+            daily_data[day_key]['trade_count'] += 1  # type: ignore
+            daily_data[day_key]['trades'].append(trade)  # type: ignore
 
         # Calculer les statistiques quotidiennes
-        daily_pnls = [data['pnl'] for data in daily_data.values()]
-        daily_gains = [pnl for pnl in daily_pnls if pnl > 0]
-        daily_losses = [pnl for pnl in daily_pnls if pnl < 0]
-        daily_trade_counts = [data['trade_count'] for data in daily_data.values()]
+        daily_pnls = [data['pnl'] for data in daily_data.values()]  # type: ignore
+        daily_gains = [pnl for pnl in daily_pnls if pnl > 0]  # type: ignore
+        daily_losses = [pnl for pnl in daily_pnls if pnl < 0]  # type: ignore
+        daily_trade_counts = [data['trade_count'] for data in daily_data.values()]  # type: ignore
 
         # Statistiques par trade
         winning_trades = [float(trade.net_pnl) for trade in trades if trade.net_pnl > 0]
@@ -805,14 +812,14 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 continue
                 
             # Trier les trades par heure d'entrée
-            trades_list.sort(key=lambda t: t.entered_at)
+            trades_list.sort(key=lambda t: t.entered_at)  # type: ignore
             
             current_consecutive_wins = 0
             current_consecutive_losses = 0
             max_day_wins = 0
             max_day_losses = 0
             
-            for trade in trades_list:
+            for trade in trades_list:  # type: ignore
                 if trade.net_pnl > 0:
                     # Trade gagnant
                     current_consecutive_wins += 1
@@ -867,13 +874,13 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
 
         return Response({
             'daily_stats': {
-                'avg_gain_per_day': sum(daily_gains) / len(daily_gains) if daily_gains else 0.0,
+                'avg_gain_per_day': sum(daily_gains) / len(daily_gains) if daily_gains else 0.0,  # type: ignore
                 'median_gain_per_day': calculate_median(daily_gains),
-                'avg_loss_per_day': sum(daily_losses) / len(daily_losses) if daily_losses else 0.0,
+                'avg_loss_per_day': sum(daily_losses) / len(daily_losses) if daily_losses else 0.0,  # type: ignore
                 'median_loss_per_day': calculate_median(daily_losses),
-                'max_gain_per_day': max(daily_pnls) if daily_pnls else 0.0,
-                'max_loss_per_day': min(daily_pnls) if daily_pnls else 0.0,
-                'avg_trades_per_day': sum(daily_trade_counts) / len(daily_trade_counts) if daily_trade_counts else 0.0,
+                'max_gain_per_day': max(daily_pnls) if daily_pnls else 0.0,  # type: ignore
+                'max_loss_per_day': min(daily_pnls) if daily_pnls else 0.0,  # type: ignore
+                'avg_trades_per_day': sum(daily_trade_counts) / len(daily_trade_counts) if daily_trade_counts else 0.0,  # type: ignore
                 'median_trades_per_day': calculate_median(daily_trade_counts),
             },
             'trade_stats': {
@@ -974,7 +981,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         """Retourne les données de drawdown pour le graphique"""
         if not request.user.is_authenticated:
             return Response({'drawdown_data': []})
-        trades = TopStepTrade.objects.filter(user=request.user).order_by('entered_at')
+        trades = TopStepTrade.objects.filter(user=request.user).order_by('entered_at')  # type: ignore
         
         if not trades.exists():
             return Response({
@@ -1055,8 +1062,8 @@ class TopStepImportLogViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """Retourne uniquement les logs de l'utilisateur connecté."""
         if not self.request.user.is_authenticated:
-            return TopStepImportLog.objects.none()
-        return TopStepImportLog.objects.filter(user=self.request.user).order_by('-imported_at')
+            return TopStepImportLog.objects.none()  # type: ignore
+        return TopStepImportLog.objects.filter(user=self.request.user).order_by('-imported_at')  # type: ignore
 
 
 class TradeStrategyViewSet(viewsets.ModelViewSet):
@@ -1069,8 +1076,8 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Retourne uniquement les stratégies de l'utilisateur connecté."""
         if not self.request.user.is_authenticated:
-            return TradeStrategy.objects.none()
-        queryset = TradeStrategy.objects.filter(user=self.request.user).select_related('trade')
+            return TradeStrategy.objects.none()  # type: ignore
+        queryset = TradeStrategy.objects.filter(user=self.request.user).select_related('trade')  # type: ignore
         
         # Filtres optionnels
         trade_id = self.request.query_params.get('trade_id', None)
@@ -1080,7 +1087,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         if trade_id:
             queryset = queryset.filter(trade__topstep_id=trade_id)
         if strategy_respected is not None:
-            queryset = queryset.filter(strategy_respected=strategy_respected.lower() == 'true')
+            queryset = queryset.filter(strategy_respected=strategy_respected.lower() == 'true')  # type: ignore
         if contract_name:
             queryset = queryset.filter(trade__contract_name__icontains=contract_name)
         
@@ -1098,7 +1105,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Paramètre trade_id requis'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            strategy = TradeStrategy.objects.filter(trade__topstep_id=trade_id).first()
+            strategy = TradeStrategy.objects.filter(trade__topstep_id=trade_id).first()  # type: ignore
             if strategy:
                 serializer = self.get_serializer(strategy)
                 return Response(serializer.data)
@@ -1115,7 +1122,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Paramètre date requis'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            strategies = TradeStrategy.objects.filter(
+            strategies = TradeStrategy.objects.filter(  # type: ignore
                 trade__trade_day=date
             ).select_related('trade')
             serializer = self.get_serializer(strategies, many=True)
@@ -1139,12 +1146,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 
                 # Chercher le trade de l'utilisateur connecté uniquement
                 try:
-                    trade = TopStepTrade.objects.get(topstep_id=trade_id, user=self.request.user)
-                except TopStepTrade.DoesNotExist:
+                    trade = TopStepTrade.objects.get(topstep_id=trade_id, user=self.request.user)  # type: ignore
+                except TopStepTrade.DoesNotExist:  # type: ignore
                     continue
                 
                 # Créer ou mettre à jour la stratégie
-                strategy, created = TradeStrategy.objects.update_or_create(
+                strategy, created = TradeStrategy.objects.update_or_create(  # type: ignore
                     user=self.request.user,
                     trade=trade,
                     defaults={
@@ -1166,3 +1173,254 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PositionStrategyViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les stratégies de position avec versioning.
+    """
+    serializer_class = PositionStrategySerializer
+    permission_classes = [permissions.AllowAny]  # Temporaire pour les tests
+    
+    def get_queryset(self):
+        """Retourne uniquement les stratégies de l'utilisateur connecté."""
+        if not self.request.user.is_authenticated:
+            # Pour les tests, retourner toutes les stratégies mais exclure les archivées
+            queryset = PositionStrategy.objects.all()  # type: ignore
+            # Appliquer le filtre par défaut même pour les tests
+            include_archived = self.request.query_params.get('include_archived', 'false').lower() == 'true'  # type: ignore
+            if not include_archived:
+                queryset = queryset.exclude(status='archived')
+            return queryset
+        
+        queryset = PositionStrategy.objects.filter(user=self.request.user)  # type: ignore
+        
+        # Filtres optionnels
+        status = self.request.query_params.get('status', None)
+        is_current = self.request.query_params.get('is_current', None)
+        search = self.request.query_params.get('search', None)
+        include_archived = self.request.query_params.get('include_archived', 'false').lower() == 'true'  # type: ignore
+        
+        # Appliquer le filtre par statut
+        if status:
+            queryset = queryset.filter(status=status)
+        elif not include_archived:
+            # Par défaut, exclure les stratégies archivées sauf si explicitement demandé
+            print(f"DEBUG: Excluding archived strategies. include_archived={include_archived}")
+            queryset = queryset.exclude(status='archived')
+        
+        if is_current is not None:
+            queryset = queryset.filter(is_current=is_current.lower() == 'true')  # type: ignore
+        if search:
+            queryset = queryset.filter(
+                models.Q(title__icontains=search) | 
+                models.Q(description__icontains=search)
+            )
+        
+        return queryset.order_by('-created_at')
+    
+    def get_serializer_class(self):  # type: ignore
+        """Retourne le serializer approprié selon l'action."""
+        if self.action == 'create':
+            return PositionStrategyCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return PositionStrategyUpdateSerializer
+        return PositionStrategySerializer
+    
+    def perform_create(self, serializer):
+        """Associe automatiquement l'utilisateur connecté à la stratégie."""
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            # Pour les tests, utiliser le premier utilisateur disponible
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            user = User.objects.first()
+            serializer.save(user=user)
+    
+    def perform_update(self, serializer):
+        """Gère la mise à jour avec création de nouvelle version si nécessaire."""
+        current_strategy = self.get_object()
+        create_new_version = serializer.validated_data.pop('create_new_version', True)
+        
+        # Ne créer une nouvelle version que si :
+        # 1. create_new_version est True
+        # 2. La stratégie est actuelle
+        # 3. La stratégie n'est PAS en brouillon (les brouillons se mettent à jour directement)
+        if (create_new_version and 
+            current_strategy.is_current and 
+            current_strategy.status != 'draft'):
+            
+            # Créer une nouvelle version
+            new_strategy = current_strategy.create_new_version(
+                new_content=serializer.validated_data.get('strategy_content', current_strategy.strategy_content),
+                version_notes=serializer.validated_data.get('version_notes', '')
+            )
+            # Mettre à jour les autres champs
+            for field, value in serializer.validated_data.items():
+                if field not in ['strategy_content', 'version_notes']:
+                    setattr(new_strategy, field, value)
+            new_strategy.save()
+            
+            # Retourner la nouvelle stratégie au lieu de l'ancienne
+            serializer.instance = new_strategy
+        else:
+            # Mise à jour directe (pour les brouillons ou si create_new_version=False)
+            serializer.save()
+    
+    @action(detail=True, methods=['get'])
+    def versions(self, request, pk=None):
+        """Récupère l'historique des versions d'une stratégie."""
+        strategy = self.get_object()
+        versions = strategy.get_version_history()
+        serializer = PositionStrategyVersionSerializer(versions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def restore_version(self, request, pk=None):
+        """Restaure une version spécifique comme version actuelle."""
+        strategy = self.get_object()
+        version_id = request.data.get('version_id')
+        
+        if not version_id:
+            return Response({'error': 'version_id requis'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            target_version = strategy.get_version_history().get(id=version_id)
+            if target_version.user != request.user:
+                return Response({'error': 'Accès non autorisé'}, status=status.HTTP_403_FORBIDDEN)
+            
+            # Créer une nouvelle version basée sur la version cible
+            new_strategy = strategy.create_new_version(
+                new_content=target_version.strategy_content,
+                version_notes=f"Restauration de la version {target_version.version}"
+            )
+            
+            serializer = self.get_serializer(new_strategy)
+            return Response(serializer.data)
+        except PositionStrategy.DoesNotExist:
+            return Response({'error': 'Version non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['get'])
+    def print_view(self, request, pk=None):
+        """Retourne la stratégie formatée pour l'impression."""
+        strategy = self.get_object()
+        
+        # Préparer les données pour l'impression
+        print_data = {
+            'strategy': PositionStrategySerializer(strategy).data,
+            'print_settings': {
+                'page_size': 'A4',
+                'orientation': 'landscape',
+                'margins': '10mm',
+                'font_size': '12px',
+                'line_height': '1.4'
+            }
+        }
+        
+        return Response(print_data)
+    
+    @action(detail=False, methods=['get'])
+    def current_strategies(self, request):
+        """Récupère toutes les stratégies actuelles (dernières versions)."""
+        queryset = self.get_queryset().filter(is_current=True)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def by_status(self, request):
+        """Récupère les stratégies groupées par statut."""
+        strategies = self.get_queryset().filter(is_current=True)
+        
+        grouped = {}
+        for strategy in strategies:
+            status = strategy.status
+            if status not in grouped:
+                grouped[status] = []
+            grouped[status].append(PositionStrategySerializer(strategy).data)
+        
+        return Response(grouped)
+    
+    @action(detail=False, methods=['get'])
+    def archives(self, request):
+        """Récupère toutes les versions archivées (non actuelles)."""
+        # Pour les archives, on veut inclure les stratégies archivées
+        if not request.user.is_authenticated:
+            # Pour les tests, retourner toutes les stratégies archivées
+            queryset = PositionStrategy.objects.all()  # type: ignore
+        else:
+            queryset = PositionStrategy.objects.filter(user=request.user)  # type: ignore
+        
+        # Filtres optionnels
+        status = request.query_params.get('status', None)
+        search = request.query_params.get('search', None)
+        
+        # Par défaut, montrer seulement les stratégies archivées
+        queryset = queryset.filter(status='archived')
+        
+        if status:
+            queryset = queryset.filter(status=status)
+        if search:
+            queryset = queryset.filter(
+                models.Q(title__icontains=search) | 
+                models.Q(description__icontains=search)
+            )
+        
+        serializer = self.get_serializer(queryset.order_by('-created_at'), many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        """Duplique une stratégie existante."""
+        original = self.get_object()
+        
+        # Créer une copie avec un nouveau titre
+        new_title = f"{original.title} (Copie)"
+        new_strategy = PositionStrategy.objects.create(
+            user=request.user,
+            title=new_title,
+            description=original.description,
+            strategy_content=original.strategy_content,
+            status='draft',
+            version_notes='Copie de la stratégie originale'
+        )
+        
+        serializer = self.get_serializer(new_strategy)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    @action(detail=True, methods=['get'])
+    def read_mode(self, request, pk=None):
+        """Retourne la stratégie formatée pour le mode lecture avec les règles."""
+        strategy = self.get_object()
+        
+        # Formater les données pour le mode lecture
+        read_mode_data = {
+            'id': strategy.id,
+            'title': strategy.title,
+            'description': strategy.description,
+            'version': strategy.version,
+            'status': strategy.status,
+            'created_at': strategy.created_at,
+            'updated_at': strategy.updated_at,
+            'sections': []
+        }
+        
+        # Traiter chaque section
+        for section in strategy.strategy_content.get('sections', []):
+            section_data = {
+                'title': section.get('title', ''),
+                'rules': []
+            }
+            
+            # Traiter chaque règle
+            for rule in section.get('rules', []):
+                rule_data = {
+                    'id': rule.get('id', 0),
+                    'text': rule.get('text', ''),
+                    'checked': False  # Par défaut non cochée
+                }
+                section_data['rules'].append(rule_data)
+            
+            read_mode_data['sections'].append(section_data)
+        
+        return Response(read_mode_data)

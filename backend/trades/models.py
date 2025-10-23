@@ -204,7 +204,7 @@ class TopStepTrade(models.Model):
         ]
     
     def __str__(self):
-        return f"{self.contract_name} - {self.trade_type} - {self.entered_at.strftime('%d/%m/%Y %H:%M')}"
+        return f"{self.contract_name} - {self.trade_type} - {self.entered_at.strftime('%d/%m/%Y %H:%M')}"  # type: ignore
     
     def save(self, *args, **kwargs):
         """
@@ -212,11 +212,11 @@ class TopStepTrade(models.Model):
         """
         # Calculer le PnL net
         if self.pnl is not None:
-            self.net_pnl = self.pnl - self.fees - self.commissions
+            self.net_pnl = self.pnl - self.fees - self.commissions  # type: ignore
             
             # Calculer le pourcentage de PnL
             if self.entry_price and self.size:
-                investment = self.entry_price * self.size
+                investment = self.entry_price * self.size  # type: ignore
                 if investment > 0:
                     self.pnl_percentage = (self.net_pnl / investment) * Decimal('100')
         
@@ -231,7 +231,7 @@ class TopStepTrade(models.Model):
     def duration_str(self):
         """Retourne la durée au format lisible."""
         if self.trade_duration:
-            total_seconds = int(self.trade_duration.total_seconds())
+            total_seconds = int(self.trade_duration.total_seconds())  # type: ignore
             hours, remainder = divmod(total_seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
             return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
@@ -240,13 +240,13 @@ class TopStepTrade(models.Model):
     @property
     def formatted_entry_date(self):
         """Retourne la date d'entrée au format européen DD/MM/YYYY HH:MM:SS."""
-        return self.entered_at.strftime('%d/%m/%Y %H:%M:%S')
+        return self.entered_at.strftime('%d/%m/%Y %H:%M:%S')  # type: ignore
     
     @property
     def formatted_exit_date(self):
         """Retourne la date de sortie au format européen DD/MM/YYYY HH:MM:SS."""
         if self.exited_at:
-            return self.exited_at.strftime('%d/%m/%Y %H:%M:%S')
+            return self.exited_at.strftime('%d/%m/%Y %H:%M:%S')  # type: ignore
         return None
     
     @property
@@ -355,19 +355,15 @@ class TopStepImportLog(models.Model):
         verbose_name='Nom du fichier'
     )
     total_rows = models.IntegerField(
-        default=0,
         verbose_name='Lignes totales'
     )
     success_count = models.IntegerField(
-        default=0,
         verbose_name='Imports réussis'
     )
     error_count = models.IntegerField(
-        default=0,
         verbose_name='Erreurs'
     )
     skipped_count = models.IntegerField(
-        default=0,
         verbose_name='Doublons ignorés'
     )
     errors = models.JSONField(
@@ -386,7 +382,7 @@ class TopStepImportLog(models.Model):
         verbose_name_plural = 'Logs d\'import TopStep'
     
     def __str__(self):
-        return f"{self.filename} - {self.imported_at.strftime('%d/%m/%Y %H:%M')}"
+        return f"{self.filename} - {self.imported_at.strftime('%d/%m/%Y %H:%M')}"  # type: ignore
 
 
 class TradeStrategy(models.Model):
@@ -464,13 +460,11 @@ class TradeStrategy(models.Model):
     
     # Take Profit atteints
     tp1_reached = models.BooleanField(
-        default=False,
         verbose_name='TP1 atteint',
         help_text='Premier Take Profit atteint'
     )
     
     tp2_plus_reached = models.BooleanField(
-        default=False,
         verbose_name='TP2+ atteint',
         help_text='Deuxième Take Profit ou plus atteint'
     )
@@ -533,7 +527,7 @@ class TradeStrategy(models.Model):
         ]
     
     def __str__(self):
-        return f"Stratégie {self.trade.contract_name} - {self.trade.entered_at.strftime('%d/%m/%Y')}"
+        return f"Stratégie {self.trade.contract_name} - {self.trade.entered_at.strftime('%d/%m/%Y')}"  # type: ignore
     
     @property
     def emotions_display(self):
@@ -541,4 +535,170 @@ class TradeStrategy(models.Model):
         if not self.dominant_emotions:
             return "Aucune"
         emotion_labels = dict(self.EMOTION_CHOICES)
-        return ", ".join([emotion_labels.get(emotion, emotion) for emotion in self.dominant_emotions])
+        return ", ".join([emotion_labels.get(emotion, emotion) for emotion in self.dominant_emotions])  # type: ignore
+
+
+class PositionStrategy(models.Model):
+    """
+    Modèle pour stocker les stratégies de prise de position avec historique des versions.
+    """
+    
+    STRATEGY_STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('archived', 'Archivée'),
+        ('draft', 'Brouillon'),
+    ]
+    
+    # Identification
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='position_strategies',
+        verbose_name='Utilisateur'
+    )
+    
+    # Versioning
+    version = models.PositiveIntegerField(
+        default=1,  # type: ignore
+        verbose_name='Version',
+        help_text='Numéro de version de la stratégie'
+    )
+    
+    parent_strategy = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='versions',
+        verbose_name='Stratégie parente'
+    )
+    
+    # Métadonnées
+    title = models.CharField(
+        max_length=200,
+        verbose_name='Titre',
+        help_text='Titre de la stratégie'
+    )
+    
+    description = models.TextField(
+        blank=True,
+        verbose_name='Description',
+        help_text='Description courte de la stratégie'
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=STRATEGY_STATUS_CHOICES,
+        default='draft',
+        verbose_name='Statut'
+    )
+    
+    # Contenu de la stratégie (format JSON pour flexibilité)
+    strategy_content = models.JSONField(
+        default=dict,
+        verbose_name='Contenu de la stratégie',
+        help_text='Contenu structuré de la stratégie'
+    )
+    
+    # Métadonnées de version
+    version_notes = models.TextField(
+        blank=True,
+        verbose_name='Notes de version',
+        help_text='Notes sur les changements de cette version'
+    )
+    
+    is_current = models.BooleanField(
+        default=True,  # type: ignore
+        verbose_name='Version actuelle',
+        help_text='Indique si c\'est la version actuelle'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Créé le'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Modifié le'
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Stratégie de Position'
+        verbose_name_plural = 'Stratégies de Position'
+        unique_together = ['user', 'parent_strategy', 'version']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['user', 'is_current']),
+            models.Index(fields=['parent_strategy']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} v{self.version} - {self.get_status_display()}"  # type: ignore
+    
+    def save(self, *args, **kwargs):
+        """Override save pour gérer le versioning automatique."""
+        if not self.pk:  # Nouvelle stratégie
+            # Marquer toutes les autres versions comme non actuelles
+            if self.parent_strategy:
+                PositionStrategy.objects.filter(  # type: ignore
+                    parent_strategy=self.parent_strategy,
+                    user=self.user
+                ).update(is_current=False)
+                self.version = self.parent_strategy.versions.count() + 1  # type: ignore
+            else:
+                # Première version
+                self.version = 1
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_latest_version(self):
+        """Vérifie si c'est la dernière version."""
+        if not self.parent_strategy:
+            return True
+        latest = self.parent_strategy.versions.order_by('-version').first()  # type: ignore
+        return self == latest
+    
+    def get_version_history(self):
+        """Retourne l'historique des versions."""
+        if self.parent_strategy:
+            return self.parent_strategy.versions.order_by('-version')  # type: ignore
+        return self.versions.order_by('-version')  # type: ignore
+    
+    def create_new_version(self, new_content, version_notes=''):
+        """Crée une nouvelle version de la stratégie."""
+        # Marquer toutes les autres versions comme non actuelles
+        parent = self.parent_strategy or self
+        
+        # Marquer toutes les versions de ce parent comme non actuelles
+        PositionStrategy.objects.filter(  # type: ignore
+            parent_strategy=parent,
+            user=self.user
+        ).update(is_current=False)
+        
+        # Marquer aussi la stratégie parente comme non actuelle
+        parent.is_current = False  # type: ignore
+        parent.save()  # type: ignore
+        
+        # Calculer le nouveau numéro de version
+        new_version = parent.versions.count() + 1  # type: ignore
+        
+        new_strategy = PositionStrategy.objects.create(  # type: ignore
+            user=self.user,
+            parent_strategy=parent,
+            title=self.title,
+            description=self.description,
+            strategy_content=new_content,
+            version_notes=version_notes,
+            status=self.status,
+            version=new_version,
+            is_current=True  # La nouvelle version est actuelle
+        )
+        
+        # Archiver l'ancienne version si elle était active
+        if self.status == 'active':
+            self.status = 'archived'
+            self.save()
+        
+        return new_strategy

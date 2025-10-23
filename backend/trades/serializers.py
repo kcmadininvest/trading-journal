@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy
 
 
 class TopStepTradeSerializer(serializers.ModelSerializer):
@@ -223,4 +223,198 @@ class TradeStrategySerializer(serializers.ModelSerializer):
         """Valide que la note est entre 1 et 5."""
         if value is not None and (value < 1 or value > 5):
             raise serializers.ValidationError("La note doit être entre 1 et 5")
+        return value
+
+
+class PositionStrategySerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les stratégies de position avec gestion des versions.
+    """
+    is_latest_version = serializers.BooleanField(read_only=True)
+    version_count = serializers.SerializerMethodField()
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = PositionStrategy
+        fields = [
+            'id',
+            'user',
+            'user_username',
+            'version',
+            'parent_strategy',
+            'title',
+            'description',
+            'status',
+            'strategy_content',
+            'version_notes',
+            'is_current',
+            'is_latest_version',
+            'version_count',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['user', 'version', 'parent_strategy', 'created_at', 'updated_at']
+    
+    def get_version_count(self, obj):
+        """Retourne le nombre total de versions."""
+        if obj.parent_strategy:
+            return obj.parent_strategy.versions.count()
+        return obj.versions.count()
+    
+    def validate_strategy_content(self, value):
+        """Valide le contenu de la stratégie."""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Le contenu doit être un objet JSON valide")
+        
+        # Validation de la structure des sections
+        if 'sections' not in value:
+            raise serializers.ValidationError("Le contenu doit contenir une liste de sections")
+        
+        sections = value.get('sections', [])
+        if not isinstance(sections, list):
+            raise serializers.ValidationError("Les sections doivent être une liste")
+        
+        if len(sections) == 0:
+            raise serializers.ValidationError("Au moins une section est requise")
+        
+        # Validation de chaque section
+        for i, section in enumerate(sections):
+            if not isinstance(section, dict):
+                raise serializers.ValidationError(f"La section {i+1} doit être un objet")
+            
+            if 'title' not in section:
+                raise serializers.ValidationError(f"La section {i+1} doit avoir un titre")
+            
+            if 'rules' not in section:
+                raise serializers.ValidationError(f"La section {i+1} doit avoir des règles")
+            
+            if not isinstance(section['rules'], list):
+                raise serializers.ValidationError(f"Les règles de la section {i+1} doivent être une liste")
+        
+        return value
+    
+    def validate_status(self, value):
+        """Valide le statut de la stratégie."""
+        valid_statuses = [choice[0] for choice in PositionStrategy.STRATEGY_STATUS_CHOICES]
+        if value not in valid_statuses:
+            raise serializers.ValidationError(f"Statut invalide. Choix possibles: {', '.join(valid_statuses)}")
+        return value
+
+
+class PositionStrategyVersionSerializer(serializers.ModelSerializer):
+    """
+    Serializer simplifié pour l'historique des versions.
+    """
+    is_latest_version = serializers.BooleanField(read_only=True)
+    
+    class Meta:
+        model = PositionStrategy
+        fields = [
+            'id',
+            'version',
+            'title',
+            'status',
+            'version_notes',
+            'is_current',
+            'is_latest_version',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['version', 'created_at', 'updated_at']
+
+
+class PositionStrategyCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour la création de nouvelles stratégies.
+    """
+    class Meta:
+        model = PositionStrategy
+        fields = [
+            'title',
+            'description',
+            'status',
+            'strategy_content',
+            'version_notes'
+        ]
+    
+    def validate_strategy_content(self, value):
+        """Valide le contenu de la stratégie."""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Le contenu doit être un objet JSON valide")
+        
+        # Validation de la structure des sections
+        if 'sections' not in value:
+            raise serializers.ValidationError("Le contenu doit contenir une liste de sections")
+        
+        sections = value.get('sections', [])
+        if not isinstance(sections, list):
+            raise serializers.ValidationError("Les sections doivent être une liste")
+        
+        if len(sections) == 0:
+            raise serializers.ValidationError("Au moins une section est requise")
+        
+        # Validation de chaque section
+        for i, section in enumerate(sections):
+            if not isinstance(section, dict):
+                raise serializers.ValidationError(f"La section {i+1} doit être un objet")
+            
+            if 'title' not in section:
+                raise serializers.ValidationError(f"La section {i+1} doit avoir un titre")
+            
+            if 'rules' not in section:
+                raise serializers.ValidationError(f"La section {i+1} doit avoir des règles")
+            
+            if not isinstance(section['rules'], list):
+                raise serializers.ValidationError(f"Les règles de la section {i+1} doivent être une liste")
+        
+        return value
+
+
+class PositionStrategyUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour la mise à jour des stratégies (crée une nouvelle version).
+    """
+    create_new_version = serializers.BooleanField(default=True, write_only=True)
+    
+    class Meta:
+        model = PositionStrategy
+        fields = [
+            'title',
+            'description',
+            'status',
+            'strategy_content',
+            'version_notes',
+            'create_new_version'
+        ]
+    
+    def validate_strategy_content(self, value):
+        """Valide le contenu de la stratégie."""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Le contenu doit être un objet JSON valide")
+        
+        # Validation de la structure des sections
+        if 'sections' not in value:
+            raise serializers.ValidationError("Le contenu doit contenir une liste de sections")
+        
+        sections = value.get('sections', [])
+        if not isinstance(sections, list):
+            raise serializers.ValidationError("Les sections doivent être une liste")
+        
+        if len(sections) == 0:
+            raise serializers.ValidationError("Au moins une section est requise")
+        
+        # Validation de chaque section
+        for i, section in enumerate(sections):
+            if not isinstance(section, dict):
+                raise serializers.ValidationError(f"La section {i+1} doit être un objet")
+            
+            if 'title' not in section:
+                raise serializers.ValidationError(f"La section {i+1} doit avoir un titre")
+            
+            if 'rules' not in section:
+                raise serializers.ValidationError(f"La section {i+1} doit avoir des règles")
+            
+            if not isinstance(section['rules'], list):
+                raise serializers.ValidationError(f"Les règles de la section {i+1} doivent être une liste")
+        
         return value

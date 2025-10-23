@@ -34,6 +34,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const isDashboard = !hash || hash === '#app'
   const isStrategy = hash === '#strategy'
+  const isPositionStrategies = hash === '#position-strategies'
+  const isArchives = hash === '#archives'
   const isTrades = hash === '#trades-table'
   const isStatistics = hash === '#statistics'
   const isAnalytics = hash === '#analytics'
@@ -82,6 +84,24 @@ const Sidebar: React.FC<SidebarProps> = ({
               </svg>
             </span>
             <span className={`${collapsed ? 'hidden' : ''} truncate`}>Stratégie</span>
+          </a>
+          
+          <a href="#position-strategies" className={`flex items-center gap-3 px-4 py-3 no-underline transition-all min-w-0 ${isPositionStrategies ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+            <span aria-hidden="true" className="flex-shrink-0">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <span className={`${collapsed ? 'hidden' : ''} truncate`}>Mes Stratégies</span>
+          </a>
+          
+          <a href="#archives" className={`flex items-center gap-3 px-4 py-3 no-underline transition-all min-w-0 ${isArchives ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+            <span aria-hidden="true" className="flex-shrink-0">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 4h18l-1 16H4L3 4zM9 8h6M9 12h6M9 16h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <span className={`${collapsed ? 'hidden' : ''} truncate`}>Archives</span>
           </a>
           
           <a href="#statistics" className={`flex items-center gap-3 px-4 py-3 no-underline transition-all min-w-0 ${isStatistics ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>

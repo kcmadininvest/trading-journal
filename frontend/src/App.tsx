@@ -8,6 +8,8 @@ import TradesPage from './pages/TradesPage';
 import StatisticsPage from './pages/StatisticsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import StrategyPage from './pages/StrategyPage';
+import PositionStrategiesPage from './pages/PositionStrategiesPage';
+import ArchivesPage from './pages/ArchivesPage';
 import SettingsPage from './pages/SettingsPage';
 import { authService, User } from './services/auth';
 import sessionManager, { SessionWarning } from './services/sessionManager';
@@ -50,37 +52,41 @@ function App() {
 
     checkAuth();
 
-    // Nettoyage lors du démontage du composant
-    return () => {
-      sessionManager.stop();
-    };
-  }, []);
-
-  useEffect(() => {
-    function onHashChange() {
-      const hash = window.location.hash;
-      if (hash === '#statistics') {
+    // Gérer la navigation par hash
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      console.log('Navigation hash change:', hash);
+      if (hash === 'statistics') {
         setCurrentPage('statistics');
-      } else if (hash === '#calendar') {
-        setCurrentPage('calendar');
-      } else if (hash === '#analytics') {
+      } else if (hash === 'analytics') {
         setCurrentPage('analytics');
-      } else if (hash === '#strategy') {
+      } else if (hash === 'strategy') {
         setCurrentPage('strategy');
-      } else if (hash === '#settings' || hash.startsWith('#settings-')) {
+      } else if (hash === 'position-strategies') {
+        setCurrentPage('position-strategies');
+      } else if (hash === 'archives') {
+        console.log('Setting current page to archives');
+        setCurrentPage('archives');
+      } else if (hash === 'settings' || hash.startsWith('settings-')) {
         setCurrentPage('settings');
       } else {
         setCurrentPage('trades');
       }
-    }
+    };
 
-    // Set initial page based on current hash
-    onHashChange();
+    // Écouter les changements de hash
+    window.addEventListener('hashchange', handleHashChange);
+    
+    // Initialiser la page selon le hash actuel
+    handleHashChange();
 
-    // Listen for hash changes
-    window.addEventListener('hashchange', onHashChange);
-    return () => window.removeEventListener('hashchange', onHashChange);
+    // Nettoyage lors du démontage du composant
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      sessionManager.stop();
+    };
   }, []);
+
 
   // Handlers pour la gestion de session
   const handleSessionWarningExtend = () => {
@@ -105,6 +111,10 @@ function App() {
         return <AnalyticsPage />;
       case 'strategy':
         return <StrategyPage />;
+      case 'position-strategies':
+        return <PositionStrategiesPage />;
+      case 'archives':
+        return <ArchivesPage />;
       case 'settings':
         return <SettingsPage currentUser={currentUser!} onUserUpdate={handleUserUpdate} />;
       default:
