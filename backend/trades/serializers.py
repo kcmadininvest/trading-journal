@@ -1,5 +1,94 @@
 from rest_framework import serializers
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount
+
+
+class TradingAccountSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les comptes de trading.
+    """
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    trades_count = serializers.SerializerMethodField()
+    is_topstep = serializers.BooleanField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    
+    class Meta:
+        model = TradingAccount
+        fields = [
+            'id',
+            'user',
+            'user_username',
+            'name',
+            'account_type',
+            'broker_account_id',
+            'currency',
+            'status',
+            'broker_config',
+            'description',
+            'is_default',
+            'trades_count',
+            'is_topstep',
+            'is_active',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def get_trades_count(self, obj):
+        """Retourne le nombre de trades associés à ce compte."""
+        return obj.topstep_trades.count()
+    
+    def validate_name(self, value):
+        """Valide que le nom du compte est unique pour l'utilisateur."""
+        user = self.context['request'].user
+        if self.instance:
+            # Mise à jour - exclure l'instance actuelle
+            if TradingAccount.objects.filter(user=user, name=value).exclude(pk=self.instance.pk).exists():  # type: ignore
+                raise serializers.ValidationError("Un compte avec ce nom existe déjà.")
+        else:
+            # Création
+            if TradingAccount.objects.filter(user=user, name=value).exists():  # type: ignore
+                raise serializers.ValidationError("Un compte avec ce nom existe déjà.")
+        return value
+    
+    def validate_is_default(self, value):
+        """S'assure qu'un seul compte est marqué comme défaut."""
+        if value:
+            user = self.context['request'].user
+            if self.instance:
+                # Mise à jour - exclure l'instance actuelle
+                TradingAccount.objects.filter(user=user, is_default=True).exclude(pk=self.instance.pk).update(is_default=False)  # type: ignore
+            else:
+                # Création
+                TradingAccount.objects.filter(user=user, is_default=True).update(is_default=False)  # type: ignore
+        return value
+
+
+class TradingAccountListSerializer(serializers.ModelSerializer):
+    """
+    Serializer simplifié pour la liste des comptes de trading.
+    """
+    trades_count = serializers.SerializerMethodField()
+    is_topstep = serializers.BooleanField(read_only=True)
+    is_active = serializers.BooleanField(read_only=True)
+    
+    class Meta:
+        model = TradingAccount
+        fields = [
+            'id',
+            'name',
+            'account_type',
+            'currency',
+            'status',
+            'is_default',
+            'trades_count',
+            'is_topstep',
+            'is_active',
+            'created_at'
+        ]
+    
+    def get_trades_count(self, obj):
+        """Retourne le nombre de trades associés à ce compte."""
+        return obj.topstep_trades.count()
 
 
 class TopStepTradeSerializer(serializers.ModelSerializer):
@@ -13,6 +102,8 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
     formatted_entry_date = serializers.CharField(read_only=True)
     formatted_exit_date = serializers.CharField(read_only=True)
     user_username = serializers.CharField(source='user.username', read_only=True)
+    trading_account_name = serializers.CharField(source='trading_account.name', read_only=True)
+    trading_account_type = serializers.CharField(source='trading_account.account_type', read_only=True)
     
     class Meta:
         model = TopStepTrade
@@ -21,6 +112,9 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
             'topstep_id',
             'user',
             'user_username',
+            'trading_account',
+            'trading_account_name',
+            'trading_account_type',
             'contract_name',
             'trade_type',
             'entered_at',
@@ -44,7 +138,7 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
             'imported_at',
             'updated_at'
         ]
-        read_only_fields = ['user', 'topstep_id', 'imported_at', 'updated_at']
+        read_only_fields = ['user', 'topstep_id', 'trading_account', 'imported_at', 'updated_at']
 
 
 class TopStepTradeListSerializer(serializers.ModelSerializer):
@@ -55,12 +149,15 @@ class TopStepTradeListSerializer(serializers.ModelSerializer):
     pnl_percentage = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     is_profitable = serializers.BooleanField(read_only=True)
     duration_str = serializers.CharField(read_only=True)
+    trading_account_name = serializers.CharField(source='trading_account.name', read_only=True)
     
     class Meta:
         model = TopStepTrade
         fields = [
             'id',
             'topstep_id',
+            'trading_account',
+            'trading_account_name',
             'contract_name',
             'trade_type',
             'entered_at',

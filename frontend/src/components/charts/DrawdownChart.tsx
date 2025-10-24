@@ -32,9 +32,10 @@ interface DrawdownDataPoint {
 
 interface DrawdownChartProps {
   data: DrawdownDataPoint[];
+  currency?: string;
 }
 
-function DrawdownChart({ data }: DrawdownChartProps) {
+function DrawdownChart({ data, currency = 'USD' }: DrawdownChartProps) {
   const hasData = Array.isArray(data) && data.length > 0;
 
   const chartData = useMemo(() => {
@@ -86,9 +87,9 @@ function DrawdownChart({ data }: DrawdownChartProps) {
             );
             
             if (dataPoint) {
-              return `${formatCurrency(drawdown)} (P/L jour: ${formatCurrency(dataPoint.pnl)}, cumulé: ${formatCurrency(dataPoint.cumulative_pnl)})`;
+              return `${formatCurrency(drawdown, currency)} (P/L jour: ${formatCurrency(dataPoint.pnl, currency)}, cumulé: ${formatCurrency(dataPoint.cumulative_pnl, currency)})`;
             }
-            return `${formatCurrency(drawdown)}`;
+            return `${formatCurrency(drawdown, currency)}`;
           }
         }
       },
@@ -130,7 +131,7 @@ function DrawdownChart({ data }: DrawdownChartProps) {
             size: 11
           },
           callback: function(value: any) {
-            return formatCurrency(value);
+            return formatCurrency(value, currency);
           }
         },
         grid: {
@@ -143,7 +144,7 @@ function DrawdownChart({ data }: DrawdownChartProps) {
       duration: 1000,
       easing: 'easeInOutQuart' as const
     }
-  }), [data]);
+  }), [data, currency]);
 
   if (!hasData) {
     return (

@@ -9,6 +9,7 @@ interface TradingMetrics {
 
 interface ModernTradingMetricsDashboardProps {
   metrics: TradingMetrics
+  currency?: string
 }
 
 interface CircularGaugeProps {
@@ -19,6 +20,7 @@ interface CircularGaugeProps {
   goal: string
   color: string
   size?: number
+  currency?: string
 }
 
 function CircularGauge({ 
@@ -28,7 +30,8 @@ function CircularGauge({
   unit, 
   goal, 
   color,
-  size = 120
+  size = 120,
+  currency = 'USD'
 }: CircularGaugeProps) {
   const radius = (size - 20) / 2
   const strokeWidth = 8
@@ -44,7 +47,9 @@ function CircularGauge({
   // Format the value for display
   const formatValue = (val: number) => {
     if (unit === '$') {
-      return `$${val.toLocaleString()}`
+      // Utiliser le symbole de la devise au lieu du formatage complet pour garder la même taille
+      const currencySymbol = currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '$'
+      return `${currencySymbol}${val.toLocaleString()}`
     }
     return `${val}${unit}`
   }
@@ -150,7 +155,7 @@ function CircularGauge({
   )
 }
 
-function ModernTradingMetricsDashboard({ metrics }: ModernTradingMetricsDashboardProps) {
+function ModernTradingMetricsDashboard({ metrics, currency = 'USD' }: ModernTradingMetricsDashboardProps) {
   const [adaptiveGoals, setAdaptiveGoals] = useState<AdaptiveGoals | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -158,7 +163,7 @@ function ModernTradingMetricsDashboard({ metrics }: ModernTradingMetricsDashboar
     const loadAdaptiveGoals = async () => {
       try {
         setLoading(true)
-        const goals = await adaptiveGoalsService.calculateAdaptiveGoals()
+        const goals = await adaptiveGoalsService.calculateAdaptiveGoals(currency)
         setAdaptiveGoals(goals)
       } catch (error) {
         console.error('Error loading adaptive goals:', error)
@@ -168,7 +173,7 @@ function ModernTradingMetricsDashboard({ metrics }: ModernTradingMetricsDashboar
     }
 
     loadAdaptiveGoals()
-  }, [metrics])
+  }, [metrics, currency])
 
   if (loading) {
     return (
@@ -218,6 +223,7 @@ function ModernTradingMetricsDashboard({ metrics }: ModernTradingMetricsDashboar
           unit="%"
           goal={adaptiveGoals?.winRate.goal || "Calcul en cours..."}
           color="#3b82f6"
+          currency={currency}
         />
         
         <CircularGauge
@@ -227,6 +233,7 @@ function ModernTradingMetricsDashboard({ metrics }: ModernTradingMetricsDashboar
           unit="$"
           goal={adaptiveGoals?.avgWinningTrade.goal || "Calcul en cours..."}
           color="#10b981"
+          currency={currency}
         />
         
         <CircularGauge
@@ -236,6 +243,7 @@ function ModernTradingMetricsDashboard({ metrics }: ModernTradingMetricsDashboar
           unit="$"
           goal={adaptiveGoals?.avgLosingTrade.goal || "Calcul en cours..."}
           color="#ef4444"
+          currency={currency}
         />
       </div>
       

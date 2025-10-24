@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { 
   createChartOptions, 
   TooltipCallback, 
@@ -23,17 +23,18 @@ export interface DistributionData {
 // Hook pour la configuration des graphiques de performance
 export const usePerformanceChartConfig = (
   data: PerformanceData[],
-  customOptions: any = {}
+  customOptions: any = {},
+  currency: string = 'USD'
 ) => {
-  const tooltipCallback: TooltipCallback = (data, context) => {
+  const tooltipCallback: TooltipCallback = useCallback((data, context) => {
     const pnl = data.value
     const cumulative = context.parsed.y
     
     return [
-      `PnL du jour: ${pnl >= 0 ? '+' : ''}${formatCurrency(pnl)}`,
-      `Total: ${formatCurrency(cumulative)}`
+      `PnL du jour: ${pnl >= 0 ? '+' : ''}${formatCurrency(pnl, currency)}`,
+      `Total: ${formatCurrency(cumulative, currency)}`
     ]
-  }
+  }, [currency])
 
   const options = useMemo(() => {
     return createChartOptions(tooltipCallback, {
@@ -45,13 +46,13 @@ export const usePerformanceChartConfig = (
           ticks: {
             ...customOptions.scales?.y?.ticks,
             callback: function(value: any) {
-              return formatCurrency(Number(value))
+              return formatCurrency(Number(value), currency)
             }
           }
         }
       }
     })
-  }, [customOptions])
+  }, [customOptions, currency, tooltipCallback])
 
   return { options }
 }
@@ -59,15 +60,16 @@ export const usePerformanceChartConfig = (
 // Hook pour la configuration des graphiques de distribution
 export const useDistributionChartConfig = (
   data: DistributionData[],
-  customOptions: any = {}
+  customOptions: any = {},
+  currency: string = 'USD'
 ) => {
-  const tooltipCallback: TooltipCallback = (data, context) => {
+  const tooltipCallback: TooltipCallback = useCallback((data, context) => {
     const count = data.additionalInfo?.[0] || ''
     return [
-      `Valeur: ${formatCurrency(data.value)}`,
+      `Valeur: ${formatCurrency(data.value, currency)}`,
       count ? `Occurrences: ${count}` : ''
     ].filter(Boolean)
-  }
+  }, [currency])
 
   const options = useMemo(() => {
     return createChartOptions(tooltipCallback, {
@@ -79,13 +81,13 @@ export const useDistributionChartConfig = (
           ticks: {
             ...customOptions.scales?.y?.ticks,
             callback: function(value: any) {
-              return formatCurrency(Number(value))
+              return formatCurrency(Number(value), currency)
             }
           }
         }
       }
     })
-  }, [customOptions])
+  }, [customOptions, currency, tooltipCallback])
 
   return { options }
 }

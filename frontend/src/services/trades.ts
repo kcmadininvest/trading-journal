@@ -1,4 +1,4 @@
-import api from './api';
+import apiClient from '../lib/apiClient';
 
 export interface TopStepTrade {
   id: number;
@@ -104,7 +104,7 @@ export interface PaginatedTradesResponse {
 
 export const tradesService = {
   // Récupérer tous les trades (pour compatibilité avec l'existant)
-  getTrades: async (filters?: {
+  getTrades: async (tradingAccountId?: number, filters?: {
     contract?: string;
     type?: string;
     start_date?: string;
@@ -113,6 +113,7 @@ export const tradesService = {
     trade_day?: string;
   }) => {
     const params = new URLSearchParams();
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
     if (filters?.contract) params.append('contract', filters.contract);
     if (filters?.type) params.append('type', filters.type);
     if (filters?.start_date) params.append('start_date', filters.start_date);
@@ -122,7 +123,7 @@ export const tradesService = {
 
     // Si on filtre par trade_day, on veut seulement les résultats de cette date
     if (filters?.trade_day) {
-      const response = await api.get<{ results: TopStepTrade[]; next: string | null }>(`/trades/topstep/?${params.toString()}`);
+      const response = await apiClient.get<{ results: TopStepTrade[]; next: string | null }>(`/trades/topstep/?${params.toString()}`);
       return response.data.results;
     }
 
@@ -131,7 +132,7 @@ export const tradesService = {
     const all: TopStepTrade[] = [] as any;
     type PaginatedResponse<T> = { results: T[]; next: string | null };
     while (url) {
-      const response = await api.get<PaginatedResponse<TopStepTrade> | TopStepTrade[]>(url);
+      const response = await apiClient.get<PaginatedResponse<TopStepTrade> | TopStepTrade[]>(url);
       const data = response.data as PaginatedResponse<TopStepTrade> | TopStepTrade[];
       if (Array.isArray(data)) {
         all.push(...data);
@@ -147,7 +148,7 @@ export const tradesService = {
   },
 
   // Récupérer les trades avec pagination
-  getTradesPaginated: async (page: number = 1, pageSize: number = 10, filters?: {
+  getTradesPaginated: async (page: number = 1, pageSize: number = 10, tradingAccountId?: number, filters?: {
     contract?: string;
     type?: string;
     start_date?: string;
@@ -158,52 +159,58 @@ export const tradesService = {
     params.append('page', page.toString());
     params.append('page_size', pageSize.toString());
     
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
     if (filters?.contract) params.append('contract', filters.contract);
     if (filters?.type) params.append('type', filters.type);
     if (filters?.start_date) params.append('start_date', filters.start_date);
     if (filters?.end_date) params.append('end_date', filters.end_date);
     if (filters?.profitable !== undefined) params.append('profitable', String(filters.profitable));
 
-    const response = await api.get<PaginatedTradesResponse>(`/trades/topstep/?${params.toString()}`);
+    const response = await apiClient.get<PaginatedTradesResponse>(`/trades/topstep/?${params.toString()}`);
     return response.data;
   },
 
   // Récupérer un trade spécifique
   getTrade: async (id: number) => {
-    const response = await api.get(`/trades/topstep/${id}/`);
+    const response = await apiClient.get(`/trades/topstep/${id}/`);
     return response.data;
   },
 
   // Mettre à jour un trade (notes, strategy)
   updateTrade: async (id: number, data: Partial<TopStepTrade>) => {
-    const response = await api.patch(`/trades/topstep/${id}/`, data);
+    const response = await apiClient.patch(`/trades/topstep/${id}/`, data);
     return response.data;
   },
 
   // Supprimer un trade
   deleteTrade: async (id: number) => {
-    const response = await api.delete(`/trades/topstep/${id}/`);
+    const response = await apiClient.delete(`/trades/topstep/${id}/`);
     return response.data;
   },
 
   // Récupérer les statistiques
-  getStatistics: async (): Promise<TradeStatistics> => {
-    const response = await api.get('/trades/topstep/statistics/');
+  getStatistics: async (tradingAccountId?: number): Promise<TradeStatistics> => {
+    const params = new URLSearchParams();
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    const response = await apiClient.get(`/trades/topstep/statistics/?${params.toString()}`);
     return response.data;
   },
 
   // Récupérer la liste des contrats
   getContracts: async (): Promise<string[]> => {
-    const response = await api.get('/trades/topstep/contracts/');
+    const response = await apiClient.get('/trades/topstep/contracts/');
     return response.data.contracts;
   },
 
   // Upload CSV
-  uploadCSV: async (file: File) => {
+  uploadCSV: async (file: File, tradingAccountId?: number) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (tradingAccountId) {
+      formData.append('trading_account', tradingAccountId.toString());
+    }
     
-    const response = await api.post('/trades/topstep/upload_csv/', formData, {
+    const response = await apiClient.post('/trades/topstep/upload_csv/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -213,66 +220,79 @@ export const tradesService = {
 
   // Récupérer les logs d'import
   getImportLogs: async (): Promise<ImportLog[]> => {
-    const response = await api.get('/trades/import-logs/');
+    const response = await apiClient.get('/trades/import-logs/');
     return response.data;
   },
 
   // Effacer tout l'historique des trades
   clearAll: async () => {
-    const response = await api.delete('/trades/topstep/clear_all/');
+    const response = await apiClient.delete('/trades/topstep/clear_all/');
     return response.data;
   },
 
   // Récupérer les données d'évolution du capital par jour
-  getCapitalEvolution: async () => {
-    const response = await api.get('/trades/topstep/capital_evolution/');
+  getCapitalEvolution: async (tradingAccountId?: number) => {
+    const params = new URLSearchParams();
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    const response = await apiClient.get(`/trades/topstep/capital_evolution/?${params.toString()}`);
     return response.data;
   },
 
   // Récupérer les données de performance par jour de la semaine
-  getWeekdayPerformance: async () => {
-    const response = await api.get('/trades/topstep/weekday_performance/');
+  getWeekdayPerformance: async (tradingAccountId?: number) => {
+    const params = new URLSearchParams();
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    const response = await apiClient.get(`/trades/topstep/weekday_performance/?${params.toString()}`);
     return response.data;
   },
 
   // Récupérer les métriques de trading (risk reward ratio, profit factor, max drawdown)
   getTradingMetrics: async () => {
-    const response = await api.get('/trades/topstep/trading_metrics/');
+    const response = await apiClient.get('/trades/topstep/trading_metrics/');
     return response.data;
   },
 
   // Récupérer les données pour le calendrier mensuel
-  getCalendarData: async (year?: number, month?: number) => {
+  getCalendarData: async (year?: number, month?: number, tradingAccountId?: number) => {
     const params = new URLSearchParams();
     if (year) params.append('year', year.toString());
     if (month) params.append('month', month.toString());
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
     
     const url = `/trades/topstep/calendar_data/${params.toString() ? `?${params.toString()}` : ''}`;
-    const response = await api.get(url);
+    const response = await apiClient.get(url);
     return response.data;
   },
 
   // Récupérer les données d'analyses détaillées
-  getAnalyticsData: async () => {
-    const response = await api.get('/trades/topstep/analytics/');
+  getAnalyticsData: async (tradingAccountId?: number) => {
+    const params = new URLSearchParams();
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    const response = await apiClient.get(`/trades/topstep/analytics/?${params.toString()}`);
     return response.data;
   },
 
   // Récupérer les performances par heure
-  getHourlyPerformance: async () => {
-    const response = await api.get('/trades/topstep/hourly_performance/');
+  getHourlyPerformance: async (tradingAccountId?: number) => {
+    const params = new URLSearchParams();
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    const response = await apiClient.get(`/trades/topstep/hourly_performance/?${params.toString()}`);
     return response.data;
   },
 
   // Récupérer les données de corrélation P/L vs Nombre de trades
-  getPnlTradesCorrelation: async () => {
-    const response = await api.get('/trades/topstep/pnl_trades_correlation/');
+  getPnlTradesCorrelation: async (tradingAccountId?: number) => {
+    const params = new URLSearchParams();
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    const response = await apiClient.get(`/trades/topstep/pnl_trades_correlation/?${params.toString()}`);
     return response.data;
   },
 
   // Récupérer les données de drawdown
-  getDrawdownData: async () => {
-    const response = await api.get('/trades/topstep/drawdown_data/');
+  getDrawdownData: async (tradingAccountId?: number) => {
+    const params = new URLSearchParams();
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    const response = await apiClient.get(`/trades/topstep/drawdown_data/?${params.toString()}`);
     return response.data;
   },
 
@@ -290,7 +310,7 @@ export const tradesService = {
     if (filters?.contract_name) params.append('contract_name', filters.contract_name);
     
     const url = `/trades/trade-strategies/${params.toString() ? `?${params.toString()}` : ''}`;
-    const response = await api.get(url);
+    const response = await apiClient.get(url);
     
     // S'assurer de retourner un tableau
     const data = response.data;
@@ -305,36 +325,39 @@ export const tradesService = {
 
   // Récupérer une stratégie de trade par ID
   getTradeStrategy: async (id: number) => {
-    const response = await api.get(`/trades/trade-strategies/${id}/`);
+    const response = await apiClient.get(`/trades/trade-strategies/${id}/`);
     return response.data;
   },
 
   // Créer une nouvelle stratégie de trade
   createTradeStrategy: async (strategyData: any) => {
-    const response = await api.post('/trades/trade-strategies/', strategyData);
+    const response = await apiClient.post('/trades/trade-strategies/', strategyData);
     return response.data;
   },
 
   // Mettre à jour une stratégie de trade
   updateTradeStrategy: async (id: number, strategyData: any) => {
-    const response = await api.patch(`/trades/trade-strategies/${id}/`, strategyData);
+    const response = await apiClient.patch(`/trades/trade-strategies/${id}/`, strategyData);
     return response.data;
   },
 
   // Supprimer une stratégie de trade
   deleteTradeStrategy: async (id: number) => {
-    await api.delete(`/trades/trade-strategies/${id}/`);
+    await apiClient.delete(`/trades/trade-strategies/${id}/`);
   },
 
   // Récupérer la stratégie pour un trade spécifique
   getTradeStrategyByTrade: async (tradeId: string) => {
-    const response = await api.get(`/trades/trade-strategies/by_trade/?trade_id=${tradeId}`);
+    const response = await apiClient.get(`/trades/trade-strategies/by_trade/?trade_id=${tradeId}`);
     return response.data;
   },
 
   // Récupérer les stratégies pour les trades d'une date spécifique
-  getTradeStrategiesByDate: async (date: string) => {
-    const response = await api.get(`/trades/trade-strategies/by_date/?date=${date}`);
+  getTradeStrategiesByDate: async (date: string, tradingAccountId?: number) => {
+    const params = new URLSearchParams();
+    params.append('date', date);
+    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    const response = await apiClient.get(`/trades/trade-strategies/by_date/?${params.toString()}`);
     return response.data;
   },
 
@@ -352,7 +375,7 @@ export const tradesService = {
     screenshot_url?: string;
     video_url?: string;
   }>) => {
-    const response = await api.post('/trades/trade-strategies/bulk_create/', {
+    const response = await apiClient.post('/trades/trade-strategies/bulk_create/', {
       strategies
     });
     return response.data;

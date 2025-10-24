@@ -8,10 +8,12 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 interface YearlySessionWinRateChartProps {
   year: number;
+  selectedAccount?: { id: number } | null;
   isLoading?: boolean;
 }
 
-const YearlySessionWinRateChart: React.FC<YearlySessionWinRateChartProps> = ({ year, isLoading = false }) => {
+const YearlySessionWinRateChart: React.FC<YearlySessionWinRateChartProps> = ({ year, selectedAccount, isLoading = false }) => {
+
   const [strategyData, setStrategyData] = useState<{ [month: string]: any }>({});
   const [loading, setLoading] = useState(true);
 
@@ -27,8 +29,9 @@ const YearlySessionWinRateChart: React.FC<YearlySessionWinRateChartProps> = ({ y
         setStrategyData({});
         
         // Récupérer les données une seule fois
+        const accountId = selectedAccount?.id;
         const [trades, strategies] = await Promise.all([
-          tradesService.getTrades(),
+          tradesService.getTrades(accountId),
           tradesService.getTradeStrategies()
         ]);
         
@@ -87,7 +90,7 @@ const YearlySessionWinRateChart: React.FC<YearlySessionWinRateChartProps> = ({ y
     };
 
     fetchYearlySessionData();
-  }, [year]);
+  }, [year, selectedAccount?.id]);
 
   // Calculer les données globales de l'année (même format que SessionWinRateChart)
   const chartData = React.useMemo(() => {

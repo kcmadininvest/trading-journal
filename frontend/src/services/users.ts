@@ -1,5 +1,5 @@
 import { authService } from './auth';
-import api from './api';
+import apiClient from '../lib/apiClient';
 
 export interface User {
   id: number;
@@ -41,7 +41,7 @@ class UsersService {
     }
 
     try {
-      const response = await api.get(`/accounts${endpoint}`);
+      const response = await apiClient.get(`/accounts${endpoint}`);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 403) {
@@ -76,7 +76,7 @@ class UsersService {
 
   async updateUser(id: number, data: Partial<User>): Promise<User> {
     try {
-      const response = await api.patch(`/accounts/admin/users/${id}/`, data);
+      const response = await apiClient.patch(`/accounts/admin/users/${id}/`, data);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 403) {
@@ -91,7 +91,7 @@ class UsersService {
 
   async deleteUser(id: number): Promise<void> {
     try {
-      await api.delete(`/accounts/admin/users/${id}/`);
+      await apiClient.delete(`/accounts/admin/users/${id}/`);
     } catch (error: any) {
       if (error.response?.status === 403) {
         throw new Error('Permission refusée. Seuls les administrateurs peuvent accéder à cette fonctionnalité.');

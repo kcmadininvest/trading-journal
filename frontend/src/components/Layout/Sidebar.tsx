@@ -39,6 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const isTrades = hash === '#trades-table'
   const isStatistics = hash === '#statistics'
   const isAnalytics = hash === '#analytics'
+  const isTradingAccounts = hash === '#trading-accounts'
   return (
     <>
       {/* Overlay pour mobile */}
@@ -98,7 +99,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           <a href="#archives" className={`flex items-center gap-3 px-4 py-3 no-underline transition-all min-w-0 ${isArchives ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
             <span aria-hidden="true" className="flex-shrink-0">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 4h18l-1 16H4L3 4zM9 8h6M9 12h6M9 16h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M21 8v13H3V8M1 3h22l-1 5H2L1 3z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M10 12h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </span>
             <span className={`${collapsed ? 'hidden' : ''} truncate`}>Archives</span>
@@ -133,12 +135,24 @@ const Sidebar: React.FC<SidebarProps> = ({
             <span className={`${collapsed ? 'hidden' : ''} truncate`}>Mes Trades</span>
           </a>
           
+          <a href="#trading-accounts" className={`flex items-center gap-3 px-4 py-3 no-underline transition-all min-w-0 ${isTradingAccounts ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}>
+            <span aria-hidden="true" className="flex-shrink-0">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="9" cy="7" r="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
+            <span className={`${collapsed ? 'hidden' : ''} truncate`}>Comptes</span>
+          </a>
+          
           
           {currentUser?.is_admin && (
             <a href="#settings" className="flex items-center gap-3 px-4 py-3 text-gray-300 no-underline transition-all hover:bg-gray-800 hover:text-white min-w-0">
               <span aria-hidden="true" className="flex-shrink-0">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 8a4 4 0 100 8 4 4 0 000-8Zm8 4a8 8 0 01-.18 1.66l2.02 1.57-2 3.46-2.4-1a8 8 0 01-2.88 1.68l-.36 2.58h-4l-.36-2.58A8 8 0 015.56 19l-2.4 1-2-3.46 2.02-1.57A8 8 0 013.99 12c0-.57.06-1.12.18-1.66L2.15 8.77l2-3.46 2.4 1A8 8 0 019.43 4.6L9.79 2h4l.36 2.6A8 8 0 0117.9 6.3l2.4-1 2 3.46-2.02 1.57c.12.54.18 1.09.18 1.67z" fill="currentColor"/>
+                  <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </span>
               <span className={`${collapsed ? 'hidden' : ''} truncate`}>Paramètres</span>

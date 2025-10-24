@@ -3,7 +3,7 @@
  * Gère l'expiration des tokens JWT et la déconnexion automatique
  */
 
-import axios from './api';
+import apiClient from '../lib/apiClient';
 import authService from './auth';
 
 export interface SessionInfo {
@@ -78,7 +78,7 @@ class SessionManager {
    */
   private async checkSession(): Promise<void> {
     try {
-      const response = await axios.get('/accounts/session/info/');
+      const response = await apiClient.get('/accounts/session/info/');
       this.sessionInfo = response.data;
 
       // Vérifier que sessionInfo n'est pas null après l'assignation
@@ -116,7 +116,7 @@ class SessionManager {
    */
   private async refreshSession(): Promise<void> {
     try {
-      const response = await axios.post('/accounts/session/extend/');
+      const response = await apiClient.post('/accounts/session/extend/');
       const { access, refresh, session_info } = response.data;
 
       // Mettre à jour les tokens

@@ -29,9 +29,10 @@ interface HourlyDataPoint {
 
 interface HourlyPerformanceChartProps {
   data: HourlyDataPoint[];
+  currency?: string;
 }
 
-function HourlyPerformanceChart({ data }: HourlyPerformanceChartProps) {
+function HourlyPerformanceChart({ data, currency = 'USD' }: HourlyPerformanceChartProps) {
   const hasData = Array.isArray(data) && data.length > 0;
 
   // Filtrer les données pour ne garder que les heures avec des trades
@@ -119,9 +120,9 @@ function HourlyPerformanceChart({ data }: HourlyPerformanceChartProps) {
             });
             
             if (dataPoint) {
-              return `${formatCurrency(pnl)} (${dataPoint.trade_count} trades, moy: ${formatCurrency(pnl / dataPoint.trade_count)})`;
+              return `${formatCurrency(pnl, currency)} (${dataPoint.trade_count} trades, moy: ${formatCurrency(pnl / dataPoint.trade_count, currency)})`;
             }
-            return `${formatCurrency(pnl)}`;
+            return `${formatCurrency(pnl, currency)}`;
           }
         }
       },
@@ -173,7 +174,7 @@ function HourlyPerformanceChart({ data }: HourlyPerformanceChartProps) {
       duration: 1000,
       easing: 'easeInOutQuart' as const
     }
-  }), [filteredData]);
+  }), [filteredData, currency]);
 
 
   if (!hasData || filteredData.length === 0) {

@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
+import './styles/devtools.css';
+import { queryClient } from './lib/queryClient';
+import { PageSuspense } from './components/SuspenseBoundary';
 import Layout from './components/Layout/Layout';
 import SidebarProfileModal from './components/Layout/SidebarProfileModal';
 import SessionWarningModal from './components/auth/SessionWarningModal';
-import HomePage from './pages/HomePage';
-import TradesPage from './pages/TradesPage';
-import StatisticsPage from './pages/StatisticsPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import StrategyPage from './pages/StrategyPage';
-import PositionStrategiesPage from './pages/PositionStrategiesPage';
-import ArchivesPage from './pages/ArchivesPage';
-import SettingsPage from './pages/SettingsPage';
+import { LazyTradesPage, LazyStrategyPage, LazyStatisticsPage, LazyAnalyticsPage, LazyTradingAccountsPage, LazySettingsPage, LazyArchivesPage, LazyPositionStrategiesPage, LazyHomePage } from './components/LazyPages';
 import { authService, User } from './services/auth';
 import sessionManager, { SessionWarning } from './services/sessionManager';
 
@@ -55,7 +53,6 @@ function App() {
     // Gérer la navigation par hash
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      console.log('Navigation hash change:', hash);
       if (hash === 'statistics') {
         setCurrentPage('statistics');
       } else if (hash === 'analytics') {
@@ -65,8 +62,9 @@ function App() {
       } else if (hash === 'position-strategies') {
         setCurrentPage('position-strategies');
       } else if (hash === 'archives') {
-        console.log('Setting current page to archives');
         setCurrentPage('archives');
+      } else if (hash === 'trading-accounts') {
+        setCurrentPage('trading-accounts');
       } else if (hash === 'settings' || hash.startsWith('settings-')) {
         setCurrentPage('settings');
       } else {
@@ -106,19 +104,21 @@ function App() {
   const renderPage = () => {
     switch (currentPage) {
       case 'statistics':
-        return <StatisticsPage />;
+        return <LazyStatisticsPage />;
       case 'analytics':
-        return <AnalyticsPage />;
+        return <LazyAnalyticsPage />;
       case 'strategy':
-        return <StrategyPage />;
+        return <LazyStrategyPage />;
       case 'position-strategies':
-        return <PositionStrategiesPage />;
+        return <LazyPositionStrategiesPage />;
       case 'archives':
-        return <ArchivesPage />;
+        return <LazyArchivesPage />;
+      case 'trading-accounts':
+        return <LazyTradingAccountsPage />;
       case 'settings':
-        return <SettingsPage currentUser={currentUser!} onUserUpdate={handleUserUpdate} />;
+        return <LazySettingsPage currentUser={currentUser!} onUserUpdate={handleUserUpdate} />;
       default:
-        return <TradesPage />;
+        return <LazyTradesPage />;
     }
   };
 
@@ -162,13 +162,14 @@ function App() {
             },
           }}
         />
-        <HomePage />
+        <LazyHomePage />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ overflowX: 'hidden' }}>
+    <QueryClientProvider client={queryClient}>
+      <div className="min-h-screen bg-gray-50" style={{ overflowX: 'hidden' }}>
       <Toaster 
         position="top-right"
         toastOptions={{
@@ -200,7 +201,9 @@ function App() {
         onShowProfile={() => setShowSidebarProfile(true)}
         onUserChange={setCurrentUser}
       >
-        {renderPage()}
+        <PageSuspense>
+          {renderPage()}
+        </PageSuspense>
       </Layout>
 
       {currentUser && (
@@ -224,7 +227,17 @@ function App() {
           onDismiss={handleSessionWarningDismiss}
         />
       )}
-    </div>
+      </div>
+      
+      {/* React Query DevTools en développement */}
+      {process.env.NODE_ENV === 'development' && (
+        <ReactQueryDevtools 
+          initialIsOpen={false}
+          buttonPosition="bottom-left"
+          position="bottom"
+        />
+      )}
+    </QueryClientProvider>
   );
 }
 

@@ -10,7 +10,7 @@ import pytz
 from decimal import Decimal
 from collections import defaultdict
 
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -23,8 +23,135 @@ from .serializers import (
     PositionStrategyCreateSerializer,
     PositionStrategyUpdateSerializer,
     PositionStrategyVersionSerializer,
+    TradingAccountSerializer,
+    TradingAccountListSerializer,
 )
 from .utils import TopStepCSVImporter
+
+
+class TradingAccountViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les comptes de trading.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_serializer_class(self):  # type: ignore
+        if self.action == 'list':
+            return TradingAccountListSerializer
+        return TradingAccountSerializer
+    
+    def get_queryset(self):
+        """Retourne uniquement les comptes de l'utilisateur connecté."""
+        if not self.request.user.is_authenticated:
+            return TradingAccount.objects.none()  # type: ignore
+        return TradingAccount.objects.filter(user=self.request.user)  # type: ignore
+    
+    def perform_create(self, serializer):
+        """Associe automatiquement le compte à l'utilisateur connecté."""
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def default(self, request):
+        """
+        Retourne le compte par défaut de l'utilisateur.
+        """
+        try:
+            default_account = self.get_queryset().filter(is_default=True).first()
+            if not default_account:
+                return Response(
+                    {'error': 'Aucun compte par défaut trouvé'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            serializer = self.get_serializer(default_account)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération du compte par défaut: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        """
+        Définit ce compte comme compte par défaut.
+        """
+        try:
+            account = self.get_object()
+            
+            # Désactiver tous les autres comptes par défaut
+            self.get_queryset().exclude(pk=account.pk).update(is_default=False)
+            
+            # Activer ce compte comme défaut
+            account.is_default = True
+            account.save()
+            
+            serializer = self.get_serializer(account)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la définition du compte par défaut: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def statistics(self, request, pk=None):
+        """
+        Retourne les statistiques pour un compte spécifique.
+        """
+        try:
+            account = self.get_object()
+            trades = account.topstep_trades.all()
+            
+            if not trades.exists():
+                return Response({
+                    'account_name': account.name,
+                    'total_trades': 0,
+                    'message': 'Aucun trade trouvé pour ce compte'
+                })
+            
+            # Calcul des statistiques de base
+            total_trades = trades.count()
+            winning_trades = trades.filter(net_pnl__gt=0).count()
+            losing_trades = trades.filter(net_pnl__lt=0).count()
+            win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+            
+            total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+            total_gains = trades.filter(net_pnl__gt=0).aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+            total_losses = trades.filter(net_pnl__lt=0).aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+            
+            # Meilleur trade : le plus gros gain parmi les trades gagnants uniquement
+            # Si aucun trade gagnant, best_trade = 0 (ne pas afficher)
+            best_trade = trades.filter(net_pnl__gt=0).aggregate(best=Max('net_pnl'))['best']
+            if best_trade is None:
+                best_trade = Decimal('0')
+            
+            # Pire trade : le plus gros loss parmi les trades perdants uniquement
+            # Si aucun trade perdant, worst_trade = 0 (ne pas afficher)
+            worst_trade = trades.filter(net_pnl__lt=0).aggregate(worst=Min('net_pnl'))['worst']
+            if worst_trade is None:
+                worst_trade = Decimal('0')
+            
+            stats = {
+                'account_name': account.name,
+                'account_type': account.account_type,
+                'total_trades': total_trades,
+                'winning_trades': winning_trades,
+                'losing_trades': losing_trades,
+                'win_rate': round(win_rate, 2),
+                'total_pnl': str(total_pnl),
+                'total_gains': str(total_gains),
+                'total_losses': str(total_losses),
+                'best_trade': str(best_trade),
+                'worst_trade': str(worst_trade),
+                'average_pnl': str(total_pnl / total_trades) if total_trades > 0 else '0',
+            }
+            
+            return Response(stats)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors du calcul des statistiques: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class TopStepTradeViewSet(viewsets.ModelViewSet):
@@ -43,6 +170,19 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         if not self.request.user.is_authenticated:
             return TopStepTrade.objects.none()  # type: ignore
         queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
+        
+        # Filtre par compte de trading
+        trading_account_id = self.request.query_params.get('trading_account', None)
+        if trading_account_id:
+            queryset = queryset.filter(trading_account_id=trading_account_id)
+        else:
+            # Si aucun compte spécifié, utiliser le compte par défaut
+            default_account = TradingAccount.objects.filter(  # type: ignore
+                user=self.request.user, 
+                is_default=True
+            ).first()
+            if default_account:
+                queryset = queryset.filter(trading_account=default_account)
         
         # Filtres optionnels
         contract = self.request.query_params.get('contract', None)
@@ -199,11 +339,21 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         aggregates = trades.aggregate(
             total_pnl=Sum('net_pnl'),
             average_pnl=Avg('net_pnl'),
-            best_trade=Max('net_pnl'),
-            worst_trade=Min('net_pnl'),
             total_fees=Sum('fees'),
             total_volume=Sum('size')
         )
+        
+        # Meilleur trade : le plus gros gain parmi les trades gagnants uniquement
+        # Si aucun trade gagnant, best_trade = 0 (ne pas afficher)
+        best_trade = trades.filter(net_pnl__gt=0).aggregate(best=Max('net_pnl'))['best']
+        if best_trade is None:
+            best_trade = Decimal('0')
+        
+        # Pire trade : le plus gros loss parmi les trades perdants uniquement
+        # Si aucun trade perdant, worst_trade = 0 (ne pas afficher)
+        worst_trade = trades.filter(net_pnl__lt=0).aggregate(worst=Min('net_pnl'))['worst']
+        if worst_trade is None:
+            worst_trade = Decimal('0')
         
         # Calculs séparés pour gains et pertes
         winning_trades_aggregate = trades.filter(net_pnl__gt=0).aggregate(
@@ -232,9 +382,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         
         # 4. Ratio de Récupération
         recovery_ratio = 0
-        if aggregates['worst_trade'] and aggregates['best_trade']:
-            if aggregates['worst_trade'] != 0:
-                recovery_ratio = abs(aggregates['best_trade'] / aggregates['worst_trade'])
+        if worst_trade and best_trade:
+            if worst_trade != 0:
+                recovery_ratio = abs(best_trade / worst_trade)
         
         # 5. Ratio P/L par Trade
         pnl_per_trade = 0
@@ -301,8 +451,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'total_gains': total_gains,
             'total_losses': total_losses,
             'average_pnl': aggregates['average_pnl'] or Decimal('0'),
-            'best_trade': aggregates['best_trade'] or Decimal('0'),
-            'worst_trade': aggregates['worst_trade'] or Decimal('0'),
+            'best_trade': best_trade,
+            'worst_trade': worst_trade,
             'total_fees': aggregates['total_fees'] or Decimal('0'),
             'total_volume': aggregates['total_volume'] or Decimal('0'),
             'average_duration': avg_duration_str,
@@ -488,8 +638,35 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             user = request.user
             logger.info(f"Utilisateur: {user.username}")
             
+            # Récupérer le compte de trading (paramètre optionnel)
+            trading_account_id = request.data.get('trading_account')
+            trading_account = None
+            if trading_account_id:
+                try:
+                    trading_account = TradingAccount.objects.get(  # type: ignore
+                        id=trading_account_id, 
+                        user=user
+                    )
+                    logger.info(f"Compte de trading sélectionné: {trading_account.name}")
+                except TradingAccount.DoesNotExist:  # type: ignore
+                    return Response({
+                        'error': 'Compte de trading invalide'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Utiliser le compte par défaut
+                trading_account = TradingAccount.objects.filter(  # type: ignore
+                    user=user, 
+                    is_default=True
+                ).first()
+                if trading_account:
+                    logger.info(f"Utilisation du compte par défaut: {trading_account.name}")
+                else:
+                    return Response({
+                        'error': 'Aucun compte de trading par défaut trouvé. Veuillez créer un compte de trading d\'abord.'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+            
             # Importer via l'utilitaire
-            importer = TopStepCSVImporter(user)
+            importer = TopStepCSVImporter(user, trading_account)
             result = importer.import_from_string(content, csv_file.name)
             
             # Log des résultats
@@ -878,14 +1055,14 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'median_gain_per_day': calculate_median(daily_gains),
                 'avg_loss_per_day': sum(daily_losses) / len(daily_losses) if daily_losses else 0.0,  # type: ignore
                 'median_loss_per_day': calculate_median(daily_losses),
-                'max_gain_per_day': max(daily_pnls) if daily_pnls else 0.0,  # type: ignore
-                'max_loss_per_day': min(daily_pnls) if daily_pnls else 0.0,  # type: ignore
+                'max_gain_per_day': max(daily_gains) if daily_gains else 0.0,  # type: ignore
+                'max_loss_per_day': min(daily_losses) if daily_losses else 0.0,  # type: ignore
                 'avg_trades_per_day': sum(daily_trade_counts) / len(daily_trade_counts) if daily_trade_counts else 0.0,  # type: ignore
                 'median_trades_per_day': calculate_median(daily_trade_counts),
             },
             'trade_stats': {
-                'max_gain_per_trade': max(all_trade_pnls) if all_trade_pnls else 0.0,
-                'max_loss_per_trade': min(all_trade_pnls) if all_trade_pnls else 0.0,
+                'max_gain_per_trade': max(winning_trades) if winning_trades else 0.0,
+                'max_loss_per_trade': min(losing_trades) if losing_trades else 0.0,
                 'avg_winning_trade': sum(winning_trades) / len(winning_trades) if winning_trades else 0.0,
                 'median_winning_trade': calculate_median(winning_trades),
                 'avg_losing_trade': sum(losing_trades) / len(losing_trades) if losing_trades else 0.0,
@@ -981,7 +1158,17 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         """Retourne les données de drawdown pour le graphique"""
         if not request.user.is_authenticated:
             return Response({'drawdown_data': []})
-        trades = TopStepTrade.objects.filter(user=request.user).order_by('entered_at')  # type: ignore
+        
+        # Filtrer par trading_account si spécifié
+        trading_account_id = request.query_params.get('trading_account')
+        trades = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+        if trading_account_id:
+            try:
+                trades = trades.filter(trading_account_id=int(trading_account_id))
+            except (ValueError, TypeError):
+                # Si trading_account_id n'est pas un entier valide, ignorer le filtre
+                pass
+        trades = trades.order_by('entered_at')  # type: ignore
         
         if not trades.exists():
             return Response({
@@ -1125,6 +1312,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             strategies = TradeStrategy.objects.filter(  # type: ignore
                 trade__trade_day=date
             ).select_related('trade')
+            
+            # Filtrer par compte de trading si spécifié
+            trading_account_id = request.query_params.get('trading_account')
+            if trading_account_id:
+                strategies = strategies.filter(trade__trading_account_id=trading_account_id)
+            
             serializer = self.get_serializer(strategies, many=True)
             return Response(serializer.data)
         except Exception as e:

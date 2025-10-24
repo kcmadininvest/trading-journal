@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { tradesService } from '../services/trades';
+import TradingAccountSelector from '../components/TradingAccount/TradingAccountSelector';
+import { TradingAccount } from '../types';
+import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency';
 import { Scatter } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -50,14 +53,17 @@ function AnalyticsPage() {
   const [correlationData, setCorrelationData] = useState<any>(null);
   const [drawdownData, setDrawdownData] = useState<DrawdownData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
+  const selectedCurrency = useSelectedAccountCurrency(selectedAccount);
 
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
+      const accountId = selectedAccount?.id;
       const [hourly, correlation, drawdown] = await Promise.all([
-        tradesService.getHourlyPerformance(),
-        tradesService.getPnlTradesCorrelation(),
-        tradesService.getDrawdownData()
+        tradesService.getHourlyPerformance(accountId),
+        tradesService.getPnlTradesCorrelation(accountId),
+        tradesService.getDrawdownData(accountId)
       ]);
       setHourlyData(hourly);
       setCorrelationData(correlation);
@@ -71,9 +77,10 @@ function AnalyticsPage() {
 
   useEffect(() => {
     fetchAnalyticsData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccount]);
 
-  const formatCurrency = globalFormatCurrency;
+  const formatCurrency = (value: number) => globalFormatCurrency(value, selectedCurrency);
 
 
   // Préparer les données du graphique en nuage de points
@@ -152,7 +159,7 @@ function AnalyticsPage() {
             const dataIndex = context.dataIndex;
             const originalData = hourlyData?.hourly_data.filter(item => item.trade_count > 0)[dataIndex];
             const tradeCount = originalData?.trade_count || 0;
-            return `${globalFormatCurrency(pnl)} (${tradeCount} trades, moy: ${globalFormatCurrency(tradeCount > 0 ? pnl / tradeCount : 0)})`;
+            return `${formatCurrency(pnl)} (${tradeCount} trades, moy: ${formatCurrency(tradeCount > 0 ? pnl / tradeCount : 0)})`;
           }
         }
       },
@@ -199,7 +206,7 @@ function AnalyticsPage() {
       y: {
         title: {
           display: true,
-          text: 'P/L (USD)',
+          text: `P/L (${selectedCurrency})`,
           font: {
             size: 14,
             weight: 'bold' as const
@@ -306,6 +313,20 @@ function AnalyticsPage() {
           </div>
         </div>
 
+        {/* Sélecteur de compte de trading */}
+        <div className="flex justify-between items-center mb-6">
+          <TradingAccountSelector
+            selectedAccountId={selectedAccount?.id}
+            onAccountChange={setSelectedAccount}
+            className="flex items-center space-x-2"
+          />
+          {selectedAccount && (
+            <div className="text-sm text-gray-600">
+              Analyses pour le compte "{selectedAccount.name}"
+            </div>
+          )}
+        </div>
+
         {/* Section des graphiques principaux */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           {/* Graphique de performance par heure (nuage de points) */}
@@ -370,7 +391,7 @@ function AnalyticsPage() {
             </h2>
             <div className="h-80">
               {correlationData?.correlation_data ? (
-                <PnlTradesCorrelationChart data={correlationData.correlation_data} />
+                <PnlTradesCorrelationChart data={correlationData.correlation_data} currency={selectedCurrency} />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   Aucune donnée disponible
@@ -409,7 +430,7 @@ function AnalyticsPage() {
             </h2>
             <div className="h-80">
               {hourlyData?.hourly_data ? (
-                <HourlyPerformanceChart data={hourlyData.hourly_data} />
+                <HourlyPerformanceChart data={hourlyData.hourly_data} currency={selectedCurrency} />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   Aucune donnée disponible
@@ -444,7 +465,7 @@ function AnalyticsPage() {
             </h2>
             <div className="h-80">
               {drawdownData.length > 0 && drawdownData.some(item => item.drawdown > 0) ? (
-                <DrawdownChart data={drawdownData} />
+                <DrawdownChart data={drawdownData} currency={selectedCurrency} />
               ) : (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   {drawdownData.length > 0 ? 'Aucun drawdown détecté - Performance constante !' : 'Aucune donnée disponible'}

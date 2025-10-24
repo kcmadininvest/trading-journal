@@ -32,9 +32,10 @@ interface CorrelationDataPoint {
 
 interface PnlTradesCorrelationChartProps {
   data: CorrelationDataPoint[];
+  currency?: string;
 }
 
-function PnlTradesCorrelationChart({ data }: PnlTradesCorrelationChartProps) {
+function PnlTradesCorrelationChart({ data, currency = 'USD' }: PnlTradesCorrelationChartProps) {
   const hasData = Array.isArray(data) && data.length > 0;
 
   const chartData = useMemo(() => {
@@ -82,7 +83,7 @@ function PnlTradesCorrelationChart({ data }: PnlTradesCorrelationChartProps) {
             const pnl = context.parsed.y;
             const tradeCount = context.parsed.x;
             const avgPnlPerTrade = context.raw.avgPnlPerTrade;
-            return `${formatCurrency(pnl)} (${tradeCount} trades, moy: ${formatCurrency(avgPnlPerTrade)})`;
+            return `${formatCurrency(pnl, currency)} (${tradeCount} trades, moy: ${formatCurrency(avgPnlPerTrade, currency)})`;
           }
         }
       },
@@ -133,7 +134,7 @@ function PnlTradesCorrelationChart({ data }: PnlTradesCorrelationChartProps) {
         }
       }
     }
-  }), []);
+  }), [currency]);
 
 
   if (!hasData) {

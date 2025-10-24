@@ -3,6 +3,8 @@ import { toast } from 'react-hot-toast';
 import { tradesService } from '../../services/trades';
 import FileUpload from '../common/FileUpload';
 import Button from '../common/Button';
+import TradingAccountSelector from '../TradingAccount/TradingAccountSelector';
+import { TradingAccount } from '../../types';
 
 interface GlobalImportModalProps {
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface GlobalImportModalProps {
 const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, onImported }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
 
   if (!isOpen) return null;
 
@@ -27,9 +30,14 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
       return;
     }
 
+    if (!selectedAccount) {
+      toast.error('Veuillez sélectionner un compte de trading');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const result = await tradesService.uploadCSV(selectedFile);
+      const result = await tradesService.uploadCSV(selectedFile, selectedAccount.id);
       if (result.success) {
         toast.success(result.message, { duration: 5000 });
         setSelectedFile(null);
@@ -119,6 +127,23 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
           </div>
         </div>
 
+        {/* Sélecteur de compte de trading */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Compte de trading
+          </label>
+          <TradingAccountSelector
+            selectedAccountId={selectedAccount?.id}
+            onAccountChange={setSelectedAccount}
+            className="w-full"
+          />
+          {selectedAccount && (
+            <p className="text-xs text-gray-500 mt-1">
+              Les trades seront importés dans le compte "{selectedAccount.name}"
+            </p>
+          )}
+        </div>
+
         <FileUpload 
           onFileSelect={handleFileSelect} 
           accept={getAcceptTypes()} 
@@ -135,7 +160,7 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
             variant="primary" 
             onClick={handleUpload} 
             loading={isLoading} 
-            disabled={!selectedFile}
+            disabled={!selectedFile || !selectedAccount}
           >
             {isLoading ? 'Import en cours...' : 'Importer le fichier'}
           </Button>

@@ -6,6 +6,135 @@ from datetime import datetime, timedelta
 import pytz
 
 
+class TradingAccount(models.Model):
+    """
+    Modèle pour gérer plusieurs comptes de trading par utilisateur.
+    Chaque utilisateur peut avoir plusieurs comptes (TopStep, IBKR, etc.)
+    """
+    
+    ACCOUNT_TYPE_CHOICES = [
+        ('topstep', 'TopStep'),
+        ('ibkr', 'Interactive Brokers'),
+        ('ninjatrader', 'NinjaTrader'),
+        ('tradovate', 'Tradovate'),
+        ('other', 'Autre'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'Actif'),
+        ('inactive', 'Inactif'),
+        ('archived', 'Archivé'),
+    ]
+    
+    # Identification
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_accounts',
+        verbose_name='Utilisateur'
+    )
+    
+    # Informations du compte
+    name = models.CharField(
+        max_length=100,
+        verbose_name='Nom du compte',
+        help_text='Nom personnalisé pour identifier ce compte'
+    )
+    
+    account_type = models.CharField(
+        max_length=20,
+        choices=ACCOUNT_TYPE_CHOICES,
+        verbose_name='Type de compte',
+        help_text='Type de broker ou plateforme'
+    )
+    
+    broker_account_id = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='ID du compte broker',
+        help_text='Identifiant du compte chez le broker'
+    )
+    
+    # Configuration
+    currency = models.CharField(
+        max_length=3,
+        default='USD',
+        verbose_name='Devise',
+        help_text='Devise principale du compte'
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active',
+        verbose_name='Statut'
+    )
+    
+    # Configuration spécifique au broker (JSON pour flexibilité)
+    broker_config = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Configuration broker',
+        help_text='Configuration spécifique au type de broker'
+    )
+    
+    # Métadonnées
+    description = models.TextField(
+        blank=True,
+        verbose_name='Description',
+        help_text='Description du compte'
+    )
+    
+    is_default = models.BooleanField(
+        default=False,  # type: ignore
+        verbose_name='Compte par défaut',
+        help_text='Compte sélectionné par défaut pour cet utilisateur'
+    )
+    
+    # Métadonnées système
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Créé le'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Modifié le'
+    )
+    
+    class Meta:
+        ordering = ['-is_default', 'name']
+        verbose_name = 'Compte de trading'
+        verbose_name_plural = 'Comptes de trading'
+        unique_together = ['user', 'name']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['account_type']),
+            models.Index(fields=['is_default']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_account_type_display()})"  # type: ignore
+    
+    def save(self, *args, **kwargs):
+        # S'assurer qu'un seul compte est marqué comme défaut par utilisateur
+        if self.is_default:
+            TradingAccount.objects.filter(  # type: ignore
+                user=self.user, 
+                is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_topstep(self):
+        """Vérifie si c'est un compte TopStep"""
+        return self.account_type == 'topstep'
+    
+    @property
+    def is_active(self):
+        """Vérifie si le compte est actif"""
+        return self.status == 'active'
+
+
 class TopStepTrade(models.Model):
     """
     Modèle pour stocker les trades importés depuis TopStep.
@@ -26,6 +155,15 @@ class TopStepTrade(models.Model):
         on_delete=models.CASCADE, 
         related_name='topstep_trades',
         verbose_name='Utilisateur'
+    )
+    
+    # Compte de trading associé
+    trading_account = models.ForeignKey(
+        TradingAccount,
+        on_delete=models.CASCADE,
+        related_name='topstep_trades',
+        verbose_name='Compte de trading',
+        help_text='Compte de trading associé à ce trade'
     )
     
     # Id (champ original TopStep)
@@ -194,9 +332,10 @@ class TopStepTrade(models.Model):
         ordering = ['-entered_at']
         verbose_name = 'Trade TopStep'
         verbose_name_plural = 'Trades TopStep'
-        unique_together = ['user', 'topstep_id']
+        unique_together = ['user', 'trading_account', 'topstep_id']
         indexes = [
             models.Index(fields=['user', '-entered_at']),
+            models.Index(fields=['trading_account', '-entered_at']),
             models.Index(fields=['contract_name']),
             models.Index(fields=['trade_type']),
             models.Index(fields=['trade_day']),

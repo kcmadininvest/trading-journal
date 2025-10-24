@@ -1,134 +1,87 @@
-import React, { useState, useEffect } from 'react'
-import { tradesService, TradeStatistics } from '../services/trades'
+import React, { useState } from 'react'
+import { useStatistics, useAnalytics, useGlobalStrategyData, useTradesUpdateInvalidation } from '../hooks/useStatistics'
+import { useTradingAccounts } from '../hooks/useTradingAccounts'
 import { formatCurrency } from '../config/chartConfig'
 import Tooltip from '../components/common/Tooltip'
 import StrategyProgressBar from '../components/Strategy/StrategyProgressBar'
-import api from '../services/api'
+import TradingAccountSelector from '../components/TradingAccount/TradingAccountSelector'
+import { TradingAccount } from '../types'
+import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency'
+import { StatisticsPageSkeleton } from '../components/ui/Skeleton'
 
-interface AnalyticsData {
-  daily_stats: {
-    avg_gain_per_day: number;
-    median_gain_per_day: number;
-    avg_loss_per_day: number;
-    median_loss_per_day: number;
-    max_gain_per_day: number;
-    max_loss_per_day: number;
-    avg_trades_per_day: number;
-    median_trades_per_day: number;
-  };
-  trade_stats: {
-    max_gain_per_trade: number;
-    max_loss_per_trade: number;
-    avg_winning_trade: number;
-    median_winning_trade: number;
-    avg_losing_trade: number;
-    median_losing_trade: number;
-  };
-  consecutive_stats: {
-    max_consecutive_wins_per_day: number;
-    max_consecutive_losses_per_day: number;
-    max_consecutive_wins: number;
-    max_consecutive_losses: number;
-  };
-}
-
-
-function StatisticsPage() {
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
-  const [statisticsData, setStatisticsData] = useState<TradeStatistics | null>(null)
-  const [loading, setLoading] = useState(true)
+function StatisticsPageOptimized() {
+  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null)
+  const selectedCurrency = useSelectedAccountCurrency(selectedAccount)
   
-  // État pour les données globales de stratégie
-  const [globalStrategyData, setGlobalStrategyData] = useState<{ [date: string]: any }>({})
-  const [isGlobalStrategyDataLoading, setIsGlobalStrategyDataLoading] = useState(false)
-
-  const fetchAnalyticsData = async () => {
-    try {
-      setLoading(true)
-      const [analytics, statistics] = await Promise.all([
-        tradesService.getAnalyticsData(),
-        tradesService.getStatistics()
-      ])
-      setAnalyticsData(analytics)
-      setStatisticsData(statistics)
-    } catch (error) {
-      // Erreur silencieuse lors du chargement des données d'analyses
-    } finally {
-      setLoading(false)
+  // Hooks React Query pour les données
+  const { data: accounts, isLoading: accountsLoading } = useTradingAccounts()
+  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(selectedAccount?.id)
+  const { isLoading: analyticsLoading, error: analyticsError } = useAnalytics(selectedAccount?.id)
+  const { data: globalStrategyData, isLoading: globalStrategyLoading } = useGlobalStrategyData()
+  
+  // Gérer l'invalidation des queries quand les trades sont mis à jour
+  useTradesUpdateInvalidation()
+  
+  // États de chargement
+  const isLoading = accountsLoading || statisticsLoading || analyticsLoading || globalStrategyLoading
+  const hasError = statisticsError || analyticsError
+  
+  // Sélection automatique du compte par défaut
+  React.useEffect(() => {
+    if (accounts && accounts.length > 0 && !selectedAccount) {
+      const defaultAccount = accounts.find(acc => acc.is_default) || accounts[0]
+      setSelectedAccount(defaultAccount)
     }
-  }
-
-  const fetchGlobalStrategyData = async () => {
-    try {
-      setIsGlobalStrategyDataLoading(true)
-      const response = await api.get('/trades/trade-strategies/')
-      
-      // Gérer la pagination - l'API peut retourner {results: [...]} ou directement [...]
-      const strategies = response.data.results || response.data
-      
-      // Calculer le pourcentage global
-      const totalStrategies = strategies.length
-      const respectedStrategies = strategies.filter((s: any) => s.strategy_respected === true).length
-      
-      // Créer un objet avec les données globales
-      const globalData = {
-        total: totalStrategies,
-        respected: respectedStrategies,
-        notRespected: totalStrategies - respectedStrategies,
-        percentage: totalStrategies > 0 ? (respectedStrategies / totalStrategies) * 100 : 0
-      }
-      
-      // Stocker dans globalStrategyData pour la compatibilité avec le composant
-      setGlobalStrategyData({ 'global': globalData })
-    } catch (error) {
-      console.error('Erreur lors du chargement des données globales de stratégie:', error)
-    } finally {
-      setIsGlobalStrategyDataLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchAnalyticsData()
-    fetchGlobalStrategyData()
-  }, [])
-
-  if (loading) {
+  }, [accounts, selectedAccount])
+  
+  // Gestion des erreurs
+  if (hasError) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="p-6 bg-gray-50 min-h-screen">
+        <div className="text-center py-12">
+          <div className="text-red-500 text-lg mb-4">Erreur lors du chargement des données</div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Réessayer
+          </button>
+        </div>
       </div>
     )
   }
-
-  const formatNumber = (value: number) => {
-    return value.toFixed(2)
+  
+  // Skeleton pendant le chargement
+  if (isLoading) {
+    return <StatisticsPageSkeleton />
   }
-
+  
+  // Fonctions utilitaires
+  
   const formatVolume = (volume: string) => {
     if (!volume) return 'N/A'
     const num = parseFloat(volume)
     
-    // Si le volume est très grand, utiliser une notation scientifique ou des unités
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`
     } else if (num >= 1000) {
       return `${(num / 1000).toFixed(1)}K`
     } else if (num >= 1) {
-      return num.toFixed(0) // Pas de décimales pour les volumes entiers
+      return num.toFixed(0)
     } else {
-      return num.toFixed(2) // 2 décimales pour les petits volumes
+      return num.toFixed(2)
     }
   }
-
+  
   const formatRatio = (ratio: number) => {
     const absRatio = Math.abs(ratio)
     
     if (absRatio >= 1) {
-      return ratio.toFixed(2) // 2 décimales pour les ratios >= 1 (positifs ou négatifs)
+      return ratio.toFixed(2)
     } else if (absRatio >= 0.01) {
-      return ratio.toFixed(4) // 4 décimales pour les ratios entre 0.01 et 1
+      return ratio.toFixed(4)
     } else {
-      return ratio.toFixed(6) // 6 décimales pour les très petits ratios
+      return ratio.toFixed(6)
     }
   }
 
@@ -145,15 +98,29 @@ function StatisticsPage() {
           {/* Barre de progression du respect global de la stratégie */}
           <div className="flex-shrink-0">
             <StrategyProgressBar
-              respectPercentage={globalStrategyData.global?.percentage || 0}
-              totalTrades={globalStrategyData.global?.total || 0}
-              respectedTrades={globalStrategyData.global?.respected || 0}
-              isLoading={isGlobalStrategyDataLoading}
+              respectPercentage={globalStrategyData?.percentage || 0}
+              totalTrades={globalStrategyData?.total || 0}
+              respectedTrades={globalStrategyData?.respected || 0}
+              isLoading={globalStrategyLoading}
             />
           </div>
         </div>
 
-        {/* Section 1: Vue d'ensemble */}
+        {/* Sélecteur de compte de trading */}
+        <div className="flex justify-between items-center mb-6">
+          <TradingAccountSelector
+            selectedAccountId={selectedAccount?.id}
+            onAccountChange={setSelectedAccount}
+            className="flex items-center space-x-2"
+          />
+          {selectedAccount && (
+            <div className="text-sm text-gray-600">
+              Statistiques pour le compte "{selectedAccount.name}"
+            </div>
+          )}
+        </div>
+
+        {/* Section 1: Vue d'overview */}
         <div className="mb-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Vue d'ensemble</h2>
@@ -176,7 +143,7 @@ function StatisticsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Total trades</span>
                   <span className="text-base font-semibold text-gray-900">
-                    {statisticsData ? statisticsData.total_trades : 'N/A'}
+                    {statisticsData?.total_trades || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -188,7 +155,7 @@ function StatisticsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">P/L total</span>
                   <span className="text-base font-semibold text-gray-900">
-                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_pnl)) : 'N/A'}
+                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_pnl), selectedCurrency) : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -210,19 +177,19 @@ function StatisticsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Gains totaux</span>
                   <span className="text-base font-semibold text-green-600">
-                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_gains)) : 'N/A'}
+                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_gains), selectedCurrency) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Pertes totales</span>
                   <span className="text-base font-semibold text-red-600">
-                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_losses)) : 'N/A'}
+                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_losses), selectedCurrency) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Net</span>
                   <span className={`text-base font-semibold ${statisticsData && parseFloat(statisticsData.total_pnl) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_pnl)) : 'N/A'}
+                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_pnl), selectedCurrency) : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -244,13 +211,13 @@ function StatisticsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">P/L moyen</span>
                   <span className="text-base font-semibold text-gray-900">
-                    {statisticsData ? formatCurrency(parseFloat(statisticsData.average_pnl)) : 'N/A'}
+                    {statisticsData ? formatCurrency(parseFloat(statisticsData.average_pnl), selectedCurrency) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Frais totaux</span>
                   <span className="text-base font-semibold text-orange-600">
-                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_fees)) : 'N/A'}
+                    {statisticsData ? formatCurrency(parseFloat(statisticsData.total_fees), selectedCurrency) : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -385,7 +352,7 @@ function StatisticsPage() {
                       </Tooltip>
                     </div>
                     <span className={`text-base font-semibold ${statisticsData.pnl_per_trade >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(statisticsData.pnl_per_trade)}
+                      {formatCurrency(statisticsData.pnl_per_trade, selectedCurrency)}
                     </span>
                   </div>
                 </div>
@@ -513,13 +480,13 @@ function StatisticsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Nombre</span>
                   <span className="text-base font-semibold text-green-600">
-                    {statisticsData ? statisticsData.winning_trades : 'N/A'}
+                    {statisticsData?.winning_trades || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Meilleur trade</span>
                   <span className="text-base font-semibold text-green-600">
-                    {statisticsData ? formatCurrency(parseFloat(statisticsData.best_trade)) : 'N/A'}
+                    {statisticsData ? formatCurrency(parseFloat(statisticsData.best_trade), selectedCurrency) : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -541,286 +508,22 @@ function StatisticsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Nombre</span>
                   <span className="text-base font-semibold text-red-600">
-                    {statisticsData ? statisticsData.losing_trades : 'N/A'}
+                    {statisticsData?.losing_trades || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Pire trade</span>
                   <span className="text-base font-semibold text-red-600">
-                    {statisticsData ? formatCurrency(parseFloat(statisticsData.worst_trade)) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Contrat le plus tradé */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-medium text-gray-500">Contrat Favori</h3>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Le plus tradé</span>
-                  <span className="text-base font-semibold text-yellow-600">
-                    {statisticsData?.most_traded_contract || 'N/A'}
+                    {statisticsData ? formatCurrency(parseFloat(statisticsData.worst_trade), selectedCurrency) : 'N/A'}
                   </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Section 4: Analyses Avancées */}
-        <div className="mb-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyses Avancées</h2>
-            <p className="text-gray-600">Métriques détaillées et analyses comportementales</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {/* Gains quotidiens */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-medium text-gray-500">Gains Quotidiens</h3>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Moyenne</span>
-                  <span className="text-base font-semibold text-green-600">
-                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.avg_gain_per_day) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Médiane</span>
-                  <span className="text-base font-semibold text-green-600">
-                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.median_gain_per_day) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Maximum</span>
-                  <span className="text-base font-semibold text-green-600">
-                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.max_gain_per_day) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Pertes quotidiennes */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-medium text-gray-500">Pertes Quotidiennes</h3>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Moyenne</span>
-                  <span className="text-base font-semibold text-red-600">
-                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.avg_loss_per_day) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Médiane</span>
-                  <span className="text-base font-semibold text-red-600">
-                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.median_loss_per_day) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Maximum</span>
-                  <span className="text-base font-semibold text-red-600">
-                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.max_loss_per_day) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Trades gagnants détaillés */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-medium text-gray-500">Trades Gagnants</h3>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Moyenne</span>
-                  <span className="text-base font-semibold text-blue-600">
-                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.avg_winning_trade) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Médiane</span>
-                  <span className="text-base font-semibold text-blue-600">
-                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.median_winning_trade) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Maximum</span>
-                  <span className="text-base font-semibold text-blue-600">
-                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_gain_per_trade) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Trades perdants détaillés */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-medium text-gray-500">Trades Perdants</h3>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Moyenne</span>
-                  <span className="text-base font-semibold text-gray-600">
-                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.avg_losing_trade) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Médiane</span>
-                  <span className="text-base font-semibold text-gray-600">
-                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.median_losing_trade) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Maximum</span>
-                  <span className="text-base font-semibold text-gray-600">
-                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_loss_per_trade) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Trades par jour */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-medium text-gray-500">Trades par Jour</h3>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Moyenne</span>
-                  <span className="text-base font-semibold text-purple-600">
-                    {analyticsData?.daily_stats ? formatNumber(analyticsData.daily_stats.avg_trades_per_day) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Médiane</span>
-                  <span className="text-base font-semibold text-purple-600">
-                    {analyticsData?.daily_stats ? formatNumber(analyticsData.daily_stats.median_trades_per_day) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Trades individuels */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-medium text-gray-500">Trades Individuels</h3>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Gain max</span>
-                  <span className="text-base font-semibold text-green-600">
-                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_gain_per_trade) : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Perte max</span>
-                  <span className="text-base font-semibold text-red-600">
-                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_loss_per_trade) : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Séquences consécutives */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-medium text-gray-500">Séquences</h3>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Gains/jour</span>
-                  <span className="text-base font-semibold text-green-600">
-                    {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_wins_per_day : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Pertes/jour</span>
-                  <span className="text-base font-semibold text-red-600">
-                    {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_losses_per_day : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Gains globaux</span>
-                  <span className="text-base font-semibold text-green-600">
-                    {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_wins : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Pertes globales</span>
-                  <span className="text-base font-semibold text-red-600">
-                    {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_losses : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   )
 }
 
-export default StatisticsPage
+export default StatisticsPageOptimized

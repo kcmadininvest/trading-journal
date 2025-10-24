@@ -5,6 +5,7 @@ from . import views
 app_name = 'trades'
 
 router = DefaultRouter()
+router.register(r'trading-accounts', views.TradingAccountViewSet, basename='trading-account')
 router.register(r'topstep', views.TopStepTradeViewSet, basename='topstep-trade')
 router.register(r'import-logs', views.TopStepImportLogViewSet, basename='import-log')
 router.register(r'trade-strategies', views.TradeStrategyViewSet, basename='trade-strategy')

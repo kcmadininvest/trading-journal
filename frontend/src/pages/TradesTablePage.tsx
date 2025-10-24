@@ -3,6 +3,9 @@ import { tradesService, PaginatedTradesResponse } from '../services/trades'
 import Card from '../components/common/Card'
 import ConfirmDialog from '../components/common/ConfirmDialog'
 import Pagination from '../components/common/Pagination'
+import TradingAccountSelector from '../components/TradingAccount/TradingAccountSelector'
+import { TradingAccount } from '../types'
+import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency'
 
 function TradesTablePage() {
   const [trades, setTrades] = useState<any[]>([])
@@ -28,6 +31,10 @@ function TradesTablePage() {
   
   // États pour les totaux globaux
   const [globalTotals, setGlobalTotals] = useState({ totalPnl: 0, totalFees: 0, totalNetPnl: 0 })
+  
+  // État pour le compte de trading sélectionné
+  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null)
+  const selectedCurrency = useSelectedAccountCurrency(selectedAccount)
 
   // Fonction pour charger les trades avec pagination
   const loadTrades = useCallback(async (page: number = currentPage, pageSize: number = itemsPerPage) => {
@@ -40,7 +47,7 @@ function TradesTablePage() {
         end_date: endDate || undefined
       }
       
-      const response: PaginatedTradesResponse = await tradesService.getTradesPaginated(page, pageSize, filters)
+      const response: PaginatedTradesResponse = await tradesService.getTradesPaginated(page, pageSize, selectedAccount?.id, filters)
       setTrades(response.results)
       setTotalItems(response.count)
       setTotalPages(Math.ceil(response.count / pageSize))
@@ -52,12 +59,12 @@ function TradesTablePage() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, itemsPerPage, filterType, filterContract, startDate, endDate])
+  }, [currentPage, itemsPerPage, filterType, filterContract, startDate, endDate, selectedAccount?.id])
 
-  // Fonction pour charger les totaux globaux (sans filtres)
+  // Fonction pour charger les totaux globaux (filtrés par compte)
   const loadGlobalTotals = useCallback(async () => {
     try {
-      const response = await tradesService.getTradesPaginated(1, 1000) // Récupérer tous les trades
+      const response = await tradesService.getTradesPaginated(1, 1000, selectedAccount?.id) // Récupérer les trades du compte sélectionné
       const allTrades = response.results
       
       const totalPnl = allTrades.reduce((sum, trade) => sum + (trade.pnl ? parseFloat(trade.pnl) : 0), 0)
@@ -68,7 +75,15 @@ function TradesTablePage() {
     } catch (error) {
       console.error('Erreur lors du chargement des totaux globaux:', error)
     }
-  }, [])
+  }, [selectedAccount?.id])
+
+  // Recharger les trades et totaux quand le compte change
+  useEffect(() => {
+    if (selectedAccount) {
+      loadTrades(1, itemsPerPage)
+      loadGlobalTotals()
+    }
+  }, [selectedAccount, loadTrades, loadGlobalTotals, itemsPerPage])
 
   useEffect(() => {
     loadTrades()
@@ -171,7 +186,7 @@ function TradesTablePage() {
   function formatCurrency(value: string | number | null) {
     if (!value) return '-'
     const num = typeof value === 'string' ? parseFloat(value) : value
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(num)
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: selectedCurrency }).format(num)
   }
   function formatDate(dateString: string | null) {
     if (!dateString) return '-'
@@ -235,7 +250,26 @@ function TradesTablePage() {
             </svg>
             <h2 className="text-lg md:text-xl font-semibold text-gray-900">Historique des trades ({totalItems})</h2>
           </div>
+        </div>
 
+        {/* Sélecteur de compte de trading */}
+        <div className="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium text-gray-700">Compte de trading :</span>
+            <TradingAccountSelector
+              selectedAccountId={selectedAccount?.id}
+              onAccountChange={setSelectedAccount}
+              className="flex items-center space-x-2"
+            />
+          </div>
+          {selectedAccount && (
+            <div className="text-sm text-gray-600">
+              {selectedAccount.trades_count} trade{selectedAccount.trades_count > 1 ? 's' : ''} dans ce compte
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between items-center mb-5 flex-wrap gap-4">
           <div className="flex gap-3 flex-wrap items-center">
             {/* Totaux globaux */}
             <div className="flex items-center gap-4 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-md">

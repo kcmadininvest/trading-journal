@@ -10,7 +10,11 @@ import WaterfallChart from '../components/charts/WaterfallChart'
 import WeekdayPerformanceChart from '../components/charts/WeekdayPerformanceChart'
 import TradesTablePage from './TradesTablePage'
 import StrategyProgressBar from '../components/Strategy/StrategyProgressBar'
-import api from '../services/api'
+import TradingAccountSelector from '../components/TradingAccount/TradingAccountSelector'
+import { TradingAccount } from '../types'
+import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency'
+import apiClient from '../lib/apiClient'
+import { authService } from '../services/auth'
 
 interface Trade {
   id: number
@@ -37,38 +41,21 @@ function TradesPage() {
   const [weekdayData, setWeekdayData] = useState<any[]>([])
   const [strategyData, setStrategyData] = useState<{ [date: string]: any }>({})
   const [loading, setLoading] = useState(true)
+  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null)
+  const selectedCurrency = useSelectedAccountCurrency(selectedAccount)
   // Import CSV via modal dans le menu
 
   // Filtres (table déplacée dans le menu)
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true)
-      const [tradesData, statsData, cascadeResponse, weekdayResponse] = await Promise.all([
-        tradesService.getTrades(),
-        tradesService.getStatistics(),
-        tradesService.getCapitalEvolution(),
-        tradesService.getWeekdayPerformance()
-      ])
-      setTrades(tradesData)
-      setStatistics(statsData)
-      setCascadeData(cascadeResponse)
-      setWeekdayData(weekdayResponse)
-      
-      // Charger les données de stratégie pour le calcul du pourcentage global
-      await loadStrategyData()
-    } catch (error) {
-      console.error('Erreur lors du chargement des données:', error)
-      toast.error('Impossible de charger les données')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   const loadStrategyData = useCallback(async () => {
+    // Vérifier l'authentification avant de faire des appels API
+    if (!authService.isAuthenticated()) {
+      return;
+    }
+    
     try {
       // Récupérer toutes les stratégies (pas seulement le mois en cours)
-      const response = await api.get('/trades/trade-strategies/')
+      const response = await apiClient.get('/trades/trade-strategies/')
       
       // Gérer la pagination - l'API peut retourner {results: [...]} ou directement [...]
       const strategies = response.data.results || response.data
@@ -91,6 +78,37 @@ function TradesPage() {
       console.error('Erreur lors du chargement des données de stratégie:', error)
     }
   }, [])
+
+  const loadData = useCallback(async () => {
+    // Vérifier l'authentification avant de faire des appels API
+    if (!authService.isAuthenticated()) {
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      setLoading(true)
+      const accountId = selectedAccount?.id
+      const [tradesData, statsData, cascadeResponse, weekdayResponse] = await Promise.all([
+        tradesService.getTrades(accountId),
+        tradesService.getStatistics(accountId),
+        tradesService.getCapitalEvolution(accountId),
+        tradesService.getWeekdayPerformance(accountId)
+      ])
+      setTrades(tradesData)
+      setStatistics(statsData)
+      setCascadeData(cascadeResponse)
+      setWeekdayData(weekdayResponse)
+      
+      // Charger les données de stratégie pour le calcul du pourcentage global
+      await loadStrategyData()
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error)
+      toast.error('Impossible de charger les données')
+    } finally {
+      setLoading(false)
+    }
+  }, [selectedAccount, loadStrategyData])
 
   useEffect(() => {
     loadData()
@@ -119,7 +137,7 @@ function TradesPage() {
     const num = typeof value === 'string' ? parseFloat(value) : value
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'USD'
+      currency: selectedCurrency
     }).format(num)
   }
 
@@ -276,6 +294,20 @@ function TradesPage() {
         </div>
       </div>
 
+      {/* Sélecteur de compte de trading */}
+      <div className="flex justify-between items-center mb-4">
+        <TradingAccountSelector
+          selectedAccountId={selectedAccount?.id}
+          onAccountChange={setSelectedAccount}
+          className="flex items-center space-x-2"
+        />
+        {selectedAccount && (
+          <div className="text-sm text-gray-600">
+            {selectedAccount.trades_count} trade{selectedAccount.trades_count > 1 ? 's' : ''} dans ce compte
+          </div>
+        )}
+      </div>
+
       {/* Zone d'import déplacée dans le menu (ImportCSVModal) */}
 
       {/* Layout réorganisé : graphiques en haut, tableau de bord et cartes en bas */}
@@ -285,7 +317,7 @@ function TradesPage() {
           {/* Graphique SOLDE DU COMPTE DANS LE TEMPS - Haut gauche (2/3 de la largeur) */}
           <div className="lg:col-span-2">
             {!loading && trades.length > 0 && (
-              <PerformanceChart data={chartData} />
+              <PerformanceChart data={chartData} currency={selectedCurrency} />
             )}
           </div>
           
@@ -302,14 +334,14 @@ function TradesPage() {
           {/* Graphique Évolution des Gains et Pertes Journalière */}
           <div>
             {!loading && cascadeData.length > 0 && (
-              <WaterfallChart data={cascadeData} />
+              <WaterfallChart data={cascadeData} currency={selectedCurrency} />
             )}
           </div>
           
           {/* Graphique Performance par Jour de la Semaine */}
           <div>
             {!loading && weekdayData.length > 0 && (
-              <WeekdayPerformanceChart data={weekdayData} />
+              <WeekdayPerformanceChart data={weekdayData} currency={selectedCurrency} />
             )}
           </div>
         </div>
@@ -319,7 +351,7 @@ function TradesPage() {
           {/* Tableau de bord TOPSTEP TRADER PERFORMANCE TRACKER - Bas gauche */}
           <div>
             {!loading && trades.length > 0 && (
-              <ModernTradingMetricsDashboard metrics={tradingMetrics} />
+              <ModernTradingMetricsDashboard metrics={tradingMetrics} currency={selectedCurrency} />
             )}
           </div>
 

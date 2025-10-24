@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { tradesService, TopStepTrade } from '../services/trades';
+import TradingAccountSelector from '../components/TradingAccount/TradingAccountSelector';
+import { TradingAccount } from '../types';
+import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency';
 import TradesStrategyModal from '../components/Strategy/TradesStrategyModal';
 import StrategyRespectChart from '../components/Strategy/StrategyRespectChart';
 import WinRateByStrategyChart from '../components/Strategy/WinRateByStrategyChart';
@@ -45,8 +48,14 @@ function StrategyPage() {
   const [showTradesModal, setShowTradesModal] = useState(false);
   const [dayTrades, setDayTrades] = useState<TopStepTrade[]>([]);
   const [strategyData, setStrategyData] = useState<{ [date: string]: any }>({});
+  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
+  const selectedCurrency = useSelectedAccountCurrency(selectedAccount);
   const [isUpdatingStrategy, setIsUpdatingStrategy] = useState(false);
   const [isStrategyDataLoading, setIsStrategyDataLoading] = useState(false);
+  const [hasInitialDataLoaded, setHasInitialDataLoaded] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
+  const [lastSelectedAccount, setLastSelectedAccount] = useState<number | undefined>(undefined);
   
   // État pour les données globales de stratégie
   const [globalStrategyData, setGlobalStrategyData] = useState<{ [date: string]: any }>({});
@@ -58,7 +67,7 @@ function StrategyPage() {
   // État pour l'année courante dans la vue globale
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  const fetchStrategyData = useCallback(async (year: number, month: number) => {
+  const fetchStrategyData = useCallback(async (year: number, month: number, accountId?: number) => {
     try {
       setIsStrategyDataLoading(true);
       // Réinitialiser les données de stratégie pour éviter l'état de chargement persistant
@@ -73,7 +82,7 @@ function StrategyPage() {
         const date = new Date(year, month - 1, day);
         const dateStr = date.toISOString().split('T')[0];
         strategyPromises.push(
-          tradesService.getTradeStrategiesByDate(dateStr)
+          tradesService.getTradeStrategiesByDate(dateStr, accountId)
             .then(strategies => ({ date: dateStr, strategies }))
             .catch(() => ({ date: dateStr, strategies: [] }))
         );
@@ -131,23 +140,28 @@ function StrategyPage() {
   const fetchCalendarData = useCallback(async (year: number, month: number) => {
     try {
       setLoading(true);
-      const data = await tradesService.getCalendarData(year, month);
+      const accountId = selectedAccount?.id;
+      const data = await tradesService.getCalendarData(year, month, accountId);
       setCalendarData(data);
       
       // Récupérer les données de stratégie pour le mois
-      await fetchStrategyData(year, month);
+      await fetchStrategyData(year, month, accountId);
     } catch (error) {
       // Erreur silencieuse lors du chargement des données du calendrier
       console.error('Erreur lors du chargement des données du calendrier:', error);
     } finally {
       setLoading(false);
     }
-  }, [fetchStrategyData]);
+  }, [fetchStrategyData, selectedAccount]);
 
   const fetchGlobalStrategyData = useCallback(async () => {
     try {
       setIsGlobalStrategyDataLoading(true);
-      const response = await api.get('/trades/trade-strategies/');
+      const params = new URLSearchParams();
+      if (selectedAccount?.id) {
+        params.append('trading_account', selectedAccount.id.toString());
+      }
+      const response = await api.get(`/trades/trade-strategies/?${params.toString()}`);
       
       // Gérer la pagination - l'API peut retourner {results: [...]} ou directement [...]
       const strategies = response.data.results || response.data;
@@ -171,13 +185,14 @@ function StrategyPage() {
     } finally {
       setIsGlobalStrategyDataLoading(false);
     }
-  }, []);
+  }, [selectedAccount]);
 
   // Fonction pour mettre à jour les données de stratégie de manière transparente
   const updateStrategyDataSilently = async (year: number, month: number) => {
     try {
       setIsUpdatingStrategy(true);
-      await fetchStrategyData(year, month);
+      const accountId = selectedAccount?.id;
+      await fetchStrategyData(year, month, accountId);
     } catch (error) {
       console.error('Erreur lors de la mise à jour des données de stratégie:', error);
     } finally {
@@ -185,12 +200,67 @@ function StrategyPage() {
     }
   };
 
+  // Charger toutes les données en une seule fois pour éviter les rechargements multiples
   useEffect(() => {
-    // Charger les données du calendrier au montage et lors du changement de mois
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth() + 1;
-    fetchCalendarData(year, month);
-  }, [currentDate, fetchCalendarData]);
+    // Éviter les rechargements multiples si déjà en cours
+    if (isLoadingInProgress) {
+      return;
+    }
+
+    // Éviter les rechargements si le compte n'a pas changé
+    const currentAccountId = selectedAccount?.id;
+    if (currentAccountId === lastSelectedAccount && hasInitialDataLoaded) {
+      return;
+    }
+
+    // Annuler le timeout précédent s'il existe
+    if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+    }
+
+    const loadAllData = async () => {
+      setIsLoadingInProgress(true);
+      setHasInitialDataLoaded(false);
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      const accountId = selectedAccount?.id;
+      
+      try {
+        // Charger toutes les données en parallèle
+        await Promise.all([
+          fetchCalendarData(year, month),
+          fetchGlobalStrategyData(),
+          fetchStrategyData(year, month, accountId)
+        ]);
+        
+        // Petit délai pour éviter les rechargements multiples
+        const timeoutId = setTimeout(() => {
+          setHasInitialDataLoaded(true);
+          setIsLoadingInProgress(false);
+          setLastSelectedAccount(currentAccountId); // Mémoriser le compte actuel
+          setLoadingTimeout(null);
+        }, 100);
+        
+        setLoadingTimeout(timeoutId);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+        setIsLoadingInProgress(false);
+      }
+    };
+    
+    // Délai pour éviter les changements rapides de selectedAccount
+    const debounceTimeout = setTimeout(() => {
+      loadAllData();
+    }, 100);
+
+    return () => {
+      clearTimeout(debounceTimeout);
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, selectedAccount?.id]);
 
   // Écouter les événements de mise à jour des trades pour recharger le calendrier
   useEffect(() => {
@@ -198,16 +268,20 @@ function StrategyPage() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
       fetchCalendarData(year, month);
+      fetchGlobalStrategyData(); // Mettre à jour les données globales de stratégie
     };
 
     window.addEventListener('trades:updated', handleTradesUpdated);
-    return () => window.removeEventListener('trades:updated', handleTradesUpdated);
-  }, [currentDate, fetchCalendarData]);
+    return () => {
+      window.removeEventListener('trades:updated', handleTradesUpdated);
+      // Nettoyer les timeouts au démontage
+      if (loadingTimeout) {
+        clearTimeout(loadingTimeout);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, loadingTimeout]); // Retiré fetchCalendarData des dépendances
 
-  // Charger les données globales au chargement de la page
-  useEffect(() => {
-    fetchGlobalStrategyData();
-  }, [fetchGlobalStrategyData]);
 
   const { dailyData, monthlyTotal } = useMemo(() => {
     if (!calendarData) {
@@ -275,7 +349,7 @@ function StrategyPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'USD',
+      currency: selectedAccount?.currency || 'USD',
       minimumFractionDigits: 2
     }).format(amount);
   };
@@ -365,7 +439,7 @@ function StrategyPage() {
       
       try {
         // Récupérer les trades pour cette date
-        const trades = await tradesService.getTrades({
+        const trades = await tradesService.getTrades(selectedAccount?.id, {
           trade_day: dateStr
         });
         
@@ -392,6 +466,9 @@ function StrategyPage() {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
       await updateStrategyDataSilently(year, month);
+      
+      // Déclencher l'événement pour notifier les autres composants
+      window.dispatchEvent(new CustomEvent('trades:updated'));
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des stratégies:', error);
     }
@@ -405,7 +482,7 @@ function StrategyPage() {
       // Recharger les trades pour cette date
       if (selectedDate) {
         const dateStr = selectedDate.toISOString().split('T')[0];
-        const trades = await tradesService.getTrades({
+        const trades = await tradesService.getTrades(selectedAccount?.id, {
           trade_day: dateStr
         });
         setDayTrades(Array.isArray(trades) ? trades : []);
@@ -451,7 +528,7 @@ function StrategyPage() {
   }
 
   return (
-    <div className="p-6 bg-gray-50">
+    <div className="pt-1 px-6 pb-6 bg-gray-50">
       <div className="max-w-full mx-auto">
         {/* En-tête */}
         <div className="flex justify-between items-start mb-6">
@@ -469,6 +546,20 @@ function StrategyPage() {
               isLoading={isGlobalStrategyDataLoading}
             />
           </div>
+        </div>
+
+        {/* Sélecteur de compte de trading */}
+        <div className="flex justify-between items-center mb-6">
+          <TradingAccountSelector
+            selectedAccountId={selectedAccount?.id}
+            onAccountChange={setSelectedAccount}
+            className="flex items-center space-x-2"
+          />
+          {selectedAccount && (
+            <div className="text-sm text-gray-600">
+              Stratégies pour le compte "{selectedAccount.name}"
+            </div>
+          )}
         </div>
 
         {/* Onglets de navigation */}
@@ -576,9 +667,9 @@ function StrategyPage() {
             <div className="flex-1">
               <WinRateByStrategyChart strategyData={strategyData} isLoading={isStrategyDataLoading} />
             </div>
-          </div>
-          
-          {/* Calendrier */}
+        </div>
+
+        {/* Calendrier */}
           <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             {/* En-têtes */}
             <div className="grid grid-cols-7 border-b border-gray-200">
@@ -766,37 +857,41 @@ function StrategyPage() {
               <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
                 {/* Graphique de respect de la stratégie */}
                 <div className="flex-1">
-                  <YearlyStrategyRespectChart year={currentYear} isLoading={isStrategyDataLoading} />
+                  {hasInitialDataLoaded && <YearlyStrategyRespectChart year={currentYear} selectedAccount={selectedAccount} isLoading={isStrategyDataLoading} />}
                 </div>
                 
                 {/* Graphique de win rate par stratégie */}
                 <div className="flex-1">
-                  <YearlyWinRateByStrategyChart year={currentYear} isLoading={isStrategyDataLoading} />
+                  {hasInitialDataLoaded && <YearlyWinRateByStrategyChart year={currentYear} selectedAccount={selectedAccount} isLoading={isStrategyDataLoading} />}
                 </div>
               </div>
               
               {/* Calendrier Annuel */}
               <div className="flex-1">
-                <YearlyCalendar 
-                  year={currentYear} 
-                  onMonthClick={(month, year) => {
-                    // Optionnel : naviguer vers le calendrier mensuel
-                    setActiveTab('calendar');
-                    setCurrentDate(new Date(year, month - 1, 1));
-                  }}
-                />
+                {hasInitialDataLoaded && selectedAccount && (
+                  <YearlyCalendar 
+                    key={`calendar-${selectedAccount.id}-${currentYear}`}
+                    year={currentYear} 
+                    selectedAccount={selectedAccount}
+                    currency={selectedCurrency}
+                    onMonthClick={(month, year) => {
+                      setActiveTab('calendar');
+                      setCurrentDate(new Date(year, month - 1, 1));
+                    }}
+                  />
+                )}
               </div>
               
               {/* Graphiques de droite */}
               <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
                 {/* Graphique de sessions gagnantes */}
                 <div className="flex-1">
-                  <YearlySessionWinRateChart year={currentYear} isLoading={isStrategyDataLoading} />
+                  {hasInitialDataLoaded && <YearlySessionWinRateChart year={currentYear} selectedAccount={selectedAccount} isLoading={isStrategyDataLoading} />}
                 </div>
                 
                 {/* Graphique d'émotions dominantes */}
                 <div className="flex-1">
-                  <YearlyEmotionsChart year={currentYear} isLoading={isStrategyDataLoading} />
+                  {hasInitialDataLoaded && <YearlyEmotionsChart year={currentYear} selectedAccount={selectedAccount} isLoading={isStrategyDataLoading} />}
                 </div>
               </div>
             </div>

@@ -29,9 +29,10 @@ interface WaterfallDataPoint {
 
 interface WaterfallChartProps {
   data: WaterfallDataPoint[]
+  currency?: string
 }
 
-function WaterfallChart({ data }: WaterfallChartProps) {
+function WaterfallChart({ data, currency = 'USD' }: WaterfallChartProps) {
   const hasData = Array.isArray(data) && data.length > 0
 
   // Préparer les données pour le graphique waterfall avec barres flottantes
@@ -98,9 +99,9 @@ function WaterfallChart({ data }: WaterfallChartProps) {
             const start = waterfallData.start
             
             return [
-              `PnL du jour: ${formatCurrency(pnl)}`,
-              `Capital cumulé: ${formatCurrency(cumulative)}`,
-              `Variation: ${formatCurrency(cumulative - start)}`
+              `PnL du jour: ${formatCurrency(pnl, currency)}`,
+              `Capital cumulé: ${formatCurrency(cumulative, currency)}`,
+              `Variation: ${formatCurrency(cumulative - start, currency)}`
             ]
           }
         }
@@ -130,7 +131,7 @@ function WaterfallChart({ data }: WaterfallChartProps) {
         },
         ticks: {
           callback: function(value: any) {
-            return formatCurrency(value)
+            return formatCurrency(value, currency)
           },
           font: {
             size: 11
@@ -151,7 +152,7 @@ function WaterfallChart({ data }: WaterfallChartProps) {
     // Configuration pour les barres flottantes
     barPercentage: 0.7,
     categoryPercentage: 0.8
-  }), [])
+  }), [currency])
 
   // Calculer les statistiques
   const stats = useMemo(() => {
@@ -194,16 +195,16 @@ function WaterfallChart({ data }: WaterfallChartProps) {
                     <div className="flex items-center gap-1">
                       <span>Capital total :</span>
                       <span className={`font-medium ${stats.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(stats.totalPnl)}
+                        {formatCurrency(stats.totalPnl, currency)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span>Meilleur jour :</span>
-                      <span className="font-medium text-green-600">{formatCurrency(stats.bestDay)}</span>
+                      <span className="font-medium text-green-600">{formatCurrency(stats.bestDay, currency)}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span>Pire jour :</span>
-                      <span className="font-medium text-red-600">{formatCurrency(stats.worstDay)}</span>
+                      <span className="font-medium text-red-600">{formatCurrency(stats.worstDay, currency)}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span>Jours gagnants :</span>

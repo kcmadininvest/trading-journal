@@ -11,6 +11,7 @@ interface WinRateByStrategyChartProps {
 }
 
 const WinRateByStrategyChart: React.FC<WinRateByStrategyChartProps> = ({ strategyData, isLoading = false }) => {
+  
   // Calculer les données de win rate par respect de stratégie
   const chartData = React.useMemo(() => {
     let respectedTrades = 0;

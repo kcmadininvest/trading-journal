@@ -21,8 +21,9 @@ class TopStepCSVImporter:
         'TradeDuration', 'Commissions'
     ]
     
-    def __init__(self, user):
+    def __init__(self, user, trading_account=None):
         self.user = user
+        self.trading_account = trading_account
         self.errors = []
         self.success_count = 0
         self.error_count = 0
@@ -51,7 +52,7 @@ class TopStepCSVImporter:
                 # Vérifier les colonnes
                 is_valid, missing_columns = self._validate_columns(reader.fieldnames)
                 if not is_valid:
-                    missing_cols_str = ', '.join(missing_columns)
+                    missing_cols_str = ', '.join(missing_columns)  # type: ignore  # type: ignore
                     return {
                         'success': False,
                         'error': f'Format de fichier invalide. Colonnes manquantes : {missing_cols_str}',
@@ -62,7 +63,7 @@ class TopStepCSVImporter:
                     }
                 
                 # Traiter chaque ligne
-                with transaction.atomic():
+                with transaction.atomic():  # type: ignore  # type: ignore
                     for row_num, row in enumerate(reader, start=2):  # Start at 2 (header is 1)
                         total_rows += 1
                         try:
@@ -85,7 +86,7 @@ class TopStepCSVImporter:
                                 })
                     
                     # Créer le log d'import
-                    TopStepImportLog.objects.create(
+                    TopStepImportLog.objects.create(  # type: ignore  # type: ignore
                         user=self.user,
                         filename=filename,
                         total_rows=total_rows,
@@ -132,7 +133,7 @@ class TopStepCSVImporter:
             # Vérifier les colonnes
             is_valid, missing_columns = self._validate_columns(reader.fieldnames)
             if not is_valid:
-                missing_cols_str = ', '.join(missing_columns)
+                missing_cols_str = ', '.join(missing_columns)  # type: ignore
                 return {
                     'success': False,
                     'error': f'Format de fichier invalide. Colonnes manquantes : {missing_cols_str}',
@@ -143,7 +144,7 @@ class TopStepCSVImporter:
                 }
             
             # Traiter chaque ligne
-            with transaction.atomic():
+            with transaction.atomic():  # type: ignore
                 for row_num, row in enumerate(reader, start=2):
                     total_rows += 1
                     try:
@@ -166,7 +167,7 @@ class TopStepCSVImporter:
                             })
                 
                 # Créer le log d'import
-                TopStepImportLog.objects.create(
+                TopStepImportLog.objects.create(  # type: ignore
                     user=self.user,
                     filename=filename,
                     total_rows=total_rows,
@@ -222,7 +223,7 @@ class TopStepCSVImporter:
         topstep_id = row['Id'].strip()
         
         # Vérifier si ce trade existe déjà (par topstep_id unique)
-        if TopStepTrade.objects.filter(topstep_id=topstep_id).exists():
+        if TopStepTrade.objects.filter(topstep_id=topstep_id).exists():  # type: ignore
             return None  # Ignorer silencieusement le doublon
         
         # Parser les dates (format US -> format Python)
@@ -256,9 +257,20 @@ class TopStepCSVImporter:
         if trade_type not in ['Long', 'Short']:
             raise ValueError(f"Type de trade invalide: {trade_type} (ligne {row_num})")
         
+        # Obtenir le compte de trading (utiliser le compte par défaut si non spécifié)
+        if not self.trading_account:
+            from .models import TradingAccount
+            self.trading_account = TradingAccount.objects.filter(  # type: ignore
+                user=self.user, 
+                is_default=True
+            ).first()
+            if not self.trading_account:
+                raise ValueError("Aucun compte de trading par défaut trouvé pour cet utilisateur")
+        
         # Créer le trade
-        trade = TopStepTrade.objects.create(
+        trade = TopStepTrade.objects.create(  # type: ignore
             user=self.user,
+            trading_account=self.trading_account,
             topstep_id=topstep_id,
             contract_name=row['ContractName'].strip(),
             entered_at=entered_at,

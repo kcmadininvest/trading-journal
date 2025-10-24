@@ -1,5 +1,21 @@
 import { tradesService } from './trades'
 
+// Fonction utilitaire pour formater les montants selon la devise
+const formatCurrency = (amount: number, currency: string = 'USD'): string => {
+  const symbols: { [key: string]: string } = {
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'CAD': 'C$',
+    'AUD': 'A$',
+    'CHF': 'CHF',
+    'JPY': '¥'
+  }
+  
+  const symbol = symbols[currency] || '$'
+  return `${symbol}${amount.toFixed(0)}`
+}
+
 export interface AdaptiveGoals {
   winRate: {
     current: number
@@ -89,7 +105,7 @@ class AdaptiveGoalsService {
   /**
    * Calcule les objectifs adaptatifs basés sur les performances historiques
    */
-  async calculateAdaptiveGoals(): Promise<AdaptiveGoals> {
+  async calculateAdaptiveGoals(currency: string = 'USD'): Promise<AdaptiveGoals> {
     const performance = await this.calculateHistoricalPerformance()
     
     // Win Rate adaptatif
@@ -115,13 +131,13 @@ class AdaptiveGoalsService {
         current: performance.avgWinningTrade,
         target: avgWinTarget,
         improvement: avgWinImprovement,
-        goal: this.generateAvgWinGoal(performance, avgWinTarget)
+        goal: this.generateAvgWinGoal(performance, avgWinTarget, currency)
       },
       avgLosingTrade: {
         current: performance.avgLosingTrade,
         target: avgLossTarget,
         improvement: avgLossImprovement,
-        goal: this.generateAvgLossGoal(performance, avgLossTarget)
+        goal: this.generateAvgLossGoal(performance, avgLossTarget, currency)
       }
     }
   }
@@ -199,32 +215,32 @@ class AdaptiveGoalsService {
   /**
    * Génère le texte d'objectif pour la moyenne des trades gagnants
    */
-  private generateAvgWinGoal(performance: HistoricalPerformance, target: number): string {
+  private generateAvgWinGoal(performance: HistoricalPerformance, target: number, currency: string = 'USD'): string {
     const improvement = target - performance.avgWinningTrade
     const best = performance.bestAvgWin
     
     if (target >= best) {
-      return `Atteindre $${target.toFixed(0)} (nouveau record personnel)`
+      return `Atteindre ${formatCurrency(target, currency)} (nouveau record personnel)`
     } else if (improvement > 0) {
-      return `Augmenter de $${performance.avgWinningTrade.toFixed(0)} à $${target.toFixed(0)} (+$${improvement.toFixed(0)})`
+      return `Augmenter de ${formatCurrency(performance.avgWinningTrade, currency)} à ${formatCurrency(target, currency)} (+${formatCurrency(improvement, currency)})`
     } else {
-      return `Maintenir $${performance.avgWinningTrade.toFixed(0)} (performance excellente)`
+      return `Maintenir ${formatCurrency(performance.avgWinningTrade, currency)} (performance excellente)`
     }
   }
 
   /**
    * Génère le texte d'objectif pour la moyenne des trades perdants
    */
-  private generateAvgLossGoal(performance: HistoricalPerformance, target: number): string {
+  private generateAvgLossGoal(performance: HistoricalPerformance, target: number, currency: string = 'USD'): string {
     const improvement = performance.avgLosingTrade - target // Positif car on améliore
     const best = performance.bestAvgLoss
     
     if (target >= best) {
-      return `Réduire à $${target.toFixed(0)} (nouveau record personnel)`
+      return `Réduire à ${formatCurrency(target, currency)} (nouveau record personnel)`
     } else if (improvement > 0) {
-      return `Réduire de $${performance.avgLosingTrade.toFixed(0)} à $${target.toFixed(0)} (amélioration de $${improvement.toFixed(0)})`
+      return `Réduire de ${formatCurrency(performance.avgLosingTrade, currency)} à ${formatCurrency(target, currency)} (amélioration de ${formatCurrency(improvement, currency)})`
     } else {
-      return `Maintenir $${performance.avgLosingTrade.toFixed(0)} (performance excellente)`
+      return `Maintenir ${formatCurrency(performance.avgLosingTrade, currency)} (performance excellente)`
     }
   }
 

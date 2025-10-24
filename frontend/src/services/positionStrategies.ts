@@ -1,4 +1,4 @@
-import apiClient from './api';
+import apiClient from '../lib/apiClient';
 
 export interface PositionStrategy {
   id: number;

@@ -31,9 +31,10 @@ interface PerformanceChartProps {
     pnl: number
     cumulative: number
   }>
+  currency?: string
 }
 
-function PerformanceChart({ data }: PerformanceChartProps) {
+function PerformanceChart({ data, currency = 'USD' }: PerformanceChartProps) {
   const hasData = Array.isArray(data) && data.length > 0
 
   // Get default date range from data
@@ -211,7 +212,7 @@ function PerformanceChart({ data }: PerformanceChartProps) {
         display: false
       }
     }
-  })
+  }, currency)
 
   return (
     <ChartCard
@@ -233,17 +234,17 @@ function PerformanceChart({ data }: PerformanceChartProps) {
                 {performanceStats.isPositive ? 'Gain' : 'Perte'} total :
               </span>
               <span className={`text-lg font-bold ${colors.text}`}>
-                {formatCurrency(performanceStats.totalReturn)}
+                {formatCurrency(performanceStats.totalReturn, currency)}
           </span>
             </div>
             <div className="flex items-center gap-4 justify-end text-xs text-gray-500">
               <div className="flex items-center gap-1">
                 <span>Plus haut :</span>
-                <span className="font-medium text-gray-700">{formatCurrency(performanceStats.highestValue || 0)}</span>
+                <span className="font-medium text-gray-700">{formatCurrency(performanceStats.highestValue || 0, currency)}</span>
               </div>
               <div className="flex items-center gap-1">
                 <span>Plus bas :</span>
-                <span className="font-medium text-gray-700">{formatCurrency(performanceStats.lowestValue || 0)}</span>
+                <span className="font-medium text-gray-700">{formatCurrency(performanceStats.lowestValue || 0, currency)}</span>
               </div>
             </div>
           </div>

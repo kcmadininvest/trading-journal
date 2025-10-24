@@ -11,10 +11,14 @@ interface MonthlyData {
 
 interface YearlyCalendarProps {
   year: number;
+  selectedAccount?: { id: number } | null;
   onMonthClick?: (month: number, year: number) => void;
+  isLoading?: boolean;
+  currency?: string;
 }
 
-const YearlyCalendar: React.FC<YearlyCalendarProps> = ({ year, onMonthClick }) => {
+const YearlyCalendar: React.FC<YearlyCalendarProps> = ({ year, selectedAccount, onMonthClick, isLoading = false, currency = 'USD' }) => {
+
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,16 +29,22 @@ const YearlyCalendar: React.FC<YearlyCalendarProps> = ({ year, onMonthClick }) =
   ];
 
   useEffect(() => {
+    // Éviter les rechargements si les données sont déjà chargées
+    if (monthlyData.length > 0 && !loading) {
+      return;
+    }
+
     const fetchYearlyData = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Récupérer les données pour chaque mois de l'année
+        const accountId = selectedAccount?.id;
+        
         const monthlyPromises = [];
         for (let month = 1; month <= 12; month++) {
           monthlyPromises.push(
-            tradesService.getCalendarData(year, month)
+            tradesService.getCalendarData(year, month, accountId)
               .then(data => ({
                 month,
                 year,
@@ -60,8 +70,15 @@ const YearlyCalendar: React.FC<YearlyCalendarProps> = ({ year, onMonthClick }) =
       }
     };
 
-    fetchYearlyData();
-  }, [year]);
+    // Délai pour éviter les rechargements multiples
+    const timeoutId = setTimeout(() => {
+      fetchYearlyData();
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [year, selectedAccount?.id, loading, monthlyData.length]);
 
   // Calculer les statistiques de l'année
   const yearlyStats = useMemo(() => {
@@ -138,7 +155,7 @@ const YearlyCalendar: React.FC<YearlyCalendarProps> = ({ year, onMonthClick }) =
           <div className="flex items-center space-x-6 text-base">
             <div className="text-center">
               <div className={`text-xl font-bold ${yearlyStats.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(yearlyStats.totalPnl)}
+                {formatCurrency(yearlyStats.totalPnl, currency)}
               </div>
               <div className="text-gray-600 text-sm">P/L Total</div>
             </div>
@@ -198,7 +215,7 @@ const YearlyCalendar: React.FC<YearlyCalendarProps> = ({ year, onMonthClick }) =
                 
                 {/* P/L du mois */}
                 <div className={`text-base font-bold mb-2 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(pnl)}
+                  {formatCurrency(pnl, currency)}
                 </div>
                 
                 {/* Nombre de trades */}
@@ -216,19 +233,19 @@ const YearlyCalendar: React.FC<YearlyCalendarProps> = ({ year, onMonthClick }) =
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-sm">
           <div>
             <div className={`font-medium ${yearlyStats.bestMonth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(yearlyStats.bestMonth)}
+              {formatCurrency(yearlyStats.bestMonth, currency)}
             </div>
             <div className="text-gray-600">Meilleur mois</div>
           </div>
           <div>
             <div className={`font-medium ${yearlyStats.worstMonth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(yearlyStats.worstMonth)}
+              {formatCurrency(yearlyStats.worstMonth, currency)}
             </div>
             <div className="text-gray-600">Pire mois</div>
           </div>
           <div>
             <div className={`font-medium ${yearlyStats.avgMonthlyPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(yearlyStats.avgMonthlyPnl)}
+              {formatCurrency(yearlyStats.avgMonthlyPnl, currency)}
             </div>
             <div className="text-gray-600">P/L moyen/mois</div>
           </div>

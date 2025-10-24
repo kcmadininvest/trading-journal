@@ -1,5 +1,5 @@
 import { authService } from './auth';
-import api from './api';
+import apiClient from '../lib/apiClient';
 
 export interface SystemStats {
   active_users_today: number;
@@ -19,7 +19,7 @@ class SystemService {
     }
 
     try {
-      const response = await api.get(`/accounts${endpoint}`);
+      const response = await apiClient.get(`/accounts${endpoint}`);
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 403) {
@@ -38,7 +38,7 @@ class SystemService {
 
   async createBackup(): Promise<{ message: string; backup_id: string }> {
     try {
-      const response = await api.post('/accounts/admin/system/backup/');
+      const response = await apiClient.post('/accounts/admin/system/backup/');
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 403) {
@@ -53,7 +53,7 @@ class SystemService {
 
   async cleanLogs(): Promise<{ message: string; logs_cleaned: number }> {
     try {
-      const response = await api.post('/accounts/admin/system/clean-logs/');
+      const response = await apiClient.post('/accounts/admin/system/clean-logs/');
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 403) {
@@ -68,7 +68,7 @@ class SystemService {
 
   async checkIntegrity(): Promise<{ message: string; issues_found: number }> {
     try {
-      const response = await api.post('/accounts/admin/system/check-integrity/');
+      const response = await apiClient.post('/accounts/admin/system/check-integrity/');
       return response.data;
     } catch (error: any) {
       if (error.response?.status === 403) {

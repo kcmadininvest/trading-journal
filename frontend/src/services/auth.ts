@@ -1,4 +1,4 @@
-import axios from './api';
+import apiClient from '../lib/apiClient';
 
 export interface User {
   id: number;
@@ -93,7 +93,7 @@ class AuthService {
 
   async login(credentials: LoginData): Promise<LoginResponse> {
     try {
-      const response = await axios.post('/accounts/auth/login/', credentials);
+      const response = await apiClient.post('/accounts/auth/login/', credentials);
       const { access, refresh, user, session_info } = response.data;
       
       this.saveTokensToStorage(access, refresh, user);
@@ -138,7 +138,7 @@ class AuthService {
 
   async register(userData: RegisterData): Promise<LoginResponse> {
     try {
-      const response = await axios.post('/accounts/auth/register/', userData);
+      const response = await apiClient.post('/accounts/auth/register/', userData);
       const { access, refresh, user } = response.data;
       
       this.saveTokensToStorage(access, refresh, user);
@@ -151,7 +151,7 @@ class AuthService {
   async logout(): Promise<void> {
     try {
       if (this.refreshToken) {
-        await axios.post('/accounts/auth/logout/', {
+        await apiClient.post('/accounts/auth/logout/', {
           refresh: this.refreshToken
         });
       }
@@ -168,7 +168,7 @@ class AuthService {
     }
 
     try {
-      const response = await axios.post('/accounts/auth/refresh/', {
+      const response = await apiClient.post('/accounts/auth/refresh/', {
         refresh: this.refreshToken
       });
       
@@ -186,7 +186,7 @@ class AuthService {
 
   async changePassword(passwordData: PasswordChangeData): Promise<void> {
     try {
-      await axios.post('/accounts/auth/password/change/', passwordData);
+      await apiClient.post('/accounts/auth/password/change/', passwordData);
     } catch (error: any) {
       throw new Error(error.response?.data?.detail || 'Erreur lors du changement de mot de passe');
     }
@@ -194,7 +194,7 @@ class AuthService {
 
   async requestPasswordReset(email: string): Promise<void> {
     try {
-      await axios.post('/accounts/auth/password/reset/', { email });
+      await apiClient.post('/accounts/auth/password/reset/', { email });
     } catch (error: any) {
       throw new Error(error.response?.data?.detail || 'Erreur lors de la demande de réinitialisation');
     }
@@ -202,7 +202,7 @@ class AuthService {
 
   async getUserProfile(): Promise<User> {
     try {
-      const response = await axios.get('/accounts/profile/');
+      const response = await apiClient.get('/accounts/profile/');
       const user = response.data;
       this.user = user;
       localStorage.setItem('user', JSON.stringify(user));
@@ -214,7 +214,7 @@ class AuthService {
 
   async updateUserProfile(userData: Partial<User>): Promise<User> {
     try {
-      const response = await axios.patch('/accounts/profile/', userData);
+      const response = await apiClient.patch('/accounts/profile/', userData);
       const user = response.data;
       this.user = user;
       localStorage.setItem('user', JSON.stringify(user));
@@ -233,7 +233,7 @@ class AuthService {
     is_active?: boolean;
   }): Promise<User> {
     try {
-      const response = await axios.put('/accounts/profile/', profileData);
+      const response = await apiClient.put('/accounts/profile/', profileData);
       const { user } = response.data;
       this.user = user;
       localStorage.setItem('user', JSON.stringify(user));
@@ -245,7 +245,7 @@ class AuthService {
 
   async deleteAccount(): Promise<void> {
     try {
-      await axios.delete('/accounts/profile/');
+      await apiClient.delete('/accounts/profile/');
       // Nettoyer les données locales
       this.user = null;
       localStorage.removeItem('user');

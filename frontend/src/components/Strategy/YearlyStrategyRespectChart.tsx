@@ -8,10 +8,12 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 interface YearlyStrategyRespectChartProps {
   year: number;
+  selectedAccount?: { id: number } | null;
   isLoading?: boolean;
 }
 
-const YearlyStrategyRespectChart: React.FC<YearlyStrategyRespectChartProps> = ({ year, isLoading = false }) => {
+const YearlyStrategyRespectChart: React.FC<YearlyStrategyRespectChartProps> = ({ year, selectedAccount, isLoading = false }) => {
+
   const [strategyData, setStrategyData] = useState<{ [month: string]: any }>({});
   const [loading, setLoading] = useState(true);
 
@@ -27,8 +29,9 @@ const YearlyStrategyRespectChart: React.FC<YearlyStrategyRespectChartProps> = ({
         setStrategyData({});
         
         // Récupérer les données une seule fois
+        const accountId = selectedAccount?.id;
         const [trades, strategies] = await Promise.all([
-          tradesService.getTrades(),
+          tradesService.getTrades(accountId),
           tradesService.getTradeStrategies()
         ]);
         
@@ -85,7 +88,7 @@ const YearlyStrategyRespectChart: React.FC<YearlyStrategyRespectChartProps> = ({
     };
 
     fetchYearlyStrategyData();
-  }, [year]);
+  }, [year, selectedAccount?.id]);
 
   // Calculer les données globales de l'année (même format que StrategyRespectChart)
   const chartData = React.useMemo(() => {

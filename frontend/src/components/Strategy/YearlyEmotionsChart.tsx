@@ -8,10 +8,12 @@ ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 interface YearlyEmotionsChartProps {
   year: number;
+  selectedAccount?: { id: number } | null;
   isLoading?: boolean;
 }
 
-const YearlyEmotionsChart: React.FC<YearlyEmotionsChartProps> = ({ year, isLoading = false }) => {
+const YearlyEmotionsChart: React.FC<YearlyEmotionsChartProps> = ({ year, selectedAccount, isLoading = false }) => {
+
   const [emotionsData, setEmotionsData] = useState<{ [emotion: string]: number }>({});
   const [loading, setLoading] = useState(true);
 
@@ -22,8 +24,9 @@ const YearlyEmotionsChart: React.FC<YearlyEmotionsChartProps> = ({ year, isLoadi
         setEmotionsData({});
         
         // Récupérer les données une seule fois
+        const accountId = selectedAccount?.id;
         const [trades, strategies] = await Promise.all([
-          tradesService.getTrades(),
+          tradesService.getTrades(accountId),
           tradesService.getTradeStrategies()
         ]);
         
@@ -107,7 +110,7 @@ const YearlyEmotionsChart: React.FC<YearlyEmotionsChartProps> = ({ year, isLoadi
     };
 
     fetchYearlyEmotionsData();
-  }, [year]);
+  }, [year, selectedAccount?.id]);
 
   // Calculer les données d'émotions dominantes (même format que EmotionsChart)
   const chartData = React.useMemo(() => {

@@ -32,9 +32,10 @@ interface WeekdayPerformanceData {
 
 interface WeekdayPerformanceChartProps {
   data: WeekdayPerformanceData[]
+  currency?: string
 }
 
-function WeekdayPerformanceChart({ data }: WeekdayPerformanceChartProps) {
+function WeekdayPerformanceChart({ data, currency = 'USD' }: WeekdayPerformanceChartProps) {
   const hasData = Array.isArray(data) && data.length > 0
 
   // Filtrer les données pour exclure samedi et dimanche
@@ -90,7 +91,7 @@ function WeekdayPerformanceChart({ data }: WeekdayPerformanceChartProps) {
             const dayData = filteredData[index]
             
             return [
-              `PnL Total: ${formatCurrency(value)}`,
+              `PnL Total: ${formatCurrency(value, currency)}`,
               `Nombre de trades: ${dayData.trade_count}`,
               `Taux de réussite: ${dayData.win_rate.toFixed(1)}%`
             ]
@@ -111,7 +112,7 @@ function WeekdayPerformanceChart({ data }: WeekdayPerformanceChartProps) {
         },
         formatter: function(value: any, context: any) {
           const actualValue = context.parsed?.y || value
-          return formatCurrency(actualValue)
+          return formatCurrency(actualValue, currency)
         }
       }
     },
@@ -131,7 +132,7 @@ function WeekdayPerformanceChart({ data }: WeekdayPerformanceChartProps) {
         },
         ticks: {
           callback: function(value: any) {
-            return formatCurrency(value)
+            return formatCurrency(value, currency)
           }
         }
       }
@@ -140,7 +141,7 @@ function WeekdayPerformanceChart({ data }: WeekdayPerformanceChartProps) {
       duration: 1000,
       easing: 'easeInOutQuart' as const
     }
-  }), [filteredData])
+  }), [filteredData, currency])
 
   // Calculer les statistiques
   const stats = useMemo(() => {
