@@ -11,6 +11,7 @@ import SessionWarningModal from './components/auth/SessionWarningModal';
 import { LazyTradesPage, LazyStrategyPage, LazyStatisticsPage, LazyAnalyticsPage, LazyTradingAccountsPage, LazySettingsPage, LazyArchivesPage, LazyPositionStrategiesPage, LazyHomePage } from './components/LazyPages';
 import { authService, User } from './services/auth';
 import sessionManager, { SessionWarning } from './services/sessionManager';
+import cacheManager from './services/cacheManager';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('trades');
@@ -26,6 +27,9 @@ function App() {
         if (authService.isAuthenticated()) {
           const user = authService.getCurrentUser();
           setCurrentUser(user);
+          
+          // Initialiser le cache manager avec l'utilisateur actuel
+          cacheManager.setCurrentUser(user?.id?.toString() || null);
           
           // Initialiser le gestionnaire de session si l'utilisateur est connecté
           sessionManager.initialize(
@@ -78,9 +82,37 @@ function App() {
     // Initialiser la page selon le hash actuel
     handleHashChange();
 
+    // Gérer les événements de changement d'utilisateur
+    const handleUserLogin = (event: any) => {
+      console.log('🎉 [APP] Événement user:login reçu');
+      const user = event.detail?.user;
+      if (user) {
+        console.log('👤 [APP] Connexion de l\'utilisateur:', user.email, 'ID:', user.id);
+        setCurrentUser(user);
+        cacheManager.setCurrentUser(user.id?.toString() || null);
+        console.log('✅ [APP] Utilisateur connecté et cache mis à jour');
+      } else {
+        console.log('⚠️ [APP] Événement user:login sans utilisateur');
+      }
+    };
+
+    const handleUserLogout = () => {
+      console.log('👋 [APP] Événement user:logout reçu');
+      setCurrentUser(null);
+      cacheManager.setCurrentUser(null);
+      cacheManager.clearAllCaches();
+      console.log('✅ [APP] Utilisateur déconnecté et cache nettoyé');
+    };
+
+    // Écouter les événements de changement d'utilisateur
+    window.addEventListener('user:login', handleUserLogin);
+    window.addEventListener('user:logout', handleUserLogout);
+
     // Nettoyage lors du démontage du composant
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('user:login', handleUserLogin);
+      window.removeEventListener('user:logout', handleUserLogout);
       sessionManager.stop();
     };
   }, []);

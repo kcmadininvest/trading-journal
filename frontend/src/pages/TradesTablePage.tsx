@@ -174,7 +174,7 @@ function TradesTablePage() {
     const loadAllContracts = async () => {
       try {
         const allTrades = await tradesService.getTrades()
-        const contracts = Array.from(new Set(allTrades.map((t: any) => t.contract_name)))
+        const contracts = Array.from(new Set(allTrades.map((t: any) => t.contract_name))) as string[]
         setAllContracts(contracts)
       } catch (error) {
         console.error('Erreur lors du chargement des contrats:', error)

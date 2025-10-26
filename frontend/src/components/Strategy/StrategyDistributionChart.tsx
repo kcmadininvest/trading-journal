@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { tradesService } from '../../services/trades';
+import { tradesService, TopStepTrade } from '../../services/trades';
 import { formatCurrency } from '../../config/chartConfig';
 
 
@@ -52,7 +52,7 @@ const StrategyDistributionChart: React.FC<StrategyDistributionChartProps> = ({
           max_loss: number;
         }>();
 
-        trades.forEach(trade => {
+        trades.forEach((trade: TopStepTrade) => {
           // Filtrer par mois si spécifié
           if (year && month) {
             const tradeDate = new Date(trade.entered_at);

@@ -1,4 +1,4 @@
-import { tradesService } from './trades'
+import { tradesService, TopStepTrade } from './trades'
 
 // Fonction utilitaire pour formater les montants selon la devise
 const formatCurrency = (amount: number, currency: string = 'USD'): string => {
@@ -63,15 +63,15 @@ class AdaptiveGoalsService {
 
       // Calculer les métriques globales
       const totalTrades = trades.length
-      const winningTrades = trades.filter(trade => parseFloat(trade.net_pnl.toString()) > 0)
-      const losingTrades = trades.filter(trade => parseFloat(trade.net_pnl.toString()) < 0)
+      const winningTrades = trades.filter((trade: TopStepTrade) => parseFloat(trade.net_pnl.toString()) > 0)
+      const losingTrades = trades.filter((trade: TopStepTrade) => parseFloat(trade.net_pnl.toString()) < 0)
       
       const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0
       const avgWinningTrade = winningTrades.length > 0 
-        ? winningTrades.reduce((sum, trade) => sum + parseFloat(trade.net_pnl.toString()), 0) / winningTrades.length
+        ? winningTrades.reduce((sum: number, trade: TopStepTrade) => sum + parseFloat(trade.net_pnl.toString()), 0) / winningTrades.length
         : 0
       const avgLosingTrade = losingTrades.length > 0
-        ? losingTrades.reduce((sum, trade) => sum + parseFloat(trade.net_pnl.toString()), 0) / losingTrades.length
+        ? losingTrades.reduce((sum: number, trade: TopStepTrade) => sum + parseFloat(trade.net_pnl.toString()), 0) / losingTrades.length
         : 0
 
       // Calculer les performances par mois pour trouver les meilleures/pires
@@ -273,10 +273,10 @@ class AdaptiveGoalsService {
       
       const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0
       const avgWinningTrade = winningTrades.length > 0 
-        ? winningTrades.reduce((sum, trade) => sum + parseFloat(trade.net_pnl.toString()), 0) / winningTrades.length
+        ? winningTrades.reduce((sum: number, trade: TopStepTrade) => sum + parseFloat(trade.net_pnl.toString()), 0) / winningTrades.length
         : 0
       const avgLosingTrade = losingTrades.length > 0
-        ? losingTrades.reduce((sum, trade) => sum + parseFloat(trade.net_pnl.toString()), 0) / losingTrades.length
+        ? losingTrades.reduce((sum: number, trade: TopStepTrade) => sum + parseFloat(trade.net_pnl.toString()), 0) / losingTrades.length
         : 0
       
       return { winRate, avgWinningTrade, avgLosingTrade }

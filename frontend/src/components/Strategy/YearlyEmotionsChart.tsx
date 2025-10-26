@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { tradesService } from '../../services/trades';
+import { tradesService, TopStepTrade } from '../../services/trades';
 
 ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
@@ -31,7 +31,7 @@ const YearlyEmotionsChart: React.FC<YearlyEmotionsChartProps> = ({ year, selecte
         ]);
         
         // Filtrer les trades de l'année
-        const yearTrades = trades.filter(trade => {
+        const yearTrades = trades.filter((trade: TopStepTrade) => {
           const tradeDate = new Date(trade.entered_at);
           return tradeDate.getFullYear() === year;
         });
@@ -43,7 +43,7 @@ const YearlyEmotionsChart: React.FC<YearlyEmotionsChartProps> = ({ year, selecte
           const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
           
           // Filtrer les trades du mois
-          const monthTrades = yearTrades.filter(trade => {
+          const monthTrades = yearTrades.filter((trade: TopStepTrade) => {
             const tradeDate = new Date(trade.entered_at);
             return tradeDate.getMonth() + 1 === month;
           });
@@ -52,7 +52,7 @@ const YearlyEmotionsChart: React.FC<YearlyEmotionsChartProps> = ({ year, selecte
           const respectedTrades: Array<{ dominant_emotions: string[] }> = [];
           const notRespectedTrades: Array<{ dominant_emotions: string[] }> = [];
           
-          monthTrades.forEach(trade => {
+          monthTrades.forEach((trade: TopStepTrade) => {
             const strategyInfo = strategies.find((s: any) => s.trade === trade.id);
             if (strategyInfo) {
               const tradeWithEmotions = {

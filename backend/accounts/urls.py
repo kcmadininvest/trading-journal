@@ -23,12 +23,11 @@ urlpatterns = [
     # Administration (admin seulement)
     path('admin/users/', views.AdminUserListView.as_view(), name='admin_user_list'),
     path('admin/users/<int:id>/', views.AdminUserDetailView.as_view(), name='admin_user_detail'),
+    path('admin/users/<int:id>/deletion-preview/', views.AdminUserDeletionPreviewView.as_view(), name='admin_user_deletion_preview'),
+    path('admin/users/bulk-delete/', views.AdminBulkDeleteUsersView.as_view(), name='admin_bulk_delete_users'),
     path('admin/stats/', views.admin_stats_view, name='admin_stats'),
     path('admin/system/stats/', views.SystemStatsView.as_view(), name='system_stats'),
     path('admin/system/backup/', views.create_system_backup, name='create_system_backup'),
     path('admin/system/clean-logs/', views.clean_system_logs, name='clean_system_logs'),
     path('admin/system/check-integrity/', views.check_system_integrity, name='check_system_integrity'),
-    
-    # Django-allauth URLs (pour l'interface web si nécessaire)
-    path('allauth/', include('allauth.urls')),
 ]

@@ -1,5 +1,5 @@
 from rest_framework import status, generics, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
@@ -9,6 +9,7 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rolepermissions.decorators import has_permission_decorator
 from rolepermissions.checkers import has_permission
 
@@ -23,6 +24,31 @@ from .serializers import (
     AdminUserUpdateSerializer,
     CustomTokenObtainPairSerializer
 )
+
+# Imports des modèles trades pour éviter les erreurs de linting
+try:
+    from trades.models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount
+except ImportError:
+    # Les modèles trades n'existent pas encore
+    TopStepTrade = TopStepImportLog = TradeStrategy = PositionStrategy = TradingAccount = None
+
+def safe_count(model, user):
+    """Compte les objets d'un modèle pour un utilisateur de manière sécurisée"""
+    if model is None:
+        return 0
+    try:
+        return model.objects.filter(user=user).count()
+    except AttributeError:
+        return 0
+
+def safe_first(model, user, order_by):
+    """Récupère le premier objet d'un modèle pour un utilisateur de manière sécurisée"""
+    if model is None:
+        return None
+    try:
+        return model.objects.filter(user=user).order_by(order_by).first()
+    except AttributeError:
+        return None
 
 
 class CustomTokenObtainPairView(TokenObtainPairView):
@@ -266,7 +292,162 @@ class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
                 {'error': 'Permission refusée'}, 
                 status=status.HTTP_403_FORBIDDEN
             )
-        return super().destroy(request, *args, **kwargs)
+        
+        # Récupérer l'utilisateur à supprimer
+        user_to_delete = self.get_object()
+        
+        # Empêcher l'auto-suppression
+        if user_to_delete.id == request.user.id:
+            return Response(
+                {'error': 'Vous ne pouvez pas supprimer votre propre compte'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Compter les données à supprimer
+        
+        stats = {
+            'user_email': user_to_delete.email,
+            'trading_accounts': TradingAccount.objects.filter(user=user_to_delete).count(),
+            'trades': TopStepTrade.objects.filter(user=user_to_delete).count(),
+            'import_logs': TopStepImportLog.objects.filter(user=user_to_delete).count(),
+            'trade_strategies': TradeStrategy.objects.filter(user=user_to_delete).count(),
+            'position_strategies': PositionStrategy.objects.filter(user=user_to_delete).count(),
+        }
+        
+        try:
+            # Supprimer toutes les données associées (cascade automatique)
+            user_to_delete.delete()
+            
+            return Response({
+                'message': f'Utilisateur {user_to_delete.email} supprimé avec succès',
+                'deleted_data': stats
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la suppression: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+
+
+class AdminUserDeletionPreviewView(APIView):
+    """
+    Vue pour l'aperçu des données qui seront supprimées avec un utilisateur
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request, id=None):
+        if not has_permission(request.user, 'delete_users'):
+            return Response(
+                {'error': 'Permission refusée'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        user_to_delete = get_object_or_404(User, id=id)
+        
+        # Compter toutes les données associées
+        
+        stats = {
+            'user': {
+                'id': user_to_delete.id,
+                'email': user_to_delete.email,
+                'first_name': user_to_delete.first_name,
+                'last_name': user_to_delete.last_name,
+                'role': user_to_delete.role,
+                'is_active': user_to_delete.is_active,
+                'created_at': user_to_delete.created_at,
+                'last_login': user_to_delete.last_login,
+            },
+            'data_summary': {
+                'trading_accounts': safe_count(TradingAccount, user_to_delete),
+                'trades': safe_count(TopStepTrade, user_to_delete),
+                'import_logs': safe_count(TopStepImportLog, user_to_delete),
+                'trade_strategies': safe_count(TradeStrategy, user_to_delete),
+                'position_strategies': safe_count(PositionStrategy, user_to_delete),
+            },
+            'recent_activity': {
+                'last_trade': safe_first(TopStepTrade, user_to_delete, '-entered_at'),
+                'last_import': safe_first(TopStepImportLog, user_to_delete, '-imported_at'),
+            }
+        }
+        
+        return Response(stats)
+
+
+class AdminBulkDeleteUsersView(APIView):
+    """
+    Vue pour supprimer plusieurs utilisateurs en une fois (admin seulement)
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def post(self, request):
+        if not has_permission(request.user, 'delete_users'):
+            return Response(
+                {'error': 'Permission refusée'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        user_ids = request.data.get('user_ids', [])
+        if not user_ids:
+            return Response(
+                {'error': 'Aucun utilisateur spécifié'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Empêcher l'auto-suppression
+        if request.user.id in user_ids:
+            return Response(
+                {'error': 'Vous ne pouvez pas supprimer votre propre compte'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        
+        results = []
+        errors = []
+        
+        for user_id in user_ids:
+            try:
+                user_to_delete = User.objects.filter(id=user_id).first()
+                
+                if not user_to_delete:
+                    errors.append({
+                        'user_id': user_id,
+                        'error': 'Utilisateur non trouvé'
+                    })
+                    continue
+                
+                # Compter les données
+                stats = {
+                    'user_email': user_to_delete.email,
+                    'trading_accounts': safe_count(TradingAccount, user_to_delete),
+                    'trades': safe_count(TopStepTrade, user_to_delete),
+                    'import_logs': safe_count(TopStepImportLog, user_to_delete),
+                    'trade_strategies': safe_count(TradeStrategy, user_to_delete),
+                    'position_strategies': safe_count(PositionStrategy, user_to_delete),
+                }
+                
+                # Supprimer l'utilisateur et toutes ses données
+                user_to_delete.delete()
+                
+                results.append({
+                    'user_id': user_id,
+                    'user_email': user_to_delete.email,
+                    'status': 'deleted',
+                    'deleted_data': stats
+                })
+                
+            except Exception as e:
+                errors.append({
+                    'user_id': user_id,
+                    'error': f'Erreur lors de la suppression: {str(e)}'
+                })
+        
+        return Response({
+            'message': f'Suppression terminée: {len(results)} utilisateurs supprimés, {len(errors)} erreurs',
+            'results': results,
+            'errors': errors
+        }, status=status.HTTP_200_OK)
 
 
 @api_view(['GET'])

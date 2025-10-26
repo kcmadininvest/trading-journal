@@ -81,10 +81,28 @@ class AuthService {
   }
 
   private clearStorage() {
+    // Nettoyer tous les tokens et données utilisateur
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     localStorage.removeItem('session_info');
+    
+    // Nettoyer le cache des données de trading
+    localStorage.removeItem('trading_accounts');
+    localStorage.removeItem('trades_cache');
+    localStorage.removeItem('statistics_cache');
+    localStorage.removeItem('strategy_cache');
+    localStorage.removeItem('analytics_cache');
+    
+    // Nettoyer le cache React Query si disponible
+    if (typeof window !== 'undefined' && (window as any).queryClient) {
+      (window as any).queryClient.clear();
+    }
+    
+    // Déclencher un événement pour nettoyer les caches des composants
+    window.dispatchEvent(new CustomEvent('user:logout', { 
+      detail: { clearAllCaches: true } 
+    }));
     
     this.accessToken = null;
     this.refreshToken = null;
@@ -93,15 +111,46 @@ class AuthService {
 
   async login(credentials: LoginData): Promise<LoginResponse> {
     try {
+      console.log('🔐 [AUTH] Début de la connexion pour:', credentials.email);
+      
+      // Nettoyer complètement le cache et les tokens avant la connexion
+      console.log('🧹 [AUTH] Nettoyage complet avant connexion');
+      this.clearStorage();
+      
+      // S'assurer que les tokens sont bien supprimés de la mémoire
+      this.accessToken = null;
+      this.refreshToken = null;
+      this.user = null;
+      
+      // Supprimer explicitement les tokens du localStorage
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      
+      console.log('📡 [AUTH] Envoi de la requête de connexion...');
       const response = await apiClient.post('/accounts/auth/login/', credentials);
       const { access, refresh, user, session_info } = response.data;
+      
+      console.log('✅ [AUTH] Connexion réussie pour:', user.email, 'ID:', user.id);
+      console.log('👤 [AUTH] Utilisateur:', {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        is_admin: user.is_admin
+      });
       
       this.saveTokensToStorage(access, refresh, user);
       
       // Stocker les informations de session si disponibles
       if (session_info) {
+        console.log('📊 [AUTH] Stockage des informations de session');
         localStorage.setItem('session_info', JSON.stringify(session_info));
       }
+      
+      // Déclencher un événement pour recharger les données du nouvel utilisateur
+      console.log('📢 [AUTH] Déclenchement de l\'événement user:login');
+      window.dispatchEvent(new CustomEvent('user:login', { 
+        detail: { user, clearAllCaches: true } 
+      }));
       
       return { access, refresh, user };
     } catch (error: any) {

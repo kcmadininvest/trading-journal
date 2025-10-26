@@ -47,9 +47,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'drf_spectacular',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
     'guardian',
     'rolepermissions',
     # Local apps
@@ -64,7 +61,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -263,26 +259,10 @@ SITE_ID = 1
 # Authentication Backends
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
     'guardian.backends.ObjectPermissionBackend',
 )
 
-# Django-allauth Settings
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
-ACCOUNT_PASSWORD_MIN_LENGTH = 8
-ACCOUNT_SESSION_REMEMBER = True
-ACCOUNT_LOGOUT_ON_GET = True
-ACCOUNT_LOGOUT_REDIRECT_URL = '/'
-ACCOUNT_LOGIN_REDIRECT_URL = '/dashboard/'
-
-# Nouvelles configurations allauth (remplace les dépréciées)
-ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
-ACCOUNT_RATE_LIMITS = {
-    'login_failed': '5/5m',
-    'login_failed_username': '5/5m',
-    'login_failed_email': '5/5m',
-}
+# Django-allauth Settings - SUPPRIMÉ (non utilisé)
 
 # Role Permissions Settings
 ROLEPERMISSIONS_MODULE = 'accounts.roles'

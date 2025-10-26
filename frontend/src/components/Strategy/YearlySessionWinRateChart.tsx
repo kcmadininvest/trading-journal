@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { tradesService } from '../../services/trades';
+import { tradesService, TopStepTrade } from '../../services/trades';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
@@ -36,7 +36,7 @@ const YearlySessionWinRateChart: React.FC<YearlySessionWinRateChartProps> = ({ y
         ]);
         
         // Filtrer les trades de l'année
-        const yearTrades = trades.filter(trade => {
+        const yearTrades = trades.filter((trade: TopStepTrade) => {
           const tradeDate = new Date(trade.entered_at);
           return tradeDate.getFullYear() === year;
         });
@@ -48,7 +48,7 @@ const YearlySessionWinRateChart: React.FC<YearlySessionWinRateChartProps> = ({ y
           const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
           
           // Filtrer les trades du mois
-          const monthTrades = yearTrades.filter(trade => {
+          const monthTrades = yearTrades.filter((trade: TopStepTrade) => {
             const tradeDate = new Date(trade.entered_at);
             return tradeDate.getMonth() + 1 === month;
           });
@@ -58,7 +58,7 @@ const YearlySessionWinRateChart: React.FC<YearlySessionWinRateChartProps> = ({ y
           let tp1Sessions = 0;
           let tp2Sessions = 0;
           
-          monthTrades.forEach(trade => {
+          monthTrades.forEach((trade: TopStepTrade) => {
             const strategyInfo = strategies.find((s: any) => s.trade === trade.id);
             if (strategyInfo) {
               totalSessions++;

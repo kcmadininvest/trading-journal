@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { tradesService } from '../../services/trades';
+import { tradesService, TopStepTrade } from '../../services/trades';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
@@ -31,7 +31,7 @@ const YearlyWinRateByStrategyChart: React.FC<YearlyWinRateByStrategyChartProps> 
         ]);
         
         // Filtrer les trades de l'année
-        const yearTrades = trades.filter(trade => {
+        const yearTrades = trades.filter((trade: TopStepTrade) => {
           const tradeDate = new Date(trade.entered_at);
           return tradeDate.getFullYear() === year;
         });
@@ -43,7 +43,7 @@ const YearlyWinRateByStrategyChart: React.FC<YearlyWinRateByStrategyChartProps> 
           const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
           
           // Filtrer les trades du mois
-          const monthTrades = yearTrades.filter(trade => {
+          const monthTrades = yearTrades.filter((trade: TopStepTrade) => {
             const tradeDate = new Date(trade.entered_at);
             return tradeDate.getMonth() + 1 === month;
           });
@@ -52,7 +52,7 @@ const YearlyWinRateByStrategyChart: React.FC<YearlyWinRateByStrategyChartProps> 
           const respectedTrades: Array<{ pnl: number }> = [];
           const notRespectedTrades: Array<{ pnl: number }> = [];
           
-          monthTrades.forEach(trade => {
+          monthTrades.forEach((trade: TopStepTrade) => {
             const strategyInfo = strategies.find((s: any) => s.trade === trade.id);
             const tradeWithPnl = {
               pnl: parseFloat(trade.net_pnl.toString())

@@ -4,6 +4,7 @@ import { usersService, User as ApiUser, UserFilters } from '../../services/users
 import UserTable from './UserTable';
 import UserDetailsModal from './UserDetailsModal';
 import UserEditModal from './UserEditModal';
+import UserDeleteModal from './UserDeleteModal';
 import toast from 'react-hot-toast';
 
 interface UsersManagementProps {
@@ -28,6 +29,9 @@ const UsersManagement: React.FC<UsersManagementProps> = ({ currentUser, onUserUp
   const [showUserModal, setShowUserModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingUser, setEditingUser] = useState<ApiUser | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingUser, setDeletingUser] = useState<ApiUser | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Vérifier les permissions
   const canViewUsers = currentUser?.is_admin;
@@ -151,6 +155,43 @@ const UsersManagement: React.FC<UsersManagementProps> = ({ currentUser, onUserUp
         u.id === user.id ? { ...u, role: user.role } : u
       ));
     }
+  };
+
+  const handleDeleteUser = (user: ApiUser) => {
+    setDeletingUser(user);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async (user: ApiUser) => {
+    try {
+      setDeleteLoading(true);
+      await usersService.deleteUser(user.id);
+      
+      // Supprimer l'utilisateur de la liste locale
+      setUsers(prev => prev.filter(u => u.id !== user.id));
+      
+      // Mettre à jour la pagination
+      setPagination(prev => ({
+        ...prev,
+        count: prev.count - 1
+      }));
+      
+      // Fermer le modal
+      setShowDeleteModal(false);
+      setDeletingUser(null);
+      
+      toast.success(`Utilisateur ${user.full_name} supprimé avec succès`);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error(error instanceof Error ? error.message : 'Erreur lors de la suppression de l\'utilisateur');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeletingUser(null);
   };
 
   const filteredUsers = useMemo(() => {
@@ -295,6 +336,7 @@ const UsersManagement: React.FC<UsersManagementProps> = ({ currentUser, onUserUp
         onEditUser={handleEditUser}
         onToggleStatus={handleToggleUserStatus}
         onChangeRole={handleChangeUserRole}
+        onDeleteUser={handleDeleteUser}
         canEdit={canEditUsers}
       />
 
@@ -356,6 +398,16 @@ const UsersManagement: React.FC<UsersManagementProps> = ({ currentUser, onUserUp
             setEditingUser(null);
           }}
           onSave={handleUserUpdated}
+        />
+      )}
+
+      {deletingUser && (
+        <UserDeleteModal
+          user={deletingUser}
+          isOpen={showDeleteModal}
+          onClose={handleCloseDeleteModal}
+          onConfirm={handleConfirmDelete}
+          loading={deleteLoading}
         />
       )}
     </div>

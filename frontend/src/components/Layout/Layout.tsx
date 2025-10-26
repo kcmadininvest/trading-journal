@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 import FloatingImportButton from '../common/FloatingImportButton';
 import GlobalImportModal from '../Import/GlobalImportModal';
 import { User } from '../../services/auth';
+import appInitializer from '../../services/appInitializer';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,6 +19,19 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, onLogout, onShow
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isGlobalImportOpen, setIsGlobalImportOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Initialiser les optimisations de cache quand l'utilisateur change
+  useEffect(() => {
+    if (currentUser) {
+      // Démarrer l'initialisation en arrière-plan
+      appInitializer.initialize().catch(error => {
+        console.warn('⚠️ [LAYOUT] Erreur lors de l\'initialisation des optimisations:', error);
+      });
+    } else {
+      // Nettoyer les données quand l'utilisateur se déconnecte
+      appInitializer.cleanup();
+    }
+  }, [currentUser]);
   
 
   return (
@@ -76,4 +90,3 @@ const Layout: React.FC<LayoutProps> = ({ children, currentUser, onLogout, onShow
 };
 
 export default Layout;
-

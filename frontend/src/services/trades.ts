@@ -1,4 +1,7 @@
 import apiClient from '../lib/apiClient';
+import cacheManager from './cacheManager';
+import errorHandler from './errorHandler';
+import retryService from './retryService';
 
 export interface TopStepTrade {
   id: number;
@@ -112,6 +115,15 @@ export const tradesService = {
     profitable?: boolean;
     trade_day?: string;
   }) => {
+    // Créer une clé de cache unique basée sur les paramètres
+    const cacheKey = `trades_${tradingAccountId || 'all'}_${JSON.stringify(filters || {})}`;
+    
+    // Vérifier le cache d'abord
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+
     const params = new URLSearchParams();
     if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
     if (filters?.contract) params.append('contract', filters.contract);
@@ -124,7 +136,10 @@ export const tradesService = {
     // Si on filtre par trade_day, on veut seulement les résultats de cette date
     if (filters?.trade_day) {
       const response = await apiClient.get<{ results: TopStepTrade[]; next: string | null }>(`/trades/topstep/?${params.toString()}`);
-      return response.data.results;
+      const result = response.data.results;
+      // Mettre en cache pour 2 minutes
+      cacheManager.set(cacheKey, result, 2 * 60 * 1000);
+      return result;
     }
 
     // Sinon, récupérer tous les trades avec pagination
@@ -144,6 +159,9 @@ export const tradesService = {
       }
       url = page.next || null;
     }
+    
+    // Mettre en cache pour 5 minutes
+    cacheManager.set(cacheKey, all, 5 * 60 * 1000);
     return all;
   },
 
@@ -252,23 +270,72 @@ export const tradesService = {
     return response.data;
   },
 
-  // Récupérer les données pour le calendrier mensuel
+  // Récupérer les données pour le calendrier mensuel avec optimisations
   getCalendarData: async (year?: number, month?: number, tradingAccountId?: number) => {
-    const params = new URLSearchParams();
-    if (year) params.append('year', year.toString());
-    if (month) params.append('month', month.toString());
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+    // Vérifier l'authentification avant de faire l'appel API
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.log('🔐 [TRADES] Utilisateur non authentifié, arrêt de la récupération des données du calendrier');
+      return [];
+    }
     
-    const url = `/trades/topstep/calendar_data/${params.toString() ? `?${params.toString()}` : ''}`;
-    const response = await apiClient.get(url);
-    return response.data;
+    const cacheKey = `calendar_${year}_${month}_${tradingAccountId || 'all'}`;
+    
+    // Vérifier le cache d'abord
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      console.log('✅ [TRADES] Données du calendrier récupérées du cache');
+      return cachedData;
+    }
+
+    // Utiliser le retry service pour une récupération robuste
+    return retryService.executeWithAdaptiveRetry(
+      async () => {
+        const params = new URLSearchParams();
+        if (year) params.append('year', year.toString());
+        if (month) params.append('month', month.toString());
+        if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+        
+        const url = `/trades/topstep/calendar_data/${params.toString() ? `?${params.toString()}` : ''}`;
+        const response = await apiClient.get(url);
+        
+        // Mettre en cache pour 5 minutes
+        cacheManager.set(cacheKey, response.data, 5 * 60 * 1000);
+        console.log('💾 [TRADES] Données du calendrier mises en cache');
+        
+        return response.data;
+      },
+      'calendar_data',
+      {
+        onSuccess: (result) => {
+          console.log('✅ [TRADES] Données du calendrier récupérées avec succès');
+        },
+        onFailure: (error) => {
+          console.error('❌ [TRADES] Échec de la récupération du calendrier:', error);
+        }
+      }
+    );
   },
 
   // Récupérer les données d'analyses détaillées
   getAnalyticsData: async (tradingAccountId?: number) => {
+    const cacheKey = `analytics_${tradingAccountId || 'all'}`;
+    
+    // Vérifier le cache d'abord
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      console.log('✅ [TRADES] Données d\'analytics récupérées du cache');
+      return cachedData;
+    }
+
     const params = new URLSearchParams();
     if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
     const response = await apiClient.get(`/trades/topstep/analytics/?${params.toString()}`);
+    
+    // Mettre en cache pour 10 minutes
+    cacheManager.set(cacheKey, response.data, 10 * 60 * 1000);
+    console.log('💾 [TRADES] Données d\'analytics mises en cache');
+    
     return response.data;
   },
 
@@ -304,6 +371,15 @@ export const tradesService = {
     strategy_respected?: boolean;
     contract_name?: string;
   }) => {
+    const cacheKey = `trade_strategies_${JSON.stringify(filters || {})}`;
+    
+    // Vérifier le cache d'abord
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      console.log('✅ [TRADES] Stratégies de trades récupérées du cache');
+      return cachedData;
+    }
+
     const params = new URLSearchParams();
     if (filters?.trade_id) params.append('trade_id', filters.trade_id);
     if (filters?.strategy_respected !== undefined) params.append('strategy_respected', String(filters.strategy_respected));
@@ -314,13 +390,20 @@ export const tradesService = {
     
     // S'assurer de retourner un tableau
     const data = response.data;
+    let result;
     if (Array.isArray(data)) {
-      return data;
+      result = data;
     } else if (data && Array.isArray(data.results)) {
-      return data.results;
+      result = data.results;
     } else {
-      return [];
+      result = [];
     }
+    
+    // Mettre en cache pour 5 minutes
+    cacheManager.set(cacheKey, result, 5 * 60 * 1000);
+    console.log('💾 [TRADES] Stratégies de trades mises en cache');
+    
+    return result;
   },
 
   // Récupérer une stratégie de trade par ID
@@ -332,12 +415,26 @@ export const tradesService = {
   // Créer une nouvelle stratégie de trade
   createTradeStrategy: async (strategyData: any) => {
     const response = await apiClient.post('/trades/trade-strategies/', strategyData);
+    
+    // Invalider le cache des stratégies et du calendrier après création
+    console.log('🔄 [TRADES] Invalidation du cache après création de stratégie');
+    cacheManager.invalidatePattern('trade_strategies');
+    cacheManager.invalidatePattern('trade_strategies_by_date');
+    cacheManager.invalidatePattern('calendar');
+    
     return response.data;
   },
 
   // Mettre à jour une stratégie de trade
   updateTradeStrategy: async (id: number, strategyData: any) => {
     const response = await apiClient.patch(`/trades/trade-strategies/${id}/`, strategyData);
+    
+    // Invalider le cache des stratégies et du calendrier après mise à jour
+    console.log('🔄 [TRADES] Invalidation du cache après mise à jour de stratégie');
+    cacheManager.invalidatePattern('trade_strategies');
+    cacheManager.invalidatePattern('trade_strategies_by_date');
+    cacheManager.invalidatePattern('calendar');
+    
     return response.data;
   },
 
@@ -352,13 +449,46 @@ export const tradesService = {
     return response.data;
   },
 
-  // Récupérer les stratégies pour les trades d'une date spécifique
+  // Récupérer les stratégies pour les trades d'une date spécifique avec optimisations
   getTradeStrategiesByDate: async (date: string, tradingAccountId?: number) => {
-    const params = new URLSearchParams();
-    params.append('date', date);
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    const response = await apiClient.get(`/trades/trade-strategies/by_date/?${params.toString()}`);
-    return response.data;
+    // Vérifier l'authentification avant de faire l'appel API
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.log('🔐 [TRADES] Utilisateur non authentifié, arrêt de la récupération des stratégies');
+      return [];
+    }
+    
+    const cacheKey = `trade_strategies_by_date_${date}_${tradingAccountId || 'all'}`;
+    
+    // Vérifier le cache d'abord
+    const cachedData = cacheManager.get(cacheKey);
+    if (cachedData) {
+      console.log('✅ [TRADES] Stratégies par date récupérées du cache');
+      return cachedData;
+    }
+
+    // Utiliser le retry service avec gestion d'erreurs robuste
+    return errorHandler.handleCacheError(
+      cacheKey,
+      async () => {
+        const params = new URLSearchParams();
+        params.append('date', date);
+        if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
+        const response = await apiClient.get(`/trades/trade-strategies/by_date/?${params.toString()}`);
+        
+        // Mettre en cache pour 5 minutes
+        cacheManager.set(cacheKey, response.data, 5 * 60 * 1000);
+        console.log('💾 [TRADES] Stratégies par date mises en cache');
+        
+        return response.data;
+      },
+      {
+        maxRetries: 3,
+        onRetry: (attempt, error) => {
+          console.log(`🔄 [TRADES] Retry ${attempt} pour les stratégies du ${date}:`, error.message);
+        }
+      }
+    );
   },
 
   // Créer ou mettre à jour plusieurs stratégies de trades en une fois
@@ -378,7 +508,94 @@ export const tradesService = {
     const response = await apiClient.post('/trades/trade-strategies/bulk_create/', {
       strategies
     });
+    
+    // Invalider le cache des stratégies et du calendrier après création en masse
+    console.log('🔄 [TRADES] Invalidation du cache après création en masse de stratégies');
+    cacheManager.invalidatePattern('trade_strategies');
+    cacheManager.invalidatePattern('trade_strategies_by_date');
+    cacheManager.invalidatePattern('calendar');
+    
     return response.data;
   },
-};
 
+  // === MÉTHODES D'OPTIMISATION ===
+
+  // Précharger les données pour une période donnée
+  preloadDateRange: async (startDate: Date, endDate: Date, tradingAccountId?: number) => {
+    const dates: string[] = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      dates.push(currentDate.toISOString().split('T')[0]);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Précharger en parallèle avec limitation de concurrence
+    const batchSize = 3;
+    const results: any[] = [];
+    
+    for (let i = 0; i < dates.length; i += batchSize) {
+      const batch = dates.slice(i, i + batchSize);
+      const batchPromises = batch.map(date => 
+        tradesService.getTradeStrategiesByDate(date, tradingAccountId).catch(error => {
+          console.warn(`⚠️ [TRADES] Erreur lors du préchargement de ${date}:`, error);
+          return null;
+        })
+      );
+      
+      const batchResults = await Promise.allSettled(batchPromises);
+      results.push(...batchResults.map(result => 
+        result.status === 'fulfilled' ? result.value : null
+      ).filter(Boolean));
+    }
+    
+    console.log(`✅ [TRADES] Préchargement terminé: ${results.length} dates traitées`);
+    return results;
+  },
+
+  // Précharger les données du mois actuel
+  preloadCurrentMonth: async (tradingAccountId?: number) => {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    return tradesService.preloadDateRange(firstDay, lastDay, tradingAccountId);
+  },
+
+  // Précharger les données du mois suivant
+  preloadNextMonth: async (tradingAccountId?: number) => {
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    const lastDayNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    
+    return tradesService.preloadDateRange(nextMonth, lastDayNextMonth, tradingAccountId);
+  },
+
+  // Précharger les données prédictives (3 prochains jours ouvrables)
+  preloadPredictiveData: async (tradingAccountId?: number) => {
+    const today = new Date();
+    const dates: string[] = [];
+    
+    for (let i = 1; i <= 3; i++) {
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + i);
+      
+      // Ignorer les weekends
+      if (futureDate.getDay() !== 0 && futureDate.getDay() !== 6) {
+        dates.push(futureDate.toISOString().split('T')[0]);
+      }
+    }
+
+    // Précharger en parallèle
+    const promises = dates.map(date => 
+      tradesService.getTradeStrategiesByDate(date, tradingAccountId).catch(error => {
+        console.warn(`⚠️ [TRADES] Erreur lors du préchargement prédictif de ${date}:`, error);
+        return null;
+      })
+    );
+
+    const results = await Promise.allSettled(promises);
+    console.log(`🔮 [TRADES] Préchargement prédictif terminé: ${dates.length} dates traitées`);
+    return results;
+  },
+};

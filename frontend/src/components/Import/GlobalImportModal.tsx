@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { tradesService } from '../../services/trades';
 import FileUpload from '../common/FileUpload';
@@ -17,6 +17,71 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
+  const [selectorKey, setSelectorKey] = useState(0);
+
+  // Réinitialiser l'état quand la modale s'ouvre
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedAccount(null);
+      setSelectedFile(null);
+      setSelectorKey(prev => prev + 1); // Forcer le rechargement du sélecteur
+      console.log('🔄 [GLOBAL_IMPORT_MODAL] Modale ouverte, réinitialisation de l\'état');
+      
+      // Délai pour permettre au TradingAccountSelector de se charger
+      const timer = setTimeout(() => {
+        console.log('⏰ [GLOBAL_IMPORT_MODAL] Délai écoulé, vérification des comptes');
+        // Forcer la mise à jour si aucun compte n'est sélectionné
+        if (!selectedAccount) {
+          console.log('🔄 [GLOBAL_IMPORT_MODAL] Aucun compte sélectionné, forçage de la mise à jour');
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, selectedAccount]);
+
+  // Écouter les événements de mise à jour des comptes
+  useEffect(() => {
+    const handleAccountsUpdate = () => {
+      // Forcer la mise à jour du sélecteur de comptes
+      console.log('🔄 [GLOBAL_IMPORT_MODAL] Mise à jour des comptes détectée');
+    };
+
+    window.addEventListener('trades:updated', handleAccountsUpdate);
+    window.addEventListener('user:login', handleAccountsUpdate);
+    
+    return () => {
+      window.removeEventListener('trades:updated', handleAccountsUpdate);
+      window.removeEventListener('user:login', handleAccountsUpdate);
+    };
+  }, []);
+
+  // Forcer la mise à jour après un délai pour s'assurer que le sélecteur est chargé
+  useEffect(() => {
+    if (isOpen && !selectedAccount) {
+      const timer = setTimeout(() => {
+        console.log('🔄 [GLOBAL_IMPORT_MODAL] Vérification forcée après délai');
+        // Forcer le rechargement du sélecteur si aucun compte n'est sélectionné
+        setSelectorKey(prev => prev + 1);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, selectedAccount]);
+
+  // Gérer la sélection automatique du compte par défaut
+  const handleAccountChange = (account: TradingAccount | null) => {
+    console.log('🔄 [GLOBAL_IMPORT_MODAL] handleAccountChange appelé avec:', account?.name || 'Aucun');
+    console.log('🔄 [GLOBAL_IMPORT_MODAL] Détails du compte:', account);
+    setSelectedAccount(account);
+  };
+
+  // Debug: afficher l'état du bouton
+  console.log('🔍 [GLOBAL_IMPORT_MODAL] État actuel:', {
+    selectedAccount: selectedAccount?.name || 'Aucun',
+    selectedFile: selectedFile?.name || 'Aucun',
+    buttonText: !selectedAccount ? 'Créer un compte de trading' : 'Importer le fichier'
+  });
 
   if (!isOpen) return null;
 
@@ -133,10 +198,15 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
             Compte de trading
           </label>
           <TradingAccountSelector
+            key={selectorKey}
             selectedAccountId={selectedAccount?.id}
-            onAccountChange={setSelectedAccount}
+            onAccountChange={handleAccountChange}
             className="w-full"
           />
+          {/* Debug: afficher les props passées au sélecteur */}
+          <div className="text-xs text-gray-400 mt-1">
+            Debug: selectedAccountId={selectedAccount?.id || 'null'}, selectorKey={selectorKey}
+          </div>
           {selectedAccount && (
             <p className="text-xs text-gray-500 mt-1">
               Les trades seront importés dans le compte "{selectedAccount.name}"
@@ -156,14 +226,27 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
           <Button variant="ghost" onClick={handleClose} disabled={isLoading}>
             Annuler
           </Button>
-          <Button 
-            variant="primary" 
-            onClick={handleUpload} 
-            loading={isLoading} 
-            disabled={!selectedFile || !selectedAccount}
-          >
-            {isLoading ? 'Import en cours...' : 'Importer le fichier'}
-          </Button>
+          {!selectedAccount ? (
+            <Button 
+              variant="primary" 
+              onClick={() => {
+                handleClose();
+                window.location.hash = '#trading-accounts';
+              }}
+              disabled={isLoading}
+            >
+              Créer un compte de trading
+            </Button>
+          ) : (
+            <Button 
+              variant="primary" 
+              onClick={handleUpload} 
+              loading={isLoading} 
+              disabled={!selectedFile}
+            >
+              {isLoading ? 'Import en cours...' : 'Importer le fichier'}
+            </Button>
+          )}
         </div>
       </div>
     </div>

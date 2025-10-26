@@ -1292,7 +1292,11 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Paramètre trade_id requis'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            strategy = TradeStrategy.objects.filter(trade__topstep_id=trade_id).first()  # type: ignore
+            # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
+            strategy = TradeStrategy.objects.filter(  # type: ignore
+                user=self.request.user,  # ✅ Filtre par utilisateur
+                trade__topstep_id=trade_id
+            ).first()
             if strategy:
                 serializer = self.get_serializer(strategy)
                 return Response(serializer.data)
@@ -1309,7 +1313,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Paramètre date requis'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
+            # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
             strategies = TradeStrategy.objects.filter(  # type: ignore
+                user=self.request.user,  # ✅ Filtre par utilisateur
                 trade__trade_day=date
             ).select_related('trade')
             
@@ -1439,18 +1445,12 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
     ViewSet pour gérer les stratégies de position avec versioning.
     """
     serializer_class = PositionStrategySerializer
-    permission_classes = [permissions.AllowAny]  # Temporaire pour les tests
+    permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         """Retourne uniquement les stratégies de l'utilisateur connecté."""
         if not self.request.user.is_authenticated:
-            # Pour les tests, retourner toutes les stratégies mais exclure les archivées
-            queryset = PositionStrategy.objects.all()  # type: ignore
-            # Appliquer le filtre par défaut même pour les tests
-            include_archived = self.request.query_params.get('include_archived', 'false').lower() == 'true'  # type: ignore
-            if not include_archived:
-                queryset = queryset.exclude(status='archived')
-            return queryset
+            return PositionStrategy.objects.none()  # type: ignore
         
         queryset = PositionStrategy.objects.filter(user=self.request.user)  # type: ignore
         
@@ -1488,14 +1488,7 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur connecté à la stratégie."""
-        if self.request.user.is_authenticated:
-            serializer.save(user=self.request.user)
-        else:
-            # Pour les tests, utiliser le premier utilisateur disponible
-            from django.contrib.auth import get_user_model
-            User = get_user_model()
-            user = User.objects.first()
-            serializer.save(user=user)
+        serializer.save(user=self.request.user)
     
     def perform_update(self, serializer):
         """Gère la mise à jour avec création de nouvelle version si nécessaire."""
@@ -1604,11 +1597,7 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
     def archives(self, request):
         """Récupère toutes les versions archivées (non actuelles)."""
         # Pour les archives, on veut inclure les stratégies archivées
-        if not request.user.is_authenticated:
-            # Pour les tests, retourner toutes les stratégies archivées
-            queryset = PositionStrategy.objects.all()  # type: ignore
-        else:
-            queryset = PositionStrategy.objects.filter(user=request.user)  # type: ignore
+        queryset = PositionStrategy.objects.filter(user=request.user)  # type: ignore
         
         # Filtres optionnels
         status = request.query_params.get('status', None)
