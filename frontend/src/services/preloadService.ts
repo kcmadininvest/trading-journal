@@ -244,7 +244,6 @@ class PreloadService {
       
       this.completedTasks.add(task.id);
       
-      console.log(`✅ [PRELOAD] Tâche ${task.id} terminée avec succès`);
     } catch (error) {
       console.warn(`❌ [PRELOAD] Erreur lors de l'exécution de la tâche ${task.id}:`, error);
     } finally {
@@ -336,7 +335,6 @@ class PreloadService {
 
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      console.log(`🧹 [PRELOAD] Nettoyage de ${keysToRemove.length} entrées de préchargement`);
     } catch (error) {
       console.warn('❌ [PRELOAD] Erreur lors du nettoyage:', error);
     }

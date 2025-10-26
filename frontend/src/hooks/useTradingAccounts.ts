@@ -12,17 +12,13 @@ export const useTradingAccounts = () => {
   // Écouter les événements de changement d'utilisateur pour invalider le cache
   useEffect(() => {
     const handleUserChange = (event: any) => {
-      console.log('🔄 [USE_TRADING_ACCOUNTS] Événement de changement d\'utilisateur:', event.type);
-      console.log('🗑️ [USE_TRADING_ACCOUNTS] Invalidation du cache React Query');
       queryClient.invalidateQueries({ queryKey: queryKeys.tradingAccounts })
     }
 
-    console.log('👂 [USE_TRADING_ACCOUNTS] Ajout des écouteurs d\'événements');
     window.addEventListener('user:login', handleUserChange)
     window.addEventListener('user:logout', handleUserChange)
 
     return () => {
-      console.log('🧹 [USE_TRADING_ACCOUNTS] Suppression des écouteurs d\'événements');
       window.removeEventListener('user:login', handleUserChange)
       window.removeEventListener('user:logout', handleUserChange)
     }
@@ -31,16 +27,12 @@ export const useTradingAccounts = () => {
   return useQuery({
     queryKey: queryKeys.tradingAccounts,
     queryFn: async () => {
-      console.log('🏦 [USE_TRADING_ACCOUNTS] Exécution de la queryFn');
       try {
         const result = await tradingAccountService.getAccounts();
-        console.log('✅ [USE_TRADING_ACCOUNTS] QueryFn réussie:', result.length, 'comptes');
         return result;
       } catch (error: any) {
-        console.log('❌ [USE_TRADING_ACCOUNTS] Erreur dans queryFn:', error.response?.status, error.message);
         // Si l'utilisateur n'est pas authentifié ou n'a pas de comptes, retourner un tableau vide
         if (error.response?.status === 401 || error.response?.status === 403) {
-          console.log('ℹ️ [USE_TRADING_ACCOUNTS] Utilisateur non authentifié ou sans comptes, retour tableau vide');
           return [];
         }
         // Pour les autres erreurs, les relancer
@@ -50,7 +42,6 @@ export const useTradingAccounts = () => {
     enabled: authService.isAuthenticated(), // Ne s'exécute que si l'utilisateur est authentifié
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error: any) => {
-      console.log('🔄 [USE_TRADING_ACCOUNTS] Retry attempt:', failureCount, 'Error:', error?.response?.status);
       // Ne pas retry sur les erreurs d'authentification
       if (error?.response?.status === 401 || error?.response?.status === 403) {
         return false;

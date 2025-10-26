@@ -31,7 +31,7 @@ class CacheManager {
   private config: CacheConfig = {
     maxRetries: 3,
     retryDelay: 1000, // 1 seconde
-    enableLogging: process.env.NODE_ENV === 'development',
+    enableLogging: false, // Désactivé pour réduire le bruit dans la console
     enableBatchOperations: true
   };
   private pendingOperations = new Map<string, Promise<any>>();

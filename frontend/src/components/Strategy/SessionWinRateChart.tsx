@@ -2,6 +2,7 @@ import React from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { useLogger } from '../../hooks/useLogger';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
@@ -11,20 +12,45 @@ interface SessionWinRateChartProps {
 }
 
 const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData, isLoading = false }) => {
+  const logger = useLogger('SessionWinRateChart');
+  
+  logger.debug('📊 [SESSION_CHART] Composant rendu avec:', {
+    strategyDataKeys: Object.keys(strategyData),
+    strategyDataLength: Object.keys(strategyData).length,
+    isLoading,
+    hasData: Object.keys(strategyData).length > 0
+  });
   // Calculer les données de sessions gagnantes avec TP1 et TP2
   const chartData = React.useMemo(() => {
+    logger.debug('📊 [SESSION_CHART] Calcul des données du graphique');
+    logger.debug('📊 [SESSION_CHART] strategyData reçu:', {
+      keys: Object.keys(strategyData),
+      length: Object.keys(strategyData).length,
+      data: strategyData
+    });
+    
     let totalSessions = 0;
     let tp1Sessions = 0;
     let tp2Sessions = 0;
 
-    Object.values(strategyData).forEach((dayData: any) => {
+    Object.values(strategyData).forEach((dayData: any, index) => {
+      logger.debug(`📅 [SESSION_CHART] Traitement jour ${index}:`, dayData);
+      
       // Vérifier si on a des données de trades respectés
       if (dayData.respectedTrades && Array.isArray(dayData.respectedTrades)) {
-        dayData.respectedTrades.forEach((trade: any) => {
+        logger.debug(`📊 [SESSION_CHART] Trades respectés trouvés: ${dayData.respectedTrades.length}`);
+        dayData.respectedTrades.forEach((trade: any, tradeIndex: number) => {
+          logger.debug(`📈 [SESSION_CHART] Trade ${tradeIndex}:`, {
+            tp1_reached: trade.tp1_reached,
+            tp2_plus_reached: trade.tp2_plus_reached,
+            pnl: trade.pnl
+          });
           totalSessions++;
           if (trade.tp1_reached) tp1Sessions++;
           if (trade.tp2_plus_reached) tp2Sessions++;
         });
+      } else {
+        logger.debug(`📅 [SESSION_CHART] Aucun trade respecté pour ce jour`);
       }
       
       // Vérifier aussi les trades non respectés
@@ -39,6 +65,14 @@ const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData,
 
     const tp1Rate = totalSessions > 0 ? (tp1Sessions / totalSessions) * 100 : 0;
     const tp2Rate = totalSessions > 0 ? (tp2Sessions / totalSessions) * 100 : 0;
+
+    logger.debug('📊 [SESSION_CHART] Résultat du calcul:', {
+      totalSessions,
+      tp1Sessions,
+      tp2Sessions,
+      tp1Rate,
+      tp2Rate
+    });
 
     return {
       totalSessions,
@@ -168,6 +202,7 @@ const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData,
   );
 
   if (!hasSessionData) {
+    logger.warn('⚠️ [SESSION_CHART] Aucune donnée de session trouvée');
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex items-center justify-center">
         <div className="text-center text-gray-500">
@@ -179,6 +214,7 @@ const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData,
   }
 
   if (chartData.totalSessions === 0) {
+    logger.warn('⚠️ [SESSION_CHART] Total sessions = 0');
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex items-center justify-center">
         <div className="text-center text-gray-500">
@@ -189,6 +225,8 @@ const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData,
     );
   }
 
+  logger.info('✅ [SESSION_CHART] Rendu du graphique avec succès');
+  
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-full flex flex-col">
       {/* En-tête */}

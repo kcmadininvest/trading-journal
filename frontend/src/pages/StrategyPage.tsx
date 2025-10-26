@@ -3,6 +3,7 @@ import { tradesService, TopStepTrade } from '../services/trades';
 import TradingAccountSelector from '../components/TradingAccount/TradingAccountSelector';
 import { TradingAccount } from '../types';
 import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency';
+import { useLogger } from '../hooks/useLogger';
 import TradesStrategyModal from '../components/Strategy/TradesStrategyModal';
 import StrategyRespectChart from '../components/Strategy/StrategyRespectChart';
 import WinRateByStrategyChart from '../components/Strategy/WinRateByStrategyChart';
@@ -17,6 +18,7 @@ import YearlySessionWinRateChart from '../components/Strategy/YearlySessionWinRa
 import YearlyEmotionsChart from '../components/Strategy/YearlyEmotionsChart';
 import StrategyProgressBar from '../components/Strategy/StrategyProgressBar';
 import api from '../services/api';
+import { tradingAccountService } from '../services/tradingAccountService';
 
 interface DailyData {
   date: string;
@@ -41,15 +43,38 @@ interface CalendarData {
 
 
 function StrategyPage() {
+  const logger = useLogger('StrategyPage');
   const [calendarData, setCalendarData] = useState<CalendarData | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true); // État de chargement initial
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showTradesModal, setShowTradesModal] = useState(false);
+  
+  logger.debug('🏗️ [STRATEGY] Composant StrategyPage initialisé');
   const [dayTrades, setDayTrades] = useState<TopStepTrade[]>([]);
   const [strategyData, setStrategyData] = useState<{ [date: string]: any }>({});
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const selectedCurrency = useSelectedAccountCurrency(selectedAccount);
+  
+  // Stabiliser selectedAccount pour éviter les re-renders inutiles
+  const stableSelectedAccount = useMemo(() => selectedAccount, [selectedAccount?.id]);
+  
+  logger.debug('📊 [STRATEGY] État de selectedAccount:', {
+    selectedAccount: stableSelectedAccount,
+    selectedAccountId: stableSelectedAccount?.id,
+    selectedAccountName: stableSelectedAccount?.name,
+    hasSelectedAccount: !!stableSelectedAccount
+  });
+  
+  // Debug supplémentaire pour comprendre le problème
+  console.log('🔍 [STRATEGY] Debug account selection:', {
+    selectedAccount: selectedAccount,
+    stableSelectedAccount: stableSelectedAccount,
+    selectedAccountId: selectedAccount?.id,
+    stableSelectedAccountId: stableSelectedAccount?.id,
+    hasSelectedAccount: !!selectedAccount,
+    hasStableSelectedAccount: !!stableSelectedAccount
+  });
   const [isUpdatingStrategy, setIsUpdatingStrategy] = useState(false);
   const [isStrategyDataLoading, setIsStrategyDataLoading] = useState(false);
   const [hasInitialDataLoaded, setHasInitialDataLoaded] = useState(false);
@@ -68,35 +93,80 @@ function StrategyPage() {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const fetchStrategyData = useCallback(async (year: number, month: number, accountId?: number) => {
+    logger.debug('🚀 [STRATEGY] fetchStrategyData appelé avec:', { year, month, accountId });
     try {
       setIsStrategyDataLoading(true);
-      // Réinitialiser les données de stratégie pour éviter l'état de chargement persistant
-      setStrategyData({});
       
-      // Récupérer les données de stratégie pour chaque jour du mois
-      // const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0);
+      // Vérifier l'authentification
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        logger.warn('❌ [STRATEGY] Pas de token d\'authentification, arrêt du chargement');
+        setStrategyData({});
+        return;
+      }
       
-      const strategyPromises = [];
+      logger.debug('🚀 [STRATEGY] Début du chargement des données de stratégie');
+      logger.debug(`📅 [STRATEGY] Paramètres: year=${year}, month=${month}, accountId=${accountId}`);
+      
+      // Charger les stratégies jour par jour pour le mois courant
+      const strategyMap: { [date: string]: any } = {};
+      const endDate = new Date(year, month, 0); // Dernier jour du mois
+      
+      logger.debug(`📅 [STRATEGY] Mois: ${month}, Dernier jour: ${endDate.getDate()}`);
+      
+      // Créer les promesses pour chaque jour du mois
+      const dayPromises = [];
       for (let day = 1; day <= endDate.getDate(); day++) {
         const date = new Date(year, month - 1, day);
         const dateStr = date.toISOString().split('T')[0];
-        strategyPromises.push(
+        
+        logger.debug(`📅 [STRATEGY] Préparation requête pour ${dateStr}`);
+        
+        dayPromises.push(
           tradesService.getTradeStrategiesByDate(dateStr, accountId)
-            .then(strategies => ({ date: dateStr, strategies }))
-            .catch(() => ({ date: dateStr, strategies: [] }))
+            .then(strategies => {
+              logger.debug(`✅ [STRATEGY] ${dateStr}: ${strategies?.length || 0} stratégies chargées`);
+              if (strategies && strategies.length > 0) {
+                logger.debug(`📊 [STRATEGY] ${dateStr}: Détail des stratégies:`, strategies);
+              }
+              return { date: dateStr, strategies };
+            })
+            .catch(error => {
+              logger.warn(`❌ [STRATEGY] Erreur pour ${dateStr}:`, error);
+              logger.warn(`🔍 [STRATEGY] Détail de l'erreur:`, {
+                message: error.message,
+                status: error.response?.status,
+                data: error.response?.data
+              });
+              return { date: dateStr, strategies: [] };
+            })
         );
       }
       
-      const results = await Promise.all(strategyPromises);
-      const strategyMap: { [date: string]: any } = {};
+      logger.debug(`⏳ [STRATEGY] Attente de ${dayPromises.length} requêtes...`);
+      
+      // Attendre toutes les requêtes
+      const results = await Promise.all(dayPromises);
+      
+      logger.debug(`📊 [STRATEGY] Résultats reçus pour ${results.length} jours`);
+      
+      // Traiter les résultats
+      let totalStrategies = 0;
+      let totalRespected = 0;
       
       results.forEach(({ date, strategies }) => {
+        logger.debug(`📅 [STRATEGY] Traitement ${date}: ${strategies?.length || 0} stratégies`);
+        
         if (strategies && strategies.length > 0) {
+          totalStrategies += strategies.length;
+          
           const respectedCount = strategies.filter((s: any) => s.strategy_respected === true).length;
           const totalCount = strategies.length;
+          totalRespected += respectedCount;
           
-          // Séparer les trades respectés et non respectés avec leurs PnL, TP et émotions
+          logger.debug(`📊 [STRATEGY] ${date}: ${respectedCount}/${totalCount} stratégies respectées`);
+          
+          // Séparer les trades respectés et non respectés avec leurs métadonnées
           const respectedTrades = strategies
             .filter((s: any) => s.strategy_respected === true)
             .map((s: any) => ({ 
@@ -124,23 +194,48 @@ function StrategyPage() {
             notRespectedTrades
           };
           
+          logger.debug(`📈 [STRATEGY] ${date}: Données calculées:`, {
+            total: totalCount,
+            respected: respectedCount,
+            percentage: strategyMap[date].percentage,
+            respectedTradesCount: respectedTrades.length,
+            notRespectedTradesCount: notRespectedTrades.length
+          });
+        } else {
+          logger.debug(`📅 [STRATEGY] ${date}: Aucune stratégie trouvée`);
         }
       });
       
+      logger.debug(`📊 [STRATEGY] Résumé global: ${totalRespected}/${totalStrategies} stratégies respectées`);
+      logger.debug(`📊 [STRATEGY] Résultat final strategyMap:`, strategyMap);
+      logger.debug(`📊 [STRATEGY] Nombre de jours avec données: ${Object.keys(strategyMap).length}`);
+      
       setStrategyData(strategyMap);
-    } catch (error) {
-      console.error('Erreur lors du chargement des données de stratégie:', error);
-      // En cas d'erreur, s'assurer que les données sont définies pour éviter l'état de chargement infini
+      
+      // Vérifier si les données sont suffisantes pour les graphiques
+      if (Object.keys(strategyMap).length === 0) {
+        logger.warn('⚠️ [STRATEGY] Aucune donnée de stratégie trouvée pour les graphiques');
+      } else {
+        logger.info(`✅ [STRATEGY] Données chargées avec succès: ${Object.keys(strategyMap).length} jours`);
+      }
+    } catch (error: any) {
+      logger.error('❌ [STRATEGY] Erreur lors du chargement des données de stratégie:', error);
+      logger.error('🔍 [STRATEGY] Détail de l\'erreur:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data
+      });
       setStrategyData({});
     } finally {
       setIsStrategyDataLoading(false);
+      logger.debug('🏁 [STRATEGY] Chargement terminé');
     }
-  }, []);
+  }, [stableSelectedAccount?.id, logger, currentDate]); // Added logger to dependencies
 
   const fetchCalendarData = useCallback(async (year: number, month: number) => {
     try {
       setLoading(true);
-      const accountId = selectedAccount?.id;
+      const accountId = stableSelectedAccount?.id;
       const data = await tradesService.getCalendarData(year, month, accountId);
       setCalendarData(data);
       
@@ -152,14 +247,14 @@ function StrategyPage() {
     } finally {
       setLoading(false);
     }
-  }, [fetchStrategyData, selectedAccount]);
+  }, [fetchStrategyData, stableSelectedAccount]);
 
   const fetchGlobalStrategyData = useCallback(async () => {
     try {
       setIsGlobalStrategyDataLoading(true);
       const params = new URLSearchParams();
-      if (selectedAccount?.id) {
-        params.append('trading_account', selectedAccount.id.toString());
+      if (stableSelectedAccount?.id) {
+        params.append('trading_account', stableSelectedAccount.id.toString());
       }
       const response = await api.get(`/trades/trade-strategies/?${params.toString()}`);
       
@@ -185,13 +280,13 @@ function StrategyPage() {
     } finally {
       setIsGlobalStrategyDataLoading(false);
     }
-  }, [selectedAccount]);
+  }, [stableSelectedAccount]);
 
   // Fonction pour mettre à jour les données de stratégie de manière transparente
   const updateStrategyDataSilently = async (year: number, month: number) => {
     try {
       setIsUpdatingStrategy(true);
-      const accountId = selectedAccount?.id;
+      const accountId = stableSelectedAccount?.id;
       await fetchStrategyData(year, month, accountId);
     } catch (error) {
       console.error('Erreur lors de la mise à jour des données de stratégie:', error);
@@ -200,67 +295,99 @@ function StrategyPage() {
     }
   };
 
-  // Charger toutes les données en une seule fois pour éviter les rechargements multiples
+  // Chargement automatique du compte par défaut si aucun compte n'est sélectionné
   useEffect(() => {
-    // Éviter les rechargements multiples si déjà en cours
-    if (isLoadingInProgress) {
-      return;
+    if (!stableSelectedAccount && !isLoadingInProgress) {
+      logger.debug('⏸️ [STRATEGY] Aucun compte sélectionné, tentative de récupération automatique');
+      
+      const tryLoadDefaultAccount = async () => {
+        try {
+          const accounts = await tradingAccountService.getAccounts();
+          const defaultAccount = accounts.find((acc: any) => acc.is_default);
+          if (defaultAccount) {
+            console.log('🔄 [STRATEGY] Récupération automatique du compte par défaut:', defaultAccount.name);
+            setSelectedAccount(defaultAccount);
+          } else {
+            console.log('⚠️ [STRATEGY] Aucun compte par défaut trouvé');
+            setHasInitialDataLoaded(true);
+          }
+        } catch (error) {
+          console.warn('⚠️ [STRATEGY] Erreur lors de la récupération du compte par défaut:', error);
+          setHasInitialDataLoaded(true);
+        }
+      };
+      
+      tryLoadDefaultAccount();
     }
+  }, [stableSelectedAccount, isLoadingInProgress]);
 
-    // Éviter les rechargements si le compte n'a pas changé
-    const currentAccountId = selectedAccount?.id;
-    if (currentAccountId === lastSelectedAccount && hasInitialDataLoaded) {
-      return;
-    }
-
-    // Annuler le timeout précédent s'il existe
-    if (loadingTimeout) {
-      clearTimeout(loadingTimeout);
-    }
-
-    const loadAllData = async () => {
-      setIsLoadingInProgress(true);
-      setHasInitialDataLoaded(false);
+  // Gérer le changement de compte séparément
+  useEffect(() => {
+    console.log('🔄 [STRATEGY] useEffect account change triggered:', {
+      stableSelectedAccount: stableSelectedAccount,
+      hasInitialDataLoaded: hasInitialDataLoaded,
+      accountId: stableSelectedAccount?.id,
+      accountName: stableSelectedAccount?.name
+    });
+    
+    if (stableSelectedAccount && hasInitialDataLoaded) {
+      logger.debug('🔄 [STRATEGY] Compte changé, rechargement des données:', {
+        accountId: stableSelectedAccount.id,
+        accountName: stableSelectedAccount.name
+      });
+      
+      // Recharger les données pour le nouveau compte
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
-      const accountId = selectedAccount?.id;
       
-      try {
-        // Charger toutes les données en parallèle
-        await Promise.all([
-          fetchCalendarData(year, month),
-          fetchGlobalStrategyData(),
-          fetchStrategyData(year, month, accountId)
-        ]);
-        
-        // Petit délai pour éviter les rechargements multiples
-        const timeoutId = setTimeout(() => {
-          setHasInitialDataLoaded(true);
-          setIsLoadingInProgress(false);
-          setLastSelectedAccount(currentAccountId); // Mémoriser le compte actuel
-          setLoadingTimeout(null);
-        }, 100);
-        
-        setLoadingTimeout(timeoutId);
-      } catch (error) {
-        console.error('Erreur lors du chargement des données:', error);
-        setIsLoadingInProgress(false);
-      }
-    };
-    
-    // Délai pour éviter les changements rapides de selectedAccount
-    const debounceTimeout = setTimeout(() => {
-      loadAllData();
-    }, 100);
+      const loadDataForNewAccount = async () => {
+        try {
+          await Promise.all([
+            fetchCalendarData(year, month),
+            fetchGlobalStrategyData(),
+            fetchStrategyData(year, month, stableSelectedAccount.id)
+          ]);
+        } catch (error) {
+          console.error('Erreur lors du rechargement pour le nouveau compte:', error);
+        }
+      };
+      
+      loadDataForNewAccount();
+    }
+  }, [stableSelectedAccount?.id]); // Seulement quand l'ID du compte change
 
-    return () => {
-      clearTimeout(debounceTimeout);
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentDate, selectedAccount?.id]);
+  // Chargement initial quand un compte est sélectionné pour la première fois
+  useEffect(() => {
+    if (stableSelectedAccount && !hasInitialDataLoaded && !isLoadingInProgress) {
+      console.log('🚀 [STRATEGY] Chargement initial des données pour le compte:', stableSelectedAccount.name);
+      
+      const loadInitialData = async () => {
+        try {
+          setIsLoadingInProgress(true);
+          const year = currentDate.getFullYear();
+          const month = currentDate.getMonth() + 1;
+          
+          console.log('📅 [STRATEGY] Chargement des données pour:', { year, month, accountId: stableSelectedAccount.id });
+          
+          await Promise.all([
+            fetchCalendarData(year, month),
+            fetchGlobalStrategyData(),
+            fetchStrategyData(year, month, stableSelectedAccount.id)
+          ]);
+          
+          console.log('✅ [STRATEGY] Données initiales chargées avec succès');
+          setHasInitialDataLoaded(true);
+          setLastSelectedAccount(stableSelectedAccount.id);
+        } catch (error) {
+          console.error('❌ [STRATEGY] Erreur lors du chargement initial:', error);
+        } finally {
+          setIsLoadingInProgress(false);
+        }
+      };
+      
+      loadInitialData();
+    }
+  }, [stableSelectedAccount?.id, hasInitialDataLoaded, isLoadingInProgress]);
 
   // Écouter les événements de mise à jour des trades pour recharger le calendrier
   useEffect(() => {
@@ -369,6 +496,8 @@ function StrategyPage() {
   };
 
   const getStrategyIndicator = (day: number) => {
+    logger.debug(`🔍 [INDICATOR] getStrategyIndicator appelé pour le jour ${day}`);
+    
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth() + 1;
     const date = new Date(year, month - 1, day);
@@ -379,17 +508,39 @@ function StrategyPage() {
     const dayStr = String(date.getDate()).padStart(2, '0');
     const dateStr = `${yearStr}-${monthStr}-${dayStr}`;
     
+    logger.debug(`📅 [INDICATOR] Date formatée: ${dateStr}`);
+    logger.debug(`📊 [INDICATOR] strategyData disponible:`, {
+      keys: Object.keys(strategyData),
+      hasDataForDate: !!strategyData[dateStr],
+      dataForDate: strategyData[dateStr]
+    });
+    
     const data = strategyData[dateStr];
-    if (!data) return null;
+    
+    if (!data) {
+      logger.debug(`❌ [INDICATOR] Aucune donnée pour ${dateStr}, retour null`);
+      return null;
+    }
     
     // Logique binaire : si au moins un trade n'est pas respecté, la stratégie n'est pas respectée
     const isRespected = data.respected === data.total && data.total > 0;
     
-    return {
+    logger.debug(`📈 [INDICATOR] Calcul pour ${dateStr}:`, {
+      respected: data.respected,
+      total: data.total,
+      isRespected,
+      percentage: data.percentage
+    });
+    
+    const result = {
       isRespected,
       color: isRespected ? 'bg-blue-500' : 'bg-gray-500',
       text: isRespected ? 'Stratégie respectée' : 'Stratégie non respectée'
     };
+    
+    logger.debug(`✅ [INDICATOR] Résultat pour ${dateStr}:`, result);
+    
+    return result;
   };
 
 
@@ -527,6 +678,57 @@ function StrategyPage() {
     );
   }
 
+  // Écran quand aucun compte n'est sélectionné
+  if (!stableSelectedAccount) {
+    return (
+      <div className="pt-1 px-6 pb-6 bg-gray-50">
+        <div className="max-w-full mx-auto">
+          {/* En-tête */}
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Stratégie de Trading</h1>
+              <p className="text-gray-600">Planifiez et suivez vos stratégies de trading avec le calendrier intégré</p>
+            </div>
+          </div>
+
+          {/* Sélecteur de compte de trading */}
+          <div className="flex justify-between items-center mb-6">
+            <TradingAccountSelector
+              selectedAccountId={selectedAccount?.id}
+              onAccountChange={setSelectedAccount}
+              className="flex items-center space-x-2"
+            />
+          </div>
+
+          {/* Message d'information */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
+                <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Sélectionnez un compte de trading
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Pour afficher vos stratégies de trading, veuillez sélectionner un compte de trading dans le menu ci-dessus.
+              </p>
+              <div className="text-sm text-gray-500">
+                <p className="mb-2">Si vous n'avez pas encore de compte de trading :</p>
+                <ol className="list-decimal list-inside space-y-1 text-left max-w-md mx-auto">
+                  <li>Allez dans le menu <strong>"Comptes de Trading"</strong> dans la barre latérale</li>
+                  <li>Cliquez sur <strong>"Nouveau compte"</strong></li>
+                  <li>Remplissez le formulaire et marquez-le comme <strong>"Compte par défaut"</strong></li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pt-1 px-6 pb-6 bg-gray-50">
       <div className="max-w-full mx-auto">
@@ -555,9 +757,9 @@ function StrategyPage() {
             onAccountChange={setSelectedAccount}
             className="flex items-center space-x-2"
           />
-          {selectedAccount && (
+          {stableSelectedAccount && (
             <div className="text-sm text-gray-600">
-              Stratégies pour le compte "{selectedAccount.name}"
+              Stratégies pour le compte "{stableSelectedAccount.name}"
             </div>
           )}
         </div>
@@ -801,12 +1003,30 @@ function StrategyPage() {
           <div className="w-full xl:w-96 xl:flex-shrink-0 flex flex-col space-y-4">
             {/* Graphique de sessions gagnantes */}
             <div className="flex-1">
-              <SessionWinRateChart strategyData={strategyData} isLoading={isStrategyDataLoading} />
+              {(() => {
+                logger.debug('📊 [CHARTS] Rendu SessionWinRateChart avec:', {
+                  strategyDataKeys: Object.keys(strategyData),
+                  strategyDataLength: Object.keys(strategyData).length,
+                  isLoading: isStrategyDataLoading,
+                  hasData: Object.keys(strategyData).length > 0,
+                  strategyDataContent: strategyData
+                });
+                logger.debug('📊 [CHARTS] État complet de strategyData:', strategyData);
+                return <SessionWinRateChart strategyData={strategyData} isLoading={isStrategyDataLoading} />;
+              })()}
             </div>
             
             {/* Graphique d'émotions dominantes */}
             <div className="flex-1">
-              <EmotionsChart strategyData={strategyData} isLoading={isStrategyDataLoading} />
+              {(() => {
+                logger.debug('📊 [CHARTS] Rendu EmotionsChart avec:', {
+                  strategyDataKeys: Object.keys(strategyData),
+                  strategyDataLength: Object.keys(strategyData).length,
+                  isLoading: isStrategyDataLoading,
+                  hasData: Object.keys(strategyData).length > 0
+                });
+                return <EmotionsChart strategyData={strategyData} isLoading={isStrategyDataLoading} />;
+              })()}
             </div>
           </div>
         </div>
@@ -868,11 +1088,11 @@ function StrategyPage() {
               
               {/* Calendrier Annuel */}
               <div className="flex-1">
-                {hasInitialDataLoaded && selectedAccount && (
+                {hasInitialDataLoaded && stableSelectedAccount && (
                   <YearlyCalendar 
-                    key={`calendar-${selectedAccount.id}-${currentYear}`}
+                    key={`calendar-${stableSelectedAccount.id}-${currentYear}`}
                     year={currentYear} 
-                    selectedAccount={selectedAccount}
+                    selectedAccount={stableSelectedAccount}
                     currency={selectedCurrency}
                     onMonthClick={(month, year) => {
                       setActiveTab('calendar');

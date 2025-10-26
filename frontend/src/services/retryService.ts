@@ -44,7 +44,7 @@ class RetryService {
     strategies: new Map(),
     enableAdaptiveRetry: true,
     enableMetrics: true,
-    enableLogging: true
+    enableLogging: false
   };
   
   private metrics: RetryMetrics = {

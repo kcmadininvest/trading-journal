@@ -104,6 +104,11 @@ class AuthService {
       detail: { clearAllCaches: true } 
     }));
     
+    // Rediriger vers la page d'accueil
+    if (typeof window !== 'undefined') {
+      window.location.hash = '';
+    }
+    
     this.accessToken = null;
     this.refreshToken = null;
     this.user = null;
@@ -111,10 +116,7 @@ class AuthService {
 
   async login(credentials: LoginData): Promise<LoginResponse> {
     try {
-      console.log('🔐 [AUTH] Début de la connexion pour:', credentials.email);
-      
       // Nettoyer complètement le cache et les tokens avant la connexion
-      console.log('🧹 [AUTH] Nettoyage complet avant connexion');
       this.clearStorage();
       
       // S'assurer que les tokens sont bien supprimés de la mémoire
@@ -126,17 +128,8 @@ class AuthService {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       
-      console.log('📡 [AUTH] Envoi de la requête de connexion...');
       const response = await apiClient.post('/accounts/auth/login/', credentials);
       const { access, refresh, user, session_info } = response.data;
-      
-      console.log('✅ [AUTH] Connexion réussie pour:', user.email, 'ID:', user.id);
-      console.log('👤 [AUTH] Utilisateur:', {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        is_admin: user.is_admin
-      });
       
       this.saveTokensToStorage(access, refresh, user);
       
@@ -204,8 +197,12 @@ class AuthService {
           refresh: this.refreshToken
         });
       }
-    } catch (error) {
-      console.error('Erreur lors de la déconnexion:', error);
+    } catch (error: any) {
+      // Pour la déconnexion, on ignore les erreurs 401 car le token peut être expiré
+      // L'important est de nettoyer le stockage local
+      if (error.response?.status !== 401) {
+        console.error('Erreur lors de la déconnexion:', error);
+      }
     } finally {
       this.clearStorage();
     }

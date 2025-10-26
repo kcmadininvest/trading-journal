@@ -150,8 +150,9 @@ class PasswordChangeView(APIView):
 class LogoutView(APIView):
     """
     Vue pour la déconnexion avec blacklist des tokens
+    Permet la déconnexion même si le token est expiré
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = []  # Pas d'authentification requise pour la déconnexion
     
     def post(self, request):
         try:
@@ -176,10 +177,22 @@ class LogoutView(APIView):
                         created_at = datetime.fromtimestamp(iat_timestamp) if iat_timestamp else datetime.now()
                         expires_at = datetime.fromtimestamp(exp_timestamp) if exp_timestamp else datetime.now()
                         
+                        # Essayer de récupérer l'utilisateur depuis le token
+                        user_id = access_token.get('user_id')
+                        user = None
+                        if user_id:
+                            try:
+                                from django.contrib.auth import get_user_model
+                                UserModel = get_user_model()
+                                if UserModel:
+                                    user = UserModel.objects.get(id=user_id)
+                            except Exception:
+                                pass
+                        
                         outstanding_token, created = OutstandingToken.objects.get_or_create(  # type: ignore
                             jti=jti,
                             defaults={
-                                'user': request.user,
+                                'user': user,
                                 'token': access_token_str,
                                 'created_at': created_at,
                                 'expires_at': expires_at

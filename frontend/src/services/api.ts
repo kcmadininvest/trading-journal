@@ -2,6 +2,15 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
 
+// Configuration recommandée pour la production :
+// const DEFAULT_API_BASE_URL = process.env.NODE_ENV === 'development'
+//   ? '/api'
+//   : (typeof window !== 'undefined'
+//       ? `${window.location.protocol}//${window.location.host}/api`
+//       : '/api');
+// 
+// const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || DEFAULT_API_BASE_URL;
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -30,7 +39,10 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Ne pas essayer de rafraîchir le token pour les requêtes de déconnexion
+    const isLogoutRequest = originalRequest.url?.includes('/accounts/auth/logout/');
+    
+    if (error.response?.status === 401 && !originalRequest._retry && !isLogoutRequest) {
       originalRequest._retry = true;
 
       try {
@@ -65,5 +77,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-
-

@@ -275,7 +275,6 @@ export const tradesService = {
     // Vérifier l'authentification avant de faire l'appel API
     const token = localStorage.getItem('access_token');
     if (!token) {
-      console.log('🔐 [TRADES] Utilisateur non authentifié, arrêt de la récupération des données du calendrier');
       return [];
     }
     
@@ -284,7 +283,6 @@ export const tradesService = {
     // Vérifier le cache d'abord
     const cachedData = cacheManager.get(cacheKey);
     if (cachedData) {
-      console.log('✅ [TRADES] Données du calendrier récupérées du cache');
       return cachedData;
     }
 
@@ -301,14 +299,13 @@ export const tradesService = {
         
         // Mettre en cache pour 5 minutes
         cacheManager.set(cacheKey, response.data, 5 * 60 * 1000);
-        console.log('💾 [TRADES] Données du calendrier mises en cache');
         
         return response.data;
       },
       'calendar_data',
       {
         onSuccess: (result) => {
-          console.log('✅ [TRADES] Données du calendrier récupérées avec succès');
+          // Données du calendrier récupérées avec succès
         },
         onFailure: (error) => {
           console.error('❌ [TRADES] Échec de la récupération du calendrier:', error);
@@ -324,7 +321,6 @@ export const tradesService = {
     // Vérifier le cache d'abord
     const cachedData = cacheManager.get(cacheKey);
     if (cachedData) {
-      console.log('✅ [TRADES] Données d\'analytics récupérées du cache');
       return cachedData;
     }
 
@@ -334,7 +330,6 @@ export const tradesService = {
     
     // Mettre en cache pour 10 minutes
     cacheManager.set(cacheKey, response.data, 10 * 60 * 1000);
-    console.log('💾 [TRADES] Données d\'analytics mises en cache');
     
     return response.data;
   },
@@ -376,7 +371,6 @@ export const tradesService = {
     // Vérifier le cache d'abord
     const cachedData = cacheManager.get(cacheKey);
     if (cachedData) {
-      console.log('✅ [TRADES] Stratégies de trades récupérées du cache');
       return cachedData;
     }
 
@@ -401,7 +395,6 @@ export const tradesService = {
     
     // Mettre en cache pour 5 minutes
     cacheManager.set(cacheKey, result, 5 * 60 * 1000);
-    console.log('💾 [TRADES] Stratégies de trades mises en cache');
     
     return result;
   },
@@ -417,7 +410,6 @@ export const tradesService = {
     const response = await apiClient.post('/trades/trade-strategies/', strategyData);
     
     // Invalider le cache des stratégies et du calendrier après création
-    console.log('🔄 [TRADES] Invalidation du cache après création de stratégie');
     cacheManager.invalidatePattern('trade_strategies');
     cacheManager.invalidatePattern('trade_strategies_by_date');
     cacheManager.invalidatePattern('calendar');
@@ -430,7 +422,6 @@ export const tradesService = {
     const response = await apiClient.patch(`/trades/trade-strategies/${id}/`, strategyData);
     
     // Invalider le cache des stratégies et du calendrier après mise à jour
-    console.log('🔄 [TRADES] Invalidation du cache après mise à jour de stratégie');
     cacheManager.invalidatePattern('trade_strategies');
     cacheManager.invalidatePattern('trade_strategies_by_date');
     cacheManager.invalidatePattern('calendar');
@@ -463,7 +454,6 @@ export const tradesService = {
     // Vérifier le cache d'abord
     const cachedData = cacheManager.get(cacheKey);
     if (cachedData) {
-      console.log('✅ [TRADES] Stratégies par date récupérées du cache');
       return cachedData;
     }
 
@@ -478,14 +468,13 @@ export const tradesService = {
         
         // Mettre en cache pour 5 minutes
         cacheManager.set(cacheKey, response.data, 5 * 60 * 1000);
-        console.log('💾 [TRADES] Stratégies par date mises en cache');
         
         return response.data;
       },
       {
         maxRetries: 3,
         onRetry: (attempt, error) => {
-          console.log(`🔄 [TRADES] Retry ${attempt} pour les stratégies du ${date}:`, error.message);
+          // Retry pour les stratégies
         }
       }
     );
@@ -510,7 +499,6 @@ export const tradesService = {
     });
     
     // Invalider le cache des stratégies et du calendrier après création en masse
-    console.log('🔄 [TRADES] Invalidation du cache après création en masse de stratégies');
     cacheManager.invalidatePattern('trade_strategies');
     cacheManager.invalidatePattern('trade_strategies_by_date');
     cacheManager.invalidatePattern('calendar');
@@ -549,7 +537,6 @@ export const tradesService = {
       ).filter(Boolean));
     }
     
-    console.log(`✅ [TRADES] Préchargement terminé: ${results.length} dates traitées`);
     return results;
   },
 

@@ -35,7 +35,7 @@ class ErrorHandler {
     retryDelay: 1000,
     exponentialBackoff: true,
     enableFallback: true,
-    enableLogging: true,
+    enableLogging: false,
     enableMetrics: true
   };
   

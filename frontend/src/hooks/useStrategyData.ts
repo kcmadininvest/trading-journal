@@ -22,6 +22,9 @@ export const useStrategyData = (selectedAccount: TradingAccount | null, currentD
 
   const fetchStrategyData = useCallback(async (year: number, month: number, accountId?: number) => {
     try {
+      // Préchargement des stratégies temporairement désactivé pour éviter les boucles infinies
+      // TODO: Réactiver une fois le problème de boucle résolu
+      /*
       const data = await tradesService.getTradeStrategiesByDate(
         `${year}-${month.toString().padStart(2, '0')}-01`,
         accountId
@@ -37,6 +40,10 @@ export const useStrategyData = (selectedAccount: TradingAccount | null, currentD
       });
       
       setStrategyData(strategyMap);
+      */
+      
+      // Version simplifiée sans préchargement
+      setStrategyData({});
     } catch (error) {
       console.error('Erreur lors du chargement des données de stratégie:', error);
       setStrategyData({});

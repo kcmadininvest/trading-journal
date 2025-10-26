@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TradingAccount } from '../../types';
 import { tradingAccountService } from '../../services/tradingAccountService';
-import { tradesService } from '../../services/trades';
 
 interface TradingAccountSelectorProps {
   selectedAccountId?: number;
@@ -24,30 +23,29 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
   const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
 
   const loadAccounts = useCallback(async (forceReload = false) => {
-    console.log('🔄 [TRADING_ACCOUNT_SELECTOR] Début du chargement des comptes, forceReload:', forceReload);
     
     // Vérifier si l'utilisateur est authentifié avant de charger les comptes
     const token = localStorage.getItem('access_token');
     if (!token) {
-      console.log('🔐 [TRADING_ACCOUNT_SELECTOR] Utilisateur non authentifié, arrêt du chargement des comptes');
-      setAccountsLoaded(false);
+      console.log('⚠️ [TradingAccountSelector] Pas de token d\'authentification');
+      setAccountsLoaded(true);
       setAccounts([]);
+      setError(null);
       return;
     }
     
+    console.log('🔍 [TradingAccountSelector] Début du chargement des comptes, forceReload:', forceReload);
+
     // Guard: éviter les rechargements inutiles
     if (!forceReload && accountsLoaded) {
-      console.log('ℹ️ [TRADING_ACCOUNT_SELECTOR] Comptes déjà chargés, pas de rechargement');
       return
     }
     
     if (!forceReload && isLoadingInProgress) {
-      console.log('⏳ [TRADING_ACCOUNT_SELECTOR] Chargement en cours, pas de rechargement');
       return
     }
     
     try {
-      console.log('🚀 [TRADING_ACCOUNT_SELECTOR] Début du chargement des comptes...');
       setIsLoadingInProgress(true);
       setLoading(true);
       setError(null);
@@ -55,66 +53,46 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
       const accountsData = await tradingAccountService.getAccounts();
       
       const accountsArray = Array.isArray(accountsData) ? accountsData : [];
-      console.log('📊 [TRADING_ACCOUNT_SELECTOR] Comptes récupérés:', accountsArray.length);
+      console.log('📊 [TradingAccountSelector] Comptes chargés:', {
+        count: accountsArray.length,
+        accounts: accountsArray.map(acc => ({ id: acc.id, name: acc.name, is_default: acc.is_default }))
+      });
+      
       setAccounts(accountsArray);
       setAccountsLoaded(true);
       
       // Si aucun compte sélectionné, utiliser le compte par défaut
-      console.log('🔍 [TRADING_ACCOUNT_SELECTOR] Vérification sélection automatique:', {
-        selectedAccountId,
-        accountsCount: accountsArray.length,
-        hasDefaultAccount: accountsArray.some(acc => acc.is_default)
-      });
-      
       if (!selectedAccountId && accountsArray.length > 0) {
         const defaultAccount = accountsArray.find(acc => acc.is_default);
-        console.log('🔍 [TRADING_ACCOUNT_SELECTOR] Compte par défaut trouvé:', defaultAccount);
         if (defaultAccount) {
-          console.log('🎯 [TRADING_ACCOUNT_SELECTOR] Sélection du compte par défaut:', defaultAccount.name);
+          console.log('🔄 [TradingAccountSelector] Sélection automatique du compte par défaut:', defaultAccount.name);
           onAccountChange(defaultAccount);
-          
-          // Déclencher le préchargement intelligent en arrière-plan
-          setTimeout(() => {
-            // Vérifier que l'utilisateur est toujours authentifié avant le préchargement
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-              console.log('🔐 [TRADING_ACCOUNT_SELECTOR] Utilisateur non authentifié, préchargement annulé');
-              return;
-            }
-            
-            console.log('🚀 [TRADING_ACCOUNT_SELECTOR] Démarrage du préchargement intelligent');
-            tradesService.preloadCurrentMonth(defaultAccount.id).catch(error => {
-              console.warn('⚠️ [TRADING_ACCOUNT_SELECTOR] Erreur lors du préchargement:', error);
-            });
-          }, 1000);
-        } else {
-          console.log('⚠️ [TRADING_ACCOUNT_SELECTOR] Aucun compte par défaut trouvé');
+        } else if (accountsArray.length === 1) {
+          // Si un seul compte, le sélectionner automatiquement
+          console.log('🔄 [TradingAccountSelector] Sélection automatique du seul compte disponible:', accountsArray[0].name);
+          onAccountChange(accountsArray[0]);
         }
-      } else {
-        console.log('ℹ️ [TRADING_ACCOUNT_SELECTOR] Pas de sélection automatique:', {
-          reason: selectedAccountId ? 'Compte déjà sélectionné' : 'Aucun compte disponible'
-        });
       }
     } catch (err: any) {
-      console.log('❌ [TRADING_ACCOUNT_SELECTOR] Erreur lors du chargement:', err.response?.status, err.message);
-      
       // Gérer les erreurs d'authentification de manière plus élégante
       if (err.response?.status === 401) {
-        setError('Veuillez vous connecter pour accéder aux comptes de trading');
+        // Token expiré ou invalide - nettoyer et ne pas afficher d'erreur
+        setAccounts([]);
+        setAccountsLoaded(true);
+        setError(null);
+        console.warn('⚠️ [TradingAccountSelector] Token expiré, nettoyage des comptes');
       } else if (err.response?.status === 404 || err.response?.status === 403) {
         // L'utilisateur n'a pas de comptes de trading
-        console.log('ℹ️ [TRADING_ACCOUNT_SELECTOR] Utilisateur sans comptes');
         setAccounts([]);
         setAccountsLoaded(true);
         setError(null); // Pas d'erreur, juste pas de comptes
       } else {
         setError('Erreur lors du chargement des comptes');
+        console.error('❌ [TradingAccountSelector] Error loading accounts:', err);
       }
-      console.error('❌ [TradingAccountSelector] Error loading accounts:', err);
     } finally {
       setLoading(false);
       setIsLoadingInProgress(false);
-      console.log('✅ [TRADING_ACCOUNT_SELECTOR] Chargement terminé');
     }
   }, [accountsLoaded, isLoadingInProgress, onAccountChange, selectedAccountId]);
 
@@ -123,16 +101,34 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
     if (!accountsLoaded && !isLoadingInProgress) {
       loadAccounts(false);
     }
-  }, [accountsLoaded, isLoadingInProgress, loadAccounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountsLoaded, isLoadingInProgress]);
+
+  // Effet pour gérer la sélection automatique du compte par défaut
+  useEffect(() => {
+    console.log('🔄 [TradingAccountSelector] useEffect accounts change:', {
+      accountsLength: accounts.length,
+      selectedAccountId: selectedAccountId,
+      accounts: accounts.map(acc => ({ id: acc.id, name: acc.name, is_default: acc.is_default }))
+    });
+    
+    if (accounts.length > 0 && !selectedAccountId) {
+      const defaultAccount = accounts.find(acc => acc.is_default);
+      if (defaultAccount) {
+        console.log('🔄 [TradingAccountSelector] Sélection automatique du compte par défaut (useEffect):', defaultAccount.name);
+        onAccountChange(defaultAccount);
+      } else if (accounts.length === 1) {
+        console.log('🔄 [TradingAccountSelector] Sélection automatique du seul compte disponible (useEffect):', accounts[0].name);
+        onAccountChange(accounts[0]);
+      }
+    }
+  }, [accounts, selectedAccountId, onAccountChange]);
 
   // Écouter les événements de changement d'utilisateur pour recharger les comptes
   useEffect(() => {
     const handleUserChange = (event: any) => {
-      console.log('👤 [TRADING_ACCOUNT_SELECTOR] Événement de changement d\'utilisateur:', event.type);
-      
       if (event.type === 'user:logout') {
         // Lors de la déconnexion, nettoyer sans recharger
-        console.log('🧹 [TRADING_ACCOUNT_SELECTOR] Déconnexion détectée, nettoyage des comptes');
         setAccountsLoaded(false);
         setAccounts([]);
         return;
@@ -141,19 +137,21 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
       // Pour les connexions, recharger les comptes
       setAccountsLoaded(false);
       setAccounts([]);
-      loadAccounts(true); // Forcer le rechargement
+      // Utiliser une fonction anonyme pour éviter la dépendance circulaire
+      setTimeout(() => {
+        loadAccounts(true);
+      }, 100);
     };
 
-    console.log('👂 [TRADING_ACCOUNT_SELECTOR] Ajout des écouteurs d\'événements');
     window.addEventListener('user:login', handleUserChange);
     window.addEventListener('user:logout', handleUserChange);
 
     return () => {
-      console.log('🧹 [TRADING_ACCOUNT_SELECTOR] Suppression des écouteurs d\'événements');
       window.removeEventListener('user:login', handleUserChange);
       window.removeEventListener('user:logout', handleUserChange);
     };
-  }, [loadAccounts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAccountChange = (accountId: string) => {
     
@@ -210,7 +208,7 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
               <div className="text-xs text-amber-600">
                 <p className="mb-1"><strong>Pour créer un compte :</strong></p>
                 <ol className="list-decimal list-inside space-y-1 ml-2">
-                  <li>Allez dans le menu <strong>"Comptes"</strong> dans la barre latérale</li>
+                  <li>Allez dans le menu <strong>"Comptes de Trading"</strong> dans la barre latérale</li>
                   <li>Cliquez sur <strong>"Nouveau compte"</strong></li>
                   <li>Remplissez le formulaire et marquez-le comme <strong>"Compte par défaut"</strong></li>
                 </ol>

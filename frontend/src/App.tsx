@@ -8,6 +8,7 @@ import { PageSuspense } from './components/SuspenseBoundary';
 import Layout from './components/Layout/Layout';
 import SidebarProfileModal from './components/Layout/SidebarProfileModal';
 import SessionWarningModal from './components/auth/SessionWarningModal';
+import DebugControls from './components/Debug/DebugControls';
 import { LazyTradesPage, LazyStrategyPage, LazyStatisticsPage, LazyAnalyticsPage, LazyTradingAccountsPage, LazySettingsPage, LazyArchivesPage, LazyPositionStrategiesPage, LazyHomePage } from './components/LazyPages';
 import { authService, User } from './services/auth';
 import sessionManager, { SessionWarning } from './services/sessionManager';
@@ -84,24 +85,21 @@ function App() {
 
     // Gérer les événements de changement d'utilisateur
     const handleUserLogin = (event: any) => {
-      console.log('🎉 [APP] Événement user:login reçu');
       const user = event.detail?.user;
       if (user) {
-        console.log('👤 [APP] Connexion de l\'utilisateur:', user.email, 'ID:', user.id);
         setCurrentUser(user);
         cacheManager.setCurrentUser(user.id?.toString() || null);
-        console.log('✅ [APP] Utilisateur connecté et cache mis à jour');
-      } else {
-        console.log('⚠️ [APP] Événement user:login sans utilisateur');
       }
     };
 
     const handleUserLogout = () => {
-      console.log('👋 [APP] Événement user:logout reçu');
       setCurrentUser(null);
       cacheManager.setCurrentUser(null);
       cacheManager.clearAllCaches();
-      console.log('✅ [APP] Utilisateur déconnecté et cache nettoyé');
+      
+      // Rediriger vers la page d'accueil après déconnexion
+      window.location.hash = '';
+      setCurrentPage('trades');
     };
 
     // Écouter les événements de changement d'utilisateur
@@ -259,6 +257,9 @@ function App() {
           onDismiss={handleSessionWarningDismiss}
         />
       )}
+
+      {/* Contrôles de debug (seulement en développement) */}
+      <DebugControls />
       </div>
       
       {/* React Query DevTools en développement */}

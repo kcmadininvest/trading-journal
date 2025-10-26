@@ -54,7 +54,9 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
     
     try {
       setLoading(true);
-      const updatedUser = await usersService.updateUser(user.id, formData);
+      // Exclure l'email des données à envoyer car il est en lecture seule côté serveur
+      const { email, ...dataToSend } = formData;
+      const updatedUser = await usersService.updateUser(user.id, dataToSend);
       onSave(updatedUser);
       onClose();
     } catch (error) {
@@ -137,11 +139,13 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                   id="email"
                   name="email"
                   value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
                   disabled={loading}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  L'adresse email ne peut pas être modifiée pour des raisons de sécurité
+                </p>
               </div>
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
@@ -285,4 +289,3 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 };
 
 export default UserEditModal;
-

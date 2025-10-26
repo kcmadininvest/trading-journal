@@ -25,26 +25,13 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
       setSelectedAccount(null);
       setSelectedFile(null);
       setSelectorKey(prev => prev + 1); // Forcer le rechargement du sélecteur
-      console.log('🔄 [GLOBAL_IMPORT_MODAL] Modale ouverte, réinitialisation de l\'état');
-      
-      // Délai pour permettre au TradingAccountSelector de se charger
-      const timer = setTimeout(() => {
-        console.log('⏰ [GLOBAL_IMPORT_MODAL] Délai écoulé, vérification des comptes');
-        // Forcer la mise à jour si aucun compte n'est sélectionné
-        if (!selectedAccount) {
-          console.log('🔄 [GLOBAL_IMPORT_MODAL] Aucun compte sélectionné, forçage de la mise à jour');
-        }
-      }, 2000);
-      
-      return () => clearTimeout(timer);
     }
-  }, [isOpen, selectedAccount]);
+  }, [isOpen]); // Retirer selectedAccount des dépendances pour éviter la boucle infinie
 
   // Écouter les événements de mise à jour des comptes
   useEffect(() => {
     const handleAccountsUpdate = () => {
       // Forcer la mise à jour du sélecteur de comptes
-      console.log('🔄 [GLOBAL_IMPORT_MODAL] Mise à jour des comptes détectée');
     };
 
     window.addEventListener('trades:updated', handleAccountsUpdate);
@@ -60,7 +47,6 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
   useEffect(() => {
     if (isOpen && !selectedAccount) {
       const timer = setTimeout(() => {
-        console.log('🔄 [GLOBAL_IMPORT_MODAL] Vérification forcée après délai');
         // Forcer le rechargement du sélecteur si aucun compte n'est sélectionné
         setSelectorKey(prev => prev + 1);
       }, 3000);
@@ -71,17 +57,8 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
 
   // Gérer la sélection automatique du compte par défaut
   const handleAccountChange = (account: TradingAccount | null) => {
-    console.log('🔄 [GLOBAL_IMPORT_MODAL] handleAccountChange appelé avec:', account?.name || 'Aucun');
-    console.log('🔄 [GLOBAL_IMPORT_MODAL] Détails du compte:', account);
     setSelectedAccount(account);
   };
-
-  // Debug: afficher l'état du bouton
-  console.log('🔍 [GLOBAL_IMPORT_MODAL] État actuel:', {
-    selectedAccount: selectedAccount?.name || 'Aucun',
-    selectedFile: selectedFile?.name || 'Aucun',
-    buttonText: !selectedAccount ? 'Créer un compte de trading' : 'Importer le fichier'
-  });
 
   if (!isOpen) return null;
 

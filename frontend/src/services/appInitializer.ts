@@ -51,8 +51,6 @@ class AppInitializer {
       return;
     }
 
-    console.log('🚀 [APP_INITIALIZER] Initialisation de l\'application avec optimisations');
-
     try {
       // 1. Configurer tous les services
       this.configureServices();
@@ -69,8 +67,6 @@ class AppInitializer {
 
       this.isInitialized = true;
       this.currentTradingAccountId = tradingAccountId || null;
-      
-      console.log('✅ [APP_INITIALIZER] Application initialisée avec succès');
     } catch (error) {
       console.error('❌ [APP_INITIALIZER] Erreur lors de l\'initialisation:', error);
       throw error;
@@ -107,7 +103,6 @@ class AppInitializer {
       maxRetries: this.cacheConfig.errorHandler.maxRetries
     });
 
-    console.log('⚙️ [APP_INITIALIZER] Services configurés avec la configuration:', process.env.NODE_ENV);
   }
 
   /**
@@ -118,24 +113,23 @@ class AppInitializer {
       // Vérifier si l'utilisateur est authentifié avant de précharger
       const token = localStorage.getItem('access_token');
       if (!token) {
-        console.log('🔐 [APP_INITIALIZER] Utilisateur non authentifié, préchargement ignoré');
         return;
       }
 
       // Précharger les comptes de trading
       await tradingAccountService.getAccounts();
-      console.log('✅ [APP_INITIALIZER] Comptes de trading préchargés');
 
-      // Précharger les données du mois actuel
+      // Préchargement des données du mois actuel temporairement désactivé pour éviter les boucles infinies
+      // TODO: Réactiver une fois le problème de boucle résolu
+      /*
       if (tradingAccountId) {
         await tradesService.preloadCurrentMonth(tradingAccountId);
-        console.log('✅ [APP_INITIALIZER] Données du mois actuel préchargées');
       }
+      */
 
       // Précharger les données d'analytics
       if (tradingAccountId) {
         await tradesService.getAnalyticsData(tradingAccountId);
-        console.log('✅ [APP_INITIALIZER] Données d\'analytics préchargées');
       }
     } catch (error) {
       console.warn('⚠️ [APP_INITIALIZER] Erreur lors du préchargement des données essentielles:', error);
@@ -149,7 +143,6 @@ class AppInitializer {
     // Vérifier si l'utilisateur est authentifié
     const token = localStorage.getItem('access_token');
     if (!token) {
-      console.log('🔐 [APP_INITIALIZER] Utilisateur non authentifié, préchargement en arrière-plan ignoré');
       return;
     }
 
@@ -159,11 +152,9 @@ class AppInitializer {
         if (tradingAccountId) {
           // Précharger le mois suivant
           await tradesService.preloadNextMonth(tradingAccountId);
-          console.log('✅ [APP_INITIALIZER] Données du mois suivant préchargées');
 
           // Précharger les données prédictives
           await tradesService.preloadPredictiveData(tradingAccountId);
-          console.log('✅ [APP_INITIALIZER] Données prédictives préchargées');
         }
       } catch (error) {
         console.warn('⚠️ [APP_INITIALIZER] Erreur lors du préchargement en arrière-plan:', error);
@@ -208,8 +199,6 @@ class AppInitializer {
       
       this.isInitialized = false;
       this.currentTradingAccountId = null;
-      
-      console.log('🧹 [APP_INITIALIZER] Nettoyage effectué');
     } catch (error) {
       console.warn('⚠️ [APP_INITIALIZER] Erreur lors du nettoyage:', error);
     }

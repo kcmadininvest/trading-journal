@@ -9,6 +9,33 @@ import { TradingAccount } from '../types'
 import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency'
 import { StatisticsPageSkeleton } from '../components/ui/Skeleton'
 
+interface AnalyticsData {
+  daily_stats: {
+    avg_gain_per_day: number;
+    median_gain_per_day: number;
+    avg_loss_per_day: number;
+    median_loss_per_day: number;
+    max_gain_per_day: number;
+    max_loss_per_day: number;
+    avg_trades_per_day: number;
+    median_trades_per_day: number;
+  };
+  trade_stats: {
+    max_gain_per_trade: number;
+    max_loss_per_trade: number;
+    avg_winning_trade: number;
+    median_winning_trade: number;
+    avg_losing_trade: number;
+    median_losing_trade: number;
+  };
+  consecutive_stats: {
+    max_consecutive_wins_per_day: number;
+    max_consecutive_losses_per_day: number;
+    max_consecutive_wins: number;
+    max_consecutive_losses: number;
+  };
+}
+
 function StatisticsPageOptimized() {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null)
   const selectedCurrency = useSelectedAccountCurrency(selectedAccount)
@@ -16,7 +43,7 @@ function StatisticsPageOptimized() {
   // Hooks React Query pour les données
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts()
   const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(selectedAccount?.id)
-  const { isLoading: analyticsLoading, error: analyticsError } = useAnalytics(selectedAccount?.id)
+  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(selectedAccount?.id)
   const { data: globalStrategyData, isLoading: globalStrategyLoading } = useGlobalStrategyData()
   
   // Gérer l'invalidation des queries quand les trades sont mis à jour
@@ -83,6 +110,10 @@ function StatisticsPageOptimized() {
     } else {
       return ratio.toFixed(6)
     }
+  }
+
+  const formatNumber = (value: number) => {
+    return value.toFixed(2)
   }
 
   return (
@@ -515,6 +546,195 @@ function StatisticsPageOptimized() {
                   <span className="text-sm text-gray-500">Pire trade</span>
                   <span className="text-base font-semibold text-red-600">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.worst_trade), selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 4: Analyses Avancées */}
+        <div className="mb-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyses Avancées</h2>
+            <p className="text-gray-600">Métriques détaillées et analyses comportementales</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {/* Gains quotidiens */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-medium text-gray-500">Gains Quotidiens</h3>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Moyenne</span>
+                  <span className="text-base font-semibold text-green-600">
+                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.avg_gain_per_day, selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Médiane</span>
+                  <span className="text-base font-semibold text-green-600">
+                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.median_gain_per_day, selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Maximum</span>
+                  <span className="text-base font-semibold text-green-600">
+                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.max_gain_per_day, selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Pertes quotidiennes */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-medium text-gray-500">Pertes Quotidiennes</h3>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Moyenne</span>
+                  <span className="text-base font-semibold text-red-600">
+                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.avg_loss_per_day, selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Médiane</span>
+                  <span className="text-base font-semibold text-red-600">
+                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.median_loss_per_day, selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Maximum</span>
+                  <span className="text-base font-semibold text-red-600">
+                    {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.max_loss_per_day, selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Trades par jour */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-medium text-gray-500">Trades par Jour</h3>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Moyenne</span>
+                  <span className="text-base font-semibold text-purple-600">
+                    {analyticsData?.daily_stats ? formatNumber(analyticsData.daily_stats.avg_trades_per_day) : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Médiane</span>
+                  <span className="text-base font-semibold text-purple-600">
+                    {analyticsData?.daily_stats ? formatNumber(analyticsData.daily_stats.median_trades_per_day) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Trades individuels */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-medium text-gray-500">Trades Individuels</h3>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Gain max</span>
+                  <span className="text-base font-semibold text-green-600">
+                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_gain_per_trade, selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Perte max</span>
+                  <span className="text-base font-semibold text-red-600">
+                    {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_loss_per_trade, selectedCurrency) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Séquences par jour */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-medium text-gray-500">Séquences Quotidiennes</h3>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Gains consécutifs</span>
+                  <span className="text-base font-semibold text-green-600">
+                    {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_wins_per_day : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Pertes consécutives</span>
+                  <span className="text-base font-semibold text-red-600">
+                    {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_losses_per_day : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Séquences globales */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-medium text-gray-500">Séquences Globales</h3>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Gains consécutifs</span>
+                  <span className="text-base font-semibold text-green-600">
+                    {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_wins : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-500">Pertes consécutives</span>
+                  <span className="text-base font-semibold text-red-600">
+                    {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_losses : 'N/A'}
                   </span>
                 </div>
               </div>
