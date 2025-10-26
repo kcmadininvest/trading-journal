@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TradingAccount } from '../../types';
 import { tradingAccountService } from '../../services/tradingAccountService';
+import { useLogger } from '../../hooks/useLogger';
 
 interface TradingAccountSelectorProps {
   selectedAccountId?: number;
@@ -13,6 +14,7 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
   onAccountChange,
   className = ''
 }) => {
+  const logger = useLogger('TradingAccountSelector');
   
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,14 +29,14 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
     // Vérifier si l'utilisateur est authentifié avant de charger les comptes
     const token = localStorage.getItem('access_token');
     if (!token) {
-      console.log('⚠️ [TradingAccountSelector] Pas de token d\'authentification');
+      logger.warn('Pas de token d\'authentification');
       setAccountsLoaded(true);
       setAccounts([]);
       setError(null);
       return;
     }
     
-    console.log('🔍 [TradingAccountSelector] Début du chargement des comptes, forceReload:', forceReload);
+    logger.debug('Début du chargement des comptes, forceReload:', forceReload);
 
     // Guard: éviter les rechargements inutiles
     if (!forceReload && accountsLoaded) {
@@ -53,7 +55,7 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
       const accountsData = await tradingAccountService.getAccounts();
       
       const accountsArray = Array.isArray(accountsData) ? accountsData : [];
-      console.log('📊 [TradingAccountSelector] Comptes chargés:', {
+      logger.debug('Comptes chargés:', {
         count: accountsArray.length,
         accounts: accountsArray.map(acc => ({ id: acc.id, name: acc.name, is_default: acc.is_default }))
       });
@@ -65,11 +67,11 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
       if (!selectedAccountId && accountsArray.length > 0) {
         const defaultAccount = accountsArray.find(acc => acc.is_default);
         if (defaultAccount) {
-          console.log('🔄 [TradingAccountSelector] Sélection automatique du compte par défaut:', defaultAccount.name);
+          logger.debug('Sélection automatique du compte par défaut:', defaultAccount.name);
           onAccountChange(defaultAccount);
         } else if (accountsArray.length === 1) {
           // Si un seul compte, le sélectionner automatiquement
-          console.log('🔄 [TradingAccountSelector] Sélection automatique du seul compte disponible:', accountsArray[0].name);
+          logger.debug('Sélection automatique du seul compte disponible:', accountsArray[0].name);
           onAccountChange(accountsArray[0]);
         }
       }
@@ -80,7 +82,7 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
         setAccounts([]);
         setAccountsLoaded(true);
         setError(null);
-        console.warn('⚠️ [TradingAccountSelector] Token expiré, nettoyage des comptes');
+        logger.warn('Token expiré, nettoyage des comptes');
       } else if (err.response?.status === 404 || err.response?.status === 403) {
         // L'utilisateur n'a pas de comptes de trading
         setAccounts([]);
@@ -88,7 +90,7 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
         setError(null); // Pas d'erreur, juste pas de comptes
       } else {
         setError('Erreur lors du chargement des comptes');
-        console.error('❌ [TradingAccountSelector] Error loading accounts:', err);
+        logger.error('Error loading accounts:', err);
       }
     } finally {
       setLoading(false);
@@ -106,7 +108,7 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
 
   // Effet pour gérer la sélection automatique du compte par défaut
   useEffect(() => {
-    console.log('🔄 [TradingAccountSelector] useEffect accounts change:', {
+    logger.debug('useEffect accounts change:', {
       accountsLength: accounts.length,
       selectedAccountId: selectedAccountId,
       accounts: accounts.map(acc => ({ id: acc.id, name: acc.name, is_default: acc.is_default }))
@@ -115,10 +117,10 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
     if (accounts.length > 0 && !selectedAccountId) {
       const defaultAccount = accounts.find(acc => acc.is_default);
       if (defaultAccount) {
-        console.log('🔄 [TradingAccountSelector] Sélection automatique du compte par défaut (useEffect):', defaultAccount.name);
+        logger.debug('Sélection automatique du compte par défaut (useEffect):', defaultAccount.name);
         onAccountChange(defaultAccount);
       } else if (accounts.length === 1) {
-        console.log('🔄 [TradingAccountSelector] Sélection automatique du seul compte disponible (useEffect):', accounts[0].name);
+        logger.debug('Sélection automatique du seul compte disponible (useEffect):', accounts[0].name);
         onAccountChange(accounts[0]);
       }
     }

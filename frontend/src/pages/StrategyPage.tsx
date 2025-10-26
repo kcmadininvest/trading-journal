@@ -67,7 +67,7 @@ function StrategyPage() {
   });
   
   // Debug supplémentaire pour comprendre le problème
-  console.log('🔍 [STRATEGY] Debug account selection:', {
+  logger.debug('Debug account selection:', {
     selectedAccount: selectedAccount,
     stableSelectedAccount: stableSelectedAccount,
     selectedAccountId: selectedAccount?.id,
@@ -243,7 +243,7 @@ function StrategyPage() {
       await fetchStrategyData(year, month, accountId);
     } catch (error) {
       // Erreur silencieuse lors du chargement des données du calendrier
-      console.error('Erreur lors du chargement des données du calendrier:', error);
+      logger.error('Erreur lors du chargement des données du calendrier:', error);
     } finally {
       setLoading(false);
     }
@@ -276,7 +276,7 @@ function StrategyPage() {
       // Stocker dans globalStrategyData pour la compatibilité avec le composant
       setGlobalStrategyData({ 'global': globalData });
     } catch (error) {
-      console.error('Erreur lors du chargement des données globales de stratégie:', error);
+      logger.error('Erreur lors du chargement des données globales de stratégie:', error);
     } finally {
       setIsGlobalStrategyDataLoading(false);
     }
@@ -289,7 +289,7 @@ function StrategyPage() {
       const accountId = stableSelectedAccount?.id;
       await fetchStrategyData(year, month, accountId);
     } catch (error) {
-      console.error('Erreur lors de la mise à jour des données de stratégie:', error);
+      logger.error('Erreur lors de la mise à jour des données de stratégie:', error);
     } finally {
       setIsUpdatingStrategy(false);
     }
@@ -305,14 +305,14 @@ function StrategyPage() {
           const accounts = await tradingAccountService.getAccounts();
           const defaultAccount = accounts.find((acc: any) => acc.is_default);
           if (defaultAccount) {
-            console.log('🔄 [STRATEGY] Récupération automatique du compte par défaut:', defaultAccount.name);
+            logger.debug('Récupération automatique du compte par défaut:', defaultAccount.name);
             setSelectedAccount(defaultAccount);
           } else {
-            console.log('⚠️ [STRATEGY] Aucun compte par défaut trouvé');
+            logger.warn('Aucun compte par défaut trouvé');
             setHasInitialDataLoaded(true);
           }
         } catch (error) {
-          console.warn('⚠️ [STRATEGY] Erreur lors de la récupération du compte par défaut:', error);
+          logger.warn('Erreur lors de la récupération du compte par défaut:', error);
           setHasInitialDataLoaded(true);
         }
       };
@@ -323,7 +323,7 @@ function StrategyPage() {
 
   // Gérer le changement de compte séparément
   useEffect(() => {
-    console.log('🔄 [STRATEGY] useEffect account change triggered:', {
+    logger.debug('useEffect account change triggered:', {
       stableSelectedAccount: stableSelectedAccount,
       hasInitialDataLoaded: hasInitialDataLoaded,
       accountId: stableSelectedAccount?.id,
@@ -348,7 +348,7 @@ function StrategyPage() {
             fetchStrategyData(year, month, stableSelectedAccount.id)
           ]);
         } catch (error) {
-          console.error('Erreur lors du rechargement pour le nouveau compte:', error);
+          logger.error('Erreur lors du rechargement pour le nouveau compte:', error);
         }
       };
       
@@ -359,7 +359,7 @@ function StrategyPage() {
   // Chargement initial quand un compte est sélectionné pour la première fois
   useEffect(() => {
     if (stableSelectedAccount && !hasInitialDataLoaded && !isLoadingInProgress) {
-      console.log('🚀 [STRATEGY] Chargement initial des données pour le compte:', stableSelectedAccount.name);
+      logger.debug('Chargement initial des données pour le compte:', stableSelectedAccount.name);
       
       const loadInitialData = async () => {
         try {
@@ -367,7 +367,7 @@ function StrategyPage() {
           const year = currentDate.getFullYear();
           const month = currentDate.getMonth() + 1;
           
-          console.log('📅 [STRATEGY] Chargement des données pour:', { year, month, accountId: stableSelectedAccount.id });
+          logger.debug('Chargement des données pour:', { year, month, accountId: stableSelectedAccount.id });
           
           await Promise.all([
             fetchCalendarData(year, month),
@@ -375,11 +375,11 @@ function StrategyPage() {
             fetchStrategyData(year, month, stableSelectedAccount.id)
           ]);
           
-          console.log('✅ [STRATEGY] Données initiales chargées avec succès');
+          logger.debug('Données initiales chargées avec succès');
           setHasInitialDataLoaded(true);
           setLastSelectedAccount(stableSelectedAccount.id);
         } catch (error) {
-          console.error('❌ [STRATEGY] Erreur lors du chargement initial:', error);
+          logger.error('Erreur lors du chargement initial:', error);
         } finally {
           setIsLoadingInProgress(false);
         }
@@ -597,7 +597,7 @@ function StrategyPage() {
         setDayTrades(Array.isArray(trades) ? trades : []);
         setShowTradesModal(true);
       } catch (error) {
-        console.error('Erreur lors du chargement des trades:', error);
+        logger.error('Erreur lors du chargement des trades:', error);
         setDayTrades([]);
         setShowTradesModal(true);
       }
@@ -621,7 +621,7 @@ function StrategyPage() {
       // Déclencher l'événement pour notifier les autres composants
       window.dispatchEvent(new CustomEvent('trades:updated'));
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des stratégies:', error);
+      logger.error('Erreur lors de la sauvegarde des stratégies:', error);
     }
   };
 
@@ -650,7 +650,7 @@ function StrategyPage() {
       const month = currentDate.getMonth() + 1;
       await updateStrategyDataSilently(year, month);
     } catch (error) {
-      console.error('Erreur lors de la suppression du trade:', error);
+      logger.error('Erreur lors de la suppression du trade:', error);
       throw error; // Re-throw pour que la modale puisse afficher l'erreur
     }
   };

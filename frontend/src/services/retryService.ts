@@ -3,6 +3,8 @@
  * et adaptation dynamique basée sur le contexte
  */
 
+import { log } from '../utils/logger';
+
 interface RetryStrategy {
   name: string;
   maxRetries: number;
@@ -177,7 +179,7 @@ class RetryService {
         if (attempt > 0) {
           this.recordSuccessfulRetry(context, Date.now() - startTime);
           if (this.config.enableLogging) {
-            console.log(`✅ [RETRY] Succès après ${attempt} tentative(s) avec la stratégie ${strategy}`);
+            log.debug(`✅ [RETRY] Succès après ${attempt} tentative(s) avec la stratégie ${strategy}`);
           }
         }
         
@@ -187,7 +189,7 @@ class RetryService {
         lastError = error as Error;
         
         if (this.config.enableLogging) {
-          console.warn(`❌ [RETRY] Tentative ${attempt + 1}/${effectiveMaxRetries + 1} échouée:`, error);
+          log.warn(`❌ [RETRY] Tentative ${attempt + 1}/${effectiveMaxRetries + 1} échouée:`, error);
         }
 
         // Vérifier si on doit retry
@@ -201,7 +203,7 @@ class RetryService {
         const delay = this.calculateDelay(retryStrategy, attempt);
         
         if (this.config.enableLogging) {
-          console.log(`⏳ [RETRY] Attente de ${delay}ms avant la prochaine tentative`);
+          log.debug(`⏳ [RETRY] Attente de ${delay}ms avant la prochaine tentative`);
         }
 
         await this.delay(delay);
@@ -237,7 +239,7 @@ class RetryService {
     const strategy = this.selectOptimalStrategy(operationHistory);
     
     if (this.config.enableLogging) {
-      console.log(`🧠 [RETRY] Stratégie adaptative sélectionnée: ${strategy} pour ${operationType}`);
+      log.debug(`🧠 [RETRY] Stratégie adaptative sélectionnée: ${strategy} pour ${operationType}`);
     }
 
     return this.executeWithRetry(fn, {
