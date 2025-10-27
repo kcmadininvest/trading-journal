@@ -81,7 +81,7 @@ const SessionWinRateChart: React.FC<SessionWinRateChartProps> = ({ strategyData,
       tp1Rate,
       tp2Rate
     };
-  }, [strategyData]);
+  }, [strategyData, logger]);
 
   const data = {
     labels: ['TP1 Atteint', 'TP2+ Atteint'],

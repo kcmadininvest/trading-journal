@@ -180,10 +180,6 @@ const GlobalImportModal: React.FC<GlobalImportModalProps> = ({ isOpen, onClose, 
             onAccountChange={handleAccountChange}
             className="w-full"
           />
-          {/* Debug: afficher les props passées au sélecteur */}
-          <div className="text-xs text-gray-400 mt-1">
-            Debug: selectedAccountId={selectedAccount?.id || 'null'}, selectorKey={selectorKey}
-          </div>
           {selectedAccount && (
             <p className="text-xs text-gray-500 mt-1">
               Les trades seront importés dans le compte "{selectedAccount.name}"

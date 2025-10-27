@@ -9,32 +9,7 @@ import { TradingAccount } from '../types'
 import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency'
 import { StatisticsPageSkeleton } from '../components/ui/Skeleton'
 
-interface AnalyticsData {
-  daily_stats: {
-    avg_gain_per_day: number;
-    median_gain_per_day: number;
-    avg_loss_per_day: number;
-    median_loss_per_day: number;
-    max_gain_per_day: number;
-    max_loss_per_day: number;
-    avg_trades_per_day: number;
-    median_trades_per_day: number;
-  };
-  trade_stats: {
-    max_gain_per_trade: number;
-    max_loss_per_trade: number;
-    avg_winning_trade: number;
-    median_winning_trade: number;
-    avg_losing_trade: number;
-    median_losing_trade: number;
-  };
-  consecutive_stats: {
-    max_consecutive_wins_per_day: number;
-    max_consecutive_losses_per_day: number;
-    max_consecutive_wins: number;
-    max_consecutive_losses: number;
-  };
-}
+// Interface AnalyticsData non utilisée, supprimée
 
 function StatisticsPageOptimized() {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null)

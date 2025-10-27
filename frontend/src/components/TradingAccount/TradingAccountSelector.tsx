@@ -96,7 +96,7 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
       setLoading(false);
       setIsLoadingInProgress(false);
     }
-  }, [accountsLoaded, isLoadingInProgress, onAccountChange, selectedAccountId]);
+  }, [accountsLoaded, isLoadingInProgress, onAccountChange, selectedAccountId, logger]);
 
   useEffect(() => {
     // Charger les comptes seulement une fois au montage
@@ -124,7 +124,7 @@ const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
         onAccountChange(accounts[0]);
       }
     }
-  }, [accounts, selectedAccountId, onAccountChange]);
+  }, [accounts, selectedAccountId, onAccountChange, logger]);
 
   // Écouter les événements de changement d'utilisateur pour recharger les comptes
   useEffect(() => {
