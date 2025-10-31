@@ -68,13 +68,24 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   const getMonthBgColor = (month: number, pnl: number): string => {
     const isCurrentMonth = year === currentYear && month === currentMonth;
     if (isCurrentMonth) {
-      return pnl > 0 ? 'bg-green-100 border-2 border-blue-500' :
-             pnl < 0 ? 'bg-red-100 border-2 border-blue-500' :
-             'bg-blue-50 border-2 border-blue-500';
+      return pnl > 0 ? 'bg-green-100' :
+             pnl < 0 ? 'bg-red-100' :
+             'bg-blue-50';
     }
     if (pnl > 0) return 'bg-green-50 hover:bg-green-100';
     if (pnl < 0) return 'bg-red-50 hover:bg-red-100';
     return 'bg-white hover:bg-gray-50';
+  };
+
+  const getMonthBorderClasses = (month: number, colIndex: number, rowIndex: number): string => {
+    const isCurrentMonth = year === currentYear && month === currentMonth;
+    if (!isCurrentMonth) {
+      // Pour les mois non-actuels, garder la bordure droite standard
+      return 'border-r border-gray-200';
+    }
+    // Pour le mois actuel, utiliser border-2 sur tous les côtés
+    // La bordure bleue 2px remplace visuellement celle du divide-y (1px grise)
+    return 'border-2 border-blue-500';
   };
 
   const navigateYear = (direction: 'prev' | 'next') => {
@@ -199,9 +210,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                   return (
                     <div
                       key={month}
-                      className={`h-32 p-2 border-r border-gray-200 cursor-pointer ${getMonthBgColor(month, monthlyPnl)} ${
-                        isCurrentMonth ? 'ring-2 ring-blue-500' : ''
-                      }`}
+                      className={`h-32 p-2 cursor-pointer ${getMonthBgColor(month, monthlyPnl)} ${getMonthBorderClasses(month, colIndex, rowIndex)}`}
                       onClick={() => onMonthClick(month)}
                     >
                       <div className="flex flex-col h-full">
@@ -228,12 +237,16 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                 })}
 
                 {/* Cellules vides si moins de 3 mois dans la ligne */}
-                {monthCells.length < monthsPerRow && Array.from({ length: monthsPerRow - monthCells.length }).map((_, emptyIndex) => (
-                  <div
-                    key={`empty-${emptyIndex}`}
-                    className="h-32 border-r border-gray-200 bg-gray-50"
-                  />
-                ))}
+                {monthCells.length < monthsPerRow && Array.from({ length: monthsPerRow - monthCells.length }).map((_, emptyIndex) => {
+                  const emptyColIndex = monthCells.length + emptyIndex;
+                  // Ne pas ajouter de bordure droite si c'est la dernière colonne avant la colonne hebdomadaire
+                  return (
+                    <div
+                      key={`empty-${emptyIndex}`}
+                      className={`h-32 bg-gray-50 ${emptyColIndex < monthsPerRow - 1 ? 'border-r border-gray-200' : ''}`}
+                    />
+                  );
+                })}
 
                 {/* Colonne PnL Hebdomadaire pour cette ligne */}
                 <div
