@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 // import { authService, User } from '../services/auth';
-import AuthModal from '../components/auth/AuthModal';
+import AuthModal from '../components/auth';
 
 const HomePage: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);

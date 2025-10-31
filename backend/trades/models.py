@@ -6,6 +6,24 @@ from datetime import datetime, timedelta
 import pytz
 
 
+class Currency(models.Model):
+    """Table des devises courantes."""
+    code = models.CharField(max_length=3, unique=True, verbose_name='Code')
+    name = models.CharField(max_length=50, verbose_name='Nom')
+    symbol = models.CharField(max_length=5, verbose_name='Symbole')
+
+    class Meta:
+        ordering = ['code']
+        verbose_name = 'Devise'
+        verbose_name_plural = 'Devises'
+        indexes = [
+            models.Index(fields=['code']),
+        ]
+
+    def __str__(self):
+        return f"{self.code} ({self.symbol})"
+
+
 class TradingAccount(models.Model):
     """
     Modèle pour gérer plusieurs comptes de trading par utilisateur.

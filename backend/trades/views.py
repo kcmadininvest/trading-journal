@@ -10,7 +10,7 @@ import pytz
 from decimal import Decimal
 from collections import defaultdict
 
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -25,6 +25,7 @@ from .serializers import (
     PositionStrategyVersionSerializer,
     TradingAccountSerializer,
     TradingAccountListSerializer,
+    CurrencySerializer,
 )
 from .utils import TopStepCSVImporter
 
@@ -154,6 +155,14 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
             )
 
 
+class CurrencyViewSet(viewsets.ReadOnlyModelViewSet):
+    """Liste des devises disponibles."""
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = CurrencySerializer  # type: ignore
+
+    def get_queryset(self):
+        return Currency.objects.all()
+
 class TopStepTradeViewSet(viewsets.ModelViewSet):
     """
     ViewSet pour gérer les trades TopStep.
@@ -166,23 +175,20 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         return TopStepTradeSerializer
     
     def get_queryset(self):
-        """Retourne uniquement les trades de l'utilisateur connecté."""
+        """Retourne uniquement les trades de l'utilisateur connecté avec optimisations de requêtes."""
         if not self.request.user.is_authenticated:
             return TopStepTrade.objects.none()  # type: ignore
-        queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
+        queryset = (
+            TopStepTrade.objects
+            .filter(user=self.request.user)  # type: ignore
+            .select_related('trading_account', 'user')
+            .order_by('-entered_at')
+        )
         
-        # Filtre par compte de trading
+        # Filtre par compte de trading (uniquement si fourni)
         trading_account_id = self.request.query_params.get('trading_account', None)
         if trading_account_id:
             queryset = queryset.filter(trading_account_id=trading_account_id)
-        else:
-            # Si aucun compte spécifié, utiliser le compte par défaut
-            default_account = TradingAccount.objects.filter(  # type: ignore
-                user=self.request.user, 
-                is_default=True
-            ).first()
-            if default_account:
-                queryset = queryset.filter(trading_account=default_account)
         
         # Filtres optionnels
         contract = self.request.query_params.get('contract', None)
@@ -340,7 +346,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             total_pnl=Sum('net_pnl'),
             average_pnl=Avg('net_pnl'),
             total_fees=Sum('fees'),
-            total_volume=Sum('size')
+            total_volume=Sum('size'),
+            total_raw_pnl=Sum('pnl')
         )
         
         # Meilleur trade : le plus gros gain parmi les trades gagnants uniquement
@@ -448,6 +455,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'losing_trades': losing_trades,
             'win_rate': round(win_rate, 2),
             'total_pnl': aggregates['total_pnl'] or Decimal('0'),
+            'total_raw_pnl': aggregates['total_raw_pnl'] or Decimal('0'),
             'total_gains': total_gains,
             'total_losses': total_losses,
             'average_pnl': aggregates['average_pnl'] or Decimal('0'),
@@ -479,6 +487,20 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         """
         contracts = self.get_queryset().values_list('contract_name', flat=True).distinct()
         return Response({'contracts': list(contracts)})
+
+    @action(detail=False, methods=['get'])
+    def instruments(self, request):
+        """Liste des instruments (contract_name) distincts pour l'utilisateur."""
+        if not request.user.is_authenticated:
+            return Response({'instruments': []})
+        instruments = (
+            TopStepTrade.objects
+            .filter(user=request.user)  # type: ignore
+            .values_list('contract_name', flat=True)
+            .distinct()
+            .order_by('contract_name')
+        )
+        return Response({'instruments': list(instruments)})
     
     @action(detail=False, methods=['get'])
     def trading_metrics(self, request):
@@ -665,9 +687,12 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                         'error': 'Aucun compte de trading par défaut trouvé. Veuillez créer un compte de trading d\'abord.'
                     }, status=status.HTTP_400_BAD_REQUEST)
             
+            # Récupérer le paramètre dry_run (pour l'aperçu)
+            dry_run = request.data.get('dry_run', 'false').lower() == 'true'
+            
             # Importer via l'utilitaire
             importer = TopStepCSVImporter(user, trading_account)
-            result = importer.import_from_string(content, csv_file.name)
+            result = importer.import_from_string(content, csv_file.name, dry_run=dry_run)
             
             # Log des résultats
             logger.info(f"Résultat import: success={result.get('success')}, total={result.get('total_rows')}, success_count={result.get('success_count')}, skipped={result.get('skipped_count')}, errors={result.get('error_count')}")
@@ -699,7 +724,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 
                 final_message = "Import terminé : " + ", ".join(message_parts) if message_parts else "Aucun trade à importer"
                 
-                return Response({
+                response_data = {
                     'success': True,
                     'message': final_message,
                     'total_rows': result['total_rows'],
@@ -707,7 +732,14 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     'error_count': result['error_count'],
                     'skipped_count': result.get('skipped_count', 0),
                     'errors': result.get('errors', [])
-                }, status=status.HTTP_201_CREATED)
+                }
+                # Ajouter les totaux PnL et fees si disponibles
+                if 'total_pnl' in result:
+                    response_data['total_pnl'] = result['total_pnl']
+                if 'total_fees' in result:
+                    response_data['total_fees'] = result['total_fees']
+                
+                return Response(response_data, status=status.HTTP_201_CREATED)
             else:
                 return Response({
                     'success': False,
@@ -849,27 +881,99 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             entered_at__lt=end_date
         )
         
+        # Récupérer toutes les stratégies pour ce mois
+        month_strategies = TradeStrategy.objects.filter(
+            user=request.user,
+            trade__in=month_trades
+        ).select_related('trade')
+        
+        # Créer une map des stratégies par jour
+        strategies_by_day = defaultdict(lambda: {'total': 0, 'respected': 0, 'non_respected': 0, 'unknown': 0})
+        for strategy in month_strategies:
+            try:
+                trade_day = strategy.trade.trade_day
+                if trade_day:
+                    # trade_day est un objet date, on peut accéder directement à .day
+                    day = trade_day.day
+                    strategies_by_day[day]['total'] += 1
+                    if strategy.strategy_respected is True:
+                        strategies_by_day[day]['respected'] += 1
+                    elif strategy.strategy_respected is False:
+                        strategies_by_day[day]['non_respected'] += 1
+                    else:
+                        strategies_by_day[day]['unknown'] += 1
+            except (AttributeError, TypeError, ValueError):
+                # Ignorer les stratégies avec des données invalides
+                continue
+        
         # Agréger par jour
         daily_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
         for trade in month_trades:
-            day = trade.entered_at.day
-            daily_data[day]['pnl'] += float(trade.net_pnl)
-            daily_data[day]['trade_count'] += 1
+            try:
+                day = trade.entered_at.day
+                daily_data[day]['pnl'] += float(trade.net_pnl or 0)
+                daily_data[day]['trade_count'] += 1
+            except (AttributeError, TypeError, ValueError):
+                continue
+        
+        # Fonction pour déterminer le statut de compliance
+        def get_strategy_compliance_status(day):
+            total_trades = daily_data.get(day, {}).get('trade_count', 0)
+            
+            # Si aucun trade pour ce jour, pas de statut
+            if total_trades == 0:
+                return None
+            
+            # Si ce jour n'a pas de stratégies renseignées
+            if day not in strategies_by_day:
+                return 'unknown'
+            
+            day_stats = strategies_by_day[day]
+            trades_with_strategy = day_stats['total']
+            
+            # Si aucun trade n'a de stratégie renseignée
+            if trades_with_strategy == 0:
+                return 'unknown'
+            
+            # Si tous les trades avec stratégie ont strategy_respected = True
+            # ET que tous les trades du jour ont une stratégie renseignée
+            if (day_stats['respected'] == trades_with_strategy and 
+                day_stats['non_respected'] == 0 and 
+                day_stats['unknown'] == 0 and
+                trades_with_strategy == total_trades):
+                return 'compliant'
+            
+            # Si tous les trades avec stratégie ont strategy_respected = False
+            # ET que tous les trades du jour ont une stratégie renseignée
+            if (day_stats['non_respected'] == trades_with_strategy and 
+                day_stats['respected'] == 0 and
+                day_stats['unknown'] == 0 and
+                trades_with_strategy == total_trades):
+                return 'non_compliant'
+            
+            # Mix de True et False, ou certains trades sans stratégie
+            if day_stats['respected'] > 0 or day_stats['non_respected'] > 0:
+                return 'partial'
+            
+            return 'unknown'
         
         # Convertir en format pour le frontend
         daily_result = []
         for day in range(1, 32):  # Maximum 31 jours dans un mois
             if day in daily_data:
+                compliance_status = get_strategy_compliance_status(day)
                 daily_result.append({
                     'date': str(day),
                     'pnl': daily_data[day]['pnl'],
-                    'trade_count': daily_data[day]['trade_count']
+                    'trade_count': daily_data[day]['trade_count'],
+                    'strategy_compliance_status': compliance_status
                 })
             else:
                 daily_result.append({
                     'date': str(day),
                     'pnl': 0.0,
-                    'trade_count': 0
+                    'trade_count': 0,
+                    'strategy_compliance_status': None
                 })
         
         # Agréger par semaine (vraies semaines du calendrier - dimanche à samedi)
@@ -923,6 +1027,158 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'monthly_total': monthly_total,
             'year': year,
             'month': month
+        })
+
+    @action(detail=False, methods=['get'])
+    def calendar_monthly_data(self, request):
+        """
+        Retourne les données pour le calendrier annuel (P/L par mois).
+        """
+        trades = self.get_queryset()
+        
+        if not trades.exists():
+            return Response({
+                'monthly_data': [],
+                'yearly_total': 0
+            })
+        
+        # Récupérer le paramètre d'année
+        year = request.query_params.get('year')
+        
+        if not year:
+            # Utiliser l'année courante par défaut
+            now = timezone.now()
+            year = now.year
+        else:
+            year = int(year)
+        
+        # Filtrer les trades de l'année spécifiée
+        start_date = timezone.datetime(year, 1, 1)
+        end_date = timezone.datetime(year + 1, 1, 1)
+        
+        year_trades = trades.filter(
+            entered_at__gte=start_date,
+            entered_at__lt=end_date
+        )
+        
+        # Agréger par mois
+        monthly_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
+        for trade in year_trades:
+            month = trade.entered_at.month
+            monthly_data[month]['pnl'] += float(trade.net_pnl)
+            monthly_data[month]['trade_count'] += 1
+        
+        # Convertir en format pour le frontend
+        monthly_result = []
+        for month in range(1, 13):
+            if month in monthly_data:
+                monthly_result.append({
+                    'month': month,
+                    'pnl': monthly_data[month]['pnl'],
+                    'trade_count': monthly_data[month]['trade_count']
+                })
+            else:
+                monthly_result.append({
+                    'month': month,
+                    'pnl': 0.0,
+                    'trade_count': 0
+                })
+        
+        # Calculer le total annuel
+        yearly_total = sum(float(trade.net_pnl) for trade in year_trades)
+        
+        return Response({
+            'monthly_data': monthly_result,
+            'yearly_total': yearly_total,
+            'year': year
+        })
+
+    @action(detail=False, methods=['get'])
+    def calendar_weekly_data(self, request):
+        """
+        Retourne les données hebdomadaires pour une année (P/L par semaine avec samedi).
+        """
+        trades = self.get_queryset()
+        
+        if not trades.exists():
+            return Response({
+                'weekly_data': [],
+                'yearly_total': 0
+            })
+        
+        # Récupérer le paramètre d'année
+        year = request.query_params.get('year')
+        
+        if not year:
+            # Utiliser l'année courante par défaut
+            now = timezone.now()
+            year = now.year
+        else:
+            year = int(year)
+        
+        # Filtrer les trades de l'année spécifiée
+        start_date = timezone.datetime(year, 1, 1)
+        end_date = timezone.datetime(year + 1, 1, 1)
+        
+        year_trades = trades.filter(
+            entered_at__gte=start_date,
+            entered_at__lt=end_date
+        )
+        
+        # Agréger par semaine (samedi de chaque semaine)
+        weekly_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0, 'saturday_date': None})
+        
+        # Trouver le premier dimanche de l'année (ou le 1er janvier s'il est dimanche)
+        first_day = start_date.date()
+        first_weekday = first_day.weekday()  # 0 = Lundi, 6 = Dimanche
+        
+        # Calculer le premier dimanche
+        # Si le 1er janvier est dimanche (weekday=6), c'est le premier dimanche
+        # Sinon, remonter au dimanche précédent
+        # weekday() : 0=Lundi, 1=Mardi, ..., 5=Samedi, 6=Dimanche
+        if first_weekday == 6:
+            first_sunday = first_day
+        else:
+            # Pour aller au dimanche précédent: weekday + 1 jours en arrière
+            # Ex: Lundi (0) -> 1 jour en arrière, Samedi (5) -> 6 jours en arrière
+            days_to_subtract = first_weekday + 1
+            first_sunday = first_day - timedelta(days=days_to_subtract)
+        
+        for trade in year_trades:
+            trade_date = trade.entered_at.date()
+            
+            # Calculer le samedi de la semaine pour ce trade
+            days_from_first_sunday = (trade_date - first_sunday).days
+            week_number = days_from_first_sunday // 7
+            saturday_date = first_sunday + timedelta(days=week_number * 7 + 6)
+            
+            # S'assurer que le samedi est dans l'année en cours
+            if saturday_date.year == year or saturday_date.year == year + 1:
+                week_key = saturday_date.isoformat()
+                weekly_data[week_key]['pnl'] += float(trade.net_pnl)
+                weekly_data[week_key]['trade_count'] += 1
+                if weekly_data[week_key]['saturday_date'] is None:
+                    weekly_data[week_key]['saturday_date'] = saturday_date.isoformat()
+        
+        # Convertir en format pour le frontend
+        weekly_result = []
+        for week_key in sorted(weekly_data.keys()):
+            saturday_date = weekly_data[week_key]['saturday_date']
+            # Ne garder que les semaines de l'année en cours
+            if saturday_date and datetime.strptime(saturday_date, '%Y-%m-%d').year == year:
+                weekly_result.append({
+                    'saturday_date': saturday_date,
+                    'pnl': weekly_data[week_key]['pnl'],
+                    'trade_count': weekly_data[week_key]['trade_count']
+                })
+        
+        # Calculer le total annuel
+        yearly_total = sum(float(trade.net_pnl) for trade in year_trades)
+        
+        return Response({
+            'weekly_data': weekly_result,
+            'yearly_total': yearly_total,
+            'year': year
         })
 
     @action(detail=False, methods=['get'])
