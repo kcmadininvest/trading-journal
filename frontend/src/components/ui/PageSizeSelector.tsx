@@ -13,6 +13,15 @@ const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
   options = [5, 10, 25, 50, 100],
   className = '',
 }) => {
+  // S'assurer que currentSize est dans les options, sinon l'ajouter
+  const allOptions = React.useMemo(() => {
+    const optsSet = new Set(options);
+    if (!optsSet.has(currentSize)) {
+      return [...options, currentSize].sort((a, b) => a - b);
+    }
+    return options.sort((a, b) => a - b);
+  }, [options, currentSize]);
+
   return (
     <div className={`flex items-center space-x-3 ${className}`}>
       <div className="flex items-center space-x-2">
@@ -31,7 +40,7 @@ const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
           onChange={(e) => onSizeChange(Number(e.target.value))}
           className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
         >
-          {options.map((size) => (
+          {allOptions.map((size) => (
             <option key={size} value={size}>
               {size}
             </option>

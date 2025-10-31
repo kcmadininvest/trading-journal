@@ -231,6 +231,73 @@ class TradeStrategiesService {
     }
     return res.json();
   }
+
+  /**
+   * Récupère les statistiques de stratégies pour une période donnée
+   */
+  async statistics(params?: {
+    year?: number;
+    month?: number;
+    tradingAccount?: number;
+  }): Promise<{
+    period: {
+      year: number;
+      month: number | null;
+      start_date: string;
+      end_date: string;
+    };
+    statistics: {
+      total_strategies: number;
+      respect_percentage: number;
+      not_respect_percentage: number;
+      respected_count: number;
+      not_respected_count: number;
+      success_rate_if_respected: number;
+      success_rate_if_not_respected: number;
+      winning_sessions_distribution: {
+        tp1_only: number;
+        tp2_plus: number;
+        no_tp: number;
+        total_winning: number;
+      };
+      emotions_distribution: Array<{
+        emotion: string;
+        count: number;
+      }>;
+      period_data: Array<{
+        period: string;
+        date: string;
+        respect_percentage: number;
+        not_respect_percentage: number;
+        total: number;
+      }>;
+    };
+    all_time: {
+      total_strategies: number;
+      respect_percentage: number;
+      not_respect_percentage: number;
+    };
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params?.year) {
+      queryParams.append('year', String(params.year));
+    }
+    if (params?.month) {
+      queryParams.append('month', String(params.month));
+    }
+    if (params?.tradingAccount) {
+      queryParams.append('trading_account', String(params.tradingAccount));
+    }
+    
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/trade-strategies/statistics/?${queryParams}`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erreur lors de la récupération des statistiques');
+    }
+    return res.json();
+  }
 }
 
 export const tradeStrategiesService = new TradeStrategiesService();

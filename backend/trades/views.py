@@ -1651,6 +1651,186 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """Retourne les statistiques de stratégies pour une période donnée."""
+        now = timezone.now()
+        
+        # Paramètres de filtrage
+        year = request.query_params.get('year')
+        month = request.query_params.get('month')
+        trading_account_id = request.query_params.get('trading_account')
+        
+        # Déterminer la période
+        if year:
+            year = int(year)
+            if month:
+                # Filtrer par mois spécifique
+                month = int(month)
+                start_date = timezone.datetime(year, month, 1)
+                if month == 12:
+                    end_date = timezone.datetime(year + 1, 1, 1)
+                else:
+                    end_date = timezone.datetime(year, month + 1, 1)
+            else:
+                # Filtrer par année complète
+                start_date = timezone.datetime(year, 1, 1)
+                end_date = timezone.datetime(year + 1, 1, 1)
+        else:
+            # Par défaut: année en cours
+            current_year = now.year
+            start_date = timezone.datetime(current_year, 1, 1)
+            end_date = timezone.datetime(current_year + 1, 1, 1)
+        
+        # Base queryset : stratégies de l'utilisateur dans la période
+        queryset = TradeStrategy.objects.filter(  # type: ignore
+            user=self.request.user,
+            trade__trade_day__gte=start_date.strftime('%Y-%m-%d'),
+            trade__trade_day__lt=end_date.strftime('%Y-%m-%d')
+        ).select_related('trade')
+        
+        # Filtrer par compte si spécifié
+        if trading_account_id:
+            queryset = queryset.filter(trade__trading_account_id=trading_account_id)
+        
+        # Statistiques globales (toutes périodes et tous comptes)
+        all_time_queryset = TradeStrategy.objects.filter(user=self.request.user)  # type: ignore
+        
+        # Calculs
+        total_strategies = queryset.count()
+        total_all_time = all_time_queryset.count()
+        
+        # 1. Respect de la stratégie en %
+        # Calculer par rapport au nombre total de trades
+        strategies_with_respect = queryset.exclude(strategy_respected__isnull=True)
+        respected_count = strategies_with_respect.filter(strategy_respected=True).count()
+        not_respected_count = strategies_with_respect.filter(strategy_respected=False).count()
+        # Pourcentages par rapport au total des trades
+        respect_percentage = (respected_count / total_strategies * 100) if total_strategies > 0 else 0
+        not_respect_percentage = (not_respected_count / total_strategies * 100) if total_strategies > 0 else 0
+        
+        # Respect total toutes périodes
+        all_time_with_respect = all_time_queryset.exclude(strategy_respected__isnull=True)
+        all_time_respected = all_time_with_respect.filter(strategy_respected=True).count()
+        all_time_not_respected = all_time_with_respect.filter(strategy_respected=False).count()
+        all_time_respect_percentage = (all_time_respected / total_all_time * 100) if total_all_time > 0 else 0
+        all_time_not_respect_percentage = (all_time_not_respected / total_all_time * 100) if total_all_time > 0 else 0
+        
+        # 2. Taux de réussite selon respect de la stratégie
+        # Taux de réussite si stratégie respectée (trades gagnants quand strategy_respected = True)
+        respected_strategies = queryset.filter(strategy_respected=True)
+        winning_when_respected = respected_strategies.filter(trade__net_pnl__gt=0).count()
+        success_rate_if_respected = (winning_when_respected / respected_strategies.count() * 100) if respected_strategies.count() > 0 else 0
+        
+        # Taux de réussite si stratégie non respectée (trades gagnants quand strategy_respected = False)
+        not_respected_strategies = queryset.filter(strategy_respected=False)
+        winning_when_not_respected = not_respected_strategies.filter(trade__net_pnl__gt=0).count()
+        success_rate_if_not_respected = (winning_when_not_respected / not_respected_strategies.count() * 100) if not_respected_strategies.count() > 0 else 0
+        
+        # 3. Répartition des sessions gagnantes selon TP1 et TP2+
+        # Les sessions gagnantes sont celles où le trade est gagnant (net_pnl > 0)
+        winning_sessions = queryset.filter(trade__net_pnl__gt=0)
+        winning_count = winning_sessions.count()
+        tp1_only = winning_sessions.filter(tp1_reached=True, tp2_plus_reached=False).count()
+        tp2_plus = winning_sessions.filter(tp2_plus_reached=True).count()
+        no_tp = winning_count - tp1_only - tp2_plus
+        
+        # 4. Répartition des émotions dominantes
+        emotion_counts = defaultdict(int)
+        for strategy in queryset:
+            if strategy.dominant_emotions:
+                for emotion in strategy.dominant_emotions:
+                    emotion_counts[emotion] += 1
+        
+        # Trier par fréquence décroissante
+        emotions_data = [
+            {'emotion': emotion, 'count': count}
+            for emotion, count in sorted(emotion_counts.items(), key=lambda x: x[1], reverse=True)
+        ]
+        
+        # 5. Respect par période (pour graphique temporel)
+        period_data = []
+        if month:
+            # Par jour du mois
+            current_date = start_date
+            while current_date < end_date:
+                day_str = current_date.strftime('%Y-%m-%d')
+                day_strategies = queryset.filter(trade__trade_day=day_str)
+                day_total = day_strategies.count()
+                day_with_respect = day_strategies.exclude(strategy_respected__isnull=True)
+                day_respected = day_with_respect.filter(strategy_respected=True).count()
+                day_not_respected = day_with_respect.filter(strategy_respected=False).count()
+                day_respect_percentage = (day_respected / day_total * 100) if day_total > 0 else 0
+                day_not_respect_percentage = (day_not_respected / day_total * 100) if day_total > 0 else 0
+                period_data.append({
+                    'period': current_date.strftime('%d/%m'),
+                    'date': day_str,
+                    'respect_percentage': round(day_respect_percentage, 2),
+                    'not_respect_percentage': round(day_not_respect_percentage, 2),
+                    'total': day_total
+                })
+                current_date += timedelta(days=1)
+        else:
+            # Par mois de l'année
+            target_year = year if year else now.year
+            for m in range(1, 13):
+                month_start = timezone.datetime(target_year, m, 1)
+                if m == 12:
+                    month_end = timezone.datetime(target_year + 1, 1, 1)
+                else:
+                    month_end = timezone.datetime(target_year, m + 1, 1)
+                
+                # Vérifier que le mois est dans la période
+                if month_start < end_date and month_end > start_date:
+                    month_strategies = queryset.filter(
+                        trade__trade_day__gte=month_start.strftime('%Y-%m-%d'),
+                        trade__trade_day__lt=month_end.strftime('%Y-%m-%d')
+                    )
+                    month_total = month_strategies.count()
+                    month_with_respect = month_strategies.exclude(strategy_respected__isnull=True)
+                    month_respected = month_with_respect.filter(strategy_respected=True).count()
+                    month_not_respected = month_with_respect.filter(strategy_respected=False).count()
+                    month_respect_percentage = (month_respected / month_total * 100) if month_total > 0 else 0
+                    month_not_respect_percentage = (month_not_respected / month_total * 100) if month_total > 0 else 0
+                    period_data.append({
+                        'period': month_start.strftime('%B %Y'),
+                        'date': month_start.strftime('%Y-%m'),
+                        'respect_percentage': round(month_respect_percentage, 2),
+                        'not_respect_percentage': round(month_not_respect_percentage, 2),
+                        'total': month_total
+                    })
+        
+        return Response({
+            'period': {
+                'year': year if year else now.year,
+                'month': month,
+                'start_date': start_date.strftime('%Y-%m-%d'),
+                'end_date': end_date.strftime('%Y-%m-%d'),
+            },
+            'statistics': {
+                'total_strategies': total_strategies,
+                'respect_percentage': round(respect_percentage, 2),
+                'not_respect_percentage': round(not_respect_percentage, 2),
+                'respected_count': respected_count,
+                'not_respected_count': not_respected_count,
+                'success_rate_if_respected': round(success_rate_if_respected, 2),
+                'success_rate_if_not_respected': round(success_rate_if_not_respected, 2),
+                'winning_sessions_distribution': {
+                    'tp1_only': tp1_only,
+                    'tp2_plus': tp2_plus,
+                    'no_tp': no_tp,
+                    'total_winning': winning_count
+                },
+                'emotions_distribution': emotions_data,
+                'period_data': period_data,
+            },
+            'all_time': {
+                'total_strategies': total_all_time,
+                'respect_percentage': round(all_time_respect_percentage, 2),
+                'not_respect_percentage': round(all_time_not_respect_percentage, 2),
+            }
+        })
+    
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
         """Crée ou met à jour plusieurs stratégies de trades en une fois."""

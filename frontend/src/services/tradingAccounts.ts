@@ -80,6 +80,12 @@ class TradingAccountsService {
     return Array.isArray(data) ? data : (data?.results ?? []);
   }
 
+  async get(id: number): Promise<TradingAccount> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`);
+    if (!res.ok) throw new Error('Erreur lors du chargement du compte');
+    return res.json();
+  }
+
   async default(): Promise<TradingAccount | null> {
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/default/`);
     if (res.status === 404) return null;

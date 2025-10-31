@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { tradesService, TradeListItem } from '../services/trades';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { tradingAccountsService } from '../services/tradingAccounts';
@@ -17,7 +17,11 @@ const TradesPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  // Restaurer pageSize depuis localStorage ou utiliser la valeur par défaut
+  const [pageSize, setPageSize] = useState(() => {
+    const saved = localStorage.getItem('trades_page_size');
+    return saved ? parseInt(saved, 10) : 20;
+  });
   const [instruments, setInstruments] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     trading_account: null as number | null,
@@ -31,8 +35,8 @@ const TradesPage: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [stats, setStats] = useState<{ total_trades: number; total_pnl: number; total_fees: number; total_raw_pnl?: number } | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const isInitializing = useRef(false);
-  const hasInitialized = useRef(false);
 
   // Créer une clé stable pour les dépendances des useEffect basée sur les valeurs de filters
   const filtersKey = useMemo(() => {
@@ -53,26 +57,32 @@ const TradesPage: React.FC = () => {
     filters.profitable,
   ]);
 
-  const load = async () => {
+  // Utiliser useCallback pour garantir que load() utilise toujours les valeurs à jour
+  const load = useCallback(async (overridePage?: number, overridePageSize?: number) => {
+    // Utiliser les valeurs passées en paramètre ou les valeurs du state
+    const currentPage = overridePage ?? page;
+    const currentPageSize = overridePageSize ?? pageSize;
+    const currentFilters = filters;
+    
     console.log('[TradesPage] load() called', { 
-      filters, 
-      page, 
-      pageSize, 
-      hasInitialized: hasInitialized.current 
+      filters: currentFilters, 
+      page: currentPage, 
+      pageSize: currentPageSize, 
+      hasInitialized: hasInitialized 
     });
     setIsLoading(true);
     try {
       const res = await tradesService.list({
-        trading_account: filters.trading_account ?? undefined,
-        contract: filters.contract || undefined,
-        type: filters.type || undefined,
-        start_date: filters.start_date || undefined,
-        end_date: filters.end_date || undefined,
-        profitable: filters.profitable || undefined,
-        page,
-        page_size: pageSize,
+        trading_account: currentFilters.trading_account ?? undefined,
+        contract: currentFilters.contract || undefined,
+        type: currentFilters.type || undefined,
+        start_date: currentFilters.start_date || undefined,
+        end_date: currentFilters.end_date || undefined,
+        profitable: currentFilters.profitable || undefined,
+        page: currentPage,
+        page_size: currentPageSize,
       });
-      console.log('[TradesPage] load() success', { count: res.count, resultsCount: res.results.length });
+      console.log('[TradesPage] load() success', { count: res.count, resultsCount: res.results.length, page_size_requested: currentPageSize });
       setItems(res.results);
       setTotal(res.count);
     } catch (e) {
@@ -81,7 +91,7 @@ const TradesPage: React.FC = () => {
       setIsLoading(false);
       console.log('[TradesPage] load() finished');
     }
-  };
+  }, [page, pageSize, filtersKey, hasInitialized]);
 
   const reloadStats = async () => {
     try {
@@ -102,11 +112,11 @@ const TradesPage: React.FC = () => {
 
   useEffect(() => {
     console.log('[TradesPage] useEffect[init] - Start', { 
-      hasInitialized: hasInitialized.current, 
+      hasInitialized: hasInitialized, 
       isInitializing: isInitializing.current 
     });
     // Initialiser le compte sélectionné depuis le stockage ou le compte par défaut (une seule fois)
-    if (hasInitialized.current) {
+    if (hasInitialized) {
       console.log('[TradesPage] useEffect[init] - Already initialized, skipping');
       return;
     }
@@ -119,51 +129,44 @@ const TradesPage: React.FC = () => {
       console.log('[TradesPage] useEffect[init] - Starting initialization');
       isInitializing.current = true;
       
-      const stored = localStorage.getItem('current_account_id');
-      console.log('[TradesPage] useEffect[init] - localStorage account_id', stored);
-      if (stored) {
-        const id = Number(stored);
-        if (!Number.isNaN(id)) {
-          console.log('[TradesPage] useEffect[init] - Setting account from localStorage', id);
-          setFilters(prev => {
-            if (prev.trading_account === id) {
-              console.log('[TradesPage] useEffect[init] - Account unchanged, skipping update');
-              return prev;
-            }
-            console.log('[TradesPage] useEffect[init] - Updating filters with account', id);
-            // Réinitialiser les stats pour éviter d'afficher des valeurs incorrectes
-            setStats(null);
-            return { ...prev, trading_account: id };
-          });
-          hasInitialized.current = true;
-          isInitializing.current = false;
-          console.log('[TradesPage] useEffect[init] - Initialization complete (from localStorage)');
-          return;
-        }
-      }
+      // Toujours utiliser le compte par défaut du serveur (fiable)
+      // Le localStorage peut contenir un compte obsolète ou d'un autre utilisateur
       try {
         console.log('[TradesPage] useEffect[init] - Fetching default account');
         const def = await tradingAccountsService.default();
         console.log('[TradesPage] useEffect[init] - Default account received', def);
         if (def && def.status === 'active') {
           console.log('[TradesPage] useEffect[init] - Setting account from default', def.id);
+          
+          // Mettre à jour les filtres
           setFilters(prev => {
-            if (prev.trading_account === def.id) {
-              console.log('[TradesPage] useEffect[init] - Account unchanged, skipping update');
-              return prev;
+            const needsUpdate = prev.trading_account !== def.id;
+            if (needsUpdate) {
+              console.log('[TradesPage] useEffect[init] - Updating filters with default account', def.id);
+              // Réinitialiser les stats pour éviter d'afficher des valeurs incorrectes
+              setStats(null);
+            } else {
+              console.log('[TradesPage] useEffect[init] - Account already set to', def.id);
             }
-            console.log('[TradesPage] useEffect[init] - Updating filters with default account', def.id);
-            // Réinitialiser les stats pour éviter d'afficher des valeurs incorrectes
-            setStats(null);
+            // Toujours retourner un nouvel objet pour forcer le déclenchement des dépendances
             return { ...prev, trading_account: def.id };
           });
+          
+          // Marquer comme initialisé APRÈS avoir mis à jour les filtres
+          // Utiliser useState pour déclencher les re-renders et useEffect
+          setHasInitialized(true);
+          isInitializing.current = false;
+        } else {
+          console.warn('[TradesPage] useEffect[init] - No active default account found');
+          setHasInitialized(true);
+          isInitializing.current = false;
         }
       } catch (e) {
         console.error('[TradesPage] useEffect[init] - Error fetching default account', e);
+        setHasInitialized(true);
+        isInitializing.current = false;
       }
-      hasInitialized.current = true;
-      isInitializing.current = false;
-      console.log('[TradesPage] useEffect[init] - Initialization complete (from default)');
+      console.log('[TradesPage] useEffect[init] - Initialization complete');
     };
     init();
   }, []);
@@ -171,11 +174,11 @@ const TradesPage: React.FC = () => {
   useEffect(() => {
     console.log('[TradesPage] useEffect[persist] - Start', { 
       trading_account: filters.trading_account,
-      hasInitialized: hasInitialized.current,
+      hasInitialized: hasInitialized,
       isInitializing: isInitializing.current 
     });
     // Persister le compte sélectionné (seulement après l'initialisation)
-    if (!hasInitialized.current || isInitializing.current) {
+    if (!hasInitialized || isInitializing.current) {
       console.log('[TradesPage] useEffect[persist] - Skipping (not initialized yet)');
       return;
     }
@@ -195,34 +198,34 @@ const TradesPage: React.FC = () => {
       pageSize, 
       filters, 
       filtersKey,
-      hasInitialized: hasInitialized.current 
+      hasInitialized: hasInitialized 
     });
     // Attendre la fin de l'initialisation avant de charger
-    if (!hasInitialized.current) {
+    if (!hasInitialized) {
       console.log('[TradesPage] useEffect[load] - Skipping (not initialized yet)');
       return;
     }
     
-    console.log('[TradesPage] useEffect[load] - Triggering load()');
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, filtersKey]);
+    console.log('[TradesPage] useEffect[load] - Triggering load() with page:', page, 'pageSize:', pageSize);
+    // Passer explicitement page et pageSize pour garantir les bonnes valeurs au premier chargement
+    load(page, pageSize);
+  }, [load, hasInitialized, page, pageSize]);
 
   useEffect(() => {
     console.log('[TradesPage] useEffect[stats] - Start', { 
       filters, 
       filtersKey,
-      hasInitialized: hasInitialized.current 
+      hasInitialized: hasInitialized 
     });
     // Attendre la fin de l'initialisation avant de charger les stats
-    if (!hasInitialized.current) {
+    if (!hasInitialized) {
       console.log('[TradesPage] useEffect[stats] - Skipping (not initialized yet)');
       return;
     }
     
     // Si le compte n'est pas encore défini après l'initialisation, ne pas charger les stats
     // (elles seront chargées une fois le compte défini via filtersKey)
-    if (filters.trading_account === null && hasInitialized.current) {
+    if (filters.trading_account === null && hasInitialized) {
       console.log('[TradesPage] useEffect[stats] - Account not set yet, waiting...');
       // Réinitialiser les stats pour éviter d'afficher de vieilles valeurs
       setStats(null);
@@ -251,7 +254,7 @@ const TradesPage: React.FC = () => {
     };
     loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey, filters.trading_account]);
+  }, [filtersKey, filters.trading_account, hasInitialized]);
 
   useEffect(() => {
     console.log('[TradesPage] useEffect[instruments] - Start');
@@ -406,9 +409,11 @@ const TradesPage: React.FC = () => {
           onPageSizeChange={(size) => {
             setPageSize(size);
             setPage(1);
-            // reload
-            load();
+            // Persister la taille de page dans localStorage
+            localStorage.setItem('trades_page_size', String(size));
+            // Le useEffect qui écoute pageSize déclenchera automatiquement le rechargement
           }}
+          pageSizeOptions={[5, 10, 20, 25, 50, 100]}
         />
 
         {selectedId && (

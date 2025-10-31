@@ -107,7 +107,14 @@ class TradesService {
   private toQuery(params: Record<string, any>) {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
-      if (v !== undefined && v !== null && v !== '') search.append(k, String(v));
+      // Exclure les valeurs undefined, null, '' et 0 pour trading_account (0 signifie "tous les comptes")
+      if (v !== undefined && v !== null && v !== '') {
+        // Pour trading_account, ne pas inclure si c'est 0 (tous les comptes)
+        if (k === 'trading_account' && v === 0) {
+          return; // Ne pas ajouter ce paramètre
+        }
+        search.append(k, String(v));
+      }
     });
     return search.toString();
   }
@@ -215,6 +222,71 @@ class TradesService {
       throw new Error(data?.error || 'Erreur lors de l\'upload du fichier');
     }
     return data;
+  }
+
+  async detailedStatistics(tradingAccountId?: number): Promise<{
+    total_trades: number;
+    winning_trades: number;
+    losing_trades: number;
+    win_rate: number;
+    total_pnl: string;
+    total_gains: string;
+    total_losses: string;
+    average_pnl: string;
+    best_trade: string;
+    worst_trade: string;
+    total_fees: string;
+    total_volume: string;
+    average_duration: string;
+    most_traded_contract: string | null;
+    profit_factor: number;
+    win_loss_ratio: number;
+    consistency_ratio: number;
+    recovery_ratio: number;
+    pnl_per_trade: number;
+    fees_ratio: number;
+    volume_pnl_ratio: number;
+    frequency_ratio: number;
+    duration_ratio: number;
+  }> {
+    const qs = tradingAccountId ? `?trading_account=${tradingAccountId}` : '';
+    const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des statistiques détaillées');
+    return res.json();
+  }
+
+  async analytics(tradingAccountId?: number): Promise<{
+    daily_stats: {
+      avg_gain_per_day: number;
+      median_gain_per_day: number;
+      avg_loss_per_day: number;
+      median_loss_per_day: number;
+      max_gain_per_day: number;
+      max_loss_per_day: number;
+      avg_trades_per_day: number;
+      median_trades_per_day: number;
+    };
+    trade_stats: {
+      max_gain_per_trade: number;
+      max_loss_per_trade: number;
+      avg_winning_trade: number;
+      median_winning_trade: number;
+      avg_losing_trade: number;
+      median_losing_trade: number;
+    };
+    consecutive_stats: {
+      max_consecutive_wins_per_day: number;
+      max_consecutive_losses_per_day: number;
+      max_consecutive_wins: number;
+      max_consecutive_losses: number;
+    };
+  }> {
+    const qs = tradingAccountId ? `?trading_account=${tradingAccountId}` : '';
+    const url = `${this.BASE_URL}/api/trades/topstep/analytics/${qs}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des analytics');
+    return res.json();
   }
 }
 

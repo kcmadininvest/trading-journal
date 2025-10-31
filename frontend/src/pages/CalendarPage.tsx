@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import MonthlyView from '../components/calendar/MonthlyView';
 import DailyView from '../components/calendar/DailyView';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { FloatingActionButton } from '../components/ui/FloatingActionButton';
+import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import {
   calendarService,
   CalendarMonthResponse,
@@ -16,6 +18,7 @@ const CalendarPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+  const [showImport, setShowImport] = useState(false);
 
   // État pour la vue quotidienne
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -140,6 +143,21 @@ const CalendarPage: React.FC = () => {
           />
         ) : null}
       </div>
+      <FloatingActionButton onClick={() => setShowImport(true)} title="Importer des trades" />
+      <ImportTradesModal 
+        open={showImport} 
+        onClose={(done) => {
+          setShowImport(false);
+          if (done) {
+            // Recharger les données du calendrier après import
+            if (viewType === 'daily') {
+              loadDailyData();
+            } else {
+              loadYearlyData(yearlyYear, selectedAccount ?? undefined);
+            }
+          }
+        }} 
+      />
     </div>
   );
 };

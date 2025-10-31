@@ -297,9 +297,30 @@ const DailyView: React.FC<DailyViewProps> = ({
                   const isSaturday = colIndex === 6;
                   
                   // Si le jour est null (hors mois), afficher une cellule grisée
-                  // Utiliser un style inline pour garantir que le fond gris n'est jamais écrasé
-                  // Utiliser une bordure blanche pour créer un contraste élégant avec le fond gris
+                  // Mais si c'est un samedi, afficher quand même le solde hebdomadaire
                   if (day === null) {
+                    if (isSaturday) {
+                      // Pour les samedis hors du mois, afficher le solde hebdomadaire dans une cellule grisée
+                      return (
+                        <div
+                          key={colIndex}
+                          className="h-32 p-2"
+                          style={{ 
+                            backgroundColor: '#e5e7eb', // bg-gray-200 en hex
+                            backgroundImage: 'none',
+                          }}
+                        >
+                          <div className="flex flex-col h-full justify-end items-center mt-auto">
+                            {weeklyPnl !== 0 && (
+                              <div className={`text-base font-semibold text-center ${getPnlColor(weeklyPnl)}`}>
+                                {formatPnl(weeklyPnl)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+                    // Pour les autres jours hors du mois, cellule grisée vide
                     return (
                       <div
                         key={colIndex}
