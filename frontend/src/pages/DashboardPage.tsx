@@ -10,6 +10,7 @@ import { tradeStrategiesService, TradeStrategy } from '../services/tradeStrategi
 import ModernStatCard from '../components/common/ModernStatCard';
 import DurationDistributionChart from '../components/charts/DurationDistributionChart';
 import { usePreferences } from '../hooks/usePreferences';
+import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import {
@@ -173,7 +174,9 @@ const categorizeDuration = (minutes: number): string => {
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { preferences } = usePreferences();
+  const { theme } = useTheme();
   const { t } = useI18nTranslation();
+  const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
   const [accountId, setAccountId] = useState<number | null>(null);
   
@@ -946,26 +949,37 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [trades, strategies]);
 
+  // Helper function pour obtenir les couleurs selon le thème
+  const chartColors = useMemo(() => ({
+    text: isDark ? '#d1d5db' : '#374151',
+    textSecondary: isDark ? '#9ca3af' : '#6b7280',
+    background: isDark ? '#1f2937' : '#ffffff',
+    grid: isDark ? '#374151' : '#e5e7eb',
+    border: isDark ? '#4b5563' : '#d1d5db',
+    tooltipBg: isDark ? '#374151' : '#ffffff',
+    tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
+  }), [isDark]);
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6">
       {/* Filtres */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('dashboard:tradingAccount')}
             </label>
             <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('dashboard:year')}
             </label>
             <select
               value={selectedYear || ''}
               onChange={(e) => setSelectedYear(e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             >
               <option value="">{t('dashboard:allYears')}</option>
               {availableYears.map((year) => (
@@ -977,13 +991,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('dashboard:month')}
             </label>
             <select
               value={selectedMonth || ''}
               onChange={(e) => setSelectedMonth(e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!selectedYear}
             >
               <option value="">{t('dashboard:allMonths')}</option>
@@ -1001,7 +1015,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 setSelectedYear(null);
                 setSelectedMonth(null);
               }}
-              className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
               {t('dashboard:reset')}
             </button>
@@ -1011,8 +1025,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       {/* Message d'erreur */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-800">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+          <p className="text-red-800 dark:text-red-300">{error}</p>
         </div>
       )}
 
@@ -1020,28 +1034,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">{t('dashboard:loading')}</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">{t('dashboard:loading')}</p>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Graphique 1: Métriques de trading (jauges circulaires) */}
           {tradingMetrics && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="text-center mb-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-2">{t('dashboard:traderPerformanceTracker')}</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{t('dashboard:traderPerformanceTracker')}</h2>
                 <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto"></div>
-                <p className="text-sm text-gray-500 mt-2">{t('dashboard:objectivesBasedOnHistory')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('dashboard:objectivesBasedOnHistory')}</p>
               </div>
               
               <div className="grid grid-cols-3 gap-4">
                 {/* Jauge Win Rate */}
-                <div className="flex flex-col items-center bg-gray-100 rounded-xl p-4 shadow-md border border-gray-200 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 mb-4 text-center uppercase tracking-wide">
+                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
+                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-4 text-center uppercase tracking-wide">
                     {t('dashboard:winRate')}
                   </h3>
-                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
                     <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
                       <circle
                         cx="70"
@@ -1066,12 +1080,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {tradingMetrics.winRate.toFixed(1)}%
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
                     {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
                   </div>
                   <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
@@ -1083,11 +1097,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Jauge Avg Winning Trade */}
-                <div className="flex flex-col items-center bg-gray-100 rounded-xl p-4 shadow-md border border-gray-200 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 mb-4 text-center uppercase tracking-wide">
+                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
+                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-4 text-center uppercase tracking-wide">
                     {t('dashboard:avgWinning')}
                   </h3>
-                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
                     <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
                       <circle
                         cx="70"
@@ -1112,12 +1126,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-sm font-bold text-gray-900 text-center px-2">
+                      <div className="text-sm font-bold text-gray-900 dark:text-gray-100 text-center px-2">
                         {formatCurrency(tradingMetrics.avgWinningTrade, currencySymbol)}
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
                     {t('dashboard:objective')}: {formatCurrency(gaugeObjectives?.avgWinning || 0, currencySymbol)}
                   </div>
                   <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
@@ -1129,11 +1143,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Jauge Avg Losing Trade */}
-                <div className="flex flex-col items-center bg-gray-100 rounded-xl p-4 shadow-md border border-gray-200 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 mb-4 text-center uppercase tracking-wide">
+                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
+                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-4 text-center uppercase tracking-wide">
                     {t('dashboard:avgLosing')}
                   </h3>
-                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
                     <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
                       <circle
                         cx="70"
@@ -1158,12 +1172,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-sm font-bold text-gray-900 text-center px-2">
+                      <div className="text-sm font-bold text-gray-900 dark:text-gray-100 text-center px-2">
                         {formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
+                  <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
                     {t('dashboard:objective')}: &lt; {formatCurrency(gaugeObjectives?.avgLosing || 0, currencySymbol)}
                   </div>
                   <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
@@ -1274,11 +1288,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           {/* Graphique 2: Solde du compte dans le temps */}
           {accountBalanceData.length > 0 && accountBalanceChartData && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-0">
                   <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${performanceStats.isPositive ? 'bg-blue-100' : 'bg-pink-100'}`}>
+                    <div className={`p-2 rounded-lg ${performanceStats.isPositive ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-pink-100 dark:bg-pink-900/30'}`}>
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path 
                           d="M4 16l4-5 3 3 5-7 4 6" 
@@ -1290,12 +1304,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">{t('dashboard:accountBalanceOverTime')}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('dashboard:accountBalanceOverTime')}</h3>
                   </div>
                   <div className="flex items-center gap-3">
                     {/* Start Date Picker */}
                     <div className="relative">
-                      <div className="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-gray-600 z-10">
+                      <div className="absolute -top-2 left-3 bg-white dark:bg-gray-800 px-1 text-xs font-medium text-gray-600 dark:text-gray-400 z-10">
                         {t('dashboard:startDate')}
                       </div>
                       <input
@@ -1308,18 +1322,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             setStartDate(defaultStartDate);
                           }
                         }}
-                        className="px-4 py-2.5 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         min={defaultStartDate}
                         max={defaultEndDate}
                       />
                     </div>
                     
                     {/* Hyphen */}
-                    <span className="text-gray-500 text-xl font-medium">-</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-xl font-medium">-</span>
 
                     {/* End Date Picker */}
                     <div className="relative">
-                      <div className="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-gray-600 z-10">
+                      <div className="absolute -top-2 left-3 bg-white dark:bg-gray-800 px-1 text-xs font-medium text-gray-600 dark:text-gray-400 z-10">
                         {t('dashboard:endDate')}
                       </div>
                       <input
@@ -1332,7 +1346,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             setEndDate(defaultEndDate);
                           }
                         }}
-                        className="px-4 py-2.5 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         min={defaultStartDate}
                         max={defaultEndDate}
                       />
@@ -1341,23 +1355,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
                 <div className="flex items-center gap-6 ml-11">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
                       {performanceStats.totalReturn >= 0 ? t('dashboard:totalGain') : t('dashboard:totalLoss')} :
                     </span>
-                    <span className={`text-lg font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
+                    <span className={`text-lg font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
                       {formatCurrency(performanceStats.totalReturn, currencySymbol)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                     <div className="flex items-center gap-1">
                       <span>{t('dashboard:highest')} :</span>
-                      <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
+                      <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
                         {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span>{t('dashboard:lowest')} :</span>
-                      <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
+                      <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
                         {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
                       </span>
                     </div>
@@ -1367,7 +1381,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
               <div className="h-80">
                 {filteredBalanceData.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                     {t('dashboard:noDataInPeriod')}
                   </div>
                 ) : (
@@ -1431,10 +1445,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           display: false,
                         },
                         tooltip: {
-                          backgroundColor: 'white',
-                          titleColor: '#4b5563',
-                          bodyColor: '#1f2937',
-                          borderColor: '#e5e7eb',
+                          backgroundColor: chartColors.tooltipBg,
+                          titleColor: chartColors.text,
+                          bodyColor: chartColors.text,
+                          borderColor: chartColors.tooltipBorder,
                           borderWidth: 1,
                           padding: 16,
                           titleFont: {
@@ -1470,23 +1484,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           ticks: {
                             maxRotation: 45,
                             minRotation: 45,
-                            color: '#6b7280',
+                            color: chartColors.textSecondary,
                             font: {
                               size: 11,
                             },
                           },
                           grid: {
-                            color: '#e5e7eb',
+                            color: chartColors.grid,
                             lineWidth: 1,
                           },
                           border: {
-                            color: '#d1d5db',
+                            color: chartColors.border,
                           },
                         },
                         y: {
                           beginAtZero: true,
                           ticks: {
-                            color: '#6b7280',
+                            color: chartColors.textSecondary,
                             font: {
                               size: 12,
                             },
@@ -1496,17 +1510,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             },
                           },
                           grid: {
-                            color: '#e5e7eb',
+                            color: chartColors.grid,
                             lineWidth: 1,
                           },
                           border: {
-                            color: '#d1d5db',
+                            color: chartColors.border,
                             display: false,
                           },
                           title: {
                             display: true,
                             text: t('dashboard:balance'),
-                            color: '#4b5563',
+                            color: chartColors.text,
                             font: {
                               size: 13,
                               weight: 600,
@@ -1527,13 +1541,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           {/* Graphique 4: Performance par jour de la semaine */}
           {weekdayPerformanceData.length > 0 && weekdayChartData && (
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">{t('dashboard:weeklyPerformanceTitle')}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('dashboard:weeklyPerformanceTitle')}</h3>
                 </div>
                 {weekdayStats && (
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
                     <div className="flex items-center gap-1">
                       <span>{t('dashboard:mostActive')} :</span>
                       <span className="font-medium text-blue-500">{weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count} {t('trades:trades')})</span>
@@ -1569,10 +1583,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         display: false
                       },
                       tooltip: {
-                        backgroundColor: 'white',
-                        titleColor: '#4b5563',
-                        bodyColor: '#1f2937',
-                        borderColor: '#e5e7eb',
+                        backgroundColor: chartColors.tooltipBg,
+                        titleColor: chartColors.text,
+                        bodyColor: chartColors.text,
+                        borderColor: chartColors.tooltipBorder,
                         borderWidth: 1,
                         padding: 16,
                         titleFont: {
@@ -1622,13 +1636,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           display: false
                         },
                         ticks: {
-                          color: '#6b7280',
+                            color: chartColors.textSecondary,
                           font: {
                             size: 12
                           }
                         },
                         border: {
-                          color: '#d1d5db',
+                            color: chartColors.border,
                         },
                         title: {
                           display: false,
@@ -1645,9 +1659,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           color: function(context: any) {
                             // Mettre en évidence la ligne à y=0 avec une couleur plus foncée
                             if (Math.abs(context.tick.value) < 0.0001) {
-                              return '#9ca3af';
+                                return isDark ? '#6b7280' : '#9ca3af';
                             }
-                            return '#e5e7eb';
+                              return chartColors.grid;
                           },
                           lineWidth: 1,
                         },
@@ -1655,7 +1669,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           callback: function(value: any) {
                             return formatCurrency(value, currencySymbol);
                           },
-                          color: '#6b7280',
+                            color: chartColors.textSecondary,
                           font: {
                             size: 11
                           },
@@ -1665,7 +1679,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           padding: 5,
                         },
                         border: {
-                          color: '#d1d5db',
+                            color: chartColors.border,
                           display: false,
                         },
                       }
@@ -1683,13 +1697,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {/* Graphique 5: Waterfall des gains et pertes journalière */}
           {waterfallData.length > 0 && waterfallChartData && (
             <div>
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-bold text-gray-900">{t('dashboard:dailyGainsLossesEvolution')}</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('dashboard:dailyGainsLossesEvolution')}</h3>
                   </div>
                   {waterfallStats && (
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
                       <div className="flex items-center gap-1">
                         <span>{t('dashboard:totalCapital')} :</span>
                         <span className={`font-medium ${waterfallStats.totalPnl >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
@@ -1723,10 +1737,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           display: false
                         },
                         tooltip: {
-                          backgroundColor: 'white',
-                          titleColor: '#4b5563',
-                          bodyColor: '#1f2937',
-                          borderColor: '#e5e7eb',
+                          backgroundColor: chartColors.tooltipBg,
+                          titleColor: chartColors.text,
+                          bodyColor: chartColors.text,
+                          borderColor: chartColors.tooltipBorder,
                           borderWidth: 1,
                           padding: 16,
                           titleFont: {
@@ -1766,32 +1780,32 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           ticks: {
                             maxRotation: 45,
                             minRotation: 0,
-                            color: '#6b7280',
+                            color: chartColors.textSecondary,
                             font: {
                               size: 11
                             }
                           },
                           border: {
-                            color: '#d1d5db',
+                            color: chartColors.border,
                           },
                         },
                         y: {
                           beginAtZero: true,
                           grid: {
-                            color: '#e5e7eb',
+                            color: chartColors.grid,
                             lineWidth: 1,
                           },
                           ticks: {
                             callback: function(value: any) {
                               return formatCurrency(value, currencySymbol);
                             },
-                            color: '#6b7280',
+                            color: chartColors.textSecondary,
                             font: {
                               size: 11
                             }
                           },
                           border: {
-                            color: '#d1d5db',
+                            color: chartColors.border,
                             display: false,
                           },
                         }
@@ -1821,7 +1835,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       )}
 
       {!isLoading && accountBalanceData.length === 0 && !durationDistribution.some(d => d.total > 0) && waterfallData.length === 0 && weekdayPerformanceData.length === 0 && !tradingMetrics && (
-        <div className="bg-white rounded-lg shadow p-6 text-center text-gray-600">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-600 dark:text-gray-400">
           <p>{t('dashboard:noDataForPeriod')}</p>
         </div>
       )}

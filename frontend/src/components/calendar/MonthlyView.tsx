@@ -64,32 +64,32 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   };
 
   const getPnlColor = (pnl: number): string => {
-    if (pnl > 0) return 'text-green-600';
-    if (pnl < 0) return 'text-red-600';
-    return 'text-gray-400';
+    if (pnl > 0) return 'text-green-600 dark:text-green-400';
+    if (pnl < 0) return 'text-red-600 dark:text-red-400';
+    return 'text-gray-400 dark:text-gray-500';
   };
 
   const getMonthBgColor = (month: number, pnl: number): string => {
     const isCurrentMonth = year === currentYear && month === currentMonth;
     if (isCurrentMonth) {
-      return pnl > 0 ? 'bg-green-100' :
-             pnl < 0 ? 'bg-red-100' :
-             'bg-blue-50';
+      return pnl > 0 ? 'bg-green-100 dark:bg-green-900/30' :
+             pnl < 0 ? 'bg-red-100 dark:bg-red-900/30' :
+             'bg-blue-50 dark:bg-blue-900/30';
     }
-    if (pnl > 0) return 'bg-green-50 hover:bg-green-100';
-    if (pnl < 0) return 'bg-red-50 hover:bg-red-100';
-    return 'bg-white hover:bg-gray-50';
+    if (pnl > 0) return 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30';
+    if (pnl < 0) return 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
+    return 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700';
   };
 
   const getMonthBorderClasses = (month: number, colIndex: number, rowIndex: number): string => {
     const isCurrentMonth = year === currentYear && month === currentMonth;
     if (!isCurrentMonth) {
       // Pour les mois non-actuels, garder la bordure droite standard
-      return 'border-r border-gray-200';
+      return 'border-r border-gray-200 dark:border-gray-700';
     }
     // Pour le mois actuel, utiliser border-2 sur tous les côtés
     // La bordure bleue 2px remplace visuellement celle du divide-y (1px grise)
-    return 'border-2 border-blue-500';
+    return 'border-2 border-blue-500 dark:border-blue-400';
   };
 
   const navigateYear = (direction: 'prev' | 'next') => {
@@ -119,7 +119,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
               className={`px-4 py-2 text-sm font-medium rounded-l-lg border ${
                 viewType === 'daily'
                   ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               {t('calendar:daily')}
@@ -130,7 +130,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
               className={`px-4 py-2 text-sm font-medium rounded-r-lg border-t border-r border-b ${
                 viewType === 'monthly'
                   ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               {t('calendar:monthly')}
@@ -142,7 +142,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigateYear('prev')}
-            className="p-2 rounded-md hover:bg-gray-200 transition-colors"
+            className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
             aria-label={t('calendar:previousYear')}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -150,13 +150,13 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
             </svg>
           </button>
 
-          <h2 className="text-2xl font-bold text-gray-800">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
             {year}
           </h2>
 
           <button
             onClick={() => navigateYear('next')}
-            className="p-2 rounded-md hover:bg-gray-200 transition-colors"
+            className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
             aria-label={t('calendar:nextYear')}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -167,7 +167,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
           {year !== currentYear && (
             <button
               onClick={goToToday}
-              className="ml-4 px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="ml-4 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
             >
               {t('calendar:today')}
             </button>
@@ -179,22 +179,22 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
       </div>
 
       {/* Calendrier */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         {/* En-têtes des colonnes */}
-        <div className="grid grid-cols-4 bg-gray-100 border-b border-gray-200">
-          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">
+        <div className="grid grid-cols-4 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
           </div>
-          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">
+          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
           </div>
-          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">
+          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
           </div>
-          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 bg-blue-50">
+          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/30">
             {t('calendar:weeklyPnL')}
           </div>
         </div>
 
         {/* Grille du calendrier */}
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {Array.from({ length: rows }).map((_, rowIndex) => {
             const monthCells = calendarCells.slice(rowIndex * monthsPerRow, (rowIndex + 1) * monthsPerRow);
             
@@ -219,12 +219,12 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                     >
                       <div className="flex flex-col h-full">
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`text-sm font-medium ${isCurrentMonth ? 'text-blue-600 font-bold' : 'text-gray-700'}`}>
+                          <span className={`text-sm font-medium ${isCurrentMonth ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                             {monthNames[month - 1]}
                           </span>
                           {tradeCount > 0 && (
                             <Tooltip content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} position="top">
-                              <span className="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full cursor-help">
+                              <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full cursor-help">
                                 {tradeCount}
                               </span>
                             </Tooltip>
@@ -247,14 +247,14 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                   return (
                     <div
                       key={`empty-${emptyIndex}`}
-                      className={`h-32 bg-gray-50 ${emptyColIndex < monthsPerRow - 1 ? 'border-r border-gray-200' : ''}`}
+                      className={`h-32 bg-gray-50 dark:bg-gray-700 ${emptyColIndex < monthsPerRow - 1 ? 'border-r border-gray-200 dark:border-gray-700' : ''}`}
                     />
                   );
                 })}
 
                 {/* Colonne PnL Hebdomadaire pour cette ligne */}
                 <div
-                  className={`h-32 p-2 bg-blue-50 ${weeklyPnlForRow > 0 ? 'bg-green-50' : weeklyPnlForRow < 0 ? 'bg-red-50' : ''}`}
+                  className={`h-32 p-2 bg-blue-50 dark:bg-blue-900/30 ${weeklyPnlForRow > 0 ? 'bg-green-50 dark:bg-green-900/20' : weeklyPnlForRow < 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
                 >
                   <div className="flex flex-col h-full justify-center">
                     {weeklyPnlForRow !== 0 && (
@@ -269,8 +269,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
           })}
 
           {/* Ligne supplémentaire avec le total annuel dans la colonne PnL Hebdomadaire */}
-          <div className="grid grid-cols-4 bg-gray-100 border-t-2 border-gray-300">
-            <div className="col-span-3 px-4 py-3 font-semibold text-gray-900 border-r border-gray-200">
+          <div className="grid grid-cols-4 bg-gray-100 dark:bg-gray-700 border-t-2 border-gray-300 dark:border-gray-600">
+            <div className="col-span-3 px-4 py-3 font-semibold text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600">
               {t('calendar:total')} {year}
             </div>
             <div className={`px-4 py-3 font-bold text-center ${getPnlColor(yearlyTotal)}`}>

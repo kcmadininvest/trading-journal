@@ -15,12 +15,31 @@ interface PreferencesContextType {
 const PreferencesContext = createContext<PreferencesContextType | null>(null);
 
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Lire le thème depuis localStorage immédiatement pour éviter le flash
+  const getInitialTheme = (): 'light' | 'dark' => {
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || savedTheme === 'light') {
+        // Appliquer immédiatement le thème au DOM avant le premier rendu
+        if (savedTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+        return savedTheme;
+      }
+    } catch (e) {
+      // Ignorer les erreurs de localStorage
+    }
+    return 'light';
+  };
+
   const [preferences, setPreferences] = useState<UserPreferences>({
     language: 'fr',
     timezone: 'Europe/Paris',
     date_format: 'EU',
     number_format: 'comma',
-    theme: 'light',
+    theme: getInitialTheme(),
     font_size: 'medium',
   });
   const [loading, setLoading] = useState(true);
@@ -30,6 +49,20 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const prefs = await userService.getPreferences();
       if (prefs && prefs.date_format) {
         setPreferences(prefs);
+        // Appliquer le thème immédiatement
+        const root = document.documentElement;
+        if (prefs.theme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+        
+        // Sauvegarder le thème dans localStorage pour éviter le flash au prochain chargement
+        try {
+          localStorage.setItem('theme', prefs.theme || 'light');
+        } catch (e) {
+          // Ignorer les erreurs de localStorage
+        }
         // Changer la langue i18n quand les préférences sont chargées
         if (prefs.language) {
           changeLanguage(prefs.language);
@@ -37,7 +70,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } catch (error) {
       // Utiliser les valeurs par défaut si erreur
-      console.error('Erreur lors du chargement des préférences:', error);
+      console.error('[usePreferences] Erreur lors du chargement des préférences:', error);
     } finally {
       setLoading(false);
     }

@@ -8,7 +8,7 @@ interface ChartCardProps {
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, height = 420, children }) => {
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div className="mb-4">
         {title}
       </div>

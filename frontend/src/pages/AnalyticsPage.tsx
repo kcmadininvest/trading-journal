@@ -22,6 +22,7 @@ import {
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar, Line as ChartLine, Scatter as ChartScatter } from 'react-chartjs-2';
 import { usePreferences } from '../hooks/usePreferences';
+import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
@@ -41,12 +42,27 @@ ChartJS.register(
 
 const AnalyticsPage: React.FC = () => {
   const { preferences } = usePreferences();
+  const { theme } = useTheme();
   const { t } = useI18nTranslation();
+  const isDark = theme === 'dark';
   
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
     return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
   };
+
+  // Helper function pour obtenir les couleurs des graphiques selon le thème
+  const chartColors = useMemo(() => ({
+    text: isDark ? '#d1d5db' : '#374151',
+    textSecondary: isDark ? '#9ca3af' : '#6b7280',
+    background: isDark ? '#1f2937' : '#ffffff',
+    grid: isDark ? '#374151' : '#e5e7eb',
+    border: isDark ? '#4b5563' : '#d1d5db',
+    tooltipBg: isDark ? '#374151' : '#ffffff',
+    tooltipTitle: isDark ? '#d1d5db' : '#4b5563',
+    tooltipBody: isDark ? '#f3f4f6' : '#1f2937',
+    tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
+  }), [isDark]);
   const [accountId, setAccountId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
@@ -384,56 +400,76 @@ const AnalyticsPage: React.FC = () => {
     }).filter(bin => bin.count > 0); // Filtrer pour ne garder que les bins avec des données
   }, [trades]);
 
-  // Fonction pour obtenir la couleur de la heatmap (améliorée)
+  // Fonction pour obtenir la couleur de la heatmap (améliorée avec support dark mode)
   const getHeatmapColor = (value: number, maxAbs: number): string => {
-    if (maxAbs === 0) return '#f3f4f6'; // Gris clair pour les valeurs nulles
+    if (maxAbs === 0) return isDark ? '#4b5563' : '#f3f4f6'; // Gris adapté au thème pour les valeurs nulles
     
     const normalized = value / maxAbs; // -1 à 1
     
     if (normalized > 0) {
       // Bleu pour les gains avec gradient amélioré
       const intensity = Math.min(Math.abs(normalized), 1);
+      if (isDark) {
+        // Mode dark : couleurs plus foncées mais visibles
+        if (intensity < 0.2) return '#1e3a8a'; // Bleu très foncé
+        if (intensity < 0.4) return '#1e40af'; // Bleu foncé
+        if (intensity < 0.6) return '#2563eb'; // Bleu moyen-foncé
+        if (intensity < 0.8) return '#3b82f6'; // Bleu
+        return '#60a5fa'; // Bleu clair
+      } else {
+        // Mode clair : couleurs claires
       if (intensity < 0.2) return '#dbeafe'; // Bleu très clair
       if (intensity < 0.4) return '#93c5fd'; // Bleu clair
       if (intensity < 0.6) return '#60a5fa'; // Bleu moyen
       if (intensity < 0.8) return '#3b82f6'; // Bleu
       return '#2563eb'; // Bleu foncé
+      }
     } else if (normalized < 0) {
       // Rose pour les pertes avec gradient amélioré
       const intensity = Math.min(Math.abs(normalized), 1);
+      if (isDark) {
+        // Mode dark : couleurs plus foncées mais visibles
+        if (intensity < 0.2) return '#831843'; // Rose très foncé
+        if (intensity < 0.4) return '#9f1239'; // Rose foncé
+        if (intensity < 0.6) return '#be185d'; // Rose moyen-foncé
+        if (intensity < 0.8) return '#db2777'; // Rose
+        return '#ec4899'; // Rose clair
+      } else {
+        // Mode clair : couleurs claires
       if (intensity < 0.2) return '#fce7f3'; // Rose très clair
       if (intensity < 0.4) return '#f9a8d4'; // Rose clair
       if (intensity < 0.6) return '#f472b6'; // Rose moyen
       if (intensity < 0.8) return '#ec4899'; // Rose
       return '#db2777'; // Rose foncé
     }
-    return '#f3f4f6'; // Gris pour zéro
+    }
+    return isDark ? '#4b5563' : '#f3f4f6'; // Gris adapté au thème pour zéro
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8">
+    <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="mb-6">
         <AccountSelector value={accountId} onChange={setAccountId} />
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800">{error}</p>
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-800 dark:text-red-300">{error}</p>
         </div>
       )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">{t('analytics:loadingData')}</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">{t('analytics:loadingData')}</p>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Performance par heure (nuage de points) */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></div>
               {t('analytics:charts.hourlyPerformanceScatter.title')}
             </h3>
@@ -467,10 +503,10 @@ const AnalyticsPage: React.FC = () => {
                       display: false,
                     },
                     tooltip: {
-                      backgroundColor: 'white',
-                      titleColor: '#4b5563',
-                      bodyColor: '#1f2937',
-                      borderColor: '#e5e7eb',
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
                       borderWidth: 1,
                       padding: 16,
                       titleFont: {
@@ -511,7 +547,7 @@ const AnalyticsPage: React.FC = () => {
                       ticks: {
                         // Générer des ticks uniquement pour les heures avec des données
                         stepSize: 1,
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 11,
                         },
@@ -528,16 +564,16 @@ const AnalyticsPage: React.FC = () => {
                         minRotation: 45,
                       },
                       grid: {
-                        color: '#e5e7eb',
+                        color: chartColors.grid,
                         lineWidth: 1,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                       },
                       title: {
                         display: true,
                         text: t('analytics:charts.hourlyPerformanceScatter.xAxis'),
-                        color: '#4b5563',
+                        color: chartColors.text,
                         font: {
                           size: 13,
                           weight: 600,
@@ -546,7 +582,7 @@ const AnalyticsPage: React.FC = () => {
                     },
                     y: {
                       ticks: {
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 12,
                         },
@@ -556,17 +592,17 @@ const AnalyticsPage: React.FC = () => {
                         },
                       },
                       grid: {
-                        color: '#e5e7eb',
+                        color: chartColors.grid,
                         lineWidth: 1,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                         display: false,
                       },
                       title: {
                         display: true,
                         text: t('analytics:charts.hourlyPerformanceScatter.yAxis'),
-                        color: '#4b5563',
+                        color: chartColors.text,
                         font: {
                           size: 13,
                           weight: 600,
@@ -580,8 +616,8 @@ const AnalyticsPage: React.FC = () => {
           </div>
 
           {/* Corrélation PnL vs Nombre de Trades */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full mr-3"></div>
               {t('analytics:charts.correlation.title')}
             </h3>
@@ -615,10 +651,10 @@ const AnalyticsPage: React.FC = () => {
                       display: false,
                     },
                     tooltip: {
-                      backgroundColor: 'white',
-                      titleColor: '#4b5563',
-                      bodyColor: '#1f2937',
-                      borderColor: '#e5e7eb',
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
                       borderWidth: 1,
                       padding: 16,
                       titleFont: {
@@ -653,7 +689,7 @@ const AnalyticsPage: React.FC = () => {
                       max: correlationData.maxTrades + 0.5,
                       ticks: {
                         stepSize: 1,
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 12,
                         },
@@ -663,16 +699,16 @@ const AnalyticsPage: React.FC = () => {
                         },
                       },
                       grid: {
-                        color: '#e5e7eb',
+                        color: chartColors.grid,
                         lineWidth: 1,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                       },
                       title: {
                         display: true,
                         text: t('analytics:charts.correlation.xAxis'),
-                        color: '#4b5563',
+                        color: chartColors.text,
                         font: {
                           size: 13,
                           weight: 600,
@@ -681,7 +717,7 @@ const AnalyticsPage: React.FC = () => {
                     },
                     y: {
                       ticks: {
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 12,
                         },
@@ -691,17 +727,17 @@ const AnalyticsPage: React.FC = () => {
                         },
                       },
                       grid: {
-                        color: '#e5e7eb',
+                        color: chartColors.grid,
                         lineWidth: 1,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                         display: false,
                       },
                       title: {
                         display: true,
                         text: t('analytics:charts.correlation.yAxis'),
-                        color: '#4b5563',
+                        color: chartColors.text,
                         font: {
                           size: 13,
                           weight: 600,
@@ -715,16 +751,16 @@ const AnalyticsPage: React.FC = () => {
           </div>
 
           {/* Drawdown par jour */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-6 bg-gradient-to-b from-red-500 to-red-600 rounded-full mr-3"></div>
-              <h3 className="text-xl font-bold text-gray-800">{t('analytics:charts.drawdown.title')}</h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('analytics:charts.drawdown.title')}</h3>
               <TooltipComponent
                 content={t('analytics:charts.drawdown.tooltip')}
                 position="top"
               >
-                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
-                  <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                  <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -762,10 +798,10 @@ const AnalyticsPage: React.FC = () => {
                       display: false,
                     },
                     tooltip: {
-                      backgroundColor: 'white',
-                      titleColor: '#4b5563',
-                      bodyColor: '#1f2937',
-                      borderColor: '#e5e7eb',
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
                       borderWidth: 1,
                       padding: 16,
                       titleFont: {
@@ -798,23 +834,23 @@ const AnalyticsPage: React.FC = () => {
                       ticks: {
                         maxRotation: 45,
                         minRotation: 45,
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 11,
                         },
                       },
                       grid: {
-                        color: '#e5e7eb',
+                        color: chartColors.grid,
                         lineWidth: 1,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                       },
                     },
                     y: {
                       beginAtZero: true,
                       ticks: {
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 12,
                         },
@@ -824,17 +860,17 @@ const AnalyticsPage: React.FC = () => {
                         },
                       },
                       grid: {
-                        color: '#e5e7eb',
+                        color: chartColors.grid,
                         lineWidth: 1,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                         display: false,
                       },
                       title: {
                         display: true,
                         text: t('analytics:charts.drawdown.yAxis'),
-                        color: '#4b5563',
+                        color: chartColors.text,
                         font: {
                           size: 13,
                           weight: 600,
@@ -848,8 +884,8 @@ const AnalyticsPage: React.FC = () => {
           </div>
 
           {/* Performance par heure (barres) */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full mr-3"></div>
               {t('analytics:charts.hourlyPerformanceBars.title')}
             </h3>
@@ -879,10 +915,10 @@ const AnalyticsPage: React.FC = () => {
                       display: false,
                     },
                     tooltip: {
-                      backgroundColor: 'white',
-                      titleColor: '#4b5563',
-                      bodyColor: '#1f2937',
-                      borderColor: '#e5e7eb',
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
                       borderWidth: 1,
                       padding: 16,
                       titleFont: {
@@ -912,7 +948,7 @@ const AnalyticsPage: React.FC = () => {
                       ticks: {
                         maxRotation: 45,
                         minRotation: 45,
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 11,
                         },
@@ -923,12 +959,12 @@ const AnalyticsPage: React.FC = () => {
                         display: false,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                       },
                     },
                     y: {
                       ticks: {
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 12,
                         },
@@ -938,17 +974,17 @@ const AnalyticsPage: React.FC = () => {
                         },
                       },
                       grid: {
-                        color: '#e5e7eb',
+                        color: chartColors.grid,
                         lineWidth: 1,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                         display: false,
                       },
                       title: {
                         display: true,
                         text: t('analytics:charts.hourlyPerformanceBars.yAxis'),
-                        color: '#4b5563',
+                        color: chartColors.text,
                         font: {
                           size: 13,
                           weight: 600,
@@ -962,8 +998,8 @@ const AnalyticsPage: React.FC = () => {
           </div>
 
           {/* Heatmap Jour × Heure */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full mr-3"></div>
               {t('analytics:charts.heatmap.title')}
             </h3>
@@ -975,7 +1011,7 @@ const AnalyticsPage: React.FC = () => {
                     {Array.from({ length: 24 }, (_, i) => (
                       <div
                         key={i}
-                        className="flex-1 text-xs text-gray-600 text-center font-semibold min-w-[22px]"
+                        className="flex-1 text-xs text-gray-600 dark:text-gray-400 text-center font-semibold min-w-[22px]"
                       >
                         {i.toString().padStart(2, '0')}
                       </div>
@@ -986,7 +1022,7 @@ const AnalyticsPage: React.FC = () => {
                 <div className="space-y-1" ref={heatmapContainerRef}>
                   {heatmapData.daysOfWeek.map((day, dayIndex) => (
                     <div key={day} className="flex items-center">
-                      <div className="w-14 text-sm font-semibold text-gray-700 text-right pr-2">
+                      <div className="w-14 text-sm font-semibold text-gray-700 dark:text-gray-300 text-right pr-2">
                         {day}
                       </div>
                       <div className="flex flex-1">
@@ -996,7 +1032,7 @@ const AnalyticsPage: React.FC = () => {
                           return (
                             <div
                               key={hour}
-                              className="flex-1 h-7 border-2 border-white rounded-md hover:border-gray-300 hover:scale-110 transition-all duration-200 cursor-pointer relative min-w-[22px] shadow-sm"
+                              className="flex-1 h-7 border-2 border-white dark:border-gray-700 rounded-md hover:border-gray-300 dark:hover:border-gray-600 hover:scale-110 transition-all duration-200 cursor-pointer relative min-w-[22px] shadow-sm"
                               style={{ backgroundColor: color }}
                               onMouseEnter={(e) => {
                                 const rect = e.currentTarget.getBoundingClientRect();
@@ -1063,18 +1099,18 @@ const AnalyticsPage: React.FC = () => {
                   ))}
                 </div>
                 {/* Légende améliorée */}
-                <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-center space-x-6 text-sm">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-center space-x-6 text-sm">
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: '#ec4899' }}></div>
-                    <span className="text-gray-700 font-medium">{t('analytics:charts.heatmap.losses')}</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{t('analytics:charts.heatmap.losses')}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 rounded-md shadow-sm bg-gray-200"></div>
-                    <span className="text-gray-700 font-medium">{t('analytics:charts.heatmap.neutral')}</span>
+                    <div className="w-4 h-4 rounded-md shadow-sm bg-gray-200 dark:bg-gray-600"></div>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{t('analytics:charts.heatmap.neutral')}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: '#3b82f6' }}></div>
-                    <span className="text-gray-700 font-medium">{t('analytics:charts.heatmap.gains')}</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{t('analytics:charts.heatmap.gains')}</span>
                   </div>
                 </div>
               </div>
@@ -1082,8 +1118,8 @@ const AnalyticsPage: React.FC = () => {
           </div>
 
           {/* Distribution des PnL */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
               {t('analytics:charts.pnlDistribution.title')}
             </h3>
@@ -1120,10 +1156,10 @@ const AnalyticsPage: React.FC = () => {
                       display: false,
                     },
                     tooltip: {
-                      backgroundColor: 'white',
-                      titleColor: '#4b5563',
-                      bodyColor: '#1f2937',
-                      borderColor: '#e5e7eb',
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
                       borderWidth: 1,
                       padding: 16,
                       titleFont: {
@@ -1175,7 +1211,7 @@ const AnalyticsPage: React.FC = () => {
                       ticks: {
                         maxRotation: 45,
                         minRotation: 45,
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 12,
                         },
@@ -1193,7 +1229,7 @@ const AnalyticsPage: React.FC = () => {
                         display: false,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                       },
                       title: {
                         display: false,
@@ -1202,7 +1238,7 @@ const AnalyticsPage: React.FC = () => {
                     y: {
                       beginAtZero: true,
                       ticks: {
-                        color: '#6b7280',
+                        color: chartColors.textSecondary,
                         font: {
                           size: 12,
                         },
@@ -1212,17 +1248,17 @@ const AnalyticsPage: React.FC = () => {
                         },
                       },
                       grid: {
-                        color: '#e5e7eb',
+                        color: chartColors.grid,
                         lineWidth: 1,
                       },
                       border: {
-                        color: '#d1d5db',
+                        color: chartColors.border,
                         display: false,
                       },
                       title: {
                         display: true,
                         text: t('analytics:charts.pnlDistribution.yAxis'),
-                        color: '#4b5563',
+                        color: chartColors.text,
                         font: {
                           size: 13,
                           weight: 600,
@@ -1243,7 +1279,7 @@ const AnalyticsPage: React.FC = () => {
       {/* Tooltip portal pour la heatmap - rendu à la racine */}
       {heatmapTooltip && typeof window !== 'undefined' && document.body && createPortal(
         <div
-          className="fixed bg-white border border-gray-200 rounded-lg shadow-xl p-4 whitespace-nowrap pointer-events-none"
+          className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 whitespace-nowrap pointer-events-none"
           style={{
             left: `${heatmapTooltip.x}px`,
             top: `${heatmapTooltip.y}px`,
@@ -1251,10 +1287,10 @@ const AnalyticsPage: React.FC = () => {
             zIndex: 99999,
           }}
         >
-          <p className="text-sm text-gray-600 mb-2 font-medium" style={{ fontSize: '14px', fontWeight: 600 }}>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium" style={{ fontSize: '14px', fontWeight: 600 }}>
             {heatmapTooltip.day} {t('analytics:common.hour', { hour: heatmapTooltip.hour.toString().padStart(2, '0') })}
           </p>
-          <p className="text-base font-semibold text-gray-900" style={{ fontSize: '13px', fontWeight: 500 }}>
+          <p className="text-base font-semibold text-gray-900 dark:text-gray-100" style={{ fontSize: '13px', fontWeight: 500 }}>
             {formatCurrency(heatmapTooltip.value, currencySymbol)}
           </p>
         </div>,

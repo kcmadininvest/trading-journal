@@ -17,12 +17,12 @@ interface TradesFiltersProps {
 export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instruments = [], onChange, onReset }) => {
   const { t } = useI18nTranslation();
   return (
-    <div className="bg-white rounded-lg shadow p-4 md:p-5 mb-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-5 mb-4">
       <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
         <select
           value={values.contract}
           onChange={(e) => onChange({ contract: e.target.value })}
-          className="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">{t('trades:filters.instrument')}</option>
           {instruments.map((it) => (
@@ -32,7 +32,7 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
         <select
           value={values.type}
           onChange={(e) => onChange({ type: e.target.value as any })}
-          className="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">{t('trades:filters.type')}</option>
           <option value="Long">{t('trades:long')}</option>
@@ -42,25 +42,25 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
           type="date"
           value={values.start_date}
           onChange={(e) => onChange({ start_date: e.target.value })}
-          className="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <input
           type="date"
           value={values.end_date}
           onChange={(e) => onChange({ end_date: e.target.value })}
-          className="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <select
           value={values.profitable}
           onChange={(e) => onChange({ profitable: e.target.value as any })}
-          className="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">{t('trades:filters.pnl')}</option>
           <option value="true">{t('trades:filters.winners')}</option>
           <option value="false">{t('trades:filters.losers')}</option>
         </select>
         <div className="w-full flex md:justify-end">
-          <button onClick={onReset} className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">{t('trades:reset')}</button>
+          <button onClick={onReset} className="inline-flex items-center px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">{t('trades:reset')}</button>
         </div>
       </div>
     </div>

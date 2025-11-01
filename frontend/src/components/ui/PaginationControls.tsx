@@ -33,7 +33,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`bg-gradient-to-r from-white to-gray-50 border-t border-gray-200 px-6 py-6 ${className}`}>
+    <div className={`bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-t border-gray-200 dark:border-gray-700 px-6 py-6 ${className}`}>
       <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-6">
         {/* Informations de pagination */}
         {showInfo && (

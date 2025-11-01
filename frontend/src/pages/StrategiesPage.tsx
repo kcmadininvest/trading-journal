@@ -5,6 +5,7 @@ import { AccountSelector } from '../components/accounts/AccountSelector';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
+import { useTheme } from '../hooks/useTheme';
 import { getMonthNames } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import {
@@ -43,8 +44,23 @@ ChartJS.register(
 
 const StrategiesPage: React.FC = () => {
   const { preferences } = usePreferences();
+  const { theme } = useTheme();
   const { t } = useI18nTranslation();
+  const isDark = theme === 'dark';
   const [accountId, setAccountId] = useState<number | null>(null);
+
+  // Helper function pour obtenir les couleurs des graphiques selon le thème
+  const chartColors = useMemo(() => ({
+    text: isDark ? '#d1d5db' : '#374151',
+    textSecondary: isDark ? '#9ca3af' : '#6b7280',
+    background: isDark ? '#1f2937' : '#ffffff',
+    grid: isDark ? '#374151' : '#e5e7eb',
+    border: isDark ? '#4b5563' : '#d1d5db',
+    tooltipBg: isDark ? '#374151' : '#ffffff',
+    tooltipTitle: isDark ? '#d1d5db' : '#4b5563',
+    tooltipBody: isDark ? '#f3f4f6' : '#1f2937',
+    tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
+  }), [isDark]);
   const [showImport, setShowImport] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -150,17 +166,18 @@ const StrategiesPage: React.FC = () => {
           padding: 20,
           font: {
             size: 12
-          }
+          },
+          color: chartColors.textSecondary,
         },
       },
       title: {
         display: false,
       },
       tooltip: {
-        backgroundColor: 'white',
-        titleColor: '#4b5563',
-        bodyColor: '#1f2937',
-        borderColor: '#e5e7eb',
+        backgroundColor: chartColors.tooltipBg,
+        titleColor: chartColors.tooltipTitle,
+        bodyColor: chartColors.tooltipBody,
+        borderColor: chartColors.tooltipBorder,
         borderWidth: 1,
         padding: 16,
         titleFont: {
@@ -198,11 +215,23 @@ const StrategiesPage: React.FC = () => {
           callback: function(value: any) {
             return value + '%';
           },
+          color: chartColors.textSecondary,
+          font: {
+            size: 12,
+          },
+        },
+        grid: {
+          color: chartColors.grid,
+          lineWidth: 1,
+        },
+        border: {
+          color: chartColors.border,
+          display: false,
         },
         title: {
           display: true,
           text: t('strategies:percentage'),
-          color: '#4b5563',
+          color: chartColors.text,
           font: {
             size: 13,
             weight: 600,
@@ -211,12 +240,25 @@ const StrategiesPage: React.FC = () => {
       },
       x: {
         stacked: true,
+        ticks: {
+          color: chartColors.textSecondary,
+          font: {
+            size: 12,
+          },
+        },
+        grid: {
+          color: chartColors.grid,
+          lineWidth: 1,
+        },
+        border: {
+          color: chartColors.border,
+        },
         title: {
           display: false,
         },
       },
     },
-  }), [statistics?.statistics?.period_data, t]);
+  }), [statistics?.statistics?.period_data, t, chartColors]);
 
   // Graphique 2: Taux de réussite selon respect de la stratégie
   const successRateData = useMemo(() => statistics?.statistics ? {
@@ -265,17 +307,18 @@ const StrategiesPage: React.FC = () => {
           padding: 20,
           font: {
             size: 12
-          }
+          },
+          color: chartColors.textSecondary,
         },
       },
       title: {
         display: false,
       },
       tooltip: {
-        backgroundColor: 'white',
-        titleColor: '#4b5563',
-        bodyColor: '#1f2937',
-        borderColor: '#e5e7eb',
+        backgroundColor: chartColors.tooltipBg,
+        titleColor: chartColors.tooltipTitle,
+        bodyColor: chartColors.tooltipBody,
+        borderColor: chartColors.tooltipBorder,
         borderWidth: 1,
         padding: 16,
         titleFont: {
@@ -305,23 +348,23 @@ const StrategiesPage: React.FC = () => {
           callback: function(value: any) {
             return value + '%';
           },
-          color: '#6b7280',
+          color: chartColors.textSecondary,
           font: {
             size: 12,
           },
         },
         grid: {
-          color: '#e5e7eb',
+          color: chartColors.grid,
           lineWidth: 1,
         },
         border: {
-          color: '#d1d5db',
+          color: chartColors.border,
           display: false,
         },
         title: {
           display: true,
           text: t('strategies:percentage'),
-          color: '#4b5563',
+          color: chartColors.text,
           font: {
             size: 13,
             weight: 600,
@@ -333,21 +376,21 @@ const StrategiesPage: React.FC = () => {
           display: false,
         },
         ticks: {
-          color: '#6b7280',
+          color: chartColors.textSecondary,
           font: {
             size: 12,
           },
         },
         grid: {
-          color: '#e5e7eb',
+          color: chartColors.grid,
           lineWidth: 1,
         },
         border: {
-          color: '#d1d5db',
+          color: chartColors.border,
         },
       },
     },
-  }), [t]);
+  }), [t, chartColors]);
 
   // Graphique 3: Répartition des sessions gagnantes selon TP1 et TP2+
   const winningSessionsData = useMemo(() => statistics?.statistics?.winning_sessions_distribution ? {
@@ -396,58 +439,16 @@ const StrategiesPage: React.FC = () => {
         display: false,
       },
       legend: {
-        display: true,
-        position: 'top' as const,
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-          font: {
-            size: 12
-          },
-          generateLabels: function(chart: any) {
-            return [
-              {
-                text: t('strategies:tp1Only'),
-                fillStyle: '#3b82f6',
-                strokeStyle: '#3b82f6',
-                lineWidth: 2,
-                hidden: false,
-                index: 0,
-                datasetIndex: 0,
-                pointStyle: 'circle' as const,
-              },
-              {
-                text: t('strategies:tp2Plus'),
-                fillStyle: '#f97316',
-                strokeStyle: '#f97316',
-                lineWidth: 2,
-                hidden: false,
-                index: 1,
-                datasetIndex: 0,
-                pointStyle: 'circle' as const,
-              },
-              {
-                text: t('strategies:noTp'),
-                fillStyle: '#9ca3af',
-                strokeStyle: '#9ca3af',
-                lineWidth: 2,
-                hidden: false,
-                index: 2,
-                datasetIndex: 0,
-                pointStyle: 'circle' as const,
-              },
-            ];
-          },
-        },
+        display: false,
       },
       title: {
         display: false,
       },
       tooltip: {
-        backgroundColor: 'white',
-        titleColor: '#4b5563',
-        bodyColor: '#1f2937',
-        borderColor: '#e5e7eb',
+        backgroundColor: chartColors.tooltipBg,
+        titleColor: chartColors.tooltipTitle,
+        bodyColor: chartColors.tooltipBody,
+        borderColor: chartColors.tooltipBorder,
         borderWidth: 1,
         padding: 16,
         titleFont: {
@@ -482,28 +483,50 @@ const StrategiesPage: React.FC = () => {
         max: winningSessionsMax,
         ticks: {
           stepSize: 1,
-          color: '#6b7280',
+          color: chartColors.textSecondary,
           font: {
             size: 12,
           },
         },
         grid: {
-          color: '#e5e7eb',
+          color: chartColors.grid,
           lineWidth: 1,
         },
         border: {
-          color: '#d1d5db',
+          color: chartColors.border,
           display: false,
+        },
+        title: {
+          display: true,
+          text: t('strategies:numberOfWinningSessions'),
+          color: chartColors.text,
+          font: {
+            size: 13,
+            weight: 600,
+          },
         },
       },
       x: {
         stacked: false,
+        ticks: {
+          color: chartColors.textSecondary,
+          font: {
+            size: 12,
+          },
+        },
+        grid: {
+          color: chartColors.grid,
+          lineWidth: 1,
+        },
+        border: {
+          color: chartColors.border,
+        },
         title: {
           display: false,
         },
       },
     },
-  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t]);
+  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t, chartColors]);
 
   // Graphique 4: Répartition des émotions dominantes (camembert)
   const generateColors = (count: number) => {
@@ -608,10 +631,10 @@ const StrategiesPage: React.FC = () => {
         display: false,
       },
       tooltip: {
-        backgroundColor: 'white',
-        titleColor: '#4b5563',
-        bodyColor: '#1f2937',
-        borderColor: '#e5e7eb',
+        backgroundColor: chartColors.tooltipBg,
+        titleColor: chartColors.tooltipTitle,
+        bodyColor: chartColors.tooltipBody,
+        borderColor: chartColors.tooltipBorder,
         borderWidth: 1,
         padding: 16,
         titleFont: {
@@ -634,32 +657,32 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [emotionsData]);
+  }), [emotionsData, chartColors]);
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="mb-6">
         {/* Filtres */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:tradingAccount')}
               </label>
               <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:year')}
               </label>
               <select
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500"
               >
                 <option value="">{t('strategies:allYears')}</option>
                 {availableYears.map((year) => (
@@ -671,13 +694,13 @@ const StrategiesPage: React.FC = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:month')}
               </label>
               <select
                 value={selectedMonth || ''}
                 onChange={(e) => setSelectedMonth(e.target.value ? parseInt(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!selectedYear}
               >
                 <option value="">{t('strategies:allMonths')}</option>
@@ -695,7 +718,7 @@ const StrategiesPage: React.FC = () => {
                   setSelectedYear(null);
                   setSelectedMonth(null);
                 }}
-                className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
               >
                 {t('strategies:reset')}
               </button>
@@ -705,14 +728,14 @@ const StrategiesPage: React.FC = () => {
 
         {/* Message d'erreur */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+            <p className="text-red-800 dark:text-red-300">{error}</p>
           </div>
         )}
 
         {/* Indicateur global */}
         {statistics && (
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-lg p-6 mb-6 text-white">
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-lg shadow-lg p-6 mb-6 text-white">
             <h2 className="text-lg font-semibold mb-2">{t('strategies:totalRespectRate')}</h2>
             <p className="text-3xl font-bold mb-1">{allTimeRespect.toFixed(2)}%</p>
             <p className="text-sm opacity-90">
@@ -725,23 +748,23 @@ const StrategiesPage: React.FC = () => {
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">{t('strategies:loading')}</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">{t('strategies:loading')}</p>
             </div>
           </div>
         ) : statistics ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Graphique 1: Respect de la stratégie en % */}
             {respectChartData && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">{t('strategies:strategyRespectPercentage')}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:strategyRespectPercentage')}</h3>
                   <Tooltip
                     content={t('strategies:strategyRespectPercentageTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
-                      <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -755,15 +778,15 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 2: Taux de réussite si respect de la stratégie */}
             {successRateData && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">{t('strategies:successRateByStrategyRespect')}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:successRateByStrategyRespect')}</h3>
                   <Tooltip
                     content={t('strategies:successRateByStrategyRespectTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
-                      <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -777,15 +800,15 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 3: Répartition des sessions gagnantes */}
             {winningSessionsData && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">{t('strategies:winningSessionsDistribution')}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:winningSessionsDistribution')}</h3>
                   <Tooltip
                     content={t('strategies:winningSessionsDistributionTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
-                      <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -799,15 +822,15 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 4: Répartition des émotions dominantes */}
             {emotionsData && emotionsData.labels.length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">{t('strategies:dominantEmotionsDistribution')}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:dominantEmotionsDistribution')}</h3>
                   <Tooltip
                     content={t('strategies:dominantEmotionsDistributionTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
-                      <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -820,7 +843,7 @@ const StrategiesPage: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow p-6 text-center text-gray-600">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-600 dark:text-gray-400">
             <p>{t('strategies:noDataForPeriod')}</p>
           </div>
         )}

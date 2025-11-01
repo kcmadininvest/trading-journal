@@ -57,7 +57,7 @@ class TradeStrategiesService {
     try {
       const res = await fetch(`${this.BASE_URL}/api/accounts/auth/refresh/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' } as Record<string, string>,
         body: JSON.stringify({ refresh }),
       });
       if (!res.ok) return false;
@@ -156,7 +156,7 @@ class TradeStrategiesService {
         `${this.BASE_URL}/api/trades/trade-strategies/${existing.id}/`,
         {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' } as Record<string, string>,
           body: JSON.stringify(payload),
         }
       );
@@ -171,7 +171,7 @@ class TradeStrategiesService {
         `${this.BASE_URL}/api/trades/trade-strategies/`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' } as Record<string, string>,
           body: JSON.stringify({ trade: tradeId, ...data }),
         }
       );
@@ -191,7 +191,7 @@ class TradeStrategiesService {
       `${this.BASE_URL}/api/trades/trade-strategies/bulk_create/`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' } as Record<string, string>,
         body: JSON.stringify({ strategies }),
       }
     );

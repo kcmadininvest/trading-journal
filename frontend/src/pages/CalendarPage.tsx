@@ -136,7 +136,7 @@ const CalendarPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-full">
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-full">
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         {/* Sélecteur de compte */}
         <div className="mb-6">
@@ -148,8 +148,8 @@ const CalendarPage: React.FC = () => {
 
         {/* Affichage des erreurs */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-red-800 dark:text-red-300">{error}</p>
           </div>
         )}
 
@@ -157,8 +157,8 @@ const CalendarPage: React.FC = () => {
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">{t('calendar:loading')}</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600 dark:text-gray-400">{t('calendar:loading')}</p>
             </div>
           </div>
         ) : viewType === 'daily' && dailyData ? (

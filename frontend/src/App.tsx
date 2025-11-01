@@ -12,12 +12,14 @@ import TradingAccountsPage from './pages/TradingAccountsPage';
 import SettingsPage from './pages/SettingsPage';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
+import { useTheme } from './hooks/useTheme';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home');
   const currentPageRef = useRef(currentPage);
+  const { theme } = useTheme();
   
   // Maintenir la ref à jour
   useEffect(() => {
@@ -187,24 +189,26 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Chargement...</p>
         </div>
       </div>
     );
   }
 
+  const isDark = theme === 'dark';
+
   return (
-    <div className="min-h-screen bg-gray-50" style={{ overflowX: 'hidden' }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" style={{ overflowX: 'hidden' }}>
       <Toaster 
         position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#fff',
-            color: '#1f2937',
+            background: isDark ? '#1f2937' : '#fff',
+            color: isDark ? '#f3f4f6' : '#1f2937',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             borderRadius: '0.75rem',
             padding: '1rem',

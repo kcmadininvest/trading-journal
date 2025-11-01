@@ -11,7 +11,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ onCl
       type="button"
       onClick={onClick}
       title={title || 'Importer des trades'}
-      className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 flex items-center justify-center"
+      className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-blue-600 dark:bg-blue-500 text-white shadow-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700 flex items-center justify-center"
     >
       {/* Upload icon */}
       <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">

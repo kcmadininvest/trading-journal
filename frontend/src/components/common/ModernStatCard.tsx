@@ -44,51 +44,51 @@ function ModernStatCard({
 
     default: {
 
-      iconBg: 'bg-slate-100',
+      iconBg: 'bg-slate-100 dark:bg-gray-700',
 
-      iconColor: 'text-slate-600',
+      iconColor: 'text-slate-600 dark:text-slate-300',
 
-      border: 'border-gray-200'
+      border: 'border-gray-200 dark:border-gray-700'
 
     },
 
     success: {
 
-      iconBg: 'bg-emerald-100',
+      iconBg: 'bg-emerald-100 dark:bg-emerald-900/30',
 
-      iconColor: 'text-emerald-600',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
 
-      border: 'border-emerald-200'
+      border: 'border-emerald-200 dark:border-emerald-800'
 
     },
 
     danger: {
 
-      iconBg: 'bg-rose-100',
+      iconBg: 'bg-rose-100 dark:bg-rose-900/30',
 
-      iconColor: 'text-rose-600',
+      iconColor: 'text-rose-600 dark:text-rose-400',
 
-      border: 'border-rose-200'
+      border: 'border-rose-200 dark:border-rose-800'
 
     },
 
     warning: {
 
-      iconBg: 'bg-amber-100',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
 
-      iconColor: 'text-amber-600',
+      iconColor: 'text-amber-600 dark:text-amber-400',
 
-      border: 'border-amber-200'
+      border: 'border-amber-200 dark:border-amber-800'
 
     },
 
     info: {
 
-      iconBg: 'bg-blue-100',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
 
-      iconColor: 'text-blue-600',
+      iconColor: 'text-blue-600 dark:text-blue-400',
 
-      border: 'border-blue-200'
+      border: 'border-blue-200 dark:border-blue-800'
 
     }
 
@@ -188,11 +188,11 @@ function ModernStatCard({
 
   const trendColors = {
 
-    up: 'text-emerald-600 bg-emerald-50',
+    up: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20',
 
-    down: 'text-rose-600 bg-rose-50',
+    down: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20',
 
-    neutral: 'text-gray-600 bg-gray-50'
+    neutral: 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'
 
   }
 
@@ -208,7 +208,7 @@ function ModernStatCard({
 
     <div className={`
 
-      bg-white 
+      bg-white dark:bg-gray-800
 
       border ${config.border}
 
@@ -260,7 +260,7 @@ function ModernStatCard({
 
               ${sizeStyles.label}
 
-              text-gray-700 font-medium 
+              text-gray-700 dark:text-gray-300 font-medium 
 
             `}>
 
@@ -284,7 +284,7 @@ function ModernStatCard({
 
             font-semibold 
 
-            text-gray-900
+            text-gray-900 dark:text-gray-100
 
             mb-2
 
@@ -310,7 +310,7 @@ function ModernStatCard({
 
                 font-medium 
 
-                ${trend ? trendColors[trend] : 'text-gray-600 bg-gray-50'}
+                ${trend ? trendColors[trend] : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'}
 
                 px-2 py-1 
 

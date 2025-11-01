@@ -296,7 +296,7 @@ const TradesPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 py-8">
+    <div className="bg-gray-50 dark:bg-gray-900 py-8">
       <div className="px-4 sm:px-6 lg:px-8">
         {/* Sélecteur de compte */}
         <AccountSelector
@@ -314,11 +314,11 @@ const TradesPage: React.FC = () => {
         />
 
         {selectedIds.length > 0 && (
-          <div className="bg-white rounded-lg shadow p-4 mb-4 flex items-center justify-between">
-            <div className="text-sm text-gray-700">{selectedIds.length} {t('trades:selected')}</div>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4 flex items-center justify-between">
+            <div className="text-sm text-gray-700 dark:text-gray-300">{selectedIds.length} {t('trades:selected')}</div>
             <div className="flex gap-2">
-              <button onClick={() => setSelectedIds([])} className="px-3 py-2 bg-gray-100 rounded">{t('common:reset')}</button>
-              <button onClick={handleBulkDelete} className="px-3 py-2 bg-rose-600 text-white rounded hover:bg-rose-700">{t('trades:deleteSelected')}</button>
+              <button onClick={() => setSelectedIds([])} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">{t('common:reset')}</button>
+              <button onClick={handleBulkDelete} className="px-3 py-2 bg-rose-600 dark:bg-rose-500 text-white rounded hover:bg-rose-700 dark:hover:bg-rose-600">{t('trades:deleteSelected')}</button>
             </div>
           </div>
         )}
