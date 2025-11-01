@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../utils/apiConfig';
+
 export interface TradeListItem {
   id: number;
   topstep_id: string;
@@ -53,7 +55,7 @@ export interface PaginatedResponse<T> {
 }
 
 class TradesService {
-  private readonly BASE_URL = 'http://localhost:8000';
+  private readonly BASE_URL = getApiBaseUrl();
 
   private getAuthHeaders() {
     const token = localStorage.getItem('access_token');

@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../utils/apiConfig';
+
 export interface TradingAccount {
   id: number;
   user: number;
@@ -18,7 +20,7 @@ export interface TradingAccount {
 }
 
 class TradingAccountsService {
-  private readonly BASE_URL = 'http://localhost:8000';
+  private readonly BASE_URL = getApiBaseUrl();
 
   private getAuthHeaders() {
     const token = localStorage.getItem('access_token');

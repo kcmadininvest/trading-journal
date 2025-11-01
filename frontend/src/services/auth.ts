@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../utils/apiConfig';
+
 export interface User {
   id: number;
   email: string;
@@ -20,7 +22,7 @@ export interface LoginResponse {
 }
 
 class AuthService {
-  private readonly BASE_URL = 'http://localhost:8000';
+  private readonly BASE_URL = getApiBaseUrl();
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
   private user: User | null = null;

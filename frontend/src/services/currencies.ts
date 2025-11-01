@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../utils/apiConfig';
+
 export interface Currency {
   id: number;
   code: string;
@@ -6,7 +8,7 @@ export interface Currency {
 }
 
 class CurrenciesService {
-  private readonly BASE_URL = 'http://localhost:8000';
+  private readonly BASE_URL = getApiBaseUrl();
 
   private getAuthHeaders() {
     const token = localStorage.getItem('access_token');

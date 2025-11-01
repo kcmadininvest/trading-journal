@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../utils/apiConfig';
+
 export interface User {
   id: number;
   email: string;
@@ -64,7 +66,7 @@ export interface LoginHistoryEntry {
 }
 
 class UserService {
-  private readonly BASE_URL = 'http://localhost:8000';
+  private readonly BASE_URL = getApiBaseUrl();
 
   private getAuthHeaders() {
     const token = localStorage.getItem('access_token');
