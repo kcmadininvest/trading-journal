@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { tradingAccountsService, TradingAccount } from '../../services/tradingAccounts';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface AccountSelectorProps {
   value?: number | null;
@@ -9,6 +10,7 @@ interface AccountSelectorProps {
 }
 
 export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChange, allowAllActive = true, hideLabel = false }) => {
+  const { t } = useI18nTranslation();
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -52,10 +54,10 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
   const options = useMemo(() => {
     const base = accounts.map(a => ({ value: a.id, label: a.name, isDefault: !!a.is_default }));
     if (allowAllActive) {
-      return [{ value: 0, label: 'Tous les comptes actifs', isDefault: false } as any, ...base];
+      return [{ value: 0, label: t('common:allActiveAccounts'), isDefault: false } as any, ...base];
     }
     return base;
-  }, [accounts, allowAllActive]);
+  }, [accounts, allowAllActive, t]);
 
   const currentValue = useMemo(() => {
     if (selectedId === null || selectedId === undefined) return 0;
@@ -76,7 +78,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
   return (
     <div className={hideLabel ? "max-w-sm" : "mb-4 max-w-sm"}>
       {!hideLabel && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">Compte</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common:account')}</label>
       )}
       <div ref={dropdownRef} className="relative">
         <button
@@ -86,9 +88,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
           className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <span className="inline-flex items-center gap-2">
-            <span className="text-gray-900">{currentOption?.label || 'Tous les comptes actifs'}</span>
+            <span className="text-gray-900">{currentOption?.label || t('common:allActiveAccounts')}</span>
             {currentOption && (currentOption as any).isDefault && (
-              <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">Par défaut</span>
+              <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">{t('common:default')}</span>
             )}
           </span>
           <svg className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
@@ -107,7 +109,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
                     className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 ${opt.value === currentValue ? 'bg-gray-50' : ''}`}
                   >
                     <span className="text-gray-900">{opt.label}</span>
-                    {(opt as any).isDefault && <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">Par défaut</span>}
+                    {(opt as any).isDefault && <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">{t('common:default')}</span>}
                   </button>
                 </li>
               ))}

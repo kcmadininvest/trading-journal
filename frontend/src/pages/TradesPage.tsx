@@ -9,8 +9,10 @@ import { TradeModal } from '../components/trades/TradeModal';
 import PaginationControls from '../components/ui/PaginationControls';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const TradesPage: React.FC = () => {
+  const { t } = useI18nTranslation();
   const [items, setItems] = useState<TradeListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -313,10 +315,10 @@ const TradesPage: React.FC = () => {
 
         {selectedIds.length > 0 && (
           <div className="bg-white rounded-lg shadow p-4 mb-4 flex items-center justify-between">
-            <div className="text-sm text-gray-700">{selectedIds.length} sélectionné(s)</div>
+            <div className="text-sm text-gray-700">{selectedIds.length} {t('trades:selected')}</div>
             <div className="flex gap-2">
-              <button onClick={() => setSelectedIds([])} className="px-3 py-2 bg-gray-100 rounded">Effacer la sélection</button>
-              <button onClick={handleBulkDelete} className="px-3 py-2 bg-rose-600 text-white rounded hover:bg-rose-700">Supprimer sélection</button>
+              <button onClick={() => setSelectedIds([])} className="px-3 py-2 bg-gray-100 rounded">{t('common:reset')}</button>
+              <button onClick={handleBulkDelete} className="px-3 py-2 bg-rose-600 text-white rounded hover:bg-rose-700">{t('trades:deleteSelected')}</button>
             </div>
           </div>
         )}
@@ -374,7 +376,7 @@ const TradesPage: React.FC = () => {
 
         {/* Modale de création temporairement supprimée */}
       </div>
-      <FloatingActionButton onClick={() => setShowImport(true)} title="Importer des trades" />
+      <FloatingActionButton onClick={() => setShowImport(true)} title={t('trades:import')} />
       <ImportTradesModal open={showImport} onClose={(done) => {
         setShowImport(false);
         if (done) {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import userService, { UserPreferences, ActiveSession, LoginHistoryEntry, PasswordChangeData } from '../services/userService';
 import authService from '../services/auth';
+import { changeLanguage } from '../i18n/config';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const TIMEZONES = [
   'Europe/Paris',
@@ -16,6 +18,7 @@ const TIMEZONES = [
 ];
 
 const SettingsPage: React.FC = () => {
+  const { t } = useI18nTranslation();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'trading' | 'display' | 'data'>('profile');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -76,7 +79,7 @@ const SettingsPage: React.FC = () => {
       // Charger les sessions et l'historique
       loadSecurityData();
     } catch (error: any) {
-      showMessage('error', error.message || 'Erreur lors du chargement des données');
+      showMessage('error', error.message || t('common:error'));
     } finally {
       setLoading(false);
     }
@@ -110,7 +113,7 @@ const SettingsPage: React.FC = () => {
     setLoading(true);
     try {
       const result = await userService.updateCurrentUserProfile(profile);
-      showMessage('success', result.message || 'Profil mis à jour avec succès');
+      showMessage('success', result.message || t('settings:profileUpdated'));
       
       // Mettre à jour l'utilisateur dans authService et localStorage
       if (result.user) {
@@ -130,13 +133,13 @@ const SettingsPage: React.FC = () => {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordForm.new_password !== passwordForm.new_password_confirm) {
-      showMessage('error', 'Les mots de passe ne correspondent pas');
+      showMessage('error', t('settings:passwordMismatch', { defaultValue: 'Les mots de passe ne correspondent pas' }));
       return;
     }
     setLoading(true);
     try {
       await userService.changePassword(passwordForm as PasswordChangeData);
-      showMessage('success', 'Mot de passe modifié avec succès');
+      showMessage('success', t('settings:passwordUpdated'));
       setPasswordForm({ old_password: '', new_password: '', new_password_confirm: '' });
     } catch (error: any) {
       showMessage('error', error.message || 'Erreur lors du changement de mot de passe');
@@ -149,12 +152,16 @@ const SettingsPage: React.FC = () => {
     setLoading(true);
     try {
       const updatedPreferences = await userService.updatePreferences(preferences);
-      showMessage('success', 'Préférences mises à jour avec succès');
+      showMessage('success', t('settings:preferencesUpdated'));
       // Appliquer le thème immédiatement si changé
       if (preferences.theme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
+      }
+      // Changer la langue i18n si elle a changé
+      if (updatedPreferences.language) {
+        changeLanguage(updatedPreferences.language);
       }
       // Mettre à jour les préférences locales avec la réponse du serveur
       setPreferences(updatedPreferences);
@@ -168,11 +175,11 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleRevokeSession = async (jti: string) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir déconnecter cette session ?')) return;
+    if (!window.confirm(t('settings:disconnect') + '?')) return;
     setLoading(true);
     try {
       await userService.revokeSession(jti);
-      showMessage('success', 'Session déconnectée avec succès');
+      showMessage('success', t('settings:sessionRevoked'));
       await loadSecurityData();
     } catch (error: any) {
       showMessage('error', error.message || 'Erreur lors de la déconnexion de la session');
@@ -182,11 +189,11 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleRevokeAllSessions = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir déconnecter toutes les autres sessions ?')) return;
+    if (!window.confirm(t('settings:disconnectAllOther') + '?')) return;
     setLoading(true);
     try {
       await userService.revokeAllOtherSessions();
-      showMessage('success', 'Toutes les autres sessions ont été déconnectées');
+      showMessage('success', t('settings:allSessionsRevoked'));
       await loadSecurityData();
     } catch (error: any) {
       showMessage('error', error.message || 'Erreur lors de la déconnexion des sessions');
@@ -207,7 +214,7 @@ const SettingsPage: React.FC = () => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      showMessage('success', 'Données exportées avec succès');
+      showMessage('success', t('settings:dataExported'));
     } catch (error: any) {
       showMessage('error', error.message || 'Erreur lors de l\'export des données');
     } finally {
@@ -217,15 +224,15 @@ const SettingsPage: React.FC = () => {
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== 'SUPPRIMER') {
-      showMessage('error', 'Veuillez taper "SUPPRIMER" pour confirmer');
+      showMessage('error', t('settings:deleteConfirmPrompt'));
       return;
     }
-    if (!window.confirm('Êtes-vous ABSOLUMENT sûr ? Cette action est irréversible et supprimera toutes vos données.')) return;
+    if (!window.confirm(t('settings:deleteAccountWarning'))) return;
     
     setLoading(true);
     try {
       await userService.deleteCurrentUserAccount();
-      showMessage('success', 'Compte supprimé avec succès');
+      showMessage('success', t('settings:accountDeleted'));
       setTimeout(() => {
         authService.logout();
         window.location.href = '/login';
@@ -250,11 +257,11 @@ const SettingsPage: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'profile' as const, label: 'Profil', icon: '👤' },
-    { id: 'security' as const, label: 'Sécurité', icon: '🔒' },
-    { id: 'trading' as const, label: 'Trading', icon: '📊' },
-    { id: 'display' as const, label: 'Affichage', icon: '🎨' },
-    { id: 'data' as const, label: 'Données', icon: '💾' },
+    { id: 'profile' as const, label: t('settings:profile'), icon: '👤' },
+    { id: 'security' as const, label: t('settings:security'), icon: '🔒' },
+    { id: 'trading' as const, label: t('settings:trading'), icon: '📊' },
+    { id: 'display' as const, label: t('settings:display'), icon: '🎨' },
+    { id: 'data' as const, label: t('settings:data'), icon: '💾' },
   ];
 
   return (
@@ -290,17 +297,17 @@ const SettingsPage: React.FC = () => {
       {/* Contenu des onglets */}
       <div className="flex-1 overflow-y-auto bg-white p-4 sm:p-6 lg:p-8">
         {loading && (
-          <div className="mb-4 text-gray-600">Chargement...</div>
+          <div className="mb-4 text-gray-600">{t('common:loading')}</div>
         )}
 
         {/* Profil */}
         {activeTab === 'profile' && (
           <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Informations du profil</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('settings:profileInfo')}</h2>
               <form onSubmit={handleProfileUpdate} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Prénom</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:firstName')}</label>
                     <input
                       type="text"
                       value={profile.first_name}
@@ -310,7 +317,7 @@ const SettingsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nom</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:lastName')}</label>
                     <input
                       type="text"
                       value={profile.last_name}
@@ -321,7 +328,7 @@ const SettingsPage: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:email')}</label>
                   <input
                     type="email"
                     value={profile.email}
@@ -331,7 +338,7 @@ const SettingsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Nom d'utilisateur</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:username')}</label>
                   <input
                     type="text"
                     value={profile.username}
@@ -345,7 +352,7 @@ const SettingsPage: React.FC = () => {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Enregistrer les modifications
+                  {t('settings:saveChanges')}
                 </button>
               </form>
           </div>
@@ -356,10 +363,10 @@ const SettingsPage: React.FC = () => {
           <div className="space-y-8">
               {/* Changement de mot de passe */}
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Changer le mot de passe</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('settings:changePassword')}</h2>
                 <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Ancien mot de passe</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:oldPassword')}</label>
                     <input
                       type="password"
                       value={passwordForm.old_password}
@@ -369,7 +376,7 @@ const SettingsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nouveau mot de passe</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:newPassword')}</label>
                     <input
                       type="password"
                       value={passwordForm.new_password}
@@ -379,7 +386,7 @@ const SettingsPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirmer le nouveau mot de passe</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:confirmNewPassword')}</label>
                     <input
                       type="password"
                       value={passwordForm.new_password_confirm}
@@ -393,7 +400,7 @@ const SettingsPage: React.FC = () => {
                     disabled={loading}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                   >
-                    Changer le mot de passe
+                    {t('settings:updatePassword')}
                   </button>
                 </form>
               </div>
@@ -413,7 +420,7 @@ const SettingsPage: React.FC = () => {
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                    Sessions actives
+                    {t('settings:activeSessions')}
                     <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
                       {sessions.length}
                     </span>
@@ -423,14 +430,14 @@ const SettingsPage: React.FC = () => {
                       onClick={handleRevokeAllSessions}
                       className="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
                     >
-                      Déconnecter toutes les autres sessions
+                      {t('settings:disconnectAllOther')}
                     </button>
                   )}
                 </div>
                 {sessionsExpanded && (
                   <div className="space-y-3">
                     {sessions.length === 0 ? (
-                      <p className="text-gray-500 py-4">Aucune session active</p>
+                      <p className="text-gray-500 py-4">{t('settings:noActiveSessions')}</p>
                     ) : (
                       sessions.map((session) => (
                         <div
@@ -442,16 +449,16 @@ const SettingsPage: React.FC = () => {
                           <div className="flex justify-between items-start">
                             <div>
                               <div className="font-medium text-gray-900">
-                                {session.device_info || 'Appareil inconnu'}
+                                {session.device_info || t('settings:unknownDevice')}
                                 {session.is_current && (
-                                  <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">Session actuelle</span>
+                                  <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">{t('settings:currentSession')}</span>
                                 )}
                               </div>
                               <div className="text-sm text-gray-600 mt-1">
-                                Créée le {formatDate(session.created_at)}
+                                {t('settings:createdOn')} {formatDate(session.created_at)}
                               </div>
                               <div className="text-sm text-gray-600">
-                                Expire le {formatDate(session.expires_at)}
+                                {t('settings:expiresOn')} {formatDate(session.expires_at)}
                               </div>
                             </div>
                             {!session.is_current && (
@@ -459,7 +466,7 @@ const SettingsPage: React.FC = () => {
                                 onClick={() => handleRevokeSession(session.jti)}
                                 className="px-3 py-1 text-sm text-red-600 border border-red-300 rounded-md hover:bg-red-50"
                               >
-                                Déconnecter
+                                {t('settings:disconnect')}
                               </button>
                             )}
                           </div>
@@ -484,7 +491,7 @@ const SettingsPage: React.FC = () => {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                  Historique des connexions
+                  {t('settings:loginHistory')}
                   <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
                     {loginHistory.length}
                   </span>
@@ -493,31 +500,31 @@ const SettingsPage: React.FC = () => {
                   <>
                     {loginHistory.length === 0 ? (
                       <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-                        <p className="text-gray-500">Aucun historique de connexion disponible.</p>
-                        <p className="text-sm text-gray-400 mt-2">L'historique sera enregistré lors de vos prochaines connexions.</p>
+                        <p className="text-gray-500">{t('settings:noLoginHistory')}</p>
+                        <p className="text-sm text-gray-400 mt-2">{t('settings:loginHistoryInfo')}</p>
                       </div>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full divide-y divide-gray-200">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appareil</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings:date')}</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings:ip')}</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings:device')}</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('settings:status')}</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
                             {loginHistory.map((entry, index) => (
                               <tr key={index}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(entry.date)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{entry.ip_address || 'N/A'}</td>
-                                <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={entry.user_agent || 'N/A'}>{entry.user_agent || 'N/A'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{entry.ip_address || t('common:na')}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={entry.user_agent || t('common:na')}>{entry.user_agent || t('common:na')}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                                     entry.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                   }`}>
-                                    {entry.success ? 'Réussie' : 'Échouée'}
+                                    {entry.success ? t('settings:success') : t('settings:failed')}
                                   </span>
                                 </td>
                               </tr>
@@ -535,28 +542,28 @@ const SettingsPage: React.FC = () => {
         {/* Préférences de trading */}
         {activeTab === 'trading' && (
           <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Préférences de trading</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('settings:tradingPreferences')}</h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Format de date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:dateFormat')}</label>
                   <select
                     value={preferences.date_format}
                     onChange={(e) => setPreferences({ ...preferences, date_format: e.target.value as 'US' | 'EU' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="EU">EU (DD/MM/YYYY)</option>
-                    <option value="US">US (MM/DD/YYYY)</option>
+                    <option value="EU">{t('settings:dateFormatEU')}</option>
+                    <option value="US">{t('settings:dateFormatUS')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Format des nombres</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:numberFormat')}</label>
                   <select
                     value={preferences.number_format}
                     onChange={(e) => setPreferences({ ...preferences, number_format: e.target.value as 'point' | 'comma' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="comma">Virgule (1 234,56)</option>
-                    <option value="point">Point (1.234,56)</option>
+                    <option value="comma">{t('settings:numberFormatComma')}</option>
+                    <option value="point">{t('settings:numberFormatPoint')}</option>
                   </select>
                 </div>
                 <button
@@ -564,7 +571,7 @@ const SettingsPage: React.FC = () => {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Enregistrer les préférences
+                  {t('settings:savePreferences')}
                 </button>
               </div>
           </div>
@@ -573,21 +580,28 @@ const SettingsPage: React.FC = () => {
         {/* Préférences d'affichage */}
         {activeTab === 'display' && (
           <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-6">Préférences d'affichage</h2>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('settings:displayPreferences')}</h2>
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Langue</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:language')}</label>
                   <select
                     value={preferences.language}
-                    onChange={(e) => setPreferences({ ...preferences, language: e.target.value as 'fr' | 'en' })}
+                    onChange={(e) => setPreferences({ ...preferences, language: e.target.value as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="fr">Français</option>
                     <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="de">Deutsch</option>
+                    <option value="it">Italiano</option>
+                    <option value="pt">Português</option>
+                    <option value="ja">日本語</option>
+                    <option value="ko">한국어</option>
+                    <option value="zh">中文</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Fuseau horaire</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:timezone')}</label>
                   <select
                     value={preferences.timezone}
                     onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
@@ -599,26 +613,26 @@ const SettingsPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Thème</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:theme')}</label>
                   <select
                     value={preferences.theme}
                     onChange={(e) => setPreferences({ ...preferences, theme: e.target.value as 'light' | 'dark' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="light">Clair</option>
-                    <option value="dark">Sombre</option>
+                    <option value="light">{t('settings:themeLight')}</option>
+                    <option value="dark">{t('settings:themeDark')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Taille de police</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('settings:fontSize')}</label>
                   <select
                     value={preferences.font_size}
                     onChange={(e) => setPreferences({ ...preferences, font_size: e.target.value as 'small' | 'medium' | 'large' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="small">Petit</option>
-                    <option value="medium">Moyen</option>
-                    <option value="large">Grand</option>
+                    <option value="small">{t('settings:fontSizeSmall')}</option>
+                    <option value="medium">{t('settings:fontSizeMedium')}</option>
+                    <option value="large">{t('settings:fontSizeLarge')}</option>
                   </select>
                 </div>
                 <button
@@ -626,7 +640,7 @@ const SettingsPage: React.FC = () => {
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Enregistrer les préférences
+                  {t('settings:savePreferences')}
                 </button>
               </div>
           </div>
@@ -636,44 +650,44 @@ const SettingsPage: React.FC = () => {
         {activeTab === 'data' && (
           <div className="space-y-8">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Export des données</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">{t('settings:dataExport')}</h2>
                 <p className="text-gray-600 mb-4">
-                  Téléchargez une copie de toutes vos données au format JSON. Cela inclut votre profil, préférences, comptes de trading, trades, stratégies et historique des connexions.
+                  {t('settings:dataExportDescription')}
                 </p>
                 <button
                   onClick={handleExportData}
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  Exporter mes données
+                  {t('settings:exportMyData')}
                 </button>
               </div>
 
               <div className="border-t border-gray-200 pt-8">
-                <h2 className="text-xl font-semibold text-red-900 mb-6">Zone de danger</h2>
+                <h2 className="text-xl font-semibold text-red-900 mb-6">{t('settings:dangerZone')}</h2>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-red-900 mb-2">Supprimer mon compte</h3>
+                  <h3 className="text-lg font-semibold text-red-900 mb-2">{t('settings:deleteAccount')}</h3>
                   <p className="text-red-700 mb-4">
-                    Cette action est irréversible. Toutes vos données seront définitivement supprimées, y compris :
+                    {t('settings:deleteAccountWarning')}
                   </p>
                   <ul className="list-disc list-inside text-red-700 mb-4 space-y-1">
-                    <li>Votre profil et préférences</li>
-                    <li>Tous vos trades et comptes de trading</li>
-                    <li>Toutes vos stratégies</li>
-                    <li>Votre historique de connexions</li>
+                    <li>{t('settings:deleteAccountList1')}</li>
+                    <li>{t('settings:deleteAccountList2')}</li>
+                    <li>{t('settings:deleteAccountList3')}</li>
+                    <li>{t('settings:deleteAccountList4')}</li>
         </ul>
                   {!showDeleteModal ? (
                     <button
                       onClick={() => setShowDeleteModal(true)}
                       className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
                     >
-                      Supprimer mon compte
+                      {t('settings:deleteAccountButton')}
                     </button>
                   ) : (
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-red-900 mb-2">
-                          Tapez "SUPPRIMER" pour confirmer
+                          {t('settings:deleteConfirmPrompt')}
                         </label>
                         <input
                           type="text"
@@ -689,7 +703,7 @@ const SettingsPage: React.FC = () => {
                           disabled={loading || deleteConfirm !== 'SUPPRIMER'}
                           className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
                         >
-                          Confirmer la suppression
+                          {t('settings:confirmDeletion')}
                         </button>
                         <button
                           onClick={() => {
@@ -698,7 +712,7 @@ const SettingsPage: React.FC = () => {
                           }}
                           className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                         >
-                          Annuler
+                          {t('common:cancel')}
                         </button>
                       </div>
                     </div>

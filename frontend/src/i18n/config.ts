@@ -1,0 +1,148 @@
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// Import des traductions
+import frCommon from './locales/fr/common.json';
+import enCommon from './locales/en/common.json';
+import esCommon from './locales/es/common.json';
+import deCommon from './locales/de/common.json';
+import itCommon from './locales/it/common.json';
+import ptCommon from './locales/pt/common.json';
+import jaCommon from './locales/ja/common.json';
+import koCommon from './locales/ko/common.json';
+import zhCommon from './locales/zh/common.json';
+
+import frTrades from './locales/fr/trades.json';
+import enTrades from './locales/en/trades.json';
+import esTrades from './locales/es/trades.json';
+import deTrades from './locales/de/trades.json';
+import itTrades from './locales/it/trades.json';
+import ptTrades from './locales/pt/trades.json';
+import jaTrades from './locales/ja/trades.json';
+import koTrades from './locales/ko/trades.json';
+import zhTrades from './locales/zh/trades.json';
+
+import frSettings from './locales/fr/settings.json';
+import enSettings from './locales/en/settings.json';
+import esSettings from './locales/es/settings.json';
+import deSettings from './locales/de/settings.json';
+import itSettings from './locales/it/settings.json';
+import ptSettings from './locales/pt/settings.json';
+import jaSettings from './locales/ja/settings.json';
+import koSettings from './locales/ko/settings.json';
+import zhSettings from './locales/zh/settings.json';
+
+import frNavigation from './locales/fr/navigation.json';
+import enNavigation from './locales/en/navigation.json';
+import esNavigation from './locales/es/navigation.json';
+import deNavigation from './locales/de/navigation.json';
+import itNavigation from './locales/it/navigation.json';
+import ptNavigation from './locales/pt/navigation.json';
+import jaNavigation from './locales/ja/navigation.json';
+import koNavigation from './locales/ko/navigation.json';
+import zhNavigation from './locales/zh/navigation.json';
+
+import frDashboard from './locales/fr/dashboard.json';
+import enDashboard from './locales/en/dashboard.json';
+import esDashboard from './locales/es/dashboard.json';
+import deDashboard from './locales/de/dashboard.json';
+import itDashboard from './locales/it/dashboard.json';
+import ptDashboard from './locales/pt/dashboard.json';
+import jaDashboard from './locales/ja/dashboard.json';
+import koDashboard from './locales/ko/dashboard.json';
+import zhDashboard from './locales/zh/dashboard.json';
+
+const resources = {
+  fr: {
+    common: frCommon,
+    trades: frTrades,
+    settings: frSettings,
+    navigation: frNavigation,
+    dashboard: frDashboard,
+  },
+  en: {
+    common: enCommon,
+    trades: enTrades,
+    settings: enSettings,
+    navigation: enNavigation,
+    dashboard: enDashboard,
+  },
+  es: {
+    common: esCommon,
+    trades: esTrades,
+    settings: esSettings,
+    navigation: esNavigation,
+    dashboard: esDashboard,
+  },
+  de: {
+    common: deCommon,
+    trades: deTrades,
+    settings: deSettings,
+    navigation: deNavigation,
+    dashboard: deDashboard,
+  },
+  it: {
+    common: itCommon,
+    trades: itTrades,
+    settings: itSettings,
+    navigation: itNavigation,
+    dashboard: itDashboard,
+  },
+  pt: {
+    common: ptCommon,
+    trades: ptTrades,
+    settings: ptSettings,
+    navigation: ptNavigation,
+    dashboard: ptDashboard,
+  },
+  ja: {
+    common: jaCommon,
+    trades: jaTrades,
+    settings: jaSettings,
+    navigation: jaNavigation,
+    dashboard: jaDashboard,
+  },
+  ko: {
+    common: koCommon,
+    trades: koTrades,
+    settings: koSettings,
+    navigation: koNavigation,
+    dashboard: koDashboard,
+  },
+  zh: {
+    common: zhCommon,
+    trades: zhTrades,
+    settings: zhSettings,
+    navigation: zhNavigation,
+    dashboard: zhDashboard,
+  },
+};
+
+i18n
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init({
+    resources,
+    fallbackLng: 'fr',
+    supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
+    defaultNS: 'common',
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard'],
+    
+    interpolation: {
+      escapeValue: false, // React échappe déjà les valeurs
+    },
+    
+    detection: {
+      // Ne pas détecter automatiquement, on utilisera les préférences utilisateur
+      order: [],
+      caches: [],
+    },
+  });
+
+// Fonction pour changer la langue depuis les préférences utilisateur
+export const changeLanguage = (lang: string) => {
+  return i18n.changeLanguage(lang);
+};
+
+export default i18n;

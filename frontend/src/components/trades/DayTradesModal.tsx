@@ -59,11 +59,11 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   if (!open) return null;
 
   const formatDate = (dateStr: string) => {
-    return formatDateLong(dateStr, preferences.date_format, preferences.language as 'fr' | 'en', preferences.timezone);
+    return formatDateLong(dateStr, preferences.date_format, preferences.language, preferences.timezone);
   };
 
   const formatTimeLocal = (dateStr: string) => {
-    return formatTime(dateStr, preferences.timezone, preferences.language as 'fr' | 'en');
+    return formatTime(dateStr, preferences.timezone, preferences.language);
   };
 
   const formatPnl = (pnl: string | null) => {

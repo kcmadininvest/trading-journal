@@ -71,6 +71,13 @@ class UserPreferences(models.Model):
     LANGUAGE_CHOICES = [
         ('fr', 'Français'),
         ('en', 'English'),
+        ('es', 'Español'),
+        ('de', 'Deutsch'),
+        ('it', 'Italiano'),
+        ('pt', 'Português'),
+        ('ja', '日本語'),
+        ('ko', '한국어'),
+        ('zh', '中文'),
     ]
     
     DATE_FORMAT_CHOICES = [

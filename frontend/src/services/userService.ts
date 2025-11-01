@@ -38,7 +38,7 @@ export interface PasswordChangeData {
 }
 
 export interface UserPreferences {
-  language: 'fr' | 'en';
+  language: 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
   timezone: string;
   date_format: 'US' | 'EU';
   number_format: 'point' | 'comma';

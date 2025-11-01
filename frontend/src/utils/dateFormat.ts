@@ -3,6 +3,7 @@
  */
 
 export type DateFormatType = 'US' | 'EU';
+export type LanguageType = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
 
 /**
  * Formate une date selon les préférences utilisateur
@@ -154,14 +155,14 @@ export const formatDateTimeShort = (
  * Formate une date pour affichage long avec nom du mois
  * @param date - Date à formater
  * @param dateFormat - Format de date ('US' ou 'EU') - non utilisé dans cette fonction mais conservé pour compatibilité
- * @param language - Langue ('fr' ou 'en')
+ * @param language - Langue (fr, en, es, de, it, pt, ja, ko, zh)
  * @param timezone - Fuseau horaire (ex: 'Europe/Paris', 'America/New_York')
  * @returns Date formatée en format long
  */
 export const formatDateLong = (
   date: string | Date | number | null | undefined,
   dateFormat: DateFormatType = 'EU',
-  language: 'fr' | 'en' = 'fr',
+  language: LanguageType = 'fr',
   timezone?: string
 ): string => {
   if (!date) {
@@ -181,7 +182,19 @@ export const formatDateLong = (
     return '';
   }
 
-  const locale = language === 'fr' ? 'fr-FR' : 'en-US';
+  // Mapper les codes de langue aux locales
+  const localeMap: Record<LanguageType, string> = {
+    'fr': 'fr-FR',
+    'en': 'en-US',
+    'es': 'es-ES',
+    'de': 'de-DE',
+    'it': 'it-IT',
+    'pt': 'pt-PT',
+    'ja': 'ja-JP',
+    'ko': 'ko-KR',
+    'zh': 'zh-CN',
+  };
+  const locale = localeMap[language] || 'fr-FR';
   const options: Intl.DateTimeFormatOptions = {
     day: 'numeric',
     month: 'long',
@@ -196,13 +209,13 @@ export const formatDateLong = (
  * Formate une heure selon les préférences utilisateur
  * @param date - Date à formater
  * @param timezone - Fuseau horaire (ex: 'Europe/Paris', 'America/New_York')
- * @param language - Langue ('fr' ou 'en')
+ * @param language - Langue (fr, en, es, de, it, pt, ja, ko, zh)
  * @returns Heure formatée
  */
 export const formatTime = (
   date: string | Date | number | null | undefined,
   timezone?: string,
-  language: 'fr' | 'en' = 'fr'
+  language: LanguageType = 'fr'
 ): string => {
   if (!date) {
     return '';
@@ -221,7 +234,19 @@ export const formatTime = (
     return '';
   }
 
-  const locale = language === 'fr' ? 'fr-FR' : 'en-US';
+  // Mapper les codes de langue aux locales
+  const localeMap: Record<LanguageType, string> = {
+    'fr': 'fr-FR',
+    'en': 'en-US',
+    'es': 'es-ES',
+    'de': 'de-DE',
+    'it': 'it-IT',
+    'pt': 'pt-PT',
+    'ja': 'ja-JP',
+    'ko': 'ko-KR',
+    'zh': 'zh-CN',
+  };
+  const locale = localeMap[language] || 'fr-FR';
   const options: Intl.DateTimeFormatOptions = {
     hour: '2-digit',
     minute: '2-digit',

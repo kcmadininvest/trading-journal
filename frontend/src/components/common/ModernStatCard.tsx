@@ -108,7 +108,7 @@ function ModernStatCard({
 
       value: 'text-2xl',
 
-      label: 'text-xs',
+      label: 'text-base',
 
       trend: 'text-xs'
 

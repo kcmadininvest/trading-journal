@@ -257,11 +257,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   if (!open) return null;
 
   const formatDate = (dateStr: string) => {
-    return formatDateLong(dateStr, preferences.date_format, preferences.language as 'fr' | 'en', preferences.timezone);
+    return formatDateLong(dateStr, preferences.date_format, preferences.language, preferences.timezone);
   };
 
   const formatTimeLocal = (dateStr: string) => {
-    return formatTime(dateStr, preferences.timezone, preferences.language as 'fr' | 'en');
+    return formatTime(dateStr, preferences.timezone, preferences.language);
   };
 
   return (

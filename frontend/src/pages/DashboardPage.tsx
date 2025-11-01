@@ -11,6 +11,7 @@ import ModernStatCard from '../components/common/ModernStatCard';
 import DurationDistributionChart from '../components/charts/DurationDistributionChart';
 import { usePreferences } from '../hooks/usePreferences';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -58,7 +59,8 @@ const hexToRgba = (hex: string, alpha: number): string => {
 const getPerformanceLabel = (
   currentValue: number,
   objective: number,
-  metricType: 'winRate' | 'avgWinning' | 'avgLosing'
+  metricType: 'winRate' | 'avgWinning' | 'avgLosing',
+  t: (key: string) => string
 ): { label: string; color: string; bgColor: string; borderColor: string } => {
   let percentage: number;
   let color: string;
@@ -68,16 +70,16 @@ const getPerformanceLabel = (
     // Pour winRate, utiliser des seuils absolus fixes
     // Standards du trading : 60%+ excellent, 50%+ bon, 40%+ moyen, <40% à améliorer
     if (currentValue >= 60) {
-      label = 'Excellent';
+      label = t('dashboard:excellent');
       color = '#10b981'; // green
     } else if (currentValue >= 50) {
-      label = 'Bon';
+      label = t('dashboard:good');
       color = '#10b981'; // green
     } else if (currentValue >= 40) {
-      label = 'Moyen';
+      label = t('dashboard:average');
       color = '#f59e0b'; // orange
     } else {
-      label = 'À améliorer';
+      label = t('dashboard:needsImprovement');
       color = '#ef4444'; // red
     }
   } else if (metricType === 'avgLosing') {
@@ -86,19 +88,19 @@ const getPerformanceLabel = (
     percentage = (1 - Math.min(currentValue / objective, 1)) * 100;
     
     if (percentage >= 90) {
-      label = 'Excellent';
+      label = t('dashboard:excellent');
       color = '#10b981'; // green
     } else if (percentage >= 70) {
-      label = 'Très bon';
+      label = t('dashboard:veryGood');
       color = '#10b981'; // green
     } else if (percentage >= 50) {
-      label = 'Bon';
+      label = t('dashboard:good');
       color = '#f59e0b'; // orange
     } else if (percentage >= 30) {
-      label = 'Moyen';
+      label = t('dashboard:average');
       color = '#f59e0b'; // orange
     } else {
-      label = 'À améliorer';
+      label = t('dashboard:needsImprovement');
       color = '#ef4444'; // red
     }
   } else {
@@ -106,19 +108,19 @@ const getPerformanceLabel = (
     percentage = Math.min((currentValue / objective) * 100, 100);
     
     if (percentage >= 90) {
-      label = 'Excellent';
+      label = t('dashboard:excellent');
       color = '#10b981'; // green
     } else if (percentage >= 70) {
-      label = 'Très bon';
+      label = t('dashboard:veryGood');
       color = '#10b981'; // green
     } else if (percentage >= 50) {
-      label = 'Bon';
+      label = t('dashboard:good');
       color = '#f59e0b'; // orange
     } else if (percentage >= 30) {
-      label = 'Moyen';
+      label = t('dashboard:average');
       color = '#f59e0b'; // orange
     } else {
-      label = 'À améliorer';
+      label = t('dashboard:needsImprovement');
       color = '#ef4444'; // red
     }
   }
@@ -171,6 +173,7 @@ const categorizeDuration = (minutes: number): string => {
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
   const [showImport, setShowImport] = useState(false);
   const [accountId, setAccountId] = useState<number | null>(null);
   
@@ -191,18 +194,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const currentYear = new Date().getFullYear();
   const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
   const availableMonths = [
-    { value: 1, label: 'Janvier' },
-    { value: 2, label: 'Février' },
-    { value: 3, label: 'Mars' },
-    { value: 4, label: 'Avril' },
-    { value: 5, label: 'Mai' },
-    { value: 6, label: 'Juin' },
-    { value: 7, label: 'Juillet' },
-    { value: 8, label: 'Août' },
-    { value: 9, label: 'Septembre' },
-    { value: 10, label: 'Octobre' },
-    { value: 11, label: 'Novembre' },
-    { value: 12, label: 'Décembre' },
+    { value: 1, label: t('dashboard:january') },
+    { value: 2, label: t('dashboard:february') },
+    { value: 3, label: t('dashboard:march') },
+    { value: 4, label: t('dashboard:april') },
+    { value: 5, label: t('dashboard:may') },
+    { value: 6, label: t('dashboard:june') },
+    { value: 7, label: t('dashboard:july') },
+    { value: 8, label: t('dashboard:august') },
+    { value: 9, label: t('dashboard:september') },
+    { value: 10, label: t('dashboard:october') },
+    { value: 11, label: t('dashboard:november') },
+    { value: 12, label: t('dashboard:december') },
   ];
 
   // Récupérer la liste des devises
@@ -325,7 +328,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
         setStrategies(strategiesMap);
       } catch (err) {
-        setError('Erreur lors du chargement des données');
+        setError(t('dashboard:error'));
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -333,7 +336,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
 
     loadTrades();
-  }, [accountId, selectedYear, selectedMonth]);
+  }, [accountId, selectedYear, selectedMonth, t]);
 
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative }
   const accountBalanceData = useMemo(() => {
@@ -609,7 +612,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       labels,
       datasets: [
         {
-          label: 'Évolution du Capital',
+          label: t('dashboard:capitalEvolution'),
           data: floatingBars,
           backgroundColor: waterfallBarData.map(d => 
             d.isPositive ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)'
@@ -626,7 +629,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         }
       ]
     };
-  }, [waterfallData]);
+  }, [waterfallData, t]);
 
   // Statistiques pour le waterfall
   const waterfallStats = useMemo(() => {
@@ -651,17 +654,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   // Calculer la performance par jour de la semaine
   const weekdayPerformanceData = useMemo(() => {
+    const monday = t('dashboard:monday');
+    const tuesday = t('dashboard:tuesday');
+    const wednesday = t('dashboard:wednesday');
+    const thursday = t('dashboard:thursday');
+    const friday = t('dashboard:friday');
+    const saturday = t('dashboard:saturday');
+    const sunday = t('dashboard:sunday');
+    
     const dayStats: { [day: string]: { total_pnl: number; trade_count: number; winning_trades: number } } = {
-      'Lundi': { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      'Mardi': { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      'Mercredi': { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      'Jeudi': { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      'Vendredi': { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      'Samedi': { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      'Dimanche': { total_pnl: 0, trade_count: 0, winning_trades: 0 },
+      [monday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
+      [tuesday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
+      [wednesday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
+      [thursday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
+      [friday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
+      [saturday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
+      [sunday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
     };
 
-    const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const dayNames = [sunday, monday, tuesday, wednesday, thursday, friday, saturday];
 
     trades.forEach(trade => {
       if (trade.entered_at && trade.net_pnl !== null) {
@@ -688,8 +699,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         win_rate: stats.trade_count > 0 ? (stats.winning_trades / stats.trade_count) * 100 : 0,
         average_pnl: stats.trade_count > 0 ? stats.total_pnl / stats.trade_count : 0,
       }))
-      .filter(d => d.day !== 'Samedi' && d.day !== 'Dimanche'); // Filtrer les weekends
-  }, [trades]);
+      .filter(d => d.day !== t('dashboard:saturday') && d.day !== t('dashboard:sunday')); // Filtrer les weekends
+  }, [trades, t]);
 
   // Préparer les données pour le graphique de performance par jour
   const weekdayChartData = useMemo(() => {
@@ -702,7 +713,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       labels,
       datasets: [
         {
-          label: 'PnL Total',
+          label: t('dashboard:pnlTotal'),
           data: totalPnlValues,
           backgroundColor: totalPnlValues.map(value => 
             value >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)'
@@ -716,7 +727,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         }
       ]
     };
-  }, [weekdayPerformanceData]);
+  }, [weekdayPerformanceData, t]);
 
   // Calculer les limites intelligentes pour l'axe Y - toujours inclure 0 avec valeurs arrondies
   const weekdayYAxisLimits = useMemo(() => {
@@ -863,11 +874,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     if (!tradingMetrics || !gaugeObjectives) return null;
     
     return {
-      winRate: getPerformanceLabel(tradingMetrics.winRate, gaugeObjectives.winRate, 'winRate'),
-      avgWinning: getPerformanceLabel(tradingMetrics.avgWinningTrade, gaugeObjectives.avgWinning, 'avgWinning'),
-      avgLosing: getPerformanceLabel(Math.abs(tradingMetrics.avgLosingTrade), gaugeObjectives.avgLosing, 'avgLosing'),
+      winRate: getPerformanceLabel(tradingMetrics.winRate, gaugeObjectives.winRate, 'winRate', t),
+      avgWinning: getPerformanceLabel(tradingMetrics.avgWinningTrade, gaugeObjectives.avgWinning, 'avgWinning', t),
+      avgLosing: getPerformanceLabel(Math.abs(tradingMetrics.avgLosingTrade), gaugeObjectives.avgLosing, 'avgLosing', t),
     };
-  }, [tradingMetrics, gaugeObjectives]);
+  }, [tradingMetrics, gaugeObjectives, t]);
 
   // Calculer les statistiques supplémentaires pour les cartes
   const additionalStats = useMemo(() => {
@@ -942,21 +953,21 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Compte de trading
+              {t('dashboard:tradingAccount')}
             </label>
             <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Année
+              {t('dashboard:year')}
             </label>
             <select
               value={selectedYear || ''}
               onChange={(e) => setSelectedYear(e.target.value ? parseInt(e.target.value) : null)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="">Toutes les années</option>
+              <option value="">{t('dashboard:allYears')}</option>
               {availableYears.map((year) => (
                 <option key={year} value={year}>
                   {year}
@@ -967,7 +978,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mois
+              {t('dashboard:month')}
             </label>
             <select
               value={selectedMonth || ''}
@@ -975,7 +986,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={!selectedYear}
             >
-              <option value="">Tous les mois</option>
+              <option value="">{t('dashboard:allMonths')}</option>
               {availableMonths.map((month) => (
                 <option key={month.value} value={month.value}>
                   {month.label}
@@ -992,7 +1003,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               }}
               className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
             >
-              Réinitialiser
+              {t('dashboard:reset')}
             </button>
           </div>
         </div>
@@ -1010,7 +1021,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Chargement des données...</p>
+            <p className="text-gray-600">{t('dashboard:loading')}</p>
           </div>
         </div>
       ) : (
@@ -1019,16 +1030,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {tradingMetrics && (
             <div className="bg-white rounded-lg shadow p-6">
               <div className="text-center mb-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Trader Performance Tracker</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-2">{t('dashboard:traderPerformanceTracker')}</h2>
                 <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto"></div>
-                <p className="text-sm text-gray-500 mt-2">Objectifs basés sur vos performances historiques</p>
+                <p className="text-sm text-gray-500 mt-2">{t('dashboard:objectivesBasedOnHistory')}</p>
               </div>
               
               <div className="grid grid-cols-3 gap-4">
                 {/* Jauge Win Rate */}
                 <div className="flex flex-col items-center bg-gray-100 rounded-xl p-4 shadow-md border border-gray-200 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
                   <h3 className="text-xs font-semibold text-gray-700 mb-4 text-center uppercase tracking-wide">
-                    Win Rate
+                    {t('dashboard:winRate')}
                   </h3>
                   <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
@@ -1061,7 +1072,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     </div>
                   </div>
                   <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
-                    Objectif: {gaugeObjectives?.winRate}%
+                    {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
                   </div>
                   <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
                     backgroundColor: performanceLabels?.winRate.bgColor,
@@ -1074,7 +1085,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 {/* Jauge Avg Winning Trade */}
                 <div className="flex flex-col items-center bg-gray-100 rounded-xl p-4 shadow-md border border-gray-200 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
                   <h3 className="text-xs font-semibold text-gray-700 mb-4 text-center uppercase tracking-wide">
-                    Avg Gagnant
+                    {t('dashboard:avgWinning')}
                   </h3>
                   <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
@@ -1107,7 +1118,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     </div>
                   </div>
                   <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
-                    Objectif: {formatCurrency(gaugeObjectives?.avgWinning || 0, currencySymbol)}
+                    {t('dashboard:objective')}: {formatCurrency(gaugeObjectives?.avgWinning || 0, currencySymbol)}
                   </div>
                   <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
                     backgroundColor: performanceLabels?.avgWinning.bgColor,
@@ -1120,7 +1131,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 {/* Jauge Avg Losing Trade */}
                 <div className="flex flex-col items-center bg-gray-100 rounded-xl p-4 shadow-md border border-gray-200 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
                   <h3 className="text-xs font-semibold text-gray-700 mb-4 text-center uppercase tracking-wide">
-                    Avg Perdant
+                    {t('dashboard:avgLosing')}
                   </h3>
                   <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                     <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
@@ -1153,7 +1164,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     </div>
                   </div>
                   <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
-                    Objectif: &lt; {formatCurrency(gaugeObjectives?.avgLosing || 0, currencySymbol)}
+                    {t('dashboard:objective')}: &lt; {formatCurrency(gaugeObjectives?.avgLosing || 0, currencySymbol)}
                   </div>
                   <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
                     backgroundColor: performanceLabels?.avgLosing.bgColor,
@@ -1170,7 +1181,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {additionalStats && tradingMetrics && (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <ModernStatCard
-                label="P/L Total"
+                label={t('dashboard:totalPnL')}
                 value={formatCurrency(additionalStats.totalPnl, currencySymbol)}
                 variant={additionalStats.totalPnl >= 0 ? 'success' : 'danger'}
                 size="small"
@@ -1180,11 +1191,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </svg>
                 }
                 trend={additionalStats.totalPnl >= 0 ? 'up' : 'down'}
-                trendValue={additionalStats.totalPnl >= 0 ? 'Rentable' : 'Perdant'}
+                trendValue={additionalStats.totalPnl >= 0 ? t('dashboard:profitable') : t('dashboard:losing')}
               />
               
               <ModernStatCard
-                label="Profit Factor"
+                label={t('dashboard:profitFactor')}
                 value={additionalStats.profitFactor.toFixed(2)}
                 variant={additionalStats.profitFactor >= 1.5 ? 'success' : additionalStats.profitFactor >= 1 ? 'warning' : 'danger'}
                 size="small"
@@ -1200,11 +1211,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   )
                 }
                 trend={additionalStats.profitFactor >= 1 ? 'up' : 'down'}
-                trendValue={additionalStats.profitFactor >= 1.5 ? 'Excellent' : additionalStats.profitFactor >= 1 ? 'Bon' : 'À améliorer'}
+                trendValue={additionalStats.profitFactor >= 1.5 ? t('dashboard:excellent') : additionalStats.profitFactor >= 1 ? t('dashboard:good') : t('dashboard:needsImprovement')}
               />
               
               <ModernStatCard
-                label="Ratio W/L"
+                label={t('dashboard:wlRatio')}
                 value={tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 ? (Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade)).toFixed(2) : '0.00'}
                 variant={tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 && Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade) >= 2 ? 'success' : tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 && Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade) >= 1.5 ? 'warning' : 'info'}
                 size="small"
@@ -1214,11 +1225,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </svg>
                 }
                 trend={undefined}
-                trendValue={`Avg: ${formatCurrency(Math.abs(tradingMetrics.avgWinningTrade), currencySymbol)} / ${formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}`}
+                trendValue={`${t('dashboard:avg')}: ${formatCurrency(Math.abs(tradingMetrics.avgWinningTrade), currencySymbol)} / ${formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}`}
               />
               
               <ModernStatCard
-                label="Frais Totaux"
+                label={t('dashboard:totalFees')}
                 value={formatCurrency(additionalStats.totalFees, currencySymbol)}
                 variant="warning"
                 size="small"
@@ -1228,11 +1239,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </svg>
                 }
                 trend={undefined}
-                trendValue={Math.abs(additionalStats.totalPnl) > 0 ? `${((additionalStats.totalFees / Math.abs(additionalStats.totalPnl)) * 100).toFixed(1)}% du P/L` : 'N/A'}
+                trendValue={Math.abs(additionalStats.totalPnl) > 0 ? `${((additionalStats.totalFees / Math.abs(additionalStats.totalPnl)) * 100).toFixed(1)}${t('dashboard:ofPnL')}` : t('common:na')}
               />
               
               <ModernStatCard
-                label="Séquence Respect"
+                label={t('dashboard:sequenceRespect')}
                 value={additionalStats.maxConsecutiveRespected || 0}
                 variant={additionalStats.maxConsecutiveRespected >= 5 ? 'success' : additionalStats.maxConsecutiveRespected >= 3 ? 'info' : 'default'}
                 size="small"
@@ -1242,11 +1253,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </svg>
                 }
                 trend={additionalStats.maxConsecutiveRespected >= 3 ? 'up' : additionalStats.maxConsecutiveRespected > 0 ? 'neutral' : undefined}
-                trendValue={additionalStats.maxConsecutiveRespected > 0 ? `Max: ${additionalStats.maxConsecutiveRespected} trades` : 'Pas de données'}
+                trendValue={additionalStats.maxConsecutiveRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveRespected} ${t('trades:trades')}` : t('dashboard:noDataAvailable')}
               />
               
               <ModernStatCard
-                label="Séquence Non-Respect"
+                label={t('dashboard:sequenceNotRespect')}
                 value={additionalStats.maxConsecutiveNotRespected || 0}
                 variant={additionalStats.maxConsecutiveNotRespected >= 5 ? 'danger' : additionalStats.maxConsecutiveNotRespected >= 3 ? 'warning' : 'default'}
                 size="small"
@@ -1256,7 +1267,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </svg>
                 }
                 trend={additionalStats.maxConsecutiveNotRespected >= 3 ? 'down' : additionalStats.maxConsecutiveNotRespected > 0 ? 'neutral' : undefined}
-                trendValue={additionalStats.maxConsecutiveNotRespected > 0 ? `Max: ${additionalStats.maxConsecutiveNotRespected} trades` : 'Pas de données'}
+                trendValue={additionalStats.maxConsecutiveNotRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveNotRespected} ${t('trades:trades')}` : t('dashboard:noDataAvailable')}
               />
             </div>
           )}
@@ -1279,13 +1290,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         />
                       </svg>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">SOLDE DU COMPTE DANS LE TEMPS</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{t('dashboard:accountBalanceOverTime')}</h3>
                   </div>
                   <div className="flex items-center gap-3">
                     {/* Start Date Picker */}
                     <div className="relative">
                       <div className="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-gray-600 z-10">
-                        Date début
+                        {t('dashboard:startDate')}
                       </div>
                       <input
                         id="start-date"
@@ -1309,7 +1320,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     {/* End Date Picker */}
                     <div className="relative">
                       <div className="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-gray-600 z-10">
-                        Date fin
+                        {t('dashboard:endDate')}
                       </div>
                       <input
                         id="end-date"
@@ -1331,7 +1342,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 <div className="flex items-center gap-6 ml-11">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">
-                      {performanceStats.totalReturn >= 0 ? 'Gain' : 'Perte'} total :
+                      {performanceStats.totalReturn >= 0 ? t('dashboard:totalGain') : t('dashboard:totalLoss')} :
                     </span>
                     <span className={`text-lg font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
                       {formatCurrency(performanceStats.totalReturn, currencySymbol)}
@@ -1339,13 +1350,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </div>
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <div className="flex items-center gap-1">
-                      <span>Plus haut :</span>
+                      <span>{t('dashboard:highest')} :</span>
                       <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
                         {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span>Plus bas :</span>
+                      <span>{t('dashboard:lowest')} :</span>
                       <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
                         {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
                       </span>
@@ -1357,7 +1368,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               <div className="h-80">
                 {filteredBalanceData.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500">
-                    Aucune donnée dans la période sélectionnée
+                    {t('dashboard:noDataInPeriod')}
                   </div>
                 ) : (
                   <ChartLine
@@ -1366,7 +1377,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       labels: accountBalanceChartData.labels,
                       datasets: [
                         {
-                          label: 'Solde positif',
+                          label: t('dashboard:positiveBalance'),
                           data: accountBalanceChartData.positiveValues,
                           borderColor: '#3b82f6',
                           backgroundColor: 'rgba(59, 130, 246, 0.2)',
@@ -1387,7 +1398,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           spanGaps: false,
                         },
                         {
-                          label: 'Solde négatif',
+                          label: t('dashboard:negativeBalance'),
                           data: accountBalanceChartData.negativeValues,
                           borderColor: '#ec4899',
                           backgroundColor: 'rgba(236, 72, 153, 0.2)',
@@ -1447,8 +1458,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               // Utiliser le mapping pour trouver le PnL
                               const pnl = accountBalanceChartData.pnlMapping[index] ?? 0;
                               return [
-                                `Solde: ${formatCurrency(value, currencySymbol)}`,
-                                `PnL jour: ${formatCurrency(pnl, currencySymbol)}`,
+                                `${t('dashboard:balance')}: ${formatCurrency(value, currencySymbol)}`,
+                                `${t('dashboard:dayPnLShort')}: ${formatCurrency(pnl, currencySymbol)}`,
                               ];
                             },
                           },
@@ -1494,7 +1505,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           },
                           title: {
                             display: true,
-                            text: 'Solde',
+                            text: t('dashboard:balance'),
                             color: '#4b5563',
                             font: {
                               size: 13,
@@ -1519,17 +1530,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             <div className="bg-white rounded-lg shadow p-6">
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">Performance par Jour de la Semaine</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('dashboard:weeklyPerformanceTitle')}</h3>
                 </div>
                 {weekdayStats && (
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                     <div className="flex items-center gap-1">
-                      <span>Plus actif :</span>
-                      <span className="font-medium text-blue-500">{weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count} trades)</span>
+                      <span>{t('dashboard:mostActive')} :</span>
+                      <span className="font-medium text-blue-500">{weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count} {t('trades:trades')})</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span>Moins actif :</span>
-                      <span className="font-medium text-pink-500">{weekdayStats.worstDay.day} ({weekdayStats.worstDay.trade_count} trades)</span>
+                      <span>{t('dashboard:leastActive')} :</span>
+                      <span className="font-medium text-pink-500">{weekdayStats.worstDay.day} ({weekdayStats.worstDay.trade_count} {t('trades:trades')})</span>
                     </div>
                   </div>
                 )}
@@ -1580,9 +1591,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             const dayData = weekdayPerformanceData[index];
                             
                             return [
-                              `PnL Total: ${formatCurrency(value, currencySymbol)}`,
-                              `Nombre de trades: ${dayData.trade_count}`,
-                              `Taux de réussite: ${dayData.win_rate.toFixed(1)}%`
+                              `${t('dashboard:pnlTotal')}: ${formatCurrency(value, currencySymbol)}`,
+                              `${t('dashboard:numberOfTrades')}: ${dayData.trade_count}`,
+                              `${t('dashboard:winRatePercentage')}: ${dayData.win_rate.toFixed(1)}%`
                             ];
                           }
                         }
@@ -1675,26 +1686,26 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-bold text-gray-900">Évolution des Gains et Pertes Journalière</h3>
+                    <h3 className="text-lg font-bold text-gray-900">{t('dashboard:dailyGainsLossesEvolution')}</h3>
                   </div>
                   {waterfallStats && (
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                       <div className="flex items-center gap-1">
-                        <span>Capital total :</span>
+                        <span>{t('dashboard:totalCapital')} :</span>
                         <span className={`font-medium ${waterfallStats.totalPnl >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
                           {formatCurrency(waterfallStats.totalPnl, currencySymbol)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span>Meilleur jour :</span>
+                        <span>{t('dashboard:bestDay')} :</span>
                         <span className="font-medium text-blue-500">{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span>Pire jour :</span>
+                        <span>{t('dashboard:worstDay')} :</span>
                         <span className="font-medium text-pink-500">{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span>Jours gagnants :</span>
+                        <span>{t('dashboard:winningDays')} :</span>
                         <span className="font-medium text-gray-700">{waterfallStats.positiveDays}/{waterfallData.length} ({waterfallStats.winRate.toFixed(1)}%)</span>
                       </div>
                     </div>
@@ -1736,9 +1747,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               const start = waterfallBarData.start;
                               
                               return [
-                                `PnL du jour: ${formatCurrency(pnl, currencySymbol)}`,
-                                `Capital cumulé: ${formatCurrency(cumulative, currencySymbol)}`,
-                                `Variation: ${formatCurrency(cumulative - start, currencySymbol)}`
+                                `${t('dashboard:dayPnL')}: ${formatCurrency(pnl, currencySymbol)}`,
+                                `${t('dashboard:cumulativeCapital')}: ${formatCurrency(cumulative, currencySymbol)}`,
+                                `${t('dashboard:variation')}: ${formatCurrency(cumulative - start, currencySymbol)}`
                               ];
                             }
                           }
@@ -1811,11 +1822,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       {!isLoading && accountBalanceData.length === 0 && !durationDistribution.some(d => d.total > 0) && waterfallData.length === 0 && weekdayPerformanceData.length === 0 && !tradingMetrics && (
         <div className="bg-white rounded-lg shadow p-6 text-center text-gray-600">
-          <p>Aucune donnée disponible pour la période sélectionnée.</p>
+          <p>{t('dashboard:noDataForPeriod')}</p>
         </div>
       )}
 
-      <FloatingActionButton onClick={() => setShowImport(true)} title="Importer des trades" />
+      <FloatingActionButton onClick={() => setShowImport(true)} title={t('dashboard:importTrades')} />
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
     </div>
   );

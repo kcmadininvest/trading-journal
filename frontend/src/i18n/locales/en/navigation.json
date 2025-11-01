@@ -1,0 +1,14 @@
+{
+  "dashboard": "Dashboard",
+  "calendar": "Calendar",
+  "strategies": "Strategies",
+  "statistics": "Statistics",
+  "analytics": "Analytics",
+  "trades": "My Trades",
+  "accounts": "Trading Accounts",
+  "users": "User Management",
+  "settings": "Settings",
+  "navigation": "Navigation",
+  "admin": "Administrator",
+  "user": "User"
+}

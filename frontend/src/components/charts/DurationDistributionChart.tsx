@@ -14,6 +14,7 @@ import { Bar } from 'react-chartjs-2';
 import { useBarChartConfig } from '../../hooks/useChartConfig';
 import { chartColors } from '../../config/chartConfig';
 import ChartCard from '../common/ChartCard';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 // Register Chart.js components
 ChartJS.register(
@@ -36,6 +37,8 @@ interface DurationDistributionChartProps {
 }
 
 function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
+  const { t } = useI18nTranslation();
+  
   // Prepare chart data
   const chartData = useMemo(() => {
     const labels = bins.map(bin => bin.label);
@@ -46,7 +49,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
       labels,
       datasets: [
         {
-          label: 'Gagnants',
+          label: t('dashboard:winningTrades'),
           data: successfulData,
           backgroundColor: 'rgba(59, 130, 246, 0.8)',
           borderColor: '#3b82f6',
@@ -55,7 +58,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
           borderSkipped: false,
         },
         {
-          label: 'Perdants',
+          label: t('dashboard:losingTrades'),
           data: unsuccessfulData,
           backgroundColor: 'rgba(209, 213, 219, 0.8)',
           borderColor: chartColors.gray[300],
@@ -65,7 +68,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         }
       ]
     };
-  }, [bins]);
+  }, [bins, t]);
 
   // Calculer la valeur maximale pour l'axe Y avec marge
   const maxYValue = useMemo(() => {
@@ -156,14 +159,14 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
     <ChartCard
       title={(
         <div className="flex items-center gap-2">
-          <h3 className="text-lg font-bold text-gray-900">RÉPARTITION DES TRADES PAR DURÉE</h3>
+          <h3 className="text-lg font-bold text-gray-900">{t('dashboard:durationDistribution')}</h3>
         </div>
       )}
       height={420}
     >
       {bins.length === 0 ? (
         <div className="flex items-center justify-center h-full text-gray-500">
-          Pas de données disponibles
+          {t('dashboard:noData')}
         </div>
       ) : (
         <Bar data={chartData} options={finalOptions} />

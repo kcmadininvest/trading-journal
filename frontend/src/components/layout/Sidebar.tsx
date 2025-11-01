@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { User } from '../../services/auth';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface SidebarProps {
   currentUser: User;
@@ -8,11 +9,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate }) => {
+  const { t } = useI18nTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const menuItems = [
     {
       id: 'dashboard',
-      label: 'Tableau de bord',
+      label: t('navigation:dashboard'),
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" fill="currentColor"/>
@@ -22,7 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
     },
     {
       id: 'calendar',
-      label: 'Calendrier',
+      label: t('navigation:calendar'),
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -32,7 +34,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
     },
     {
       id: 'strategies',
-      label: 'Stratégies',
+      label: t('navigation:strategies'),
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -42,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
     },
     {
       id: 'statistics',
-      label: 'Statistiques',
+      label: t('navigation:statistics'),
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -52,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
     },
     {
       id: 'analytics',
-      label: 'Analyses',
+      label: t('navigation:analytics'),
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -62,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
     },
     {
       id: 'trades',
-      label: 'Mes Trades',
+      label: t('navigation:trades'),
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 18l5-6 3 3 6-8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -72,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
     },
     {
       id: 'accounts',
-      label: 'Comptes de trading',
+      label: t('navigation:accounts'),
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -82,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
     },
     {
       id: 'users',
-      label: 'Gestion des utilisateurs',
+      label: t('navigation:users'),
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -94,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
     },
         {
           id: 'settings',
-          label: 'Paramètres',
+          label: t('navigation:settings'),
           icon: (
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -152,7 +154,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
       <nav className="mt-6">
         <div className="px-3">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Navigation
+            {t('navigation:navigation')}
           </p>
         </div>
         <ul className="space-y-1 px-3">
@@ -193,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
                     : currentUser.email}
                 </p>
                 <p className="text-sm text-gray-400 truncate">
-                  {currentUser.is_admin ? 'Administrateur' : 'Utilisateur'}
+                  {currentUser.is_admin ? t('navigation:admin') : t('navigation:user')}
                 </p>
               </div>
         </div>

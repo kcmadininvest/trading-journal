@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useContext, createContext } from 'react';
 import userService, { UserPreferences } from '../services/userService';
+import { changeLanguage } from '../i18n/config';
 
 interface PreferencesContextType {
   preferences: UserPreferences;
@@ -29,6 +30,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const prefs = await userService.getPreferences();
       if (prefs && prefs.date_format) {
         setPreferences(prefs);
+        // Changer la langue i18n quand les préférences sont chargées
+        if (prefs.language) {
+          changeLanguage(prefs.language);
+        }
       }
     } catch (error) {
       // Utiliser les valeurs par défaut si erreur
@@ -52,6 +57,13 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       window.removeEventListener('preferences:updated', handlePreferencesUpdated);
     };
   }, []);
+
+  // Écouter les changements de langue dans les préférences
+  useEffect(() => {
+    if (preferences.language) {
+      changeLanguage(preferences.language);
+    }
+  }, [preferences.language]);
 
   return (
     <PreferencesContext.Provider value={{ preferences, loading, refreshPreferences }}>
