@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface PageSizeSelectorProps {
   currentSize: number;
@@ -13,6 +14,8 @@ const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
   options = [5, 10, 25, 50, 100],
   className = '',
 }) => {
+  const { t } = useI18nTranslation();
+  
   // S'assurer que currentSize est dans les options, sinon l'ajouter
   const allOptions = React.useMemo(() => {
     const optsSet = new Set(options);
@@ -29,7 +32,7 @@ const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
         </svg>
         <label htmlFor="page-size" className="text-sm font-medium text-gray-700">
-          Éléments par page
+          {t('common:pagination.itemsPerPage')}
         </label>
       </div>
       

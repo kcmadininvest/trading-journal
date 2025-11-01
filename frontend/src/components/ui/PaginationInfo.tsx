@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface PaginationInfoProps {
   currentPage: number;
@@ -19,19 +20,23 @@ const PaginationInfo: React.FC<PaginationInfoProps> = ({
   endIndex,
   className = '',
 }) => {
+  const { t } = useI18nTranslation();
+
   if (totalItems === 0) {
     return (
       <div className={`flex items-center space-x-2 text-sm text-gray-500 ${className}`}>
         <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-        <span>Aucun élément à afficher</span>
+        <span>{t('common:pagination.noItems')}</span>
       </div>
     );
   }
 
   const actualEndIndex = Math.min(endIndex, totalItems);
   const showingText = totalItems <= itemsPerPage 
-    ? `Affichage de ${totalItems} élément${totalItems > 1 ? 's' : ''}`
-    : `Affichage de ${startIndex + 1} à ${actualEndIndex} sur ${totalItems} éléments`;
+    ? totalItems === 1
+      ? t('common:pagination.showingAll', { count: totalItems })
+      : t('common:pagination.showingAllPlural', { count: totalItems })
+    : t('common:pagination.showingRange', { start: startIndex + 1, end: actualEndIndex, total: totalItems });
 
   return (
     <div className={`flex items-center space-x-4 text-sm ${className}`}>
@@ -50,7 +55,7 @@ const PaginationInfo: React.FC<PaginationInfoProps> = ({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
         <span className="text-gray-600">
-          Page <span className="font-semibold text-gray-900">{currentPage}</span> sur <span className="font-semibold text-gray-900">{totalPages}</span>
+          {t('common:pagination.page')} <span className="font-semibold text-gray-900">{currentPage}</span> {t('common:pagination.of')} <span className="font-semibold text-gray-900">{totalPages}</span>
         </span>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface PaginationProps {
   currentPage: number;
@@ -19,6 +20,7 @@ const Pagination: React.FC<PaginationProps> = ({
   maxVisiblePages = 5,
   className = '',
 }) => {
+  const { t } = useI18nTranslation();
   // Si il n'y a qu'une page ou moins, ne pas afficher la pagination
   if (totalPages <= 1) {
     return null;
@@ -95,7 +97,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => handlePageClick(1)}
           className="relative inline-flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:border-gray-400 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          aria-label="Première page"
+          aria-label={t('common:pagination.firstPage')}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -108,7 +110,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => handlePageClick(currentPage - 1)}
           className="relative inline-flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:border-gray-400 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          aria-label="Page précédente"
+          aria-label={t('common:pagination.previousPage')}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -123,7 +125,7 @@ const Pagination: React.FC<PaginationProps> = ({
           onClick={() => handlePageClick(page)}
           className={getButtonClasses(page, page === currentPage)}
           disabled={typeof page === 'string'}
-          aria-label={typeof page === 'number' ? `Page ${page}` : undefined}
+          aria-label={typeof page === 'number' ? t('common:pagination.pageNumber', { number: page }) : undefined}
           aria-current={page === currentPage ? 'page' : undefined}
         >
           {page}
@@ -135,7 +137,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => handlePageClick(currentPage + 1)}
           className="relative inline-flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:border-gray-400 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          aria-label="Page suivante"
+          aria-label={t('common:pagination.nextPage')}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -148,7 +150,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={() => handlePageClick(totalPages)}
           className="relative inline-flex items-center justify-center w-10 h-10 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-lg hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 hover:text-gray-900 hover:border-gray-400 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          aria-label="Dernière page"
+          aria-label={t('common:pagination.lastPage')}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />

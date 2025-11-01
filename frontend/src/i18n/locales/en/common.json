@@ -31,5 +31,19 @@
   "account": "Account",
   "tradingAccount": "Trading Account",
   "allActiveAccounts": "All Active Accounts",
-  "default": "Default"
+  "default": "Default",
+  "pagination": {
+    "noItems": "No items to display",
+    "showingAll": "Showing {{count}} item",
+    "showingAllPlural": "Showing {{count}} items",
+    "showingRange": "Showing {{start}} to {{end}} of {{total}} items",
+    "page": "Page",
+    "of": "of",
+    "itemsPerPage": "Items per page",
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "pageNumber": "Page {{number}}"
+  }
 }

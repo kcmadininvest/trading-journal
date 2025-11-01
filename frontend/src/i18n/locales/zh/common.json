@@ -28,8 +28,22 @@
   "noResults": "Aucun résultat",
   "unknown": "Inconnu",
   "na": "N/A",
-  "account": "账户",
-  "tradingAccount": "交易账户",
-  "allActiveAccounts": "所有活跃账户",
-  "default": "默认"
+  "account": "Compte",
+  "tradingAccount": "Compte de trading",
+  "allActiveAccounts": "Tous les comptes actifs",
+  "default": "Par défaut",
+  "pagination": {
+    "noItems": "Aucun élément à afficher",
+    "showingAll": "Affichage de {{count}} élément",
+    "showingAllPlural": "Affichage de {{count}} éléments",
+    "showingRange": "Affichage de {{start}} à {{end}} sur {{total}} éléments",
+    "page": "Page",
+    "of": "sur",
+    "itemsPerPage": "Éléments par page",
+    "firstPage": "Première page",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "lastPage": "Dernière page",
+    "pageNumber": "Page {{number}}"
+  }
 }
