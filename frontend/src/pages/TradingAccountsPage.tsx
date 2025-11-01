@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import PaginationControls from '../components/ui/PaginationControls';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const TradingAccountsPage: React.FC = () => {
+  const { t } = useI18nTranslation();
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -149,7 +151,7 @@ const TradingAccountsPage: React.FC = () => {
   };
 
   const handleDelete = async (acc: TradingAccount) => {
-    const msg = `Supprimer définitivement le compte "${acc.name}" et toutes ses données (trades associés) ?\n\nCette action est irréversible.`;
+    const msg = t('accounts:deleteConfirm', { name: acc.name });
     if (!window.confirm(msg)) return;
     try {
       await tradingAccountsService.remove(acc.id);
@@ -175,18 +177,22 @@ const TradingAccountsPage: React.FC = () => {
         <div className="flex-1">
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <div className="text-sm text-gray-600">{accounts.length} compte{accounts.length > 1 ? 's' : ''}</div>
+              <div className="text-sm text-gray-600">
+                {accounts.length === 1 
+                  ? t('accounts:accountCount', { count: accounts.length })
+                  : t('accounts:accountCountPlural', { count: accounts.length })}
+              </div>
             </div>
             <div className="overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compte</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trades</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('accounts:columns.account')}</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('accounts:columns.type')}</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('accounts:columns.status')}</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{t('accounts:columns.trades')}</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
@@ -203,7 +209,7 @@ const TradingAccountsPage: React.FC = () => {
                     ) : accounts.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-10 text-center">
-                          <div className="text-gray-500">Aucun compte. Créez votre premier compte à droite.</div>
+                          <div className="text-gray-500">{t('accounts:noAccounts')}</div>
                         </td>
                       </tr>
                     ) : (
@@ -213,7 +219,7 @@ const TradingAccountsPage: React.FC = () => {
                             <div className="flex items-center gap-2">
                               <span className="font-medium text-gray-900">{acc.name}</span>
                               {acc.is_default && (
-                                <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">Par défaut</span>
+                                <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">{t('common:default')}</span>
                               )}
                             </div>
                             {acc.description && (
@@ -222,12 +228,16 @@ const TradingAccountsPage: React.FC = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className="inline-flex items-center rounded-md bg-gray-100 text-gray-700 px-2 py-0.5 text-xs capitalize">
-                              {acc.account_type}
+                              {t(`accounts:accountTypes.${acc.account_type}`)}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs ${acc.status === 'active' ? 'bg-green-100 text-green-800' : acc.status === 'inactive' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-800'}`}>
-                              {acc.status === 'active' ? 'Actif' : acc.status === 'inactive' ? 'Inactif' : 'Archivé'}
+                              {acc.status === 'active' 
+                                ? t('accounts:status.active') 
+                                : acc.status === 'inactive' 
+                                ? t('accounts:status.inactive') 
+                                : t('accounts:status.archived')}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700">
@@ -239,19 +249,19 @@ const TradingAccountsPage: React.FC = () => {
                                 <button
                                   onClick={() => handleSetDefault(acc.id)}
                                   className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                                  title="Définir ce compte par défaut"
+                                  title={t('accounts:actions.setDefault')}
                                 >
                                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                  Défaut
+                                  {t('accounts:actions.default')}
                                 </button>
                               )}
                               <button
                                 onClick={() => handleEdit(acc)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                                title="Modifier ce compte"
+                                title={t('accounts:actions.edit')}
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                                Modifier
+                                {t('accounts:actions.editLabel')}
                               </button>
                               <button
                                 onClick={() => handleToggleStatus(acc)}
@@ -260,22 +270,22 @@ const TradingAccountsPage: React.FC = () => {
                                 {acc.status === 'active' ? (
                                   <>
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>
-                                    Désactiver
+                                    {t('accounts:actions.disable')}
                                   </>
                                 ) : (
                                   <>
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" /></svg>
-                                    Activer
+                                    {t('accounts:actions.enable')}
                                   </>
                                 )}
                               </button>
                               <button
                                 onClick={() => handleDelete(acc)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-rose-600 text-white rounded hover:bg-rose-700"
-                                title="Supprimer ce compte et toutes ses données"
+                                title={t('accounts:actions.delete')}
                               >
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-7 0h8" /></svg>
-                                Supprimer
+                                {t('accounts:actions.deleteLabel')}
                               </button>
                             </div>
                           </td>
@@ -313,22 +323,22 @@ const TradingAccountsPage: React.FC = () => {
         <div className="w-full lg:w-96" data-form-section>
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-base font-semibold">{editingAccountId ? 'Modifier le compte' : 'Nouveau compte'}</h2>
-              <p className="mt-1 text-xs text-gray-500">{editingAccountId ? 'Modifiez les informations du compte.' : 'Renseignez les informations et créez le compte en un clic.'}</p>
+              <h2 className="text-base font-semibold">{editingAccountId ? t('accounts:form.editTitle') : t('accounts:form.newTitle')}</h2>
+              <p className="mt-1 text-xs text-gray-500">{editingAccountId ? t('accounts:form.editDescription') : t('accounts:form.newDescription')}</p>
             </div>
             <div className="p-6 space-y-5">
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('accounts:form.name')}</label>
                   <input
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base px-2 py-1"
                     value={form.name || ''}
                     onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Nom du compte (ex: TopStep NQ)"
+                    placeholder={t('accounts:form.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('accounts:form.type')}</label>
                   <div ref={typeRef} className="relative">
                     <button
                       type="button"
@@ -336,13 +346,7 @@ const TradingAccountsPage: React.FC = () => {
                       className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <span className="inline-flex items-center gap-2 text-gray-900 capitalize">
-                        {({
-                          topstep: 'TopStep',
-                          ibkr: 'Interactive Brokers',
-                          ninjatrader: 'NinjaTrader',
-                          tradovate: 'Tradovate',
-                          other: 'Autre',
-                        } as Record<string, string>)[form.account_type || 'topstep']}
+                        {t(`accounts:accountTypes.${form.account_type || 'topstep'}`)}
                       </span>
                       <svg className={`h-4 w-4 text-gray-400 transition-transform ${isTypeOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
@@ -350,11 +354,11 @@ const TradingAccountsPage: React.FC = () => {
                       <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg overflow-hidden">
                         <ul className="py-1 text-sm text-gray-700">
                           {[
-                            { value: 'topstep', label: 'TopStep' },
-                            { value: 'ibkr', label: 'Interactive Brokers' },
-                            { value: 'ninjatrader', label: 'NinjaTrader' },
-                            { value: 'tradovate', label: 'Tradovate' },
-                            { value: 'other', label: 'Autre' },
+                            { value: 'topstep' },
+                            { value: 'ibkr' },
+                            { value: 'ninjatrader' },
+                            { value: 'tradovate' },
+                            { value: 'other' },
                           ].map(opt => (
                             <li key={opt.value}>
                               <button
@@ -362,7 +366,7 @@ const TradingAccountsPage: React.FC = () => {
                                 onClick={() => { setForm(prev => ({ ...prev, account_type: opt.value as TradingAccount['account_type'] })); setIsTypeOpen(false); }}
                                 className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${opt.value === (form.account_type || 'topstep') ? 'bg-gray-50' : ''}`}
                               >
-                                <span className="text-gray-900">{opt.label}</span>
+                                <span className="text-gray-900">{t(`accounts:accountTypes.${opt.value}`)}</span>
                               </button>
                             </li>
                           ))}
@@ -370,23 +374,23 @@ const TradingAccountsPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">Choisissez le type de compte/broker.</p>
+                  <p className="mt-1 text-xs text-gray-500">{t('accounts:form.typeDescription')}</p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">ID Broker (optionnel)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('accounts:form.brokerId')}</label>
                 <input
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1"
                   value={(form as any).broker_account_id || ''}
                   onChange={(e) => setForm(prev => ({ ...prev, broker_account_id: e.target.value } as any))}
-                  placeholder="Identifiant côté broker"
+                  placeholder={t('accounts:form.brokerIdPlaceholder')}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Devise</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('accounts:form.currency')}</label>
                   <div ref={currencyRef} className="relative">
                     <button
                       type="button"
@@ -416,10 +420,10 @@ const TradingAccountsPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">Sélectionnez la devise; seul le symbole sera affiché.</p>
+                  <p className="mt-1 text-xs text-gray-500">{t('accounts:form.currencyDescription')}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('accounts:form.status')}</label>
                   <div ref={statusRef} className="relative">
                     <button
                       type="button"
@@ -429,25 +433,25 @@ const TradingAccountsPage: React.FC = () => {
                       <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs ${
                         (form.status || 'active') === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
                       }`}>
-                        {(form.status || 'active') === 'active' ? 'Actif' : 'Inactif'}
+                        {(form.status || 'active') === 'active' ? t('accounts:status.active') : t('accounts:status.inactive')}
                       </span>
                       <svg className={`h-4 w-4 text-gray-400 transition-transform ${isStatusOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     {isStatusOpen && (
                       <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg overflow-hidden">
                         <ul className="py-1 text-sm text-gray-700">
-                          {[{ value: 'active', label: 'Actif' }, { value: 'inactive', label: 'Inactif' }].map(opt => (
+                          {[{ value: 'active' }, { value: 'inactive' }].map(opt => (
                             <li key={opt.value}>
                               <button
                                 type="button"
                                 onClick={() => { setForm(prev => ({ ...prev, status: opt.value as TradingAccount['status'] })); setIsStatusOpen(false); }}
                                 className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 ${opt.value === (form.status || 'active') ? 'bg-gray-50' : ''}`}
                               >
-                                <span>{opt.label}</span>
+                                <span>{t(`accounts:status.${opt.value}`)}</span>
                                 <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs ${
                                   opt.value === 'active' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
                                 }`}>
-                                  {opt.label}
+                                  {t(`accounts:status.${opt.value}`)}
                                 </span>
                               </button>
                             </li>
@@ -456,18 +460,18 @@ const TradingAccountsPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-gray-500">Choisissez si le compte est actif ou inactif.</p>
+                  <p className="mt-1 text-xs text-gray-500">{t('accounts:form.statusDescription')}</p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('accounts:form.description')}</label>
                 <textarea
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm px-2 py-1"
                   value={form.description || ''}
                   onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
-                  placeholder="Notes ou détails pour distinguer ce compte"
+                  placeholder={t('accounts:form.descriptionPlaceholder')}
                 />
               </div>
 
@@ -479,9 +483,9 @@ const TradingAccountsPage: React.FC = () => {
                     checked={Boolean((form as any).is_default)}
                     onChange={(e) => setForm(prev => ({ ...prev, is_default: e.target.checked } as any))}
                   />
-                  Définir comme compte par défaut
+                  {t('accounts:form.setAsDefault')}
                 </label>
-                <div className="text-xs text-gray-500">Un seul compte par défaut</div>
+                <div className="text-xs text-gray-500">{t('accounts:form.onlyOneDefault')}</div>
               </div>
 
               <div className="pt-2 space-y-2">
@@ -492,7 +496,7 @@ const TradingAccountsPage: React.FC = () => {
                       onClick={handleCancel}
                       disabled={saving}
                     >
-                      Annuler
+                      {t('accounts:form.cancel')}
                     </button>
                   )}
                   <button
@@ -503,19 +507,19 @@ const TradingAccountsPage: React.FC = () => {
                     {saving ? (
                       <>
                         <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-                        {editingAccountId ? 'Mise à jour...' : 'Création...'}
+                        {editingAccountId ? t('accounts:form.saving') : t('accounts:form.creating')}
                       </>
                     ) : (
                       <>
                         {editingAccountId ? (
                           <>
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            Enregistrer
+                            {t('accounts:form.save')}
                           </>
                         ) : (
                           <>
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" /></svg>
-                            Créer
+                            {t('accounts:form.create')}
                           </>
                         )}
                       </>

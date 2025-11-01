@@ -103,6 +103,16 @@ import jaUsers from './locales/ja/users.json';
 import koUsers from './locales/ko/users.json';
 import zhUsers from './locales/zh/users.json';
 
+import frAccounts from './locales/fr/accounts.json';
+import enAccounts from './locales/en/accounts.json';
+import esAccounts from './locales/es/accounts.json';
+import deAccounts from './locales/de/accounts.json';
+import itAccounts from './locales/it/accounts.json';
+import ptAccounts from './locales/pt/accounts.json';
+import jaAccounts from './locales/ja/accounts.json';
+import koAccounts from './locales/ko/accounts.json';
+import zhAccounts from './locales/zh/accounts.json';
+
 const resources = {
   fr: {
     common: frCommon,
@@ -115,6 +125,7 @@ const resources = {
     statistics: frStatistics,
     analytics: frAnalytics,
     users: frUsers,
+    accounts: frAccounts,
   },
   en: {
     common: enCommon,
@@ -127,6 +138,7 @@ const resources = {
     statistics: enStatistics,
     analytics: enAnalytics,
     users: enUsers,
+    accounts: enAccounts,
   },
   es: {
     common: esCommon,
@@ -139,6 +151,7 @@ const resources = {
     statistics: esStatistics,
     analytics: esAnalytics,
     users: esUsers,
+    accounts: esAccounts,
   },
   de: {
     common: deCommon,
@@ -151,6 +164,7 @@ const resources = {
     statistics: deStatistics,
     analytics: deAnalytics,
     users: deUsers,
+    accounts: deAccounts,
   },
   it: {
     common: itCommon,
@@ -163,6 +177,7 @@ const resources = {
     statistics: itStatistics,
     analytics: itAnalytics,
     users: itUsers,
+    accounts: itAccounts,
   },
   pt: {
     common: ptCommon,
@@ -175,6 +190,7 @@ const resources = {
     statistics: ptStatistics,
     analytics: ptAnalytics,
     users: ptUsers,
+    accounts: ptAccounts,
   },
   ja: {
     common: jaCommon,
@@ -187,6 +203,7 @@ const resources = {
     statistics: jaStatistics,
     analytics: jaAnalytics,
     users: jaUsers,
+    accounts: jaAccounts,
   },
   ko: {
     common: koCommon,
@@ -199,6 +216,7 @@ const resources = {
     statistics: koStatistics,
     analytics: koAnalytics,
     users: koUsers,
+    accounts: koAccounts,
   },
   zh: {
     common: zhCommon,
@@ -211,6 +229,7 @@ const resources = {
     statistics: zhStatistics,
     analytics: zhAnalytics,
     users: zhUsers,
+    accounts: zhAccounts,
   },
 };
 
@@ -222,7 +241,7 @@ i18n
     fallbackLng: 'fr',
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

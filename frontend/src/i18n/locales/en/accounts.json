@@ -1,0 +1,63 @@
+{
+  "account": "Account",
+  "accounts": "Accounts",
+  "accountCount": "{{count}} account",
+  "accountCountPlural": "{{count}} accounts",
+  "noAccounts": "No accounts. Create your first account on the right.",
+  "columns": {
+    "account": "Account",
+    "type": "Type",
+    "status": "Status",
+    "trades": "Trades",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "archived": "Archived"
+  },
+  "accountTypes": {
+    "topstep": "TopStep",
+    "ibkr": "Interactive Brokers",
+    "ninjatrader": "NinjaTrader",
+    "tradovate": "Tradovate",
+    "other": "Other"
+  },
+  "actions": {
+    "setDefault": "Set this account as default",
+    "edit": "Edit this account",
+    "delete": "Delete this account and all its data",
+    "default": "Default",
+    "editLabel": "Edit",
+    "disable": "Disable",
+    "enable": "Enable",
+    "deleteLabel": "Delete"
+  },
+  "deleteConfirm": "Permanently delete account \"{{name}}\" and all its data (associated trades)?\n\nThis action is irreversible.",
+  "form": {
+    "editTitle": "Edit Account",
+    "newTitle": "New Account",
+    "editDescription": "Modify account information.",
+    "newDescription": "Enter information and create the account with one click.",
+    "name": "Name",
+    "namePlaceholder": "Account name (e.g., TopStep NQ)",
+    "type": "Type",
+    "typeDescription": "Choose the account/broker type.",
+    "brokerId": "Broker ID (optional)",
+    "brokerIdPlaceholder": "Broker-side identifier",
+    "currency": "Currency",
+    "currencyDescription": "Select the currency; only the symbol will be displayed.",
+    "status": "Status",
+    "statusDescription": "Choose whether the account is active or inactive.",
+    "description": "Description",
+    "descriptionPlaceholder": "Notes or details to distinguish this account",
+    "setAsDefault": "Set as default account",
+    "onlyOneDefault": "Only one default account",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "saving": "Updating...",
+    "creating": "Creating..."
+  }
+}
+

@@ -1,0 +1,63 @@
+{
+  "account": "Compte",
+  "accounts": "Comptes",
+  "accountCount": "{{count}} compte",
+  "accountCountPlural": "{{count}} comptes",
+  "noAccounts": "Aucun compte. Créez votre premier compte à droite.",
+  "columns": {
+    "account": "Compte",
+    "type": "Type",
+    "status": "Statut",
+    "trades": "Trades",
+    "actions": "Actions"
+  },
+  "status": {
+    "active": "Actif",
+    "inactive": "Inactif",
+    "archived": "Archivé"
+  },
+  "accountTypes": {
+    "topstep": "TopStep",
+    "ibkr": "Interactive Brokers",
+    "ninjatrader": "NinjaTrader",
+    "tradovate": "Tradovate",
+    "other": "Autre"
+  },
+  "actions": {
+    "setDefault": "Définir ce compte par défaut",
+    "edit": "Modifier ce compte",
+    "delete": "Supprimer ce compte et toutes ses données",
+    "default": "Défaut",
+    "editLabel": "Modifier",
+    "disable": "Désactiver",
+    "enable": "Activer",
+    "deleteLabel": "Supprimer"
+  },
+  "deleteConfirm": "Supprimer définitivement le compte \"{{name}}\" et toutes ses données (trades associés) ?\n\nCette action est irréversible.",
+  "form": {
+    "editTitle": "Modifier le compte",
+    "newTitle": "Nouveau compte",
+    "editDescription": "Modifiez les informations du compte.",
+    "newDescription": "Renseignez les informations et créez le compte en un clic.",
+    "name": "Nom",
+    "namePlaceholder": "Nom du compte (ex: TopStep NQ)",
+    "type": "Type",
+    "typeDescription": "Choisissez le type de compte/broker.",
+    "brokerId": "ID Broker (optionnel)",
+    "brokerIdPlaceholder": "Identifiant côté broker",
+    "currency": "Devise",
+    "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
+    "status": "Statut",
+    "statusDescription": "Choisissez si le compte est actif ou inactif.",
+    "description": "Description",
+    "descriptionPlaceholder": "Notes ou détails pour distinguer ce compte",
+    "setAsDefault": "Définir comme compte par défaut",
+    "onlyOneDefault": "Un seul compte par défaut",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "create": "Créer",
+    "saving": "Mise à jour...",
+    "creating": "Création..."
+  }
+}
+
