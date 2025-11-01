@@ -58,6 +58,7 @@
     "create": "Créer",
     "saving": "Mise à jour...",
     "creating": "Création..."
-  }
+  },
+  "defaultCurrencyName": "Dollar américain"
 }
 

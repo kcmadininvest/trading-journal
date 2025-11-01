@@ -58,6 +58,7 @@
     "create": "Create",
     "saving": "Updating...",
     "creating": "Creating..."
-  }
+  },
+  "defaultCurrencyName": "US Dollar"
 }
 

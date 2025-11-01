@@ -403,7 +403,7 @@ const TradingAccountsPage: React.FC = () => {
                     {isCurrencyOpen && (
                       <div className="absolute z-10 mt-1 w-full min-w-[16rem] rounded-md border border-gray-200 bg-white shadow-lg max-h-60 overflow-auto">
                         <ul className="py-1 text-sm text-gray-700">
-                          {((orderedCurrencies.length ? orderedCurrencies : (currencies.length ? currencies : [{ code: 'USD', name: 'Dollar américain', symbol: '$', id: 0 } as any]))).map(c => (
+                          {((orderedCurrencies.length ? orderedCurrencies : (currencies.length ? currencies : [{ code: 'USD', name: t('accounts:defaultCurrencyName'), symbol: '$', id: 0 } as any]))).map(c => (
                             <li key={c.code}>
                               <button
                                 type="button"
