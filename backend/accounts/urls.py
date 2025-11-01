@@ -16,9 +16,17 @@ urlpatterns = [
     path('profile/change-password/', views.PasswordChangeView.as_view(), name='change_password'),
     path('permissions/', views.user_permissions_view, name='user_permissions'),
     
+    # Préférences utilisateur
+    path('preferences/', views.UserPreferencesView.as_view(), name='user_preferences'),
+    
     # Gestion de session et déconnexion automatique
     path('session/info/', views.session_info, name='session_info'),
     path('session/extend/', views.extend_session, name='extend_session'),
+    path('sessions/', views.ActiveSessionsView.as_view(), name='active_sessions'),
+    
+    # Historique et données
+    path('login-history/', views.LoginHistoryView.as_view(), name='login_history'),
+    path('export-data/', views.DataExportView.as_view(), name='export_data'),
     
     # Administration (admin seulement)
     path('admin/users/', views.AdminUserListView.as_view(), name='admin_user_list'),

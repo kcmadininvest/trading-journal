@@ -8,6 +8,7 @@ import { tradingAccountsService, TradingAccount } from '../services/tradingAccou
 import { currenciesService, Currency } from '../services/currencies';
 import { tradeStrategiesService, TradeStrategy } from '../services/tradeStrategies';
 import ModernStatCard from '../components/common/ModernStatCard';
+import DurationDistributionChart from '../components/charts/DurationDistributionChart';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -330,7 +331,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     loadTrades();
   }, [accountId, selectedYear, selectedMonth]);
 
-  // Calculer le solde du compte dans le temps
+  // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative }
   const accountBalanceData = useMemo(() => {
     // Créer des entrées par date pour chaque trade
     const tradesWithDates = trades
@@ -352,70 +353,152 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     let cumulativeBalance = 0;
     
     return sortedDates.map(date => {
-      cumulativeBalance += dailyData[date];
+      const dailyPnl = dailyData[date];
+      cumulativeBalance += dailyPnl;
       return {
-        date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
-        balance: cumulativeBalance,
-        dateKey: date,
+        date: date, // Format YYYY-MM-DD pour les filtres
+        pnl: dailyPnl,
+        cumulative: cumulativeBalance,
       };
     });
   }, [trades]);
 
-  // Préparer les données pour deux datasets (positif et négatif) pour le remplissage
+  // États pour les filtres de date
+  const { defaultStartDate, defaultEndDate } = useMemo(() => {
+    if (accountBalanceData.length === 0) return { defaultStartDate: '', defaultEndDate: '' };
+    const dates = accountBalanceData.map(d => d.date).sort();
+    return {
+      defaultStartDate: dates[0] || '',
+      defaultEndDate: dates[dates.length - 1] || ''
+    };
+  }, [accountBalanceData]);
+
+  const [startDate, setStartDate] = useState(defaultStartDate);
+  const [endDate, setEndDate] = useState(defaultEndDate);
+
+  // Initialiser et mettre à jour les dates quand elles changent
+  useEffect(() => {
+    if (defaultStartDate && defaultEndDate) {
+      if (defaultStartDate <= defaultEndDate) {
+        setStartDate(defaultStartDate);
+        setEndDate(defaultEndDate);
+      } else {
+        setStartDate(defaultEndDate);
+        setEndDate(defaultStartDate);
+      }
+    }
+  }, [defaultStartDate, defaultEndDate]);
+
+  // Filtrer les données par période
+  const filteredBalanceData = useMemo(() => {
+    if (!startDate || !endDate || accountBalanceData.length === 0) return accountBalanceData;
+    return accountBalanceData.filter(d => d.date >= startDate && d.date <= endDate);
+  }, [accountBalanceData, startDate, endDate]);
+
+  // Calculer les statistiques de performance
+  const performanceStats = useMemo(() => {
+    if (filteredBalanceData.length === 0) {
+      return { totalReturn: 0, isPositive: false, maxDrawdown: 0, highestValue: 0, lowestValue: 0 };
+    }
+    // Solde final de la période filtrée
+    const endingBalance = filteredBalanceData[filteredBalanceData.length - 1]?.cumulative || 0;
+    // Variation pendant la période (solde final - solde de départ)
+    const startingBalance = filteredBalanceData[0]?.cumulative || 0;
+    const totalReturn = endingBalance - startingBalance;
+    const highestValue = Math.max(...filteredBalanceData.map(d => d.cumulative));
+    const lowestValue = Math.min(...filteredBalanceData.map(d => d.cumulative));
+    // Selon les bonnes pratiques: la couleur reflète si la courbe passe au-dessus de 0
+    // Si la valeur maximale est >= 0 (courbe passe au-dessus de 0), couleur positive (bleu)
+    // Si toutes les valeurs sont < 0 (courbe toujours en dessous de 0), couleur négative (rose)
+    const isPositive = highestValue >= 0;
+    
+    return { totalReturn, isPositive, highestValue, lowestValue };
+  }, [filteredBalanceData]);
+
+  // Préparer les données du graphique avec deux datasets (positif/négatif)
   const accountBalanceChartData = useMemo(() => {
-    if (accountBalanceData.length === 0) return { positive: [], negative: [], labels: [] };
-    
-    const positive: (number | null)[] = [];
-    const negative: (number | null)[] = [];
-    const labels: string[] = [];
-    
-    accountBalanceData.forEach((point, index) => {
-      const balance = point.balance;
+    if (filteredBalanceData.length === 0) return null;
+
+    const labels = filteredBalanceData.map(d => 
+      new Date(d.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })
+    );
+    const cumulativeValues = filteredBalanceData.map(d => d.cumulative);
+    const pnlValues = filteredBalanceData.map(d => d.pnl);
+
+    // Créer deux datasets : un pour les valeurs positives (>= 0), un pour les négatives (< 0)
+    const positiveValues: (number | null)[] = [];
+    const negativeValues: (number | null)[] = [];
+    const chartLabels: string[] = [];
+    // Mapping pour retrouver l'index original et le PnL depuis l'index du graphique
+    const indexMapping: number[] = [];
+    const pnlMapping: number[] = [];
+
+    filteredBalanceData.forEach((point, index) => {
+      const value = point.cumulative;
       
       if (index === 0) {
         // Premier point
-        labels.push(point.date);
-        if (balance >= 0) {
-          positive.push(balance);
-          negative.push(null);
+        chartLabels.push(labels[index]);
+        indexMapping.push(index);
+        pnlMapping.push(point.pnl);
+        if (value >= 0) {
+          positiveValues.push(value);
+          negativeValues.push(null);
         } else {
-          positive.push(null);
-          negative.push(balance);
+          positiveValues.push(null);
+          negativeValues.push(value);
         }
       } else {
-        const prevBalance = accountBalanceData[index - 1].balance;
+        const prevValue = filteredBalanceData[index - 1].cumulative;
         
         // Si transition entre positif et négatif
-        if ((prevBalance >= 0 && balance < 0) || (prevBalance < 0 && balance >= 0)) {
-          // Ajouter le label et 0 comme point de transition dans les deux datasets
-          labels.push(point.date);
-          positive.push(0);
-          negative.push(0);
-          // Puis ajouter le point actuel avec le même label
-          labels.push(point.date);
-          if (balance >= 0) {
-            positive.push(balance);
-            negative.push(null);
+        if ((prevValue >= 0 && value < 0) || (prevValue < 0 && value >= 0)) {
+          // Ajouter un point à 0 pour la transition
+          chartLabels.push(labels[index]);
+          indexMapping.push(index);
+          pnlMapping.push(point.pnl);
+          positiveValues.push(0);
+          negativeValues.push(0);
+          // Puis ajouter le point actuel
+          chartLabels.push(labels[index]);
+          indexMapping.push(index);
+          pnlMapping.push(point.pnl);
+          if (value >= 0) {
+            positiveValues.push(value);
+            negativeValues.push(null);
           } else {
-            positive.push(null);
-            negative.push(balance);
+            positiveValues.push(null);
+            negativeValues.push(value);
           }
         } else {
-          // Pas de transition, continuer normalement
-          labels.push(point.date);
-          if (balance >= 0) {
-            positive.push(balance);
-            negative.push(null);
+          // Pas de transition
+          chartLabels.push(labels[index]);
+          indexMapping.push(index);
+          pnlMapping.push(point.pnl);
+          if (value >= 0) {
+            positiveValues.push(value);
+            negativeValues.push(null);
           } else {
-            positive.push(null);
-            negative.push(balance);
+            positiveValues.push(null);
+            negativeValues.push(value);
           }
         }
       }
     });
-    
-    return { positive, negative, labels };
-  }, [accountBalanceData]);
+
+    const textColor = performanceStats.isPositive ? 'text-blue-600' : 'text-pink-600';
+
+    return {
+      labels: chartLabels,
+      positiveValues,
+      negativeValues,
+      cumulativeValues,
+      pnlValues,
+      indexMapping,
+      pnlMapping,
+      textColor,
+    };
+  }, [filteredBalanceData, performanceStats]);
 
   // Calculer la répartition des trades par durée (gagnants et perdants)
   const durationDistribution = useMemo(() => {
@@ -451,6 +534,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       }))
       .filter(item => item.total > 0); // Filtrer les catégories vides
   }, [trades]);
+
+  // Préparer les données pour le graphique de répartition par durée
+  const durationDistributionBins = useMemo(() => {
+    return durationDistribution.map(item => ({
+      label: item.label,
+      successful: item.winning,
+      unsuccessful: item.losing,
+    }));
+  }, [durationDistribution]);
 
   // Préparer les données pour le graphique waterfall
   const waterfallData = useMemo(() => {
@@ -516,7 +608,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           label: 'Évolution du Capital',
           data: floatingBars,
           backgroundColor: waterfallBarData.map(d => 
-            d.isPositive ? '#3b82f6' : '#ec4899'
+            d.isPositive ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)'
           ),
           borderColor: waterfallBarData.map(d => 
             d.isPositive ? '#3b82f6' : '#ec4899'
@@ -609,51 +701,82 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           label: 'PnL Total',
           data: totalPnlValues,
           backgroundColor: totalPnlValues.map(value => 
-            value >= 0 ? '#3b82f6' : '#ec4899'
+            value >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)'
           ),
           borderColor: totalPnlValues.map(value => 
             value >= 0 ? '#3b82f6' : '#ec4899'
           ),
           borderWidth: 0,
-          borderRadius: 4,
+          borderRadius: 0,
           borderSkipped: false,
         }
       ]
     };
   }, [weekdayPerformanceData]);
 
-  // Calculer les limites intelligentes pour l'axe Y
+  // Calculer les limites intelligentes pour l'axe Y - toujours inclure 0 avec valeurs arrondies
   const weekdayYAxisLimits = useMemo(() => {
-    if (weekdayPerformanceData.length === 0) return { min: 0, max: 100 };
+    if (weekdayPerformanceData.length === 0) return { min: 0, max: 100, stepSize: 20 };
 
     const values = weekdayPerformanceData.map(d => d.total_pnl);
     const minValue = Math.min(...values);
     const maxValue = Math.max(...values);
     
-    // Si toutes les valeurs sont du même signe
-    if (minValue >= 0) {
-      // Toutes positives ou nulles : commencer à 0 ou légèrement en dessous du minimum
-      const padding = (maxValue - minValue) * 0.1 || Math.abs(maxValue) * 0.1 || 10;
-      return {
-        min: Math.max(0, minValue - padding),
-        max: maxValue + padding
-      };
-    } else if (maxValue <= 0) {
-      // Toutes négatives : finir à 0 ou légèrement au-dessus du maximum
-      const padding = (maxValue - minValue) * 0.1 || Math.abs(minValue) * 0.1 || 10;
-      return {
-        min: minValue - padding,
-        max: Math.min(0, maxValue + padding)
-      };
-    } else {
-      // Valeurs mixtes : inclure 0 et ajuster avec padding
-      const range = maxValue - minValue;
-      const padding = range * 0.1 || 10;
-      return {
-        min: minValue - padding,
-        max: maxValue + padding
-      };
+    // Plage effective qui inclut toujours 0
+    const effectiveMin = Math.min(minValue, 0);
+    const effectiveMax = Math.max(maxValue, 0);
+    const effectiveRange = effectiveMax - effectiveMin;
+    
+    // Calculer le stepSize optimal - on veut environ 6-8 ticks
+    const targetTicks = 7;
+    let step = effectiveRange / targetTicks;
+    
+    // Arrondir le step à une valeur "ronde"
+    if (step === 0 || !isFinite(step)) {
+      step = Math.max(Math.abs(effectiveMax), Math.abs(effectiveMin), 100) / targetTicks;
     }
+    
+    const magnitude = Math.pow(10, Math.floor(Math.log10(step)));
+    const normalized = step / magnitude;
+    
+    let niceStep: number;
+    if (normalized <= 1) niceStep = 1;
+    else if (normalized <= 2) niceStep = 2;
+    else if (normalized <= 5) niceStep = 5;
+    else niceStep = 10;
+    
+    const stepSize = niceStep * magnitude;
+    
+    // Calculer les limites minimales nécessaires pour inclure toutes les données
+    // Arrondir à la valeur inférieure pour min et supérieure pour max
+    let roundedMin = Math.floor(effectiveMin / stepSize) * stepSize;
+    let roundedMax = Math.ceil(effectiveMax / stepSize) * stepSize;
+    
+    // Ajuster si nécessaire pour inclure toutes les données exactes
+    while (roundedMin > minValue) {
+      roundedMin -= stepSize;
+    }
+    while (roundedMax < maxValue) {
+      roundedMax += stepSize;
+    }
+    
+    // S'assurer que 0 est toujours inclus
+    roundedMin = Math.min(roundedMin, 0);
+    roundedMax = Math.max(roundedMax, 0);
+    
+    // Ajouter une marge supplémentaire en haut (5% de la plage) pour les datalabels
+    const range = roundedMax - roundedMin;
+    const margin = range * 0.05;
+    const adjustedMax = roundedMax + margin;
+    
+    // Arrondir la limite ajustée au multiple du stepSize supérieur
+    const finalMax = Math.ceil(adjustedMax / stepSize) * stepSize;
+    
+    return {
+      min: roundedMin,
+      max: finalMax,
+      stepSize: stepSize
+    };
   }, [weekdayPerformanceData]);
 
   // Statistiques pour le graphique de performance par jour
@@ -936,10 +1059,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
                     Objectif: {gaugeObjectives?.winRate}%
                   </div>
-                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium border" style={{ 
+                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
                     backgroundColor: performanceLabels?.winRate.bgColor,
-                    color: performanceLabels?.winRate.color,
-                    borderColor: performanceLabels?.winRate.borderColor
+                    color: performanceLabels?.winRate.color
                   }}>
                     {performanceLabels?.winRate.label}
                   </div>
@@ -983,10 +1105,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
                     Objectif: {formatCurrency(gaugeObjectives?.avgWinning || 0, currencySymbol)}
                   </div>
-                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium border" style={{ 
+                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
                     backgroundColor: performanceLabels?.avgWinning.bgColor,
-                    color: performanceLabels?.avgWinning.color,
-                    borderColor: performanceLabels?.avgWinning.borderColor
+                    color: performanceLabels?.avgWinning.color
                   }}>
                     {performanceLabels?.avgWinning.label}
                   </div>
@@ -1030,10 +1151,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="text-xs text-gray-600 text-center leading-relaxed mb-3">
                     Objectif: &lt; {formatCurrency(gaugeObjectives?.avgLosing || 0, currencySymbol)}
                   </div>
-                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium border" style={{ 
+                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
                     backgroundColor: performanceLabels?.avgLosing.bgColor,
-                    color: performanceLabels?.avgLosing.color,
-                    borderColor: performanceLabels?.avgLosing.borderColor
+                    color: performanceLabels?.avgLosing.color
                   }}>
                     {performanceLabels?.avgLosing.label}
                   </div>
@@ -1044,21 +1164,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           {/* Cartes de statistiques à droite */}
           {additionalStats && tradingMetrics && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <ModernStatCard
-                label="Total Trades"
-                value={additionalStats.totalTrades}
-                variant="info"
-                size="small"
-                icon={
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                }
-                trend={additionalStats.winningTrades > additionalStats.losingTrades ? 'up' : additionalStats.winningTrades < additionalStats.losingTrades ? 'down' : 'neutral'}
-                trendValue={`${additionalStats.winningTrades}W / ${additionalStats.losingTrades}L`}
-              />
-              
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <ModernStatCard
                 label="P/L Total"
                 value={formatCurrency(additionalStats.totalPnl, currencySymbol)}
@@ -1079,9 +1185,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 variant={additionalStats.profitFactor >= 1.5 ? 'success' : additionalStats.profitFactor >= 1 ? 'warning' : 'danger'}
                 size="small"
                 icon={
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-                  </svg>
+                  additionalStats.profitFactor >= 1 ? (
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                    </svg>
+                  ) : (
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6L9 12.75l4.306-4.307a11.95 11.95 0 015.814 5.519l2.74 1.22m0 0l-5.94 2.28m5.94-2.28l2.28-5.941" />
+                    </svg>
+                  )
                 }
                 trend={additionalStats.profitFactor >= 1 ? 'up' : 'down'}
                 trendValue={additionalStats.profitFactor >= 1.5 ? 'Excellent' : additionalStats.profitFactor >= 1 ? 'Bon' : 'À améliorer'}
@@ -1102,27 +1214,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               />
               
               <ModernStatCard
-                label="Taux de Réussite"
-                value={`${tradingMetrics.winRate.toFixed(1)}%`}
-                variant={tradingMetrics.winRate >= 60 ? 'success' : tradingMetrics.winRate >= 50 ? 'info' : tradingMetrics.winRate >= 40 ? 'warning' : 'danger'}
-                size="small"
-                icon={
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                }
-                trend={undefined}
-                trendValue={performanceLabels?.winRate.label}
-              />
-              
-              <ModernStatCard
                 label="Frais Totaux"
                 value={formatCurrency(additionalStats.totalFees, currencySymbol)}
                 variant="warning"
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                   </svg>
                 }
                 trend={undefined}
@@ -1160,48 +1258,149 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           )}
 
           {/* Graphique 2: Solde du compte dans le temps */}
-          {accountBalanceData.length > 0 && (
+          {accountBalanceData.length > 0 && accountBalanceChartData && (
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Évolution du solde du compte</h3>
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${performanceStats.isPositive ? 'bg-blue-100' : 'bg-pink-100'}`}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path 
+                          d="M4 16l4-5 3 3 5-7 4 6" 
+                          stroke={performanceStats.isPositive ? '#3b82f6' : '#ec4899'} 
+                          strokeWidth="2" 
+                          fill="none" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">SOLDE DU COMPTE DANS LE TEMPS</h3>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Start Date Picker */}
+                    <div className="relative">
+                      <div className="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-gray-600 z-10">
+                        Date début
+                      </div>
+                      <input
+                        id="start-date"
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value || defaultStartDate)}
+                        onBlur={(e) => {
+                          if (!e.target.value) {
+                            setStartDate(defaultStartDate);
+                          }
+                        }}
+                        className="px-4 py-2.5 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        min={defaultStartDate}
+                        max={defaultEndDate}
+                      />
+                    </div>
+                    
+                    {/* Hyphen */}
+                    <span className="text-gray-500 text-xl font-medium">-</span>
+
+                    {/* End Date Picker */}
+                    <div className="relative">
+                      <div className="absolute -top-2 left-3 bg-white px-1 text-xs font-medium text-gray-600 z-10">
+                        Date fin
+                      </div>
+                      <input
+                        id="end-date"
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value || defaultEndDate)}
+                        onBlur={(e) => {
+                          if (!e.target.value) {
+                            setEndDate(defaultEndDate);
+                          }
+                        }}
+                        className="px-4 py-2.5 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        min={defaultStartDate}
+                        max={defaultEndDate}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-6 ml-11">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">
+                      {performanceStats.totalReturn >= 0 ? 'Gain' : 'Perte'} total :
+                    </span>
+                    <span className={`text-lg font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
+                      {formatCurrency(performanceStats.totalReturn, currencySymbol)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <span>Plus haut :</span>
+                      <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
+                        {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span>Plus bas :</span>
+                      <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600' : 'text-pink-600'}`}>
+                        {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="h-80">
-                <ChartLine
+                {filteredBalanceData.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    Aucune donnée dans la période sélectionnée
+                  </div>
+                ) : (
+                  <ChartLine
+                    key={`chart-${performanceStats.totalReturn}`}
                     data={{
                       labels: accountBalanceChartData.labels,
                       datasets: [
                         {
                           label: 'Solde positif',
-                          data: accountBalanceChartData.positive,
+                          data: accountBalanceChartData.positiveValues,
                           borderColor: '#3b82f6',
-                          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                          backgroundColor: 'rgba(59, 130, 246, 0.2)',
                           borderWidth: 3,
-                          pointRadius: (ctx: any) => {
-                            const value = ctx.parsed.y;
+                          fill: true,
+                          tension: 0.4,
+                          pointRadius: (context: any) => {
+                            const value = context.parsed.y;
                             return value !== null && value !== undefined ? 4 : 0;
                           },
                           pointBackgroundColor: '#3b82f6',
-                          pointBorderColor: '#fff',
-                          pointBorderWidth: 1,
+                          pointBorderColor: '#ffffff',
+                          pointBorderWidth: 2,
                           pointHoverRadius: 6,
-                          fill: true,
-                          tension: 0.4,
+                          pointHoverBackgroundColor: '#2563eb',
+                          pointHoverBorderColor: '#ffffff',
+                          pointHoverBorderWidth: 3,
                           spanGaps: false,
                         },
                         {
                           label: 'Solde négatif',
-                          data: accountBalanceChartData.negative,
+                          data: accountBalanceChartData.negativeValues,
                           borderColor: '#ec4899',
-                          backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                          backgroundColor: 'rgba(236, 72, 153, 0.2)',
                           borderWidth: 3,
-                          pointRadius: (ctx: any) => {
-                            const value = ctx.parsed.y;
+                          fill: true,
+                          tension: 0.4,
+                          pointRadius: (context: any) => {
+                            const value = context.parsed.y;
                             return value !== null && value !== undefined ? 4 : 0;
                           },
                           pointBackgroundColor: '#ec4899',
-                          pointBorderColor: '#fff',
-                          pointBorderWidth: 1,
+                          pointBorderColor: '#ffffff',
+                          pointBorderWidth: 2,
                           pointHoverRadius: 6,
-                          fill: true,
-                          tension: 0.4,
+                          pointHoverBackgroundColor: '#db2777',
+                          pointHoverBorderColor: '#ffffff',
+                          pointHoverBorderWidth: 3,
                           spanGaps: false,
                         },
                       ],
@@ -1232,14 +1431,21 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             weight: 500,
                           },
                           displayColors: false,
+                          mode: 'index' as const,
+                          intersect: false,
                           callbacks: {
-                            title: (items) => {
-                              const index = items[0].dataIndex;
-                              return accountBalanceData[index].date;
+                            title: function(context: any) {
+                              return accountBalanceChartData.labels[context[0].dataIndex] || '';
                             },
-                            label: (context) => {
-                              const balance = context.parsed.y ?? 0;
-                              return formatCurrency(balance, currencySymbol);
+                            label: function(context: any) {
+                              const value = context.parsed.y || 0;
+                              const index = context.dataIndex;
+                              // Utiliser le mapping pour trouver le PnL
+                              const pnl = accountBalanceChartData.pnlMapping[index] ?? 0;
+                              return [
+                                `Solde: ${formatCurrency(value, currencySymbol)}`,
+                                `PnL jour: ${formatCurrency(pnl, currencySymbol)}`,
+                              ];
                             },
                           },
                         },
@@ -1263,6 +1469,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           },
                         },
                         y: {
+                          beginAtZero: true,
                           ticks: {
                             color: '#6b7280',
                             font: {
@@ -1292,141 +1499,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           },
                         },
                       },
-                    }}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Graphique 2: Répartition des trades par durée */}
-          {durationDistribution.some(d => d.total > 0) && (
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Répartition des trades par durée</h3>
-              <div className="h-80">
-                <ChartBar
-                    data={{
-                      labels: durationDistribution.map(d => d.label),
-                      datasets: [
-                        {
-                          label: 'Trades gagnants',
-                          data: durationDistribution.map(d => d.winning),
-                          backgroundColor: '#3b82f6',
-                          borderRadius: 4,
-                        },
-                        {
-                          label: 'Trades perdants',
-                          data: durationDistribution.map(d => d.losing),
-                          backgroundColor: '#ec4899',
-                          borderRadius: 4,
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        datalabels: {
-                          display: true,
-                          color: '#ffffff',
-                          font: {
-                            weight: 600,
-                            size: 12,
-                          },
-                          formatter: function(value: number) {
-                            return value > 0 ? value.toString() : '';
-                          },
-                        },
-                        legend: {
-                          display: true,
-                          position: 'top' as const,
-                        },
-                        tooltip: {
-                          backgroundColor: 'white',
-                          titleColor: '#4b5563',
-                          bodyColor: '#1f2937',
-                          borderColor: '#e5e7eb',
-                          borderWidth: 1,
-                          padding: 16,
-                          titleFont: {
-                            size: 14,
-                            weight: 600,
-                          },
-                          bodyFont: {
-                            size: 13,
-                            weight: 500,
-                          },
-                          displayColors: false,
-                          mode: 'index' as const,
-                          intersect: false,
-                          callbacks: {
-                            title: (items) => {
-                              const index = items[0].dataIndex;
-                              return durationDistribution[index].label;
-                            },
-                            label: (context) => {
-                              const label = context.dataset.label || '';
-                              const count = context.parsed.y ?? 0;
-                              const category = durationDistribution[context.dataIndex];
-                              const total = category.total;
-                              const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                              return `${label}: ${count} (${percentage}% de cette durée)`;
-                            },
-                          },
-                        },
-                      },
-                      scales: {
-                        x: {
-                          stacked: true,
-                          ticks: {
-                            color: '#6b7280',
-                            font: {
-                              size: 12,
-                            },
-                            maxRotation: 45,
-                            minRotation: 45,
-                            autoSkip: false,
-                          },
-                          grid: {
-                            display: false,
-                          },
-                          border: {
-                            color: '#d1d5db',
-                          },
-                          title: {
-                            display: false,
-                          },
-                        },
-                        y: {
-                          stacked: true,
-                          beginAtZero: true,
-                          ticks: {
-                            stepSize: 1,
-                            color: '#6b7280',
-                            font: {
-                              size: 12,
-                            },
-                          },
-                          grid: {
-                            color: '#e5e7eb',
-                            lineWidth: 1,
-                          },
-                          border: {
-                            color: '#d1d5db',
-                            display: false,
-                          },
-                          title: {
-                            display: true,
-                            text: 'Nombre de trades',
-                            color: '#4b5563',
-                            font: {
-                              size: 13,
-                              weight: 600,
-                            },
-                          },
-                        },
+                      animation: {
+                        duration: 1000,
+                        easing: 'easeInOutQuart' as const,
                       },
                     }}
-                />
+                  />
+                )}
               </div>
             </div>
           )}
@@ -1442,20 +1521,31 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                     <div className="flex items-center gap-1">
                       <span>Plus actif :</span>
-                      <span className="font-medium text-blue-600">{weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count} trades)</span>
+                      <span className="font-medium text-blue-500">{weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count} trades)</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <span>Moins actif :</span>
-                      <span className="font-medium text-red-600">{weekdayStats.worstDay.day} ({weekdayStats.worstDay.trade_count} trades)</span>
+                      <span className="font-medium text-pink-500">{weekdayStats.worstDay.day} ({weekdayStats.worstDay.trade_count} trades)</span>
                     </div>
                   </div>
                 )}
-                <p className="text-sm text-gray-500">Analyse des performances et de l'activité selon les jours</p>
               </div>
 
               <div className="h-80">
                 <ChartBar
                   data={weekdayChartData}
+                  plugins={[{
+                    id: 'adjustAxis',
+                    beforeUpdate: (chart: any) => {
+                      // Ajuster les limites de l'axe Y après le calcul initial
+                      const yScale = chart.scales.y;
+                      if (yScale && weekdayYAxisLimits) {
+                        // Forcer les limites calculées
+                        yScale.min = weekdayYAxisLimits.min;
+                        yScale.max = weekdayYAxisLimits.max;
+                      }
+                    }
+                  }]}
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
@@ -1537,7 +1627,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         min: weekdayYAxisLimits.min,
                         max: weekdayYAxisLimits.max,
                         grid: {
-                          color: '#e5e7eb',
+                          color: function(context: any) {
+                            // Mettre en évidence la ligne à y=0 avec une couleur plus foncée
+                            if (Math.abs(context.tick.value) < 0.0001) {
+                              return '#9ca3af';
+                            }
+                            return '#e5e7eb';
+                          },
                           lineWidth: 1,
                         },
                         ticks: {
@@ -1548,16 +1644,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           font: {
                             size: 11
                           },
-                          // Générer des ticks intelligents
-                          stepSize: (() => {
-                            const range = weekdayYAxisLimits.max - weekdayYAxisLimits.min;
-                            // Calculer un step size raisonnable (environ 5-10 ticks)
-                            if (range === 0) return undefined;
-                            const step = range / 8;
-                            // Arrondir à une valeur "ronde"
-                            const magnitude = Math.pow(10, Math.floor(Math.log10(step)));
-                            return Math.ceil(step / magnitude) * magnitude;
-                          })()
+                          // Utiliser le stepSize calculé pour des valeurs cohérentes
+                          stepSize: weekdayYAxisLimits.stepSize,
+                          maxTicksLimit: 10,
+                          padding: 5,
                         },
                         border: {
                           color: '#d1d5db',
@@ -1587,17 +1677,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-2">
                       <div className="flex items-center gap-1">
                         <span>Capital total :</span>
-                        <span className={`font-medium ${waterfallStats.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`font-medium ${waterfallStats.totalPnl >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
                           {formatCurrency(waterfallStats.totalPnl, currencySymbol)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span>Meilleur jour :</span>
-                        <span className="font-medium text-green-600">{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
+                        <span className="font-medium text-blue-500">{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span>Pire jour :</span>
-                        <span className="font-medium text-red-600">{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
+                        <span className="font-medium text-pink-500">{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span>Jours gagnants :</span>
@@ -1605,7 +1695,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       </div>
                     </div>
                   )}
-                  <p className="text-sm text-gray-500">Graphique waterfall montrant l'évolution cumulative du capital</p>
                 </div>
 
                 <div className="h-[420px]">
@@ -1707,6 +1796,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Graphique 6: Répartition des trades par durée */}
+          {durationDistributionBins.length > 0 && (
+            <DurationDistributionChart bins={durationDistributionBins} />
           )}
         </div>
       )}

@@ -145,7 +145,7 @@ function StatisticsPage() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Taux de réussite</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {statisticsData ? `${statisticsData.win_rate.toFixed(1)}%` : 'N/A'}
                   </span>
                 </div>
@@ -173,19 +173,19 @@ function StatisticsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Gains totaux</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.total_gains), currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Pertes totales</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.total_losses), currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Net</span>
-                  <span className={`text-base font-semibold ${statisticsData && parseFloat(statisticsData.total_pnl) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`text-base font-semibold ${statisticsData && parseFloat(statisticsData.total_pnl) >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.total_pnl), currencySymbol) : 'N/A'}
                   </span>
                 </div>
@@ -283,7 +283,7 @@ function StatisticsPage() {
                         </svg>
                       </Tooltip>
                     </div>
-                    <span className={`text-base font-semibold ${statisticsData.profit_factor >= 1.0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`text-base font-semibold ${statisticsData.profit_factor >= 1.0 ? 'text-blue-500' : 'text-pink-500'}`}>
                       {statisticsData.profit_factor.toFixed(2)}
                     </span>
                   </div>
@@ -298,7 +298,7 @@ function StatisticsPage() {
                         </svg>
                       </Tooltip>
                     </div>
-                    <span className={`text-base font-semibold ${statisticsData.win_loss_ratio >= 1.0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`text-base font-semibold ${statisticsData.win_loss_ratio >= 1.0 ? 'text-blue-500' : 'text-pink-500'}`}>
                       {statisticsData.win_loss_ratio.toFixed(2)}
                     </span>
                   </div>
@@ -329,7 +329,7 @@ function StatisticsPage() {
                         </svg>
                       </Tooltip>
                     </div>
-                    <span className={`text-base font-semibold ${statisticsData.recovery_ratio >= 1.0 ? 'text-green-600' : 'text-orange-600'}`}>
+                    <span className={`text-base font-semibold ${statisticsData.recovery_ratio >= 1.0 ? 'text-blue-500' : 'text-orange-600'}`}>
                       {statisticsData.recovery_ratio.toFixed(2)}
                     </span>
                   </div>
@@ -344,7 +344,7 @@ function StatisticsPage() {
                         </svg>
                       </Tooltip>
                     </div>
-                    <span className={`text-base font-semibold ${statisticsData.pnl_per_trade >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`text-base font-semibold ${statisticsData.pnl_per_trade >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
                       {formatCurrency(statisticsData.pnl_per_trade, currencySymbol)}
                     </span>
                   </div>
@@ -375,7 +375,7 @@ function StatisticsPage() {
                         </svg>
                       </Tooltip>
                     </div>
-                    <span className={`text-base font-semibold ${statisticsData.fees_ratio <= 0.1 ? 'text-green-600' : 'text-orange-600'}`}>
+                    <span className={`text-base font-semibold ${statisticsData.fees_ratio <= 0.1 ? 'text-blue-500' : 'text-orange-600'}`}>
                       {(statisticsData.fees_ratio * 100).toFixed(1)}%
                     </span>
                   </div>
@@ -436,7 +436,7 @@ function StatisticsPage() {
                         </svg>
                       </Tooltip>
                     </div>
-                    <span className={`text-base font-semibold ${statisticsData.duration_ratio >= 1.0 ? 'text-green-600' : 'text-orange-600'}`}>
+                    <span className={`text-base font-semibold ${statisticsData.duration_ratio >= 1.0 ? 'text-blue-500' : 'text-orange-600'}`}>
                       {statisticsData.duration_ratio.toFixed(2)}
                     </span>
                   </div>
@@ -456,8 +456,8 @@ function StatisticsPage() {
             {/* Trades gagnants */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -468,13 +468,13 @@ function StatisticsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Nombre</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {statisticsData?.winning_trades || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Meilleur trade</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.best_trade), currencySymbol) : 'N/A'}
                   </span>
                 </div>
@@ -484,8 +484,8 @@ function StatisticsPage() {
             {/* Trades perdants */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </div>
@@ -496,13 +496,13 @@ function StatisticsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Nombre</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {statisticsData?.losing_trades || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Pire trade</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.worst_trade), currencySymbol) : 'N/A'}
                   </span>
                 </div>
@@ -521,8 +521,8 @@ function StatisticsPage() {
             {/* Gains quotidiens */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                   </svg>
                 </div>
@@ -533,19 +533,19 @@ function StatisticsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Moyenne</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.avg_gain_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Médiane</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.median_gain_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Maximum</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.max_gain_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
@@ -555,8 +555,8 @@ function StatisticsPage() {
             {/* Pertes quotidiennes */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
                   </svg>
                 </div>
@@ -567,19 +567,19 @@ function StatisticsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Moyenne</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.avg_loss_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Médiane</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.median_loss_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Maximum</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.max_loss_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
@@ -629,13 +629,13 @@ function StatisticsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Gain max</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_gain_per_trade, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Perte max</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_loss_per_trade, currencySymbol) : 'N/A'}
                   </span>
                 </div>
@@ -657,13 +657,13 @@ function StatisticsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Gains consécutifs</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_wins_per_day : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Pertes consécutives</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_losses_per_day : 'N/A'}
                   </span>
                 </div>
@@ -685,13 +685,13 @@ function StatisticsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Gains consécutifs</span>
-                  <span className="text-base font-semibold text-green-600">
+                  <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_wins : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-500">Pertes consécutives</span>
-                  <span className="text-base font-semibold text-red-600">
+                  <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_losses : 'N/A'}
                   </span>
                 </div>

@@ -37,6 +37,32 @@ export interface PasswordChangeData {
   new_password_confirm: string;
 }
 
+export interface UserPreferences {
+  language: 'fr' | 'en';
+  timezone: string;
+  date_format: 'US' | 'EU';
+  number_format: 'point' | 'comma';
+  theme: 'light' | 'dark';
+  font_size: 'small' | 'medium' | 'large';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ActiveSession {
+  jti: string;
+  created_at: string;
+  expires_at: string;
+  is_current: boolean;
+  device_info?: string;
+}
+
+export interface LoginHistoryEntry {
+  date: string;
+  ip_address?: string;
+  user_agent?: string;
+  success: boolean;
+}
+
 class UserService {
   private readonly BASE_URL = 'http://localhost:8000';
 
@@ -215,7 +241,7 @@ class UserService {
   }
 
   // Mettre à jour le profil de l'utilisateur connecté
-  async updateCurrentUserProfile(data: Partial<UserUpdateData>): Promise<User> {
+  async updateCurrentUserProfile(data: Partial<UserUpdateData & { email?: string }>): Promise<{ message: string; user: User }> {
     const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/profile/`, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -223,7 +249,7 @@ class UserService {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || 'Erreur lors de la mise à jour du profil');
+      throw new Error(errorData.detail || errorData.email?.[0] || 'Erreur lors de la mise à jour du profil');
     }
 
     return response.json();
@@ -265,6 +291,90 @@ class UserService {
     }
 
     return response.json();
+  }
+
+  // Récupérer les préférences de l'utilisateur
+  async getPreferences(): Promise<UserPreferences> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/preferences/`);
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération des préférences');
+    }
+
+    return response.json();
+  }
+
+  // Mettre à jour les préférences de l'utilisateur
+  async updatePreferences(data: Partial<UserPreferences>): Promise<UserPreferences> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/preferences/`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Erreur lors de la mise à jour des préférences');
+    }
+
+    const result = await response.json();
+    return result.preferences || result;
+  }
+
+  // Récupérer les sessions actives
+  async getActiveSessions(): Promise<ActiveSession[]> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/sessions/`);
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération des sessions');
+    }
+
+    return response.json();
+  }
+
+  // Déconnecter une session spécifique
+  async revokeSession(jti: string): Promise<void> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/sessions/`, {
+      method: 'POST',
+      body: JSON.stringify({ jti }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la déconnexion de la session');
+    }
+  }
+
+  // Déconnecter toutes les autres sessions
+  async revokeAllOtherSessions(): Promise<void> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/sessions/`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la déconnexion des sessions');
+    }
+  }
+
+  // Récupérer l'historique des connexions
+  async getLoginHistory(limit: number = 50): Promise<LoginHistoryEntry[]> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/login-history/?limit=${limit}`);
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération de l\'historique');
+    }
+
+    return response.json();
+  }
+
+  // Exporter toutes les données de l'utilisateur
+  async exportData(): Promise<Blob> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/export-data/`);
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de l\'export des données');
+    }
+
+    return response.blob();
   }
 }
 

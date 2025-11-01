@@ -19,6 +19,7 @@ export const TradeModal: React.FC<TradeModalProps> = ({ tradeId, onClose }) => {
     let mounted = true;
     const load = async () => {
       if (!tradeId) return;
+      const currentDraftKey = `trade-draft-${tradeId}`;
       setIsLoading(true);
       try {
         const data = await tradesService.retrieve(tradeId);
@@ -27,7 +28,7 @@ export const TradeModal: React.FC<TradeModalProps> = ({ tradeId, onClose }) => {
         setNotes(data.notes || '');
         setStrategy(data.strategy || '');
         // restore draft if any
-        const draft = localStorage.getItem(draftKey);
+        const draft = localStorage.getItem(currentDraftKey);
         if (draft) {
           const parsed = JSON.parse(draft);
           if (parsed.notes !== undefined) setNotes(parsed.notes);

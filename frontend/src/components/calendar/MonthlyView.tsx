@@ -11,6 +11,7 @@ interface MonthlyViewProps {
   onMonthClick: (month: number) => void;
   viewType?: 'daily' | 'monthly';
   onViewTypeChange?: (viewType: 'daily' | 'monthly') => void;
+  currencySymbol?: string;
 }
 
 const monthNames = [
@@ -27,6 +28,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   onMonthClick,
   viewType,
   onViewTypeChange,
+  currencySymbol = '',
 }) => {
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
@@ -55,8 +57,13 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
 
   const formatPnl = (pnl: number): string => {
     if (pnl === 0) return '';
-    const sign = pnl > 0 ? '+' : '';
-    return `${sign}${Math.abs(pnl).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const sign = pnl < 0 ? '-' : '';
+    const formatted = Math.abs(pnl).toLocaleString('fr-FR', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2,
+      useGrouping: true
+    });
+    return currencySymbol ? `${currencySymbol} ${sign}${formatted}` : `${sign}${formatted}`;
   };
 
   const getPnlColor = (pnl: number): string => {

@@ -163,6 +163,13 @@ class AuthService {
   getAccessToken(): string | null {
     return this.accessToken;
   }
+
+  updateUser(userData: Partial<User>): void {
+    if (this.user) {
+      this.user = { ...this.user, ...userData };
+      localStorage.setItem('user', JSON.stringify(this.user));
+    }
+  }
 }
 
 export const authService = new AuthService();

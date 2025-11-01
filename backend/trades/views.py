@@ -453,7 +453,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'total_trades': total_trades,
             'winning_trades': winning_trades,
             'losing_trades': losing_trades,
-            'win_rate': round(win_rate, 2),
+            'win_rate': win_rate,
             'total_pnl': aggregates['total_pnl'] or Decimal('0'),
             'total_raw_pnl': aggregates['total_raw_pnl'] or Decimal('0'),
             'total_gains': total_gains,

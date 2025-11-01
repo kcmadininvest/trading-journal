@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
@@ -18,10 +18,9 @@ import {
   Filler,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Bar as ChartBar, Line as ChartLine, Doughnut as ChartDoughnut } from 'react-chartjs-2';
+import { Bar as ChartBar, Doughnut as ChartDoughnut } from 'react-chartjs-2';
 
 const Bar = ChartBar;
-const Line = ChartLine;
 const Doughnut = ChartDoughnut;
 
 // Enregistrer les composants Chart.js nécessaires
@@ -88,12 +87,7 @@ const StrategiesPage: React.FC = () => {
     { value: 12, label: 'Décembre' },
   ];
 
-  // Charger les statistiques
-  useEffect(() => {
-    loadStatistics();
-  }, [selectedYear, selectedMonth, accountId]);
-
-  const loadStatistics = async () => {
+  const loadStatistics = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -121,7 +115,12 @@ const StrategiesPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedYear, selectedMonth, accountId]);
+
+  // Charger les statistiques
+  useEffect(() => {
+    loadStatistics();
+  }, [loadStatistics]);
 
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
@@ -131,18 +130,18 @@ const StrategiesPage: React.FC = () => {
       {
         label: 'Respecté (%)',
         data: statistics.statistics.period_data.map((d: any) => d.respect_percentage || 0),
-        backgroundColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
         borderColor: '#3b82f6',
-        borderWidth: 2,
-        borderRadius: 4,
+        borderWidth: 0,
+        borderRadius: 0,
       },
       {
         label: 'Non respecté (%)',
         data: statistics.statistics.period_data.map((d: any) => d.not_respect_percentage || 0),
-        backgroundColor: '#ec4899',
+        backgroundColor: 'rgba(236, 72, 153, 0.8)',
         borderColor: '#ec4899',
-        borderWidth: 2,
-        borderRadius: 4,
+        borderWidth: 0,
+        borderRadius: 0,
       },
     ],
   } : null;
@@ -152,11 +151,27 @@ const StrategiesPage: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       datalabels: {
-        display: false,
+        display: true,
+        color: '#ffffff',
+        font: {
+          weight: 600,
+          size: 13,
+        },
+        formatter: function(value: number) {
+          // Afficher la valeur avec le symbole %
+          return value > 0 ? `${value.toFixed(2)}%` : '';
+        },
       },
       legend: {
         display: true,
         position: 'top' as const,
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12
+          }
+        },
       },
       title: {
         display: false,
@@ -197,7 +212,8 @@ const StrategiesPage: React.FC = () => {
     scales: {
       y: {
         beginAtZero: true,
-        stacked: false,
+        stacked: true,
+        max: 100,
         ticks: {
           callback: function(value: any) {
             return value + '%';
@@ -214,7 +230,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
       x: {
-        stacked: false,
+        stacked: true,
         title: {
           display: false,
         },
@@ -229,18 +245,18 @@ const StrategiesPage: React.FC = () => {
       {
         label: 'Si stratégie respectée (%)',
         data: [statistics.statistics.success_rate_if_respected || 0],
-        backgroundColor: '#3b82f6',
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
         borderColor: '#3b82f6',
-        borderWidth: 2,
-        borderRadius: 4,
+        borderWidth: 0,
+        borderRadius: 0,
       },
       {
         label: 'Si stratégie non respectée (%)',
         data: [statistics.statistics.success_rate_if_not_respected || 0],
-        backgroundColor: '#ec4899',
+        backgroundColor: 'rgba(236, 72, 153, 0.8)',
         borderColor: '#ec4899',
-        borderWidth: 2,
-        borderRadius: 4,
+        borderWidth: 0,
+        borderRadius: 0,
       },
     ],
   } : null;
@@ -264,6 +280,13 @@ const StrategiesPage: React.FC = () => {
       legend: {
         display: true,
         position: 'top' as const,
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12
+          }
+        },
       },
       title: {
         display: false,
@@ -348,7 +371,7 @@ const StrategiesPage: React.FC = () => {
 
   // Graphique 3: Répartition des sessions gagnantes selon TP1 et TP2+
   const winningSessionsData = statistics?.statistics?.winning_sessions_distribution ? {
-    labels: ['TP1 uniquement', 'TP2+', 'Sans TP'],
+    labels: ['TP1', 'TP2+', 'Sans TP'],
     datasets: [
       {
         label: 'Nombre de sessions gagnantes',
@@ -358,20 +381,32 @@ const StrategiesPage: React.FC = () => {
           statistics.statistics.winning_sessions_distribution.no_tp,
         ],
         backgroundColor: [
-          '#3b82f6',
-          '#22c55e',
-          '#9ca3af',
+          'rgba(59, 130, 246, 0.8)',
+          'rgba(249, 115, 22, 0.8)',
+          'rgba(156, 163, 175, 0.8)',
         ],
         borderColor: [
           '#3b82f6',
-          '#22c55e',
+          '#f97316',
           '#9ca3af',
         ],
-        borderWidth: 2,
-        borderRadius: 4,
+        borderWidth: 0,
+        borderRadius: 0,
       },
     ],
   } : null;
+
+  // Calculer la valeur maximale pour l'axe Y avec marge
+  const winningSessionsMax = statistics?.statistics?.winning_sessions_distribution ? (() => {
+    const values = [
+      statistics.statistics.winning_sessions_distribution.tp1_only,
+      statistics.statistics.winning_sessions_distribution.tp2_plus,
+      statistics.statistics.winning_sessions_distribution.no_tp,
+    ];
+    const maxValue = Math.max(...values);
+    // Ajouter 15% de marge en haut
+    return Math.ceil(maxValue * 1.15);
+  })() : undefined;
 
   const winningSessionsOptions = {
     responsive: true,
@@ -384,25 +419,32 @@ const StrategiesPage: React.FC = () => {
         display: true,
         position: 'top' as const,
         labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12
+          },
           generateLabels: function(chart: any) {
             return [
               {
-                text: 'TP1 uniquement',
+                text: 'TP1',
                 fillStyle: '#3b82f6',
                 strokeStyle: '#3b82f6',
                 lineWidth: 2,
                 hidden: false,
                 index: 0,
                 datasetIndex: 0,
+                pointStyle: 'circle' as const,
               },
               {
                 text: 'TP2+',
-                fillStyle: '#22c55e',
-                strokeStyle: '#22c55e',
+                fillStyle: '#f97316',
+                strokeStyle: '#f97316',
                 lineWidth: 2,
                 hidden: false,
                 index: 1,
                 datasetIndex: 0,
+                pointStyle: 'circle' as const,
               },
               {
                 text: 'Sans TP',
@@ -412,6 +454,7 @@ const StrategiesPage: React.FC = () => {
                 hidden: false,
                 index: 2,
                 datasetIndex: 0,
+                pointStyle: 'circle' as const,
               },
             ];
           },
@@ -456,6 +499,7 @@ const StrategiesPage: React.FC = () => {
       y: {
         beginAtZero: true,
         stacked: false,
+        max: winningSessionsMax,
         ticks: {
           stepSize: 1,
           color: '#6b7280',
@@ -790,7 +834,7 @@ const StrategiesPage: React.FC = () => {
                   </Tooltip>
                 </div>
                 <div className="h-80">
-                  <ChartDoughnut data={emotionsData} options={emotionsOptions} />
+                  <Doughnut data={emotionsData} options={emotionsOptions} />
                 </div>
               </div>
             )}

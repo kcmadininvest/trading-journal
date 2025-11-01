@@ -8,21 +8,6 @@ import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import {
-  ScatterChart,
-  Scatter,
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Cell,
-} from 'recharts';
-import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -32,7 +17,6 @@ import {
   Title,
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
-  TooltipItem,
   Filler,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -58,101 +42,6 @@ const formatCurrency = (value: number, currencySymbol: string = ''): string => {
   return currencySymbol ? `${currencySymbol} ${formatted}` : formatted;
 };
 
-// Custom Tooltip pour le scatter chart (performance par heure)
-const HourlyScatterTooltip = (props: any) => {
-  const { active, payload } = props;
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const pnl = data.pnl || 0;
-    
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-        <p className="text-sm font-semibold text-gray-900">
-          {formatCurrency(pnl)}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// Custom Tooltip pour le scatter chart (corrélation PnL vs Nombre de Trades)
-const CorrelationTooltip = (props: any) => {
-  const { active, payload } = props;
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const pnl = data.pnl || 0;
-    const trades = data.trades || 0;
-    
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-        <p className="text-sm font-semibold text-gray-900">
-          {formatCurrency(pnl)}
-        </p>
-        <p className="text-sm text-gray-600 mt-1">
-          {trades} {trades > 1 ? 'trades' : 'trade'}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// Custom Tooltip pour les barres (performance par heure)
-const HourlyBarTooltip = (props: any) => {
-  const { active, payload } = props;
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const pnl = data.pnl || 0;
-    const hour = data.hour || '';
-    
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-        <p className="text-xs text-gray-600 mb-1">{hour}</p>
-        <p className="text-sm font-semibold text-gray-900">
-          {formatCurrency(pnl)}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
-// Custom Tooltip pour la distribution des PnL
-const DistributionTooltip = (props: any) => {
-  const { active, payload } = props;
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    const count = data.count || 0;
-    const rangeLabel = data.rangeLabel || '';
-    
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-        <p className="text-xs text-gray-600 mb-1">P&L: {rangeLabel}</p>
-        <p className="text-sm font-semibold text-gray-900">
-          {count} {count > 1 ? 'trades' : 'trade'}
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
-interface HourlyPerformance {
-  hour: number;
-  pnl: number;
-}
-
-interface DailyDrawdown {
-  date: string;
-  drawdown: number;
-  cumulativePnl: number;
-}
-
-interface CorrelationData {
-  trades: number;
-  pnl: number;
-}
 
 const AnalyticsPage: React.FC = () => {
   const [accountId, setAccountId] = useState<number | null>(null);
@@ -470,8 +359,6 @@ const AnalyticsPage: React.FC = () => {
       };
     }).filter(bin => bin.count > 0); // Filtrer pour ne garder que les bins avec des données
   }, [trades]);
-
-  const COLORS = ['#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6'];
 
   // Fonction pour obtenir la couleur de la heatmap (améliorée)
   const getHeatmapColor = (value: number, maxAbs: number): string => {
@@ -1228,16 +1115,21 @@ const AnalyticsPage: React.FC = () => {
                         title: (items) => {
                           const index = items[0].dataIndex;
                           const bin = pnlDistribution[index];
-                          // Extraire start et end du rangeLabel ou les recalculer
-                          const start = parseFloat(bin.range);
-                          const end = start + (parseFloat(pnlDistribution[index + 1]?.range || String(start + 1000)) - start) || (start + Math.abs(start) * 0.1);
-                          const startFormatted = formatCurrency(start, currencySymbol);
-                          // Pour trouver la fin, on peut utiliser le rangeLabel ou calculer
+                          // Extraire start et end du rangeLabel
                           const rangeMatch = bin.rangeLabel.match(/^(.+?)\s*-\s*(.+?)$/);
-                          let endValue = start;
+                          let startValue = parseFloat(bin.range);
+                          let endValue = startValue;
+                          
                           if (rangeMatch && rangeMatch[2]) {
                             endValue = parseFloat(rangeMatch[2].trim());
+                          } else if (pnlDistribution[index + 1]) {
+                            endValue = parseFloat(pnlDistribution[index + 1].range);
+                          } else {
+                            // Si c'est le dernier bin, utiliser binWidth
+                            endValue = startValue + (bin.binWidth || (startValue * 0.1));
                           }
+                          
+                          const startFormatted = formatCurrency(startValue, currencySymbol);
                           const endFormatted = formatCurrency(endValue, currencySymbol);
                           return `P&L: de ${startFormatted} à ${endFormatted}`;
                         },

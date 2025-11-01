@@ -36,6 +36,7 @@ const TradingAccountsPage: React.FC = () => {
   }, [accounts, page, pageSize]);
 
   const totalPages = Math.max(1, Math.ceil(accounts.length / pageSize));
+  const [editingAccountId, setEditingAccountId] = useState<number | null>(null);
   const [form, setForm] = useState<Partial<TradingAccount>>({
     name: '',
     account_type: 'topstep',
@@ -89,15 +90,47 @@ const TradingAccountsPage: React.FC = () => {
     if (!form.name) return;
     setSaving(true);
     try {
-      await tradingAccountsService.create(form);
+      if (editingAccountId) {
+        // Mode édition
+        await tradingAccountsService.update(editingAccountId, form);
+      } else {
+        // Mode création
+        await tradingAccountsService.create(form);
+      }
       // Recharger depuis le backend pour refléter l'unicité du compte par défaut
       await load();
       setForm({ name: '', account_type: 'topstep', currency: 'USD', status: 'active', description: '' });
+      setEditingAccountId(null);
     } catch {
       // noop
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleEdit = (acc: TradingAccount) => {
+    setForm({
+      name: acc.name,
+      account_type: acc.account_type,
+      currency: acc.currency,
+      status: acc.status,
+      description: acc.description || '',
+      broker_account_id: acc.broker_account_id || '',
+      is_default: acc.is_default,
+    });
+    setEditingAccountId(acc.id);
+    // Scroll vers le formulaire
+    setTimeout(() => {
+      const formElement = document.querySelector('[data-form-section]');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
+  const handleCancel = () => {
+    setForm({ name: '', account_type: 'topstep', currency: 'USD', status: 'active', description: '' });
+    setEditingAccountId(null);
   };
 
   const handleSetDefault = async (id: number) => {
@@ -213,6 +246,14 @@ const TradingAccountsPage: React.FC = () => {
                                 </button>
                               )}
                               <button
+                                onClick={() => handleEdit(acc)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                                title="Modifier ce compte"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                Modifier
+                              </button>
+                              <button
                                 onClick={() => handleToggleStatus(acc)}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                               >
@@ -268,12 +309,12 @@ const TradingAccountsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Create form */}
-        <div className="w-full lg:w-96">
+        {/* Create/Edit form */}
+        <div className="w-full lg:w-96" data-form-section>
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-base font-semibold">Nouveau compte</h2>
-              <p className="mt-1 text-xs text-gray-500">Renseignez les informations et créez le compte en un clic.</p>
+              <h2 className="text-base font-semibold">{editingAccountId ? 'Modifier le compte' : 'Nouveau compte'}</h2>
+              <p className="mt-1 text-xs text-gray-500">{editingAccountId ? 'Modifiez les informations du compte.' : 'Renseignez les informations et créez le compte en un clic.'}</p>
             </div>
             <div className="p-6 space-y-5">
               <div className="grid grid-cols-1 gap-4">
@@ -443,24 +484,44 @@ const TradingAccountsPage: React.FC = () => {
                 <div className="text-xs text-gray-500">Un seul compte par défaut</div>
               </div>
 
-              <div className="pt-2">
-                <button
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                  onClick={handleCreate}
-                  disabled={saving || !form.name}
-                >
-                  {saving ? (
-                    <>
-                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-                      Création...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" /></svg>
-                      Créer
-                    </>
+              <div className="pt-2 space-y-2">
+                <div className="flex gap-2">
+                  {editingAccountId && (
+                    <button
+                      className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+                      onClick={handleCancel}
+                      disabled={saving}
+                    >
+                      Annuler
+                    </button>
                   )}
-                </button>
+                  <button
+                    className={`${editingAccountId ? 'flex-1' : 'w-full'} inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50`}
+                    onClick={handleCreate}
+                    disabled={saving || !form.name}
+                  >
+                    {saving ? (
+                      <>
+                        <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                        {editingAccountId ? 'Mise à jour...' : 'Création...'}
+                      </>
+                    ) : (
+                      <>
+                        {editingAccountId ? (
+                          <>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            Enregistrer
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" /></svg>
+                            Créer
+                          </>
+                        )}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

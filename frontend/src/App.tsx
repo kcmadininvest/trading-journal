@@ -112,14 +112,29 @@ function App() {
       window.location.hash = '';
     };
 
+    const handleUserProfileUpdated = (event: any) => {
+      const user = event.detail?.user;
+      if (user) {
+        setCurrentUser(user);
+      } else {
+        // Si pas d'utilisateur dans l'événement, récupérer depuis authService
+        const updatedUser = authService.getCurrentUser();
+        if (updatedUser) {
+          setCurrentUser(updatedUser);
+        }
+      }
+    };
+
     // Écouter les événements de changement d'utilisateur
     window.addEventListener('user:login', handleUserLogin);
     window.addEventListener('user:logout', handleUserLogout);
+    window.addEventListener('user:profile-updated', handleUserProfileUpdated);
 
     // Nettoyage lors du démontage du composant
     return () => {
       window.removeEventListener('user:login', handleUserLogin);
       window.removeEventListener('user:logout', handleUserLogout);
+      window.removeEventListener('user:profile-updated', handleUserProfileUpdated);
     };
   }, []);
 

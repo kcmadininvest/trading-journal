@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MonthlyView from '../components/calendar/MonthlyView';
 import DailyView from '../components/calendar/DailyView';
 import { AccountSelector } from '../components/accounts/AccountSelector';
@@ -10,6 +10,8 @@ import {
   CalendarYearlyResponse,
   CalendarWeeklyYearlyResponse,
 } from '../services/calendar';
+import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
+import { currenciesService, Currency } from '../services/currencies';
 
 type ViewType = 'daily' | 'monthly';
 
@@ -18,6 +20,8 @@ const CalendarPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+  const [selectedAccountData, setSelectedAccountData] = useState<TradingAccount | null>(null);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [showImport, setShowImport] = useState(false);
 
   // État pour la vue quotidienne
@@ -64,6 +68,44 @@ const CalendarPage: React.FC = () => {
       setIsLoading(false);
     }
   }, []);
+
+  // Charger les devises
+  useEffect(() => {
+    const loadCurrencies = async () => {
+      try {
+        const list = await currenciesService.list();
+        setCurrencies(list);
+      } catch (err) {
+        console.error('Erreur lors du chargement des devises', err);
+      }
+    };
+    loadCurrencies();
+  }, []);
+
+  // Récupérer le compte sélectionné pour obtenir sa devise
+  useEffect(() => {
+    const loadAccount = async () => {
+      if (!selectedAccount || selectedAccount === 0) {
+        setSelectedAccountData(null);
+        return;
+      }
+      try {
+        const account = await tradingAccountsService.get(selectedAccount);
+        setSelectedAccountData(account);
+      } catch (err) {
+        console.error('Erreur lors du chargement du compte', err);
+        setSelectedAccountData(null);
+      }
+    };
+    loadAccount();
+  }, [selectedAccount]);
+
+  // Obtenir le symbole de devise
+  const currencySymbol = useMemo(() => {
+    if (!selectedAccountData || !currencies.length) return '';
+    const currency = currencies.find(c => c.code === selectedAccountData.currency);
+    return currency?.symbol || '';
+  }, [selectedAccountData, currencies]);
 
   // Charger les données quand la vue change ou quand les dates changent
   useEffect(() => {
@@ -129,6 +171,7 @@ const CalendarPage: React.FC = () => {
             onViewTypeChange={setViewType}
             tradingAccount={selectedAccount ?? undefined}
             onDataRefresh={loadDailyData}
+            currencySymbol={currencySymbol}
           />
         ) : viewType === 'monthly' && yearlyMonthlyData && yearlyWeeklyData ? (
           <MonthlyView
@@ -140,6 +183,7 @@ const CalendarPage: React.FC = () => {
             onMonthClick={handleMonthClick}
             viewType={viewType}
             onViewTypeChange={setViewType}
+            currencySymbol={currencySymbol}
           />
         ) : null}
       </div>

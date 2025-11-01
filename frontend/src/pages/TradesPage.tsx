@@ -91,7 +91,7 @@ const TradesPage: React.FC = () => {
       setIsLoading(false);
       console.log('[TradesPage] load() finished');
     }
-  }, [page, pageSize, filtersKey, hasInitialized]);
+  }, [page, pageSize, filters, hasInitialized]);
 
   const reloadStats = async () => {
     try {
@@ -169,6 +169,7 @@ const TradesPage: React.FC = () => {
       console.log('[TradesPage] useEffect[init] - Initialization complete');
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -190,14 +191,12 @@ const TradesPage: React.FC = () => {
       console.log('[TradesPage] useEffect[persist] - Removing account from localStorage');
       localStorage.removeItem('current_account_id');
     }
-  }, [filters.trading_account]);
+  }, [filters.trading_account, hasInitialized]);
 
   useEffect(() => {
     console.log('[TradesPage] useEffect[load] - Start', { 
       page, 
       pageSize, 
-      filters, 
-      filtersKey,
       hasInitialized: hasInitialized 
     });
     // Attendre la fin de l'initialisation avant de charger

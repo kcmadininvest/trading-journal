@@ -15,6 +15,7 @@ interface DailyViewProps {
   onViewTypeChange?: (viewType: 'daily' | 'monthly') => void;
   tradingAccount?: number;
   onDataRefresh?: () => void;
+  currencySymbol?: string;
 }
 
 const monthNames = [
@@ -35,6 +36,7 @@ const DailyView: React.FC<DailyViewProps> = ({
   onViewTypeChange,
   tradingAccount,
   onDataRefresh,
+  currencySymbol = '',
 }) => {
   const [selectedDateForTrades, setSelectedDateForTrades] = useState<string | null>(null);
   const [selectedDateForStrategy, setSelectedDateForStrategy] = useState<string | null>(null);
@@ -62,8 +64,9 @@ const DailyView: React.FC<DailyViewProps> = ({
 
   const formatPnl = (pnl: number): string => {
     if (pnl === 0) return '';
-    const sign = pnl > 0 ? '+' : '';
-    return `${sign}${Math.abs(pnl).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const sign = pnl < 0 ? '-' : '';
+    const formatted = Math.abs(pnl).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return currencySymbol ? `${currencySymbol} ${sign}${formatted}` : `${sign}${formatted}`;
   };
 
   const getPnlColor = (pnl: number): string => {
