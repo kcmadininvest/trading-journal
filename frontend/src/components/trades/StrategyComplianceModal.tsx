@@ -3,8 +3,8 @@ import { tradesService, TradeListItem } from '../../services/trades';
 import { tradeStrategiesService, TradeStrategy, BulkStrategyData } from '../../services/tradeStrategies';
 import { Tooltip } from '../ui';
 import { usePreferences } from '../../hooks/usePreferences';
-import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
-import { formatDateLong } from '../../utils/dateFormat';
+import { formatCurrencyWithSign } from '../../utils/numberFormat';
+import { formatDateLong, formatTime } from '../../utils/dateFormat';
 
 interface StrategyComplianceModalProps {
   open: boolean;
@@ -257,13 +257,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   if (!open) return null;
 
   const formatDate = (dateStr: string) => {
-    return formatDateLong(dateStr, preferences.date_format, preferences.language as 'fr' | 'en');
+    return formatDateLong(dateStr, preferences.date_format, preferences.language as 'fr' | 'en', preferences.timezone);
   };
 
-  const formatTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const locale = preferences.language === 'fr' ? 'fr-FR' : 'en-US';
-    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  const formatTimeLocal = (dateStr: string) => {
+    return formatTime(dateStr, preferences.timezone, preferences.language as 'fr' | 'en');
   };
 
   return (
@@ -373,7 +371,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                         >
                           {trade.trade_type}
                         </span>
-                        <span className="text-sm text-gray-500">{formatTime(trade.entered_at)}</span>
+                        <span className="text-sm text-gray-500">{formatTimeLocal(trade.entered_at)}</span>
                         {trade.net_pnl && (
                           <span
                             className={`text-sm font-medium ${

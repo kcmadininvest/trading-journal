@@ -81,7 +81,7 @@ const TradesPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, pageSize, filters, hasInitialized]);
+  }, [page, pageSize, filters]);
 
   const reloadStats = async () => {
     try {

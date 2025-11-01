@@ -253,7 +253,7 @@ const AnalyticsPage: React.FC = () => {
         : 0;
       
       return {
-        date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
+        date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
         drawdown: drawdownPercent,
         drawdownAmount: drawdownAmount,
         cumulativePnl,
@@ -262,7 +262,7 @@ const AnalyticsPage: React.FC = () => {
     
     // Filtrage : affiche uniquement les jours avec drawdown > 0
     return allData.filter(data => data.drawdown > 0);
-  }, [trades]);
+  }, [trades, preferences.timezone]);
 
   // Heatmap Jour × Heure
   const heatmapData = useMemo(() => {

@@ -80,7 +80,7 @@ export const TradeModal: React.FC<TradeModalProps> = ({ tradeId, onClose }) => {
           ) : (
             <>
               <div className="text-sm text-gray-600">
-                {trade.contract_name} • {formatDateTimeShort(trade.entered_at, preferences.date_format)} • {trade.trade_type}
+                {trade.contract_name} • {formatDateTimeShort(trade.entered_at, preferences.date_format, preferences.timezone)} • {trade.trade_type}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Stratégie</label>

@@ -424,7 +424,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     if (filteredBalanceData.length === 0) return null;
 
     const labels = filteredBalanceData.map(d => 
-      new Date(d.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })
+      new Date(d.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone })
     );
     const cumulativeValues = filteredBalanceData.map(d => d.cumulative);
     const pnlValues = filteredBalanceData.map(d => d.pnl);
@@ -502,7 +502,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       pnlMapping,
       textColor,
     };
-  }, [filteredBalanceData, performanceStats]);
+  }, [filteredBalanceData, performanceStats, preferences.timezone]);
 
   // Calculer la répartition des trades par durée (gagnants et perdants)
   const durationDistribution = useMemo(() => {
@@ -573,13 +573,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       const dailyPnl = dailyData[date];
       cumulativeBalance += dailyPnl;
       return {
-        date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
+        date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
         pnl: dailyPnl,
         cumulative: cumulativeBalance,
         is_positive: dailyPnl >= 0,
       };
     });
-  }, [trades]);
+  }, [trades, preferences.timezone]);
 
   // Préparer les données pour le graphique waterfall avec barres flottantes
   const waterfallChartData = useMemo(() => {

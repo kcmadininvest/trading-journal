@@ -36,7 +36,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
   
   // Fonction pour formater la date avec les préférences
   const formatTradeDate = (dateStr: string) => {
-    return formatDateTimeShort(dateStr, preferences.date_format);
+    return formatDateTimeShort(dateStr, preferences.date_format, preferences.timezone);
   };
 
   return (

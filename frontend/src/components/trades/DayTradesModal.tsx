@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { tradesService, TradeListItem } from '../../services/trades';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
-import { formatDateLong } from '../../utils/dateFormat';
+import { formatDateLong, formatTime } from '../../utils/dateFormat';
 
 interface DayTradesModalProps {
   open: boolean;
@@ -59,13 +59,11 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   if (!open) return null;
 
   const formatDate = (dateStr: string) => {
-    return formatDateLong(dateStr, preferences.date_format, preferences.language as 'fr' | 'en');
+    return formatDateLong(dateStr, preferences.date_format, preferences.language as 'fr' | 'en', preferences.timezone);
   };
 
-  const formatTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const locale = preferences.language === 'fr' ? 'fr-FR' : 'en-US';
-    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  const formatTimeLocal = (dateStr: string) => {
+    return formatTime(dateStr, preferences.timezone, preferences.language as 'fr' | 'en');
   };
 
   const formatPnl = (pnl: string | null) => {
@@ -184,8 +182,8 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                     {trades.map((trade) => (
                       <tr key={trade.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3 text-gray-700">
-                          {formatTime(trade.entered_at)}
-                          {trade.exited_at && ` - ${formatTime(trade.exited_at)}`}
+                          {formatTimeLocal(trade.entered_at)}
+                          {trade.exited_at && ` - ${formatTimeLocal(trade.exited_at)}`}
                         </td>
                         <td className="px-4 py-3 font-medium text-gray-900">{trade.contract_name}</td>
                         <td className="px-4 py-3">

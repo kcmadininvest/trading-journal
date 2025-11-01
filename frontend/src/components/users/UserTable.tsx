@@ -1,6 +1,7 @@
 import React from 'react';
 import { User } from '../../services/userService';
 import { Tooltip } from '../ui';
+import { usePreferences } from '../../hooks/usePreferences';
 
 interface UserTableProps {
   users: User[];
@@ -21,6 +22,7 @@ const UserTable: React.FC<UserTableProps> = ({
   onSelectUser,
   onSelectAll,
 }) => {
+  const { preferences } = usePreferences();
   const allSelected = users.length > 0 && selectedUsers.length === users.length;
   const someSelected = selectedUsers.length > 0 && selectedUsers.length < users.length;
 
@@ -31,6 +33,7 @@ const UserTable: React.FC<UserTableProps> = ({
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: preferences.timezone,
     });
   };
 
