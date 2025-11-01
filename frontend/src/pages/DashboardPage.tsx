@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { CustomSelect } from '../components/common/CustomSelect';
 import { User } from '../services/auth';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -196,20 +197,31 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Générer les années disponibles (année en cours et 5 ans précédents)
   const currentYear = new Date().getFullYear();
   const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const availableMonths = [
-    { value: 1, label: t('dashboard:january') },
-    { value: 2, label: t('dashboard:february') },
-    { value: 3, label: t('dashboard:march') },
-    { value: 4, label: t('dashboard:april') },
-    { value: 5, label: t('dashboard:may') },
-    { value: 6, label: t('dashboard:june') },
-    { value: 7, label: t('dashboard:july') },
-    { value: 8, label: t('dashboard:august') },
-    { value: 9, label: t('dashboard:september') },
-    { value: 10, label: t('dashboard:october') },
-    { value: 11, label: t('dashboard:november') },
-    { value: 12, label: t('dashboard:december') },
-  ];
+  const yearOptions = useMemo(() => [
+    { value: null, label: t('dashboard:allYears') },
+    ...availableYears.map(year => ({ value: year, label: year.toString() }))
+  ], [availableYears, t]);
+  
+  const monthOptions = useMemo(() => {
+    const availableMonths = [
+      { value: 1, label: t('dashboard:january') },
+      { value: 2, label: t('dashboard:february') },
+      { value: 3, label: t('dashboard:march') },
+      { value: 4, label: t('dashboard:april') },
+      { value: 5, label: t('dashboard:may') },
+      { value: 6, label: t('dashboard:june') },
+      { value: 7, label: t('dashboard:july') },
+      { value: 8, label: t('dashboard:august') },
+      { value: 9, label: t('dashboard:september') },
+      { value: 10, label: t('dashboard:october') },
+      { value: 11, label: t('dashboard:november') },
+      { value: 12, label: t('dashboard:december') },
+    ];
+    return [
+      { value: null, label: t('dashboard:allMonths') },
+      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
+    ];
+  }, [t]);
 
   // Récupérer la liste des devises
   useEffect(() => {
@@ -976,37 +988,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('dashboard:year')}
             </label>
-            <select
-              value={selectedYear || ''}
-              onChange={(e) => setSelectedYear(e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            >
-              <option value="">{t('dashboard:allYears')}</option>
-              {availableYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
+            <CustomSelect
+              value={selectedYear}
+              onChange={(value) => setSelectedYear(value as number | null)}
+              options={yearOptions}
+            />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('dashboard:month')}
             </label>
-            <select
-              value={selectedMonth || ''}
-              onChange={(e) => setSelectedMonth(e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            <CustomSelect
+              value={selectedMonth}
+              onChange={(value) => setSelectedMonth(value as number | null)}
+              options={monthOptions}
               disabled={!selectedYear}
-            >
-              <option value="">{t('dashboard:allMonths')}</option>
-              {availableMonths.map((month) => (
-                <option key={month.value} value={month.value}>
-                  {month.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
           
           <div className="flex items-end">

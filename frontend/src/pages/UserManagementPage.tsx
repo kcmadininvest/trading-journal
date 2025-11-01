@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { User, userService, UserUpdateData } from '../services/userService';
 import { UserTable, UserEditModal, BulkActions } from '../components/users';
 import { PaginationControls } from '../components/ui';
 import { usePagination } from '../hooks';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 const UserManagementPage: React.FC = () => {
   const { t } = useI18nTranslation();
@@ -17,6 +18,18 @@ const UserManagementPage: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<'all' | 'user' | 'admin'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  const roleFilterOptions = useMemo(() => [
+    { value: 'all', label: t('users:page.allRoles') },
+    { value: 'user', label: t('users:user') },
+    { value: 'admin', label: t('users:admin') }
+  ], [t]);
+
+  const statusFilterOptions = useMemo(() => [
+    { value: 'all', label: t('users:page.allStatuses') },
+    { value: 'active', label: t('users:active') },
+    { value: 'inactive', label: t('users:inactive') }
+  ], [t]);
 
   // Charger les utilisateurs
   const loadUsers = async () => {
@@ -254,31 +267,21 @@ const UserManagementPage: React.FC = () => {
               <label htmlFor="role-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t('users:role')}
               </label>
-              <select
-                id="role-filter"
+              <CustomSelect
                 value={roleFilter}
-                onChange={(e) => setRoleFilter(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">{t('users:page.allRoles')}</option>
-                <option value="user">{t('users:user')}</option>
-                <option value="admin">{t('users:admin')}</option>
-              </select>
+                onChange={(value) => setRoleFilter(value as 'all' | 'user' | 'admin')}
+                options={roleFilterOptions}
+              />
             </div>
             <div>
               <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 {t('users:accountStatus')}
               </label>
-              <select
-                id="status-filter"
+              <CustomSelect
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">{t('users:page.allStatuses')}</option>
-                <option value="active">{t('users:active')}</option>
-                <option value="inactive">{t('users:inactive')}</option>
-              </select>
+                onChange={(value) => setStatusFilter(value as 'all' | 'active' | 'inactive')}
+                options={statusFilterOptions}
+              />
             </div>
             <div className="flex items-end">
               <button

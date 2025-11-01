@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, UserUpdateData } from '../../services/userService';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { CustomSelect } from '../common/CustomSelect';
 
 interface UserEditModalProps {
   user: User | null;
@@ -27,6 +28,11 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const roleOptions = useMemo(() => [
+    { value: 'user', label: t('users:user') },
+    { value: 'admin', label: t('users:admin') }
+  ], [t]);
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -40,11 +46,19 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
     }
   }, [user]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value
+    }));
+    setError('');
+  };
+
+  const handleRoleChange = (value: string | number | null) => {
+    setFormData(prev => ({
+      ...prev,
+      role: value as 'user' | 'admin'
     }));
     setError('');
   };
@@ -148,16 +162,11 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
             <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('users:editModal.role')}
             </label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="user">{t('users:user')}</option>
-              <option value="admin">{t('users:admin')}</option>
-            </select>
+            <CustomSelect
+              value={formData.role || 'user'}
+              onChange={handleRoleChange}
+              options={roleOptions}
+            />
           </div>
 
           <div className="space-y-3">

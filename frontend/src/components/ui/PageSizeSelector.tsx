@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { CustomSelect } from '../common/CustomSelect';
 
 interface PageSizeSelectorProps {
   currentSize: number;
@@ -17,12 +18,12 @@ const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
   const { t } = useI18nTranslation();
   
   // S'assurer que currentSize est dans les options, sinon l'ajouter
-  const allOptions = React.useMemo(() => {
+  const allOptions = useMemo(() => {
     const optsSet = new Set(options);
-    if (!optsSet.has(currentSize)) {
-      return [...options, currentSize].sort((a, b) => a - b);
-    }
-    return options.sort((a, b) => a - b);
+    const sorted = optsSet.has(currentSize) 
+      ? [...options].sort((a, b) => a - b)
+      : [...options, currentSize].sort((a, b) => a - b);
+    return sorted.map(size => ({ value: size, label: size.toString() }));
   }, [options, currentSize]);
 
   return (
@@ -37,25 +38,12 @@ const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
       </div>
       
       <div className="relative">
-        <select
-          id="page-size"
+        <CustomSelect
           value={currentSize}
-          onChange={(e) => onSizeChange(Number(e.target.value))}
-          className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-700 dark:text-gray-100 hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md"
-        >
-          {allOptions.map((size) => (
-            <option key={size} value={size}>
-              {size}
-            </option>
-          ))}
-        </select>
-        
-        {/* Icône de flèche personnalisée */}
-        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-          <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
+          onChange={(value) => onSizeChange(value as number)}
+          options={allOptions}
+          className="w-20"
+        />
       </div>
     </div>
   );
