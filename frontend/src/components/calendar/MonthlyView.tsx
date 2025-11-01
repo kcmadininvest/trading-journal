@@ -1,6 +1,8 @@
 import React from 'react';
 import { MonthlyCalendarData, WeeklyCalendarData } from '../../services/calendar';
 import { Tooltip } from '../ui';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatCurrencyWithSign } from '../../utils/numberFormat';
 
 interface MonthlyViewProps {
   year: number;
@@ -30,6 +32,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   onViewTypeChange,
   currencySymbol = '',
 }) => {
+  const { preferences } = usePreferences();
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1;
@@ -57,13 +60,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
 
   const formatPnl = (pnl: number): string => {
     if (pnl === 0) return '';
-    const sign = pnl < 0 ? '-' : '';
-    const formatted = Math.abs(pnl).toLocaleString('fr-FR', { 
-      minimumFractionDigits: 2, 
-      maximumFractionDigits: 2,
-      useGrouping: true
-    });
-    return currencySymbol ? `${currencySymbol} ${sign}${formatted}` : `${sign}${formatted}`;
+    const formatted = formatCurrencyWithSign(pnl, currencySymbol, preferences.number_format, 2);
+    return formatted === '-' ? '' : formatted;
   };
 
   const getPnlColor = (pnl: number): string => {

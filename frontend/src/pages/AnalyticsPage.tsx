@@ -21,6 +21,8 @@ import {
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar, Line as ChartLine, Scatter as ChartScatter } from 'react-chartjs-2';
+import { usePreferences } from '../hooks/usePreferences';
+import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -36,14 +38,13 @@ ChartJS.register(
   ChartDataLabels
 );
 
-// Fonction utilitaire pour formater les montants avec séparateurs de milliers
-const formatCurrency = (value: number, currencySymbol: string = ''): string => {
-  const formatted = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return currencySymbol ? `${currencySymbol} ${formatted}` : formatted;
-};
-
-
 const AnalyticsPage: React.FC = () => {
+  const { preferences } = usePreferences();
+  
+  // Wrapper pour formatCurrency avec préférences
+  const formatCurrency = (value: number, currencySymbol: string = ''): string => {
+    return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
+  };
   const [accountId, setAccountId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [trades, setTrades] = useState<TradeListItem[]>([]);

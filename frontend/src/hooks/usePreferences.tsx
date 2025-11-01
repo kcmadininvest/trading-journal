@@ -27,7 +27,9 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const refreshPreferences = async () => {
     try {
       const prefs = await userService.getPreferences();
-      setPreferences(prefs);
+      if (prefs && prefs.date_format) {
+        setPreferences(prefs);
+      }
     } catch (error) {
       // Utiliser les valeurs par défaut si erreur
       console.error('Erreur lors du chargement des préférences:', error);

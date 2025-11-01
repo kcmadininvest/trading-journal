@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { TradeDetail, tradesService } from '../../services/trades';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDateTimeShort } from '../../utils/dateFormat';
 
 interface TradeModalProps {
   tradeId: number | null;
@@ -7,6 +9,7 @@ interface TradeModalProps {
 }
 
 export const TradeModal: React.FC<TradeModalProps> = ({ tradeId, onClose }) => {
+  const { preferences } = usePreferences();
   const [trade, setTrade] = useState<TradeDetail | null>(null);
   const [notes, setNotes] = useState('');
   const [strategy, setStrategy] = useState('');
@@ -77,7 +80,7 @@ export const TradeModal: React.FC<TradeModalProps> = ({ tradeId, onClose }) => {
           ) : (
             <>
               <div className="text-sm text-gray-600">
-                {trade.contract_name} • {new Date(trade.entered_at).toLocaleString()} • {trade.trade_type}
+                {trade.contract_name} • {formatDateTimeShort(trade.entered_at, preferences.date_format)} • {trade.trade_type}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Stratégie</label>

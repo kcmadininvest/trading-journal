@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { tradesService } from '../../services/trades';
 import { AccountSelector } from '../accounts/AccountSelector';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
 
 interface ImportTradesModalProps {
   open: boolean;
@@ -10,6 +12,7 @@ interface ImportTradesModalProps {
 type ModalState = 'initial' | 'preview' | 'importing' | 'success';
 
 export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onClose }) => {
+  const { preferences } = usePreferences();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
   const [state, setState] = useState<ModalState>('initial');
@@ -302,7 +305,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                     <div className="bg-white rounded-lg p-2 border border-blue-200">
                       <div className="text-xs text-gray-500 mb-1">PnL total</div>
                       <div className={`text-lg font-bold ${(previewResult.total_pnl ?? 0) >= 0 ? 'text-green-600' : 'text-rose-600'}`}>
-                        {previewResult.total_pnl >= 0 ? '+' : ''}{previewResult.total_pnl.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatCurrencyWithSign(previewResult.total_pnl, '', preferences.number_format, 2)}
                       </div>
                     </div>
                   )}
@@ -310,7 +313,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                     <div className="bg-white rounded-lg p-2 border border-purple-200">
                       <div className="text-xs text-gray-500 mb-1">Frais totaux</div>
                       <div className="text-lg font-bold text-purple-600">
-                        {previewResult.total_fees.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatNumber(previewResult.total_fees, 2, preferences.number_format)}
                       </div>
                     </div>
                   )}

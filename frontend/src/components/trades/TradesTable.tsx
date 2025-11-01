@@ -1,5 +1,8 @@
 import React from 'react';
 import { TradeListItem } from '../../services/trades';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
+import { formatDateTimeShort } from '../../utils/dateFormat';
 
 interface TradesTableProps {
   items: TradeListItem[];
@@ -18,23 +21,22 @@ interface TradesTableProps {
 }
 
 export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete }) => {
+  const { preferences } = usePreferences();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const visibleIds = items.map(i => i.id);
   const allSelectedOnPage = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
 
   const fmtCurrency = (v?: string | null) => {
-    if (v == null) return '-';
-    const num = parseFloat(v);
-    if (isNaN(num)) return '-';
-    const sign = num > 0 ? '+' : '';
-    return `${sign}${num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return formatCurrencyWithSign(v, '', preferences.number_format, 2);
   };
 
   const fmtNumber = (v?: string | null, digits = 2) => {
-    if (v == null) return '-';
-    const num = parseFloat(v);
-    if (isNaN(num)) return '-';
-    return num.toLocaleString('fr-FR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    return formatNumber(v, digits, preferences.number_format);
+  };
+  
+  // Fonction pour formater la date avec les préférences
+  const formatTradeDate = (dateStr: string) => {
+    return formatDateTimeShort(dateStr, preferences.date_format);
   };
 
   return (
@@ -86,7 +88,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                       />
                     </div>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{new Date(t.entered_at).toLocaleString()}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{formatTradeDate(t.entered_at)}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">
                       {t.contract_name}
@@ -160,13 +162,13 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   </span>
                 </td>
                 <td className="px-4 py-2 text-right text-sm font-semibold" style={totals.pnl !== undefined ? { color: (totals.pnl ?? 0) >= 0 ? '#05967c' : '#e11d48' } : undefined}>
-                  {totals.pnl !== undefined ? `${totals.pnl >= 0 ? '+' : ''}${(totals.pnl).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+                  {totals.pnl !== undefined ? formatCurrencyWithSign(totals.pnl, '', preferences.number_format, 2) : ''}
                 </td>
                 <td className="px-4 py-2 text-right text-sm">
-                  {totals.fees !== undefined ? (totals.fees).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                  {totals.fees !== undefined ? formatNumber(totals.fees, 2, preferences.number_format) : ''}
                 </td>
                 <td className="px-4 py-2 text-right text-sm font-semibold" style={totals.net_pnl !== undefined ? { color: (totals.net_pnl ?? 0) >= 0 ? '#05967c' : '#e11d48' } : undefined}>
-                  {totals.net_pnl !== undefined ? `${totals.net_pnl >= 0 ? '+' : ''}${(totals.net_pnl).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+                  {totals.net_pnl !== undefined ? formatCurrencyWithSign(totals.net_pnl, '', preferences.number_format, 2) : ''}
                 </td>
                 <td className="p-0"></td>
                 <td className="p-0"></td>

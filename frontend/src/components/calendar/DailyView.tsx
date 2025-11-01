@@ -3,6 +3,8 @@ import { DailyCalendarData, WeeklyCalendarData } from '../../services/calendar';
 import { Tooltip } from '../ui';
 import { DayTradesModal } from '../trades/DayTradesModal';
 import { StrategyComplianceModal } from '../trades/StrategyComplianceModal';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatCurrencyWithSign } from '../../utils/numberFormat';
 
 interface DailyViewProps {
   year: number;
@@ -38,6 +40,7 @@ const DailyView: React.FC<DailyViewProps> = ({
   onDataRefresh,
   currencySymbol = '',
 }) => {
+  const { preferences } = usePreferences();
   const [selectedDateForTrades, setSelectedDateForTrades] = useState<string | null>(null);
   const [selectedDateForStrategy, setSelectedDateForStrategy] = useState<string | null>(null);
 
@@ -64,9 +67,8 @@ const DailyView: React.FC<DailyViewProps> = ({
 
   const formatPnl = (pnl: number): string => {
     if (pnl === 0) return '';
-    const sign = pnl < 0 ? '-' : '';
-    const formatted = Math.abs(pnl).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    return currencySymbol ? `${currencySymbol} ${sign}${formatted}` : `${sign}${formatted}`;
+    const formatted = formatCurrencyWithSign(pnl, currencySymbol, preferences.number_format, 2);
+    return formatted === '-' ? '' : formatted;
   };
 
   const getPnlColor = (pnl: number): string => {

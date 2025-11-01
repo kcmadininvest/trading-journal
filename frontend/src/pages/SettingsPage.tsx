@@ -148,7 +148,7 @@ const SettingsPage: React.FC = () => {
   const handlePreferencesUpdate = async () => {
     setLoading(true);
     try {
-      await userService.updatePreferences(preferences);
+      const updatedPreferences = await userService.updatePreferences(preferences);
       showMessage('success', 'Préférences mises à jour avec succès');
       // Appliquer le thème immédiatement si changé
       if (preferences.theme === 'dark') {
@@ -156,6 +156,10 @@ const SettingsPage: React.FC = () => {
       } else {
         document.documentElement.classList.remove('dark');
       }
+      // Mettre à jour les préférences locales avec la réponse du serveur
+      setPreferences(updatedPreferences);
+      // Déclencher un événement pour rafraîchir les préférences dans tous les composants
+      window.dispatchEvent(new CustomEvent('preferences:updated'));
     } catch (error: any) {
       showMessage('error', error.message || 'Erreur lors de la mise à jour des préférences');
     } finally {

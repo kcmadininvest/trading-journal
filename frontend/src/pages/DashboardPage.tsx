@@ -9,6 +9,8 @@ import { currenciesService, Currency } from '../services/currencies';
 import { tradeStrategiesService, TradeStrategy } from '../services/tradeStrategies';
 import ModernStatCard from '../components/common/ModernStatCard';
 import DurationDistributionChart from '../components/charts/DurationDistributionChart';
+import { usePreferences } from '../hooks/usePreferences';
+import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -42,11 +44,7 @@ interface DashboardPageProps {
   currentUser: User;
 }
 
-// Fonction utilitaire pour formater les montants avec séparateurs de milliers
-const formatCurrency = (value: number, currencySymbol: string = ''): string => {
-  const formatted = value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return currencySymbol ? `${currencySymbol} ${formatted}` : formatted;
-};
+// Fonction utilitaire pour formater les montants avec séparateurs de milliers (remplacée par formatCurrencyUtil avec préférences)
 
 // Fonction pour convertir hex en rgba
 const hexToRgba = (hex: string, alpha: number): string => {
@@ -172,8 +170,14 @@ const categorizeDuration = (minutes: number): string => {
 };
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
+  const { preferences } = usePreferences();
   const [showImport, setShowImport] = useState(false);
   const [accountId, setAccountId] = useState<number | null>(null);
+  
+  // Wrapper pour formatCurrency avec préférences
+  const formatCurrency = (value: number, currencySymbol: string = ''): string => {
+    return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
+  };
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [trades, setTrades] = useState<TradeListItem[]>([]);

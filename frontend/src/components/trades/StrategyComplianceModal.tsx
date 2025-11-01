@@ -2,6 +2,9 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { tradesService, TradeListItem } from '../../services/trades';
 import { tradeStrategiesService, TradeStrategy, BulkStrategyData } from '../../services/tradeStrategies';
 import { Tooltip } from '../ui';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
+import { formatDateLong } from '../../utils/dateFormat';
 
 interface StrategyComplianceModalProps {
   open: boolean;
@@ -54,6 +57,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   onClose,
   tradingAccount,
 }) => {
+  const { preferences } = usePreferences();
   const [trades, setTrades] = useState<TradeWithStrategy[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -253,18 +257,13 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   if (!open) return null;
 
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return formatDateLong(dateStr, preferences.date_format, preferences.language as 'fr' | 'en');
   };
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const locale = preferences.language === 'fr' ? 'fr-FR' : 'en-US';
+    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   };
 
   return (
@@ -381,11 +380,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                               parseFloat(trade.net_pnl) > 0 ? 'text-green-600' : 'text-red-600'
                             }`}
                           >
-                            {parseFloat(trade.net_pnl) > 0 ? '+' : ''}
-                            {parseFloat(trade.net_pnl).toLocaleString('fr-FR', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                            {formatCurrencyWithSign(trade.net_pnl, '', preferences.number_format, 2)}
                           </span>
                         )}
                       </div>

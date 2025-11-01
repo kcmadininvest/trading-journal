@@ -1,5 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { tradesService, TradeListItem } from '../../services/trades';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
+import { formatDateLong } from '../../utils/dateFormat';
 
 interface DayTradesModalProps {
   open: boolean;
@@ -16,6 +19,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   tradingAccount,
   onStrategyClick,
 }) => {
+  const { preferences } = usePreferences();
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,26 +59,18 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   if (!open) return null;
 
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    return formatDateLong(dateStr, preferences.date_format, preferences.language as 'fr' | 'en');
   };
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr);
-    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const locale = preferences.language === 'fr' ? 'fr-FR' : 'en-US';
+    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   };
 
   const formatPnl = (pnl: string | null) => {
     if (!pnl) return '—';
-    const num = parseFloat(pnl);
-    if (num === 0) return '0.00';
-    const sign = num > 0 ? '+' : '';
-    return `${sign}${num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return formatCurrencyWithSign(pnl, '', preferences.number_format, 2);
   };
 
   const getPnlColor = (pnl: string | null) => {
@@ -203,20 +199,12 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                             {trade.trade_type}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-700">{parseFloat(trade.size).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right text-gray-700">{formatNumber(trade.size, 4, preferences.number_format)}</td>
                         <td className="px-4 py-3 text-right text-gray-700">
-                          {parseFloat(trade.entry_price).toLocaleString('fr-FR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatNumber(trade.entry_price, 2, preferences.number_format)}
                         </td>
                         <td className="px-4 py-3 text-right text-gray-700">
-                          {trade.exit_price
-                            ? parseFloat(trade.exit_price).toLocaleString('fr-FR', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })
-                            : '—'}
+                          {trade.exit_price ? formatNumber(trade.exit_price, 2, preferences.number_format) : '—'}
                         </td>
                         <td className={`px-4 py-3 text-right ${getPnlColor(trade.net_pnl)}`}>
                           {formatPnl(trade.net_pnl)}
@@ -246,9 +234,11 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                   <div>
                     <p className="text-xs text-gray-500 mb-1">Frais totaux</p>
                     <p className="text-lg font-semibold text-gray-900">
-                      {trades
-                        .reduce((sum, t) => sum + parseFloat(t.fees || '0'), 0)
-                        .toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {formatNumber(
+                        trades.reduce((sum, t) => sum + parseFloat(t.fees || '0'), 0),
+                        2,
+                        preferences.number_format
+                      )}
                     </p>
                   </div>
                   <div>
