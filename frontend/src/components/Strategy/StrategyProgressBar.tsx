@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface StrategyProgressBarProps {
   respectPercentage: number;
@@ -13,6 +14,7 @@ export const StrategyProgressBar: React.FC<StrategyProgressBarProps> = ({
   respectedTrades,
   isLoading = false,
 }) => {
+  const { t } = useI18nTranslation();
   if (isLoading) {
     return (
       <div className="w-64 h-20 bg-gray-200 rounded-lg animate-pulse" />
@@ -25,7 +27,7 @@ export const StrategyProgressBar: React.FC<StrategyProgressBarProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 w-64">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-700">Respect stratégie</span>
+        <span className="text-sm font-medium text-gray-700">{t('strategies:strategyRespect')}</span>
         <span className="text-sm font-semibold text-gray-900">{percentage}%</span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-3 mb-1">
@@ -35,7 +37,7 @@ export const StrategyProgressBar: React.FC<StrategyProgressBarProps> = ({
         />
       </div>
       <div className="text-xs text-gray-500 text-center">
-        {respectedTrades} / {totalTrades} trades respectés
+        {respectedTrades} / {totalTrades} {t('strategies:tradesRespected')}
       </div>
     </div>
   );

@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import Tooltip from '../components/ui/Tooltip';
+import { usePreferences } from '../hooks/usePreferences';
+import { getMonthNames } from '../utils/dateFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -38,29 +41,9 @@ ChartJS.register(
   ChartDataLabels
 );
 
-// Labels des émotions en français
-const EMOTION_LABELS: Record<string, string> = {
-  confiance: 'Confiance',
-  peur: 'Peur',
-  avarice: 'Avarice',
-  frustration: 'Frustration',
-  impatience: 'Impatience',
-  patience: 'Patience',
-  euphorie: 'Euphorie',
-  anxiete: 'Anxiété',
-  colere: 'Colère',
-  satisfaction: 'Satisfaction',
-  deception: 'Déception',
-  calme: 'Calme',
-  stress: 'Stress',
-  determination: 'Détermination',
-  doute: 'Doute',
-  excitation: 'Excitation',
-  lassitude: 'Lassitude',
-  fatigue: 'Fatigue',
-};
-
 const StrategiesPage: React.FC = () => {
+  const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
   const [accountId, setAccountId] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -72,20 +55,17 @@ const StrategiesPage: React.FC = () => {
   // Générer les années disponibles (année en cours et 5 ans précédents)
   const currentYear = new Date().getFullYear();
   const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const availableMonths = [
-    { value: 1, label: 'Janvier' },
-    { value: 2, label: 'Février' },
-    { value: 3, label: 'Mars' },
-    { value: 4, label: 'Avril' },
-    { value: 5, label: 'Mai' },
-    { value: 6, label: 'Juin' },
-    { value: 7, label: 'Juillet' },
-    { value: 8, label: 'Août' },
-    { value: 9, label: 'Septembre' },
-    { value: 10, label: 'Octobre' },
-    { value: 11, label: 'Novembre' },
-    { value: 12, label: 'Décembre' },
-  ];
+  
+  // Utiliser les noms de mois traduits
+  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
+  const availableMonths = useMemo(() => 
+    monthNames.map((name, index) => ({ value: index + 1, label: name }))
+  , [monthNames]);
+
+  // Fonction pour obtenir le label d'une émotion traduit
+  const getEmotionLabel = useCallback((emotion: string): string => {
+    return t(`strategies:emotions.${emotion}` as any, { defaultValue: emotion });
+  }, [t]);
 
   const loadStatistics = useCallback(async () => {
     setIsLoading(true);
@@ -110,12 +90,12 @@ const StrategiesPage: React.FC = () => {
       const data = await tradeStrategiesService.statistics(params);
       setStatistics(data);
     } catch (err: any) {
-      setError(err.message || 'Erreur lors du chargement des statistiques');
+      setError(err.message || t('strategies:errorLoadingStatistics'));
       console.error('Erreur:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [selectedYear, selectedMonth, accountId]);
+  }, [selectedYear, selectedMonth, accountId, t]);
 
   // Charger les statistiques
   useEffect(() => {
@@ -124,11 +104,11 @@ const StrategiesPage: React.FC = () => {
 
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
-  const respectChartData = statistics?.statistics?.period_data && statistics.statistics.period_data.length > 0 ? {
+  const respectChartData = useMemo(() => statistics?.statistics?.period_data && statistics.statistics.period_data.length > 0 ? {
     labels: statistics.statistics.period_data.map((d: any) => d.period),
     datasets: [
       {
-        label: 'Respecté (%)',
+        label: t('strategies:respected'),
         data: statistics.statistics.period_data.map((d: any) => d.respect_percentage || 0),
         backgroundColor: 'rgba(59, 130, 246, 0.8)',
         borderColor: '#3b82f6',
@@ -136,7 +116,7 @@ const StrategiesPage: React.FC = () => {
         borderRadius: 0,
       },
       {
-        label: 'Non respecté (%)',
+        label: t('strategies:notRespected'),
         data: statistics.statistics.period_data.map((d: any) => d.not_respect_percentage || 0),
         backgroundColor: 'rgba(236, 72, 153, 0.8)',
         borderColor: '#ec4899',
@@ -144,9 +124,9 @@ const StrategiesPage: React.FC = () => {
         borderRadius: 0,
       },
     ],
-  } : null;
+  } : null, [statistics?.statistics?.period_data, t]);
 
-  const respectChartOptions = {
+  const respectChartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -204,7 +184,7 @@ const StrategiesPage: React.FC = () => {
             const value = context.parsed.y || 0;
             const total = statistics?.statistics?.period_data?.[context.dataIndex]?.total || 0;
             const count = Math.round((value / 100) * total);
-            return `${label}: ${value.toFixed(2)}% (${count} trades sur ${total})`;
+            return `${label}: ${value.toFixed(2)}% (${count} ${t('strategies:trades')} ${t('strategies:on')} ${total})`;
           },
         },
       },
@@ -221,7 +201,7 @@ const StrategiesPage: React.FC = () => {
         },
         title: {
           display: true,
-          text: 'Pourcentage (%)',
+          text: t('strategies:percentage'),
           color: '#4b5563',
           font: {
             size: 13,
@@ -236,14 +216,14 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  };
+  }), [statistics?.statistics?.period_data, t]);
 
   // Graphique 2: Taux de réussite selon respect de la stratégie
-  const successRateData = statistics?.statistics ? {
-    labels: ['Taux de réussite'],
+  const successRateData = useMemo(() => statistics?.statistics ? {
+    labels: [t('strategies:successRateByStrategyRespect')],
     datasets: [
       {
-        label: 'Si stratégie respectée (%)',
+        label: t('strategies:ifStrategyRespected'),
         data: [statistics.statistics.success_rate_if_respected || 0],
         backgroundColor: 'rgba(59, 130, 246, 0.8)',
         borderColor: '#3b82f6',
@@ -251,7 +231,7 @@ const StrategiesPage: React.FC = () => {
         borderRadius: 0,
       },
       {
-        label: 'Si stratégie non respectée (%)',
+        label: t('strategies:ifStrategyNotRespected'),
         data: [statistics.statistics.success_rate_if_not_respected || 0],
         backgroundColor: 'rgba(236, 72, 153, 0.8)',
         borderColor: '#ec4899',
@@ -259,9 +239,9 @@ const StrategiesPage: React.FC = () => {
         borderRadius: 0,
       },
     ],
-  } : null;
+  } : null, [statistics?.statistics, t]);
 
-  const successRateOptions = {
+  const successRateOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -340,7 +320,7 @@ const StrategiesPage: React.FC = () => {
         },
         title: {
           display: true,
-          text: 'Pourcentage (%)',
+          text: t('strategies:percentage'),
           color: '#4b5563',
           font: {
             size: 13,
@@ -367,14 +347,14 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  };
+  }), [t]);
 
   // Graphique 3: Répartition des sessions gagnantes selon TP1 et TP2+
-  const winningSessionsData = statistics?.statistics?.winning_sessions_distribution ? {
-    labels: ['TP1', 'TP2+', 'Sans TP'],
+  const winningSessionsData = useMemo(() => statistics?.statistics?.winning_sessions_distribution ? {
+    labels: [t('strategies:tp1Only'), t('strategies:tp2Plus'), t('strategies:noTp')],
     datasets: [
       {
-        label: 'Nombre de sessions gagnantes',
+        label: t('strategies:numberOfWinningSessions'),
         data: [
           statistics.statistics.winning_sessions_distribution.tp1_only,
           statistics.statistics.winning_sessions_distribution.tp2_plus,
@@ -394,10 +374,10 @@ const StrategiesPage: React.FC = () => {
         borderRadius: 0,
       },
     ],
-  } : null;
+  } : null, [statistics?.statistics?.winning_sessions_distribution, t]);
 
   // Calculer la valeur maximale pour l'axe Y avec marge
-  const winningSessionsMax = statistics?.statistics?.winning_sessions_distribution ? (() => {
+  const winningSessionsMax = useMemo(() => statistics?.statistics?.winning_sessions_distribution ? (() => {
     const values = [
       statistics.statistics.winning_sessions_distribution.tp1_only,
       statistics.statistics.winning_sessions_distribution.tp2_plus,
@@ -406,9 +386,9 @@ const StrategiesPage: React.FC = () => {
     const maxValue = Math.max(...values);
     // Ajouter 15% de marge en haut
     return Math.ceil(maxValue * 1.15);
-  })() : undefined;
+  })() : undefined, [statistics?.statistics?.winning_sessions_distribution]);
 
-  const winningSessionsOptions = {
+  const winningSessionsOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -427,7 +407,7 @@ const StrategiesPage: React.FC = () => {
           generateLabels: function(chart: any) {
             return [
               {
-                text: 'TP1',
+                text: t('strategies:tp1Only'),
                 fillStyle: '#3b82f6',
                 strokeStyle: '#3b82f6',
                 lineWidth: 2,
@@ -437,7 +417,7 @@ const StrategiesPage: React.FC = () => {
                 pointStyle: 'circle' as const,
               },
               {
-                text: 'TP2+',
+                text: t('strategies:tp2Plus'),
                 fillStyle: '#f97316',
                 strokeStyle: '#f97316',
                 lineWidth: 2,
@@ -447,7 +427,7 @@ const StrategiesPage: React.FC = () => {
                 pointStyle: 'circle' as const,
               },
               {
-                text: 'Sans TP',
+                text: t('strategies:noTp'),
                 fillStyle: '#9ca3af',
                 strokeStyle: '#9ca3af',
                 lineWidth: 2,
@@ -523,7 +503,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  };
+  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t]);
 
   // Graphique 4: Répartition des émotions dominantes (camembert)
   const generateColors = (count: number) => {
@@ -559,7 +539,7 @@ const StrategiesPage: React.FC = () => {
     return { backgroundColor: colors, borderColor: borders };
   };
 
-  const emotionsData = statistics?.statistics?.emotions_distribution ? (() => {
+  const emotionsData = useMemo(() => statistics?.statistics?.emotions_distribution ? (() => {
     // Trier les émotions par fréquence (décroissant)
     const sortedEmotions = [...statistics.statistics.emotions_distribution]
       .sort((a: any, b: any) => b.count - a.count);
@@ -572,12 +552,12 @@ const StrategiesPage: React.FC = () => {
     const othersCount = otherEmotions.reduce((sum: number, e: any) => sum + e.count, 0);
     
     // Construire les labels et données
-    const labels = top5Emotions.map((e: any) => EMOTION_LABELS[e.emotion] || e.emotion);
+    const labels = top5Emotions.map((e: any) => getEmotionLabel(e.emotion));
     const data = top5Emotions.map((e: any) => e.count);
     
     // Ajouter "Autres" si nécessaire
     if (othersCount > 0) {
-      labels.push('Autres');
+      labels.push(t('strategies:others'));
       data.push(othersCount);
     }
     
@@ -591,7 +571,7 @@ const StrategiesPage: React.FC = () => {
       data,
       datasets: [
         {
-          label: 'Nombre d\'occurrences',
+          label: t('strategies:numberOfOccurrences'),
           data,
           backgroundColor: colors.backgroundColor,
           borderColor: colors.borderColor,
@@ -600,9 +580,9 @@ const StrategiesPage: React.FC = () => {
       ],
       total, // Stocker le total pour les calculs de pourcentage
     };
-  })() : null;
+  })() : null, [statistics?.statistics?.emotions_distribution, getEmotionLabel, t]);
 
-  const emotionsOptions = {
+  const emotionsOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -654,7 +634,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  };
+  }), [emotionsData]);
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
@@ -667,21 +647,21 @@ const StrategiesPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Compte de trading
+                {t('strategies:tradingAccount')}
               </label>
               <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Année
+                {t('strategies:year')}
               </label>
               <select
                 value={selectedYear || ''}
                 onChange={(e) => setSelectedYear(e.target.value ? parseInt(e.target.value) : null)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">Toutes les années</option>
+                <option value="">{t('strategies:allYears')}</option>
                 {availableYears.map((year) => (
                   <option key={year} value={year}>
                     {year}
@@ -692,7 +672,7 @@ const StrategiesPage: React.FC = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mois
+                {t('strategies:month')}
               </label>
               <select
                 value={selectedMonth || ''}
@@ -700,7 +680,7 @@ const StrategiesPage: React.FC = () => {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 disabled={!selectedYear}
               >
-                <option value="">Tous les mois</option>
+                <option value="">{t('strategies:allMonths')}</option>
                 {availableMonths.map((month) => (
                   <option key={month.value} value={month.value}>
                     {month.label}
@@ -717,7 +697,7 @@ const StrategiesPage: React.FC = () => {
                 }}
                 className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                Réinitialiser
+                {t('strategies:reset')}
               </button>
             </div>
           </div>
@@ -733,10 +713,10 @@ const StrategiesPage: React.FC = () => {
         {/* Indicateur global */}
         {statistics && (
           <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg shadow-lg p-6 mb-6 text-white">
-            <h2 className="text-lg font-semibold mb-2">Taux de respect total</h2>
+            <h2 className="text-lg font-semibold mb-2">{t('strategies:totalRespectRate')}</h2>
             <p className="text-3xl font-bold mb-1">{allTimeRespect.toFixed(2)}%</p>
             <p className="text-sm opacity-90">
-              Toutes périodes et tous comptes confondus ({statistics.all_time.total_strategies} stratégies)
+              {t('strategies:allPeriodsAndAccounts')} ({statistics.all_time.total_strategies} {t('strategies:strategies')})
             </p>
           </div>
         )}
@@ -746,7 +726,7 @@ const StrategiesPage: React.FC = () => {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Chargement des statistiques...</p>
+              <p className="text-gray-600">{t('strategies:loading')}</p>
             </div>
           </div>
         ) : statistics ? (
@@ -755,9 +735,9 @@ const StrategiesPage: React.FC = () => {
             {respectChartData && (
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">Respect de la stratégie en %</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('strategies:strategyRespectPercentage')}</h3>
                   <Tooltip
-                    content="Ce graphique montre le pourcentage de trades respectés et non respectés par rapport au total des trades pour chaque période. La barre bleue représente le % de trades où la stratégie a été respectée, la barre rose représente le % de trades où la stratégie n'a pas été respectée."
+                    content={t('strategies:strategyRespectPercentageTooltip')}
                     position="top"
                   >
                     <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
@@ -777,9 +757,9 @@ const StrategiesPage: React.FC = () => {
             {successRateData && (
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">Taux de réussite selon respect de la stratégie</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('strategies:successRateByStrategyRespect')}</h3>
                   <Tooltip
-                    content="Ce graphique compare le taux de réussite (trades gagnants) selon que la stratégie ait été respectée ou non. La barre bleue montre le % de trades gagnants quand la stratégie est respectée, la barre rose montre le % de trades gagnants quand la stratégie n'est pas respectée."
+                    content={t('strategies:successRateByStrategyRespectTooltip')}
                     position="top"
                   >
                     <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
@@ -799,9 +779,9 @@ const StrategiesPage: React.FC = () => {
             {winningSessionsData && (
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">Répartition des sessions gagnantes selon TP atteint</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('strategies:winningSessionsDistribution')}</h3>
                   <Tooltip
-                    content="Ce graphique montre comment sont réparties les sessions gagnantes (trades avec profit) selon le Take Profit atteint. TP1 uniquement : le premier Take Profit a été atteint mais pas le TP2+. TP2+ : le deuxième Take Profit ou plus a été atteint. Sans TP : aucun Take Profit n'a été atteint mais le trade est quand même gagnant."
+                    content={t('strategies:winningSessionsDistributionTooltip')}
                     position="top"
                   >
                     <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
@@ -821,9 +801,9 @@ const StrategiesPage: React.FC = () => {
             {emotionsData && emotionsData.labels.length > 0 && (
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">Répartition des émotions dominantes</h3>
+                  <h3 className="text-lg font-bold text-gray-900">{t('strategies:dominantEmotionsDistribution')}</h3>
                   <Tooltip
-                    content="Ce graphique montre la répartition des émotions dominantes ressenties lors des trades. Chaque segment représente le nombre d'occurrences d'une émotion. Cela permet d'identifier les émotions les plus fréquentes pendant vos sessions de trading."
+                    content={t('strategies:dominantEmotionsDistributionTooltip')}
                     position="top"
                   >
                     <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
@@ -841,12 +821,12 @@ const StrategiesPage: React.FC = () => {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow p-6 text-center text-gray-600">
-            <p>Aucune donnée disponible pour la période sélectionnée.</p>
+            <p>{t('strategies:noDataForPeriod')}</p>
           </div>
         )}
       </div>
 
-      <FloatingActionButton onClick={() => setShowImport(true)} title="Importer des trades" />
+      <FloatingActionButton onClick={() => setShowImport(true)} title={t('strategies:importTrades')} />
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
     </div>
   );
