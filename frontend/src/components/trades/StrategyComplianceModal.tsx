@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { tradesService, TradeListItem } from '../../services/trades';
 import { tradeStrategiesService, TradeStrategy, BulkStrategyData } from '../../services/tradeStrategies';
 import { Tooltip } from '../ui';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface StrategyComplianceModalProps {
   open: boolean;
@@ -13,28 +14,12 @@ interface StrategyComplianceModalProps {
   tradingAccount?: number;
 }
 
-// 20 émotions les plus répandues dans le trading
-const TRADING_EMOTIONS = [
-  { value: 'confiance', label: 'Confiance' },
-  { value: 'peur', label: 'Peur' },
-  { value: 'avarice', label: 'Avarice / Cupidité' },
-  { value: 'frustration', label: 'Frustration' },
-  { value: 'impatience', label: 'Impatience' },
-  { value: 'patience', label: 'Patience' },
-  { value: 'euphorie', label: 'Euphorie' },
-  { value: 'anxiete', label: 'Anxiété' },
-  { value: 'colere', label: 'Colère' },
-  { value: 'satisfaction', label: 'Satisfaction' },
-  { value: 'deception', label: 'Déception' },
-  { value: 'calme', label: 'Calme' },
-  { value: 'stress', label: 'Stress' },
-  { value: 'determination', label: 'Détermination' },
-  { value: 'doute', label: 'Doute' },
-  { value: 'excitation', label: 'Excitation' },
-  { value: 'lassitude', label: 'Lassitude' },
-  { value: 'fatigue', label: 'Fatigue' },
-  { value: 'panique', label: 'Panique' },
-  { value: 'optimisme', label: 'Optimisme / Espoir' },
+// Liste des clés d'émotions pour le trading
+const EMOTION_KEYS = [
+  'confiance', 'peur', 'avarice', 'frustration', 'impatience', 'patience',
+  'euphorie', 'anxiete', 'colere', 'satisfaction', 'deception', 'calme',
+  'stress', 'determination', 'doute', 'excitation', 'lassitude', 'fatigue',
+  'panique', 'optimisme'
 ];
 
 interface TradeWithStrategy extends TradeListItem {
@@ -58,7 +43,16 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   tradingAccount,
 }) => {
   const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
   const [trades, setTrades] = useState<TradeWithStrategy[]>([]);
+  
+  // Obtenir les émotions traduites
+  const TRADING_EMOTIONS = useMemo(() => {
+    return EMOTION_KEYS.map(key => ({
+      value: key,
+      label: t(`trades:emotions.${key}`)
+    }));
+  }, [t]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -248,7 +242,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       await loadData();
       onClose(true);
     } catch (e: any) {
-      setError(e?.message || 'Erreur lors de la sauvegarde');
+      setError(e?.message || t('trades:strategyCompliance.error'));
     } finally {
       setIsSaving(false);
     }
@@ -286,7 +280,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Respect de la stratégie</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('trades:strategyCompliance.title')}</h2>
               <p className="text-sm text-gray-600">{formatDate(date)}</p>
             </div>
           </div>
@@ -316,7 +310,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="flex-1">
-                <p className="font-medium text-rose-900">Erreur</p>
+                <p className="font-medium text-rose-900">{t('trades:strategyCompliance.error')}</p>
                 <p className="text-sm text-rose-700 mt-1">{error}</p>
               </div>
             </div>
@@ -325,7 +319,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <p className="text-lg font-medium">Aucun trade trouvé pour cette date</p>
+              <p className="text-lg font-medium">{t('trades:strategyCompliance.noTradesForDate')}</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -335,10 +329,10 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <p className="text-sm font-medium text-purple-900">
-                        Dupliquer la configuration
+                        {t('trades:strategyCompliance.duplicateConfiguration')}
                       </p>
                       <p className="text-xs text-purple-700 mt-1">
-                        Copier la saisie du premier trade (stratégie, émotions, screenshot, vidéo) sur tous les autres trades du jour
+                        {t('trades:strategyCompliance.duplicateDescription')}
                       </p>
                     </div>
                     <button
@@ -349,7 +343,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
-                      Dupliquer sur tous
+                      {t('trades:strategyCompliance.duplicateToAll')}
                     </button>
                   </div>
                 </div>
@@ -391,7 +385,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       {/* Stratégie respectée */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Stratégie respectée ?
+                          {t('trades:strategyCompliance.strategyRespected')}
                         </label>
                         <div className="flex gap-3 flex-wrap">
                           <button
@@ -406,7 +400,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                            Oui
+                            {t('trades:yes')}
                           </button>
                           <button
                             type="button"
@@ -420,7 +414,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
-                            Non
+                            {t('trades:no')}
                           </button>
                         </div>
                       </div>
@@ -429,7 +423,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       {trade.net_pnl && parseFloat(trade.net_pnl) > 0 && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Take Profit atteints
+                            {t('trades:strategyCompliance.takeProfitReached')}
                           </label>
                           <div className="flex gap-3 flex-wrap">
                             <button
@@ -446,7 +440,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
-                              TP1
+                              {t('trades:strategyCompliance.tp1')}
                             </button>
                             <button
                               type="button"
@@ -462,7 +456,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
-                              TP2+
+                              {t('trades:strategyCompliance.tp2Plus')}
                             </button>
                           </div>
                         </div>
@@ -472,9 +466,9 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       {trade.strategyRespected === false && trade.net_pnl && parseFloat(trade.net_pnl) <= 0 && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                            <span>Gain si stratégie respectée ?</span>
+                            <span>{t('trades:strategyCompliance.gainIfStrategyRespected')}</span>
                             <Tooltip 
-                              content="Si vous aviez respecté la stratégie, ce trade aurait-il été gagnant ?" 
+                              content={t('trades:strategyCompliance.gainIfStrategyRespectedTooltip')} 
                               position="top"
                             >
                               <svg 
@@ -500,7 +494,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
-                              Oui
+                              {t('trades:yes')}
                             </button>
                             <button
                               type="button"
@@ -514,7 +508,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
-                              Non
+                              {t('trades:no')}
                             </button>
                           </div>
                         </div>
@@ -525,7 +519,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   {/* Émotions dominantes */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Émotions dominantes (sélection multiple)
+                      {t('trades:strategyCompliance.dominantEmotions')}
                     </label>
                     <div className="grid grid-cols-4 gap-2">
                       {TRADING_EMOTIONS.map((emotion) => {
@@ -548,7 +542,9 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                     </div>
                     {trade.dominantEmotions.length > 0 && (
                       <p className="mt-2 text-xs text-gray-500">
-                        {trade.dominantEmotions.length} émotion{trade.dominantEmotions.length > 1 ? 's' : ''} sélectionnée{trade.dominantEmotions.length > 1 ? 's' : ''}
+                        {trade.dominantEmotions.length === 1 
+                          ? t('trades:strategyCompliance.emotionsSelected', { count: trade.dominantEmotions.length })
+                          : t('trades:strategyCompliance.emotionsSelectedPlural', { count: trade.dominantEmotions.length })}
                       </p>
                     )}
                   </div>
@@ -556,7 +552,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   {/* Note subjective */}
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Note subjective du trade
+                      {t('trades:strategyCompliance.subjectiveRating')}
                     </label>
                     <div 
                       ref={(el) => {
@@ -581,13 +577,13 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       >
                         <span className="inline-flex items-center gap-2 text-gray-900">
                           {trade.sessionRating === null 
-                            ? '-- Sélectionner une note --'
+                            ? t('trades:strategyCompliance.selectRating')
                             : `${trade.sessionRating} - ${
-                                trade.sessionRating === 1 ? 'Très mauvaise' :
-                                trade.sessionRating === 2 ? 'Mauvaise' :
-                                trade.sessionRating === 3 ? 'Moyenne' :
-                                trade.sessionRating === 4 ? 'Bonne' :
-                                'Excellente'
+                                trade.sessionRating === 1 ? t('trades:strategyCompliance.ratingVeryBad') :
+                                trade.sessionRating === 2 ? t('trades:strategyCompliance.ratingBad') :
+                                trade.sessionRating === 3 ? t('trades:strategyCompliance.ratingAverage') :
+                                trade.sessionRating === 4 ? t('trades:strategyCompliance.ratingGood') :
+                                t('trades:strategyCompliance.ratingExcellent')
                               }`
                           }
                         </span>
@@ -617,15 +613,15 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                                 }}
                                 className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${trade.sessionRating === null ? 'bg-gray-50' : ''}`}
                               >
-                                <span className="text-gray-900">-- Sélectionner une note --</span>
+                                <span className="text-gray-900">{t('trades:strategyCompliance.selectRating')}</span>
                               </button>
                             </li>
                             {[
-                              { value: 1, label: '1 - Très mauvaise' },
-                              { value: 2, label: '2 - Mauvaise' },
-                              { value: 3, label: '3 - Moyenne' },
-                              { value: 4, label: '4 - Bonne' },
-                              { value: 5, label: '5 - Excellente' },
+                              { value: 1, label: t('trades:strategyCompliance.ratingVeryBad') },
+                              { value: 2, label: t('trades:strategyCompliance.ratingBad') },
+                              { value: 3, label: t('trades:strategyCompliance.ratingAverage') },
+                              { value: 4, label: t('trades:strategyCompliance.ratingGood') },
+                              { value: 5, label: t('trades:strategyCompliance.ratingExcellent') },
                             ].map(opt => (
                               <li key={opt.value}>
                                 <button
@@ -640,7 +636,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                                   }}
                                   className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${trade.sessionRating === opt.value ? 'bg-gray-50' : ''}`}
                                 >
-                                  <span className="text-gray-900">{opt.label}</span>
+                                  <span className="text-gray-900">{opt.value} - {opt.label}</span>
                                 </button>
                               </li>
                             ))}
@@ -649,21 +645,21 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       )}
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      Évaluez subjectivement la qualité de ce trade
+                      {t('trades:strategyCompliance.ratingTooltip')}
                     </p>
                   </div>
 
                   {/* Screenshot */}
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      URL Screenshot du trade
+                      {t('trades:strategyCompliance.screenshotUrl')}
                     </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="url"
                         value={trade.screenshotUrl || ''}
                         onChange={(e) => updateTradeStrategy(trade.id, 'screenshotUrl', e.target.value)}
-                        placeholder="https://..."
+                        placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
                         className="w-2/3 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       {trade.screenshotUrl && (
@@ -671,31 +667,31 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                           type="button"
                           onClick={() => window.open(trade.screenshotUrl, '_blank', 'noopener,noreferrer')}
                           className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2 flex-shrink-0"
-                          title="Ouvrir le screenshot"
+                          title={t('trades:strategyCompliance.openScreenshot')}
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          Voir l'image
+                          {t('trades:strategyCompliance.viewImage')}
                         </button>
                       )}
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      Lien vers une image TradingView ou autre screenshot du trade
+                      {t('trades:strategyCompliance.screenshotDescription')}
                     </p>
                   </div>
 
                   {/* Vidéo */}
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      URL Vidéo de la session
+                      {t('trades:strategyCompliance.videoUrl')}
                     </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="url"
                         value={trade.videoUrl || ''}
                         onChange={(e) => updateTradeStrategy(trade.id, 'videoUrl', e.target.value)}
-                        placeholder="https://youtube.com/... ou https://..."
+                        placeholder={t('trades:strategyCompliance.videoPlaceholder')}
                         className="w-2/3 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       {trade.videoUrl && (
@@ -703,30 +699,30 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                           type="button"
                           onClick={() => window.open(trade.videoUrl, '_blank', 'noopener,noreferrer')}
                           className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-2 flex-shrink-0"
-                          title="Ouvrir la vidéo"
+                          title={t('trades:strategyCompliance.openVideo')}
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          Voir la vidéo
+                          {t('trades:strategyCompliance.viewVideo')}
                         </button>
                       )}
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      Lien vers une vidéo YouTube ou autre plateforme vidéo
+                      {t('trades:strategyCompliance.videoDescription')}
                     </p>
                   </div>
 
                   {/* Détails des émotions */}
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Détails des émotions
+                      {t('trades:strategyCompliance.emotionDetails')}
                     </label>
                     <textarea
                       value={trade.emotionDetails || ''}
                       onChange={(e) => updateTradeStrategy(trade.id, 'emotionDetails', e.target.value)}
-                      placeholder="Décrivez en détail les émotions ressenties pendant ce trade..."
+                      placeholder={t('trades:strategyCompliance.emotionDetailsPlaceholder')}
                       rows={3}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y"
                     />
@@ -735,12 +731,12 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   {/* Améliorations possibles */}
                   <div className="mt-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Améliorations possibles
+                      {t('trades:strategyCompliance.possibleImprovements')}
                     </label>
                     <textarea
                       value={trade.possibleImprovements || ''}
                       onChange={(e) => updateTradeStrategy(trade.id, 'possibleImprovements', e.target.value)}
-                      placeholder="Identifiez les points d'amélioration pour ce trade..."
+                      placeholder={t('trades:strategyCompliance.possibleImprovementsPlaceholder')}
                       rows={3}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y"
                     />
@@ -756,7 +752,10 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
           <div className="text-sm text-gray-600">
             {trades.length > 0 && (
               <span>
-                {trades.filter((t) => t.strategyRespected === true).length} / {trades.length} trades avec stratégie respectée
+                {t('trades:strategyCompliance.tradesWithStrategyRespected', {
+                  count: trades.filter((t) => t.strategyRespected === true).length,
+                  total: trades.length
+                })}
               </span>
             )}
           </div>
@@ -766,7 +765,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               disabled={isSaving}
               className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors disabled:opacity-50"
             >
-              Annuler
+              {t('trades:strategyCompliance.cancel')}
             </button>
             <button
               onClick={handleSave}
@@ -779,14 +778,14 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Sauvegarde...
+                  {t('trades:strategyCompliance.saving')}
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  Enregistrer
+                  {t('trades:strategyCompliance.save')}
                 </>
               )}
             </button>

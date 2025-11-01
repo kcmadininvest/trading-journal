@@ -3,6 +3,7 @@ import { tradesService, TradeListItem } from '../../services/trades';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface DayTradesModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   onStrategyClick,
 }) => {
   const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +43,11 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
       });
       setTrades(sortedTrades);
     } catch (e: any) {
-      setError(e?.message || 'Erreur lors du chargement des trades');
+      setError(e?.message || t('trades:dayTradesModal.errorLoading'));
     } finally {
       setIsLoading(false);
     }
-  }, [date, tradingAccount]);
+  }, [date, tradingAccount, t]);
 
   useEffect(() => {
     if (open && date) {
@@ -101,7 +103,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Trades du jour</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('trades:dayTradesModal.title')}</h2>
               <p className="text-sm text-gray-600">{formatDate(date)}</p>
             </div>
           </div>
@@ -130,7 +132,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="flex-1">
-                <p className="font-medium text-rose-900">Erreur</p>
+                <p className="font-medium text-rose-900">{t('trades:dayTradesModal.error')}</p>
                 <p className="text-sm text-rose-700 mt-1">{error}</p>
               </div>
             </div>
@@ -139,7 +141,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
-              <p className="text-lg font-medium">Aucun trade trouvé pour cette date</p>
+              <p className="text-lg font-medium">{t('trades:dayTradesModal.noTradesForDate')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -147,7 +149,9 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-blue-900 font-medium">
-                      {trades.length} trade{trades.length > 1 ? 's' : ''} trouvé{trades.length > 1 ? 's' : ''}
+                      {trades.length === 1 
+                        ? t('trades:dayTradesModal.tradesFound', { count: trades.length })
+                        : t('trades:dayTradesModal.tradesFoundPlural', { count: trades.length })}
                     </p>
                   </div>
                   {onStrategyClick && (
@@ -158,7 +162,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Gérer le respect de la stratégie
+                      {t('trades:dayTradesModal.manageStrategy')}
                     </button>
                   )}
                 </div>
@@ -168,14 +172,14 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Heure</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Symbole</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Type</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Taille</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Prix Entrée</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Prix Sortie</th>
-                      <th className="px-4 py-3 text-right font-semibold text-gray-700">PnL</th>
-                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Durée</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">{t('trades:dayTradesModal.time')}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">{t('trades:dayTradesModal.symbol')}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">{t('trades:type')}</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-700">{t('trades:size')}</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-700">{t('trades:dayTradesModal.entryPrice')}</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-700">{t('trades:dayTradesModal.exitPrice')}</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-700">{t('trades:pnl')}</th>
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">{t('trades:duration')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -194,7 +198,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                                 : 'bg-red-100 text-red-800'
                             }`}
                           >
-                            {trade.trade_type}
+                            {trade.trade_type === 'Long' ? t('trades:long') : t('trades:short')}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right text-gray-700">{formatNumber(trade.size, 4, preferences.number_format)}</td>
@@ -218,7 +222,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Total PnL</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('trades:dayTradesModal.totalPnl')}</p>
                     <p
                       className={`text-lg font-bold ${getPnlColor(
                         trades.reduce((sum, t) => sum + parseFloat(t.net_pnl || '0'), 0).toString()
@@ -230,7 +234,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Frais totaux</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('trades:dayTradesModal.totalFees')}</p>
                     <p className="text-lg font-semibold text-gray-900">
                       {formatNumber(
                         trades.reduce((sum, t) => sum + parseFloat(t.fees || '0'), 0),
@@ -240,7 +244,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Trades gagnants</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('trades:dayTradesModal.winningTrades')}</p>
                     <p className="text-lg font-semibold text-green-600">
                       {trades.filter((t) => parseFloat(t.net_pnl || '0') > 0).length} / {trades.length}
                     </p>
@@ -257,7 +261,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors"
           >
-            Fermer
+            {t('trades:dayTradesModal.close')}
           </button>
         </div>
       </div>
