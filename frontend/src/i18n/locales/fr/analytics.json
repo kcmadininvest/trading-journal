@@ -1,0 +1,62 @@
+{
+  "title": "Analyses",
+  "errorLoadingData": "Erreur lors du chargement des données",
+  "loadingData": "Chargement des données...",
+  "importTrades": "Importer des trades",
+  "charts": {
+    "hourlyPerformanceScatter": {
+      "title": "Performance par heure (Nuage de points)",
+      "label": "Performance",
+      "xAxis": "Heure",
+      "yAxis": "PnL"
+    },
+    "correlation": {
+      "title": "Corrélation PnL vs Nombre de Trades",
+      "label": "Corrélation",
+      "xAxis": "Nombre de trades",
+      "yAxis": "PnL total"
+    },
+    "drawdown": {
+      "title": "Drawdown par jour",
+      "label": "Drawdown",
+      "yAxis": "Drawdown (%)",
+      "tooltip": "Ce graphique montre la distance depuis votre meilleur niveau (pic). La ligne à 0 représente votre pic. Plus la valeur est élevée, plus vous êtes loin de votre meilleur niveau. Quand vous atteignez un nouveau pic, le drawdown revient à 0. Les pourcentages (%) représentent le pourcentage de perte depuis le pic. Par exemple, 10% signifie que vous avez perdu 10% par rapport à votre meilleur niveau.",
+      "amount": "Montant",
+      "percentage": "Pourcentage",
+      "lossFromPeak": "perte depuis le pic"
+    },
+    "hourlyPerformanceBars": {
+      "title": "Performance par heure (Barres)",
+      "label": "Performance",
+      "yAxis": "PnL total"
+    },
+    "heatmap": {
+      "title": "Heatmap de Performance (Jour × Heure)",
+      "losses": "Pertes",
+      "neutral": "Neutre",
+      "gains": "Gains"
+    },
+    "pnlDistribution": {
+      "title": "Distribution des PnL",
+      "label": "Pourcentage de trades",
+      "yAxis": "Pourcentage de trades",
+      "range": "P&L: de {{start}} à {{end}}",
+      "onTotal": "sur {{total}} total"
+    }
+  },
+  "common": {
+    "trade": "trade",
+    "trades": "trades",
+    "hour": "{{hour}}h"
+  },
+  "days": {
+    "monday": "Lun",
+    "tuesday": "Mar",
+    "wednesday": "Mer",
+    "thursday": "Jeu",
+    "friday": "Ven",
+    "saturday": "Sam",
+    "sunday": "Dim"
+  }
+}
+

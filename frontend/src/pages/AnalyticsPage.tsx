@@ -1,483 +1,1303 @@
-import React, { useState, useEffect } from 'react';
-import { tradesService } from '../services/trades';
-import TradingAccountSelector from '../components/TradingAccount/TradingAccountSelector';
-import { TradingAccount } from '../types';
-import { useSelectedAccountCurrency } from '../hooks/useSelectedAccountCurrency';
-import { Scatter } from 'react-chartjs-2';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { FloatingActionButton } from '../components/ui/FloatingActionButton';
+import { ImportTradesModal } from '../components/trades/ImportTradesModal';
+import { AccountSelector } from '../components/accounts/AccountSelector';
+import TooltipComponent from '../components/ui/Tooltip';
+import { tradesService, TradeListItem } from '../services/trades';
+import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
+import { currenciesService, Currency } from '../services/currencies';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
-  PointElement,
+  BarElement,
   LineElement,
+  PointElement,
   Title,
   Tooltip as ChartTooltip,
-  Legend,
+  Legend as ChartLegend,
+  Filler,
 } from 'chart.js';
-import { globalTooltipConfig, formatCurrency as globalFormatCurrency } from '../config/chartConfig';
-import HourlyPerformanceChart from '../components/charts/HourlyPerformanceChart';
-import PnlTradesCorrelationChart from '../components/charts/PnlTradesCorrelationChart';
-import DrawdownChart from '../components/charts/DrawdownChart';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { Bar as ChartBar, Line as ChartLine, Scatter as ChartScatter } from 'react-chartjs-2';
+import { usePreferences } from '../hooks/usePreferences';
+import { useTheme } from '../hooks/useTheme';
+import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
-// Enregistrer les composants Chart.js
+// Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
   CategoryScale,
   LinearScale,
-  PointElement,
+  BarElement,
   LineElement,
+  PointElement,
   Title,
   ChartTooltip,
-  Legend
+  ChartLegend,
+  Filler,
+  ChartDataLabels
 );
 
-
-interface HourlyData {
-  hour: number;
-  pnl: number;
-  trade_count: number;
-}
-
-interface DrawdownData {
-  date: string;
-  pnl: number;
-  cumulative_pnl: number;
-  drawdown: number;
-}
-
-interface HourlyPerformanceData {
-  hourly_data: HourlyData[];
-}
-
-function AnalyticsPage() {
-  const [hourlyData, setHourlyData] = useState<HourlyPerformanceData | null>(null);
-  const [correlationData, setCorrelationData] = useState<any>(null);
-  const [drawdownData, setDrawdownData] = useState<DrawdownData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
-  const selectedCurrency = useSelectedAccountCurrency(selectedAccount);
-
-  const fetchAnalyticsData = async () => {
-    try {
-      setLoading(true);
-      const accountId = selectedAccount?.id;
-      const [hourly, correlation, drawdown] = await Promise.all([
-        tradesService.getHourlyPerformance(accountId),
-        tradesService.getPnlTradesCorrelation(accountId),
-        tradesService.getDrawdownData(accountId)
-      ]);
-      setHourlyData(hourly);
-      setCorrelationData(correlation);
-      setDrawdownData(drawdown.drawdown_data || []);
-    } catch (error) {
-      // Erreur silencieuse lors du chargement des données d'analyses
-    } finally {
-      setLoading(false);
-    }
+const AnalyticsPage: React.FC = () => {
+  const { preferences } = usePreferences();
+  const { theme } = useTheme();
+  const { t } = useI18nTranslation();
+  const isDark = theme === 'dark';
+  
+  // Wrapper pour formatCurrency avec préférences
+  const formatCurrency = (value: number, currencySymbol: string = ''): string => {
+    return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
   };
+
+  // Helper function pour obtenir les couleurs des graphiques selon le thème
+  const chartColors = useMemo(() => ({
+    text: isDark ? '#d1d5db' : '#374151',
+    textSecondary: isDark ? '#9ca3af' : '#6b7280',
+    background: isDark ? '#1f2937' : '#ffffff',
+    grid: isDark ? '#374151' : '#e5e7eb',
+    border: isDark ? '#4b5563' : '#d1d5db',
+    tooltipBg: isDark ? '#374151' : '#ffffff',
+    tooltipTitle: isDark ? '#d1d5db' : '#4b5563',
+    tooltipBody: isDark ? '#f3f4f6' : '#1f2937',
+    tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
+  }), [isDark]);
+  const [accountId, setAccountId] = useState<number | null>(null);
+  const [showImport, setShowImport] = useState(false);
+  const [trades, setTrades] = useState<TradeListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [heatmapTooltip, setHeatmapTooltip] = useState<{
+    day: string;
+    hour: number;
+    value: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  
+  const heatmapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Récupérer la liste des devises
+  useEffect(() => {
+    const loadCurrencies = async () => {
+      try {
+        const currencyList = await currenciesService.list();
+        setCurrencies(currencyList);
+      } catch (err) {
+        console.error('Erreur lors du chargement des devises', err);
+      }
+    };
+    loadCurrencies();
+  }, []);
+
+  // Récupérer le compte sélectionné pour obtenir sa devise
+  useEffect(() => {
+    const loadAccount = async () => {
+      if (!accountId) {
+        setSelectedAccount(null);
+        return;
+      }
+      try {
+        const account = await tradingAccountsService.get(accountId);
+        setSelectedAccount(account);
+      } catch (err) {
+        console.error('Erreur lors du chargement du compte', err);
+        setSelectedAccount(null);
+      }
+    };
+    loadAccount();
+  }, [accountId]);
+
+  // Obtenir le symbole de devise
+  const currencySymbol = useMemo(() => {
+    if (!selectedAccount || !currencies.length) return '';
+    const currency = currencies.find(c => c.code === selectedAccount.currency);
+    return currency?.symbol || '';
+  }, [selectedAccount, currencies]);
 
   useEffect(() => {
-    fetchAnalyticsData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAccount]);
-
-  const formatCurrency = (value: number) => globalFormatCurrency(value, selectedCurrency);
-
-
-  // Préparer les données du graphique en nuage de points
-  const chartData = hourlyData ? {
-    datasets: [
-      {
-        label: 'Performance par heure',
-        data: hourlyData.hourly_data
-          .filter(item => item.trade_count > 0) // Seulement les heures avec des trades
-          .map(item => ({
-            x: item.hour,
-            y: item.pnl,
-            tradeCount: item.trade_count
-          })),
-        backgroundColor: hourlyData.hourly_data
-          .filter(item => item.trade_count > 0)
-          .map(item => 
-            item.pnl >= 0 ? '#3b82f6' : '#6b7280'
-          ),
-        borderColor: hourlyData.hourly_data
-          .filter(item => item.trade_count > 0)
-          .map(item => 
-            item.pnl >= 0 ? '#1d4ed8' : '#4b5563'
-          ),
-        borderWidth: 0,
-        pointRadius: 12,
-        pointHoverRadius: 16
+    const loadTrades = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await tradesService.list({
+          trading_account: accountId ?? undefined,
+          page_size: 1000, // Récupérer beaucoup de trades pour les analyses
+        });
+        setTrades(response.results);
+      } catch (err) {
+        setError(t('analytics:errorLoadingData'));
+        console.error(err);
+      } finally {
+        setIsLoading(false);
       }
-    ]
-  } : null;
-
-  // Calculer la plage d'heures avec des trades
-  const getHourRange = () => {
-    if (!hourlyData) return { min: 0, max: 23.5 };
-    
-    const hoursWithTrades = hourlyData.hourly_data
-      .filter(item => item.trade_count > 0)
-      .map(item => item.hour);
-    
-    if (hoursWithTrades.length === 0) return { min: 0, max: 23.5 };
-    
-    const minHour = Math.min(...hoursWithTrades);
-    const maxHour = Math.max(...hoursWithTrades);
-    
-    // Ajouter une marge de 0.5 heure (30 minutes) de chaque côté pour le contexte
-    return {
-      min: Math.max(0, minHour - 0.5),
-      max: Math.min(23.5, maxHour + 0.5)
     };
-  };
 
-  const hourRange = getHourRange();
+    loadTrades();
+  }, [accountId, t]);
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
-      },
-      tooltip: {
-        ...globalTooltipConfig,
-        callbacks: {
-          title: function(context: any) {
-            const value = context[0].parsed.x;
-            const hour = Math.floor(value);
-            const minutes = (value - hour) * 60;
-            if (minutes === 0) {
-              return `${hour}h`;
-            } else {
-              return `${hour}h${minutes.toString().padStart(2, '0')}`;
-            }
-          },
-          label: function(context: any) {
-            const pnl = context.parsed.y;
-            const dataIndex = context.dataIndex;
-            const originalData = hourlyData?.hourly_data.filter(item => item.trade_count > 0)[dataIndex];
-            const tradeCount = originalData?.trade_count || 0;
-            return `${formatCurrency(pnl)} (${tradeCount} trades, moy: ${formatCurrency(tradeCount > 0 ? pnl / tradeCount : 0)})`;
-          }
-        }
-      },
-      datalabels: {
-        display: false
+  // Performance par heure (nuage de points)
+  const hourlyPerformanceScatter = useMemo(() => {
+    const scatterData: { hour: number; pnl: number }[] = [];
+    const hoursWithData = new Set<number>();
+    
+    trades.forEach(trade => {
+      if (trade.entered_at && trade.net_pnl) {
+        const date = new Date(trade.entered_at);
+        const hour = date.getHours();
+        const pnl = parseFloat(trade.net_pnl);
+        
+        scatterData.push({
+          hour,
+          pnl,
+        });
+        hoursWithData.add(hour);
       }
-    },
-    scales: {
-      x: {
-        type: 'linear' as const,
-        title: {
-          display: true,
-          text: 'Heure de la journée',
-          font: {
-            size: 14,
-            weight: 'bold' as const
-          }
-        },
-        min: hourRange.min,
-        max: hourRange.max,
-        ticks: {
-          stepSize: 0.5,
-          callback: function(value: any) {
-            const hour = Math.floor(value);
-            const minutes = (value - hour) * 60;
-            if (minutes === 0) {
-              return `${hour}h`;
-            } else {
-              return `${hour}h${minutes.toString().padStart(2, '0')}`;
-            }
-          },
-          font: {
-            size: 12
-          }
-        },
-        grid: {
-          color: 'rgba(0, 0, 0, 0.05)',
-          lineWidth: 0.5
-        },
-        border: {
-          width: 1
+    });
+
+    // Retourner les données et les heures avec des trades (pour l'axe X)
+    return {
+      data: scatterData,
+      hoursWithData: Array.from(hoursWithData).sort((a, b) => a - b),
+    };
+  }, [trades]);
+
+  // Performance par heure (barres)
+  const hourlyPerformanceBars = useMemo(() => {
+    const hourlyData: { [hour: number]: number } = {};
+    
+    trades.forEach(trade => {
+      if (trade.entered_at && trade.net_pnl) {
+        const date = new Date(trade.entered_at);
+        const hour = date.getHours();
+        const pnl = parseFloat(trade.net_pnl);
+        
+        hourlyData[hour] = (hourlyData[hour] || 0) + pnl;
+      }
+    });
+
+    // Ne garder que les heures avec des données (pnl !== 0) pour éviter les grands espaces vides
+    return Object.keys(hourlyData)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map(hour => ({
+        hour: `${hour.toString().padStart(2, '0')}:00`,
+        hourNum: hour, // Stocker le numéro d'heure pour référence
+        pnl: hourlyData[hour] || 0,
+      }));
+  }, [trades]);
+
+  // Corrélation PnL vs Nombre de Trades
+  const correlationData = useMemo(() => {
+    const dailyData: { [date: string]: { trades: number; pnl: number } } = {};
+    
+    trades.forEach(trade => {
+      if (trade.trade_day && trade.net_pnl) {
+        const date = trade.trade_day;
+        const pnl = parseFloat(trade.net_pnl);
+        
+        if (!dailyData[date]) {
+          dailyData[date] = { trades: 0, pnl: 0 };
         }
-      },
-      y: {
-        title: {
-          display: true,
-          text: `P/L (${selectedCurrency})`,
-          font: {
-            size: 14,
-            weight: 'bold' as const
-          }
-        },
-        beginAtZero: true,
-        grid: {
-          color: 'rgba(0, 0, 0, 0.1)'
-        }
+        dailyData[date].trades += 1;
+        dailyData[date].pnl += pnl;
+      }
+    });
+
+    const dataPoints = Object.values(dailyData).map(data => ({
+      trades: data.trades,
+      pnl: data.pnl,
+    }));
+
+    // Calculer les ticks uniques pour l'axe X
+    const uniqueTrades = Array.from(new Set(dataPoints.map(d => d.trades))).sort((a, b) => a - b);
+    const minTrades = uniqueTrades.length > 0 ? Math.min(...uniqueTrades) : 0;
+    const maxTrades = uniqueTrades.length > 0 ? Math.max(...uniqueTrades) : 1;
+    
+    // Générer des ticks raisonnables (max 10-12 ticks)
+    let xTicks: number[] = [];
+    const range = maxTrades - minTrades;
+    if (range <= 12 && uniqueTrades.length <= 12) {
+      // Si peu de valeurs uniques, utiliser toutes les valeurs uniques
+      xTicks = uniqueTrades;
+    } else {
+      // Sinon, créer des ticks espacés de manière équitable
+      const step = Math.ceil(range / 10);
+      for (let i = minTrades; i <= maxTrades; i += step) {
+        xTicks.push(i);
+      }
+      if (xTicks[xTicks.length - 1] !== maxTrades) {
+        xTicks.push(maxTrades);
       }
     }
+
+    return { dataPoints, xTicks, minTrades, maxTrades };
+  }, [trades]);
+
+  // Drawdown par jour
+  // Le graphique affiche l'écart entre le P/L cumulé le plus élevé (pic) et le P/L cumulé actuel au fil du temps
+  const drawdownData = useMemo(() => {
+    // Groupement par date : tous les trades sont groupés par date d'entrée
+    const dailyData: { [date: string]: number } = {};
+    
+    trades.forEach(trade => {
+      if (trade.trade_day && trade.net_pnl) {
+        const date = trade.trade_day;
+        const pnl = parseFloat(trade.net_pnl);
+        // P/L journalier : somme du net_pnl pour chaque jour
+        dailyData[date] = (dailyData[date] || 0) + pnl;
+      }
+    });
+
+    const sortedDates = Object.keys(dailyData).sort();
+    let cumulativePnl = 0; // P/L cumulé : addition progressive du P/L journalier
+    let peak = 0; // Pic de performance (peak_pnl) : valeur maximale du P/L cumulé atteinte jusqu'alors
+    
+    const allData = sortedDates.map(date => {
+      // Addition progressive du P/L journalier
+      cumulativePnl += dailyData[date];
+      // Mettre à jour le pic si le P/L cumulé dépasse le pic précédent
+      peak = Math.max(peak, cumulativePnl);
+      
+      // Drawdown : différence entre le pic et le P/L cumulé actuel
+      // drawdown = peak_pnl - cumulative_pnl
+      // Le drawdown représente la distance depuis le pic (0 = au pic, jamais négatif)
+      const drawdownAmount = cumulativePnl < peak ? peak - cumulativePnl : 0;
+      const drawdownPercent = peak > 0 && cumulativePnl < peak 
+        ? ((peak - cumulativePnl) / peak) * 100 
+        : 0;
+      
+      const localeMap: Record<string, string> = {
+        'fr': 'fr-FR',
+        'en': 'en-US',
+        'es': 'es-ES',
+        'de': 'de-DE',
+        'it': 'it-IT',
+        'pt': 'pt-PT',
+        'ja': 'ja-JP',
+        'ko': 'ko-KR',
+        'zh': 'zh-CN',
+      };
+      const locale = localeMap[preferences.language] || 'fr-FR';
+      
+      return {
+        date: new Date(date).toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
+        drawdown: drawdownPercent,
+        drawdownAmount: drawdownAmount,
+        cumulativePnl,
+      };
+    });
+    
+    // Filtrage : affiche uniquement les jours avec drawdown > 0
+    return allData.filter(data => data.drawdown > 0);
+  }, [trades, preferences.timezone, preferences.language]);
+
+  // Heatmap Jour × Heure
+  const heatmapData = useMemo(() => {
+    const daysOfWeek = [
+      t('analytics:days.monday'),
+      t('analytics:days.tuesday'),
+      t('analytics:days.wednesday'),
+      t('analytics:days.thursday'),
+      t('analytics:days.friday'),
+      t('analytics:days.saturday'),
+      t('analytics:days.sunday'),
+    ];
+    const heatmap: { [day: number]: { [hour: number]: number } } = {};
+    
+    // Initialiser toutes les combinaisons
+    for (let day = 0; day < 7; day++) {
+      heatmap[day] = {};
+      for (let hour = 0; hour < 24; hour++) {
+        heatmap[day][hour] = 0;
+      }
+    }
+    
+    trades.forEach(trade => {
+      if (trade.entered_at && trade.net_pnl) {
+        const date = new Date(trade.entered_at);
+        const day = (date.getDay() + 6) % 7; // 0 = Lundi, 6 = Dimanche
+        const hour = date.getHours();
+        const pnl = parseFloat(trade.net_pnl);
+        
+        heatmap[day][hour] = (heatmap[day][hour] || 0) + pnl;
+      }
+    });
+
+    // Calculer les min/max pour la normalisation des couleurs (optimisé)
+    let maxPnl = 0;
+    let minPnl = 0;
+    for (let day = 0; day < 7; day++) {
+      for (let hour = 0; hour < 24; hour++) {
+        const value = heatmap[day][hour];
+        if (value > maxPnl) maxPnl = value;
+        if (value < minPnl) minPnl = value;
+      }
+    }
+    const maxAbs = Math.max(Math.abs(maxPnl), Math.abs(minPnl));
+
+    return {
+      data: heatmap,
+      daysOfWeek,
+      maxAbs,
+      minPnl,
+      maxPnl,
+    };
+  }, [trades, t]);
+
+  // Distribution des PnL (histogramme)
+  const pnlDistribution = useMemo(() => {
+    const pnls: number[] = [];
+    
+    // Calculer min/max en une seule passe (optimisé)
+    let minPnl = Infinity;
+    let maxPnl = -Infinity;
+    
+    for (const trade of trades) {
+      if (trade.net_pnl !== null && trade.net_pnl !== undefined) {
+        const pnl = parseFloat(trade.net_pnl);
+        pnls.push(pnl);
+        if (pnl < minPnl) minPnl = pnl;
+        if (pnl > maxPnl) maxPnl = pnl;
+      }
+    }
+
+    if (pnls.length === 0) return [];
+
+    const range = maxPnl - minPnl;
+    // Bonne pratique : limiter à 10 bins maximum pour une meilleure lisibilité (recommandation : 2-10 catégories)
+    const bins = Math.min(10, Math.max(5, Math.ceil(Math.sqrt(pnls.length))));
+    const binWidth = range / bins;
+
+    const histogram: { [bin: number]: number } = {};
+    for (let i = 0; i < bins; i++) {
+      histogram[i] = 0;
+    }
+
+    pnls.forEach(pnl => {
+      let binIndex = Math.floor((pnl - minPnl) / binWidth);
+      if (binIndex === bins) binIndex = bins - 1; // Le dernier point va dans la dernière bin
+      histogram[binIndex] = (histogram[binIndex] || 0) + 1;
+    });
+
+    return Array.from({ length: bins }, (_, i) => {
+      const start = minPnl + i * binWidth;
+      const end = minPnl + (i + 1) * binWidth;
+      const midpoint = start + binWidth / 2;
+      return {
+        range: `${start.toFixed(0)}`,
+        rangeLabel: `${start.toFixed(0)} - ${end.toFixed(0)}`,
+        count: histogram[i] || 0,
+        midpoint: midpoint,
+        isPositive: midpoint >= 0, // Pour déterminer la couleur
+        start: start, // Stocker pour les labels
+        end: end, // Stocker pour les labels
+        binWidth: binWidth, // Stocker pour référence
+      };
+    }).filter(bin => bin.count > 0); // Filtrer pour ne garder que les bins avec des données
+  }, [trades]);
+
+  // Fonction pour obtenir la couleur de la heatmap (améliorée avec support dark mode)
+  const getHeatmapColor = (value: number, maxAbs: number): string => {
+    if (maxAbs === 0) return isDark ? '#4b5563' : '#f3f4f6'; // Gris adapté au thème pour les valeurs nulles
+    
+    const normalized = value / maxAbs; // -1 à 1
+    
+    if (normalized > 0) {
+      // Bleu pour les gains avec gradient amélioré
+      const intensity = Math.min(Math.abs(normalized), 1);
+      if (isDark) {
+        // Mode dark : couleurs plus foncées mais visibles
+        if (intensity < 0.2) return '#1e3a8a'; // Bleu très foncé
+        if (intensity < 0.4) return '#1e40af'; // Bleu foncé
+        if (intensity < 0.6) return '#2563eb'; // Bleu moyen-foncé
+        if (intensity < 0.8) return '#3b82f6'; // Bleu
+        return '#60a5fa'; // Bleu clair
+      } else {
+        // Mode clair : couleurs claires
+      if (intensity < 0.2) return '#dbeafe'; // Bleu très clair
+      if (intensity < 0.4) return '#93c5fd'; // Bleu clair
+      if (intensity < 0.6) return '#60a5fa'; // Bleu moyen
+      if (intensity < 0.8) return '#3b82f6'; // Bleu
+      return '#2563eb'; // Bleu foncé
+      }
+    } else if (normalized < 0) {
+      // Rose pour les pertes avec gradient amélioré
+      const intensity = Math.min(Math.abs(normalized), 1);
+      if (isDark) {
+        // Mode dark : couleurs plus foncées mais visibles
+        if (intensity < 0.2) return '#831843'; // Rose très foncé
+        if (intensity < 0.4) return '#9f1239'; // Rose foncé
+        if (intensity < 0.6) return '#be185d'; // Rose moyen-foncé
+        if (intensity < 0.8) return '#db2777'; // Rose
+        return '#ec4899'; // Rose clair
+      } else {
+        // Mode clair : couleurs claires
+      if (intensity < 0.2) return '#fce7f3'; // Rose très clair
+      if (intensity < 0.4) return '#f9a8d4'; // Rose clair
+      if (intensity < 0.6) return '#f472b6'; // Rose moyen
+      if (intensity < 0.8) return '#ec4899'; // Rose
+      return '#db2777'; // Rose foncé
+    }
+    }
+    return isDark ? '#4b5563' : '#f3f4f6'; // Gris adapté au thème pour zéro
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg text-gray-600">Chargement des analyses...</div>
-      </div>
-    );
-  }
-
-
   return (
-    <div className="p-4 bg-gray-50">
-      <div className="w-full">
-        {/* En-tête avec statistiques de corrélation */}
-        <div className="mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Analyses Détaillées</h1>
-              <p className="text-gray-600">Métriques avancées de performance et statistiques de trading</p>
-            </div>
-            
-            {/* Statistiques de corrélation */}
-            {correlationData?.correlation_data && (() => {
-              const data = correlationData.correlation_data;
-              const n = data.length;
-              const sumX = data.reduce((sum: number, item: any) => sum + item.trade_count, 0);
-              const sumY = data.reduce((sum: number, item: any) => sum + item.pnl, 0);
-              const sumXY = data.reduce((sum: number, item: any) => sum + item.trade_count * item.pnl, 0);
-              const sumX2 = data.reduce((sum: number, item: any) => sum + item.trade_count * item.trade_count, 0);
-              const sumY2 = data.reduce((sum: number, item: any) => sum + item.pnl * item.pnl, 0);
-              
-              const correlation = (n * sumXY - sumX * sumY) / 
-                Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-              
-              const avgTradesPerDay = sumX / n;
-              const avgPnlPerDay = sumY / n;
-              
-              return (
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                    <div className="text-center">
-                      <div className="text-gray-500 font-medium mb-1 flex items-center justify-center gap-1">
-                        Corrélation
-                        <div className="relative group">
-                          <svg className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          {/* Infobulle */}
-                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-white/95 backdrop-blur-sm text-gray-800 text-sm rounded-xl shadow-lg border border-gray-200/50 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 font-sans antialiased">
-                            <div className="font-semibold mb-2 text-gray-900">Corrélation :</div>
-                            <div className="space-y-1">
-                              <div><span className="text-green-600 font-semibold">+1 :</span> <span className="text-sm font-normal">Relation parfaite positive</span></div>
-                              <div><span className="text-orange-600 font-semibold">-1 :</span> <span className="text-sm font-normal">Relation parfaite négative</span></div>
-                              <div><span className="text-gray-600 font-semibold">0 :</span> <span className="text-sm font-normal">Aucune relation</span></div>
-                            </div>
-                            {/* Flèche */}
-                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-white/95"></div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className={`text-sm font-bold ${
-                        correlation > 0.3 ? 'text-green-600' : 
-                        correlation < -0.3 ? 'text-red-600' : 'text-gray-600'
-                      }`}>
-                        {isNaN(correlation) ? '0.000' : correlation.toFixed(3)}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-gray-500 font-medium mb-1">Trades Moyens/Jour</div>
-                      <div className="text-sm font-bold text-blue-600">
-                        {avgTradesPerDay.toFixed(1)}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-gray-500 font-medium mb-1">P/L Moyen/Jour</div>
-                      <div className={`text-sm font-bold ${
-                        avgPnlPerDay >= 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {formatCurrency(avgPnlPerDay)}
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-gray-500 font-medium mb-1">Jours Analysés</div>
-                      <div className="text-sm font-bold text-gray-700">
-                        {n}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-
-        {/* Sélecteur de compte de trading */}
-        <div className="flex justify-between items-center mb-6">
-          <TradingAccountSelector
-            selectedAccountId={selectedAccount?.id}
-            onAccountChange={setSelectedAccount}
-            className="flex items-center space-x-2"
-          />
-          {selectedAccount && (
-            <div className="text-sm text-gray-600">
-              Analyses pour le compte "{selectedAccount.name}"
-            </div>
-          )}
-        </div>
-
-        {/* Section des graphiques principaux */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-          {/* Graphique de performance par heure (nuage de points) */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Performance par Heure (Nuage de Points)
-              <div className="relative group">
-                <svg className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {/* Infobulle */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-white/95 backdrop-blur-sm text-gray-800 text-sm rounded-xl shadow-lg border border-gray-200/50 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-20 font-sans antialiased">
-                  <div className="font-semibold mb-2 text-gray-900">Performance par Heure (Nuage de Points) :</div>
-                  <div className="space-y-1">
-                    <div><span className="text-blue-600 font-semibold">Chaque point :</span> <span className="text-sm font-normal">Une heure avec des trades</span></div>
-                    <div><span className="text-blue-600 font-semibold">Axe X :</span> <span className="text-sm font-normal">Heure de la journée</span></div>
-                    <div><span className="text-blue-600 font-semibold">Axe Y :</span> <span className="text-sm font-normal">P/L généré</span></div>
-                    <div><span className="text-blue-600 font-semibold">Points bleus :</span> <span className="text-sm font-normal">Profits, <span className="text-gray-600 font-semibold">Points gris :</span> Pertes</span></div>
-                  </div>
-                  {/* Flèche */}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-white/95"></div>
-                </div>
-              </div>
-            </h2>
-            <div className="h-80">
-              {chartData ? (
-                <Scatter data={chartData} options={chartOptions} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Aucune donnée disponible
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Graphique de corrélation P/L vs Nombre de trades */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Corrélation P/L vs Nombre de Trades
-              <div className="relative group">
-                <svg className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {/* Infobulle */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-white/95 backdrop-blur-sm text-gray-800 text-sm rounded-xl shadow-lg border border-gray-200/50 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-20 font-sans antialiased">
-                  <div className="font-semibold mb-2 text-gray-900">Corrélation P/L vs Nombre de Trades :</div>
-                  <div className="space-y-1">
-                    <div><span className="text-blue-600 font-semibold">Chaque point :</span> <span className="text-sm font-normal">Un jour de trading</span></div>
-                    <div><span className="text-green-600 font-semibold">Corrélation positive :</span> <span className="text-sm font-normal">Plus de trades = plus de profits</span></div>
-                    <div><span className="text-orange-600 font-semibold">Corrélation négative :</span> <span className="text-sm font-normal">La qualité prime sur la quantité</span></div>
-                  </div>
-                  {/* Flèche */}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-white/95"></div>
-                </div>
-              </div>
-            </h2>
-            <div className="h-80">
-              {correlationData?.correlation_data ? (
-                <PnlTradesCorrelationChart data={correlationData.correlation_data} currency={selectedCurrency} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Aucune donnée disponible
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Graphiques de performance par heure (barres) et drawdown */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Graphique de performance par heure (barres) */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              Performance par Heure (Barres)
-              <div className="relative group">
-                <svg className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {/* Infobulle */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-white/95 backdrop-blur-sm text-gray-800 text-sm rounded-xl shadow-lg border border-gray-200/50 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-20 font-sans antialiased">
-                  <div className="font-semibold mb-2 text-gray-900">Performance par Heure (Barres) :</div>
-                  <div className="space-y-1">
-                    <div><span className="text-green-600 font-semibold">Chaque barre :</span> <span className="text-sm font-normal">Une heure avec des trades</span></div>
-                    <div><span className="text-blue-600 font-semibold">Barres bleues :</span> <span className="text-sm font-normal">Profits</span></div>
-                    <div><span className="text-gray-600 font-semibold">Barres grises :</span> <span className="text-sm font-normal">Pertes</span></div>
-                    <div><span className="text-green-600 font-semibold">Objectif :</span> <span className="text-sm font-normal">Identifier vos heures les plus rentables</span></div>
-                  </div>
-                  {/* Flèche */}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-white/95"></div>
-                </div>
-              </div>
-            </h2>
-            <div className="h-80">
-              {hourlyData?.hourly_data ? (
-                <HourlyPerformanceChart data={hourlyData.hourly_data} currency={selectedCurrency} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  Aucune donnée disponible
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Graphique de Drawdown */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-              </svg>
-              Graphique de Drawdown
-              <div className="relative group">
-                <svg className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {/* Infobulle */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-4 py-3 bg-white/95 backdrop-blur-sm text-gray-800 text-sm rounded-xl shadow-lg border border-gray-200/50 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-20 font-sans antialiased">
-                  <div className="font-semibold mb-2 text-gray-900">Qu'est-ce que le Drawdown ?</div>
-                  <div className="space-y-1">
-                    <div><span className="text-green-600 font-semibold">Ligne à 0 :</span> <span className="text-sm font-normal">Vous êtes à votre meilleur niveau</span></div>
-                    <div><span className="text-orange-600 font-semibold">Ligne rouge :</span> <span className="text-sm font-normal">Vous avez perdu par rapport à votre pic</span></div>
-                    <div><span className="text-orange-600 font-semibold">Plus c'est haut :</span> <span className="text-sm font-normal">Plus vous êtes loin de votre meilleur niveau</span></div>
-                  </div>
-                  {/* Flèche */}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-white/95"></div>
-                </div>
-              </div>
-            </h2>
-            <div className="h-80">
-              {drawdownData.length > 0 && drawdownData.some(item => item.drawdown > 0) ? (
-                <DrawdownChart data={drawdownData} currency={selectedCurrency} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  {drawdownData.length > 0 ? 'Aucun drawdown détecté - Performance constante !' : 'Aucune donnée disponible'}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
+    <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="mb-6">
+        <AccountSelector value={accountId} onChange={setAccountId} />
       </div>
+
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-800 dark:text-red-300">{error}</p>
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">{t('analytics:loadingData')}</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Performance par heure (nuage de points) */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+              <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></div>
+              {t('analytics:charts.hourlyPerformanceScatter.title')}
+            </h3>
+            <div style={{ height: '320px', position: 'relative' }}>
+              <ChartScatter
+                data={{
+                  datasets: [
+                    {
+                      label: t('analytics:charts.hourlyPerformanceScatter.label'),
+                      data: hourlyPerformanceScatter.data.map(d => ({
+                        x: d.hour,
+                        y: d.pnl,
+                      })),
+                      backgroundColor: hourlyPerformanceScatter.data.map(d => 
+                        d.pnl >= 0 ? '#3b82f6' : '#ec4899'
+                      ),
+                      pointRadius: 5,
+                      pointHoverRadius: 7,
+                      pointBorderWidth: 0,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    datalabels: {
+                      display: false,
+                    },
+                    legend: {
+                      display: false,
+                    },
+                    tooltip: {
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
+                      borderWidth: 1,
+                      padding: 16,
+                      titleFont: {
+                        size: 14,
+                        weight: 600,
+                      },
+                      bodyFont: {
+                        size: 13,
+                        weight: 500,
+                      },
+                      displayColors: false,
+                      callbacks: {
+                        title: (items) => {
+                          const item = items[0];
+                          const raw = item.raw as { x: number; y: number };
+                          const hour = raw.x;
+                          return `${hour.toString().padStart(2, '0')}:00`;
+                        },
+                        label: (context) => {
+                          const raw = context.raw as { x: number; y: number };
+                          const pnl = raw.y;
+                          return formatCurrency(pnl, currencySymbol);
+                        },
+                      },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      type: 'linear',
+                      position: 'bottom',
+                      // Ajuster min/max pour n'afficher que les heures avec des données
+                      min: hourlyPerformanceScatter.hoursWithData.length > 0 
+                        ? Math.min(...hourlyPerformanceScatter.hoursWithData) - 0.5 
+                        : -0.5,
+                      max: hourlyPerformanceScatter.hoursWithData.length > 0 
+                        ? Math.max(...hourlyPerformanceScatter.hoursWithData) + 0.5 
+                        : 23.5,
+                      ticks: {
+                        // Générer des ticks uniquement pour les heures avec des données
+                        stepSize: 1,
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 11,
+                        },
+                        callback: function(value) {
+                          const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                          const hour = Math.round(numValue);
+                          // Afficher seulement si l'heure fait partie des heures avec des données
+                          if (hourlyPerformanceScatter.hoursWithData.includes(hour)) {
+                            return t('analytics:common.hour', { hour: hour.toString().padStart(2, '0') });
+                          }
+                          return '';
+                        },
+                        maxRotation: 45,
+                        minRotation: 45,
+                      },
+                      grid: {
+                        color: chartColors.grid,
+                        lineWidth: 1,
+                      },
+                      border: {
+                        color: chartColors.border,
+                      },
+                      title: {
+                        display: true,
+                        text: t('analytics:charts.hourlyPerformanceScatter.xAxis'),
+                        color: chartColors.text,
+                        font: {
+                          size: 13,
+                          weight: 600,
+                        },
+                      },
+                    },
+                    y: {
+                      ticks: {
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 12,
+                        },
+                        callback: function(value) {
+                          const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                          return formatCurrency(numValue, currencySymbol);
+                        },
+                      },
+                      grid: {
+                        color: chartColors.grid,
+                        lineWidth: 1,
+                      },
+                      border: {
+                        color: chartColors.border,
+                        display: false,
+                      },
+                      title: {
+                        display: true,
+                        text: t('analytics:charts.hourlyPerformanceScatter.yAxis'),
+                        color: chartColors.text,
+                        font: {
+                          size: 13,
+                          weight: 600,
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Corrélation PnL vs Nombre de Trades */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+              <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full mr-3"></div>
+              {t('analytics:charts.correlation.title')}
+            </h3>
+            <div style={{ height: '320px', position: 'relative' }}>
+              <ChartScatter
+                data={{
+                  datasets: [
+                    {
+                      label: t('analytics:charts.correlation.label'),
+                      data: correlationData.dataPoints.map(d => ({
+                        x: d.trades,
+                        y: d.pnl,
+                      })),
+                      backgroundColor: correlationData.dataPoints.map(d => 
+                        d.pnl >= 0 ? '#3b82f6' : '#ec4899'
+                      ),
+                      pointRadius: 5,
+                      pointHoverRadius: 7,
+                      pointBorderWidth: 0,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    datalabels: {
+                      display: false,
+                    },
+                    legend: {
+                      display: false,
+                    },
+                    tooltip: {
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
+                      borderWidth: 1,
+                      padding: 16,
+                      titleFont: {
+                        size: 14,
+                        weight: 600,
+                      },
+                      bodyFont: {
+                        size: 13,
+                        weight: 500,
+                      },
+                      displayColors: false,
+                      callbacks: {
+                        title: (items) => {
+                          const item = items[0];
+                          const raw = item.raw as { x: number; y: number };
+                          const trades = raw.x;
+                          return `${trades} ${trades > 1 ? t('analytics:common.trades') : t('analytics:common.trade')}`;
+                        },
+                        label: (context) => {
+                          const raw = context.raw as { x: number; y: number };
+                          const pnl = raw.y;
+                          return formatCurrency(pnl, currencySymbol);
+                        },
+                      },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      type: 'linear',
+                      position: 'bottom',
+                      min: correlationData.minTrades - 0.5,
+                      max: correlationData.maxTrades + 0.5,
+                      ticks: {
+                        stepSize: 1,
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 12,
+                        },
+                        callback: function(value) {
+                          const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                          return Math.round(numValue).toString();
+                        },
+                      },
+                      grid: {
+                        color: chartColors.grid,
+                        lineWidth: 1,
+                      },
+                      border: {
+                        color: chartColors.border,
+                      },
+                      title: {
+                        display: true,
+                        text: t('analytics:charts.correlation.xAxis'),
+                        color: chartColors.text,
+                        font: {
+                          size: 13,
+                          weight: 600,
+                        },
+                      },
+                    },
+                    y: {
+                      ticks: {
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 12,
+                        },
+                        callback: function(value) {
+                          const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                          return formatCurrency(numValue, currencySymbol);
+                        },
+                      },
+                      grid: {
+                        color: chartColors.grid,
+                        lineWidth: 1,
+                      },
+                      border: {
+                        color: chartColors.border,
+                        display: false,
+                      },
+                      title: {
+                        display: true,
+                        text: t('analytics:charts.correlation.yAxis'),
+                        color: chartColors.text,
+                        font: {
+                          size: 13,
+                          weight: 600,
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Drawdown par jour */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-1 h-6 bg-gradient-to-b from-red-500 to-red-600 rounded-full mr-3"></div>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('analytics:charts.drawdown.title')}</h3>
+              <TooltipComponent
+                content={t('analytics:charts.drawdown.tooltip')}
+                position="top"
+              >
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                  <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </TooltipComponent>
+            </div>
+            <div style={{ height: '320px', position: 'relative' }}>
+              <ChartLine
+                data={{
+                  labels: drawdownData.map(d => d.date),
+                  datasets: [
+                    {
+                      label: t('analytics:charts.drawdown.label'),
+                      data: drawdownData.map(d => d.drawdown),
+                      borderColor: '#ec4899',
+                      backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                      borderWidth: 3,
+                      pointRadius: 5,
+                      pointBackgroundColor: '#ec4899',
+                      pointBorderColor: '#fff',
+                      pointBorderWidth: 2,
+                      pointHoverRadius: 7,
+                      fill: true,
+                      tension: 0, // Ligne droite, pas de courbe
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    datalabels: {
+                      display: false,
+                    },
+                    legend: {
+                      display: false,
+                    },
+                    tooltip: {
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
+                      borderWidth: 1,
+                      padding: 16,
+                      titleFont: {
+                        size: 14,
+                        weight: 600,
+                      },
+                      bodyFont: {
+                        size: 13,
+                        weight: 500,
+                      },
+                      displayColors: false,
+                      callbacks: {
+                        title: (items) => {
+                          const index = items[0].dataIndex;
+                          return drawdownData[index].date;
+                        },
+                        label: (context) => {
+                          const index = context.dataIndex;
+                          const data = drawdownData[index];
+                          return [
+                            `${t('analytics:charts.drawdown.amount')}: ${formatCurrency(data.drawdownAmount, currencySymbol)}`,
+                            `${t('analytics:charts.drawdown.percentage')}: ${data.drawdown.toFixed(2)}% (${t('analytics:charts.drawdown.lossFromPeak')})`,
+                          ];
+                        },
+                      },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 11,
+                        },
+                      },
+                      grid: {
+                        color: chartColors.grid,
+                        lineWidth: 1,
+                      },
+                      border: {
+                        color: chartColors.border,
+                      },
+                    },
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 12,
+                        },
+                        callback: function(value) {
+                          const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                          return numValue.toFixed(1) + '%';
+                        },
+                      },
+                      grid: {
+                        color: chartColors.grid,
+                        lineWidth: 1,
+                      },
+                      border: {
+                        color: chartColors.border,
+                        display: false,
+                      },
+                      title: {
+                        display: true,
+                        text: t('analytics:charts.drawdown.yAxis'),
+                        color: chartColors.text,
+                        font: {
+                          size: 13,
+                          weight: 600,
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Performance par heure (barres) */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+              <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full mr-3"></div>
+              {t('analytics:charts.hourlyPerformanceBars.title')}
+            </h3>
+            <div style={{ height: '320px', position: 'relative' }}>
+              <ChartBar
+                data={{
+                  labels: hourlyPerformanceBars.map(d => d.hour),
+                  datasets: [
+                    {
+                      label: t('analytics:charts.hourlyPerformanceBars.label'),
+                      data: hourlyPerformanceBars.map(d => d.pnl),
+                      backgroundColor: hourlyPerformanceBars.map(d => 
+                        d.pnl >= 0 ? '#3b82f6' : '#ec4899'
+                      ),
+                      borderRadius: 4,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    datalabels: {
+                      display: false,
+                    },
+                    legend: {
+                      display: false,
+                    },
+                    tooltip: {
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
+                      borderWidth: 1,
+                      padding: 16,
+                      titleFont: {
+                        size: 14,
+                        weight: 600,
+                      },
+                      bodyFont: {
+                        size: 13,
+                        weight: 500,
+                      },
+                      displayColors: false,
+                      callbacks: {
+                        title: (items) => {
+                          const index = items[0].dataIndex;
+                          return hourlyPerformanceBars[index].hour;
+                        },
+                        label: (context) => {
+                          const pnl = context.parsed.y ?? 0;
+                          return formatCurrency(pnl, currencySymbol);
+                        },
+                      },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      type: 'category' as const,
+                      ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 11,
+                        },
+                        // Afficher tous les labels car on a déjà filtré les heures vides
+                        autoSkip: false,
+                      },
+                      grid: {
+                        display: false,
+                      },
+                      border: {
+                        color: chartColors.border,
+                      },
+                    },
+                    y: {
+                      ticks: {
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 12,
+                        },
+                        callback: function(value) {
+                          const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                          return formatCurrency(numValue, currencySymbol);
+                        },
+                      },
+                      grid: {
+                        color: chartColors.grid,
+                        lineWidth: 1,
+                      },
+                      border: {
+                        color: chartColors.border,
+                        display: false,
+                      },
+                      title: {
+                        display: true,
+                        text: t('analytics:charts.hourlyPerformanceBars.yAxis'),
+                        color: chartColors.text,
+                        font: {
+                          size: 13,
+                          weight: 600,
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Heatmap Jour × Heure */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+              <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full mr-3"></div>
+              {t('analytics:charts.heatmap.title')}
+            </h3>
+            <div className="overflow-x-auto -mx-2 px-2">
+              <div className="inline-block min-w-full">
+                <div className="mb-3">
+                  {/* En-tête des heures */}
+                  <div className="flex ml-14">
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 text-xs text-gray-600 dark:text-gray-400 text-center font-semibold min-w-[22px]"
+                      >
+                        {i.toString().padStart(2, '0')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Grille de la heatmap */}
+                <div className="space-y-1" ref={heatmapContainerRef}>
+                  {heatmapData.daysOfWeek.map((day, dayIndex) => (
+                    <div key={day} className="flex items-center">
+                      <div className="w-14 text-sm font-semibold text-gray-700 dark:text-gray-300 text-right pr-2">
+                        {day}
+                      </div>
+                      <div className="flex flex-1">
+                        {Array.from({ length: 24 }, (_, hour) => {
+                          const value = heatmapData.data[dayIndex][hour];
+                          const color = getHeatmapColor(value, heatmapData.maxAbs);
+                          return (
+                            <div
+                              key={hour}
+                              className="flex-1 h-7 border-2 border-white dark:border-gray-700 rounded-md hover:border-gray-300 dark:hover:border-gray-600 hover:scale-110 transition-all duration-200 cursor-pointer relative min-w-[22px] shadow-sm"
+                              style={{ backgroundColor: color }}
+                              onMouseEnter={(e) => {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                
+                                // Calculer la position du tooltip
+                                const tooltipWidth = 150;
+                                const tooltipHeight = 70;
+                                const padding = 8;
+                                
+                                let x = rect.left + rect.width / 2;
+                                let y = rect.top - tooltipHeight - padding;
+                                
+                                // Deux premières lignes : tooltip en dessous
+                                const isFirstTwoRows = dayIndex <= 1;
+                                if (isFirstTwoRows) {
+                                  y = rect.bottom + padding;
+                                }
+                                
+                                // Dernières colonnes : aligner à droite
+                                const isLastColumns = hour >= 20;
+                                if (isLastColumns) {
+                                  x = rect.right - tooltipWidth;
+                                  // Si déborde à gauche, centrer
+                                  if (x < padding) {
+                                    x = rect.left + rect.width / 2;
+                                  }
+                                } else {
+                                  // Centrer mais éviter les débordements
+                                  if (x - tooltipWidth / 2 < padding) {
+                                    x = tooltipWidth / 2 + padding;
+                                  } else if (x + tooltipWidth / 2 > window.innerWidth - padding) {
+                                    x = window.innerWidth - tooltipWidth / 2 - padding;
+                                  }
+                                }
+                                
+                                // Ajuster verticalement si nécessaire
+                                if (y < padding) {
+                                  y = rect.bottom + padding;
+                                }
+                                if (y + tooltipHeight > window.innerHeight - padding) {
+                                  y = rect.top - tooltipHeight - padding;
+                                  // Si toujours trop bas, placer en dessous
+                                  if (y < padding) {
+                                    y = rect.bottom + padding;
+                                  }
+                                }
+                                
+                                setHeatmapTooltip({
+                                  day,
+                                  hour,
+                                  value,
+                                  x: Math.max(padding, x),
+                                  y: Math.max(padding, y),
+                                });
+                              }}
+                              onMouseLeave={() => {
+                                setHeatmapTooltip(null);
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Légende améliorée */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-center space-x-6 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: '#ec4899' }}></div>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{t('analytics:charts.heatmap.losses')}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 rounded-md shadow-sm bg-gray-200 dark:bg-gray-600"></div>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{t('analytics:charts.heatmap.neutral')}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: '#3b82f6' }}></div>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{t('analytics:charts.heatmap.gains')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Distribution des PnL */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+              <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
+              {t('analytics:charts.pnlDistribution.title')}
+            </h3>
+            <div style={{ height: '320px', position: 'relative' }}>
+              <ChartBar
+                data={{
+                  labels: pnlDistribution.map((d, index) => {
+                    // Format compact pour les labels : afficher seulement le début de l'intervalle
+                    // L'intervalle complet est disponible dans le tooltip
+                    return formatCurrency(d.start || parseFloat(d.range), currencySymbol);
+                  }),
+                  datasets: [
+                    {
+                      label: t('analytics:charts.pnlDistribution.label'),
+                      data: (() => {
+                        const totalTrades = pnlDistribution.reduce((sum, d) => sum + d.count, 0);
+                        return pnlDistribution.map(d => totalTrades > 0 ? (d.count / totalTrades) * 100 : 0);
+                      })(),
+                      backgroundColor: pnlDistribution.map(d => 
+                        d.isPositive ? '#3b82f6' : '#ec4899'
+                      ),
+                      borderRadius: 4,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    datalabels: {
+                      display: false,
+                    },
+                    legend: {
+                      display: false,
+                    },
+                    tooltip: {
+                      backgroundColor: chartColors.tooltipBg,
+                      titleColor: chartColors.tooltipTitle,
+                      bodyColor: chartColors.tooltipBody,
+                      borderColor: chartColors.tooltipBorder,
+                      borderWidth: 1,
+                      padding: 16,
+                      titleFont: {
+                        size: 14,
+                        weight: 600,
+                      },
+                      bodyFont: {
+                        size: 13,
+                        weight: 500,
+                      },
+                      displayColors: false,
+                      callbacks: {
+                        title: (items) => {
+                          const index = items[0].dataIndex;
+                          const bin = pnlDistribution[index];
+                          // Extraire start et end du rangeLabel
+                          const rangeMatch = bin.rangeLabel.match(/^(.+?)\s*-\s*(.+?)$/);
+                          let startValue = parseFloat(bin.range);
+                          let endValue = startValue;
+                          
+                          if (rangeMatch && rangeMatch[2]) {
+                            endValue = parseFloat(rangeMatch[2].trim());
+                          } else if (pnlDistribution[index + 1]) {
+                            endValue = parseFloat(pnlDistribution[index + 1].range);
+                          } else {
+                            // Si c'est le dernier bin, utiliser binWidth
+                            endValue = startValue + (bin.binWidth || (startValue * 0.1));
+                          }
+                          
+                          const startFormatted = formatCurrency(startValue, currencySymbol);
+                          const endFormatted = formatCurrency(endValue, currencySymbol);
+                          return t('analytics:charts.pnlDistribution.range', { start: startFormatted, end: endFormatted });
+                        },
+                        label: (context) => {
+                          const index = context.dataIndex;
+                          const count = pnlDistribution[index].count;
+                          const percentage = context.parsed.y ?? 0;
+                          const totalTrades = pnlDistribution.reduce((sum, d) => sum + d.count, 0);
+                          return [
+                            `${count} ${count > 1 ? t('analytics:common.trades') : t('analytics:common.trade')}`,
+                            `${percentage.toFixed(1)}% (${t('analytics:charts.pnlDistribution.onTotal', { total: totalTrades })})`
+                          ];
+                        },
+                      },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 12,
+                        },
+                        // Afficher seulement un label sur deux pour éviter la surcharge quand il y a beaucoup de valeurs
+                        callback: function(value: any, index: number, ticks: any[]) {
+                          // Si plus de 8 bins, afficher seulement un label sur deux
+                          if (pnlDistribution.length > 8) {
+                            return index % 2 === 0 ? this.getLabelForValue(value) : '';
+                          }
+                          return this.getLabelForValue(value);
+                        },
+                        maxTicksLimit: 10, // Limiter le nombre de ticks affichés
+                      },
+                      grid: {
+                        display: false,
+                      },
+                      border: {
+                        color: chartColors.border,
+                      },
+                      title: {
+                        display: false,
+                      },
+                    },
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        color: chartColors.textSecondary,
+                        font: {
+                          size: 12,
+                        },
+                        callback: function(value) {
+                          const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                          return numValue.toFixed(1) + '%';
+                        },
+                      },
+                      grid: {
+                        color: chartColors.grid,
+                        lineWidth: 1,
+                      },
+                      border: {
+                        color: chartColors.border,
+                        display: false,
+                      },
+                      title: {
+                        display: true,
+                        text: t('analytics:charts.pnlDistribution.yAxis'),
+                        color: chartColors.text,
+                        font: {
+                          size: 13,
+                          weight: 600,
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <FloatingActionButton onClick={() => setShowImport(true)} title={t('analytics:importTrades')} />
+      <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
+      
+      {/* Tooltip portal pour la heatmap - rendu à la racine */}
+      {heatmapTooltip && typeof window !== 'undefined' && document.body && createPortal(
+        <div
+          className="fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 whitespace-nowrap pointer-events-none"
+          style={{
+            left: `${heatmapTooltip.x}px`,
+            top: `${heatmapTooltip.y}px`,
+            transform: heatmapTooltip.hour >= 20 ? 'none' : 'translateX(-50%)',
+            zIndex: 99999,
+          }}
+        >
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 font-medium" style={{ fontSize: '14px', fontWeight: 600 }}>
+            {heatmapTooltip.day} {t('analytics:common.hour', { hour: heatmapTooltip.hour.toString().padStart(2, '0') })}
+          </p>
+          <p className="text-base font-semibold text-gray-900 dark:text-gray-100" style={{ fontSize: '13px', fontWeight: 500 }}>
+            {formatCurrency(heatmapTooltip.value, currencySymbol)}
+          </p>
+        </div>,
+        document.body
+      )}
     </div>
   );
-}
+};
 
 export default AnalyticsPage;

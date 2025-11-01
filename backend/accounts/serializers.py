@@ -4,7 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import datetime, timedelta
-from .models import User
+from .models import User, UserPreferences
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -101,7 +101,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'full_name', 'role', 'is_verified', 'is_active',
             'is_admin', 'is_regular_user', 'created_at', 'updated_at'
         )
-        read_only_fields = ('id', 'email', 'role', 'is_verified', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'role', 'is_verified', 'created_at', 'updated_at')
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
@@ -124,16 +124,18 @@ class UserFullUpdateSerializer(serializers.ModelSerializer):
     Sérialiseur pour la mise à jour complète du profil utilisateur
     Permet aux admins de modifier le rôle et le statut
     """
+    email = serializers.EmailField(required=False)
+    
     class Meta:
         model = User
-        fields = ('first_name', 'last_name', 'username', 'role', 'is_verified', 'is_active')
+        fields = ('first_name', 'last_name', 'username', 'email', 'role', 'is_verified', 'is_active')
     
     def update(self, instance, validated_data):
         # Vérifier si l'utilisateur actuel est admin
         current_user = self.context['request'].user
         if not current_user.is_admin:
             # Si ce n'est pas un admin, ne permettre que la modification des champs de base
-            allowed_fields = ['first_name', 'last_name', 'username']
+            allowed_fields = ['first_name', 'last_name', 'username', 'email']
             filtered_data = {k: v for k, v in validated_data.items() if k in allowed_fields}
             validated_data = filtered_data
         
@@ -302,3 +304,37 @@ class SessionInfoSerializer(serializers.Serializer):
     auto_logout_warning_at = serializers.DateTimeField()
     time_remaining = serializers.IntegerField(help_text="Temps restant en secondes")
     warning_time_remaining = serializers.IntegerField(help_text="Temps avant avertissement en secondes")
+
+
+class UserPreferencesSerializer(serializers.ModelSerializer):
+    """
+    Sérialiseur pour les préférences utilisateur
+    """
+    class Meta:
+        model = UserPreferences
+        fields = (
+            'language', 'timezone', 'date_format', 'number_format',
+            'theme', 'font_size', 'created_at', 'updated_at'
+        )
+        read_only_fields = ('created_at', 'updated_at')
+
+
+class ActiveSessionSerializer(serializers.Serializer):
+    """
+    Sérialiseur pour les sessions actives
+    """
+    jti = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    expires_at = serializers.DateTimeField()
+    is_current = serializers.BooleanField()
+    device_info = serializers.CharField(required=False, allow_null=True)
+
+
+class LoginHistorySerializer(serializers.Serializer):
+    """
+    Sérialiseur pour l'historique des connexions
+    """
+    date = serializers.DateTimeField()
+    ip_address = serializers.CharField(required=False, allow_null=True)
+    user_agent = serializers.CharField(required=False, allow_null=True)
+    success = serializers.BooleanField()

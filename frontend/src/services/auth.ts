@@ -1,4 +1,4 @@
-import apiClient from '../lib/apiClient';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
 export interface User {
   id: number;
@@ -6,7 +6,6 @@ export interface User {
   username: string;
   first_name: string;
   last_name: string;
-  full_name: string;
   role: 'user' | 'admin';
   is_verified: boolean;
   is_active: boolean;
@@ -22,31 +21,8 @@ export interface LoginResponse {
   user: User;
 }
 
-export interface RegisterData {
-  email: string;
-  username: string;
-  first_name: string;
-  last_name: string;
-  password: string;
-  password_confirm: string;
-}
-
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-export interface PasswordChangeData {
-  old_password: string;
-  new_password: string;
-  new_password_confirm: string;
-}
-
-export interface PasswordResetData {
-  email: string;
-}
-
 class AuthService {
+  private readonly BASE_URL = getApiBaseUrl();
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
   private user: User | null = null;
@@ -81,237 +57,105 @@ class AuthService {
   }
 
   private clearStorage() {
-    // Nettoyer tous les tokens et données utilisateur
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
-    localStorage.removeItem('session_info');
-    
-    // Nettoyer le cache des données de trading
-    localStorage.removeItem('trading_accounts');
-    localStorage.removeItem('trades_cache');
-    localStorage.removeItem('statistics_cache');
-    localStorage.removeItem('strategy_cache');
-    localStorage.removeItem('analytics_cache');
-    
-    // Nettoyer le cache React Query si disponible
-    if (typeof window !== 'undefined' && (window as any).queryClient) {
-      (window as any).queryClient.clear();
-    }
-    
-    // Déclencher un événement pour nettoyer les caches des composants
-    window.dispatchEvent(new CustomEvent('user:logout', { 
-      detail: { clearAllCaches: true } 
-    }));
-    
-    // Rediriger vers la page d'accueil
-    if (typeof window !== 'undefined') {
-      window.location.hash = '';
-    }
     
     this.accessToken = null;
     this.refreshToken = null;
     this.user = null;
   }
 
-  async login(credentials: LoginData): Promise<LoginResponse> {
+  async login(username: string, password: string): Promise<LoginResponse> {
     try {
-      // Nettoyer complètement le cache et les tokens avant la connexion
-      this.clearStorage();
-      
-      // S'assurer que les tokens sont bien supprimés de la mémoire
-      this.accessToken = null;
-      this.refreshToken = null;
-      this.user = null;
-      
-      // Supprimer explicitement les tokens du localStorage
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      
-      const response = await apiClient.post('/accounts/auth/login/', credentials);
-      const { access, refresh, user, session_info } = response.data;
+      const response = await fetch(`${this.BASE_URL}/api/accounts/auth/login/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: username, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erreur de connexion');
+      }
+
+      const data = await response.json();
+      const { access, refresh, user } = data;
       
       this.saveTokensToStorage(access, refresh, user);
       
-      // Stocker les informations de session si disponibles
-      if (session_info) {
-        console.log('📊 [AUTH] Stockage des informations de session');
-        localStorage.setItem('session_info', JSON.stringify(session_info));
-      }
-      
       // Déclencher un événement pour recharger les données du nouvel utilisateur
-      console.log('📢 [AUTH] Déclenchement de l\'événement user:login');
       window.dispatchEvent(new CustomEvent('user:login', { 
-        detail: { user, clearAllCaches: true } 
+        detail: { user } 
       }));
       
       return { access, refresh, user };
     } catch (error: any) {
-      // Gestion des erreurs spécifiques
-      if (error.response?.status === 400) {
-        const errors = error.response?.data;
-        if (errors && typeof errors === 'object') {
-          // Gestion des erreurs de validation Django
-          if (errors.non_field_errors && errors.non_field_errors.length > 0) {
-            throw new Error(errors.non_field_errors[0]);
-          } else if (errors.email && errors.email.length > 0) {
-            throw new Error('Aucun compte trouvé avec cette adresse email');
-          } else if (errors.password && errors.password.length > 0) {
-            throw new Error('Mot de passe incorrect');
-          } else {
-            throw new Error('Email ou mot de passe incorrect');
-          }
-        } else if (typeof errors === 'string') {
-          throw new Error(errors);
-        } else {
-          throw new Error('Email ou mot de passe incorrect');
-        }
-      } else if (error.response?.status === 401) {
-        throw new Error('Email ou mot de passe incorrect');
-      } else if (error.response?.status === 404) {
-        throw new Error('Aucun compte trouvé avec cette adresse email');
-      } else if (error.response?.status >= 500) {
-        throw new Error('Erreur du serveur. Veuillez réessayer plus tard');
-      } else {
-        throw new Error(error.response?.data?.detail || 'Erreur de connexion');
-      }
+      throw new Error(error.message || 'Erreur de connexion');
     }
   }
 
-  async register(userData: RegisterData): Promise<LoginResponse> {
+  async register(username: string, email: string, password: string): Promise<LoginResponse> {
     try {
-      const response = await apiClient.post('/accounts/auth/register/', userData);
-      const { access, refresh, user } = response.data;
+      const response = await fetch(`${this.BASE_URL}/api/accounts/auth/register/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          username, 
+          email, 
+          password,
+          first_name: '',
+          last_name: '',
+          password_confirm: password
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Erreur d\'inscription');
+      }
+
+      const data = await response.json();
+      const { access, refresh, user } = data;
       
       this.saveTokensToStorage(access, refresh, user);
+      
+      // Déclencher un événement pour recharger les données du nouvel utilisateur
+      window.dispatchEvent(new CustomEvent('user:login', { 
+        detail: { user } 
+      }));
+      
       return { access, refresh, user };
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Erreur d\'inscription');
+      throw new Error(error.message || 'Erreur d\'inscription');
     }
   }
 
   async logout(): Promise<void> {
     try {
       if (this.refreshToken) {
-        await apiClient.post('/accounts/auth/logout/', {
-          refresh: this.refreshToken
+        await fetch(`${this.BASE_URL}/api/accounts/auth/logout/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refresh: this.refreshToken }),
         });
       }
     } catch (error: any) {
-      // Pour la déconnexion, on ignore les erreurs 401 car le token peut être expiré
-      // L'important est de nettoyer le stockage local
-      if (error.response?.status !== 401) {
-        console.error('Erreur lors de la déconnexion:', error);
-      }
+      console.error('Erreur lors de la déconnexion:', error);
     } finally {
       this.clearStorage();
-    }
-  }
-
-  async refreshAccessToken(): Promise<string | null> {
-    if (!this.refreshToken) {
-      return null;
-    }
-
-    try {
-      const response = await apiClient.post('/accounts/auth/refresh/', {
-        refresh: this.refreshToken
-      });
-      
-      const { access } = response.data;
-      this.accessToken = access;
-      localStorage.setItem('access_token', access);
-      
-      return access;
-    } catch (error) {
-      console.error('Erreur lors du refresh du token:', error);
-      this.clearStorage();
-      return null;
-    }
-  }
-
-  async changePassword(passwordData: PasswordChangeData): Promise<void> {
-    try {
-      await apiClient.post('/accounts/auth/password/change/', passwordData);
-    } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Erreur lors du changement de mot de passe');
-    }
-  }
-
-  async requestPasswordReset(email: string): Promise<void> {
-    try {
-      await apiClient.post('/accounts/auth/password/reset/', { email });
-    } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Erreur lors de la demande de réinitialisation');
-    }
-  }
-
-  async getUserProfile(): Promise<User> {
-    try {
-      const response = await apiClient.get('/accounts/profile/');
-      const user = response.data;
-      this.user = user;
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Erreur lors de la récupération du profil');
-    }
-  }
-
-  async updateUserProfile(userData: Partial<User>): Promise<User> {
-    try {
-      const response = await apiClient.patch('/accounts/profile/', userData);
-      const user = response.data;
-      this.user = user;
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Erreur lors de la mise à jour du profil');
-    }
-  }
-
-  async updateProfile(profileData: {
-    first_name?: string;
-    last_name?: string;
-    username?: string;
-    role?: string;
-    is_verified?: boolean;
-    is_active?: boolean;
-  }): Promise<User> {
-    try {
-      const response = await apiClient.put('/accounts/profile/', profileData);
-      const { user } = response.data;
-      this.user = user;
-      localStorage.setItem('user', JSON.stringify(user));
-      return user;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Erreur lors de la mise à jour du profil');
-    }
-  }
-
-  async deleteAccount(): Promise<void> {
-    try {
-      await apiClient.delete('/accounts/profile/');
-      // Nettoyer les données locales
-      this.user = null;
-      localStorage.removeItem('user');
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-    } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Erreur lors de la suppression du compte');
+      window.dispatchEvent(new CustomEvent('user:logout'));
     }
   }
 
   isAuthenticated(): boolean {
     return !!this.accessToken && !!this.user;
-  }
-
-  isAdmin(): boolean {
-    return this.user?.is_admin || false;
-  }
-
-  isRegularUser(): boolean {
-    return this.user?.is_regular_user || false;
   }
 
   getCurrentUser(): User | null {
@@ -322,15 +166,49 @@ class AuthService {
     return this.accessToken;
   }
 
-  getRefreshToken(): string | null {
-    return this.refreshToken;
+  /**
+   * Rafraîchit le token d'accès en utilisant le refresh token
+   * Retourne le nouveau token d'accès ou null en cas d'échec
+   */
+  async refreshAccessToken(): Promise<string | null> {
+    const refresh = this.refreshToken || localStorage.getItem('refresh_token');
+    if (!refresh) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${this.BASE_URL}/api/accounts/auth/refresh/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const newAccess = data.access as string | undefined;
+
+      if (newAccess) {
+        this.accessToken = newAccess;
+        localStorage.setItem('access_token', newAccess);
+        return newAccess;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement du token:', error);
+      return null;
+    }
   }
 
-  updateCurrentUser(updatedUser: User): void {
-    // Mettre à jour l'utilisateur dans le localStorage
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+  updateUser(userData: Partial<User>): void {
+    if (this.user) {
+      this.user = { ...this.user, ...userData };
+      localStorage.setItem('user', JSON.stringify(this.user));
     }
   }
 }

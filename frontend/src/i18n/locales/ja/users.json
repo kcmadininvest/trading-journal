@@ -1,0 +1,70 @@
+{
+  "user": "Utilisateur",
+  "role": "Rôle",
+  "accountStatus": "Statut compte",
+  "emailStatus": "Statut mail",
+  "createdAt": "Créé le",
+  "lastLogin": "Dernière connexion",
+  "never": "Jamais",
+  "admin": "Administrateur",
+  "active": "Actif",
+  "inactive": "Inactif",
+  "verified": "Vérifié",
+  "notVerified": "Non vérifié",
+  "editUser": "Modifier l'utilisateur",
+  "deleteUser": "Supprimer l'utilisateur",
+  "disableAccount": "Désactiver le compte",
+  "enableAccount": "Activer le compte",
+  "editModal": {
+    "title": "Modifier l'utilisateur",
+    "email": "Email:",
+    "id": "ID:",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "username": "Nom d'utilisateur",
+    "role": "Rôle",
+    "accountActive": "Compte actif",
+    "emailVerified": "Email vérifié",
+    "error": "Une erreur est survenue",
+    "cancel": "Annuler",
+    "saving": "Sauvegarde...",
+    "save": "Sauvegarder"
+  },
+  "page": {
+    "loading": "Chargement des utilisateurs...",
+    "totalUsers": "Total utilisateurs",
+    "administrators": "Administrateurs",
+    "activeAccounts": "Comptes actifs",
+    "search": "Rechercher",
+    "searchPlaceholder": "Email, nom, prénom...",
+    "allRoles": "Tous les rôles",
+    "allStatuses": "Tous les statuts",
+    "refresh": "Actualiser",
+    "refreshing": "Actualisation...",
+    "error": {
+      "invalidDataFormat": "Format de données invalide reçu du serveur",
+      "loading": "Erreur lors du chargement des utilisateurs",
+      "updateStatus": "Erreur lors de la modification du statut",
+      "delete": "Erreur lors de la suppression",
+      "bulkDelete": "Erreur lors de la suppression en masse"
+    },
+    "success": {
+      "userUpdated": "Utilisateur mis à jour avec succès",
+      "userDisabled": "Utilisateur désactivé avec succès",
+      "userEnabled": "Utilisateur activé avec succès",
+      "userDeleted": "Utilisateur supprimé avec succès",
+      "usersDeleted": "{{count}} utilisateur(s) supprimé(s) avec succès"
+    },
+    "confirm": {
+      "deleteUser": "Êtes-vous sûr de vouloir supprimer l'utilisateur {{email}} ?",
+      "bulkDelete": "Êtes-vous sûr de vouloir supprimer {{count}} utilisateur(s) ?"
+    }
+  },
+  "bulkActions": {
+    "selected": "{{count}} utilisateur sélectionné",
+    "selectedPlural": "{{count}} utilisateurs sélectionnés",
+    "clearSelection": "Annuler la sélection",
+    "deleteSelection": "Supprimer sélection"
+  }
+}
+

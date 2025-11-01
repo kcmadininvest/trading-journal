@@ -1,0 +1,23 @@
+{
+  "title": "Calendrier",
+  "loading": "Chargement...",
+  "errorLoadingMonthlyData": "Erreur lors du chargement des données mensuelles",
+  "errorLoadingYearlyData": "Erreur lors du chargement des données annuelles",
+  "daily": "Quotidienne",
+  "monthly": "Mensuelle",
+  "previousMonth": "Mois précédent",
+  "nextMonth": "Mois suivant",
+  "previousYear": "Année précédente",
+  "nextYear": "Année suivante",
+  "today": "Aujourd'hui",
+  "weeklyPnL": "PnL Hebdomadaire",
+  "total": "Total",
+  "strategyRespected": "Stratégie respectée pour tous les trades",
+  "strategyPartiallyRespected": "Stratégie partiellement respectée",
+  "viewDayTrades": "Voir les trades du jour",
+  "manageStrategyCompliance": "Gérer le respect de la stratégie",
+  "importTrades": "Importer des trades",
+  "trade": "trade",
+  "trades": "trades"
+}
+

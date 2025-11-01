@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface StrategyProgressBarProps {
   respectPercentage: number;
@@ -7,67 +8,38 @@ interface StrategyProgressBarProps {
   isLoading?: boolean;
 }
 
-const StrategyProgressBar: React.FC<StrategyProgressBarProps> = ({ 
-  respectPercentage, 
-  totalTrades, 
-  respectedTrades, 
-  isLoading = false 
+export const StrategyProgressBar: React.FC<StrategyProgressBarProps> = ({
+  respectPercentage,
+  totalTrades,
+  respectedTrades,
+  isLoading = false,
 }) => {
+  const { t } = useI18nTranslation();
   if (isLoading) {
     return (
-      <div className="flex items-center gap-4">
-        <div className="text-base text-gray-500">Chargement...</div>
-        <div className="w-48 h-3 bg-gray-200 rounded-full animate-pulse"></div>
-      </div>
+      <div className="w-64 h-20 bg-gray-200 rounded-lg animate-pulse" />
     );
   }
 
-  if (totalTrades === 0) {
-    return (
-      <div className="flex items-center gap-4">
-        <div className="text-base text-gray-500">Aucun trade</div>
-        <div className="w-48 h-3 bg-gray-200 rounded-full"></div>
-      </div>
-    );
-  }
-
-  // Fonction pour calculer la couleur graduelle
-  const getGradualColor = (percentage: number) => {
-    // Transition graduelle du rouge au vert
-    // Rouge pur à 0%, vert pur à 100%
-    const red = Math.max(0, Math.min(255, 255 - (percentage * 2.55)));
-    const green = Math.max(0, Math.min(255, percentage * 2.55));
-    const blue = 0;
-    
-    return `rgb(${Math.round(red)}, ${Math.round(green)}, ${Math.round(blue)})`;
-  };
-
+  const percentage = Math.round(respectPercentage);
+  const colorClass = percentage >= 75 ? 'bg-green-500' : percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500';
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="text-base text-gray-700">
-        <span className="font-semibold">Respect global de la stratégie :</span>
-        <span 
-          className="ml-2 font-bold text-lg"
-          style={{ color: getGradualColor(respectPercentage) }}
-        >
-          {Math.round(respectPercentage)}%
-        </span>
-        <span className="text-sm text-gray-600 ml-2">
-          ({respectedTrades}/{totalTrades})
-        </span>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 w-64">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium text-gray-700">{t('strategies:strategyRespect')}</span>
+        <span className="text-sm font-semibold text-gray-900">{percentage}%</span>
       </div>
-      <div className="w-48 h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-        <div 
-          className="h-full transition-all duration-500 ease-out"
-          style={{ 
-            width: `${Math.min(respectPercentage, 100)}%`,
-            backgroundColor: getGradualColor(respectPercentage)
-          }}
+      <div className="w-full bg-gray-200 rounded-full h-3 mb-1">
+        <div
+          className={`h-3 rounded-full transition-all duration-300 ${colorClass}`}
+          style={{ width: `${Math.min(percentage, 100)}%` }}
         />
+      </div>
+      <div className="text-xs text-gray-500 text-center">
+        {respectedTrades} / {totalTrades} {t('strategies:tradesRespected')}
       </div>
     </div>
   );
 };
 
-export default StrategyProgressBar;

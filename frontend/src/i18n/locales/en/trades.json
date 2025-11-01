@@ -1,0 +1,243 @@
+{
+  "title": "My Trades",
+  "loading": "Loading...",
+  "noTrades": "No trades found",
+  "selectAll": "Select all",
+  "deselectAll": "Deselect all",
+  "deleteSelected": "Delete selection",
+  "selected": "selected",
+  "trade": "Trade",
+  "trades": "Trades",
+  "contract": "Contract",
+  "type": "Type",
+  "size": "Size",
+  "entry": "Entry",
+  "exit": "Exit",
+  "pnl": "PnL",
+  "fees": "Fees",
+  "netPnl": "Net PnL",
+  "duration": "Duration",
+  "date": "Date",
+  "actions": "Actions",
+  "long": "Long",
+  "short": "Short",
+  "view": "View",
+  "edit": "Edit",
+  "delete": "Delete",
+  "deleteConfirm": "Are you sure you want to delete this trade?",
+  "deleteSuccess": "Trade deleted successfully",
+  "deleteError": "Error deleting trade",
+  "totals": "Totals",
+  "count": "Count",
+  "import": "Import",
+  "add": "Add",
+  "filters": "Filters",
+  "reset": "Reset",
+  "account": "Account",
+  "allAccounts": "All accounts",
+  "startDate": "Start date",
+  "endDate": "End date",
+  "profitable": "Profitable",
+  "all": "All",
+  "yes": "Yes",
+  "no": "No",
+  "stats": "Statistics",
+  "totalTrades": "Total trades",
+  "totalPnl": "Total PnL",
+  "totalFees": "Total fees",
+  "totalNetPnl": "Total Net PnL",
+  "modal": {
+    "editTitle": "Edit trade",
+    "strategy": "Strategy",
+    "notes": "Notes",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "strategyCompliance": {
+    "title": "Strategy Compliance",
+    "error": "Error",
+    "noTradesForDate": "No trades found for this date",
+    "duplicateConfiguration": "Duplicate configuration",
+    "duplicateDescription": "Copy the first trade's input (strategy, emotions, screenshot, video) to all other trades of the day",
+    "duplicateToAll": "Duplicate to all",
+    "strategyRespected": "Strategy respected?",
+    "takeProfitReached": "Take Profit reached",
+    "tp1": "TP1",
+    "tp2Plus": "TP2+",
+    "gainIfStrategyRespected": "Gain if strategy respected?",
+    "gainIfStrategyRespectedTooltip": "If you had respected the strategy, would this trade have been profitable?",
+    "dominantEmotions": "Dominant emotions (multiple selection)",
+    "emotionsSelected": "{{count}} emotion selected",
+    "emotionsSelectedPlural": "{{count}} emotions selected",
+    "subjectiveRating": "Subjective trade rating",
+    "selectRating": "-- Select a rating --",
+    "ratingVeryBad": "Very bad",
+    "ratingBad": "Bad",
+    "ratingAverage": "Average",
+    "ratingGood": "Good",
+    "ratingExcellent": "Excellent",
+    "ratingTooltip": "Subjectively evaluate the quality of this trade",
+    "screenshotUrl": "Trade Screenshot URL",
+    "screenshotPlaceholder": "https://...",
+    "openScreenshot": "Open screenshot",
+    "viewImage": "View image",
+    "screenshotDescription": "Link to a TradingView image or other trade screenshot",
+    "videoUrl": "Session Video URL",
+    "videoPlaceholder": "https://youtube.com/... or https://...",
+    "openVideo": "Open video",
+    "viewVideo": "View video",
+    "videoDescription": "Link to a YouTube video or other video platform",
+    "emotionDetails": "Emotion details",
+    "emotionDetailsPlaceholder": "Describe in detail the emotions felt during this trade...",
+    "possibleImprovements": "Possible improvements",
+    "possibleImprovementsPlaceholder": "Identify improvement points for this trade...",
+    "tradesWithStrategyRespected": "{{count}} / {{total}} trades with strategy respected",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  },
+  "emotions": {
+    "confiance": "Confidence",
+    "peur": "Fear",
+    "avarice": "Greed / Avarice",
+    "frustration": "Frustration",
+    "impatience": "Impatience",
+    "patience": "Patience",
+    "euphorie": "Euphoria",
+    "anxiete": "Anxiety",
+    "colere": "Anger",
+    "satisfaction": "Satisfaction",
+    "deception": "Disappointment",
+    "calme": "Calm",
+    "stress": "Stress",
+    "determination": "Determination",
+    "doute": "Doubt",
+    "excitation": "Excitement",
+    "lassitude": "Weariness",
+    "fatigue": "Fatigue",
+    "panique": "Panic",
+    "optimisme": "Optimism / Hope"
+  },
+  "filters": {
+    "instrument": "Instrument",
+    "type": "Type",
+    "pnl": "PnL",
+    "winners": "Winners",
+    "losers": "Losers"
+  },
+  "dayTradesModal": {
+    "title": "Day Trades",
+    "error": "Error",
+    "errorLoading": "Error loading trades",
+    "noTradesForDate": "No trades found for this date",
+    "tradesFound": "{{count}} trade found",
+    "tradesFoundPlural": "{{count}} trades found",
+    "manageStrategy": "Manage strategy compliance",
+    "time": "Time",
+    "symbol": "Symbol",
+    "entryPrice": "Entry Price",
+    "exitPrice": "Exit Price",
+    "totalPnl": "Total PnL",
+    "totalFees": "Total Fees",
+    "winningTrades": "Winning trades",
+    "close": "Close"
+  },
+  "importModal": {
+    "title": "Import Trades",
+    "format": "CSV Format",
+    "tradingAccount": "Trading Account",
+    "csvFile": "CSV File",
+    "selectFile": "Please select a CSV file.",
+    "errorAnalyzing": "Error analyzing file",
+    "errorImporting": "Error importing file",
+    "dragDrop": "Drag and drop your CSV file here",
+    "or": "or",
+    "browseFiles": "Browse Files",
+    "changeFile": "Change file",
+    "fileFormatRequired": "File must follow the required format (13 columns required)",
+    "showFormatGuide": "Show format guide",
+    "hideFormatGuide": "Hide format guide",
+    "formatGuide": {
+      "title": "CSV Format Guide",
+      "separator": "Separator:",
+      "separatorNote": "(comma)",
+      "encoding": "Encoding:",
+      "encodingNote": "(with or without BOM)",
+      "downloadTemplate": "Download Template",
+      "column": "Column",
+      "description": "Description",
+      "example": "Example",
+      "required": "Required",
+      "yes": "Yes",
+      "optional": "Optional",
+      "values": "Values:",
+      "fullLineExample": "Complete line example:",
+      "columns": {
+        "Id": {
+          "description": "Unique trade identifier"
+        },
+        "ContractName": {
+          "description": "Contract name (symbol)"
+        },
+        "EnteredAt": {
+          "description": "Entry date/time (US format: MM/DD/YYYY HH:MM:SS)"
+        },
+        "ExitedAt": {
+          "description": "Exit date/time (US format: MM/DD/YYYY HH:MM:SS)"
+        },
+        "EntryPrice": {
+          "description": "Entry price (US format with decimal point)"
+        },
+        "ExitPrice": {
+          "description": "Exit price (US format with decimal point)"
+        },
+        "Fees": {
+          "description": "Fees (US format with decimal point)"
+        },
+        "PnL": {
+          "description": "Profit/Loss (US format, negative for loss)"
+        },
+        "Size": {
+          "description": "Position size (number of contracts)"
+        },
+        "Type": {
+          "description": "Trade type",
+          "allowedValues": "Long or Short"
+        },
+        "TradeDay": {
+          "description": "Trade day (US format: MM/DD/YYYY)"
+        },
+        "TradeDuration": {
+          "description": "Trade duration (HH:MM:SS.microseconds)"
+        },
+        "Commissions": {
+          "description": "Commissions (US format with decimal point)"
+        }
+      }
+    },
+    "preview": {
+      "title": "File Preview",
+      "totalRows": "Total rows",
+      "importable": "Importable",
+      "errors": "Errors",
+      "duplicates": "Duplicates",
+      "totalPnl": "Total PnL",
+      "totalFees": "Total Fees",
+      "missingColumns": "Missing columns:",
+      "detailedErrors": "Detailed errors:",
+      "line": "Line",
+      "andMoreErrors": "... and {{count}} more error(s)"
+    },
+    "success": {
+      "message": "Import successful",
+      "imported": "Imported",
+      "skipped": "Skipped"
+    },
+    "error": "Error",
+    "cancel": "Cancel",
+    "analyzing": "Analyzing...",
+    "importing": "Importing...",
+    "previewButton": "Preview",
+    "importButton": "Import"
+  }
+}

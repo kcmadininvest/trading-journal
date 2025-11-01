@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -61,6 +61,12 @@ class TradingAccountSerializer(serializers.ModelSerializer):
                 # Création
                 TradingAccount.objects.filter(user=user, is_default=True).update(is_default=False)  # type: ignore
         return value
+
+
+class CurrencySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Currency
+        fields = ['id', 'code', 'name', 'symbol']
 
 
 class TradingAccountListSerializer(serializers.ModelSerializer):
@@ -138,7 +144,43 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
             'imported_at',
             'updated_at'
         ]
-        read_only_fields = ['user', 'topstep_id', 'trading_account', 'imported_at', 'updated_at']
+        read_only_fields = ['user', 'topstep_id', 'imported_at', 'updated_at']
+
+    def create(self, validated_data):
+        """
+        Permet la création manuelle d'un trade:
+        - Génère un topstep_id si absent
+        - Assigne l'utilisateur courant
+        - Assigne le compte de trading par défaut si non fourni
+        - Renseigne trade_day si déductible
+        """
+        from .models import TradingAccount, TopStepTrade
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        else:
+            raise serializers.ValidationError('Utilisateur non authentifié')
+
+        # Générer un topstep_id si manquant
+        if not validated_data.get('topstep_id'):
+            import uuid
+            validated_data['topstep_id'] = f"MANUAL-{uuid.uuid4().hex[:20]}"
+
+        # Compte de trading: utiliser celui fourni ou le compte par défaut
+        trading_account = validated_data.get('trading_account')
+        if trading_account is None:
+            default_account = TradingAccount.objects.filter(user=request.user, is_default=True).first()  # type: ignore
+            if not default_account:
+                raise serializers.ValidationError("Aucun compte de trading par défaut. Veuillez en créer un et le définir par défaut.")
+            validated_data['trading_account'] = default_account
+
+        # Déduire trade_day si possible
+        entered_at = validated_data.get('entered_at')
+        if entered_at and not validated_data.get('trade_day'):
+            validated_data['trade_day'] = entered_at.date()
+
+        instance = TopStepTrade.objects.create(**validated_data)
+        return instance
 
 
 class TopStepTradeListSerializer(serializers.ModelSerializer):
@@ -216,6 +258,7 @@ class TradeStatisticsSerializer(serializers.Serializer):
     losing_trades = serializers.IntegerField()
     win_rate = serializers.FloatField()
     total_pnl = serializers.DecimalField(max_digits=18, decimal_places=2)
+    total_raw_pnl = serializers.DecimalField(max_digits=18, decimal_places=2)
     total_gains = serializers.DecimalField(max_digits=18, decimal_places=2)
     total_losses = serializers.DecimalField(max_digits=18, decimal_places=2)
     average_pnl = serializers.DecimalField(max_digits=18, decimal_places=2)

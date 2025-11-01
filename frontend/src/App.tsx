@@ -1,25 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import React, { useState, useEffect, useRef } from 'react';
 import { Toaster } from 'react-hot-toast';
-import './styles/devtools.css';
-import { queryClient } from './lib/queryClient';
-import { PageSuspense } from './components/SuspenseBoundary';
-import Layout from './components/Layout/Layout';
-import SidebarProfileModal from './components/Layout/SidebarProfileModal';
-import SessionWarningModal from './components/auth/SessionWarningModal';
-import DebugControls from './components/Debug/DebugControls';
-import { LazyTradesPage, LazyStrategyPage, LazyStatisticsPage, LazyAnalyticsPage, LazyTradingAccountsPage, LazySettingsPage, LazyArchivesPage, LazyPositionStrategiesPage, LazyHomePage } from './components/LazyPages';
+import HomePage from './pages/HomePage';
+import DashboardPage from './pages/DashboardPage';
+import CalendarPage from './pages/CalendarPage';
+import UserManagementPage from './pages/UserManagementPage';
+import TradesPage from './pages/TradesPage';
+import StatisticsPage from './pages/StatisticsPage';
+import StrategiesPage from './pages/StrategiesPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import TradingAccountsPage from './pages/TradingAccountsPage';
+import SettingsPage from './pages/SettingsPage';
+import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
-import sessionManager, { SessionWarning } from './services/sessionManager';
-import cacheManager from './services/cacheManager';
+import { useTheme } from './hooks/useTheme';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('trades');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showSidebarProfile, setShowSidebarProfile] = useState(false);
-  const [sessionWarning, setSessionWarning] = useState<SessionWarning | null>(null);
+  const [currentPage, setCurrentPage] = useState('home');
+  const currentPageRef = useRef(currentPage);
+  const { theme } = useTheme();
+  
+  // Maintenir la ref à jour
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
 
   useEffect(() => {
     // Vérifier l'authentification au chargement
@@ -28,23 +33,6 @@ function App() {
         if (authService.isAuthenticated()) {
           const user = authService.getCurrentUser();
           setCurrentUser(user);
-          
-          // Initialiser le cache manager avec l'utilisateur actuel
-          cacheManager.setCurrentUser(user?.id?.toString() || null);
-          
-          // Initialiser le gestionnaire de session si l'utilisateur est connecté
-          sessionManager.initialize(
-            (warning: SessionWarning) => {
-              setSessionWarning(warning);
-            },
-            () => {
-              // Déconnexion automatique
-              setCurrentUser(null);
-              setSessionWarning(null);
-              // Rediriger vers la page d'accueil
-              window.location.hash = '#app';
-            }
-          );
         }
       } catch (error) {
         console.error('Erreur lors de la vérification de l\'authentification:', error);
@@ -54,159 +42,173 @@ function App() {
     };
 
     checkAuth();
+  }, []);
+
+  // Gérer la navigation par hash - séparé pour avoir accès à currentUser à jour
+  useEffect(() => {
+    if (!currentUser) {
+      return; // Ne pas gérer la navigation si l'utilisateur n'est pas connecté
+    }
 
     // Gérer la navigation par hash
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash === 'statistics') {
-        setCurrentPage('statistics');
-      } else if (hash === 'analytics') {
-        setCurrentPage('analytics');
-      } else if (hash === 'strategy') {
-        setCurrentPage('strategy');
-      } else if (hash === 'position-strategies') {
-        setCurrentPage('position-strategies');
-      } else if (hash === 'archives') {
-        setCurrentPage('archives');
-      } else if (hash === 'trading-accounts') {
-        setCurrentPage('trading-accounts');
-      } else if (hash === 'settings' || hash.startsWith('settings-')) {
-        setCurrentPage('settings');
-      } else {
-        setCurrentPage('trades');
+      const hash = window.location.hash.replace('#', '').trim();
+      const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'analytics', 'users', 'settings', 'accounts'];
+      const page = currentPageRef.current;
+      
+      // Si on a un hash valide et qu'il est différent de la page actuelle
+      if (hash && validPages.includes(hash) && hash !== page) {
+        setCurrentPage(hash);
+        return;
+      }
+      
+      // Si pas de hash ou hash invalide, et qu'on n'est pas déjà sur dashboard, aller au dashboard
+      if ((!hash || !validPages.includes(hash)) && page !== 'dashboard') {
+        // Éviter les boucles en vérifiant le hash actuel
+        if (window.location.hash !== '#dashboard') {
+          window.location.hash = 'dashboard';
+          setCurrentPage('dashboard');
+        }
       }
     };
 
     // Écouter les changements de hash
     window.addEventListener('hashchange', handleHashChange);
     
-    // Initialiser la page selon le hash actuel
-    handleHashChange();
+    // Initialiser la page selon le hash actuel au premier rendu
+    const currentHash = window.location.hash.replace('#', '').trim();
+    const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'analytics', 'users', 'settings', 'accounts'];
+    const page = currentPageRef.current;
+    
+    if (currentHash && validPages.includes(currentHash)) {
+      // Si le hash est valide et différent de la page actuelle, mettre à jour
+      if (currentHash !== page) {
+        setCurrentPage(currentHash);
+      }
+    } else if (!currentHash || !validPages.includes(currentHash)) {
+      // Si pas de hash valide, aller au dashboard seulement si on n'y est pas déjà
+      if (page !== 'dashboard') {
+        window.location.hash = 'dashboard';
+        setCurrentPage('dashboard');
+      }
+    }
 
-    // Gérer les événements de changement d'utilisateur
+    // Nettoyage lors du démontage du composant
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, [currentUser]); // Ne pas inclure currentPage pour éviter les boucles
+
+  // Gérer les événements de changement d'utilisateur - séparé pour éviter les conflits
+  useEffect(() => {
     const handleUserLogin = (event: any) => {
       const user = event.detail?.user;
       if (user) {
         setCurrentUser(user);
-        cacheManager.setCurrentUser(user.id?.toString() || null);
       }
     };
 
     const handleUserLogout = () => {
       setCurrentUser(null);
-      cacheManager.setCurrentUser(null);
-      cacheManager.clearAllCaches();
-      
-      // Rediriger vers la page d'accueil après déconnexion
+      setCurrentPage('home');
       window.location.hash = '';
-      setCurrentPage('trades');
+    };
+
+    const handleUserProfileUpdated = (event: any) => {
+      const user = event.detail?.user;
+      if (user) {
+        setCurrentUser(user);
+      } else {
+        // Si pas d'utilisateur dans l'événement, récupérer depuis authService
+        const updatedUser = authService.getCurrentUser();
+        if (updatedUser) {
+          setCurrentUser(updatedUser);
+        }
+      }
     };
 
     // Écouter les événements de changement d'utilisateur
     window.addEventListener('user:login', handleUserLogin);
     window.addEventListener('user:logout', handleUserLogout);
+    window.addEventListener('user:profile-updated', handleUserProfileUpdated);
 
     // Nettoyage lors du démontage du composant
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('user:login', handleUserLogin);
       window.removeEventListener('user:logout', handleUserLogout);
-      sessionManager.stop();
+      window.removeEventListener('user:profile-updated', handleUserProfileUpdated);
     };
   }, []);
 
-
-  // Handlers pour la gestion de session
-  const handleSessionWarningExtend = () => {
-    setSessionWarning(null);
-  };
-
-  const handleSessionWarningDismiss = () => {
-    setSessionWarning(null);
-  };
-
-  const handleUserUpdate = (updatedUser: User) => {
-    setCurrentUser(updatedUser);
-    // Mettre à jour aussi le service d'authentification
-    authService.updateCurrentUser(updatedUser);
-  };
-
   const renderPage = () => {
-    switch (currentPage) {
-      case 'statistics':
-        return <LazyStatisticsPage />;
-      case 'analytics':
-        return <LazyAnalyticsPage />;
-      case 'strategy':
-        return <LazyStrategyPage />;
-      case 'position-strategies':
-        return <LazyPositionStrategiesPage />;
-      case 'archives':
-        return <LazyArchivesPage />;
-      case 'trading-accounts':
-        return <LazyTradingAccountsPage />;
-      case 'settings':
-        return <LazySettingsPage currentUser={currentUser!} onUserUpdate={handleUserUpdate} />;
-      default:
-        return <LazyTradesPage />;
+    if (!currentUser) {
+      return <HomePage />;
     }
+
+        switch (currentPage) {
+          case 'trades':
+            return <TradesPage />;
+          case 'calendar':
+            return <CalendarPage />;
+          case 'statistics':
+            return <StatisticsPage />;
+          case 'strategies':
+            return <StrategiesPage />;
+          case 'analytics':
+            return <AnalyticsPage />;
+          case 'accounts':
+            return <TradingAccountsPage />;
+          case 'users':
+            return <UserManagementPage />;
+          case 'settings':
+            return <SettingsPage />;
+          case 'dashboard':
+          default:
+            return <DashboardPage currentUser={currentUser} />;
+        }
+  };
+
+  const handleNavigate = (page: string) => {
+    // Vérifier si on est déjà sur cette page
+    if (currentPageRef.current === page) {
+      return; // Déjà sur cette page, ne rien faire
+    }
+    
+    // Mettre à jour le hash d'abord, puis la page
+    // Cela évitera que handleHashChange ne redirige
+    window.location.hash = page;
+    setCurrentPage(page);
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setCurrentUser(null);
+    setCurrentPage('home');
+    window.location.hash = '';
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-300">Chargement...</p>
         </div>
       </div>
     );
   }
 
-  // Si l'utilisateur n'est pas connecté, afficher la page d'accueil
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen" style={{ overflowX: 'hidden' }}>
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#fff',
-              color: '#1f2937',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-              borderRadius: '0.75rem',
-              padding: '1rem',
-            },
-            success: {
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
-        <LazyHomePage />
-      </div>
-    );
-  }
+  const isDark = theme === 'dark';
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-gray-50" style={{ overflowX: 'hidden' }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" style={{ overflowX: 'hidden' }}>
       <Toaster 
         position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
-            background: '#fff',
-            color: '#1f2937',
+            background: isDark ? '#1f2937' : '#fff',
+            color: isDark ? '#f3f4f6' : '#1f2937',
             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             borderRadius: '0.75rem',
             padding: '1rem',
@@ -225,52 +227,19 @@ function App() {
           },
         }}
       />
-      <Layout 
-        currentUser={currentUser} 
-        onLogout={() => setCurrentUser(null)}
-        onShowProfile={() => setShowSidebarProfile(true)}
-        onUserChange={setCurrentUser}
-      >
-        <PageSuspense>
+      {currentUser ? (
+        <Layout
+          currentUser={currentUser}
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          onLogout={handleLogout}
+        >
           {renderPage()}
-        </PageSuspense>
-      </Layout>
-
-      {currentUser && (
-        <SidebarProfileModal
-          user={currentUser}
-          isOpen={showSidebarProfile}
-          onClose={() => setShowSidebarProfile(false)}
-          onPasswordChanged={() => {
-            // Optionnel : rafraîchir les données utilisateur
-            const user = authService.getCurrentUser();
-            setCurrentUser(user);
-          }}
-        />
+        </Layout>
+      ) : (
+        renderPage()
       )}
-
-      {/* Modal d'avertissement de session */}
-      {sessionWarning && (
-        <SessionWarningModal
-          warning={sessionWarning}
-          onExtend={handleSessionWarningExtend}
-          onDismiss={handleSessionWarningDismiss}
-        />
-      )}
-
-      {/* Contrôles de debug (seulement en développement) */}
-      <DebugControls />
-      </div>
-      
-      {/* React Query DevTools en développement */}
-      {process.env.NODE_ENV === 'development' && (
-        <ReactQueryDevtools 
-          initialIsOpen={false}
-          buttonPosition="bottom-left"
-          position="bottom"
-        />
-      )}
-    </QueryClientProvider>
+    </div>
   );
 }
 

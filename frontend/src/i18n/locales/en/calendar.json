@@ -1,0 +1,27 @@
+{
+  "title": "Calendar",
+  "loading": "Loading...",
+  "errorLoadingMonthlyData": "Error loading monthly data",
+  "errorLoadingYearlyData": "Error loading yearly data",
+  "daily": "Daily",
+  "monthly": "Monthly",
+  "previousMonth": "Previous Month",
+  "nextMonth": "Next Month",
+  "previousYear": "Previous Year",
+  "nextYear": "Next Year",
+  "today": "Today",
+  "weeklyPnL": "Weekly PnL",
+  "total": "Total",
+  "totalWeek": "week total",
+  "strategyRespected": "Strategy respected for all trades",
+  "strategyNotRespected": "Strategy not respected",
+  "strategyPartiallyRespected": "Strategy partially respected",
+  "viewDayTrades": "View day trades",
+  "manageStrategyCompliance": "Manage strategy compliance",
+  "viewTrades": "View trades",
+  "manageStrategy": "Manage strategy",
+  "importTrades": "Import trades",
+  "trade": "trade",
+  "trades": "trades"
+}
+

@@ -78,4 +78,8 @@ Thumbs.db
 logs/
 *.log
 
+# Deployment scripts (specific to production server)
+deploy_production.sh
+*.deploy.sh
+
 

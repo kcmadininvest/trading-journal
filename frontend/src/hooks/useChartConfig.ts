@@ -1,150 +1,167 @@
-import { useMemo, useCallback } from 'react'
-import { 
-  createChartOptions, 
-  TooltipCallback, 
-  formatCurrency,
-  chartColors 
-} from '../config/chartConfig'
+import { ChartOptions } from 'chart.js';
+import { chartColors } from '../config/chartConfig';
 
-// Types pour les données de performance
-export interface PerformanceData {
-  date: string
-  pnl: number
-  cumulative: number
+interface UseBarChartConfigOptions {
+  layout?: {
+    padding?: {
+      bottom?: number;
+      top?: number;
+      left?: number;
+      right?: number;
+    };
+  };
+  plugins?: {
+    legend?: {
+      display?: boolean;
+      position?: 'top' | 'bottom' | 'left' | 'right';
+      labels?: {
+        usePointStyle?: boolean;
+        padding?: number;
+        font?: {
+          size?: number;
+        };
+      };
+    };
+    datalabels?: {
+      display?: boolean;
+      color?: string | ((context: any) => string);
+      font?: {
+        weight?: number;
+        size?: number;
+      };
+      formatter?: (value: number) => string;
+    };
+  };
+  scales?: {
+    x?: {
+      stacked?: boolean;
+      grid?: {
+        display?: boolean;
+      };
+      ticks?: {
+        padding?: number;
+      };
+    };
+    y?: {
+      stacked?: boolean;
+      beginAtZero?: boolean;
+      grid?: {
+        color?: string;
+      };
+    };
+  };
+  elements?: {
+    bar?: {
+      borderRadius?: number;
+    };
+  };
+  animation?: {
+    duration?: number;
+    easing?: 'linear' | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad' | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic' | 'easeInQuart' | 'easeOutQuart' | 'easeInOutQuart' | 'easeInQuint' | 'easeOutQuint' | 'easeInOutQuint' | 'easeInSine' | 'easeOutSine' | 'easeInOutSine' | 'easeInExpo' | 'easeOutExpo' | 'easeInOutExpo' | 'easeInCirc' | 'easeOutCirc' | 'easeInOutCirc' | 'easeInElastic' | 'easeOutElastic' | 'easeInOutElastic' | 'easeInBack' | 'easeOutBack' | 'easeInOutBack' | 'easeInBounce' | 'easeOutBounce' | 'easeInOutBounce';
+  };
 }
 
-// Types pour les données de distribution
-export interface DistributionData {
-  label: string
-  value: number
-  count?: number
-}
+export function useBarChartConfig(config?: UseBarChartConfigOptions): { options: ChartOptions<'bar'> } {
+  const defaultOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: config?.layout && config.layout.padding ? {
+      padding: Object.fromEntries(
+        Object.entries(config.layout.padding).filter(([_, value]) => value !== undefined)
+      ) as { bottom?: number; top?: number; left?: number; right?: number },
+    } : undefined,
+    plugins: {
+      legend: {
+        display: config?.plugins?.legend?.display ?? true,
+        position: config?.plugins?.legend?.position ?? 'top',
+        labels: {
+          usePointStyle: config?.plugins?.legend?.labels?.usePointStyle ?? true,
+          padding: config?.plugins?.legend?.labels?.padding ?? 20,
+          font: {
+            size: config?.plugins?.legend?.labels?.font?.size ?? 12,
+          },
+        },
+      },
+      tooltip: {
+        backgroundColor: 'white',
+        titleColor: '#4b5563',
+        bodyColor: '#1f2937',
+        borderColor: '#e5e7eb',
+        borderWidth: 1,
+        padding: 16,
+        titleFont: {
+          size: 14,
+          weight: 600 as const,
+        },
+        bodyFont: {
+          size: 13,
+          weight: 500 as const,
+        },
+        displayColors: true,
+      },
+      datalabels: config?.plugins?.datalabels?.display ? {
+        display: true,
+        ...(config.plugins.datalabels.color !== undefined && {
+          color: config.plugins.datalabels.color as any,
+        }),
+        ...(config.plugins.datalabels.font && {
+          font: {
+            weight: config.plugins.datalabels.font.weight,
+            size: config.plugins.datalabels.font.size,
+          },
+        }),
+        ...(config.plugins.datalabels.formatter && {
+          formatter: config.plugins.datalabels.formatter as any,
+        }),
+      } : {
+        display: false,
+      },
+    },
+    scales: {
+      x: {
+        stacked: config?.scales?.x?.stacked ?? false,
+        grid: {
+          display: config?.scales?.x?.grid?.display ?? false,
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          },
+          padding: config?.scales?.x?.ticks?.padding,
+        },
+        border: {
+          color: '#d1d5db',
+        },
+      },
+      y: {
+        stacked: config?.scales?.y?.stacked ?? false,
+        beginAtZero: config?.scales?.y?.beginAtZero ?? true,
+        grid: {
+          color: config?.scales?.y?.grid?.color ?? chartColors.gray[200],
+        },
+        ticks: {
+          color: '#6b7280',
+          font: {
+            size: 12,
+          },
+        },
+        border: {
+          color: '#d1d5db',
+          display: false,
+        },
+      },
+    },
+    elements: {
+      bar: {
+        borderRadius: config?.elements?.bar?.borderRadius ?? 0,
+      },
+    },
+    animation: {
+      duration: config?.animation?.duration ?? 1000,
+      easing: (config?.animation?.easing ?? 'easeInOutQuart') as 'linear' | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad' | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic' | 'easeInQuart' | 'easeOutQuart' | 'easeInOutQuart' | 'easeInQuint' | 'easeOutQuint' | 'easeInOutQuint' | 'easeInSine' | 'easeOutSine' | 'easeInOutSine' | 'easeInExpo' | 'easeOutExpo' | 'easeInOutExpo' | 'easeInCirc' | 'easeOutCirc' | 'easeInOutCirc' | 'easeInElastic' | 'easeOutElastic' | 'easeInOutElastic' | 'easeInBack' | 'easeOutBack' | 'easeInOutBack' | 'easeInBounce' | 'easeOutBounce' | 'easeInOutBounce',
+    },
+  };
 
-// Hook pour la configuration des graphiques de performance
-export const usePerformanceChartConfig = (
-  data: PerformanceData[],
-  customOptions: any = {},
-  currency: string = 'USD'
-) => {
-  const tooltipCallback: TooltipCallback = useCallback((data, context) => {
-    const pnl = data.value
-    const cumulative = context.parsed.y
-    
-    return [
-      `PnL du jour: ${pnl >= 0 ? '+' : ''}${formatCurrency(pnl, currency)}`,
-      `Total: ${formatCurrency(cumulative, currency)}`
-    ]
-  }, [currency])
-
-  const options = useMemo(() => {
-    return createChartOptions(tooltipCallback, {
-      ...customOptions,
-      scales: {
-        ...customOptions.scales,
-        y: {
-          ...customOptions.scales?.y,
-          ticks: {
-            ...customOptions.scales?.y?.ticks,
-            callback: function(value: any) {
-              return formatCurrency(Number(value), currency)
-            }
-          }
-        }
-      }
-    })
-  }, [customOptions, currency, tooltipCallback])
-
-  return { options }
-}
-
-// Hook pour la configuration des graphiques de distribution
-export const useDistributionChartConfig = (
-  data: DistributionData[],
-  customOptions: any = {},
-  currency: string = 'USD'
-) => {
-  const tooltipCallback: TooltipCallback = useCallback((data, context) => {
-    const count = data.additionalInfo?.[0] || ''
-    return [
-      `Valeur: ${formatCurrency(data.value, currency)}`,
-      count ? `Occurrences: ${count}` : ''
-    ].filter(Boolean)
-  }, [currency])
-
-  const options = useMemo(() => {
-    return createChartOptions(tooltipCallback, {
-      ...customOptions,
-      scales: {
-        ...customOptions.scales,
-        y: {
-          ...customOptions.scales?.y,
-          ticks: {
-            ...customOptions.scales?.y?.ticks,
-            callback: function(value: any) {
-              return formatCurrency(Number(value), currency)
-            }
-          }
-        }
-      }
-    })
-  }, [customOptions, currency, tooltipCallback])
-
-  return { options }
-}
-
-// Hook pour la configuration des graphiques en barres (durée)
-export const useBarChartConfig = (
-  customOptions: any = {}
-) => {
-  const tooltipCallback: TooltipCallback = (data, context) => {
-    const datasetLabel = context.dataset.label || ''
-    const value = data.value
-    return [
-      `${datasetLabel}: ${value} trades`
-    ]
-  }
-
-  const options = useMemo(() => {
-    return createChartOptions(tooltipCallback, {
-      ...customOptions,
-      scales: {
-        ...customOptions.scales,
-        y: {
-          ...customOptions.scales?.y,
-          ticks: {
-            ...customOptions.scales?.y?.ticks,
-            callback: function(value: any) {
-              return Math.round(Number(value))
-            }
-          }
-        }
-      }
-    })
-  }, [customOptions])
-
-  return { options }
-}
-
-// Hook pour la configuration des graphiques génériques
-export const useGenericChartConfig = (
-  tooltipCallback?: TooltipCallback,
-  customOptions: any = {}
-) => {
-  const options = useMemo(() => {
-    return createChartOptions(tooltipCallback, customOptions)
-  }, [tooltipCallback, customOptions])
-
-  return { options }
-}
-
-// Hook pour les couleurs dynamiques basées sur la performance
-export const usePerformanceColors = (isPositive: boolean) => {
-  return useMemo(() => ({
-    line: isPositive ? chartColors.primary : chartColors.secondary,
-    area: isPositive ? chartColors.primary : chartColors.secondary,
-    point: (value: number) => value >= 0 ? '#2563eb' : '#ec4899',
-    pointHover: (value: number) => value >= 0 ? '#1d4ed8' : '#db2777',
-    background: isPositive ? 'bg-blue-100' : 'bg-pink-50',
-    text: isPositive ? 'text-blue-600' : 'text-pink-500'
-  }), [isPositive])
+  return { options: defaultOptions };
 }

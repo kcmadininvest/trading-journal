@@ -1,201 +1,311 @@
 # 🚀 Guide de Déploiement en Production
 
-## ⚠️ Important : Migrations
+Ce guide explique comment déployer les changements de la branche `dev` vers le serveur de production.
 
-Le système d'authentification utilise un modèle User personnalisé avec des colonnes supplémentaires. Pour un déploiement propre en production, suivez ces étapes :
+## 📋 Informations du Serveur de Production
 
-## 📋 Prérequis
+- **Serveur**: 185.217.126.243
+- **Répertoire**: `/var/www/html/trading_journal/`
+- **URL Production**: https://app.kcmadininvest.fr
+- **URL API**: https://app.kcmadininvest.fr/api
 
-1. **Base de données PostgreSQL** configurée
-2. **Python 3.9+** installé
-3. **Variables d'environnement** configurées
+## 🔧 Prérequis
 
-## 🔧 Déploiement
+1. Accès SSH au serveur de production
+2. Permissions pour exécuter des commandes système (sudo pour Apache)
+3. Git configuré sur le serveur
+4. Node.js et npm installés
+5. Python et pip installés
+6. Apache configuré et actif
 
-### Option 1 : Déploiement Automatique (Recommandé)
+## 📝 Variables d'Environnement
 
-```bash
-cd /var/www/html/trading_journal/backend
-source venv/bin/activate
-python deploy_production.py
+Le fichier `.env.production` doit contenir les variables suivantes dans `/var/www/html/trading_journal/frontend/`:
+
+```env
+REACT_APP_API_URL=https://app.kcmadininvest.fr/api
+REACT_APP_ENVIRONMENT=production
 ```
 
-### Option 2 : Déploiement Manuel
+## 🚀 Déploiement Automatique
+
+### Méthode 1: Script Automatique (Recommandé)
+
+Le script `deploy_production.sh` automatise tout le processus de déploiement.
+
+1. **Se connecter au serveur de production**:
+```bash
+ssh root@185.217.126.243
+```
+
+2. **Naviguer vers le répertoire du projet**:
+```bash
+cd /var/www/html/trading_journal
+```
+
+3. **Exécuter le script de déploiement**:
+```bash
+./deploy_production.sh
+```
+
+Le script effectue automatiquement:
+- ✅ Récupération des changements depuis la branche `dev`
+- ✅ Nettoyage des fichiers obsolètes (comme `api.ts`)
+- ✅ Configuration du fichier `.env.production`
+- ✅ Installation des dépendances npm si nécessaire
+- ✅ Compilation du frontend React en mode production
+- ✅ Synchronisation des fichiers statiques avec Django
+- ✅ Application des migrations Django
+- ✅ Collecte des fichiers statiques Django
+- ✅ Redémarrage d'Apache
+- ✅ Vérifications finales
+
+### Méthode 2: Déploiement Manuel
+
+Si vous préférez déployer manuellement, suivez ces étapes:
+
+#### 1. Récupérer les changements
 
 ```bash
-# 1. Activer l'environnement virtuel
+cd /var/www/html/trading_journal
+git fetch origin dev
+git checkout dev
+git pull origin dev
+```
+
+#### 2. Nettoyer les fichiers obsolètes
+
+```bash
+# Supprimer l'ancien fichier api.ts s'il existe
+rm -f /var/www/html/trading_journal/frontend/src/services/api.ts
+```
+
+#### 3. Configurer le fichier .env.production
+
+```bash
+cd /var/www/html/trading_journal/frontend
+cat > .env.production << EOF
+REACT_APP_API_URL=https://app.kcmadininvest.fr/api
+REACT_APP_ENVIRONMENT=production
+EOF
+```
+
+#### 4. Installer les dépendances (si nécessaire)
+
+```bash
+cd /var/www/html/trading_journal/frontend
+npm ci --production=false
+```
+
+#### 5. Compiler le frontend
+
+```bash
+npm run build
+```
+
+#### 6. Synchroniser avec Django
+
+```bash
+cd /var/www/html/trading_journal
+
+# Sauvegarder l'ancien template
+cp backend/trading_journal_api/templates/index.html backend/trading_journal_api/templates/index.html.backup
+
+# Copier le nouveau template
+cp frontend/build/index.html backend/trading_journal_api/templates/index.html
+
+# Extraire les noms de fichiers hashés
+JS_FILE=$(ls frontend/build/static/js/main.*.js | head -1 | xargs basename)
+CSS_FILE=$(ls frontend/build/static/css/main.*.css | head -1 | xargs basename)
+
+# Mettre à jour le template avec les nouveaux noms
+sed -i "s/main\.[a-f0-9]*\.js/$JS_FILE/g" backend/trading_journal_api/templates/index.html
+sed -i "s/main\.[a-f0-9]*\.css/$CSS_FILE/g" backend/trading_journal_api/templates/index.html
+
+# Copier les autres fichiers
+cp frontend/build/manifest.json backend/trading_journal_api/templates/manifest.json
+cp frontend/build/favicon.ico backend/trading_journal_api/templates/favicon.ico
+
+# Créer les répertoires statiques Django
+mkdir -p backend/staticfiles/static/js
+mkdir -p backend/staticfiles/static/css
+
+# Copier les fichiers statiques vers les bons répertoires
+cp frontend/build/static/js/* backend/staticfiles/static/js/
+cp frontend/build/static/css/* backend/staticfiles/static/css/
+```
+
+#### 7. Appliquer les migrations Django
+
+```bash
 cd /var/www/html/trading_journal/backend
-source venv/bin/activate
 
-# 2. Installer les dépendances
-pip install -r requirements.txt
+# Activer l'environnement virtuel si nécessaire
+source venv/bin/activate  # ou ../venv/bin/activate
 
-# 3. Nettoyer l'historique des migrations (si nécessaire)
-python manage.py shell -c "
-from django.db import connection
-cursor = connection.cursor()
-cursor.execute(\"DELETE FROM django_migrations WHERE app IN ('admin', 'auth', 'trades')\")
-print('Migrations nettoyées')
-"
-
-# 4. Appliquer les migrations
-python manage.py migrate --fake-initial
-
-# 5. Vérifier que les colonnes existent
-python manage.py shell -c "
-from django.db import connection
-cursor = connection.cursor()
-cursor.execute('ALTER TABLE auth_user ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT \\'user\\'')
-cursor.execute('ALTER TABLE auth_user ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE')
-cursor.execute('ALTER TABLE auth_user ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()')
-cursor.execute('ALTER TABLE auth_user ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()')
-print('Colonnes ajoutées')
-"
-
-# 6. Créer un superutilisateur
-python manage.py shell -c "
-from accounts.models import User
-if not User.objects.filter(is_superuser=True).exists():
-    User.objects.create_superuser('admin@trading.com', 'admin', 'admin123', 'Admin', 'User')
-    print('Superutilisateur créé')
-"
-
-# 7. Collecter les fichiers statiques
+# Appliquer les migrations
+python manage.py migrate --noinput
 python manage.py collectstatic --noinput
-
-# 8. Démarrer le serveur
-python manage.py runserver 0.0.0.0:8000
 ```
 
-## 🔍 Vérification
-
-### Test de l'API d'authentification
+#### 8. Redémarrer Apache
 
 ```bash
-# Test d'inscription
-curl -X POST http://localhost:8000/api/accounts/auth/register/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "username": "testuser",
-    "first_name": "Test",
-    "last_name": "User",
-    "password": "test123456",
-    "password_confirm": "test123456"
-  }'
-
-# Test de connexion
-curl -X POST http://localhost:8000/api/accounts/auth/login/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "test123456"
-  }'
+sudo systemctl reload httpd
+# ou
+sudo systemctl reload apache2
 ```
 
-## 🐳 Déploiement avec Docker (Optionnel)
+## 🔍 Vérifications Post-Déploiement
 
-```dockerfile
-# Dockerfile pour la production
-FROM python:3.9-slim
+Après le déploiement, vérifiez que:
 
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-RUN python deploy_production.py
-
-EXPOSE 8000
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-```
-
-## 🔧 Configuration Production
-
-### Variables d'environnement
-
+1. **Apache est actif**:
 ```bash
-# .env.production
-DEBUG=False
-SECRET_KEY=your-secret-key-here
-DATABASE_URL=postgresql://user:password@localhost:5432/dbname
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
+systemctl status httpd
+# ou
+systemctl status apache2
 ```
 
-### Settings de production
-
-```python
-# settings_production.py
-import os
-from .settings import *
-
-DEBUG = False
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
-
-# Sécurité
-SECURE_SSL_REDIRECT = True
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-
-# Base de données
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME'),
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
-    }
-}
-```
-
-## 🚨 Dépannage
-
-### Erreur : "column role does not exist"
-
+2. **L'application est accessible**:
 ```bash
-# Ajouter manuellement les colonnes
-python manage.py shell -c "
-from django.db import connection
-cursor = connection.cursor()
-cursor.execute('ALTER TABLE auth_user ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT \\'user\\'')
-cursor.execute('ALTER TABLE auth_user ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE')
-cursor.execute('ALTER TABLE auth_user ADD COLUMN IF NOT EXISTS created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()')
-cursor.execute('ALTER TABLE auth_user ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()')
-"
+curl -I https://app.kcmadininvest.fr
 ```
 
-### Erreur : "InconsistentMigrationHistory"
-
+3. **L'API répond correctement**:
 ```bash
-# Nettoyer l'historique
-python manage.py shell -c "
-from django.db import connection
-cursor = connection.cursor()
-cursor.execute(\"DELETE FROM django_migrations WHERE app IN ('admin', 'auth', 'trades')\")
-"
-python manage.py migrate --fake-initial
+curl -I https://app.kcmadininvest.fr/api/
 ```
 
-## ✅ Checklist de Déploiement
+4. **Les fichiers sont bien déployés**:
+```bash
+# Vérifier le build
+ls -la /var/www/html/trading_journal/frontend/build/index.html
 
-- [ ] Base de données PostgreSQL configurée
-- [ ] Variables d'environnement définies
-- [ ] Migrations appliquées correctement
-- [ ] Colonnes User personnalisées présentes
-- [ ] Superutilisateur créé
-- [ ] Fichiers statiques collectés
-- [ ] Tests d'authentification passés
-- [ ] Frontend connecté au backend
-- [ ] CORS configuré
-- [ ] Sécurité en production activée
+# Vérifier les templates Django
+ls -la /var/www/html/trading_journal/backend/trading_journal_api/templates/index.html
+```
+
+## 🐛 Dépannage
+
+### Problème: Le build échoue
+
+**Solution**: Vérifiez les erreurs dans la console et assurez-vous que:
+- Les dépendances npm sont à jour: `npm ci`
+- Le fichier `.env.production` est correctement configuré
+- Node.js est à jour
+
+### Problème: Apache ne redémarre pas
+
+**Solution**: Exécutez manuellement avec sudo:
+```bash
+sudo systemctl reload httpd
+```
+
+Vérifiez les logs:
+```bash
+sudo tail -f /var/log/httpd/error_log
+```
+
+### Problème: Les fichiers statiques ne se chargent pas
+
+**Solution**: 
+1. Vérifiez les permissions:
+```bash
+sudo chown -R apache: /var/www/html/trading_journal
+sudo chmod -R 755 /var/www/html/trading_journal
+```
+
+2. Vérifiez que les fichiers sont dans les bons répertoires:
+```bash
+ls -la /var/www/html/trading_journal/backend/staticfiles/static/js/
+ls -la /var/www/html/trading_journal/backend/staticfiles/static/css/
+```
+
+3. Réexécutez collectstatic:
+```bash
+cd /var/www/html/trading_journal/backend
+source venv/bin/activate
+python manage.py collectstatic --noinput
+```
+
+### Problème: L'API ne répond pas correctement
+
+**Solution**:
+1. Vérifiez que Django est correctement configuré
+2. Vérifiez les logs Django: `tail -f backend/logs/*.log`
+3. Vérifiez que la configuration Apache pointe vers le bon répertoire WSGI
+
+## 📦 Fichiers Obsolètes à Supprimer
+
+Lors du déploiement, les fichiers suivants peuvent être supprimés s'ils existent:
+
+- `frontend/src/services/api.ts` (remplacé par les nouveaux services)
+
+Le script de déploiement automatique gère cela automatiquement.
+
+## 🔄 Rollback (Retour en arrière)
+
+Si quelque chose ne fonctionne pas après le déploiement:
+
+1. **Revenir à la version précédente via Git**:
+```bash
+cd /var/www/html/trading_journal
+git checkout <commit-hash-précédent>
+./deploy_production.sh
+```
+
+2. **Ou restaurer depuis un backup**:
+```bash
+# Si vous avez fait un backup avant le déploiement
+cp -r /backup/trading_journal/* /var/www/html/trading_journal/
+```
+
+## 📚 Structure des Fichiers de Production
+
+```
+/var/www/html/trading_journal/
+├── frontend/
+│   ├── .env.production          # Variables d'environnement production
+│   ├── build/                   # Build compilé du frontend
+│   │   ├── index.html          # Template HTML principal
+│   │   └── static/             # Fichiers statiques (JS, CSS, media)
+│   │       ├── js/             # Fichiers JavaScript hashés
+│   │       ├── css/            # Fichiers CSS hashés
+│   │       └── media/          # Images, fonts, etc.
+│   └── src/
+│       └── services/            # Services API (sans api.ts)
+├── backend/
+│   ├── trading_journal_api/
+│   │   ├── templates/           # Templates Django
+│   │   │   ├── index.html      # Template principal (mis à jour avec hash)
+│   │   │   ├── manifest.json   # Manifest de l'app
+│   │   │   └── favicon.ico     # Favicon
+│   │   └── wsgi.py             # Configuration WSGI
+│   ├── staticfiles/             # Fichiers statiques Django collectés
+│   │   └── static/             
+│   │       ├── js/             # Fichiers JavaScript copiés
+│   │       ├── css/            # Fichiers CSS copiés
+│   │       └── media/          # Fichiers média
+│   ├── venv/                   # Environnement virtuel Python
+│   └── manage.py
+└── deploy_production.sh         # Script de déploiement
+```
+
+## 🔐 Sécurité
+
+- Ne commitez **jamais** le fichier `.env.production` avec des secrets
+- Utilisez des permissions restrictives sur les fichiers sensibles
+- Vérifiez régulièrement les logs pour détecter les erreurs
+- Maintenez les dépendances à jour pour éviter les vulnérabilités
 
 ## 📞 Support
 
-En cas de problème, vérifiez :
-1. Les logs Django : `python manage.py runserver --verbosity=2`
-2. Les logs de la base de données
-3. La configuration CORS
-4. Les variables d'environnement
+En cas de problème, vérifiez:
+1. Les logs Apache: `/var/log/httpd/error_log`
+2. Les logs Django: `backend/logs/`
+3. Les logs du build: Sortie de `npm run build`
+
+---
+
+**Note**: Ce processus de déploiement est conçu pour fonctionner avec la structure actuelle du projet. Si la structure change, mettez à jour ce document en conséquence.

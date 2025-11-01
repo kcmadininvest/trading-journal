@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User
+from .models import User, UserPreferences, LoginHistory
 
 
 @admin.register(User)
@@ -36,3 +36,26 @@ class UserAdmin(BaseUserAdmin):
         if obj:  # Édition d'un utilisateur existant
             return self.readonly_fields + ('email',)
         return self.readonly_fields
+
+
+@admin.register(UserPreferences)
+class UserPreferencesAdmin(admin.ModelAdmin):
+    """
+    Configuration de l'interface d'administration pour UserPreferences
+    """
+    list_display = ('user', 'language', 'timezone', 'theme', 'date_format', 'number_format', 'updated_at')
+    list_filter = ('language', 'theme', 'date_format', 'number_format')
+    search_fields = ('user__email', 'user__username')
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(LoginHistory)
+class LoginHistoryAdmin(admin.ModelAdmin):
+    """
+    Configuration de l'interface d'administration pour LoginHistory
+    """
+    list_display = ('user', 'date', 'ip_address', 'success')
+    list_filter = ('success', 'date')
+    search_fields = ('user__email', 'ip_address', 'user_agent')
+    readonly_fields = ('date',)
+    ordering = ('-date',)

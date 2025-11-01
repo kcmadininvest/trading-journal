@@ -13,16 +13,20 @@ from django.shortcuts import get_object_or_404
 from rolepermissions.decorators import has_permission_decorator
 from rolepermissions.checkers import has_permission
 
-from .models import User
+from .models import User, UserPreferences, LoginHistory
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
     UserProfileSerializer,
     UserUpdateSerializer,
+    UserFullUpdateSerializer,
     PasswordChangeSerializer,
     AdminUserListSerializer,
     AdminUserUpdateSerializer,
-    CustomTokenObtainPairSerializer
+    CustomTokenObtainPairSerializer,
+    UserPreferencesSerializer,
+    ActiveSessionSerializer,
+    LoginHistorySerializer
 )
 
 # Imports des modèles trades pour éviter les erreurs de linting
@@ -56,6 +60,76 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     Vue personnalisée pour l'obtention des tokens JWT avec gestion de session
     """
     serializer_class = CustomTokenObtainPairSerializer
+    
+    def post(self, request, *args, **kwargs):
+        """Enregistrer l'historique de connexion"""
+        response = super().post(request, *args, **kwargs)
+        
+        # Enregistrer l'historique de connexion si la connexion a réussi
+        if response.status_code == 200:
+            try:
+                # Récupérer l'utilisateur depuis la réponse ou le serializer
+                response_data = response.data if hasattr(response, 'data') else None
+                user_data = response_data.get('user', {}) if response_data else {}
+                user_id = user_data.get('id')
+                
+                if not user_id:
+                    # Essayer de récupérer par email
+                    email = request.data.get('email')
+                    if email:
+                        try:
+                            user = User.objects.get(email=email)
+                            user_id = user.id
+                        except User.DoesNotExist:
+                            pass
+                
+                if user_id:
+                    try:
+                        user = User.objects.get(id=user_id)
+                        LoginHistory.objects.create(
+                            user=user,
+                            ip_address=self._get_client_ip(request),
+                            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                            success=True
+                        )
+                    except (User.DoesNotExist, Exception) as e:
+                        # Logger l'erreur pour debug mais ne pas faire échouer la connexion
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Erreur lors de l'enregistrement de l'historique de connexion: {str(e)}")
+            except Exception as e:
+                # Ne pas faire échouer la connexion si l'enregistrement de l'historique échoue
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Erreur lors de l'enregistrement de l'historique de connexion: {str(e)}")
+        else:
+            # Enregistrer les tentatives de connexion échouées
+            try:
+                email = request.data.get('email')
+                if email:
+                    try:
+                        user = User.objects.get(email=email)
+                        LoginHistory.objects.create(
+                            user=user,
+                            ip_address=self._get_client_ip(request),
+                            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                            success=False
+                        )
+                    except User.DoesNotExist:
+                        pass
+            except Exception:
+                pass
+        
+        return response
+    
+    def _get_client_ip(self, request):
+        """Récupérer l'adresse IP du client"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
 
 
 class UserRegistrationView(APIView):
@@ -92,7 +166,21 @@ class UserProfileView(APIView):
 
     def put(self, request):
         from .serializers import UserFullUpdateSerializer
-        serializer = UserFullUpdateSerializer(request.user, data=request.data, partial=True, context={'request': request})
+        # Autoriser la modification de l'email pour les utilisateurs normaux
+        update_data = request.data.copy()
+        if 'email' in update_data and request.user.role == 'user':
+            # Vérifier que l'email n'est pas déjà utilisé
+            email = update_data['email']
+            if User.objects.filter(email=email).exclude(id=request.user.id).exists():
+                return Response(
+                    {'email': ['Cet email est déjà utilisé par un autre compte.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            request.user.email = email
+            request.user.save()
+            update_data.pop('email', None)
+        
+        serializer = UserFullUpdateSerializer(request.user, data=update_data, partial=True, context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response({
@@ -774,3 +862,285 @@ def check_system_integrity(request):
         return Response({
             'error': f'Erreur lors de la vérification d\'intégrité: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserPreferencesView(APIView):
+    """
+    Vue pour récupérer et mettre à jour les préférences utilisateur
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Récupérer les préférences de l'utilisateur"""
+        preferences, created = UserPreferences.objects.get_or_create(user=request.user)
+        serializer = UserPreferencesSerializer(preferences)
+        return Response(serializer.data)
+    
+    def put(self, request):
+        """Mettre à jour les préférences de l'utilisateur"""
+        preferences, created = UserPreferences.objects.get_or_create(user=request.user)
+        serializer = UserPreferencesSerializer(preferences, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Préférences mises à jour avec succès',
+                'preferences': serializer.data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ActiveSessionsView(APIView):
+    """
+    Vue pour récupérer et gérer les sessions actives
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Récupérer toutes les sessions actives de l'utilisateur"""
+        try:
+            from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+            from rest_framework_simplejwt.tokens import RefreshToken
+            from datetime import datetime
+            
+            # OutstandingToken contient uniquement les refresh tokens
+            # Récupérer le jti du refresh token actuel depuis le cookie/localStorage via le body
+            # Pour cela, on va utiliser une approche différente : comparer les tokens par leur date de création récente
+            
+            # Récupérer tous les refresh tokens non expirés et non blacklistés de l'utilisateur
+            now = datetime.now()
+            outstanding_tokens = OutstandingToken.objects.filter(
+                user=request.user,
+                expires_at__gt=now
+            ).select_related().order_by('-created_at')
+            
+            # Récupérer les jti des tokens blacklistés pour les exclure
+            blacklisted_jtis = set(
+                BlacklistedToken.objects.filter(
+                    token__user=request.user,
+                    token__expires_at__gt=now
+                ).values_list('token__jti', flat=True)
+            )
+            
+            sessions = []
+            seen_jtis = set()  # Pour éviter les doublons
+            
+            for token in outstanding_tokens:
+                # Vérifier si le token est blacklisté
+                if token.jti in blacklisted_jtis:
+                    continue
+                
+                # Éviter les doublons
+                if token.jti in seen_jtis:
+                    continue
+                seen_jtis.add(token.jti)
+                
+                # Déterminer si c'est la session actuelle
+                # On considère la session la plus récente comme la session actuelle
+                # ou on vérifie si le token correspond au refresh token actuel
+                is_current = len(sessions) == 0  # La première session (la plus récente) est la session actuelle
+                
+                sessions.append({
+                    'jti': token.jti,
+                    'created_at': token.created_at,
+                    'expires_at': token.expires_at,
+                    'is_current': is_current,
+                    'device_info': getattr(token, 'device_info', None) or 'Unknown device'
+                })
+            
+            # Marquer seulement la session la plus récente comme actuelle
+            if sessions:
+                for i, session in enumerate(sessions):
+                    session['is_current'] = (i == 0)
+            
+            serializer = ActiveSessionSerializer(sessions, many=True)
+            return Response(serializer.data)
+            
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors de la récupération des sessions: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def post(self, request):
+        """Déconnecter une session spécifique ou toutes les sessions"""
+        try:
+            from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
+            
+            jti = request.data.get('jti')
+            if jti:
+                # Déconnecter une session spécifique
+                try:
+                    token = OutstandingToken.objects.get(jti=jti, user=request.user)
+                    BlacklistedToken.objects.get_or_create(token=token)
+                    return Response({'message': 'Session déconnectée avec succès'})
+                except OutstandingToken.DoesNotExist:
+                    return Response(
+                        {'error': 'Session non trouvée'}, 
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+            else:
+                # Déconnecter toutes les sessions (y compris la session actuelle)
+                # Blacklister tous les refresh tokens non expirés de l'utilisateur
+                now = datetime.now()
+                outstanding_tokens = OutstandingToken.objects.filter(
+                    user=request.user,
+                    expires_at__gt=now
+                )
+                
+                count = 0
+                for token in outstanding_tokens:
+                    # Vérifier si le token n'est pas déjà blacklisté
+                    if not BlacklistedToken.objects.filter(token=token).exists():
+                        BlacklistedToken.objects.get_or_create(token=token)
+                        count += 1
+                
+                return Response({
+                    'message': f'{count} session(s) déconnectée(s) avec succès'
+                })
+                
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors de la déconnexion: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LoginHistoryView(APIView):
+    """
+    Vue pour récupérer l'historique des connexions
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Récupérer l'historique des connexions de l'utilisateur"""
+        try:
+            limit = int(request.query_params.get('limit', 50))
+            history = LoginHistory.objects.filter(user=request.user)[:limit]
+            serializer = LoginHistorySerializer(history, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors de la récupération de l\'historique: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class DataExportView(APIView):
+    """
+    Vue pour exporter toutes les données de l'utilisateur
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Exporter toutes les données de l'utilisateur au format JSON"""
+        try:
+            from django.http import JsonResponse
+            import json
+            from datetime import datetime
+            
+            user = request.user
+            
+            # Préparer les données à exporter
+            export_data = {
+                'export_date': datetime.now().isoformat(),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'role': user.role,
+                    'created_at': user.created_at.isoformat() if user.created_at else None,
+                    'last_login': user.last_login.isoformat() if user.last_login else None,
+                },
+                'preferences': {},
+                'trading_accounts': [],
+                'trades': [],
+                'strategies': [],
+                'login_history': []
+            }
+            
+            # Préférences
+            try:
+                preferences = UserPreferences.objects.get(user=user)
+                export_data['preferences'] = UserPreferencesSerializer(preferences).data
+            except UserPreferences.DoesNotExist:
+                pass
+            
+            # Comptes de trading
+            try:
+                from trades.models import TradingAccount
+                accounts = TradingAccount.objects.filter(user=user)
+                for account in accounts:
+                    export_data['trading_accounts'].append({
+                        'id': account.id,
+                        'name': account.name,
+                        'account_type': account.account_type,
+                        'broker_account_id': account.broker_account_id,
+                        'currency': account.currency,
+                        'status': account.status,
+                        'is_default': account.is_default,
+                        'created_at': account.created_at.isoformat() if account.created_at else None,
+                        'updated_at': account.updated_at.isoformat() if account.updated_at else None,
+                    })
+            except Exception as e:
+                export_data['trading_accounts_error'] = str(e)
+            
+            # Trades
+            try:
+                from trades.models import TopStepTrade
+                trades = TopStepTrade.objects.filter(user=user)
+                for trade in trades:
+                    export_data['trades'].append({
+                        'id': trade.id,
+                        'topstep_id': trade.topstep_id,
+                        'contract_name': trade.contract_name,
+                        'entered_at': trade.entered_at.isoformat() if trade.entered_at else None,
+                        'exited_at': trade.exited_at.isoformat() if trade.exited_at else None,
+                        'entry_price': str(trade.entry_price) if trade.entry_price else None,
+                        'exit_price': str(trade.exit_price) if trade.exit_price else None,
+                        'fees': str(trade.fees) if trade.fees else None,
+                        'pnl': str(trade.pnl) if trade.pnl else None,
+                        'size': trade.size,
+                        'type': trade.type,
+                        'trade_day': trade.trade_day.isoformat() if trade.trade_day else None,
+                        'trade_duration': str(trade.trade_duration) if trade.trade_duration else None,
+                        'created_at': trade.created_at.isoformat() if trade.created_at else None,
+                    })
+            except Exception as e:
+                export_data['trades_error'] = str(e)
+            
+            # Stratégies
+            try:
+                from trades.models import TradeStrategy
+                strategies = TradeStrategy.objects.filter(user=user)
+                for strategy in strategies:
+                    export_data['strategies'].append({
+                        'id': strategy.id,
+                        'name': strategy.name,
+                        'description': strategy.description,
+                        'created_at': strategy.created_at.isoformat() if strategy.created_at else None,
+                    })
+            except Exception as e:
+                export_data['strategies_error'] = str(e)
+            
+            # Historique des connexions
+            try:
+                history = LoginHistory.objects.filter(user=user)[:100]
+                for entry in history:
+                    export_data['login_history'].append({
+                        'date': entry.date.isoformat() if entry.date else None,
+                        'ip_address': entry.ip_address,
+                        'user_agent': entry.user_agent,
+                        'success': entry.success,
+                    })
+            except Exception as e:
+                export_data['login_history_error'] = str(e)
+            
+            # Retourner la réponse JSON
+            response = JsonResponse(export_data, json_dumps_params={'indent': 2, 'ensure_ascii': False})
+            filename = f'trading_journal_export_{user.email}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+            
+        except Exception as e:
+            return Response({
+                'error': f'Erreur lors de l\'export des données: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

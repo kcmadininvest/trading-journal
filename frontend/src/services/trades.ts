@@ -1,14 +1,13 @@
-import apiClient from '../lib/apiClient';
-import cacheManager from './cacheManager';
-import errorHandler from './errorHandler';
-import retryService from './retryService';
+import { getApiBaseUrl } from '../utils/apiConfig';
 
-export interface TopStepTrade {
+export interface TradeListItem {
   id: number;
   topstep_id: string;
+  trading_account: number;
+  trading_account_name: string;
   contract_name: string;
   trade_type: 'Long' | 'Short';
-  entered_at: string;
+  entered_at: string; // ISO
   exited_at: string | null;
   entry_price: string;
   exit_price: string | null;
@@ -16,573 +15,283 @@ export interface TopStepTrade {
   fees: string;
   commissions: string;
   pnl: string | null;
-  net_pnl: string;
+  net_pnl: string | null;
   pnl_percentage: string | null;
   is_profitable: boolean | null;
   trade_duration: string | null;
   duration_str: string | null;
-  trade_day: string | null;
-  // Champs optionnels qui peuvent ne pas être présents dans toutes les réponses
-  user_username?: string;
-  notes?: string;
-  strategy?: string;
-  formatted_entry_date?: string;
-  formatted_exit_date?: string | null;
-  imported_at?: string;
-  updated_at?: string;
+  trade_day: string | null; // YYYY-MM-DD
 }
 
-export interface TradeStrategy {
-  id?: string;
-  trade: number;
-  trade_info: {
-    topstep_id: string;
-    contract_name: string;
-    trade_type: 'Long' | 'Short';
-    size: string;
-    net_pnl: string | null;
-    entered_at: string;
-    exited_at: string | null;
-  };
-  strategy_respected: boolean | null;
-  dominant_emotions: string[];
-  gain_if_strategy_respected: boolean | null;
-  tp1_reached: boolean;
-  tp2_plus_reached: boolean;
-  session_rating: number | null;
-  emotion_details: string;
-  possible_improvements: string;
-  screenshot_url: string;
-  video_url: string;
-  emotions_display: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface TradeStatistics {
-  total_trades: number;
-  winning_trades: number;
-  losing_trades: number;
-  win_rate: number;
-  total_pnl: string;
-  total_gains: string;
-  total_losses: string;
-  average_pnl: string;
-  best_trade: string;
-  worst_trade: string;
-  total_fees: string;
-  total_volume: string;
-  average_duration: string;
-  most_traded_contract: string | null;
-  // Ratios de Performance
-  profit_factor: number;
-  win_loss_ratio: number;
-  consistency_ratio: number;
-  recovery_ratio: number;
-  pnl_per_trade: number;
-  fees_ratio: number;
-  volume_pnl_ratio: number;
-  frequency_ratio: number;
-  duration_ratio: number;
-}
-
-export interface ImportLog {
-  id: number;
+export interface TradeDetail extends TradeListItem {
+  user: number;
   user_username: string;
-  filename: string;
-  total_rows: number;
-  success_count: number;
-  error_count: number;
-  success_rate: number;
-  errors: any[];
+  trading_account_type: string;
+  notes: string;
+  strategy: string;
+  formatted_entry_date: string;
+  formatted_exit_date: string | null;
   imported_at: string;
+  updated_at: string;
 }
 
-export interface PaginatedTradesResponse {
-  results: TopStepTrade[];
+export interface TradesFilters {
+  trading_account?: number;
+  contract?: string;
+  type?: 'Long' | 'Short';
+  start_date?: string; // YYYY-MM-DD
+  end_date?: string;   // YYYY-MM-DD
+  profitable?: 'true' | 'false';
+  trade_day?: string;  // YYYY-MM-DD
+  page?: number;
+  page_size?: number;
+}
+
+export interface PaginatedResponse<T> {
   count: number;
   next: string | null;
   previous: string | null;
+  results: T[];
 }
 
-export const tradesService = {
-  // Récupérer tous les trades (pour compatibilité avec l'existant)
-  getTrades: async (tradingAccountId?: number, filters?: {
-    contract?: string;
-    type?: string;
-    start_date?: string;
-    end_date?: string;
-    profitable?: boolean;
-    trade_day?: string;
-  }) => {
-    // Créer une clé de cache unique basée sur les paramètres
-    const cacheKey = `trades_${tradingAccountId || 'all'}_${JSON.stringify(filters || {})}`;
-    
-    // Vérifier le cache d'abord
-    const cachedData = cacheManager.get(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
+class TradesService {
+  private readonly BASE_URL = getApiBaseUrl();
 
-    const params = new URLSearchParams();
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    if (filters?.contract) params.append('contract', filters.contract);
-    if (filters?.type) params.append('type', filters.type);
-    if (filters?.start_date) params.append('start_date', filters.start_date);
-    if (filters?.end_date) params.append('end_date', filters.end_date);
-    if (filters?.profitable !== undefined) params.append('profitable', String(filters.profitable));
-    if (filters?.trade_day) params.append('trade_day', filters.trade_day);
-
-    // Si on filtre par trade_day, on veut seulement les résultats de cette date
-    if (filters?.trade_day) {
-      const response = await apiClient.get<{ results: TopStepTrade[]; next: string | null }>(`/trades/topstep/?${params.toString()}`);
-      const result = response.data.results;
-      // Mettre en cache pour 2 minutes
-      cacheManager.set(cacheKey, result, 2 * 60 * 1000);
-      return result;
-    }
-
-    // Sinon, récupérer tous les trades avec pagination
-    let url: string | null = `/trades/topstep/?${params.toString()}`;
-    const all: TopStepTrade[] = [] as any;
-    type PaginatedResponse<T> = { results: T[]; next: string | null };
-    while (url) {
-      const response = await apiClient.get<PaginatedResponse<TopStepTrade> | TopStepTrade[]>(url);
-      const data = response.data as PaginatedResponse<TopStepTrade> | TopStepTrade[];
-      if (Array.isArray(data)) {
-        all.push(...data);
-        break;
-      }
-      const page = data as PaginatedResponse<TopStepTrade>;
-      if (Array.isArray(page.results)) {
-        all.push(...page.results);
-      }
-      url = page.next || null;
-    }
-    
-    // Mettre en cache pour 5 minutes
-    cacheManager.set(cacheKey, all, 5 * 60 * 1000);
-    return all;
-  },
-
-  // Récupérer les trades avec pagination
-  getTradesPaginated: async (page: number = 1, pageSize: number = 10, tradingAccountId?: number, filters?: {
-    contract?: string;
-    type?: string;
-    start_date?: string;
-    end_date?: string;
-    profitable?: boolean;
-  }): Promise<PaginatedTradesResponse> => {
-    const params = new URLSearchParams();
-    params.append('page', page.toString());
-    params.append('page_size', pageSize.toString());
-    
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    if (filters?.contract) params.append('contract', filters.contract);
-    if (filters?.type) params.append('type', filters.type);
-    if (filters?.start_date) params.append('start_date', filters.start_date);
-    if (filters?.end_date) params.append('end_date', filters.end_date);
-    if (filters?.profitable !== undefined) params.append('profitable', String(filters.profitable));
-
-    const response = await apiClient.get<PaginatedTradesResponse>(`/trades/topstep/?${params.toString()}`);
-    return response.data;
-  },
-
-  // Récupérer un trade spécifique
-  getTrade: async (id: number) => {
-    const response = await apiClient.get(`/trades/topstep/${id}/`);
-    return response.data;
-  },
-
-  // Mettre à jour un trade (notes, strategy)
-  updateTrade: async (id: number, data: Partial<TopStepTrade>) => {
-    const response = await apiClient.patch(`/trades/topstep/${id}/`, data);
-    return response.data;
-  },
-
-  // Supprimer un trade
-  deleteTrade: async (id: number) => {
-    const response = await apiClient.delete(`/trades/topstep/${id}/`);
-    return response.data;
-  },
-
-  // Récupérer les statistiques
-  getStatistics: async (tradingAccountId?: number): Promise<TradeStatistics> => {
-    const params = new URLSearchParams();
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    const response = await apiClient.get(`/trades/topstep/statistics/?${params.toString()}`);
-    return response.data;
-  },
-
-  // Récupérer la liste des contrats
-  getContracts: async (): Promise<string[]> => {
-    const response = await apiClient.get('/trades/topstep/contracts/');
-    return response.data.contracts;
-  },
-
-  // Upload CSV
-  uploadCSV: async (file: File, tradingAccountId?: number) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (tradingAccountId) {
-      formData.append('trading_account', tradingAccountId.toString());
-    }
-    
-    const response = await apiClient.post('/trades/topstep/upload_csv/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
-  },
-
-  // Récupérer les logs d'import
-  getImportLogs: async (): Promise<ImportLog[]> => {
-    const response = await apiClient.get('/trades/import-logs/');
-    return response.data;
-  },
-
-  // Effacer tout l'historique des trades
-  clearAll: async () => {
-    const response = await apiClient.delete('/trades/topstep/clear_all/');
-    return response.data;
-  },
-
-  // Récupérer les données d'évolution du capital par jour
-  getCapitalEvolution: async (tradingAccountId?: number) => {
-    const params = new URLSearchParams();
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    const response = await apiClient.get(`/trades/topstep/capital_evolution/?${params.toString()}`);
-    return response.data;
-  },
-
-  // Récupérer les données de performance par jour de la semaine
-  getWeekdayPerformance: async (tradingAccountId?: number) => {
-    const params = new URLSearchParams();
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    const response = await apiClient.get(`/trades/topstep/weekday_performance/?${params.toString()}`);
-    return response.data;
-  },
-
-  // Récupérer les métriques de trading (risk reward ratio, profit factor, max drawdown)
-  getTradingMetrics: async () => {
-    const response = await apiClient.get('/trades/topstep/trading_metrics/');
-    return response.data;
-  },
-
-  // Récupérer les données pour le calendrier mensuel avec optimisations
-  getCalendarData: async (year?: number, month?: number, tradingAccountId?: number) => {
-    // Vérifier l'authentification avant de faire l'appel API
+  private getAuthHeaders() {
     const token = localStorage.getItem('access_token');
-    if (!token) {
-      return [];
-    }
-    
-    const cacheKey = `calendar_${year}_${month}_${tradingAccountId || 'all'}`;
-    
-    // Vérifier le cache d'abord
-    const cachedData = cacheManager.get(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
+    return {
+      'Authorization': `Bearer ${token}`,
+      // Content-Type is set per-request (JSON vs multipart)
+    } as Record<string, string>;
+  }
 
-    // Utiliser le retry service pour une récupération robuste
-    return retryService.executeWithAdaptiveRetry(
-      async () => {
-        const params = new URLSearchParams();
-        if (year) params.append('year', year.toString());
-        if (month) params.append('month', month.toString());
-        if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-        
-        const url = `/trades/topstep/calendar_data/${params.toString() ? `?${params.toString()}` : ''}`;
-        const response = await apiClient.get(url);
-        
-        // Mettre en cache pour 5 minutes
-        cacheManager.set(cacheKey, response.data, 5 * 60 * 1000);
-        
-        return response.data;
-      },
-      'calendar_data',
-      {
-        onSuccess: (result) => {
-          // Données du calendrier récupérées avec succès
-        },
-        onFailure: (error) => {
-          console.error('❌ [TRADES] Échec de la récupération du calendrier:', error);
-        }
+  private async refreshAccessToken(): Promise<boolean> {
+    const refresh = localStorage.getItem('refresh_token');
+    if (!refresh) return false;
+    try {
+      const res = await fetch(`${this.BASE_URL}/api/accounts/auth/refresh/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh })
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const newAccess = data.access as string | undefined;
+      if (newAccess) {
+        localStorage.setItem('access_token', newAccess);
+        return true;
       }
-    );
-  },
-
-  // Récupérer les données d'analyses détaillées
-  getAnalyticsData: async (tradingAccountId?: number) => {
-    const cacheKey = `analytics_${tradingAccountId || 'all'}`;
-    
-    // Vérifier le cache d'abord
-    const cachedData = cacheManager.get(cacheKey);
-    if (cachedData) {
-      return cachedData;
+      return false;
+    } catch {
+      return false;
     }
+  }
 
-    const params = new URLSearchParams();
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    const response = await apiClient.get(`/trades/topstep/analytics/?${params.toString()}`);
-    
-    // Mettre en cache pour 10 minutes
-    cacheManager.set(cacheKey, response.data, 10 * 60 * 1000);
-    
-    return response.data;
-  },
-
-  // Récupérer les performances par heure
-  getHourlyPerformance: async (tradingAccountId?: number) => {
-    const params = new URLSearchParams();
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    const response = await apiClient.get(`/trades/topstep/hourly_performance/?${params.toString()}`);
-    return response.data;
-  },
-
-  // Récupérer les données de corrélation P/L vs Nombre de trades
-  getPnlTradesCorrelation: async (tradingAccountId?: number) => {
-    const params = new URLSearchParams();
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    const response = await apiClient.get(`/trades/topstep/pnl_trades_correlation/?${params.toString()}`);
-    return response.data;
-  },
-
-  // Récupérer les données de drawdown
-  getDrawdownData: async (tradingAccountId?: number) => {
-    const params = new URLSearchParams();
-    if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-    const response = await apiClient.get(`/trades/topstep/drawdown_data/?${params.toString()}`);
-    return response.data;
-  },
-
-  // === STRATÉGIES DE TRADES ===
-  
-  // Récupérer toutes les stratégies de trades
-  getTradeStrategies: async (filters?: {
-    trade_id?: string;
-    strategy_respected?: boolean;
-    contract_name?: string;
-  }) => {
-    const cacheKey = `trade_strategies_${JSON.stringify(filters || {})}`;
-    
-    // Vérifier le cache d'abord
-    const cachedData = cacheManager.get(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
-
-    const params = new URLSearchParams();
-    if (filters?.trade_id) params.append('trade_id', filters.trade_id);
-    if (filters?.strategy_respected !== undefined) params.append('strategy_respected', String(filters.strategy_respected));
-    if (filters?.contract_name) params.append('contract_name', filters.contract_name);
-    
-    const url = `/trades/trade-strategies/${params.toString() ? `?${params.toString()}` : ''}`;
-    const response = await apiClient.get(url);
-    
-    // S'assurer de retourner un tableau
-    const data = response.data;
-    let result;
-    if (Array.isArray(data)) {
-      result = data;
-    } else if (data && Array.isArray(data.results)) {
-      result = data.results;
-    } else {
-      result = [];
-    }
-    
-    // Mettre en cache pour 5 minutes
-    cacheManager.set(cacheKey, result, 5 * 60 * 1000);
-    
-    return result;
-  },
-
-  // Récupérer une stratégie de trade par ID
-  getTradeStrategy: async (id: number) => {
-    const response = await apiClient.get(`/trades/trade-strategies/${id}/`);
-    return response.data;
-  },
-
-  // Créer une nouvelle stratégie de trade
-  createTradeStrategy: async (strategyData: any) => {
-    const response = await apiClient.post('/trades/trade-strategies/', strategyData);
-    
-    // Invalider le cache des stratégies et du calendrier après création
-    cacheManager.invalidatePattern('trade_strategies');
-    cacheManager.invalidatePattern('trade_strategies_by_date');
-    cacheManager.invalidatePattern('calendar');
-    
-    return response.data;
-  },
-
-  // Mettre à jour une stratégie de trade
-  updateTradeStrategy: async (id: number, strategyData: any) => {
-    const response = await apiClient.patch(`/trades/trade-strategies/${id}/`, strategyData);
-    
-    // Invalider le cache des stratégies et du calendrier après mise à jour
-    cacheManager.invalidatePattern('trade_strategies');
-    cacheManager.invalidatePattern('trade_strategies_by_date');
-    cacheManager.invalidatePattern('calendar');
-    
-    return response.data;
-  },
-
-  // Supprimer une stratégie de trade
-  deleteTradeStrategy: async (id: number) => {
-    await apiClient.delete(`/trades/trade-strategies/${id}/`);
-  },
-
-  // Récupérer la stratégie pour un trade spécifique
-  getTradeStrategyByTrade: async (tradeId: string) => {
-    const response = await apiClient.get(`/trades/trade-strategies/by_trade/?trade_id=${tradeId}`);
-    return response.data;
-  },
-
-  // Récupérer les stratégies pour les trades d'une date spécifique avec optimisations
-  getTradeStrategiesByDate: async (date: string, tradingAccountId?: number) => {
-    // Vérifier l'authentification avant de faire l'appel API
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      console.log('🔐 [TRADES] Utilisateur non authentifié, arrêt de la récupération des stratégies');
-      return [];
-    }
-    
-    const cacheKey = `trade_strategies_by_date_${date}_${tradingAccountId || 'all'}`;
-    
-    // Vérifier le cache d'abord
-    const cachedData = cacheManager.get(cacheKey);
-    if (cachedData) {
-      return cachedData;
-    }
-
-    // Utiliser le retry service avec gestion d'erreurs robuste
-    return errorHandler.handleCacheError(
-      cacheKey,
-      async () => {
-        const params = new URLSearchParams();
-        params.append('date', date);
-        if (tradingAccountId) params.append('trading_account', tradingAccountId.toString());
-        const response = await apiClient.get(`/trades/trade-strategies/by_date/?${params.toString()}`);
-        
-        // Mettre en cache pour 5 minutes
-        cacheManager.set(cacheKey, response.data, 5 * 60 * 1000);
-        
-        return response.data;
-      },
-      {
-        maxRetries: 3,
-        onRetry: (attempt, error) => {
-          // Retry pour les stratégies
-        }
+  private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {
+    const headers: Record<string, string> = {
+      ...(init.headers as Record<string, string> || {}),
+      ...this.getAuthHeaders(),
+    };
+    const res = await fetch(input, { ...init, headers });
+    if (res.status === 401 && retry) {
+      const refreshed = await this.refreshAccessToken();
+      if (refreshed) {
+        const headers2: Record<string, string> = {
+          ...(init.headers as Record<string, string> || {}),
+          ...this.getAuthHeaders(),
+        };
+        return fetch(input, { ...init, headers: headers2 });
       }
-    );
-  },
+    }
+    return res;
+  }
 
-  // Créer ou mettre à jour plusieurs stratégies de trades en une fois
-  bulkCreateTradeStrategies: async (strategies: Array<{
-    trade_id: string;
-    strategy_respected?: boolean | null;
-    dominant_emotions?: string[];
-    gain_if_strategy_respected?: boolean | null;
-    tp1_reached?: boolean;
-    tp2_plus_reached?: boolean;
-    session_rating?: number | null;
-    emotion_details?: string;
-    possible_improvements?: string;
-    screenshot_url?: string;
-    video_url?: string;
-  }>) => {
-    const response = await apiClient.post('/trades/trade-strategies/bulk_create/', {
-      strategies
+  private toQuery(params: Record<string, any>) {
+    const search = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      // Exclure les valeurs undefined, null, '' et 0 pour trading_account (0 signifie "tous les comptes")
+      if (v !== undefined && v !== null && v !== '') {
+        // Pour trading_account, ne pas inclure si c'est 0 (tous les comptes)
+        if (k === 'trading_account' && v === 0) {
+          return; // Ne pas ajouter ce paramètre
+        }
+        search.append(k, String(v));
+      }
     });
-    
-    // Invalider le cache des stratégies et du calendrier après création en masse
-    cacheManager.invalidatePattern('trade_strategies');
-    cacheManager.invalidatePattern('trade_strategies_by_date');
-    cacheManager.invalidatePattern('calendar');
-    
-    return response.data;
-  },
+    return search.toString();
+  }
 
-  // === MÉTHODES D'OPTIMISATION ===
+  async list(filters: TradesFilters = {}): Promise<PaginatedResponse<TradeListItem>> {
+    const qs = this.toQuery(filters as any);
+    const url = `${this.BASE_URL}/api/trades/topstep/${qs ? `?${qs}` : ''}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des trades');
+    return res.json();
+  }
 
-  // Précharger les données pour une période donnée
-  preloadDateRange: async (startDate: Date, endDate: Date, tradingAccountId?: number) => {
-    const dates: string[] = [];
-    const currentDate = new Date(startDate);
-    
-    while (currentDate <= endDate) {
-      dates.push(currentDate.toISOString().split('T')[0]);
-      currentDate.setDate(currentDate.getDate() + 1);
+  async instruments(): Promise<string[]> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/instruments/`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.instruments || [];
+  }
+
+  async retrieve(id: number): Promise<TradeDetail> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/${id}/`);
+    if (!res.ok) throw new Error('Erreur lors de la récupération du trade');
+    return res.json();
+  }
+
+  async create(payload: Partial<TradeDetail>): Promise<TradeDetail> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Erreur lors de la création du trade');
     }
+    return res.json();
+  }
 
-    // Précharger en parallèle avec limitation de concurrence
-    const batchSize = 3;
-    const results: any[] = [];
-    
-    for (let i = 0; i < dates.length; i += batchSize) {
-      const batch = dates.slice(i, i + batchSize);
-      const batchPromises = batch.map(date => 
-        tradesService.getTradeStrategiesByDate(date, tradingAccountId).catch(error => {
-          console.warn(`⚠️ [TRADES] Erreur lors du préchargement de ${date}:`, error);
-          return null;
-        })
-      );
-      
-      const batchResults = await Promise.allSettled(batchPromises);
-      results.push(...batchResults.map(result => 
-        result.status === 'fulfilled' ? result.value : null
-      ).filter(Boolean));
+  async update(id: number, payload: Partial<TradeDetail>): Promise<TradeDetail> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/${id}/`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Erreur lors de la mise à jour du trade');
     }
-    
-    return results;
-  },
+    return res.json();
+  }
 
-  // Précharger les données du mois actuel
-  preloadCurrentMonth: async (tradingAccountId?: number) => {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    
-    return tradesService.preloadDateRange(firstDay, lastDay, tradingAccountId);
-  },
+  async remove(id: number): Promise<void> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/${id}/`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Erreur lors de la suppression du trade');
+  }
 
-  // Précharger les données du mois suivant
-  preloadNextMonth: async (tradingAccountId?: number) => {
-    const today = new Date();
-    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-    const lastDayNextMonth = new Date(today.getFullYear(), today.getMonth() + 2, 0);
-    
-    return tradesService.preloadDateRange(nextMonth, lastDayNextMonth, tradingAccountId);
-  },
+  async statistics(filters: TradesFilters = {}): Promise<{
+    total_trades: number;
+    total_pnl: number; // net
+    total_raw_pnl?: number;
+    total_fees: number;
+  }> {
+    const qs = this.toQuery(filters as any);
+    const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs ? `?${qs}` : ''}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des statistiques');
+    const data = await res.json();
+    return {
+      total_trades: data.total_trades ?? 0,
+      total_pnl: typeof data.total_pnl === 'number' ? data.total_pnl : parseFloat(String(data.total_pnl || 0)),
+      total_raw_pnl: typeof data.total_raw_pnl === 'number' ? data.total_raw_pnl : parseFloat(String(data.total_raw_pnl || 0)),
+      total_fees: typeof data.total_fees === 'number' ? data.total_fees : parseFloat(String(data.total_fees || 0)),
+    };
+  }
 
-  // Précharger les données prédictives (3 prochains jours ouvrables)
-  preloadPredictiveData: async (tradingAccountId?: number) => {
-    const today = new Date();
-    const dates: string[] = [];
-    
-    for (let i = 1; i <= 3; i++) {
-      const futureDate = new Date(today);
-      futureDate.setDate(today.getDate() + i);
-      
-      // Ignorer les weekends
-      if (futureDate.getDay() !== 0 && futureDate.getDay() !== 6) {
-        dates.push(futureDate.toISOString().split('T')[0]);
-      }
+  async uploadCSV(file: File, trading_account?: number, dryRun = false): Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+    total_rows?: number;
+    success_count?: number;
+    error_count?: number;
+    skipped_count?: number;
+    errors?: Array<{ row?: number; error: string }>;
+    missing_columns?: string[];
+    total_pnl?: number;
+    total_fees?: number;
+  }> {
+    const form = new FormData();
+    form.append('file', file);
+    if (trading_account !== undefined && trading_account !== null) {
+      form.append('trading_account', String(trading_account));
     }
+    if (dryRun) {
+      form.append('dry_run', 'true');
+    }
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/upload_csv/`, {
+      method: 'POST',
+      body: form,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || 'Erreur lors de l\'upload du fichier');
+    }
+    return data;
+  }
 
-    // Précharger en parallèle
-    const promises = dates.map(date => 
-      tradesService.getTradeStrategiesByDate(date, tradingAccountId).catch(error => {
-        console.warn(`⚠️ [TRADES] Erreur lors du préchargement prédictif de ${date}:`, error);
-        return null;
-      })
-    );
+  async detailedStatistics(tradingAccountId?: number): Promise<{
+    total_trades: number;
+    winning_trades: number;
+    losing_trades: number;
+    win_rate: number;
+    total_pnl: string;
+    total_gains: string;
+    total_losses: string;
+    average_pnl: string;
+    best_trade: string;
+    worst_trade: string;
+    total_fees: string;
+    total_volume: string;
+    average_duration: string;
+    most_traded_contract: string | null;
+    profit_factor: number;
+    win_loss_ratio: number;
+    consistency_ratio: number;
+    recovery_ratio: number;
+    pnl_per_trade: number;
+    fees_ratio: number;
+    volume_pnl_ratio: number;
+    frequency_ratio: number;
+    duration_ratio: number;
+  }> {
+    const qs = tradingAccountId ? `?trading_account=${tradingAccountId}` : '';
+    const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des statistiques détaillées');
+    return res.json();
+  }
 
-    const results = await Promise.allSettled(promises);
-    console.log(`🔮 [TRADES] Préchargement prédictif terminé: ${dates.length} dates traitées`);
-    return results;
-  },
-};
+  async analytics(tradingAccountId?: number): Promise<{
+    daily_stats: {
+      avg_gain_per_day: number;
+      median_gain_per_day: number;
+      avg_loss_per_day: number;
+      median_loss_per_day: number;
+      max_gain_per_day: number;
+      max_loss_per_day: number;
+      avg_trades_per_day: number;
+      median_trades_per_day: number;
+    };
+    trade_stats: {
+      max_gain_per_trade: number;
+      max_loss_per_trade: number;
+      avg_winning_trade: number;
+      median_winning_trade: number;
+      avg_losing_trade: number;
+      median_losing_trade: number;
+    };
+    consecutive_stats: {
+      max_consecutive_wins_per_day: number;
+      max_consecutive_losses_per_day: number;
+      max_consecutive_wins: number;
+      max_consecutive_losses: number;
+    };
+  }> {
+    const qs = tradingAccountId ? `?trading_account=${tradingAccountId}` : '';
+    const url = `${this.BASE_URL}/api/trades/topstep/analytics/${qs}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des analytics');
+    return res.json();
+  }
+}
+
+export const tradesService = new TradesService();
+
+

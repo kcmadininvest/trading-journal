@@ -1,12 +1,16 @@
-import { ChartOptions } from 'chart.js'
-
-// Configuration globale des couleurs
 export const chartColors = {
-  primary: '#3b82f6', // blue-500
-  secondary: '#f472b6', // pink-400
-  success: '#22c55e', // green-500
-  warning: '#f59e0b', // amber-500
-  danger: '#ef4444', // red-500
+  blue: {
+    50: '#eff6ff',
+    100: '#dbeafe',
+    200: '#bfdbfe',
+    300: '#93c5fd',
+    400: '#60a5fa',
+    500: '#3b82f6',
+    600: '#2563eb',
+    700: '#1d4ed8',
+    800: '#1e40af',
+    900: '#1e3a8a',
+  },
   gray: {
     50: '#f9fafb',
     100: '#f3f4f6',
@@ -17,142 +21,42 @@ export const chartColors = {
     600: '#4b5563',
     700: '#374151',
     800: '#1f2937',
-    900: '#111827'
-  }
-}
-
-// Configuration globale des tooltips
-export const globalTooltipConfig = {
-  enabled: true,
-  backgroundColor: 'rgba(255, 255, 255, 0.95)',
-  backdropFilter: 'blur(8px)',
-  titleColor: '#1f2937',
-  bodyColor: '#374151',
-  borderColor: 'rgba(229, 231, 235, 0.5)',
-  borderWidth: 1,
-  cornerRadius: 12,
-  displayColors: false,
-  titleFont: {
-    family: 'system-ui, -apple-system, sans-serif',
-    size: 14,
-    weight: 'bold' as const
+    900: '#111827',
   },
-  bodyFont: {
-    family: 'system-ui, -apple-system, sans-serif',
-    size: 13,
-    weight: 'normal' as const
+  green: {
+    50: '#f0fdf4',
+    100: '#dcfce7',
+    200: '#bbf7d0',
+    300: '#86efac',
+    400: '#4ade80',
+    500: '#22c55e',
+    600: '#16a34a',
+    700: '#15803d',
+    800: '#166534',
+    900: '#14532d',
   },
-  padding: 12
-}
-
-// Configuration globale des grilles
-export const globalGridConfig = {
-  color: '#f1f5f9',
-  drawBorder: false
-}
-
-// Configuration globale des axes
-export const globalAxisConfig = {
-  ticks: {
-    color: chartColors.gray[500],
-    font: {
-      size: 12
-    }
+  red: {
+    50: '#fef2f2',
+    100: '#fee2e2',
+    200: '#fecaca',
+    300: '#fca5a5',
+    400: '#f87171',
+    500: '#ef4444',
+    600: '#dc2626',
+    700: '#b91c1c',
+    800: '#991b1b',
+    900: '#7f1d1d',
   },
-  grid: globalGridConfig
-}
-
-// Configuration de base pour tous les graphiques
-export const baseChartOptions: Partial<ChartOptions> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: {
-    intersect: false,
-    mode: 'index' as const,
+  purple: {
+    50: '#faf5ff',
+    100: '#f3e8ff',
+    200: '#e9d5ff',
+    300: '#d8b4fe',
+    400: '#c084fc',
+    500: '#a855f7',
+    600: '#9333ea',
+    700: '#7e22ce',
+    800: '#6b21a8',
+    900: '#581c87',
   },
-  plugins: {
-    legend: {
-      display: false
-    },
-    tooltip: globalTooltipConfig
-  },
-  layout: {
-    padding: {
-      top: 10,
-      bottom: 10,
-      left: 10,
-      right: 10
-    }
-  },
-  scales: {
-    x: {
-      type: 'category' as const,
-      ...globalAxisConfig,
-      display: true
-    },
-    y: {
-      ...globalAxisConfig,
-      display: true
-    }
-  }
-}
-
-// Types pour les callbacks de tooltip
-export interface TooltipCallbackData {
-  label: string
-  value: number
-  formattedValue?: string
-  additionalInfo?: string[]
-}
-
-export type TooltipCallback = (data: TooltipCallbackData, context: any) => string[]
-
-// Fonction utilitaire pour créer des options de graphique avec tooltip personnalisé
-export const createChartOptions = (
-  customTooltipCallback?: TooltipCallback,
-  customOptions: any = {}
-): any => {
-  const tooltipConfig = {
-    ...globalTooltipConfig,
-    callbacks: customTooltipCallback ? {
-      title: (context: any) => {
-        return context[0]?.label || ''
-      },
-      label: (context: any) => {
-        const data: TooltipCallbackData = {
-          label: context.label || '',
-          value: context.parsed.y || 0,
-          formattedValue: context.formattedValue
-        }
-        return customTooltipCallback(data, context)
-      }
-    } : undefined
-  }
-
-  return {
-    ...baseChartOptions,
-    ...customOptions,
-    plugins: {
-      ...baseChartOptions.plugins,
-      ...customOptions.plugins,
-      tooltip: {
-        ...tooltipConfig,
-        ...customOptions.plugins?.tooltip
-      }
-    }
-  }
-}
-
-// Fonction utilitaire pour formater les valeurs monétaires
-export const formatCurrency = (value: number, currency: string = 'USD'): string => {
-  const nf = new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: currency
-  })
-  return nf.format(value)
-}
-
-// Fonction utilitaire pour formater les pourcentages
-export const formatPercentage = (value: number, decimals: number = 2): string => {
-  return `${value >= 0 ? '+' : ''}${value.toFixed(decimals)}%`
-}
+};

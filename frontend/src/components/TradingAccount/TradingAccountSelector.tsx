@@ -1,247 +1,134 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { TradingAccount } from '../../types';
-import { tradingAccountService } from '../../services/tradingAccountService';
-import { useLogger } from '../../hooks/useLogger';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { TradingAccount, tradingAccountsService } from '../../services/tradingAccounts';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface TradingAccountSelectorProps {
-  selectedAccountId?: number;
+  selectedAccountId?: number | null;
   onAccountChange: (account: TradingAccount | null) => void;
   className?: string;
+  hideLabel?: boolean;
 }
 
-const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
-  selectedAccountId,
-  onAccountChange,
-  className = ''
+export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({ 
+  selectedAccountId, 
+  onAccountChange, 
+  className = '',
+  hideLabel = false 
 }) => {
-  const logger = useLogger('TradingAccountSelector');
-  
+  const { t } = useI18nTranslation();
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Guards pour prévenir les rechargements inutiles
-  const [accountsLoaded, setAccountsLoaded] = useState(false);
-  const [isLoadingInProgress, setIsLoadingInProgress] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const selectedId = selectedAccountId ?? null;
 
-  const loadAccounts = useCallback(async (forceReload = false) => {
-    
-    // Vérifier si l'utilisateur est authentifié avant de charger les comptes
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      logger.warn('Pas de token d\'authentification');
-      setAccountsLoaded(true);
-      setAccounts([]);
-      setError(null);
-      return;
-    }
-    
-    logger.debug('Début du chargement des comptes, forceReload:', forceReload);
-
-    // Guard: éviter les rechargements inutiles
-    if (!forceReload && accountsLoaded) {
-      return
-    }
-    
-    if (!forceReload && isLoadingInProgress) {
-      return
-    }
-    
-    try {
-      setIsLoadingInProgress(true);
+  useEffect(() => {
+    const load = async () => {
       setLoading(true);
-      setError(null);
-      
-      const accountsData = await tradingAccountService.getAccounts();
-      
-      const accountsArray = Array.isArray(accountsData) ? accountsData : [];
-      logger.debug('Comptes chargés:', {
-        count: accountsArray.length,
-        accounts: accountsArray.map(acc => ({ id: acc.id, name: acc.name, is_default: acc.is_default }))
-      });
-      
-      setAccounts(accountsArray);
-      setAccountsLoaded(true);
-      
-      // Si aucun compte sélectionné, utiliser le compte par défaut
-      if (!selectedAccountId && accountsArray.length > 0) {
-        const defaultAccount = accountsArray.find(acc => acc.is_default);
-        if (defaultAccount) {
-          logger.debug('Sélection automatique du compte par défaut:', defaultAccount.name);
-          onAccountChange(defaultAccount);
-        } else if (accountsArray.length === 1) {
-          // Si un seul compte, le sélectionner automatiquement
-          logger.debug('Sélection automatique du seul compte disponible:', accountsArray[0].name);
-          onAccountChange(accountsArray[0]);
-        }
-      }
-    } catch (err: any) {
-      // Gérer les erreurs d'authentification de manière plus élégante
-      if (err.response?.status === 401) {
-        // Token expiré ou invalide - nettoyer et ne pas afficher d'erreur
+      try {
+        const list = await tradingAccountsService.list();
+        setAccounts(list.filter(a => a.status === 'active'));
+      } catch {
         setAccounts([]);
-        setAccountsLoaded(true);
-        setError(null);
-        logger.warn('Token expiré, nettoyage des comptes');
-      } else if (err.response?.status === 404 || err.response?.status === 403) {
-        // L'utilisateur n'a pas de comptes de trading
-        setAccounts([]);
-        setAccountsLoaded(true);
-        setError(null); // Pas d'erreur, juste pas de comptes
-      } else {
-        setError('Erreur lors du chargement des comptes');
-        logger.error('Error loading accounts:', err);
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-      setIsLoadingInProgress(false);
-    }
-  }, [accountsLoaded, isLoadingInProgress, onAccountChange, selectedAccountId, logger]);
-
-  useEffect(() => {
-    // Charger les comptes seulement une fois au montage
-    if (!accountsLoaded && !isLoadingInProgress) {
-      loadAccounts(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountsLoaded, isLoadingInProgress]);
-
-  // Effet pour gérer la sélection automatique du compte par défaut
-  useEffect(() => {
-    logger.debug('useEffect accounts change:', {
-      accountsLength: accounts.length,
-      selectedAccountId: selectedAccountId,
-      accounts: accounts.map(acc => ({ id: acc.id, name: acc.name, is_default: acc.is_default }))
-    });
-    
-    if (accounts.length > 0 && !selectedAccountId) {
-      const defaultAccount = accounts.find(acc => acc.is_default);
-      if (defaultAccount) {
-        logger.debug('Sélection automatique du compte par défaut (useEffect):', defaultAccount.name);
-        onAccountChange(defaultAccount);
-      } else if (accounts.length === 1) {
-        logger.debug('Sélection automatique du seul compte disponible (useEffect):', accounts[0].name);
-        onAccountChange(accounts[0]);
-      }
-    }
-  }, [accounts, selectedAccountId, onAccountChange, logger]);
-
-  // Écouter les événements de changement d'utilisateur pour recharger les comptes
-  useEffect(() => {
-    const handleUserChange = (event: any) => {
-      if (event.type === 'user:logout') {
-        // Lors de la déconnexion, nettoyer sans recharger
-        setAccountsLoaded(false);
-        setAccounts([]);
-        return;
-      }
-      
-      // Pour les connexions, recharger les comptes
-      setAccountsLoaded(false);
-      setAccounts([]);
-      // Utiliser une fonction anonyme pour éviter la dépendance circulaire
-      setTimeout(() => {
-        loadAccounts(true);
-      }, 100);
     };
-
-    window.addEventListener('user:login', handleUserChange);
-    window.addEventListener('user:logout', handleUserChange);
-
-    return () => {
-      window.removeEventListener('user:login', handleUserChange);
-      window.removeEventListener('user:logout', handleUserChange);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    load();
   }, []);
 
-  const handleAccountChange = (accountId: string) => {
-    
-    const account = accounts.find(acc => acc.id === parseInt(accountId));
-    
-    onAccountChange(account || null);
-  };
-
-  const getAccountTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      'topstep': 'TopStep',
-      'ibkr': 'Interactive Brokers',
-      'ninjatrader': 'NinjaTrader',
-      'tradovate': 'Tradovate',
-      'other': 'Autre'
+  // Si aucune valeur n'est fournie, sélectionner automatiquement le compte par défaut
+  useEffect(() => {
+    const initDefault = async () => {
+      if (selectedId == null) {
+        try {
+          const def = await tradingAccountsService.default();
+          if (def && def.status === 'active') {
+            onAccountChange(def);
+          }
+        } catch {
+          // noop
+        }
+      }
     };
-    return labels[type] || type;
-  };
+    initDefault();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId]);
 
-  if (loading) {
-    return (
-      <div className={`flex items-center space-x-2 ${className}`}>
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-        <span className="text-sm text-gray-600">Chargement des comptes...</span>
-      </div>
-    );
-  }
+  const options = useMemo(() => {
+    const base = accounts.map(a => ({ 
+      value: a.id, 
+      label: a.name, 
+      isDefault: !!a.is_default,
+      account: a 
+    }));
+    return [{ value: null, label: t('common:allActiveAccounts'), isDefault: false, account: null }, ...base];
+  }, [accounts, t]);
 
-  if (error) {
-    return (
-      <div className={`text-red-600 text-sm ${className}`}>
-        {error}
-      </div>
-    );
-  }
+  const currentValue = useMemo(() => {
+    if (selectedId === null || selectedId === undefined) return null;
+    return selectedId;
+  }, [selectedId]);
 
-  if (accounts.length === 0) {
-    return (
-      <div className={`${className}`}>
-        <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h4 className="text-sm font-semibold text-amber-800 mb-1">
-                Aucun compte de trading trouvé
-              </h4>
-              <p className="text-sm text-amber-700 mb-2">
-                Vous devez créer au minimum un compte de trading pour pouvoir utiliser cette fonctionnalité.
-              </p>
-              <div className="text-xs text-amber-600">
-                <p className="mb-1"><strong>Pour créer un compte :</strong></p>
-                <ol className="list-decimal list-inside space-y-1 ml-2">
-                  <li>Allez dans le menu <strong>"Comptes de Trading"</strong> dans la barre latérale</li>
-                  <li>Cliquez sur <strong>"Nouveau compte"</strong></li>
-                  <li>Remplissez le formulaire et marquez-le comme <strong>"Compte par défaut"</strong></li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const currentOption = useMemo(() => {
+    return options.find(o => o.value === currentValue) || options[0];
+  }, [options, currentValue]);
+
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (open && dropdownRef.current && !dropdownRef.current.contains(t)) setOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
 
   return (
-    <div className={`flex items-center space-x-2 ${className}`}>
-      <label htmlFor="account-selector" className="text-sm font-medium text-gray-700">
-        Compte:
-      </label>
-      <select
-        id="account-selector"
-        value={selectedAccountId || ''}
-        onChange={(e) => handleAccountChange(e.target.value)}
-        className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-      >
-        {accounts.map((account) => (
-          <option key={account.id} value={account.id}>
-            {account.name} ({getAccountTypeLabel(account.account_type)})
-            {account.is_default && ' - Défaut'}
-          </option>
-        ))}
-      </select>
+    <div className={`max-w-sm ${className}`}>
+      {!hideLabel && (
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common:tradingAccount')}</label>
+      )}
+      <div ref={dropdownRef} className="relative">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => setOpen(v => !v)}
+          className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+        >
+          <span className="inline-flex items-center gap-2">
+            <span className="text-gray-900 dark:text-gray-100">{currentOption?.label || t('common:allActiveAccounts')}</span>
+            {currentOption && currentOption.isDefault && (
+              <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs">{t('common:default')}</span>
+            )}
+          </span>
+          <svg className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {open && (
+          <div className="absolute z-50 mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg max-h-72 overflow-auto">
+            <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">
+              {options.map(opt => (
+                <li key={opt.value ?? 'all'}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onAccountChange(opt.account);
+                      setOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${opt.value === currentValue ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
+                  >
+                    <span className="text-gray-900 dark:text-gray-100">{opt.label}</span>
+                    {opt.isDefault && (
+                      <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs">{t('common:default')}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
-
-export default TradingAccountSelector;
