@@ -78,7 +78,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
   return (
     <div className={hideLabel ? "max-w-sm" : "mb-4 max-w-sm"}>
       {!hideLabel && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common:account')}</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common:tradingAccount')}</label>
       )}
       <div ref={dropdownRef} className="relative">
         <button

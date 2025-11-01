@@ -23,6 +23,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar, Line as ChartLine, Scatter as ChartScatter } from 'react-chartjs-2';
 import { usePreferences } from '../hooks/usePreferences';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -40,6 +41,7 @@ ChartJS.register(
 
 const AnalyticsPage: React.FC = () => {
   const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
   
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
@@ -111,7 +113,7 @@ const AnalyticsPage: React.FC = () => {
         });
         setTrades(response.results);
       } catch (err) {
-        setError('Erreur lors du chargement des données');
+        setError(t('analytics:errorLoadingData'));
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -119,7 +121,7 @@ const AnalyticsPage: React.FC = () => {
     };
 
     loadTrades();
-  }, [accountId]);
+  }, [accountId, t]);
 
   // Performance par heure (nuage de points)
   const hourlyPerformanceScatter = useMemo(() => {
@@ -252,8 +254,21 @@ const AnalyticsPage: React.FC = () => {
         ? ((peak - cumulativePnl) / peak) * 100 
         : 0;
       
+      const localeMap: Record<string, string> = {
+        'fr': 'fr-FR',
+        'en': 'en-US',
+        'es': 'es-ES',
+        'de': 'de-DE',
+        'it': 'it-IT',
+        'pt': 'pt-PT',
+        'ja': 'ja-JP',
+        'ko': 'ko-KR',
+        'zh': 'zh-CN',
+      };
+      const locale = localeMap[preferences.language] || 'fr-FR';
+      
       return {
-        date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
+        date: new Date(date).toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
         drawdown: drawdownPercent,
         drawdownAmount: drawdownAmount,
         cumulativePnl,
@@ -262,11 +277,19 @@ const AnalyticsPage: React.FC = () => {
     
     // Filtrage : affiche uniquement les jours avec drawdown > 0
     return allData.filter(data => data.drawdown > 0);
-  }, [trades, preferences.timezone]);
+  }, [trades, preferences.timezone, preferences.language]);
 
   // Heatmap Jour × Heure
   const heatmapData = useMemo(() => {
-    const daysOfWeek = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    const daysOfWeek = [
+      t('analytics:days.monday'),
+      t('analytics:days.tuesday'),
+      t('analytics:days.wednesday'),
+      t('analytics:days.thursday'),
+      t('analytics:days.friday'),
+      t('analytics:days.saturday'),
+      t('analytics:days.sunday'),
+    ];
     const heatmap: { [day: number]: { [hour: number]: number } } = {};
     
     // Initialiser toutes les combinaisons
@@ -307,7 +330,7 @@ const AnalyticsPage: React.FC = () => {
       minPnl,
       maxPnl,
     };
-  }, [trades]);
+  }, [trades, t]);
 
   // Distribution des PnL (histogramme)
   const pnlDistribution = useMemo(() => {
@@ -403,7 +426,7 @@ const AnalyticsPage: React.FC = () => {
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Chargement des données...</p>
+            <p className="text-gray-600">{t('analytics:loadingData')}</p>
           </div>
         </div>
       ) : (
@@ -412,14 +435,14 @@ const AnalyticsPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
             <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></div>
-              Performance par heure (Nuage de points)
+              {t('analytics:charts.hourlyPerformanceScatter.title')}
             </h3>
             <div style={{ height: '320px', position: 'relative' }}>
               <ChartScatter
                 data={{
                   datasets: [
                     {
-                      label: 'Performance',
+                      label: t('analytics:charts.hourlyPerformanceScatter.label'),
                       data: hourlyPerformanceScatter.data.map(d => ({
                         x: d.hour,
                         y: d.pnl,
@@ -497,7 +520,7 @@ const AnalyticsPage: React.FC = () => {
                           const hour = Math.round(numValue);
                           // Afficher seulement si l'heure fait partie des heures avec des données
                           if (hourlyPerformanceScatter.hoursWithData.includes(hour)) {
-                            return `${hour.toString().padStart(2, '0')}h`;
+                            return t('analytics:common.hour', { hour: hour.toString().padStart(2, '0') });
                           }
                           return '';
                         },
@@ -513,7 +536,7 @@ const AnalyticsPage: React.FC = () => {
                       },
                       title: {
                         display: true,
-                        text: 'Heure',
+                        text: t('analytics:charts.hourlyPerformanceScatter.xAxis'),
                         color: '#4b5563',
                         font: {
                           size: 13,
@@ -542,7 +565,7 @@ const AnalyticsPage: React.FC = () => {
                       },
                       title: {
                         display: true,
-                        text: 'PnL',
+                        text: t('analytics:charts.hourlyPerformanceScatter.yAxis'),
                         color: '#4b5563',
                         font: {
                           size: 13,
@@ -560,14 +583,14 @@ const AnalyticsPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
             <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full mr-3"></div>
-              Corrélation PnL vs Nombre de Trades
+              {t('analytics:charts.correlation.title')}
             </h3>
             <div style={{ height: '320px', position: 'relative' }}>
               <ChartScatter
                 data={{
                   datasets: [
                     {
-                      label: 'Corrélation',
+                      label: t('analytics:charts.correlation.label'),
                       data: correlationData.dataPoints.map(d => ({
                         x: d.trades,
                         y: d.pnl,
@@ -612,7 +635,7 @@ const AnalyticsPage: React.FC = () => {
                           const item = items[0];
                           const raw = item.raw as { x: number; y: number };
                           const trades = raw.x;
-                          return `${trades} ${trades > 1 ? 'trades' : 'trade'}`;
+                          return `${trades} ${trades > 1 ? t('analytics:common.trades') : t('analytics:common.trade')}`;
                         },
                         label: (context) => {
                           const raw = context.raw as { x: number; y: number };
@@ -648,7 +671,7 @@ const AnalyticsPage: React.FC = () => {
                       },
                       title: {
                         display: true,
-                        text: 'Nombre de trades',
+                        text: t('analytics:charts.correlation.xAxis'),
                         color: '#4b5563',
                         font: {
                           size: 13,
@@ -677,7 +700,7 @@ const AnalyticsPage: React.FC = () => {
                       },
                       title: {
                         display: true,
-                        text: 'PnL total',
+                        text: t('analytics:charts.correlation.yAxis'),
                         color: '#4b5563',
                         font: {
                           size: 13,
@@ -695,9 +718,9 @@ const AnalyticsPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-6 bg-gradient-to-b from-red-500 to-red-600 rounded-full mr-3"></div>
-              <h3 className="text-xl font-bold text-gray-800">Drawdown par jour</h3>
+              <h3 className="text-xl font-bold text-gray-800">{t('analytics:charts.drawdown.title')}</h3>
               <TooltipComponent
-                content="Ce graphique montre la distance depuis votre meilleur niveau (pic). La ligne à 0 représente votre pic. Plus la valeur est élevée, plus vous êtes loin de votre meilleur niveau. Quand vous atteignez un nouveau pic, le drawdown revient à 0. Les pourcentages (%) représentent le pourcentage de perte depuis le pic. Par exemple, 10% signifie que vous avez perdu 10% par rapport à votre meilleur niveau."
+                content={t('analytics:charts.drawdown.tooltip')}
                 position="top"
               >
                 <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-help">
@@ -713,7 +736,7 @@ const AnalyticsPage: React.FC = () => {
                   labels: drawdownData.map(d => d.date),
                   datasets: [
                     {
-                      label: 'Drawdown',
+                      label: t('analytics:charts.drawdown.label'),
                       data: drawdownData.map(d => d.drawdown),
                       borderColor: '#ec4899',
                       backgroundColor: 'rgba(236, 72, 153, 0.1)',
@@ -763,8 +786,8 @@ const AnalyticsPage: React.FC = () => {
                           const index = context.dataIndex;
                           const data = drawdownData[index];
                           return [
-                            `Montant: ${formatCurrency(data.drawdownAmount, currencySymbol)}`,
-                            `Pourcentage: ${data.drawdown.toFixed(2)}% (perte depuis le pic)`,
+                            `${t('analytics:charts.drawdown.amount')}: ${formatCurrency(data.drawdownAmount, currencySymbol)}`,
+                            `${t('analytics:charts.drawdown.percentage')}: ${data.drawdown.toFixed(2)}% (${t('analytics:charts.drawdown.lossFromPeak')})`,
                           ];
                         },
                       },
@@ -810,7 +833,7 @@ const AnalyticsPage: React.FC = () => {
                       },
                       title: {
                         display: true,
-                        text: 'Drawdown (%)',
+                        text: t('analytics:charts.drawdown.yAxis'),
                         color: '#4b5563',
                         font: {
                           size: 13,
@@ -828,7 +851,7 @@ const AnalyticsPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
             <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full mr-3"></div>
-              Performance par heure (Barres)
+              {t('analytics:charts.hourlyPerformanceBars.title')}
             </h3>
             <div style={{ height: '320px', position: 'relative' }}>
               <ChartBar
@@ -836,7 +859,7 @@ const AnalyticsPage: React.FC = () => {
                   labels: hourlyPerformanceBars.map(d => d.hour),
                   datasets: [
                     {
-                      label: 'Performance',
+                      label: t('analytics:charts.hourlyPerformanceBars.label'),
                       data: hourlyPerformanceBars.map(d => d.pnl),
                       backgroundColor: hourlyPerformanceBars.map(d => 
                         d.pnl >= 0 ? '#3b82f6' : '#ec4899'
@@ -924,7 +947,7 @@ const AnalyticsPage: React.FC = () => {
                       },
                       title: {
                         display: true,
-                        text: 'PnL total',
+                        text: t('analytics:charts.hourlyPerformanceBars.yAxis'),
                         color: '#4b5563',
                         font: {
                           size: 13,
@@ -942,7 +965,7 @@ const AnalyticsPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
             <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full mr-3"></div>
-              Heatmap de Performance (Jour × Heure)
+              {t('analytics:charts.heatmap.title')}
             </h3>
             <div className="overflow-x-auto -mx-2 px-2">
               <div className="inline-block min-w-full">
@@ -1043,15 +1066,15 @@ const AnalyticsPage: React.FC = () => {
                 <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-center space-x-6 text-sm">
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: '#ec4899' }}></div>
-                    <span className="text-gray-700 font-medium">Pertes</span>
+                    <span className="text-gray-700 font-medium">{t('analytics:charts.heatmap.losses')}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 rounded-md shadow-sm bg-gray-200"></div>
-                    <span className="text-gray-700 font-medium">Neutre</span>
+                    <span className="text-gray-700 font-medium">{t('analytics:charts.heatmap.neutral')}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-4 h-4 rounded-md shadow-sm" style={{ backgroundColor: '#3b82f6' }}></div>
-                    <span className="text-gray-700 font-medium">Gains</span>
+                    <span className="text-gray-700 font-medium">{t('analytics:charts.heatmap.gains')}</span>
                   </div>
                 </div>
               </div>
@@ -1062,7 +1085,7 @@ const AnalyticsPage: React.FC = () => {
           <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
             <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
               <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
-              Distribution des PnL
+              {t('analytics:charts.pnlDistribution.title')}
             </h3>
             <div style={{ height: '320px', position: 'relative' }}>
               <ChartBar
@@ -1074,7 +1097,7 @@ const AnalyticsPage: React.FC = () => {
                   }),
                   datasets: [
                     {
-                      label: 'Pourcentage de trades',
+                      label: t('analytics:charts.pnlDistribution.label'),
                       data: (() => {
                         const totalTrades = pnlDistribution.reduce((sum, d) => sum + d.count, 0);
                         return pnlDistribution.map(d => totalTrades > 0 ? (d.count / totalTrades) * 100 : 0);
@@ -1132,7 +1155,7 @@ const AnalyticsPage: React.FC = () => {
                           
                           const startFormatted = formatCurrency(startValue, currencySymbol);
                           const endFormatted = formatCurrency(endValue, currencySymbol);
-                          return `P&L: de ${startFormatted} à ${endFormatted}`;
+                          return t('analytics:charts.pnlDistribution.range', { start: startFormatted, end: endFormatted });
                         },
                         label: (context) => {
                           const index = context.dataIndex;
@@ -1140,8 +1163,8 @@ const AnalyticsPage: React.FC = () => {
                           const percentage = context.parsed.y ?? 0;
                           const totalTrades = pnlDistribution.reduce((sum, d) => sum + d.count, 0);
                           return [
-                            `${count} ${count > 1 ? 'trades' : 'trade'}`,
-                            `${percentage.toFixed(1)}% (sur ${totalTrades} total)`
+                            `${count} ${count > 1 ? t('analytics:common.trades') : t('analytics:common.trade')}`,
+                            `${percentage.toFixed(1)}% (${t('analytics:charts.pnlDistribution.onTotal', { total: totalTrades })})`
                           ];
                         },
                       },
@@ -1198,7 +1221,7 @@ const AnalyticsPage: React.FC = () => {
                       },
                       title: {
                         display: true,
-                        text: 'Pourcentage de trades',
+                        text: t('analytics:charts.pnlDistribution.yAxis'),
                         color: '#4b5563',
                         font: {
                           size: 13,
@@ -1214,7 +1237,7 @@ const AnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      <FloatingActionButton onClick={() => setShowImport(true)} title="Importer des trades" />
+      <FloatingActionButton onClick={() => setShowImport(true)} title={t('analytics:importTrades')} />
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
       
       {/* Tooltip portal pour la heatmap - rendu à la racine */}
@@ -1229,7 +1252,7 @@ const AnalyticsPage: React.FC = () => {
           }}
         >
           <p className="text-sm text-gray-600 mb-2 font-medium" style={{ fontSize: '14px', fontWeight: 600 }}>
-            {heatmapTooltip.day} {heatmapTooltip.hour.toString().padStart(2, '0')}h
+            {heatmapTooltip.day} {t('analytics:common.hour', { hour: heatmapTooltip.hour.toString().padStart(2, '0') })}
           </p>
           <p className="text-base font-semibold text-gray-900" style={{ fontSize: '13px', fontWeight: 500 }}>
             {formatCurrency(heatmapTooltip.value, currencySymbol)}

@@ -1,0 +1,62 @@
+{
+  "title": "Analytics",
+  "errorLoadingData": "Error loading data",
+  "loadingData": "Loading data...",
+  "importTrades": "Import trades",
+  "charts": {
+    "hourlyPerformanceScatter": {
+      "title": "Performance by Hour (Scatter Plot)",
+      "label": "Performance",
+      "xAxis": "Hour",
+      "yAxis": "PnL"
+    },
+    "correlation": {
+      "title": "PnL vs Number of Trades Correlation",
+      "label": "Correlation",
+      "xAxis": "Number of trades",
+      "yAxis": "Total PnL"
+    },
+    "drawdown": {
+      "title": "Daily Drawdown",
+      "label": "Drawdown",
+      "yAxis": "Drawdown (%)",
+      "tooltip": "This chart shows the distance from your best level (peak). The line at 0 represents your peak. The higher the value, the further you are from your best level. When you reach a new peak, the drawdown returns to 0. Percentages (%) represent the percentage of loss from the peak. For example, 10% means you have lost 10% compared to your best level.",
+      "amount": "Amount",
+      "percentage": "Percentage",
+      "lossFromPeak": "loss from peak"
+    },
+    "hourlyPerformanceBars": {
+      "title": "Performance by Hour (Bars)",
+      "label": "Performance",
+      "yAxis": "Total PnL"
+    },
+    "heatmap": {
+      "title": "Performance Heatmap (Day × Hour)",
+      "losses": "Losses",
+      "neutral": "Neutral",
+      "gains": "Gains"
+    },
+    "pnlDistribution": {
+      "title": "PnL Distribution",
+      "label": "Percentage of trades",
+      "yAxis": "Percentage of trades",
+      "range": "P&L: from {{start}} to {{end}}",
+      "onTotal": "of {{total}} total"
+    }
+  },
+  "common": {
+    "trade": "trade",
+    "trades": "trades",
+    "hour": "{{hour}}h"
+  },
+  "days": {
+    "monday": "Mon",
+    "tuesday": "Tue",
+    "wednesday": "Wed",
+    "thursday": "Thu",
+    "friday": "Fri",
+    "saturday": "Sat",
+    "sunday": "Sun"
+  }
+}
+

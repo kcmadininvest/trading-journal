@@ -83,6 +83,16 @@ import jaStatistics from './locales/ja/statistics.json';
 import koStatistics from './locales/ko/statistics.json';
 import zhStatistics from './locales/zh/statistics.json';
 
+import frAnalytics from './locales/fr/analytics.json';
+import enAnalytics from './locales/en/analytics.json';
+import esAnalytics from './locales/es/analytics.json';
+import deAnalytics from './locales/de/analytics.json';
+import itAnalytics from './locales/it/analytics.json';
+import ptAnalytics from './locales/pt/analytics.json';
+import jaAnalytics from './locales/ja/analytics.json';
+import koAnalytics from './locales/ko/analytics.json';
+import zhAnalytics from './locales/zh/analytics.json';
+
 const resources = {
   fr: {
     common: frCommon,
@@ -93,6 +103,7 @@ const resources = {
     calendar: frCalendar,
     strategies: frStrategies,
     statistics: frStatistics,
+    analytics: frAnalytics,
   },
   en: {
     common: enCommon,
@@ -103,6 +114,7 @@ const resources = {
     calendar: enCalendar,
     strategies: enStrategies,
     statistics: enStatistics,
+    analytics: enAnalytics,
   },
   es: {
     common: esCommon,
@@ -113,6 +125,7 @@ const resources = {
     calendar: esCalendar,
     strategies: esStrategies,
     statistics: esStatistics,
+    analytics: esAnalytics,
   },
   de: {
     common: deCommon,
@@ -123,6 +136,7 @@ const resources = {
     calendar: deCalendar,
     strategies: deStrategies,
     statistics: deStatistics,
+    analytics: deAnalytics,
   },
   it: {
     common: itCommon,
@@ -133,6 +147,7 @@ const resources = {
     calendar: itCalendar,
     strategies: itStrategies,
     statistics: itStatistics,
+    analytics: itAnalytics,
   },
   pt: {
     common: ptCommon,
@@ -143,6 +158,7 @@ const resources = {
     calendar: ptCalendar,
     strategies: ptStrategies,
     statistics: ptStatistics,
+    analytics: ptAnalytics,
   },
   ja: {
     common: jaCommon,
@@ -153,6 +169,7 @@ const resources = {
     calendar: jaCalendar,
     strategies: jaStrategies,
     statistics: jaStatistics,
+    analytics: jaAnalytics,
   },
   ko: {
     common: koCommon,
@@ -163,6 +180,7 @@ const resources = {
     calendar: koCalendar,
     strategies: koStrategies,
     statistics: koStatistics,
+    analytics: koAnalytics,
   },
   zh: {
     common: zhCommon,
@@ -173,6 +191,7 @@ const resources = {
     calendar: zhCalendar,
     strategies: zhStrategies,
     statistics: zhStatistics,
+    analytics: zhAnalytics,
   },
 };
 
@@ -184,7 +203,7 @@ i18n
     fallbackLng: 'fr',
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
