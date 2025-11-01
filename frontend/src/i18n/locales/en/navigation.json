@@ -1,6 +1,6 @@
 {
   "dashboard": "Dashboard",
-  "calendar": "Calendar",
+  "calendar": "PnL Calendar",
   "strategies": "Strategies",
   "statistics": "Statistics",
   "analytics": "Analytics",
@@ -10,5 +10,11 @@
   "settings": "Settings",
   "navigation": "Navigation",
   "admin": "Administrator",
-  "user": "User"
+  "user": "User",
+  "header": {
+    "dashboardDescription": "Overview of your trading activities",
+    "managementPrefix": "Management of",
+    "logout": "Logout",
+    "appName": "Trading Journal"
+  }
 }

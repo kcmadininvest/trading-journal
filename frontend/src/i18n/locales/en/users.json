@@ -1,0 +1,34 @@
+{
+  "user": "User",
+  "role": "Role",
+  "accountStatus": "Account Status",
+  "emailStatus": "Email Status",
+  "createdAt": "Created At",
+  "lastLogin": "Last Login",
+  "never": "Never",
+  "admin": "Administrator",
+  "active": "Active",
+  "inactive": "Inactive",
+  "verified": "Verified",
+  "notVerified": "Not Verified",
+  "editUser": "Edit User",
+  "deleteUser": "Delete User",
+  "disableAccount": "Disable Account",
+  "enableAccount": "Enable Account",
+  "editModal": {
+    "title": "Edit User",
+    "email": "Email:",
+    "id": "ID:",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "username": "Username",
+    "role": "Role",
+    "accountActive": "Active Account",
+    "emailVerified": "Verified Email",
+    "error": "An error occurred",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  }
+}
+

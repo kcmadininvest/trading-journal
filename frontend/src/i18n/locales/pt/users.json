@@ -1,0 +1,34 @@
+{
+  "user": "Utilisateur",
+  "role": "Rôle",
+  "accountStatus": "Statut compte",
+  "emailStatus": "Statut mail",
+  "createdAt": "Créé le",
+  "lastLogin": "Dernière connexion",
+  "never": "Jamais",
+  "admin": "Administrateur",
+  "active": "Actif",
+  "inactive": "Inactif",
+  "verified": "Vérifié",
+  "notVerified": "Non vérifié",
+  "editUser": "Modifier l'utilisateur",
+  "deleteUser": "Supprimer l'utilisateur",
+  "disableAccount": "Désactiver le compte",
+  "enableAccount": "Activer le compte",
+  "editModal": {
+    "title": "Modifier l'utilisateur",
+    "email": "Email:",
+    "id": "ID:",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "username": "Nom d'utilisateur",
+    "role": "Rôle",
+    "accountActive": "Compte actif",
+    "emailVerified": "Email vérifié",
+    "error": "Une erreur est survenue",
+    "cancel": "Annuler",
+    "saving": "Sauvegarde...",
+    "save": "Sauvegarder"
+  }
+}
+

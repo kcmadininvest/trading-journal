@@ -141,5 +141,103 @@
     "totalFees": "Total Fees",
     "winningTrades": "Winning trades",
     "close": "Close"
+  },
+  "importModal": {
+    "title": "Import Trades",
+    "format": "CSV Format",
+    "tradingAccount": "Trading Account",
+    "csvFile": "CSV File",
+    "selectFile": "Please select a CSV file.",
+    "errorAnalyzing": "Error analyzing file",
+    "errorImporting": "Error importing file",
+    "dragDrop": "Drag and drop your CSV file here",
+    "or": "or",
+    "browseFiles": "Browse Files",
+    "changeFile": "Change file",
+    "fileFormatRequired": "File must follow the required format (13 columns required)",
+    "showFormatGuide": "Show format guide",
+    "hideFormatGuide": "Hide format guide",
+    "formatGuide": {
+      "title": "CSV Format Guide",
+      "separator": "Separator:",
+      "separatorNote": "(comma)",
+      "encoding": "Encoding:",
+      "encodingNote": "(with or without BOM)",
+      "downloadTemplate": "Download Template",
+      "column": "Column",
+      "description": "Description",
+      "example": "Example",
+      "required": "Required",
+      "yes": "Yes",
+      "optional": "Optional",
+      "values": "Values:",
+      "fullLineExample": "Complete line example:",
+      "columns": {
+        "Id": {
+          "description": "Unique trade identifier"
+        },
+        "ContractName": {
+          "description": "Contract name (symbol)"
+        },
+        "EnteredAt": {
+          "description": "Entry date/time (US format: MM/DD/YYYY HH:MM:SS)"
+        },
+        "ExitedAt": {
+          "description": "Exit date/time (US format: MM/DD/YYYY HH:MM:SS)"
+        },
+        "EntryPrice": {
+          "description": "Entry price (US format with decimal point)"
+        },
+        "ExitPrice": {
+          "description": "Exit price (US format with decimal point)"
+        },
+        "Fees": {
+          "description": "Fees (US format with decimal point)"
+        },
+        "PnL": {
+          "description": "Profit/Loss (US format, negative for loss)"
+        },
+        "Size": {
+          "description": "Position size (number of contracts)"
+        },
+        "Type": {
+          "description": "Trade type",
+          "allowedValues": "Long or Short"
+        },
+        "TradeDay": {
+          "description": "Trade day (US format: MM/DD/YYYY)"
+        },
+        "TradeDuration": {
+          "description": "Trade duration (HH:MM:SS.microseconds)"
+        },
+        "Commissions": {
+          "description": "Commissions (US format with decimal point)"
+        }
+      }
+    },
+    "preview": {
+      "title": "File Preview",
+      "totalRows": "Total rows",
+      "importable": "Importable",
+      "errors": "Errors",
+      "duplicates": "Duplicates",
+      "totalPnl": "Total PnL",
+      "totalFees": "Total Fees",
+      "missingColumns": "Missing columns:",
+      "detailedErrors": "Detailed errors:",
+      "line": "Line",
+      "andMoreErrors": "... and {{count}} more error(s)"
+    },
+    "success": {
+      "message": "Import successful",
+      "imported": "Imported",
+      "skipped": "Skipped"
+    },
+    "error": "Error",
+    "cancel": "Cancel",
+    "analyzing": "Analyzing...",
+    "importing": "Importing...",
+    "previewButton": "Preview",
+    "importButton": "Import"
   }
 }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, UserUpdateData } from '../../services/userService';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface UserEditModalProps {
   user: User | null;
@@ -14,6 +15,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const { t } = useI18nTranslation();
   const [formData, setFormData] = useState<UserUpdateData>({
     first_name: '',
     last_name: '',
@@ -58,7 +60,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
       await onSave(user.id, formData);
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
+      setError(err.message || t('users:editModal.error'));
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +73,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">
-            Modifier l'utilisateur
+            {t('users:editModal.title')}
           </h2>
           <button
             onClick={onClose}
@@ -85,10 +87,10 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
         <div className="mb-4 p-3 bg-gray-50 rounded-lg">
           <p className="text-sm text-gray-600">
-            <strong>Email:</strong> {user.email}
+            <strong>{t('users:editModal.email')}</strong> {user.email}
           </p>
           <p className="text-sm text-gray-600">
-            <strong>ID:</strong> {user.id}
+            <strong>{t('users:editModal.id')}</strong> {user.id}
           </p>
         </div>
 
@@ -102,7 +104,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
-                Prénom
+                {t('users:editModal.firstName')}
               </label>
               <input
                 type="text"
@@ -115,7 +117,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
             </div>
             <div>
               <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
-                Nom
+                {t('users:editModal.lastName')}
               </label>
               <input
                 type="text"
@@ -130,7 +132,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-              Nom d'utilisateur
+              {t('users:editModal.username')}
             </label>
             <input
               type="text"
@@ -144,7 +146,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
           <div>
             <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
-              Rôle
+              {t('users:editModal.role')}
             </label>
             <select
               id="role"
@@ -153,8 +155,8 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               onChange={handleInputChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="user">Utilisateur</option>
-              <option value="admin">Administrateur</option>
+              <option value="user">{t('users:user')}</option>
+              <option value="admin">{t('users:admin')}</option>
             </select>
           </div>
 
@@ -169,7 +171,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
-                Compte actif
+                {t('users:editModal.accountActive')}
               </label>
             </div>
             <div className="flex items-center">
@@ -182,7 +184,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="is_verified" className="ml-2 block text-sm text-gray-900">
-                Email vérifié
+                {t('users:editModal.emailVerified')}
               </label>
             </div>
           </div>
@@ -193,14 +195,14 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors"
             >
-              Annuler
+              {t('users:editModal.cancel')}
             </button>
             <button
               type="submit"
               disabled={isLoading}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Sauvegarde...' : 'Sauvegarder'}
+              {isLoading ? t('users:editModal.saving') : t('users:editModal.save')}
             </button>
           </div>
         </form>

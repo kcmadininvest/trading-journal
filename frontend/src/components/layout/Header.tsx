@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { User } from '../../services/auth';
 import { authService } from '../../services/auth';
 import { Tooltip } from '../ui';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface HeaderProps {
   currentUser: User;
@@ -10,20 +11,29 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) => {
-  const getPageTitle = (page: string) => {
+  const { t } = useI18nTranslation();
+  
+  const pageTitle = useMemo(() => {
     const titles: { [key: string]: string } = {
-      dashboard: 'Tableau de bord',
-      calendar: 'Calendrier PnL',
-      trades: 'Mes Trades',
-      statistics: 'Statistiques',
-      strategies: 'Stratégies',
-      analytics: 'Analyses',
-      accounts: 'Comptes de trading',
-      users: 'Gestion des utilisateurs',
-      settings: 'Paramètres',
+      dashboard: t('navigation:dashboard'),
+      calendar: t('navigation:calendar'),
+      trades: t('navigation:trades'),
+      statistics: t('navigation:statistics'),
+      strategies: t('navigation:strategies'),
+      analytics: t('navigation:analytics'),
+      accounts: t('navigation:accounts'),
+      users: t('navigation:users'),
+      settings: t('navigation:settings'),
     };
-    return titles[page] || 'Trading Journal';
-  };
+    return titles[currentPage] || t('navigation:header.appName');
+  }, [currentPage, t]);
+  
+  const pageDescription = useMemo(() => {
+    if (currentPage === 'dashboard') {
+      return t('navigation:header.dashboardDescription');
+    }
+    return `${t('navigation:header.managementPrefix')} ${pageTitle.toLowerCase()}`;
+  }, [currentPage, pageTitle, t]);
 
   const handleLogout = () => {
     authService.logout();
@@ -36,13 +46,10 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
         {/* Page title */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {getPageTitle(currentPage)}
+            {pageTitle}
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            {currentPage === 'dashboard' 
-              ? 'Vue d\'ensemble de vos activités de trading'
-              : `Gestion des ${getPageTitle(currentPage).toLowerCase()}`
-            }
+            {pageDescription}
           </p>
         </div>
 
@@ -61,13 +68,13 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
                   ? 'bg-red-100 text-red-800' 
                   : 'bg-blue-100 text-blue-800'
               }`}>
-                {currentUser.is_admin ? 'Administrateur' : 'Utilisateur'}
+                {currentUser.is_admin ? t('navigation:admin') : t('navigation:user')}
               </span>
             </div>
           </div>
 
           {/* Logout button */}
-          <Tooltip content="Se déconnecter" position="left">
+          <Tooltip content={t('navigation:header.logout')} position="left">
             <button
               onClick={handleLogout}
               className="inline-flex items-center justify-center w-10 h-10 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"

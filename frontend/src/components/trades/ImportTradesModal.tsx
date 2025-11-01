@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { tradesService } from '../../services/trades';
 import { AccountSelector } from '../accounts/AccountSelector';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface ImportTradesModalProps {
   open: boolean;
@@ -13,6 +14,7 @@ type ModalState = 'initial' | 'preview' | 'importing' | 'success';
 
 export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onClose }) => {
   const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
   const [state, setState] = useState<ModalState>('initial');
@@ -42,21 +44,21 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
   const previousFileRef = useRef<File | null>(null);
   const previousAccountRef = useRef<number | null>(null);
 
-  const CSV_COLUMNS = [
-    { name: 'Id', description: 'Identifiant unique du trade', example: '1443101901', required: true },
-    { name: 'ContractName', description: 'Nom du contrat (symbole)', example: 'NQZ5', required: true },
-    { name: 'EnteredAt', description: 'Date/heure d\'entrée (format US: MM/DD/YYYY HH:MM:SS)', example: '10/08/2025 18:23:28 +02:00', required: true },
-    { name: 'ExitedAt', description: 'Date/heure de sortie (format US: MM/DD/YYYY HH:MM:SS)', example: '10/08/2025 18:31:03 +02:00', required: true },
-    { name: 'EntryPrice', description: 'Prix d\'entrée (format US avec point décimal)', example: '25261.750000000', required: true },
-    { name: 'ExitPrice', description: 'Prix de sortie (format US avec point décimal)', example: '25245.750000000', required: true },
-    { name: 'Fees', description: 'Frais (format US avec point décimal)', example: '8.40000', required: true },
-    { name: 'PnL', description: 'Profit/Perte (format US, négatif pour perte)', example: '-960.000000000', required: true },
-    { name: 'Size', description: 'Taille de la position (nombre de contrats)', example: '3', required: true },
-    { name: 'Type', description: 'Type de trade', example: 'Long', required: true, allowedValues: 'Long ou Short' },
-    { name: 'TradeDay', description: 'Jour du trade (format US: MM/DD/YYYY)', example: '10/08/2025 00:00:00 -05:00', required: true },
-    { name: 'TradeDuration', description: 'Durée du trade (HH:MM:SS.microseconds)', example: '00:07:34.9942140', required: true },
-    { name: 'Commissions', description: 'Commissions (format US avec point décimal)', example: '0.00', required: false },
-  ];
+  const CSV_COLUMNS = useMemo(() => [
+    { name: 'Id', description: t('trades:importModal.formatGuide.columns.Id.description'), example: '1443101901', required: true },
+    { name: 'ContractName', description: t('trades:importModal.formatGuide.columns.ContractName.description'), example: 'NQZ5', required: true },
+    { name: 'EnteredAt', description: t('trades:importModal.formatGuide.columns.EnteredAt.description'), example: '10/08/2025 18:23:28 +02:00', required: true },
+    { name: 'ExitedAt', description: t('trades:importModal.formatGuide.columns.ExitedAt.description'), example: '10/08/2025 18:31:03 +02:00', required: true },
+    { name: 'EntryPrice', description: t('trades:importModal.formatGuide.columns.EntryPrice.description'), example: '25261.750000000', required: true },
+    { name: 'ExitPrice', description: t('trades:importModal.formatGuide.columns.ExitPrice.description'), example: '25245.750000000', required: true },
+    { name: 'Fees', description: t('trades:importModal.formatGuide.columns.Fees.description'), example: '8.40000', required: true },
+    { name: 'PnL', description: t('trades:importModal.formatGuide.columns.PnL.description'), example: '-960.000000000', required: true },
+    { name: 'Size', description: t('trades:importModal.formatGuide.columns.Size.description'), example: '3', required: true },
+    { name: 'Type', description: t('trades:importModal.formatGuide.columns.Type.description'), example: 'Long', required: true, allowedValues: t('trades:importModal.formatGuide.columns.Type.allowedValues') },
+    { name: 'TradeDay', description: t('trades:importModal.formatGuide.columns.TradeDay.description'), example: '10/08/2025 00:00:00 -05:00', required: true },
+    { name: 'TradeDuration', description: t('trades:importModal.formatGuide.columns.TradeDuration.description'), example: '00:07:34.9942140', required: true },
+    { name: 'Commissions', description: t('trades:importModal.formatGuide.columns.Commissions.description'), example: '0.00', required: false },
+  ], [t]);
 
   // Réinitialiser tous les états quand la modale s'ouvre
   React.useEffect(() => {
@@ -161,7 +163,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
 
   const handlePreview = async () => {
     if (!selectedFile) {
-      setError('Veuillez sélectionner un fichier CSV.');
+      setError(t('trades:importModal.selectFile'));
       return;
     }
     
@@ -179,7 +181,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
         setState('initial');
       }
     } catch (e: any) {
-      setError(e?.message || 'Erreur lors de l\'analyse du fichier');
+      setError(e?.message || t('trades:importModal.errorAnalyzing'));
       setState('initial');
     } finally {
       setIsLoading(false);
@@ -188,7 +190,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
 
   const handleImport = async () => {
     if (!selectedFile) {
-      setError('Veuillez sélectionner un fichier CSV.');
+      setError(t('trades:importModal.selectFile'));
       return;
     }
     
@@ -206,7 +208,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
         onClose(true);
       }, 2000);
     } catch (e: any) {
-      setError(e?.message || 'Erreur lors de l\'import du fichier');
+      setError(e?.message || t('trades:importModal.errorImporting'));
       setState('preview'); // Revenir à l'état aperçu
     } finally {
       setIsLoading(false);
@@ -242,8 +244,8 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Importer des trades</h2>
-              <p className="text-sm text-gray-600">Format CSV</p>
+              <h2 className="text-xl font-bold text-gray-900">{t('trades:importModal.title')}</h2>
+              <p className="text-sm text-gray-600">{t('trades:importModal.format')}</p>
             </div>
           </div>
           <button 
@@ -275,35 +277,35 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                 </svg>
               )}
               <div className="flex-1">
-                <p className="font-semibold text-gray-900 mb-2">Aperçu du fichier</p>
+                <p className="font-semibold text-gray-900 mb-2">{t('trades:importModal.preview.title')}</p>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-2">
                   {previewResult.total_rows !== undefined && (
                     <div className="bg-white rounded-lg p-2 border border-gray-200">
-                      <div className="text-xs text-gray-500 mb-1">Total lignes</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.preview.totalRows')}</div>
                       <div className="text-lg font-bold text-gray-900">{previewResult.total_rows}</div>
                     </div>
                   )}
                   {previewResult.success_count !== undefined && (
                     <div className="bg-white rounded-lg p-2 border border-green-200">
-                      <div className="text-xs text-gray-500 mb-1">Importables</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.preview.importable')}</div>
                       <div className="text-lg font-bold text-green-600">{previewResult.success_count}</div>
                     </div>
                   )}
                   {previewResult.error_count !== undefined && previewResult.error_count > 0 && (
                     <div className="bg-white rounded-lg p-2 border border-rose-200">
-                      <div className="text-xs text-gray-500 mb-1">Erreurs</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.preview.errors')}</div>
                       <div className="text-lg font-bold text-rose-600">{previewResult.error_count}</div>
                     </div>
                   )}
                   {previewResult.skipped_count !== undefined && previewResult.skipped_count > 0 && (
                     <div className="bg-white rounded-lg p-2 border border-amber-200">
-                      <div className="text-xs text-gray-500 mb-1">Doublons</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.preview.duplicates')}</div>
                       <div className="text-lg font-bold text-amber-600">{previewResult.skipped_count}</div>
                     </div>
                   )}
                   {previewResult.total_pnl !== undefined && (
                     <div className="bg-white rounded-lg p-2 border border-blue-200">
-                      <div className="text-xs text-gray-500 mb-1">PnL total</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.preview.totalPnl')}</div>
                       <div className={`text-lg font-bold ${(previewResult.total_pnl ?? 0) >= 0 ? 'text-green-600' : 'text-rose-600'}`}>
                         {formatCurrencyWithSign(previewResult.total_pnl, '', preferences.number_format, 2)}
                       </div>
@@ -311,7 +313,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                   )}
                   {previewResult.total_fees !== undefined && (
                     <div className="bg-white rounded-lg p-2 border border-purple-200">
-                      <div className="text-xs text-gray-500 mb-1">Frais totaux</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.preview.totalFees')}</div>
                       <div className="text-lg font-bold text-purple-600">
                         {formatNumber(previewResult.total_fees, 2, preferences.number_format)}
                       </div>
@@ -320,7 +322,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                 </div>
                 {previewResult.missing_columns && previewResult.missing_columns.length > 0 && (
                   <div className="mt-2 pt-2 border-t border-amber-300">
-                    <div className="font-medium text-amber-900 mb-1">Colonnes manquantes :</div>
+                    <div className="font-medium text-amber-900 mb-1">{t('trades:importModal.preview.missingColumns')}</div>
                     <div className="flex flex-wrap gap-2">
                       {previewResult.missing_columns.map((col, idx) => (
                         <span key={idx} className="px-2 py-1 bg-amber-100 text-amber-800 text-xs rounded font-mono">
@@ -343,29 +345,29 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="flex-1">
-                <p className="font-semibold text-green-900 mb-2">{importResult.message || 'Import réussi'}</p>
+                <p className="font-semibold text-green-900 mb-2">{importResult.message || t('trades:importModal.success.message')}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {importResult.total_rows !== undefined && (
                     <div className="bg-white rounded-lg p-2 border border-gray-200">
-                      <div className="text-xs text-gray-500 mb-1">Total lignes</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.preview.totalRows')}</div>
                       <div className="text-lg font-bold text-gray-900">{importResult.total_rows}</div>
                     </div>
                   )}
                   {importResult.success_count !== undefined && (
                     <div className="bg-white rounded-lg p-2 border border-green-200">
-                      <div className="text-xs text-gray-500 mb-1">Importés</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.success.imported')}</div>
                       <div className="text-lg font-bold text-green-600">{importResult.success_count}</div>
                     </div>
                   )}
                   {importResult.error_count !== undefined && importResult.error_count > 0 && (
                     <div className="bg-white rounded-lg p-2 border border-rose-200">
-                      <div className="text-xs text-gray-500 mb-1">Erreurs</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.preview.errors')}</div>
                       <div className="text-lg font-bold text-rose-600">{importResult.error_count}</div>
                     </div>
                   )}
                   {importResult.skipped_count !== undefined && importResult.skipped_count > 0 && (
                     <div className="bg-white rounded-lg p-2 border border-amber-200">
-                      <div className="text-xs text-gray-500 mb-1">Ignorés</div>
+                      <div className="text-xs text-gray-500 mb-1">{t('trades:importModal.success.skipped')}</div>
                       <div className="text-lg font-bold text-amber-600">{importResult.skipped_count}</div>
                     </div>
                   )}
@@ -380,7 +382,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
           {/* Account Selector */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Compte de trading
+              {t('trades:importModal.tradingAccount')}
             </label>
             <AccountSelector value={accountId} onChange={handleAccountChange} hideLabel />
           </div>
@@ -388,7 +390,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
           {/* File Upload Area */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Fichier CSV
+              {t('trades:importModal.csvFile')}
             </label>
             <div
               onDragOver={handleDragOver}
@@ -427,7 +429,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                         onClick={() => fileInputRef.current?.click()}
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                       >
-                        Changer de fichier
+                        {t('trades:importModal.changeFile')}
                       </button>
                     )}
                   </div>
@@ -440,15 +442,15 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        Glissez-déposez votre fichier CSV ici
+                        {t('trades:importModal.dragDrop')}
                       </p>
-                      <p className="text-sm text-gray-500 mt-1">ou</p>
+                      <p className="text-sm text-gray-500 mt-1">{t('trades:importModal.or')}</p>
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={state === 'importing'}
                         className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50"
                       >
-                        Parcourir les fichiers
+                        {t('trades:importModal.browseFiles')}
                       </button>
                     </div>
                   </div>
@@ -460,13 +462,13 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                Le fichier doit respecter le format requis (13 colonnes requises)
+                {t('trades:importModal.fileFormatRequired')}
               </p>
               <button
                 onClick={() => setShowFormatGuide(!showFormatGuide)}
                 className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
               >
-                {showFormatGuide ? 'Masquer' : 'Voir'} le guide de format
+                {showFormatGuide ? t('trades:importModal.hideFormatGuide') : t('trades:importModal.showFormatGuide')}
                 <svg className={`w-4 h-4 transition-transform ${showFormatGuide ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -483,11 +485,11 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                     <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Guide de format CSV
+                    {t('trades:importModal.formatGuide.title')}
                   </h3>
                   <div className="text-sm text-gray-600 space-y-1">
-                    <p>Séparateur: <span className="font-mono font-semibold bg-white px-2 py-0.5 rounded border">,</span> (virgule)</p>
-                    <p>Encodage: <span className="font-mono font-semibold bg-white px-2 py-0.5 rounded border">UTF-8</span> (avec ou sans BOM)</p>
+                    <p>{t('trades:importModal.formatGuide.separator')} <span className="font-mono font-semibold bg-white px-2 py-0.5 rounded border">,</span> {t('trades:importModal.formatGuide.separatorNote')}</p>
+                    <p>{t('trades:importModal.formatGuide.encoding')} <span className="font-mono font-semibold bg-white px-2 py-0.5 rounded border">UTF-8</span> {t('trades:importModal.formatGuide.encodingNote')}</p>
                   </div>
                 </div>
                 <button
@@ -497,7 +499,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  Télécharger template
+                  {t('trades:importModal.formatGuide.downloadTemplate')}
                 </button>
               </div>
 
@@ -506,10 +508,10 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 sticky top-0">
                       <tr>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Colonne</th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Description</th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">Exemple</th>
-                        <th className="px-4 py-2 text-center font-semibold text-gray-700 border-b border-gray-200">Requis</th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">{t('trades:importModal.formatGuide.column')}</th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">{t('trades:importModal.formatGuide.description')}</th>
+                        <th className="px-4 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">{t('trades:importModal.formatGuide.example')}</th>
+                        <th className="px-4 py-2 text-center font-semibold text-gray-700 border-b border-gray-200">{t('trades:importModal.formatGuide.required')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -521,7 +523,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                           <td className="px-4 py-2.5 text-gray-700">
                             {col.description}
                             {col.allowedValues && (
-                              <span className="text-xs text-gray-500 block mt-1">Valeurs: {col.allowedValues}</span>
+                              <span className="text-xs text-gray-500 block mt-1">{t('trades:importModal.formatGuide.values')} {col.allowedValues}</span>
                             )}
                           </td>
                           <td className="px-4 py-2.5">
@@ -532,11 +534,11 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                           <td className="px-4 py-2.5 text-center">
                             {col.required ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                Oui
+                                {t('trades:importModal.formatGuide.yes')}
                               </span>
                             ) : (
                               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                                Optionnel
+                                {t('trades:importModal.formatGuide.optional')}
                               </span>
                             )}
                           </td>
@@ -553,7 +555,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h2m0 0h2m-2 0v2m0-4V9m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 mb-1">Exemple de ligne complète :</p>
+                    <p className="font-medium text-gray-900 mb-1">{t('trades:importModal.formatGuide.fullLineExample')}</p>
                     <div className="bg-gray-100 px-3 py-2 rounded overflow-x-auto max-w-full">
                       <code className="text-xs text-gray-800 whitespace-nowrap block">
                         <div>Id,ContractName,EnteredAt,ExitedAt,EntryPrice,ExitPrice,Fees,PnL,Size,Type,TradeDay,TradeDuration,Commissions</div>
@@ -573,7 +575,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <div className="flex-1">
-                <p className="font-medium text-rose-900">Erreur</p>
+                <p className="font-medium text-rose-900">{t('trades:importModal.error')}</p>
                 <p className="text-sm text-rose-700 mt-1">{error}</p>
               </div>
             </div>
@@ -582,17 +584,17 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
           {/* Détails des erreurs (si aperçu) */}
           {state === 'preview' && previewResult && Array.isArray(previewResult.errors) && previewResult.errors.length > 0 && (
             <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-              <div className="font-medium text-gray-900 mb-2">Erreurs détaillées :</div>
+              <div className="font-medium text-gray-900 mb-2">{t('trades:importModal.preview.detailedErrors')}</div>
               <div className="max-h-48 overflow-y-auto space-y-1">
                 {previewResult.errors.slice(0, 10).map((er, idx) => (
                   <div key={idx} className="text-xs text-gray-700 bg-white rounded p-2 border border-gray-200">
-                    {er.row && <span className="font-mono font-medium">Ligne {er.row}: </span>}
+                    {er.row && <span className="font-mono font-medium">{t('trades:importModal.preview.line')} {er.row}: </span>}
                     {er.error}
                   </div>
                 ))}
                 {previewResult.errors.length > 10 && (
                   <div className="text-xs text-gray-500 italic">
-                    ... et {previewResult.errors.length - 10} autre(s) erreur(s)
+                    {t('trades:importModal.preview.andMoreErrors', { count: previewResult.errors.length - 10 })}
                   </div>
                 )}
               </div>
@@ -617,7 +619,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
             disabled={state === 'importing'}
             className="px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium transition-colors disabled:opacity-50"
           >
-            Annuler
+            {t('trades:importModal.cancel')}
           </button>
           <div className="flex items-center gap-3">
             {state === 'initial' && (
@@ -632,7 +634,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Analyse en cours...
+                    {t('trades:importModal.analyzing')}
                   </>
                 ) : (
                   <>
@@ -640,7 +642,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    Aperçu
+                    {t('trades:importModal.previewButton')}
                   </>
                 )}
               </button>
@@ -657,14 +659,14 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Import en cours...
+                    {t('trades:importModal.importing')}
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
                     </svg>
-                    Importer
+                    {t('trades:importModal.importButton')}
                   </>
                 )}
               </button>

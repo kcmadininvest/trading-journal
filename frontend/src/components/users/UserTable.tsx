@@ -2,6 +2,7 @@ import React from 'react';
 import { User } from '../../services/userService';
 import { Tooltip } from '../ui';
 import { usePreferences } from '../../hooks/usePreferences';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface UserTableProps {
   users: User[];
@@ -23,6 +24,7 @@ const UserTable: React.FC<UserTableProps> = ({
   onSelectAll,
 }) => {
   const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
   const allSelected = users.length > 0 && selectedUsers.length === users.length;
   const someSelected = selectedUsers.length > 0 && selectedUsers.length < users.length;
 
@@ -67,25 +69,25 @@ const UserTable: React.FC<UserTableProps> = ({
                 />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Utilisateur
+                {t('users:user')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Rôle
+                {t('users:role')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Statut compte
+                {t('users:accountStatus')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Statut mail
+                {t('users:emailStatus')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Créé le
+                {t('users:createdAt')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Dernière connexion
+                {t('users:lastLogin')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                {t('common:actions')}
               </th>
             </tr>
           </thead>
@@ -121,12 +123,12 @@ const UserTable: React.FC<UserTableProps> = ({
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadge(user.role)}`}>
-                    {user.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
+                    {user.role === 'admin' ? t('users:admin') : t('users:user')}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(user.is_active)}`}>
-                    {user.is_active ? 'Actif' : 'Inactif'}
+                    {user.is_active ? t('users:active') : t('users:inactive')}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -135,19 +137,19 @@ const UserTable: React.FC<UserTableProps> = ({
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-orange-100 text-orange-800'
                   }`}>
-                    {user.is_verified ? 'Vérifié' : 'Non vérifié'}
+                    {user.is_verified ? t('users:verified') : t('users:notVerified')}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {formatDate(user.created_at)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.last_login ? formatDate(user.last_login) : 'Jamais'}
+                  {user.last_login ? formatDate(user.last_login) : t('users:never')}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex items-center space-x-2">
                     {/* Bouton Modifier */}
-                    <Tooltip content="Modifier l'utilisateur" position="top">
+                    <Tooltip content={t('users:editUser')} position="top">
                       <button
                         onClick={() => onEditUser(user)}
                         className="inline-flex items-center justify-center w-10 h-10 text-blue-600 hover:text-blue-700 hover:bg-blue-100 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
@@ -160,7 +162,7 @@ const UserTable: React.FC<UserTableProps> = ({
 
                     {/* Bouton Activer/Désactiver */}
                     <Tooltip 
-                      content={user.is_active ? 'Désactiver le compte' : 'Activer le compte'} 
+                      content={user.is_active ? t('users:disableAccount') : t('users:enableAccount')} 
                       position="top"
                     >
                       <button
@@ -184,7 +186,7 @@ const UserTable: React.FC<UserTableProps> = ({
                     </Tooltip>
 
                     {/* Bouton Supprimer */}
-                    <Tooltip content="Supprimer l'utilisateur" position="top">
+                    <Tooltip content={t('users:deleteUser')} position="top">
                       <button
                         onClick={() => onDeleteUser(user)}
                         className="inline-flex items-center justify-center w-10 h-10 text-red-600 hover:text-red-700 hover:bg-red-100 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1"
