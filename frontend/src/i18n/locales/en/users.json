@@ -24,11 +24,47 @@
     "username": "Username",
     "role": "Role",
     "accountActive": "Active Account",
-    "emailVerified": "Verified Email",
+    "emailVerified": "Email Verified",
     "error": "An error occurred",
     "cancel": "Cancel",
     "saving": "Saving...",
     "save": "Save"
+  },
+  "page": {
+    "loading": "Loading users...",
+    "totalUsers": "Total Users",
+    "administrators": "Administrators",
+    "activeAccounts": "Active Accounts",
+    "search": "Search",
+    "searchPlaceholder": "Email, name, first name...",
+    "allRoles": "All Roles",
+    "allStatuses": "All Statuses",
+    "refresh": "Refresh",
+    "refreshing": "Refreshing...",
+    "error": {
+      "invalidDataFormat": "Invalid data format received from server",
+      "loading": "Error loading users",
+      "updateStatus": "Error updating status",
+      "delete": "Error deleting user",
+      "bulkDelete": "Error during bulk deletion"
+    },
+    "success": {
+      "userUpdated": "User updated successfully",
+      "userDisabled": "User disabled successfully",
+      "userEnabled": "User enabled successfully",
+      "userDeleted": "User deleted successfully",
+      "usersDeleted": "{{count}} user(s) deleted successfully"
+    },
+    "confirm": {
+      "deleteUser": "Are you sure you want to delete user {{email}}?",
+      "bulkDelete": "Are you sure you want to delete {{count}} user(s)?"
+    }
+  },
+  "bulkActions": {
+    "selected": "{{count}} user selected",
+    "selectedPlural": "{{count}} users selected",
+    "clearSelection": "Clear selection",
+    "deleteSelection": "Delete selection"
   }
 }
 

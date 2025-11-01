@@ -4,8 +4,10 @@ import { User, userService, UserUpdateData } from '../services/userService';
 import { UserTable, UserEditModal, BulkActions } from '../components/users';
 import { PaginationControls } from '../components/ui';
 import { usePagination } from '../hooks';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const UserManagementPage: React.FC = () => {
+  const { t } = useI18nTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
@@ -29,11 +31,11 @@ const UserManagementPage: React.FC = () => {
       } else {
         console.error('Invalid users data format:', usersData);
         setUsers([]);
-        toast.error('Format de données invalide reçu du serveur');
+        toast.error(t('users:page.error.invalidDataFormat'));
       }
     } catch (error: any) {
       console.error('Error loading users:', error);
-      toast.error(error.message || 'Erreur lors du chargement des utilisateurs');
+      toast.error(error.message || t('users:page.error.loading'));
       setUsers([]);
     } finally {
       setLoading(false);
@@ -108,7 +110,7 @@ const UserManagementPage: React.FC = () => {
         prevUsers.map(u => u.id === userId ? { ...u, ...updatedUser } : u)
       );
       
-      toast.success('Utilisateur mis à jour avec succès');
+      toast.success(t('users:page.success.userUpdated'));
     } catch (error: any) {
       throw error; // L'erreur sera gérée par le modal
     }
@@ -123,29 +125,29 @@ const UserManagementPage: React.FC = () => {
         prevUsers.map(u => u.id === user.id ? { ...u, is_active: updatedUser.is_active } : u)
       );
       
-      toast.success(`Utilisateur ${user.is_active ? 'désactivé' : 'activé'} avec succès`);
+      toast.success(user.is_active ? t('users:page.success.userDisabled') : t('users:page.success.userEnabled'));
     } catch (error: any) {
-      toast.error(error.message || 'Erreur lors de la modification du statut');
+      toast.error(error.message || t('users:page.error.updateStatus'));
     }
   };
 
   const handleDeleteUser = async (user: User) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'utilisateur ${user.email} ?`)) {
+    if (window.confirm(t('users:page.confirm.deleteUser', { email: user.email }))) {
       try {
         await userService.deleteUser(user.id);
         
         // Supprimer l'utilisateur de la liste locale au lieu de recharger
         setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id));
         
-        toast.success('Utilisateur supprimé avec succès');
+        toast.success(t('users:page.success.userDeleted'));
       } catch (error: any) {
-        toast.error(error.message || 'Erreur lors de la suppression');
+        toast.error(error.message || t('users:page.error.delete'));
       }
     }
   };
 
   const handleBulkDelete = async () => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedUsers.length} utilisateur(s) ?`)) {
+    if (window.confirm(t('users:page.confirm.bulkDelete', { count: selectedUsers.length }))) {
       try {
         const result = await userService.bulkDeleteUsers(selectedUsers);
         
@@ -158,9 +160,9 @@ const UserManagementPage: React.FC = () => {
         );
         
         setSelectedUsers([]);
-        toast.success(`${deletedIds.length} utilisateur(s) supprimé(s) avec succès`);
+        toast.success(t('users:page.success.usersDeleted', { count: deletedIds.length }));
       } catch (error: any) {
-        toast.error(error.message || 'Erreur lors de la suppression en masse');
+        toast.error(error.message || t('users:page.error.bulkDelete'));
       }
     }
   };
@@ -170,7 +172,7 @@ const UserManagementPage: React.FC = () => {
       <div className="bg-gray-50 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des utilisateurs...</p>
+          <p className="text-gray-600">{t('users:page.loading')}</p>
         </div>
       </div>
     );
@@ -191,7 +193,7 @@ const UserManagementPage: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total utilisateurs</p>
+                <p className="text-sm font-medium text-gray-500">{t('users:page.totalUsers')}</p>
                 <p className="text-2xl font-semibold text-gray-900">{users.length}</p>
               </div>
             </div>
@@ -206,7 +208,7 @@ const UserManagementPage: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Administrateurs</p>
+                <p className="text-sm font-medium text-gray-500">{t('users:page.administrators')}</p>
                 <p className="text-2xl font-semibold text-gray-900">
                   {users.filter(u => u.role === 'admin').length}
                 </p>
@@ -223,7 +225,7 @@ const UserManagementPage: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Comptes actifs</p>
+                <p className="text-sm font-medium text-gray-500">{t('users:page.activeAccounts')}</p>
                 <p className="text-2xl font-semibold text-gray-900">
                   {users.filter(u => u.is_active).length}
                 </p>
@@ -237,20 +239,20 @@ const UserManagementPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
-                Rechercher
+                {t('users:page.search')}
               </label>
               <input
                 type="text"
                 id="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Email, nom, prénom..."
+                placeholder={t('users:page.searchPlaceholder')}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
               <label htmlFor="role-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                Rôle
+                {t('users:role')}
               </label>
               <select
                 id="role-filter"
@@ -258,14 +260,14 @@ const UserManagementPage: React.FC = () => {
                 onChange={(e) => setRoleFilter(e.target.value as any)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">Tous les rôles</option>
-                <option value="user">Utilisateur</option>
-                <option value="admin">Administrateur</option>
+                <option value="all">{t('users:page.allRoles')}</option>
+                <option value="user">{t('users:user')}</option>
+                <option value="admin">{t('users:admin')}</option>
               </select>
             </div>
             <div>
               <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                Statut
+                {t('users:accountStatus')}
               </label>
               <select
                 id="status-filter"
@@ -273,9 +275,9 @@ const UserManagementPage: React.FC = () => {
                 onChange={(e) => setStatusFilter(e.target.value as any)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">Tous les statuts</option>
-                <option value="active">Actif</option>
-                <option value="inactive">Inactif</option>
+                <option value="all">{t('users:page.allStatuses')}</option>
+                <option value="active">{t('users:active')}</option>
+                <option value="inactive">{t('users:inactive')}</option>
               </select>
             </div>
             <div className="flex items-end">
@@ -287,10 +289,10 @@ const UserManagementPage: React.FC = () => {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Actualisation...
+                    {t('users:page.refreshing')}
                   </>
                 ) : (
-                  'Actualiser'
+                  t('users:page.refresh')
                 )}
               </button>
             </div>

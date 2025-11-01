@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface BulkActionsProps {
   selectedCount: number;
@@ -11,6 +12,8 @@ const BulkActions: React.FC<BulkActionsProps> = ({
   onBulkDelete,
   onClearSelection,
 }) => {
+  const { t } = useI18nTranslation();
+  
   if (selectedCount === 0) return null;
 
   return (
@@ -18,7 +21,10 @@ const BulkActions: React.FC<BulkActionsProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           <span className="text-sm font-medium text-blue-800">
-            {selectedCount} utilisateur{selectedCount > 1 ? 's' : ''} sélectionné{selectedCount > 1 ? 's' : ''}
+            {selectedCount === 1 
+              ? t('users:bulkActions.selected', { count: selectedCount })
+              : t('users:bulkActions.selectedPlural', { count: selectedCount })
+            }
           </span>
         </div>
         <div className="flex space-x-2">
@@ -26,13 +32,13 @@ const BulkActions: React.FC<BulkActionsProps> = ({
             onClick={onClearSelection}
             className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800"
           >
-            Annuler la sélection
+            {t('users:bulkActions.clearSelection')}
           </button>
           <button
             onClick={onBulkDelete}
             className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
           >
-            Supprimer sélection
+            {t('users:bulkActions.deleteSelection')}
           </button>
         </div>
       </div>
