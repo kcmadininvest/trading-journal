@@ -166,6 +166,45 @@ class AuthService {
     return this.accessToken;
   }
 
+  /**
+   * Rafraîchit le token d'accès en utilisant le refresh token
+   * Retourne le nouveau token d'accès ou null en cas d'échec
+   */
+  async refreshAccessToken(): Promise<string | null> {
+    const refresh = this.refreshToken || localStorage.getItem('refresh_token');
+    if (!refresh) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${this.BASE_URL}/api/accounts/auth/refresh/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh }),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      const newAccess = data.access as string | undefined;
+
+      if (newAccess) {
+        this.accessToken = newAccess;
+        localStorage.setItem('access_token', newAccess);
+        return newAccess;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement du token:', error);
+      return null;
+    }
+  }
+
   updateUser(userData: Partial<User>): void {
     if (this.user) {
       this.user = { ...this.user, ...userData };
