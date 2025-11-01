@@ -28,7 +28,8 @@
   "noResults": "Aucun résultat",
   "unknown": "Inconnu",
   "na": "N/A",
-  "account": "Compte",
-  "allActiveAccounts": "Tous les comptes actifs",
-  "default": "Par défaut"
+  "account": "账户",
+  "tradingAccount": "交易账户",
+  "allActiveAccounts": "所有活跃账户",
+  "default": "默认"
 }

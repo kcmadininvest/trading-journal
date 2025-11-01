@@ -28,7 +28,8 @@
   "noResults": "Aucun résultat",
   "unknown": "Inconnu",
   "na": "N/A",
-  "account": "Compte",
-  "allActiveAccounts": "Tous les comptes actifs",
-  "default": "Par défaut"
+  "account": "계정",
+  "tradingAccount": "거래 계정",
+  "allActiveAccounts": "모든 활성 계정",
+  "default": "기본값"
 }

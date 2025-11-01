@@ -7,8 +7,10 @@ import { TradingAccountSelector } from '../components/TradingAccount/TradingAcco
 import { TradingAccount } from '../services/tradingAccounts';
 import { StatisticsPageSkeleton } from '../components/ui/StatisticsPageSkeleton';
 import { currenciesService, Currency } from '../services/currencies';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 function StatisticsPage() {
+  const { t } = useI18nTranslation();
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   
@@ -57,12 +59,12 @@ function StatisticsPage() {
     return (
       <div className="p-6 bg-gray-50 min-h-screen">
         <div className="text-center py-12">
-          <div className="text-red-500 text-lg mb-4">Erreur lors du chargement des données</div>
+          <div className="text-red-500 text-lg mb-4">{t('statistics:errorLoadingData')}</div>
           <button 
             onClick={() => window.location.reload()} 
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
-            Réessayer
+            {t('statistics:retry')}
           </button>
         </div>
       </div>
@@ -120,8 +122,8 @@ function StatisticsPage() {
         {/* Section 1: Vue d'overview */}
         <div className="mb-8">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Vue d'ensemble</h2>
-            <p className="text-gray-600">Statistiques générales et performance globale</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('statistics:overview.title')}</h2>
+            <p className="text-gray-600">{t('statistics:overview.subtitle')}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {/* Statistiques générales */}
@@ -133,24 +135,24 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Statistiques Générales</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:overview.generalStatistics')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Total trades</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.totalTrades')}</span>
                   <span className="text-base font-semibold text-gray-900">
                     {statisticsData?.total_trades || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Taux de réussite</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.winRate')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {statisticsData ? `${statisticsData.win_rate.toFixed(1)}%` : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">P/L total</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.totalPnL')}</span>
                   <span className="text-base font-semibold text-gray-900">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.total_pnl), currencySymbol) : 'N/A'}
                   </span>
@@ -167,24 +169,24 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Gains vs Pertes</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:overview.gainsVsLosses')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Gains totaux</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.totalGains')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.total_gains), currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Pertes totales</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.totalLosses')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.total_losses), currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Net</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.net')}</span>
                   <span className={`text-base font-semibold ${statisticsData && parseFloat(statisticsData.total_pnl) >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.total_pnl), currencySymbol) : 'N/A'}
                   </span>
@@ -201,18 +203,18 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Performance & Coûts</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:overview.performanceAndCosts')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">P/L moyen</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.averagePnL')}</span>
                   <span className="text-base font-semibold text-gray-900">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.average_pnl), currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Frais totaux</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.totalFees')}</span>
                   <span className="text-base font-semibold text-orange-600">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.total_fees), currencySymbol) : 'N/A'}
                   </span>
@@ -229,18 +231,18 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Volume & Durée</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:overview.volumeAndDuration')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Volume total</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.totalVolume')}</span>
                   <span className="text-base font-semibold text-cyan-600">
                     {statisticsData ? formatVolume(statisticsData.total_volume) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Durée moyenne</span>
+                  <span className="text-sm text-gray-500">{t('statistics:overview.averageDuration')}</span>
                   <span className="text-base font-semibold text-cyan-600">
                     {statisticsData ? statisticsData.average_duration : 'N/A'}
                   </span>
@@ -254,8 +256,8 @@ function StatisticsPage() {
         {statisticsData && (
           <div className="mb-8">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Ratios de Performance</h2>
-              <p className="text-gray-600">Métriques avancées pour analyser votre stratégie de trading</p>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('statistics:performanceRatios.title')}</h2>
+              <p className="text-gray-600">{t('statistics:performanceRatios.subtitle')}</p>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-6">
@@ -268,15 +270,15 @@ function StatisticsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-base font-medium text-gray-500">Performance Principale</h3>
+                    <h3 className="text-base font-medium text-gray-500">{t('statistics:performanceRatios.mainPerformance')}</h3>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Profit Factor</span>
+                      <span className="text-sm text-gray-500">{t('statistics:performanceRatios.profitFactor')}</span>
                       <Tooltip 
-                        content="Ratio entre les gains totaux et les pertes totales. > 1.0 = profitable, > 2.0 = excellent"
+                        content={t('statistics:performanceRatios.profitFactorTooltip')}
                       >
                         <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -289,9 +291,9 @@ function StatisticsPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Win/Loss Ratio</span>
+                      <span className="text-sm text-gray-500">{t('statistics:performanceRatios.winLossRatio')}</span>
                       <Tooltip 
-                        content="Ratio entre le nombre de trades gagnants et perdants. > 1.0 = plus de gains que de pertes"
+                        content={t('statistics:performanceRatios.winLossRatioTooltip')}
                       >
                         <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -314,15 +316,15 @@ function StatisticsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-base font-medium text-gray-500">Récupération</h3>
+                    <h3 className="text-base font-medium text-gray-500">{t('statistics:performanceRatios.recovery')}</h3>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Ratio Récupération</span>
+                      <span className="text-sm text-gray-500">{t('statistics:performanceRatios.recoveryRatio')}</span>
                       <Tooltip 
-                        content="Ratio entre le meilleur trade et la pire perte. > 1.0 = le meilleur gain couvre la pire perte"
+                        content={t('statistics:performanceRatios.recoveryRatioTooltip')}
                       >
                         <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -335,9 +337,9 @@ function StatisticsPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">P/L par Trade</span>
+                      <span className="text-sm text-gray-500">{t('statistics:performanceRatios.pnlPerTrade')}</span>
                       <Tooltip 
-                        content="Gain ou perte moyen par trade. Indique la rentabilité moyenne de chaque opération"
+                        content={t('statistics:performanceRatios.pnlPerTradeTooltip')}
                       >
                         <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -360,15 +362,15 @@ function StatisticsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-base font-medium text-gray-500">Efficacité Financière</h3>
+                    <h3 className="text-base font-medium text-gray-500">{t('statistics:performanceRatios.financialEfficiency')}</h3>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Ratio Frais</span>
+                      <span className="text-sm text-gray-500">{t('statistics:performanceRatios.feesRatio')}</span>
                       <Tooltip 
-                        content="Pourcentage des frais par rapport au P/L total. < 10% = frais raisonnables, > 20% = frais élevés"
+                        content={t('statistics:performanceRatios.feesRatioTooltip')}
                       >
                         <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -381,9 +383,9 @@ function StatisticsPage() {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Volume/P/L</span>
+                      <span className="text-sm text-gray-500">{t('statistics:performanceRatios.volumePnLRatio')}</span>
                       <Tooltip 
-                        content="Efficacité du trading par unité de volume. Plus élevé = meilleure efficacité de capital"
+                        content={t('statistics:performanceRatios.volumePnLRatioTooltip')}
                       >
                         <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -406,15 +408,15 @@ function StatisticsPage() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-base font-medium text-gray-500">Analyse Temporelle</h3>
+                    <h3 className="text-base font-medium text-gray-500">{t('statistics:performanceRatios.temporalAnalysis')}</h3>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Fréquence</span>
+                      <span className="text-sm text-gray-500">{t('statistics:performanceRatios.frequency')}</span>
                       <Tooltip 
-                        content="Nombre moyen de trades par jour de trading. Indique l'activité et le style de trading"
+                        content={t('statistics:performanceRatios.frequencyTooltip')}
                       >
                         <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -422,14 +424,14 @@ function StatisticsPage() {
                       </Tooltip>
                     </div>
                     <span className="text-base font-semibold text-cyan-600">
-                      {statisticsData.frequency_ratio.toFixed(1)} trades/jour
+                      {statisticsData.frequency_ratio.toFixed(1)} {t('statistics:performanceRatios.tradesPerDay')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center gap-1">
-                      <span className="text-sm text-gray-500">Ratio Durée</span>
+                      <span className="text-sm text-gray-500">{t('statistics:performanceRatios.durationRatio')}</span>
                       <Tooltip 
-                        content="Ratio entre la durée moyenne des trades gagnants et perdants. > 1.0 = les trades gagnants durent plus longtemps que les perdants"
+                        content={t('statistics:performanceRatios.durationRatioTooltip')}
                       >
                         <svg className="w-4 h-4 text-gray-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
@@ -449,8 +451,8 @@ function StatisticsPage() {
         {/* Section 3: Analyse des Trades */}
         <div className="mb-8">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyse des Trades</h2>
-            <p className="text-gray-600">Détail des trades gagnants et perdants</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('statistics:tradesAnalysis.title')}</h2>
+            <p className="text-gray-600">{t('statistics:tradesAnalysis.subtitle')}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {/* Trades gagnants */}
@@ -462,18 +464,18 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Trades Gagnants</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:tradesAnalysis.winningTrades')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Nombre</span>
+                  <span className="text-sm text-gray-500">{t('statistics:tradesAnalysis.count')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {statisticsData?.winning_trades || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Meilleur trade</span>
+                  <span className="text-sm text-gray-500">{t('statistics:tradesAnalysis.bestTrade')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.best_trade), currencySymbol) : 'N/A'}
                   </span>
@@ -490,18 +492,18 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Trades Perdants</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:tradesAnalysis.losingTrades')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Nombre</span>
+                  <span className="text-sm text-gray-500">{t('statistics:tradesAnalysis.count')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {statisticsData?.losing_trades || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Pire trade</span>
+                  <span className="text-sm text-gray-500">{t('statistics:tradesAnalysis.worstTrade')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {statisticsData ? formatCurrency(parseFloat(statisticsData.worst_trade), currencySymbol) : 'N/A'}
                   </span>
@@ -514,8 +516,8 @@ function StatisticsPage() {
         {/* Section 4: Analyses Avancées */}
         <div className="mb-8">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyses Avancées</h2>
-            <p className="text-gray-600">Métriques détaillées et analyses comportementales</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('statistics:advancedAnalysis.title')}</h2>
+            <p className="text-gray-600">{t('statistics:advancedAnalysis.subtitle')}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {/* Gains quotidiens */}
@@ -527,24 +529,24 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Gains Quotidiens</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:advancedAnalysis.dailyGains')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Moyenne</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.average')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.avg_gain_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Médiane</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.median')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.median_gain_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Maximum</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.maximum')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.max_gain_per_day, currencySymbol) : 'N/A'}
                   </span>
@@ -561,24 +563,24 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Pertes Quotidiennes</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:advancedAnalysis.dailyLosses')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Moyenne</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.average')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.avg_loss_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Médiane</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.median')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.median_loss_per_day, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Maximum</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.maximum')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.daily_stats ? formatCurrency(analyticsData.daily_stats.max_loss_per_day, currencySymbol) : 'N/A'}
                   </span>
@@ -595,18 +597,18 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Trades par Jour</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:advancedAnalysis.tradesPerDay')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Moyenne</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.average')}</span>
                   <span className="text-base font-semibold text-purple-600">
                     {analyticsData?.daily_stats ? formatNumber(analyticsData.daily_stats.avg_trades_per_day) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Médiane</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.median')}</span>
                   <span className="text-base font-semibold text-purple-600">
                     {analyticsData?.daily_stats ? formatNumber(analyticsData.daily_stats.median_trades_per_day) : 'N/A'}
                   </span>
@@ -623,18 +625,18 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Trades Individuels</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:advancedAnalysis.individualTrades')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Gain max</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.maxGain')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_gain_per_trade, currencySymbol) : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Perte max</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.maxLoss')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.trade_stats ? formatCurrency(analyticsData.trade_stats.max_loss_per_trade, currencySymbol) : 'N/A'}
                   </span>
@@ -651,18 +653,18 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Séquences Quotidiennes</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:advancedAnalysis.dailySequences')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Gains consécutifs</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.consecutiveGains')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_wins_per_day : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Pertes consécutives</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.consecutiveLosses')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_losses_per_day : 'N/A'}
                   </span>
@@ -679,18 +681,18 @@ function StatisticsPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-base font-medium text-gray-500">Séquences Globales</h3>
+                  <h3 className="text-base font-medium text-gray-500">{t('statistics:advancedAnalysis.globalSequences')}</h3>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Gains consécutifs</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.consecutiveGains')}</span>
                   <span className="text-base font-semibold text-blue-500">
                     {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_wins : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Pertes consécutives</span>
+                  <span className="text-sm text-gray-500">{t('statistics:advancedAnalysis.consecutiveLosses')}</span>
                   <span className="text-base font-semibold text-pink-500">
                     {analyticsData?.consecutive_stats ? analyticsData.consecutive_stats.max_consecutive_losses : 'N/A'}
                   </span>

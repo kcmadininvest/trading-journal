@@ -28,7 +28,8 @@
   "noResults": "Aucun résultat",
   "unknown": "Inconnu",
   "na": "N/A",
-  "account": "Compte",
-  "allActiveAccounts": "Tous les comptes actifs",
-  "default": "Par défaut"
+  "account": "アカウント",
+  "tradingAccount": "トレーディングアカウント",
+  "allActiveAccounts": "すべてのアクティブアカウント",
+  "default": "デフォルト"
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { TradingAccount, tradingAccountsService } from '../../services/tradingAccounts';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface TradingAccountSelectorProps {
   selectedAccountId?: number | null;
@@ -14,6 +15,7 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
   className = '',
   hideLabel = false 
 }) => {
+  const { t } = useI18nTranslation();
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -60,8 +62,8 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
       isDefault: !!a.is_default,
       account: a 
     }));
-    return [{ value: null, label: 'Tous les comptes actifs', isDefault: false, account: null }, ...base];
-  }, [accounts]);
+    return [{ value: null, label: t('common:allActiveAccounts'), isDefault: false, account: null }, ...base];
+  }, [accounts, t]);
 
   const currentValue = useMemo(() => {
     if (selectedId === null || selectedId === undefined) return null;
@@ -83,7 +85,9 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
 
   return (
     <div className={`max-w-sm ${className}`}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Compte de trading</label>
+      {!hideLabel && (
+        <label className="block text-sm font-medium text-gray-700 mb-1">{t('common:tradingAccount')}</label>
+      )}
       <div ref={dropdownRef} className="relative">
         <button
           type="button"
@@ -92,9 +96,9 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
           className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <span className="inline-flex items-center gap-2">
-            <span className="text-gray-900">{currentOption?.label || 'Tous les comptes actifs'}</span>
+            <span className="text-gray-900">{currentOption?.label || t('common:allActiveAccounts')}</span>
             {currentOption && currentOption.isDefault && (
-              <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">Par défaut</span>
+              <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">{t('common:default')}</span>
             )}
           </span>
           <svg className={`h-4 w-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -116,7 +120,7 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
                   >
                     <span className="text-gray-900">{opt.label}</span>
                     {opt.isDefault && (
-                      <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">Par défaut</span>
+                      <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 text-xs">{t('common:default')}</span>
                     )}
                   </button>
                 </li>

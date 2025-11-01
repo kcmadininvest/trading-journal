@@ -29,6 +29,7 @@
   "unknown": "Inconnu",
   "na": "N/A",
   "account": "Compte",
+  "tradingAccount": "Compte de trading",
   "allActiveAccounts": "Tous les comptes actifs",
   "default": "Par défaut"
 }

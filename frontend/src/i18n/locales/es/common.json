@@ -28,7 +28,8 @@
   "noResults": "Aucun résultat",
   "unknown": "Inconnu",
   "na": "N/A",
-  "account": "Compte",
-  "allActiveAccounts": "Tous les comptes actifs",
-  "default": "Par défaut"
+  "account": "Cuenta",
+  "tradingAccount": "Cuenta de trading",
+  "allActiveAccounts": "Todas las cuentas activas",
+  "default": "Por defecto"
 }
