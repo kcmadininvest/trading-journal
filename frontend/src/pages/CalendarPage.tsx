@@ -12,10 +12,12 @@ import {
 } from '../services/calendar';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 type ViewType = 'daily' | 'monthly';
 
 const CalendarPage: React.FC = () => {
+  const { t } = useI18nTranslation();
   const [viewType, setViewType] = useState<ViewType>('daily');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,12 +45,12 @@ const CalendarPage: React.FC = () => {
       const data = await calendarService.getMonthData(currentYear, currentMonth, tradingAccount);
       setDailyData(data);
     } catch (err) {
-      setError('Erreur lors du chargement des données mensuelles');
+      setError(t('calendar:errorLoadingMonthlyData'));
       console.error(err);
     } finally {
       setIsLoading(false);
     }
-  }, [currentYear, currentMonth, selectedAccount]);
+  }, [currentYear, currentMonth, selectedAccount, t]);
 
   // Charger les données pour la vue mensuelle
   const loadYearlyData = useCallback(async (year: number, tradingAccount?: number) => {
@@ -62,12 +64,12 @@ const CalendarPage: React.FC = () => {
       setYearlyMonthlyData(monthlyData);
       setYearlyWeeklyData(weeklyData);
     } catch (err) {
-      setError('Erreur lors du chargement des données annuelles');
+      setError(t('calendar:errorLoadingYearlyData'));
       console.error(err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   // Charger les devises
   useEffect(() => {
@@ -156,7 +158,7 @@ const CalendarPage: React.FC = () => {
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Chargement...</p>
+              <p className="text-gray-600">{t('calendar:loading')}</p>
             </div>
           </div>
         ) : viewType === 'daily' && dailyData ? (
@@ -187,7 +189,7 @@ const CalendarPage: React.FC = () => {
           />
         ) : null}
       </div>
-      <FloatingActionButton onClick={() => setShowImport(true)} title="Importer des trades" />
+      <FloatingActionButton onClick={() => setShowImport(true)} title={t('calendar:importTrades')} />
       <ImportTradesModal 
         open={showImport} 
         onClose={(done) => {

@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MonthlyCalendarData, WeeklyCalendarData } from '../../services/calendar';
 import { Tooltip } from '../ui';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
+import { getMonthNames } from '../../utils/dateFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface MonthlyViewProps {
   year: number;
@@ -16,11 +18,6 @@ interface MonthlyViewProps {
   currencySymbol?: string;
 }
 
-const monthNames = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-];
-
 const MonthlyView: React.FC<MonthlyViewProps> = ({
   year,
   monthlyData,
@@ -33,6 +30,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   currencySymbol = '',
 }) => {
   const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
+  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1;
@@ -123,7 +122,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
-              Quotidienne
+              {t('calendar:daily')}
             </button>
             <button
               type="button"
@@ -134,7 +133,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
-              Mensuelle
+              {t('calendar:monthly')}
             </button>
           </div>
         )}
@@ -144,7 +143,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
           <button
             onClick={() => navigateYear('prev')}
             className="p-2 rounded-md hover:bg-gray-200 transition-colors"
-            aria-label="Année précédente"
+            aria-label={t('calendar:previousYear')}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -158,7 +157,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
           <button
             onClick={() => navigateYear('next')}
             className="p-2 rounded-md hover:bg-gray-200 transition-colors"
-            aria-label="Année suivante"
+            aria-label={t('calendar:nextYear')}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -170,7 +169,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
               onClick={goToToday}
               className="ml-4 px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
-              Aujourd'hui
+              {t('calendar:today')}
             </button>
           )}
         </div>
@@ -190,7 +189,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
           <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 border-r border-gray-200">
           </div>
           <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 bg-blue-50">
-            PnL Hebdomadaire
+            {t('calendar:weeklyPnL')}
           </div>
         </div>
 
@@ -224,7 +223,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                             {monthNames[month - 1]}
                           </span>
                           {tradeCount > 0 && (
-                            <Tooltip content={`${tradeCount} trade${tradeCount > 1 ? 's' : ''}`} position="top">
+                            <Tooltip content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} position="top">
                               <span className="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full cursor-help">
                                 {tradeCount}
                               </span>
@@ -272,7 +271,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
           {/* Ligne supplémentaire avec le total annuel dans la colonne PnL Hebdomadaire */}
           <div className="grid grid-cols-4 bg-gray-100 border-t-2 border-gray-300">
             <div className="col-span-3 px-4 py-3 font-semibold text-gray-900 border-r border-gray-200">
-              Total {year}
+              {t('calendar:total')} {year}
             </div>
             <div className={`px-4 py-3 font-bold text-center ${getPnlColor(yearlyTotal)}`}>
               {formatPnl(yearlyTotal)}

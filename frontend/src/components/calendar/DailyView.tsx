@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DailyCalendarData, WeeklyCalendarData } from '../../services/calendar';
 import { Tooltip } from '../ui';
 import { DayTradesModal } from '../trades/DayTradesModal';
 import { StrategyComplianceModal } from '../trades/StrategyComplianceModal';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
+import { getMonthNames, getDayNames } from '../../utils/dateFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface DailyViewProps {
   year: number;
@@ -20,13 +22,6 @@ interface DailyViewProps {
   currencySymbol?: string;
 }
 
-const monthNames = [
-  'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-  'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-];
-
-const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-
 const DailyView: React.FC<DailyViewProps> = ({
   year,
   month,
@@ -41,8 +36,12 @@ const DailyView: React.FC<DailyViewProps> = ({
   currencySymbol = '',
 }) => {
   const { preferences } = usePreferences();
+  const { t } = useI18nTranslation();
   const [selectedDateForTrades, setSelectedDateForTrades] = useState<string | null>(null);
   const [selectedDateForStrategy, setSelectedDateForStrategy] = useState<string | null>(null);
+  
+  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
+  const dayNames = useMemo(() => getDayNames(preferences.language), [preferences.language]);
 
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
@@ -203,7 +202,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
-              Quotidienne
+              {t('calendar:daily')}
             </button>
             <button
               type="button"
@@ -214,7 +213,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                   : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
               }`}
             >
-              Mensuelle
+              {t('calendar:monthly')}
             </button>
           </div>
         )}
@@ -224,7 +223,7 @@ const DailyView: React.FC<DailyViewProps> = ({
           <button
             onClick={() => navigateMonth('prev')}
             className="p-2 rounded-md hover:bg-gray-200 transition-colors"
-            aria-label="Mois précédent"
+            aria-label={t('calendar:previousMonth')}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -238,7 +237,7 @@ const DailyView: React.FC<DailyViewProps> = ({
           <button
             onClick={() => navigateMonth('next')}
             className="p-2 rounded-md hover:bg-gray-200 transition-colors"
-            aria-label="Mois suivant"
+            aria-label={t('calendar:nextMonth')}
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -250,7 +249,7 @@ const DailyView: React.FC<DailyViewProps> = ({
               onClick={goToToday}
               className="ml-4 px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
-              Aujourd'hui
+              {t('calendar:today')}
             </button>
           )}
         </div>
@@ -363,7 +362,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                             </span>
                             {weeklyTradeCount > 0 && (
                               <Tooltip 
-                                content={`${weeklyTradeCount} trade${weeklyTradeCount > 1 ? 's' : ''} (total de la semaine)`} 
+                                content={`${weeklyTradeCount} ${weeklyTradeCount > 1 ? t('calendar:trades') : t('calendar:trade')} (${t('calendar:totalWeek')})`} 
                                 position="top"
                               >
                                 <span className="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full cursor-help">
@@ -388,9 +387,9 @@ const DailyView: React.FC<DailyViewProps> = ({
                             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                               <Tooltip 
                                 content={
-                                  dayData.strategy_compliance_status === 'compliant' ? 'Stratégie respectée pour tous les trades' :
-                                  dayData.strategy_compliance_status === 'non_compliant' ? 'Stratégie non respectée' :
-                                  dayData.strategy_compliance_status === 'partial' ? 'Stratégie partiellement respectée' :
+                                  dayData.strategy_compliance_status === 'compliant' ? t('calendar:strategyRespected') :
+                                  dayData.strategy_compliance_status === 'non_compliant' ? t('calendar:strategyNotRespected') :
+                                  dayData.strategy_compliance_status === 'partial' ? t('calendar:strategyPartiallyRespected') :
                                   ''
                                 }
                                 position="top"
@@ -411,11 +410,11 @@ const DailyView: React.FC<DailyViewProps> = ({
                               {/* Actions pour les jours avec trades */}
                               {tradeCount > 0 && (
                                 <>
-                                  <Tooltip content="Voir les trades du jour" position="top">
+                                  <Tooltip content={t('calendar:viewDayTrades')} position="top">
                                     <button
                                       onClick={() => handleTradesClick(dayNumber)}
                                       className="p-1 rounded hover:bg-blue-100 text-blue-600 transition-colors flex-shrink-0"
-                                      aria-label="Voir les trades"
+                                      aria-label={t('calendar:viewTrades')}
                                     >
                                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -423,11 +422,11 @@ const DailyView: React.FC<DailyViewProps> = ({
                                       </svg>
                                     </button>
                                   </Tooltip>
-                                  <Tooltip content="Gérer le respect de la stratégie" position="top">
+                                  <Tooltip content={t('calendar:manageStrategyCompliance')} position="top">
                                     <button
                                       onClick={() => handleStrategyClick(dayNumber)}
                                       className="p-1 rounded hover:bg-purple-100 text-purple-600 transition-colors flex-shrink-0"
-                                      aria-label="Gérer la stratégie"
+                                      aria-label={t('calendar:manageStrategy')}
                                     >
                                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -439,7 +438,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                               {/* Badge du nombre de trades en dernier */}
                               {tradeCount > 0 && (
                                 <Tooltip 
-                                  content={`${tradeCount} trade${tradeCount > 1 ? 's' : ''}`} 
+                                  content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} 
                                   position="top"
                                 >
                                   <span className="text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full cursor-help flex-shrink-0">
@@ -467,7 +466,7 @@ const DailyView: React.FC<DailyViewProps> = ({
           {/* Ligne supplémentaire avec le total mensuel dans la colonne Samedi */}
           <div className="grid grid-cols-7 bg-gray-100 border-t-2 border-gray-300">
             <div className="col-span-6 px-4 py-3 font-semibold text-gray-900 border-r border-gray-200">
-              Total {monthNames[month - 1]} {year}
+              {t('calendar:total')} {monthNames[month - 1]} {year}
             </div>
             <div className={`px-4 py-3 font-bold text-center ${getPnlColor(monthlyPnlForSaturday)}`}>
               {formatPnl(monthlyPnlForSaturday)}

@@ -257,3 +257,68 @@ export const formatTime = (
   return dateObj.toLocaleTimeString(locale, options);
 };
 
+/**
+ * Obtient le nom d'un mois localisé (1-12)
+ * @param month - Numéro du mois (1-12)
+ * @param language - Langue (fr, en, es, de, it, pt, ja, ko, zh)
+ * @returns Nom du mois localisé
+ */
+export const getMonthName = (month: number, language: LanguageType = 'fr'): string => {
+  const localeMap: Record<LanguageType, string> = {
+    'fr': 'fr-FR',
+    'en': 'en-US',
+    'es': 'es-ES',
+    'de': 'de-DE',
+    'it': 'it-IT',
+    'pt': 'pt-PT',
+    'ja': 'ja-JP',
+    'ko': 'ko-KR',
+    'zh': 'zh-CN',
+  };
+  const locale = localeMap[language] || 'fr-FR';
+  const date = new Date(2024, month - 1, 1);
+  return date.toLocaleDateString(locale, { month: 'long' });
+};
+
+/**
+ * Obtient le nom d'un jour de la semaine localisé (0-6, où 0 = Dimanche)
+ * @param dayIndex - Index du jour (0-6, où 0 = Dimanche)
+ * @param language - Langue (fr, en, es, de, it, pt, ja, ko, zh)
+ * @returns Nom du jour localisé
+ */
+export const getDayName = (dayIndex: number, language: LanguageType = 'fr'): string => {
+  const localeMap: Record<LanguageType, string> = {
+    'fr': 'fr-FR',
+    'en': 'en-US',
+    'es': 'es-ES',
+    'de': 'de-DE',
+    'it': 'it-IT',
+    'pt': 'pt-PT',
+    'ja': 'ja-JP',
+    'ko': 'ko-KR',
+    'zh': 'zh-CN',
+  };
+  const locale = localeMap[language] || 'fr-FR';
+  // Dimanche = 0, donc on utilise 2024-01-07 (Dimanche) comme base et on ajoute dayIndex jours
+  const date = new Date(2024, 0, 7 + dayIndex);
+  return date.toLocaleDateString(locale, { weekday: 'long' });
+};
+
+/**
+ * Obtient tous les noms de mois localisés
+ * @param language - Langue (fr, en, es, de, it, pt, ja, ko, zh)
+ * @returns Tableau des noms de mois (index 0 = Janvier)
+ */
+export const getMonthNames = (language: LanguageType = 'fr'): string[] => {
+  return Array.from({ length: 12 }, (_, i) => getMonthName(i + 1, language));
+};
+
+/**
+ * Obtient tous les noms de jours de la semaine localisés
+ * @param language - Langue (fr, en, es, de, it, pt, ja, ko, zh)
+ * @returns Tableau des noms de jours (index 0 = Dimanche)
+ */
+export const getDayNames = (language: LanguageType = 'fr'): string[] => {
+  return Array.from({ length: 7 }, (_, i) => getDayName(i, language));
+};
+

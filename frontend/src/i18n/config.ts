@@ -53,6 +53,16 @@ import jaDashboard from './locales/ja/dashboard.json';
 import koDashboard from './locales/ko/dashboard.json';
 import zhDashboard from './locales/zh/dashboard.json';
 
+import frCalendar from './locales/fr/calendar.json';
+import enCalendar from './locales/en/calendar.json';
+import esCalendar from './locales/es/calendar.json';
+import deCalendar from './locales/de/calendar.json';
+import itCalendar from './locales/it/calendar.json';
+import ptCalendar from './locales/pt/calendar.json';
+import jaCalendar from './locales/ja/calendar.json';
+import koCalendar from './locales/ko/calendar.json';
+import zhCalendar from './locales/zh/calendar.json';
+
 const resources = {
   fr: {
     common: frCommon,
@@ -60,6 +70,7 @@ const resources = {
     settings: frSettings,
     navigation: frNavigation,
     dashboard: frDashboard,
+    calendar: frCalendar,
   },
   en: {
     common: enCommon,
@@ -67,6 +78,7 @@ const resources = {
     settings: enSettings,
     navigation: enNavigation,
     dashboard: enDashboard,
+    calendar: enCalendar,
   },
   es: {
     common: esCommon,
@@ -74,6 +86,7 @@ const resources = {
     settings: esSettings,
     navigation: esNavigation,
     dashboard: esDashboard,
+    calendar: esCalendar,
   },
   de: {
     common: deCommon,
@@ -81,6 +94,7 @@ const resources = {
     settings: deSettings,
     navigation: deNavigation,
     dashboard: deDashboard,
+    calendar: deCalendar,
   },
   it: {
     common: itCommon,
@@ -88,6 +102,7 @@ const resources = {
     settings: itSettings,
     navigation: itNavigation,
     dashboard: itDashboard,
+    calendar: itCalendar,
   },
   pt: {
     common: ptCommon,
@@ -95,6 +110,7 @@ const resources = {
     settings: ptSettings,
     navigation: ptNavigation,
     dashboard: ptDashboard,
+    calendar: ptCalendar,
   },
   ja: {
     common: jaCommon,
@@ -102,6 +118,7 @@ const resources = {
     settings: jaSettings,
     navigation: jaNavigation,
     dashboard: jaDashboard,
+    calendar: jaCalendar,
   },
   ko: {
     common: koCommon,
@@ -109,6 +126,7 @@ const resources = {
     settings: koSettings,
     navigation: koNavigation,
     dashboard: koDashboard,
+    calendar: koCalendar,
   },
   zh: {
     common: zhCommon,
@@ -116,6 +134,7 @@ const resources = {
     settings: zhSettings,
     navigation: zhNavigation,
     dashboard: zhDashboard,
+    calendar: zhCalendar,
   },
 };
 
@@ -127,7 +146,7 @@ i18n
     fallbackLng: 'fr',
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
