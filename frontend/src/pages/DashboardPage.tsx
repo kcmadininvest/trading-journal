@@ -1302,7 +1302,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               <ModernStatCard
                 label={t('dashboard:sequenceRespect')}
                 value={additionalStats.maxConsecutiveRespected || 0}
-                variant={additionalStats.maxConsecutiveRespected >= 5 ? 'success' : additionalStats.maxConsecutiveRespected >= 3 ? 'info' : 'default'}
+                variant={additionalStats.maxConsecutiveRespected >= 21 ? 'success' : additionalStats.maxConsecutiveRespected > 0 ? 'info' : 'default'}
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -1310,13 +1310,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </svg>
                 }
                 trend={additionalStats.maxConsecutiveRespected > 0 ? 'up' : undefined}
-                trendValue={additionalStats.maxConsecutiveRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveRespected} ${t('trades:trades')}` : t('dashboard:noDataAvailable')}
+                trendValue={additionalStats.maxConsecutiveRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveRespected} ${t('trades:trades')} (${t('dashboard:objective')}: 21)` : t('dashboard:noDataAvailable')}
               />
               
               <ModernStatCard
                 label={t('dashboard:sequenceNotRespect')}
                 value={additionalStats.maxConsecutiveNotRespected || 0}
-                variant={additionalStats.maxConsecutiveNotRespected >= 5 ? 'danger' : additionalStats.maxConsecutiveNotRespected >= 3 ? 'warning' : 'default'}
+                variant={additionalStats.maxConsecutiveNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveNotRespected > 0 ? 'warning' : 'default'}
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
