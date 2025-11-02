@@ -1,6 +1,13 @@
 # 🚀 Guide de Déploiement en Production
 
-Ce guide explique comment déployer les changements de la branche `dev` vers le serveur de production.
+Ce guide explique comment déployer les releases stables de la branche `main` vers le serveur de production.
+
+## 🔄 Workflow Git
+
+**Workflow recommandé** :
+1. **Développement** : Tous les changements sont faits dans la branche `dev`
+2. **Release** : Quand une version est prête, merger `dev` → `main` et créer un tag (ex: `v2.5.0`)
+3. **Production** : Déployer depuis la branche `main` (seulement les versions taguées/testées)
 
 ## 📋 Informations du Serveur de Production
 
@@ -49,10 +56,10 @@ cd /var/www/html/trading_journal
 ```
 
 Le script effectue automatiquement:
-- ✅ Récupération des changements depuis la branche `dev`
+- ✅ Récupération des changements depuis la branche `main` (releases stables)
+- ✅ Affichage de la version taguée (ex: v2.5.0)
 - ✅ Nettoyage des fichiers obsolètes (comme `api.ts`)
 - ✅ Configuration du fichier `.env.production`
-- ✅ Installation des dépendances npm si nécessaire
 - ✅ Compilation du frontend React en mode production
 - ✅ Synchronisation des fichiers statiques avec Django
 - ✅ Application des migrations Django
@@ -64,13 +71,16 @@ Le script effectue automatiquement:
 
 Si vous préférez déployer manuellement, suivez ces étapes:
 
-#### 1. Récupérer les changements
+#### 1. Récupérer les changements depuis main
 
 ```bash
 cd /var/www/html/trading_journal
-git fetch origin dev
-git checkout dev
-git pull origin dev
+git fetch origin main
+git checkout main
+git pull origin main
+
+# Vérifier la version taguée
+git describe --tags --exact-match HEAD 2>/dev/null || git describe --tags --abbrev=0
 ```
 
 #### 2. Nettoyer les fichiers obsolètes
