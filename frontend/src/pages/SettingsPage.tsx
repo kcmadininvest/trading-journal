@@ -4,6 +4,7 @@ import authService from '../services/auth';
 import { changeLanguage } from '../i18n/config';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 const TIMEZONES = [
   'Europe/Paris',
@@ -326,7 +327,7 @@ const SettingsPage: React.FC = () => {
         {activeTab === 'profile' && (
           <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('settings:profileInfo')}</h2>
-              <form onSubmit={handleProfileUpdate} className="space-y-6">
+              <form onSubmit={handleProfileUpdate} className="space-y-6 max-w-md">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings:firstName')}</label>
@@ -569,28 +570,28 @@ const SettingsPage: React.FC = () => {
         {activeTab === 'trading' && (
           <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('settings:tradingPreferences')}</h2>
-              <div className="space-y-6">
+              <div className="space-y-6 max-w-md">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings:dateFormat')}</label>
-                  <select
+                  <CustomSelect
                     value={preferences.date_format}
-                    onChange={(e) => setPreferences({ ...preferences, date_format: e.target.value as 'US' | 'EU' })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="EU">{t('settings:dateFormatEU')}</option>
-                    <option value="US">{t('settings:dateFormatUS')}</option>
-                  </select>
+                    onChange={(value) => setPreferences({ ...preferences, date_format: value as 'US' | 'EU' })}
+                    options={[
+                      { value: 'EU', label: t('settings:dateFormatEU') },
+                      { value: 'US', label: t('settings:dateFormatUS') },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings:numberFormat')}</label>
-                  <select
+                  <CustomSelect
                     value={preferences.number_format}
-                    onChange={(e) => setPreferences({ ...preferences, number_format: e.target.value as 'point' | 'comma' })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="comma">{t('settings:numberFormatComma')}</option>
-                    <option value="point">{t('settings:numberFormatPoint')}</option>
-                  </select>
+                    onChange={(value) => setPreferences({ ...preferences, number_format: value as 'point' | 'comma' })}
+                    options={[
+                      { value: 'comma', label: t('settings:numberFormatComma') },
+                      { value: 'point', label: t('settings:numberFormatPoint') },
+                    ]}
+                  />
                 </div>
                 <button
                   onClick={handlePreferencesUpdate}
@@ -607,36 +608,32 @@ const SettingsPage: React.FC = () => {
         {activeTab === 'display' && (
           <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">{t('settings:displayPreferences')}</h2>
-              <div className="space-y-6">
+              <div className="space-y-6 max-w-md">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings:language')}</label>
-                  <select
+                  <CustomSelect
                     value={preferences.language}
-                    onChange={(e) => setPreferences({ ...preferences, language: e.target.value as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh' })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
-                    <option value="de">Deutsch</option>
-                    <option value="it">Italiano</option>
-                    <option value="pt">Português</option>
-                    <option value="ja">日本語</option>
-                    <option value="ko">한국어</option>
-                    <option value="zh">中文</option>
-                  </select>
+                    onChange={(value) => setPreferences({ ...preferences, language: value as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh' })}
+                    options={[
+                      { value: 'fr', label: 'Français' },
+                      { value: 'en', label: 'English' },
+                      { value: 'es', label: 'Español' },
+                      { value: 'de', label: 'Deutsch' },
+                      { value: 'it', label: 'Italiano' },
+                      { value: 'pt', label: 'Português' },
+                      { value: 'ja', label: '日本語' },
+                      { value: 'ko', label: '한국어' },
+                      { value: 'zh', label: '中文' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings:timezone')}</label>
-                  <select
+                  <CustomSelect
                     value={preferences.timezone}
-                    onChange={(e) => setPreferences({ ...preferences, timezone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  >
-                    {TIMEZONES.map((tz) => (
-                      <option key={tz} value={tz}>{tz}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => setPreferences({ ...preferences, timezone: value as string })}
+                    options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t('settings:theme')}</label>
@@ -666,15 +663,15 @@ const SettingsPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings:fontSize')}</label>
-                  <select
+                  <CustomSelect
                     value={preferences.font_size}
-                    onChange={(e) => setPreferences({ ...preferences, font_size: e.target.value as 'small' | 'medium' | 'large' })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="small">{t('settings:fontSizeSmall')}</option>
-                    <option value="medium">{t('settings:fontSizeMedium')}</option>
-                    <option value="large">{t('settings:fontSizeLarge')}</option>
-                  </select>
+                    onChange={(value) => setPreferences({ ...preferences, font_size: value as 'small' | 'medium' | 'large' })}
+                    options={[
+                      { value: 'small', label: t('settings:fontSizeSmall') },
+                      { value: 'medium', label: t('settings:fontSizeMedium') },
+                      { value: 'large', label: t('settings:fontSizeLarge') },
+                    ]}
+                  />
                 </div>
                 <button
                   onClick={handlePreferencesUpdate}
