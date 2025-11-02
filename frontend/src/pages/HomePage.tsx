@@ -17,9 +17,11 @@ const HomePage: React.FC = () => {
     const browserLang = navigator.language || (navigator as any).userLanguage;
     if (browserLang) {
       const lang = browserLang.split('-')[0].toLowerCase();
-      // Pour le moment, seules le français et l'anglais sont complètement traduites
-      // Les autres langues utiliseront l'anglais par défaut
-      return lang === 'fr' ? 'fr' : 'en';
+      // Les langues complètement traduites sont : français, anglais, espagnol, et allemand
+      if (lang === 'fr') return 'fr';
+      if (lang === 'es') return 'es';
+      if (lang === 'de') return 'de';
+      return 'en';
     }
     return 'en';
   };
@@ -28,7 +30,7 @@ const HomePage: React.FC = () => {
   const initializeLanguage = (): string => {
     const savedLang = localStorage.getItem('i18nextLng');
     // Si une langue est sauvegardée et valide, l'utiliser
-    if (savedLang && ['fr', 'en'].includes(savedLang)) {
+    if (savedLang && ['fr', 'en', 'es', 'de'].includes(savedLang)) {
       return savedLang;
     }
     // Si pas de langue sauvegardée ou langue invalide, détecter depuis le navigateur
@@ -89,6 +91,8 @@ const HomePage: React.FC = () => {
   const languageOptions = [
     { value: 'fr', label: 'Français', flag: '🇫🇷' },
     { value: 'en', label: 'English', flag: '🇬🇧' },
+    { value: 'es', label: 'Español', flag: '🇪🇸' },
+    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
   ];
 
   const handleAuthSuccess = () => {

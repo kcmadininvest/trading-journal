@@ -125,6 +125,8 @@ import zhAuth from './locales/zh/auth.json';
 
 import frHome from './locales/fr/home.json';
 import enHome from './locales/en/home.json';
+import esHome from './locales/es/home.json';
+import deHome from './locales/de/home.json';
 
 const resources = {
   fr: {
@@ -170,6 +172,7 @@ const resources = {
     users: esUsers,
     accounts: esAccounts,
     auth: esAuth,
+    home: esHome,
   },
   de: {
     common: deCommon,
@@ -184,6 +187,7 @@ const resources = {
     users: deUsers,
     accounts: deAccounts,
     auth: deAuth,
+    home: deHome,
   },
   it: {
     common: itCommon,
@@ -261,7 +265,7 @@ const resources = {
 // Utilise navigator.language (standard) ou navigator.userLanguage (IE legacy)
 // Format retourné : 'fr-FR', 'en-US', 'es-ES', etc.
 // On extrait le code langue principal (ex: 'fr' de 'fr-FR')
-// Pour le moment, seules 'fr' et 'en' sont complètement traduites
+// Les langues complètement traduites sont : 'fr', 'en', et 'es'
 // Les autres langues utiliseront 'en' par défaut
 const getDefaultLanguage = (): string => {
   if (typeof navigator !== 'undefined') {
@@ -273,10 +277,15 @@ const getDefaultLanguage = (): string => {
       // Extraire le code langue principal (ex: 'fr' de 'fr-FR')
       const lang = browserLang.split('-')[0].toLowerCase();
       
-      // Pour le moment, seules le français et l'anglais sont complètement traduites
-      // Les autres langues utiliseront l'anglais par défaut
+      // Les langues complètement traduites sont : français, anglais, espagnol, et allemand
       if (lang === 'fr') {
         return 'fr';
+      }
+      if (lang === 'es') {
+        return 'es';
+      }
+      if (lang === 'de') {
+        return 'de';
       }
       // Pour 'en' et toutes les autres langues, utiliser 'en'
       return 'en';
@@ -308,12 +317,15 @@ i18n
       caches: ['localStorage'],
       lookupLocalStorage: 'i18nextLng',
       // Fonction pour convertir la langue détectée par le navigateur
-      // Assure que seules 'fr' et 'en' sont utilisées
+      // Les langues complètement traduites sont : 'fr', 'en', 'es', et 'de'
       convertDetectedLanguage: (lng: string): string => {
         if (!lng) return 'en';
         const lang = lng.split('-')[0].toLowerCase();
-        // Seules le français et l'anglais sont complètement traduites
-        return lang === 'fr' ? 'fr' : 'en';
+        // Les langues complètement traduites sont : français, anglais, espagnol, et allemand
+        if (lang === 'fr') return 'fr';
+        if (lang === 'es') return 'es';
+        if (lang === 'de') return 'de';
+        return 'en';
       },
     },
   });
