@@ -22,6 +22,8 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const selectedId = selectedAccountId ?? null;
 
+  const isMountedRef = useRef(false);
+
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -37,23 +39,31 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
     load();
   }, []);
 
-  // Si aucune valeur n'est fournie, sélectionner automatiquement le compte par défaut
+  // Initialiser le compte par défaut uniquement au premier montage si aucune valeur n'est fournie
+  // Ne pas réinitialiser si selectedId est explicitement null (choix "Tous les comptes")
   useEffect(() => {
-    const initDefault = async () => {
-      if (selectedId == null) {
-        try {
-          const def = await tradingAccountsService.default();
-          if (def && def.status === 'active') {
-            onAccountChange(def);
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      // Au premier montage uniquement, initialiser le compte par défaut si aucune valeur n'est fournie
+      // selectedAccountId === undefined signifie qu'aucune valeur n'a été fournie
+      // selectedAccountId === null signifie que l'utilisateur a choisi "Tous les comptes"
+      if (selectedAccountId === undefined) {
+        const initDefault = async () => {
+          try {
+            const def = await tradingAccountsService.default();
+            if (def && def.status === 'active') {
+              onAccountChange(def);
+            }
+          } catch {
+            // noop
           }
-        } catch {
-          // noop
-        }
+        };
+        initDefault();
       }
-    };
-    initDefault();
+    }
+    // Ne pas réinitialiser après le premier montage - respecter le choix de l'utilisateur
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, []);
 
   const options = useMemo(() => {
     const base = accounts.map(a => ({ 
