@@ -346,32 +346,41 @@ const AnalyticsPage: React.FC = () => {
     }
     
     let cumulativePnl = 0; // P/L cumulé : addition progressive du P/L journalier
-    let peak = 0; // Pic de performance (peak_pnl) : valeur maximale du P/L cumulé atteinte jusqu'alors
+    let peak: number | null = null; // Pic de performance (peak_pnl) : valeur maximale du P/L cumulé atteinte jusqu'alors
+    // Initialiser avec null pour détecter le premier calcul
     
     const allData = sortedDates.map(date => {
       // Addition progressive du P/L journalier
       cumulativePnl += dailyData[date];
-      // Mettre à jour le pic si le P/L cumulé dépasse le pic précédent
-      peak = Math.max(peak, cumulativePnl);
+      
+      // Initialiser le peak avec le premier P/L cumulé, puis le mettre à jour
+      if (peak === null) {
+        peak = cumulativePnl;
+      } else {
+        // Mettre à jour le pic si le P/L cumulé dépasse le pic précédent
+        peak = Math.max(peak, cumulativePnl);
+      }
       
       // Drawdown : différence entre le pic et le P/L cumulé actuel
       // drawdown = peak_pnl - cumulative_pnl
       // Le drawdown représente la distance depuis le pic (0 = au pic, jamais négatif)
-      const drawdownAmount = cumulativePnl < peak ? peak - cumulativePnl : 0;
+      // peak ne peut plus être null ici car il a été initialisé au premier passage
+      const peakValue = peak!;
+      const drawdownAmount = cumulativePnl < peakValue ? peakValue - cumulativePnl : 0;
       
       // Calcul du pourcentage de drawdown
       // Cas 1: Peak positif et cumulative en dessous du peak
       // Cas 2: Peak négatif et cumulative encore plus négatif (plus de perte)
       // Cas 3: Peak à 0 (pas de pourcentage possible, utiliser seulement le montant)
       let drawdownPercent = 0;
-      if (drawdownAmount > 0) {
-        if (peak > 0) {
+      if (drawdownAmount > 0 && peakValue !== 0) {
+        if (peakValue > 0) {
           // Peak positif : calcul standard (pourcentage de perte depuis le peak)
-          drawdownPercent = ((peak - cumulativePnl) / peak) * 100;
-        } else if (peak < 0) {
+          drawdownPercent = ((peakValue - cumulativePnl) / peakValue) * 100;
+        } else if (peakValue < 0) {
           // Peak négatif : le pourcentage représente l'aggravation de la perte
           // Utiliser la valeur absolue pour le calcul
-          drawdownPercent = (drawdownAmount / Math.abs(peak)) * 100;
+          drawdownPercent = (drawdownAmount / Math.abs(peakValue)) * 100;
         }
         // Si peak === 0, drawdownPercent reste à 0 (on ne peut pas diviser par 0)
       }
