@@ -1,18 +1,20 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { tradesService, TradeListItem } from '../services/trades';
 import { AccountSelector } from '../components/accounts/AccountSelector';
-import { tradingAccountsService } from '../services/tradingAccounts';
 import { TradesFilters } from '../components/trades/TradesFilters';
 import { TradesTable } from '../components/trades/TradesTable';
 import { TradeModal } from '../components/trades/TradeModal';
  
 import PaginationControls from '../components/ui/PaginationControls';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
+import { DeleteConfirmModal } from '../components/ui';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { useTradingAccount } from '../contexts/TradingAccountContext';
 
 const TradesPage: React.FC = () => {
   const { t } = useI18nTranslation();
+  const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
   const [items, setItems] = useState<TradeListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +39,11 @@ const TradesPage: React.FC = () => {
   const [showImport, setShowImport] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const isInitializing = useRef(false);
+  const [tradeToDelete, setTradeToDelete] = useState<number | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   // Créer une clé stable pour les dépendances des useEffect basée sur les valeurs de filters
   const filtersKey = useMemo(() => {
@@ -102,6 +109,13 @@ const TradesPage: React.FC = () => {
     }
   };
 
+  // Synchroniser filters.trading_account avec le contexte global
+  useEffect(() => {
+    if (filters.trading_account !== selectedAccountId) {
+      setFilters(prev => ({ ...prev, trading_account: selectedAccountId }));
+    }
+  }, [selectedAccountId, filters.trading_account]);
+
   useEffect(() => {
     // Initialiser le compte sélectionné depuis le stockage ou le compte par défaut (une seule fois)
     if (hasInitialized) {
@@ -114,52 +128,14 @@ const TradesPage: React.FC = () => {
       }
       isInitializing.current = true;
       
-      // Toujours utiliser le compte par défaut du serveur (fiable)
-      // Le localStorage peut contenir un compte obsolète ou d'un autre utilisateur
-      try {
-        const def = await tradingAccountsService.default();
-        if (def && def.status === 'active') {
-          // Mettre à jour les filtres
-          setFilters(prev => {
-            const needsUpdate = prev.trading_account !== def.id;
-            if (needsUpdate) {
-              // Réinitialiser les stats pour éviter d'afficher des valeurs incorrectes
-              setStats(null);
-            }
-            // Toujours retourner un nouvel objet pour forcer le déclenchement des dépendances
-            return { ...prev, trading_account: def.id };
-          });
-          
-          // Marquer comme initialisé APRÈS avoir mis à jour les filtres
-          // Utiliser useState pour déclencher les re-renders et useEffect
-          setHasInitialized(true);
-          isInitializing.current = false;
-        } else {
-          setHasInitialized(true);
-          isInitializing.current = false;
-        }
-      } catch (e) {
-        console.error('[TradesPage] Error fetching default account', e);
-        setHasInitialized(true);
-        isInitializing.current = false;
-      }
+      // Ne plus initialiser ici, c'est géré par TradingAccountProvider
+      // On synchronise juste filters.trading_account avec selectedAccountId
+      setHasInitialized(true);
+      isInitializing.current = false;
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    // Persister le compte sélectionné (seulement après l'initialisation)
-    if (!hasInitialized || isInitializing.current) {
-      return;
-    }
-    
-    if (filters.trading_account) {
-      localStorage.setItem('current_account_id', String(filters.trading_account));
-    } else {
-      localStorage.removeItem('current_account_id');
-    }
-  }, [filters.trading_account, hasInitialized]);
+  }, []); // Ne s'exécute qu'une fois au montage
 
   useEffect(() => {
     // Attendre la fin de l'initialisation avant de charger
@@ -222,17 +198,24 @@ const TradesPage: React.FC = () => {
  
 
   const resetFilters = () => {
+    setSelectedAccountId(null);
     setFilters({ trading_account: null, contract: '', type: '', start_date: '', end_date: '', profitable: '' });
     setPage(1);
   };
 
   const handleDeleteOne = async (id: number) => {
-    const confirmMsg = 'Êtes-vous sûr de vouloir supprimer ce trade ? Cette action est irréversible.';
-    if (!window.confirm(confirmMsg)) return;
+    setTradeToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteOne = async () => {
+    if (!tradeToDelete) return;
+    
+    setDeleteLoading(true);
     try {
-      await tradesService.remove(id);
+      await tradesService.remove(tradeToDelete);
       // Retirer localement pour réactivité
-      setItems(prev => prev.filter(t => t.id !== id));
+      setItems(prev => prev.filter(t => t.id !== tradeToDelete));
       setTotal(prev => Math.max(0, prev - 1));
       // Recharger stats
       try {
@@ -253,19 +236,28 @@ const TradesPage: React.FC = () => {
           load();
         }
       }, 0);
+      setShowDeleteModal(false);
+      setTradeToDelete(null);
     } catch (e) {
       // Fallback: recharger
       load();
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    const n = selectedIds.length;
-    const confirmMsg = `Supprimer ${n} trade${n > 1 ? 's' : ''} sélectionné${n > 1 ? 's' : ''} ? Cette action est irréversible.`;
-    if (!window.confirm(confirmMsg)) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    
     const ids = [...selectedIds];
     setSelectedIds([]);
+    setBulkDeleteLoading(true);
+    
     try {
       const results = await Promise.allSettled(ids.map(id => tradesService.remove(id)));
       // Mettre à jour localement
@@ -290,8 +282,11 @@ const TradesPage: React.FC = () => {
           load();
         }
       }, 0);
+      setShowBulkDeleteModal(false);
     } catch {
       load();
+    } finally {
+      setBulkDeleteLoading(false);
     }
   };
 
@@ -300,8 +295,11 @@ const TradesPage: React.FC = () => {
       <div className="px-4 sm:px-6 lg:px-8">
         {/* Sélecteur de compte */}
         <AccountSelector
-          value={filters.trading_account}
-          onChange={(accountId) => setFilters(prev => ({ ...prev, trading_account: accountId }))}
+          value={selectedAccountId}
+          onChange={(accountId) => {
+            setSelectedAccountId(accountId);
+            setFilters(prev => ({ ...prev, trading_account: accountId }));
+          }}
         />
 
         {/* Filtres */}
@@ -376,6 +374,32 @@ const TradesPage: React.FC = () => {
 
         {/* Modale de création temporairement supprimée */}
       </div>
+      
+      {/* Modal de suppression d'un trade */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setTradeToDelete(null);
+        }}
+        onConfirm={confirmDeleteOne}
+        title={t('trades:deleteTitle', 'Delete Trade')}
+        message={t('trades:deleteConfirm', 'Are you sure you want to delete this trade? This action is irreversible.')}
+        isLoading={deleteLoading}
+        confirmButtonText={t('trades:delete', 'Delete')}
+      />
+
+      {/* Modal de suppression en masse */}
+      <DeleteConfirmModal
+        isOpen={showBulkDeleteModal}
+        onClose={() => setShowBulkDeleteModal(false)}
+        onConfirm={confirmBulkDelete}
+        title={t('trades:deleteMultipleTitle', 'Delete Multiple Trades')}
+        message={t('trades:deleteMultipleConfirm', { count: selectedIds.length }, `Delete ${selectedIds.length} selected trade(s)? This action is irreversible.`)}
+        isLoading={bulkDeleteLoading}
+        confirmButtonText={t('trades:deleteSelected', 'Delete Selected')}
+      />
+
       <FloatingActionButton onClick={() => setShowImport(true)} title={t('trades:import')} />
       <ImportTradesModal open={showImport} onClose={(done) => {
         setShowImport(false);

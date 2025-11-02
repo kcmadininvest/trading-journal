@@ -3,6 +3,12 @@
   "errorLoadingData": "Error loading data",
   "loadingData": "Loading data...",
   "importTrades": "Import trades",
+  "tradingAccount": "Trading Account",
+  "year": "Year",
+  "month": "Month",
+  "allYears": "All Years",
+  "allMonths": "All Months",
+  "reset": "Reset",
   "charts": {
     "hourlyPerformanceScatter": {
       "title": "Performance by Hour (Scatter Plot)",

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import PaginationControls from '../components/ui/PaginationControls';
+import { DeleteConfirmModal } from '../components/ui';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const TradingAccountsPage: React.FC = () => {
@@ -47,6 +48,9 @@ const TradingAccountsPage: React.FC = () => {
     description: '',
   });
   const [saving, setSaving] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const selectedCurrency = useMemo(() => {
     const code = form.currency || 'USD';
     return currencies.find(c => c.code === code) || (currencies.length ? currencies[0] : undefined);
@@ -151,20 +155,30 @@ const TradingAccountsPage: React.FC = () => {
   };
 
   const handleDelete = async (acc: TradingAccount) => {
-    const msg = t('accounts:deleteConfirm', { name: acc.name });
-    if (!window.confirm(msg)) return;
+    setAccountToDelete(acc);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!accountToDelete) return;
+    
+    setDeleteLoading(true);
     try {
-      await tradingAccountsService.remove(acc.id);
+      await tradingAccountsService.remove(accountToDelete.id);
       setAccounts(prev => {
-        const filtered = prev.filter(a => a.id !== acc.id);
+        const filtered = prev.filter(a => a.id !== accountToDelete.id);
         // Si on supprime le dernier élément de la page et qu'on n'est pas sur la première page, reculer d'une page
         if (filtered.length > 0 && page > 1 && (page - 1) * pageSize >= filtered.length) {
           setPage(page - 1);
         }
         return filtered;
       });
+      setShowDeleteModal(false);
+      setAccountToDelete(null);
     } catch (e) {
       // noop (on peut ajouter un toast plus tard)
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -531,6 +545,20 @@ const TradingAccountsPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de suppression */}
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setAccountToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title={t('accounts:deleteTitle', 'Delete Account')}
+        message={accountToDelete ? t('accounts:deleteConfirm', { name: accountToDelete.name }) : ''}
+        isLoading={deleteLoading}
+        confirmButtonText={t('accounts:actions.deleteLabel', 'Delete')}
+      />
     </div>
   );
 };

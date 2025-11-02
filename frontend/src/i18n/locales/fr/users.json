@@ -57,8 +57,11 @@
     },
     "confirm": {
       "deleteUser": "Êtes-vous sûr de vouloir supprimer l'utilisateur {{email}} ?",
-      "bulkDelete": "Êtes-vous sûr de vouloir supprimer {{count}} utilisateur(s) ?"
-    }
+      "deleteUserTitle": "Supprimer l'utilisateur",
+      "bulkDelete": "Êtes-vous sûr de vouloir supprimer {{count}} utilisateur(s) ?",
+      "bulkDeleteTitle": "Supprimer plusieurs utilisateurs"
+    },
+    "delete": "Supprimer"
   },
   "bulkActions": {
     "selected": "{{count}} utilisateur sélectionné",

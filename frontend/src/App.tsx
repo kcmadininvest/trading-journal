@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
 import CalendarPage from './pages/CalendarPage';
@@ -10,11 +11,13 @@ import StrategiesPage from './pages/StrategiesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import TradingAccountsPage from './pages/TradingAccountsPage';
 import SettingsPage from './pages/SettingsPage';
+import ActivateAccountPage from './pages/ActivateAccountPage';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { useTheme } from './hooks/useTheme';
 
 function App() {
+  const { t } = useI18nTranslation();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home');
@@ -141,6 +144,14 @@ function App() {
   }, []);
 
   const renderPage = () => {
+    // Vérifier si on est sur la page d'activation
+    const pathname = window.location.pathname;
+    const activateMatch = pathname.match(/^\/activate-account\/([^/]+)\/?$/);
+    if (activateMatch) {
+      const token = activateMatch[1];
+      return <ActivateAccountPage token={token} />;
+    }
+
     if (!currentUser) {
       return <HomePage />;
     }
@@ -192,7 +203,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Chargement...</p>
+          <p className="text-gray-600 dark:text-gray-300">{t('common:loading')}</p>
         </div>
       </div>
     );

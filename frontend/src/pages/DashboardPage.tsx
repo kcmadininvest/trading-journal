@@ -14,6 +14,7 @@ import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { useTradingAccount } from '../contexts/TradingAccountContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -179,13 +180,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
-  const [accountId, setAccountId] = useState<number | null>(null);
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
   
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
     return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
   };
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [strategies, setStrategies] = useState<Map<number, TradeStrategy>>(new Map());
@@ -246,13 +247,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       try {
         const account = await tradingAccountsService.get(accountId);
         setSelectedAccount(account);
-      } catch (err) {
-        console.error('Erreur lors du chargement du compte', err);
+      } catch (err: any) {
+        // Si le compte n'existe pas (404) ou n'appartient pas à l'utilisateur, réinitialiser
+        if (err?.status === 404) {
+          console.warn('Le compte sélectionné n\'existe plus, réinitialisation...');
+          setAccountId(null); // Réinitialiser le compte sélectionné dans le contexte
+        } else {
+          console.error('Erreur lors du chargement du compte', err);
+        }
         setSelectedAccount(null);
       }
     };
     loadAccount();
-  }, [accountId]);
+  }, [accountId, setAccountId]);
 
   // Obtenir le symbole de devise
   const currencySymbol = useMemo(() => {
@@ -269,7 +276,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       try {
         const filters: any = {
           trading_account: accountId ?? undefined,
-          page_size: 10000, // Récupérer beaucoup de trades
+          // Utiliser une limite raisonnable : 10000 par défaut, ou plus si une année spécifique est sélectionnée
+          page_size: selectedYear ? 10000 : 5000, // Limiter pour éviter les timeouts
         };
 
         // Ajouter le filtre de date selon l'année et le mois
@@ -278,22 +286,43 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
             : `${selectedYear}-01-01`;
           
-          const endDate = selectedMonth
-            ? new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0]
-            : `${selectedYear}-12-31`;
+          let endDate: string;
+          if (selectedMonth) {
+            // Calculer le dernier jour du mois sélectionné
+            // selectedMonth est 1-12, donc on utilise selectedMonth comme index (1=janvier devient mois 1 en JS = février)
+            // Le jour 0 du mois suivant donne le dernier jour du mois actuel
+            const lastDay = new Date(selectedYear, selectedMonth, 0);
+            const year = lastDay.getFullYear();
+            const month = String(lastDay.getMonth() + 1).padStart(2, '0');
+            const day = String(lastDay.getDate()).padStart(2, '0');
+            endDate = `${year}-${month}-${day}`;
+          } else {
+            endDate = `${selectedYear}-12-31`;
+          }
           
           filters.start_date = startDate;
           filters.end_date = endDate;
         }
 
-        const response = await tradesService.list(filters);
+        // Ajouter un timeout pour éviter les chargements infinis
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Timeout: La requête a pris trop de temps')), 60000); // 60 secondes
+        });
+
+        const response = await Promise.race([
+          tradesService.list(filters),
+          timeoutPromise
+        ]);
         
         // Filtrer par année/mois côté client aussi pour être sûr
         let filteredTrades = response.results;
         if (selectedYear) {
           filteredTrades = filteredTrades.filter(trade => {
-            if (!trade.trade_day) return false;
-            const tradeDate = new Date(trade.trade_day);
+            // Utiliser trade_day si disponible, sinon entered_at comme fallback
+            const dateStr = trade.trade_day || trade.entered_at;
+            if (!dateStr) return false;
+            
+            const tradeDate = new Date(dateStr);
             const tradeYear = tradeDate.getFullYear();
             const tradeMonth = tradeDate.getMonth() + 1;
             
@@ -313,35 +342,47 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         
         setTrades(filteredTrades);
 
-        // Charger les stratégies pour tous les trades
-        const strategiesMap = new Map<number, TradeStrategy>();
-        try {
-          // Récupérer toutes les dates uniques des trades
-          const uniqueDates = new Set<string>();
-          filteredTrades.forEach(trade => {
-            if (trade.trade_day) {
-              uniqueDates.add(trade.trade_day);
-            }
-          });
+        // Charger les stratégies de manière asynchrone (non bloquant)
+        // pour ne pas ralentir l'affichage initial des données
+        (async () => {
+          const strategiesMap = new Map<number, TradeStrategy>();
+          try {
+            // Récupérer toutes les dates uniques des trades
+            const uniqueDates = new Set<string>();
+            filteredTrades.forEach(trade => {
+              if (trade.trade_day) {
+                uniqueDates.add(trade.trade_day);
+              }
+            });
 
-          // Charger les stratégies pour chaque date
-          const datesArray = Array.from(uniqueDates);
-          for (const date of datesArray) {
-            try {
-              const dateStrategies = await tradeStrategiesService.byDate(date, accountId ?? undefined);
-              dateStrategies.forEach(strategy => {
-                // strategy.trade est l'ID numérique du trade TopStepTrade
-                strategiesMap.set(strategy.trade, strategy);
-              });
-            } catch (e) {
-              // Ignorer les erreurs pour les dates sans stratégies
+            // Limiter le nombre de dates à traiter pour éviter trop de requêtes
+            // Si trop de dates, on limite à un échantillon raisonnable
+            const datesArray = Array.from(uniqueDates).slice(0, 365); // Max 1 an de dates
+            
+            // Charger les stratégies en parallèle (batch de 10 à la fois pour éviter de surcharger)
+            const batchSize = 10;
+            for (let i = 0; i < datesArray.length; i += batchSize) {
+              const batch = datesArray.slice(i, i + batchSize);
+              await Promise.all(
+                batch.map(async (date) => {
+                  try {
+                    const dateStrategies = await tradeStrategiesService.byDate(date, accountId ?? undefined);
+                    dateStrategies.forEach(strategy => {
+                      // strategy.trade est l'ID numérique du trade TopStepTrade
+                      strategiesMap.set(strategy.trade, strategy);
+                    });
+                  } catch (e) {
+                    // Ignorer les erreurs pour les dates sans stratégies
+                  }
+                })
+              );
             }
+          } catch (err) {
+            console.error('Erreur lors du chargement des stratégies', err);
           }
-        } catch (err) {
-          console.error('Erreur lors du chargement des stratégies', err);
-        }
 
-        setStrategies(strategiesMap);
+          setStrategies(strategiesMap);
+        })();
       } catch (err) {
         setError(t('dashboard:error'));
         console.error(err);
@@ -422,11 +463,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     if (filteredBalanceData.length === 0) {
       return { totalReturn: 0, isPositive: false, maxDrawdown: 0, highestValue: 0, lowestValue: 0 };
     }
-    // Solde final de la période filtrée
-    const endingBalance = filteredBalanceData[filteredBalanceData.length - 1]?.cumulative || 0;
-    // Variation pendant la période (solde final - solde de départ)
-    const startingBalance = filteredBalanceData[0]?.cumulative || 0;
-    const totalReturn = endingBalance - startingBalance;
+    // Calculer la perte/gain total : somme des PnL de la période filtrée
+    // C'est plus fiable car cela représente exactement la variation pendant la période sélectionnée
+    const totalReturn = filteredBalanceData.reduce((sum, d) => sum + d.pnl, 0);
     const highestValue = Math.max(...filteredBalanceData.map(d => d.cumulative));
     const lowestValue = Math.min(...filteredBalanceData.map(d => d.cumulative));
     // Selon les bonnes pratiques: la couleur reflète si la courbe passe au-dessus de 0
@@ -818,7 +857,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       weekdayPerformanceData[0]
     );
     const worstDay = weekdayPerformanceData.reduce((min, day) => 
-      day.trade_count < min.trade_count ? day : min, 
+      day.total_pnl < min.total_pnl ? day : min, 
       weekdayPerformanceData[0]
     );
     const mostActiveDay = weekdayPerformanceData.reduce((max, day) => 
@@ -1288,23 +1327,35 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {accountBalanceData.length > 0 && accountBalanceChartData && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="mb-4">
-                <div className="flex items-center justify-between mb-0">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${performanceStats.isPositive ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-pink-100 dark:bg-pink-900/30'}`}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path 
-                          d="M4 16l4-5 3 3 5-7 4 6" 
-                          stroke={performanceStats.isPositive ? '#3b82f6' : '#ec4899'} 
-                          strokeWidth="2" 
-                          fill="none" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('dashboard:accountBalanceOverTime')}</h3>
+                    <div className="flex items-center gap-6 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {performanceStats.totalReturn >= 0 ? t('dashboard:totalGain') : t('dashboard:totalLoss')} :
+                        </span>
+                        <span className={`text-lg font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                          {formatCurrency(performanceStats.totalReturn, currencySymbol)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <span>{t('dashboard:highest')} :</span>
+                          <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                            {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>{t('dashboard:lowest')} :</span>
+                          <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                            {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('dashboard:accountBalanceOverTime')}</h3>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 ml-4">
                     {/* Start Date Picker */}
                     <div className="relative">
                       <div className="absolute -top-2 left-3 bg-white dark:bg-gray-800 px-1 text-xs font-medium text-gray-600 dark:text-gray-400 z-10">
@@ -1351,30 +1402,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-6 ml-11">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {performanceStats.totalReturn >= 0 ? t('dashboard:totalGain') : t('dashboard:totalLoss')} :
-                    </span>
-                    <span className={`text-lg font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                      {formatCurrency(performanceStats.totalReturn, currencySymbol)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center gap-1">
-                      <span>{t('dashboard:highest')} :</span>
-                      <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                        {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span>{t('dashboard:lowest')} :</span>
-                      <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                        {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               <div className="h-80">
@@ -1397,7 +1424,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           fill: true,
                           tension: 0.4,
                           pointRadius: (context: any) => {
-                            const value = context.parsed.y;
+                            // Masquer les points si trop de données (> 100 points)
+                            const dataLength = accountBalanceChartData.labels.length;
+                            if (dataLength > 100) return 0;
+                            // Vérifier que context.parsed existe avant d'accéder à y
+                            const value = context.parsed?.y;
                             return value !== null && value !== undefined ? 4 : 0;
                           },
                           pointBackgroundColor: '#3b82f6',
@@ -1418,7 +1449,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           fill: true,
                           tension: 0.4,
                           pointRadius: (context: any) => {
-                            const value = context.parsed.y;
+                            // Masquer les points si trop de données (> 100 points)
+                            const dataLength = accountBalanceChartData.labels.length;
+                            if (dataLength > 100) return 0;
+                            // Vérifier que context.parsed existe avant d'accéder à y
+                            const value = context.parsed?.y;
                             return value !== null && value !== undefined ? 4 : 0;
                           },
                           pointBackgroundColor: '#ec4899',
@@ -1488,8 +1523,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             },
                           },
                           grid: {
-                            color: chartColors.grid,
-                            lineWidth: 1,
+                            display: false,
                           },
                           border: {
                             color: chartColors.border,
@@ -1516,13 +1550,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             display: false,
                           },
                           title: {
-                            display: true,
-                            text: t('dashboard:balance'),
-                            color: chartColors.text,
-                            font: {
-                              size: 13,
-                              weight: 600,
-                            },
+                            display: false,
                           },
                         },
                       },
@@ -1538,7 +1566,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           )}
 
           {/* Graphique 4: Performance par jour de la semaine */}
-          {weekdayPerformanceData.length > 0 && weekdayChartData && (
+          {weekdayPerformanceData.length > 0 && weekdayChartData && weekdayPerformanceData.some(d => d.trade_count > 0) && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-4">
@@ -1694,8 +1722,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           {/* Graphique 5: Waterfall des gains et pertes journalière */}
           {waterfallData.length > 0 && waterfallChartData && (
-            <div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-4">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('dashboard:dailyGainsLossesEvolution')}</h3>
@@ -1821,7 +1848,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     }}
                   />
                 </div>
-              </div>
             </div>
           )}
 

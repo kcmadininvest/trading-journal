@@ -3,6 +3,12 @@
   "errorLoadingData": "Erreur lors du chargement des données",
   "loadingData": "Chargement des données...",
   "importTrades": "Importer des trades",
+  "tradingAccount": "Compte de trading",
+  "year": "Année",
+  "month": "Mois",
+  "allYears": "Toutes les années",
+  "allMonths": "Tous les mois",
+  "reset": "Réinitialiser",
   "charts": {
     "hourlyPerformanceScatter": {
       "title": "Performance par heure (Nuage de points)",

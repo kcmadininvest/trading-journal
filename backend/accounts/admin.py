@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, UserPreferences, LoginHistory
+from .models import User, UserPreferences, LoginHistory, EmailActivationToken
 
 
 @admin.register(User)
@@ -59,3 +59,21 @@ class LoginHistoryAdmin(admin.ModelAdmin):
     search_fields = ('user__email', 'ip_address', 'user_agent')
     readonly_fields = ('date',)
     ordering = ('-date',)
+
+
+@admin.register(EmailActivationToken)
+class EmailActivationTokenAdmin(admin.ModelAdmin):
+    """
+    Configuration de l'interface d'administration pour EmailActivationToken
+    """
+    list_display = ('user', 'token', 'created_at', 'expires_at', 'is_used', 'is_expired_display')
+    list_filter = ('is_used', 'created_at', 'expires_at')
+    search_fields = ('user__email', 'token')
+    readonly_fields = ('token', 'created_at', 'expires_at', 'is_expired_display')
+    ordering = ('-created_at',)
+    
+    def is_expired_display(self, obj):
+        """Affiche si le token est expiré"""
+        return obj.is_expired()
+    is_expired_display.boolean = True
+    is_expired_display.short_description = 'Expiré'

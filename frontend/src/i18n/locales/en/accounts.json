@@ -33,6 +33,7 @@
     "enable": "Enable",
     "deleteLabel": "Delete"
   },
+  "deleteTitle": "Delete Account",
   "deleteConfirm": "Permanently delete account \"{{name}}\" and all its data (associated trades)?\n\nThis action is irreversible.",
   "form": {
     "editTitle": "Edit Account",

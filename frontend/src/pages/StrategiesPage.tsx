@@ -9,6 +9,7 @@ import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { getMonthNames } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { useTradingAccount } from '../contexts/TradingAccountContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -48,7 +49,7 @@ const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
-  const [accountId, setAccountId] = useState<number | null>(null);
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => ({
@@ -63,7 +64,7 @@ const StrategiesPage: React.FC = () => {
     tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
   }), [isDark]);
   const [showImport, setShowImport] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +130,13 @@ const StrategiesPage: React.FC = () => {
 
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
-  const respectChartData = useMemo(() => statistics?.statistics?.period_data && statistics.statistics.period_data.length > 0 ? {
+  const respectChartData = useMemo(() => {
+    if (!statistics?.statistics?.period_data || statistics.statistics.period_data.length === 0) return null;
+    // Vérifier qu'il y a au moins une période avec des données (total > 0)
+    const hasData = statistics.statistics.period_data.some((d: any) => d.total > 0);
+    if (!hasData) return null;
+    
+    return {
     labels: statistics.statistics.period_data.map((d: any) => d.period),
     datasets: [
       {
@@ -149,7 +156,8 @@ const StrategiesPage: React.FC = () => {
         borderRadius: 0,
       },
     ],
-  } : null, [statistics?.statistics?.period_data, t]);
+  };
+  }, [statistics?.statistics?.period_data, t]);
 
   const respectChartOptions = useMemo(() => ({
     responsive: true,
@@ -270,7 +278,13 @@ const StrategiesPage: React.FC = () => {
   }), [statistics?.statistics?.period_data, t, chartColors]);
 
   // Graphique 2: Taux de réussite selon respect de la stratégie
-  const successRateData = useMemo(() => statistics?.statistics ? {
+  const successRateData = useMemo(() => {
+    if (!statistics?.statistics) return null;
+    // Vérifier qu'il y a des statistiques significatives
+    const hasData = statistics.statistics.total_strategies > 0;
+    if (!hasData) return null;
+    
+    return {
     labels: [t('strategies:successRateByStrategyRespect')],
     datasets: [
       {
@@ -290,7 +304,8 @@ const StrategiesPage: React.FC = () => {
         borderRadius: 0,
       },
     ],
-  } : null, [statistics?.statistics, t]);
+  };
+  }, [statistics?.statistics, t]);
 
   const successRateOptions = useMemo(() => ({
     responsive: true,
@@ -402,7 +417,14 @@ const StrategiesPage: React.FC = () => {
   }), [t, chartColors]);
 
   // Graphique 3: Répartition des sessions gagnantes selon TP1 et TP2+
-  const winningSessionsData = useMemo(() => statistics?.statistics?.winning_sessions_distribution ? {
+  const winningSessionsData = useMemo(() => {
+    if (!statistics?.statistics?.winning_sessions_distribution) return null;
+    // Vérifier qu'il y a au moins une session gagnante
+    const dist = statistics.statistics.winning_sessions_distribution;
+    const hasData = (dist.tp1_only || 0) + (dist.tp2_plus || 0) + (dist.no_tp || 0) > 0;
+    if (!hasData) return null;
+    
+    return {
     labels: [t('strategies:tp1Only'), t('strategies:tp2Plus'), t('strategies:noTp')],
     datasets: [
       {
@@ -426,7 +448,8 @@ const StrategiesPage: React.FC = () => {
         borderRadius: 0,
       },
     ],
-  } : null, [statistics?.statistics?.winning_sessions_distribution, t]);
+  };
+  }, [statistics?.statistics?.winning_sessions_distribution, t]);
 
   // Calculer la valeur maximale pour l'axe Y avec marge
   const winningSessionsMax = useMemo(() => statistics?.statistics?.winning_sessions_distribution ? (() => {

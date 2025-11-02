@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MonthlyView from '../components/calendar/MonthlyView';
 import DailyView from '../components/calendar/DailyView';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import {
@@ -21,7 +22,7 @@ const CalendarPage: React.FC = () => {
   const [viewType, setViewType] = useState<ViewType>('daily');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAccount, setSelectedAccount] = useState<number | null>(null);
+  const { selectedAccountId: selectedAccount, setSelectedAccountId: setSelectedAccount } = useTradingAccount();
   const [selectedAccountData, setSelectedAccountData] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [showImport, setShowImport] = useState(false);

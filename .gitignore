@@ -76,6 +76,7 @@ Thumbs.db
 
 # Logs
 logs/
+.logs/
 *.log
 
 # Deployment scripts (specific to production server)

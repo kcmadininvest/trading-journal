@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aktivierung Ihres Kontos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2563eb;
+            margin: 0;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            padding: 16px 40px;
+            background-color: #2563eb;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            border: 2px solid #2563eb;
+            min-width: 200px;
+        }
+        .button:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+        }
+        .button:visited {
+            color: #ffffff !important;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+        .link {
+            color: #2563eb;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Willkommen bei Trading Journal!</h1>
+        </div>
+        <div class="content">
+            <p>Hallo {{ user.first_name }},</p>
+            <p>Vielen Dank für Ihre Anmeldung auf unserer Trading-Journal-Plattform. Um Ihre Anmeldung abzuschließen und Ihr Konto zu aktivieren, klicken Sie bitte auf die Schaltfläche unten:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ activation_url }}" class="button" style="color: #ffffff; text-decoration: none;">Mein Konto aktivieren</a>
+            </div>
+            <p>Wenn die Schaltfläche nicht funktioniert, können Sie den folgenden Link in Ihren Browser kopieren und einfügen:</p>
+            <p class="link">{{ activation_url }}</p>
+            <p><strong>Wichtig:</strong> Dieser Link ist 7 Tage lang gültig. Nach diesem Zeitraum müssen Sie einen neuen Aktivierungslink anfordern.</p>
+        </div>
+        <div class="footer">
+            <p>Wenn Sie kein Konto auf unserer Plattform erstellt haben, können Sie diese E-Mail ignorieren.</p>
+            <p>&copy; 2025 Trading Journal. Alle Rechte vorbehalten.</p>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -2,6 +2,12 @@
   "title": "Statistics",
   "errorLoadingData": "Error loading data",
   "retry": "Retry",
+  "tradingAccount": "Trading Account",
+  "year": "Year",
+  "month": "Month",
+  "allYears": "All Years",
+  "allMonths": "All Months",
+  "reset": "Reset",
   "overview": {
     "title": "Overview",
     "subtitle": "General statistics and overall performance",

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { User, userService, UserUpdateData } from '../services/userService';
 import { UserTable, UserEditModal, BulkActions } from '../components/users';
-import { PaginationControls } from '../components/ui';
+import { PaginationControls, DeleteConfirmModal } from '../components/ui';
 import { usePagination } from '../hooks';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { CustomSelect } from '../components/common/CustomSelect';
@@ -14,6 +14,11 @@ const UserManagementPage: React.FC = () => {
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'user' | 'admin'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -145,38 +150,55 @@ const UserManagementPage: React.FC = () => {
   };
 
   const handleDeleteUser = async (user: User) => {
-    if (window.confirm(t('users:page.confirm.deleteUser', { email: user.email }))) {
-      try {
-        await userService.deleteUser(user.id);
-        
-        // Supprimer l'utilisateur de la liste locale au lieu de recharger
-        setUsers(prevUsers => prevUsers.filter(u => u.id !== user.id));
-        
-        toast.success(t('users:page.success.userDeleted'));
-      } catch (error: any) {
-        toast.error(error.message || t('users:page.error.delete'));
-      }
+    setDeleteUser(user);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!deleteUser) return;
+    
+    setDeleteLoading(true);
+    try {
+      await userService.deleteUser(deleteUser.id);
+      
+      // Supprimer l'utilisateur de la liste locale au lieu de recharger
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== deleteUser.id));
+      
+      toast.success(t('users:page.success.userDeleted'));
+      setShowDeleteModal(false);
+      setDeleteUser(null);
+    } catch (error: any) {
+      toast.error(error.message || t('users:page.error.delete'));
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
   const handleBulkDelete = async () => {
-    if (window.confirm(t('users:page.confirm.bulkDelete', { count: selectedUsers.length }))) {
-      try {
-        const result = await userService.bulkDeleteUsers(selectedUsers);
-        
-        // Extraire les IDs des utilisateurs supprimés depuis results
-        const deletedIds = result.results?.map((item: any) => item.user_id) || [];
-        
-        // Supprimer les utilisateurs supprimés de la liste locale
-        setUsers(prevUsers => 
-          prevUsers.filter(u => !deletedIds.includes(u.id))
-        );
-        
-        setSelectedUsers([]);
-        toast.success(t('users:page.success.usersDeleted', { count: deletedIds.length }));
-      } catch (error: any) {
-        toast.error(error.message || t('users:page.error.bulkDelete'));
-      }
+    if (selectedUsers.length === 0) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    setBulkDeleteLoading(true);
+    try {
+      const result = await userService.bulkDeleteUsers(selectedUsers);
+      
+      // Extraire les IDs des utilisateurs supprimés depuis results
+      const deletedIds = result.results?.map((item: any) => item.user_id) || [];
+      
+      // Supprimer les utilisateurs supprimés de la liste locale
+      setUsers(prevUsers => 
+        prevUsers.filter(u => !deletedIds.includes(u.id))
+      );
+      
+      setSelectedUsers([]);
+      toast.success(t('users:page.success.usersDeleted', { count: deletedIds.length }));
+      setShowBulkDeleteModal(false);
+    } catch (error: any) {
+      toast.error(error.message || t('users:page.error.bulkDelete'));
+    } finally {
+      setBulkDeleteLoading(false);
     }
   };
 
@@ -342,6 +364,31 @@ const UserManagementPage: React.FC = () => {
             setEditingUser(null);
           }}
           onSave={handleSaveUser}
+        />
+
+        {/* Modal de suppression d'un utilisateur */}
+        <DeleteConfirmModal
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setDeleteUser(null);
+          }}
+          onConfirm={confirmDeleteUser}
+          title={t('users:page.confirm.deleteUserTitle', 'Delete User')}
+          message={deleteUser ? t('users:page.confirm.deleteUser', { email: deleteUser.email }) : ''}
+          isLoading={deleteLoading}
+          confirmButtonText={t('users:delete', 'Delete')}
+        />
+
+        {/* Modal de suppression en masse */}
+        <DeleteConfirmModal
+          isOpen={showBulkDeleteModal}
+          onClose={() => setShowBulkDeleteModal(false)}
+          onConfirm={confirmBulkDelete}
+          title={t('users:page.confirm.bulkDeleteTitle', 'Delete Multiple Users')}
+          message={t('users:page.confirm.bulkDelete', { count: selectedUsers.length })}
+          isLoading={bulkDeleteLoading}
+          confirmButtonText={t('users:delete', 'Delete')}
         />
       </div>
     </div>

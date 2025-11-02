@@ -226,7 +226,7 @@ class TradesService {
     return data;
   }
 
-  async detailedStatistics(tradingAccountId?: number): Promise<{
+  async detailedStatistics(tradingAccountId?: number, year?: number | null, month?: number | null): Promise<{
     total_trades: number;
     winning_trades: number;
     losing_trades: number;
@@ -251,14 +251,41 @@ class TradesService {
     frequency_ratio: number;
     duration_ratio: number;
   }> {
-    const qs = tradingAccountId ? `?trading_account=${tradingAccountId}` : '';
-    const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs}`;
+    const queryParams = new URLSearchParams();
+    if (tradingAccountId) {
+      queryParams.append('trading_account', String(tradingAccountId));
+    }
+    
+    // Ajouter les filtres de date si fournis
+    if (year) {
+      const startDate = month 
+        ? `${year}-${month.toString().padStart(2, '0')}-01`
+        : `${year}-01-01`;
+      
+      let endDate: string;
+      if (month) {
+        // Calculer le dernier jour du mois sélectionné
+        const lastDay = new Date(year, month, 0);
+        const yearStr = lastDay.getFullYear();
+        const monthStr = String(lastDay.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(lastDay.getDate()).padStart(2, '0');
+        endDate = `${yearStr}-${monthStr}-${dayStr}`;
+      } else {
+        endDate = `${year}-12-31`;
+      }
+      
+      queryParams.append('start_date', startDate);
+      queryParams.append('end_date', endDate);
+    }
+    
+    const qs = queryParams.toString();
+    const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs ? `?${qs}` : ''}`;
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des statistiques détaillées');
     return res.json();
   }
 
-  async analytics(tradingAccountId?: number): Promise<{
+  async analytics(tradingAccountId?: number, year?: number | null, month?: number | null): Promise<{
     daily_stats: {
       avg_gain_per_day: number;
       median_gain_per_day: number;
@@ -284,8 +311,35 @@ class TradesService {
       max_consecutive_losses: number;
     };
   }> {
-    const qs = tradingAccountId ? `?trading_account=${tradingAccountId}` : '';
-    const url = `${this.BASE_URL}/api/trades/topstep/analytics/${qs}`;
+    const queryParams = new URLSearchParams();
+    if (tradingAccountId) {
+      queryParams.append('trading_account', String(tradingAccountId));
+    }
+    
+    // Ajouter les filtres de date si fournis
+    if (year) {
+      const startDate = month 
+        ? `${year}-${month.toString().padStart(2, '0')}-01`
+        : `${year}-01-01`;
+      
+      let endDate: string;
+      if (month) {
+        // Calculer le dernier jour du mois sélectionné
+        const lastDay = new Date(year, month, 0);
+        const yearStr = lastDay.getFullYear();
+        const monthStr = String(lastDay.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(lastDay.getDate()).padStart(2, '0');
+        endDate = `${yearStr}-${monthStr}-${dayStr}`;
+      } else {
+        endDate = `${year}-12-31`;
+      }
+      
+      queryParams.append('start_date', startDate);
+      queryParams.append('end_date', endDate);
+    }
+    
+    const qs = queryParams.toString();
+    const url = `${this.BASE_URL}/api/trades/topstep/analytics/${qs ? `?${qs}` : ''}`;
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des analytics');
     return res.json();

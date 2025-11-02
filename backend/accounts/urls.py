@@ -11,6 +11,10 @@ urlpatterns = [
     path('auth/logout/', views.LogoutView.as_view(), name='logout'),
     path('auth/register/', views.UserRegistrationView.as_view(), name='register'),
     
+    # Activation de compte
+    path('auth/activate/<uuid:token>/', views.AccountActivationView.as_view(), name='activate_account'),
+    path('auth/resend-activation/', views.ResendActivationEmailView.as_view(), name='resend_activation'),
+    
     # Profil utilisateur
     path('profile/', views.UserProfileView.as_view(), name='user_profile'),
     path('profile/change-password/', views.PasswordChangeView.as_view(), name='change_password'),

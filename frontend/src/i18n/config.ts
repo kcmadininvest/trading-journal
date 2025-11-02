@@ -113,6 +113,21 @@ import jaAccounts from './locales/ja/accounts.json';
 import koAccounts from './locales/ko/accounts.json';
 import zhAccounts from './locales/zh/accounts.json';
 
+import frAuth from './locales/fr/auth.json';
+import enAuth from './locales/en/auth.json';
+import esAuth from './locales/es/auth.json';
+import deAuth from './locales/de/auth.json';
+import itAuth from './locales/it/auth.json';
+import ptAuth from './locales/pt/auth.json';
+import jaAuth from './locales/ja/auth.json';
+import koAuth from './locales/ko/auth.json';
+import zhAuth from './locales/zh/auth.json';
+
+import frHome from './locales/fr/home.json';
+import enHome from './locales/en/home.json';
+import esHome from './locales/es/home.json';
+import deHome from './locales/de/home.json';
+
 const resources = {
   fr: {
     common: frCommon,
@@ -126,6 +141,8 @@ const resources = {
     analytics: frAnalytics,
     users: frUsers,
     accounts: frAccounts,
+    auth: frAuth,
+    home: frHome,
   },
   en: {
     common: enCommon,
@@ -139,6 +156,8 @@ const resources = {
     analytics: enAnalytics,
     users: enUsers,
     accounts: enAccounts,
+    auth: enAuth,
+    home: enHome,
   },
   es: {
     common: esCommon,
@@ -152,6 +171,8 @@ const resources = {
     analytics: esAnalytics,
     users: esUsers,
     accounts: esAccounts,
+    auth: esAuth,
+    home: esHome,
   },
   de: {
     common: deCommon,
@@ -165,6 +186,8 @@ const resources = {
     analytics: deAnalytics,
     users: deUsers,
     accounts: deAccounts,
+    auth: deAuth,
+    home: deHome,
   },
   it: {
     common: itCommon,
@@ -178,6 +201,7 @@ const resources = {
     analytics: itAnalytics,
     users: itUsers,
     accounts: itAccounts,
+    auth: itAuth,
   },
   pt: {
     common: ptCommon,
@@ -191,6 +215,7 @@ const resources = {
     analytics: ptAnalytics,
     users: ptUsers,
     accounts: ptAccounts,
+    auth: ptAuth,
   },
   ja: {
     common: jaCommon,
@@ -204,6 +229,7 @@ const resources = {
     analytics: jaAnalytics,
     users: jaUsers,
     accounts: jaAccounts,
+    auth: jaAuth,
   },
   ko: {
     common: koCommon,
@@ -217,6 +243,7 @@ const resources = {
     analytics: koAnalytics,
     users: koUsers,
     accounts: koAccounts,
+    auth: koAuth,
   },
   zh: {
     common: zhCommon,
@@ -230,7 +257,42 @@ const resources = {
     analytics: zhAnalytics,
     users: zhUsers,
     accounts: zhAccounts,
+    auth: zhAuth,
   },
+};
+
+// Fonction pour obtenir la langue par défaut depuis le navigateur
+// Utilise navigator.language (standard) ou navigator.userLanguage (IE legacy)
+// Format retourné : 'fr-FR', 'en-US', 'es-ES', etc.
+// On extrait le code langue principal (ex: 'fr' de 'fr-FR')
+// Les langues complètement traduites sont : 'fr', 'en', et 'es'
+// Les autres langues utiliseront 'en' par défaut
+const getDefaultLanguage = (): string => {
+  if (typeof navigator !== 'undefined') {
+    // navigator.language est la propriété standard qui retourne la langue préférée du navigateur
+    // Format BCP 47 : 'fr-FR', 'en-US', 'en-GB', 'es-ES', etc.
+    // navigator.userLanguage est un fallback pour les anciennes versions d'Internet Explorer
+    const browserLang = navigator.language || (navigator as any).userLanguage;
+    if (browserLang) {
+      // Extraire le code langue principal (ex: 'fr' de 'fr-FR')
+      const lang = browserLang.split('-')[0].toLowerCase();
+      
+      // Les langues complètement traduites sont : français, anglais, espagnol, et allemand
+      if (lang === 'fr') {
+        return 'fr';
+      }
+      if (lang === 'es') {
+        return 'es';
+      }
+      if (lang === 'de') {
+        return 'de';
+      }
+      // Pour 'en' et toutes les autres langues, utiliser 'en'
+      return 'en';
+    }
+  }
+  // Par défaut, retourner 'en'
+  return 'en';
 };
 
 i18n
@@ -238,21 +300,38 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'fr',
+    fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
     },
     
     detection: {
-      // Ne pas détecter automatiquement, on utilisera les préférences utilisateur
-      order: [],
-      caches: [],
+      // Détecter la langue du navigateur, mais seulement si pas de langue sauvegardée
+      // L'ordre est important : on vérifie d'abord localStorage (préférence utilisateur)
+      // puis le navigateur si aucune préférence n'est sauvegardée
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
+      // Fonction pour convertir la langue détectée par le navigateur
+      // Les langues complètement traduites sont : 'fr', 'en', 'es', et 'de'
+      convertDetectedLanguage: (lng: string): string => {
+        if (!lng) return 'en';
+        const lang = lng.split('-')[0].toLowerCase();
+        // Les langues complètement traduites sont : français, anglais, espagnol, et allemand
+        if (lang === 'fr') return 'fr';
+        if (lang === 'es') return 'es';
+        if (lang === 'de') return 'de';
+        return 'en';
+      },
     },
   });
+
+// La détection de langue est gérée par i18next avec le fallbackLng qui utilise getDefaultLanguage()
+// getDefaultLanguage() retourne 'fr' si le navigateur est en français, sinon 'en'
 
 // Fonction pour changer la langue depuis les préférences utilisateur
 export const changeLanguage = (lang: string) => {

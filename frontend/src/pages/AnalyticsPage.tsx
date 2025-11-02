@@ -25,6 +25,9 @@ import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { CustomSelect } from '../components/common/CustomSelect';
+import { getMonthNames } from '../utils/dateFormat';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -63,12 +66,15 @@ const AnalyticsPage: React.FC = () => {
     tooltipBody: isDark ? '#f3f4f6' : '#1f2937',
     tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
   }), [isDark]);
-  const [accountId, setAccountId] = useState<number | null>(null);
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
+  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
+  // accountId vient maintenant du contexte global
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [heatmapTooltip, setHeatmapTooltip] = useState<{
     day: string;
@@ -118,16 +124,75 @@ const AnalyticsPage: React.FC = () => {
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
 
+  // Générer les années disponibles (année en cours et 5 ans précédents)
+  const currentYear = new Date().getFullYear();
+  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
+  const yearOptions = useMemo(() => [
+    { value: null, label: t('analytics:allYears') },
+    ...availableYears.map(year => ({ value: year, label: year.toString() }))
+  ], [availableYears, t]);
+  
+  // Utiliser les noms de mois traduits
+  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
+  const monthOptions = useMemo(() => {
+    const availableMonths = monthNames.map((name, index) => ({ value: index + 1, label: name }));
+    return [
+      { value: null, label: t('analytics:allMonths') },
+      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
+    ];
+  }, [monthNames, t]);
+
   useEffect(() => {
     const loadTrades = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await tradesService.list({
+        const filters: any = {
           trading_account: accountId ?? undefined,
           page_size: 1000, // Récupérer beaucoup de trades pour les analyses
-        });
-        setTrades(response.results);
+        };
+
+        // Ajouter le filtre de date selon l'année et le mois
+        if (selectedYear) {
+          const startDate = selectedMonth 
+            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+            : `${selectedYear}-01-01`;
+          
+          let endDate: string;
+          if (selectedMonth) {
+            // Calculer le dernier jour du mois sélectionné
+            const lastDay = new Date(selectedYear, selectedMonth, 0);
+            const year = lastDay.getFullYear();
+            const month = String(lastDay.getMonth() + 1).padStart(2, '0');
+            const day = String(lastDay.getDate()).padStart(2, '0');
+            endDate = `${year}-${month}-${day}`;
+          } else {
+            endDate = `${selectedYear}-12-31`;
+          }
+          
+          filters.start_date = startDate;
+          filters.end_date = endDate;
+        }
+
+        const response = await tradesService.list(filters);
+        
+        // Filtrer par année/mois côté client aussi pour être sûr
+        let filteredTrades = response.results;
+        if (selectedYear) {
+          filteredTrades = filteredTrades.filter(trade => {
+            if (!trade.trade_day) return false;
+            const tradeDate = new Date(trade.trade_day);
+            const tradeYear = tradeDate.getFullYear();
+            const tradeMonth = tradeDate.getMonth() + 1;
+            
+            if (selectedMonth) {
+              return tradeYear === selectedYear && tradeMonth === selectedMonth;
+            }
+            return tradeYear === selectedYear;
+          });
+        }
+        
+        setTrades(filteredTrades);
       } catch (err) {
         setError(t('analytics:errorLoadingData'));
         console.error(err);
@@ -137,7 +202,7 @@ const AnalyticsPage: React.FC = () => {
     };
 
     loadTrades();
-  }, [accountId, t]);
+  }, [accountId, selectedYear, selectedMonth, t]);
 
   // Performance par heure (nuage de points)
   const hourlyPerformanceScatter = useMemo(() => {
@@ -448,8 +513,51 @@ const AnalyticsPage: React.FC = () => {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="mb-6">
-        <AccountSelector value={accountId} onChange={setAccountId} />
+      {/* Filtres */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('analytics:tradingAccount')}
+            </label>
+            <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('analytics:year')}
+            </label>
+            <CustomSelect
+              value={selectedYear}
+              onChange={(value) => setSelectedYear(value as number | null)}
+              options={yearOptions}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('analytics:month')}
+            </label>
+            <CustomSelect
+              value={selectedMonth}
+              onChange={(value) => setSelectedMonth(value as number | null)}
+              options={monthOptions}
+              disabled={!selectedYear}
+            />
+          </div>
+          
+          <div className="flex items-end">
+            <button
+              onClick={() => {
+                setSelectedYear(null);
+                setSelectedMonth(null);
+              }}
+              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              {t('analytics:reset')}
+            </button>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -777,7 +885,14 @@ const AnalyticsPage: React.FC = () => {
                       borderColor: '#ec4899',
                       backgroundColor: 'rgba(236, 72, 153, 0.1)',
                       borderWidth: 3,
-                      pointRadius: 5,
+                      pointRadius: (context: any) => {
+                        // Masquer les points si trop de données (> 100 points)
+                        const dataLength = drawdownData.length;
+                        if (dataLength > 100) return 0;
+                        // Vérifier que context.parsed existe avant d'accéder à y
+                        const value = context.parsed?.y;
+                        return value !== null && value !== undefined ? 5 : 0;
+                      },
                       pointBackgroundColor: '#ec4899',
                       pointBorderColor: '#fff',
                       pointBorderWidth: 2,
@@ -840,8 +955,7 @@ const AnalyticsPage: React.FC = () => {
                         },
                       },
                       grid: {
-                        color: chartColors.grid,
-                        lineWidth: 1,
+                        display: false,
                       },
                       border: {
                         color: chartColors.border,

@@ -33,23 +33,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
     load();
   }, []);
 
-  // Si aucune valeur n'est fournie, sélectionner automatiquement le compte par défaut
-  useEffect(() => {
-    const initDefault = async () => {
-      if (value == null) {
-        try {
-          const def = await tradingAccountsService.default();
-          if (def && def.status === 'active') {
-            onChange && onChange(def.id);
-          }
-        } catch {
-          // noop
-        }
-      }
-    };
-    initDefault();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
+  // L'initialisation du compte par défaut est maintenant gérée par TradingAccountProvider
+  // Plus besoin d'initialiser ici
 
   const options = useMemo(() => {
     const base = accounts.map(a => ({ value: a.id, label: a.name, isDefault: !!a.is_default }));

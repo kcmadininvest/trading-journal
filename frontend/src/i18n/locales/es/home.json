@@ -1,0 +1,99 @@
+{
+  "title": "Trading Journal",
+  "subtitle": "La plataforma completa para seguir, analizar y optimizar tu rendimiento en trading. Toma el control de tu trading con herramientas profesionales.",
+  "hero": {
+    "tagline": "Transforma tus datos en insights accionables",
+    "description": "Sigue cada operación, analiza tus patrones, identifica tus fortalezas y debilidades para convertirte en un trader más eficiente y disciplinado."
+  },
+  "features": {
+    "tradeTracking": {
+      "title": "Seguimiento Completo de Operaciones",
+      "description": "Registra todas tus operaciones con precisión. Importación CSV, gestión multi-cuentas, seguimiento en tiempo real de tu rendimiento."
+    },
+    "advancedAnalysis": {
+      "title": "Análisis Avanzados",
+      "description": "Gráficos interactivos, mapas de calor de rendimiento, análisis por día de la semana y por hora para identificar tus mejores momentos de trading."
+    },
+    "strategies": {
+      "title": "Gestión de Estrategias",
+      "description": "Documenta tus estrategias, analiza su cumplimiento, mide su eficacia e identifica posibles mejoras."
+    },
+    "statistics": {
+      "title": "Estadísticas Detalladas",
+      "description": "Métricas de rendimiento avanzadas: factor de beneficio, tasa de aciertos, drawdown, ratios de recuperación y mucho más."
+    },
+    "emotions": {
+      "title": "Análisis de Emociones",
+      "description": "Sigue tus emociones durante cada operación para entender su impacto en tu rendimiento y mejorar tu disciplina mental."
+    },
+    "calendar": {
+      "title": "Vista Calendario",
+      "description": "Visualiza tu rendimiento de trading en formato calendario para identificar rápidamente tus mejores y peores días."
+    },
+    "multiAccount": {
+      "title": "Multi-Cuentas",
+      "description": "Gestiona múltiples cuentas de trading (TopStep, IBKR, NinjaTrader, etc.) y analízalas por separado o de forma agregada."
+    },
+    "insights": {
+      "title": "Insights Inteligentes",
+      "description": "Descubre tus patrones de trading, tus momentos más rentables y tus hábitos para optimizar tu enfoque."
+    }
+  },
+  "benefits": {
+    "title": "¿Por qué elegir Trading Journal?",
+    "items": {
+      "data": {
+        "title": "Datos Centralizados",
+        "description": "Todos tus datos de trading en un solo lugar, fácilmente accesibles y analizables."
+      },
+      "visualization": {
+        "title": "Visualizaciones Potentes",
+        "description": "Gráficos interactivos y paneles intuitivos para entender rápidamente tu rendimiento."
+      },
+      "improvement": {
+        "title": "Mejora Continua",
+        "description": "Identifica tus fortalezas y debilidades para progresar regularmente en tu trading."
+      },
+      "discipline": {
+        "title": "Disciplina Mental",
+        "description": "Sigue tus emociones y el cumplimiento de tus estrategias para fortalecer tu disciplina de trading."
+      }
+    }
+  },
+  "cta": {
+    "title": "¿Listo para transformar tu trading?",
+    "description": "Únete a traders que ya utilizan Trading Journal para mejorar su rendimiento. Comienza gratis hoy mismo.",
+    "subtitle": "Gratis • Sin compromiso • Configuración en 2 minutos",
+    "registerButton": "Registrarse - Gratis"
+  },
+  "footer": {
+    "copyright": "© 2025 Trading Journal. Todos los derechos reservados.",
+    "legalNotice": "Aviso legal"
+  },
+  "legalNotice": {
+    "title": "Aviso legal",
+    "ownership": {
+      "title": "Propiedad",
+      "content": "Esta aplicación de diario de trading es propiedad exclusiva de K&C Madin Invest."
+    },
+    "liability": {
+      "title": "Limitación de responsabilidad",
+      "content1": "La información contenida en esta aplicación de diario de trading se proporciona únicamente con fines informativos. K&C Madin Invest no puede garantizar la exactitud, integridad o relevancia de la información, análisis o estadísticas puestas a disposición en el marco de la aplicación.",
+      "content2": "Las decisiones de trading tomadas sobre la base de la información proporcionada por la aplicación son responsabilidad exclusiva del usuario. K&C Madin Invest no podrá en ningún caso ser responsable de los daños directos o indirectos, incluidas las pérdidas financieras, resultantes del uso de esta información o de la propia aplicación."
+    },
+    "dataProtection": {
+      "title": "Protección de datos",
+      "content": "De acuerdo con la legislación vigente (RGPD), el usuario tiene derecho a acceder, rectificar, portar y eliminar sus datos personales. El usuario puede eliminar permanentemente su cuenta y todos sus datos de trading en cualquier momento a través del menú « Configuración » / « Cuenta » en la aplicación. Para cualquier otra solicitud relacionada con sus datos personales, el usuario puede contactar a K&C Madin Invest."
+    },
+    "cookies": {
+      "title": "Cookies y almacenamiento local",
+      "intro": "Esta aplicación de diario de trading utiliza únicamente cookies técnicas necesarias para su funcionamiento:",
+      "session": "Cookies de sesión: Mantenimiento de tu conexión segura y autenticación",
+      "csrf": "Cookies CSRF: Protección contra ataques de tipo Cross-Site Request Forgery",
+      "storage": "Almacenamiento local (localStorage): Almacenamiento temporal de tus preferencias de autenticación, idioma y configuración de visualización",
+      "conclusion": "No se utilizan cookies de seguimiento, publicitarias o de análisis de terceros. Todas las cookies son seguras (transmisión HTTPS únicamente) y no contienen datos personales sensibles o financieros. Los datos de trading se almacenan de forma segura en nuestros servidores. Puedes eliminar las cookies y el almacenamiento local en cualquier momento a través de la configuración de tu navegador."
+    },
+    "close": "Cerrar"
+  }
+}
+

@@ -1,62 +1,67 @@
 {
-  "title": "Analyses",
-  "errorLoadingData": "Erreur lors du chargement des données",
-  "loadingData": "Chargement des données...",
-  "importTrades": "Importer des trades",
+  "title": "Análisis",
+  "errorLoadingData": "Error al cargar los datos",
+  "loadingData": "Cargando datos...",
+  "importTrades": "Importar operaciones",
+  "tradingAccount": "Cuenta de trading",
+  "year": "Año",
+  "month": "Mes",
+  "allYears": "Todos los Años",
+  "allMonths": "Todos los Meses",
+  "reset": "Restablecer",
   "charts": {
     "hourlyPerformanceScatter": {
-      "title": "Performance par heure (Nuage de points)",
-      "label": "Performance",
-      "xAxis": "Heure",
+      "title": "Rendimiento por Hora (Gráfico de Dispersión)",
+      "label": "Rendimiento",
+      "xAxis": "Hora",
       "yAxis": "PnL"
     },
     "correlation": {
-      "title": "Corrélation PnL vs Nombre de Trades",
-      "label": "Corrélation",
-      "xAxis": "Nombre de trades",
-      "yAxis": "PnL total"
+      "title": "Correlación PnL vs Número de Operaciones",
+      "label": "Correlación",
+      "xAxis": "Número de operaciones",
+      "yAxis": "PnL Total"
     },
     "drawdown": {
-      "title": "Drawdown par jour",
+      "title": "Drawdown Diario",
       "label": "Drawdown",
       "yAxis": "Drawdown (%)",
-      "tooltip": "Ce graphique montre la distance depuis votre meilleur niveau (pic). La ligne à 0 représente votre pic. Plus la valeur est élevée, plus vous êtes loin de votre meilleur niveau. Quand vous atteignez un nouveau pic, le drawdown revient à 0. Les pourcentages (%) représentent le pourcentage de perte depuis le pic. Par exemple, 10% signifie que vous avez perdu 10% par rapport à votre meilleur niveau.",
-      "amount": "Montant",
-      "percentage": "Pourcentage",
-      "lossFromPeak": "perte depuis le pic"
+      "tooltip": "Este gráfico muestra la distancia desde tu mejor nivel (pico). La línea en 0 representa tu pico. Cuanto mayor es el valor, más lejos estás de tu mejor nivel. Cuando alcanzas un nuevo pico, el drawdown vuelve a 0. Los porcentajes (%) representan el porcentaje de pérdida desde el pico. Por ejemplo, 10% significa que has perdido 10% en comparación con tu mejor nivel.",
+      "amount": "Cantidad",
+      "percentage": "Porcentaje",
+      "lossFromPeak": "pérdida desde el pico"
     },
     "hourlyPerformanceBars": {
-      "title": "Performance par heure (Barres)",
-      "label": "Performance",
-      "yAxis": "PnL total"
+      "title": "Rendimiento por Hora (Barras)",
+      "label": "Rendimiento",
+      "yAxis": "PnL Total"
     },
     "heatmap": {
-      "title": "Heatmap de Performance (Jour × Heure)",
-      "losses": "Pertes",
-      "neutral": "Neutre",
-      "gains": "Gains"
+      "title": "Mapa de Calor de Rendimiento (Día × Hora)",
+      "losses": "Pérdidas",
+      "neutral": "Neutral",
+      "gains": "Ganancias"
     },
     "pnlDistribution": {
-      "title": "Distribution des PnL",
-      "label": "Pourcentage de trades",
-      "yAxis": "Pourcentage de trades",
-      "range": "P&L: de {{start}} à {{end}}",
-      "onTotal": "sur {{total}} total"
+      "title": "Distribución de PnL",
+      "label": "Porcentaje de operaciones",
+      "yAxis": "Porcentaje de operaciones",
+      "range": "P&L: de {{start}} a {{end}}",
+      "onTotal": "de {{total}} total"
     }
   },
   "common": {
-    "trade": "trade",
-    "trades": "trades",
+    "trade": "operación",
+    "trades": "operaciones",
     "hour": "{{hour}}h"
   },
   "days": {
     "monday": "Lun",
     "tuesday": "Mar",
-    "wednesday": "Mer",
-    "thursday": "Jeu",
-    "friday": "Ven",
-    "saturday": "Sam",
-    "sunday": "Dim"
+    "wednesday": "Mié",
+    "thursday": "Jue",
+    "friday": "Vie",
+    "saturday": "Sáb",
+    "sunday": "Dom"
   }
 }
-
