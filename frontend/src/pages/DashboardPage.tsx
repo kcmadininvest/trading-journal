@@ -3,6 +3,7 @@ import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { DateInput } from '../components/common/DateInput';
 import { User } from '../services/auth';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -1361,16 +1362,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       <div className="absolute -top-2 left-3 bg-white dark:bg-gray-800 px-1 text-xs font-medium text-gray-600 dark:text-gray-400 z-10">
                         {t('dashboard:startDate')}
                       </div>
-                      <input
-                        id="start-date"
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value || defaultStartDate)}
-                        onBlur={(e) => {
-                          if (!e.target.value) {
-                            setStartDate(defaultStartDate);
-                          }
-                        }}
+                      <DateInput
+                        value={startDate || defaultStartDate}
+                        onChange={(value) => setStartDate(value || defaultStartDate)}
                         className="px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         min={defaultStartDate}
                         max={defaultEndDate}
@@ -1385,16 +1379,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       <div className="absolute -top-2 left-3 bg-white dark:bg-gray-800 px-1 text-xs font-medium text-gray-600 dark:text-gray-400 z-10">
                         {t('dashboard:endDate')}
                       </div>
-                      <input
-                        id="end-date"
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value || defaultEndDate)}
-                        onBlur={(e) => {
-                          if (!e.target.value) {
-                            setEndDate(defaultEndDate);
-                          }
-                        }}
+                      <DateInput
+                        value={endDate || defaultEndDate}
+                        onChange={(value) => setEndDate(value || defaultEndDate)}
                         className="px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         min={defaultStartDate}
                         max={defaultEndDate}
