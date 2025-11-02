@@ -565,7 +565,16 @@ class AdminUserListView(generics.ListAPIView):
     def get_queryset(self):
         if not has_permission(self.request.user, 'view_all_users'):
             return User.objects.none()
-        return User.objects.all().order_by('-created_at')
+        # Exclure les utilisateurs anonymes et invalides
+        return User.objects.exclude(
+            username='AnonymousUser'
+        ).exclude(
+            email='AnonymousUser'
+        ).exclude(
+            email__isnull=True
+        ).exclude(
+            email=''
+        ).order_by('-created_at')
     
     def list(self, request, *args, **kwargs):
         if not has_permission(request.user, 'view_all_users'):

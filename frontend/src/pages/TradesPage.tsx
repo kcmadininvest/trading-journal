@@ -153,20 +153,13 @@ const TradesPage: React.FC = () => {
       return;
     }
     
-    // Si le compte n'est pas encore défini après l'initialisation, ne pas charger les stats
-    // (elles seront chargées une fois le compte défini via filtersKey)
-    if (filters.trading_account === null && hasInitialized) {
-      // Réinitialiser les stats pour éviter d'afficher de vieilles valeurs
-      setStats(null);
-      return;
-    }
-    
     // Capturer les valeurs de filters pour éviter les problèmes de closure
     const { trading_account, contract, type, start_date, end_date, profitable } = filters;
     const loadStats = async () => {
       try {
+        // Passer trading_account même s'il est null (tous les comptes) - undefined sera ignoré par l'API
         const s = await tradesService.statistics({
-          trading_account: trading_account ?? undefined,
+          trading_account: trading_account !== null ? trading_account : undefined,
           contract: contract || undefined,
           type: type || undefined,
           start_date: start_date || undefined,
@@ -181,7 +174,7 @@ const TradesPage: React.FC = () => {
     };
     loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey, filters.trading_account, hasInitialized]);
+  }, [filtersKey, hasInitialized]);
 
   useEffect(() => {
     const loadInstruments = async () => {
@@ -290,17 +283,131 @@ const TradesPage: React.FC = () => {
     }
   };
 
+  const handleExportTrades = async () => {
+    setIsLoading(true);
+    try {
+      // Récupérer tous les trades avec les filtres actuels (sans pagination)
+      const allTrades: TradeListItem[] = [];
+      let currentPage = 1;
+      let hasMore = true;
+      const pageSizeForExport = 100;
+
+      while (hasMore) {
+        const res = await tradesService.list({
+          trading_account: filters.trading_account ?? undefined,
+          contract: filters.contract || undefined,
+          type: filters.type || undefined,
+          start_date: filters.start_date || undefined,
+          end_date: filters.end_date || undefined,
+          profitable: filters.profitable || undefined,
+          page: currentPage,
+          page_size: pageSizeForExport,
+        });
+        
+        allTrades.push(...res.results);
+        hasMore = res.next !== null;
+        currentPage++;
+      }
+
+      // Générer le CSV
+      const headers = [
+        'ID',
+        'TopStep ID',
+        'Compte',
+        'Contrat',
+        'Type',
+        'Date d\'entrée',
+        'Date de sortie',
+        'Prix d\'entrée',
+        'Prix de sortie',
+        'Taille',
+        'Frais',
+        'Commissions',
+        'P&L',
+        'P&L Net',
+        'P&L %',
+        'Rentable',
+        'Durée',
+        'Jour de trade',
+      ];
+
+      const rows = allTrades.map(trade => [
+        trade.id.toString(),
+        trade.topstep_id || '',
+        trade.trading_account_name || '',
+        trade.contract_name || '',
+        trade.trade_type || '',
+        trade.entered_at || '',
+        trade.exited_at || '',
+        trade.entry_price || '',
+        trade.exit_price || '',
+        trade.size || '',
+        trade.fees || '',
+        trade.commissions || '',
+        trade.pnl || '',
+        trade.net_pnl || '',
+        trade.pnl_percentage || '',
+        trade.is_profitable !== null ? (trade.is_profitable ? 'Oui' : 'Non') : '',
+        trade.duration_str || trade.trade_duration || '',
+        trade.trade_day || '',
+      ]);
+
+      // Créer le contenu CSV avec BOM pour Excel
+      const csvContent = [
+        '\uFEFF' + headers.join(','), // BOM pour Excel UTF-8
+        ...rows.map(row => row.map(cell => {
+          // Échapper les cellules contenant des virgules, guillemets ou retours à la ligne
+          const cellStr = String(cell || '');
+          if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+            return `"${cellStr.replace(/"/g, '""')}"`;
+          }
+          return cellStr;
+        }).join(',')),
+      ].join('\n');
+
+      // Créer le blob et télécharger
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.download = `trades_export_${dateStr}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="bg-gray-50 dark:bg-gray-900 py-8">
       <div className="px-4 sm:px-6 lg:px-8">
-        {/* Sélecteur de compte */}
-        <AccountSelector
-          value={selectedAccountId}
-          onChange={(accountId) => {
-            setSelectedAccountId(accountId);
-            setFilters(prev => ({ ...prev, trading_account: accountId }));
-          }}
-        />
+        {/* Sélecteur de compte et bouton d'export */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex-1 max-w-md">
+            <AccountSelector
+              value={selectedAccountId}
+              onChange={(accountId) => {
+                setSelectedAccountId(accountId);
+                setFilters(prev => ({ ...prev, trading_account: accountId }));
+              }}
+            />
+          </div>
+          <button
+            onClick={handleExportTrades}
+            disabled={isLoading}
+            className="ml-4 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {t('trades:export', { defaultValue: 'Exporter' })}
+          </button>
+        </div>
 
         {/* Filtres */}
 

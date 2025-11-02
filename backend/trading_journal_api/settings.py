@@ -270,6 +270,15 @@ ROLEPERMISSIONS_MODULE = 'accounts.roles'
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.User'
 
+# Login History Settings
+# Durée de rétention de l'historique de connexion en jours (défaut: 90 jours)
+# Les entrées plus anciennes seront automatiquement supprimées par la commande de nettoyage
+LOGIN_HISTORY_RETENTION_DAYS = config('LOGIN_HISTORY_RETENTION_DAYS', default=90, cast=int)
+
+# Nombre maximum d'entrées d'historique à conserver par utilisateur (None = illimité)
+# Si défini, les entrées les plus anciennes seront supprimées au-delà de cette limite
+LOGIN_HISTORY_MAX_ENTRIES_PER_USER = config('LOGIN_HISTORY_MAX_ENTRIES_PER_USER', default=None, cast=lambda v: int(v) if v else None)
+
 # Celery Settings
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
 CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
