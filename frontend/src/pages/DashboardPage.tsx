@@ -865,6 +865,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       day.trade_count > max.trade_count ? day : max, 
       weekdayPerformanceData[0]
     );
+    const leastActiveDay = weekdayPerformanceData.reduce((min, day) => 
+      day.trade_count < min.trade_count ? day : min, 
+      weekdayPerformanceData[0]
+    );
     const totalTrades = weekdayPerformanceData.reduce((sum, day) => sum + day.trade_count, 0);
     const totalPnl = weekdayPerformanceData.reduce((sum, day) => sum + day.total_pnl, 0);
 
@@ -872,6 +876,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       bestDay,
       worstDay,
       mostActiveDay,
+      leastActiveDay,
       totalTrades,
       totalPnl
     };
@@ -1304,7 +1309,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
-                trend={additionalStats.maxConsecutiveRespected >= 3 ? 'up' : additionalStats.maxConsecutiveRespected > 0 ? 'neutral' : undefined}
+                trend={additionalStats.maxConsecutiveRespected > 0 ? 'up' : undefined}
                 trendValue={additionalStats.maxConsecutiveRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveRespected} ${t('trades:trades')}` : t('dashboard:noDataAvailable')}
               />
               
@@ -1318,7 +1323,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 }
-                trend={additionalStats.maxConsecutiveNotRespected >= 3 ? 'down' : additionalStats.maxConsecutiveNotRespected > 0 ? 'neutral' : undefined}
+                trend={additionalStats.maxConsecutiveNotRespected > 0 ? 'down' : undefined}
                 trendValue={additionalStats.maxConsecutiveNotRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveNotRespected} ${t('trades:trades')}` : t('dashboard:noDataAvailable')}
               />
             </div>
@@ -1567,7 +1572,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     </div>
                     <div className="flex items-center gap-1">
                       <span>{t('dashboard:leastActive')} :</span>
-                      <span className="font-medium text-pink-500">{weekdayStats.worstDay.day} ({weekdayStats.worstDay.trade_count} {t('trades:trades')})</span>
+                      <span className="font-medium text-pink-500">{weekdayStats.leastActiveDay.day} ({weekdayStats.leastActiveDay.trade_count} {t('trades:trades')})</span>
                     </div>
                   </div>
                 )}
