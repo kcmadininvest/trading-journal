@@ -554,10 +554,10 @@ const TradingAccountsPage: React.FC = () => {
           setAccountToDelete(null);
         }}
         onConfirm={confirmDelete}
-        title={t('accounts:deleteTitle', 'Delete Account')}
+        title={t('accounts:deleteTitle', { defaultValue: 'Delete Account' })}
         message={accountToDelete ? t('accounts:deleteConfirm', { name: accountToDelete.name }) : ''}
         isLoading={deleteLoading}
-        confirmButtonText={t('accounts:actions.deleteLabel', 'Delete')}
+        confirmButtonText={t('accounts:actions.deleteLabel', { defaultValue: 'Delete' })}
       />
     </div>
   );

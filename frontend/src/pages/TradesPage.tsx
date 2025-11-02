@@ -383,10 +383,10 @@ const TradesPage: React.FC = () => {
           setTradeToDelete(null);
         }}
         onConfirm={confirmDeleteOne}
-        title={t('trades:deleteTitle', 'Delete Trade')}
-        message={t('trades:deleteConfirm', 'Are you sure you want to delete this trade? This action is irreversible.')}
+        title={t('trades:deleteTitle', { defaultValue: 'Delete Trade' })}
+        message={t('trades:deleteConfirm', { defaultValue: 'Are you sure you want to delete this trade? This action is irreversible.' })}
         isLoading={deleteLoading}
-        confirmButtonText={t('trades:delete', 'Delete')}
+        confirmButtonText={t('trades:delete', { defaultValue: 'Delete' })}
       />
 
       {/* Modal de suppression en masse */}
@@ -394,10 +394,10 @@ const TradesPage: React.FC = () => {
         isOpen={showBulkDeleteModal}
         onClose={() => setShowBulkDeleteModal(false)}
         onConfirm={confirmBulkDelete}
-        title={t('trades:deleteMultipleTitle', 'Delete Multiple Trades')}
-        message={t('trades:deleteMultipleConfirm', { count: selectedIds.length }, `Delete ${selectedIds.length} selected trade(s)? This action is irreversible.`)}
+        title={t('trades:deleteMultipleTitle', { defaultValue: 'Delete Multiple Trades' })}
+        message={t('trades:deleteMultipleConfirm', { count: selectedIds.length, defaultValue: `Delete ${selectedIds.length} selected trade(s)? This action is irreversible.` })}
         isLoading={bulkDeleteLoading}
-        confirmButtonText={t('trades:deleteSelected', 'Delete Selected')}
+        confirmButtonText={t('trades:deleteSelected', { defaultValue: 'Delete Selected' })}
       />
 
       <FloatingActionButton onClick={() => setShowImport(true)} title={t('trades:import')} />
