@@ -5,22 +5,59 @@ const path = require('path');
 // Fonction pour obtenir le dernier tag Git
 function getGitVersion() {
   try {
-    // Essayer d'obtenir le tag exact du commit actuel
-    let version = execSync('git describe --tags --exact-match HEAD 2>/dev/null', {
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'ignore']
-    }).trim();
-    
-    // Si pas de tag exact, obtenir le dernier tag avec le nombre de commits depuis
-    if (!version) {
-      version = execSync('git describe --tags --abbrev=0 2>/dev/null', {
+    // S'assurer que les tags distants sont récupérés
+    try {
+      execSync('git fetch --tags --quiet 2>/dev/null', {
         encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'ignore']
+        stdio: ['pipe', 'pipe', 'ignore'],
+        cwd: path.join(__dirname, '../..')
+      });
+    } catch (e) {
+      // Ignorer les erreurs de fetch
+    }
+    
+    // Essayer d'obtenir le tag exact du commit actuel
+    let version = '';
+    try {
+      version = execSync('git describe --tags --exact-match HEAD 2>/dev/null', {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+        cwd: path.join(__dirname, '../..')
       }).trim();
+    } catch (e) {
+      // Pas de tag exact, continuer
+    }
+    
+    // Si pas de tag exact, obtenir le dernier tag (trié par version)
+    if (!version) {
+      try {
+        // Récupérer tous les tags et trier par version
+        const tags = execSync('git tag --sort=-v:refname 2>/dev/null', {
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'ignore'],
+          cwd: path.join(__dirname, '../..')
+        }).trim();
+        
+        if (tags) {
+          // Prendre le premier tag (le plus récent)
+          version = tags.split('\n')[0].trim();
+        }
+      } catch (e) {
+        // Essayer la méthode alternative
+        try {
+          version = execSync('git describe --tags --abbrev=0 2>/dev/null', {
+            encoding: 'utf-8',
+            stdio: ['pipe', 'pipe', 'ignore'],
+            cwd: path.join(__dirname, '../..')
+          }).trim();
+        } catch (e2) {
+          // Pas de tags disponibles
+        }
+      }
     }
     
     // Nettoyer le tag (enlever le 'v' s'il existe)
-    if (version.startsWith('v')) {
+    if (version && version.startsWith('v')) {
       version = version.substring(1);
     }
     
