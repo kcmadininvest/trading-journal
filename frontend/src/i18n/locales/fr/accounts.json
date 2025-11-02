@@ -33,6 +33,7 @@
     "enable": "Activer",
     "deleteLabel": "Supprimer"
   },
+  "deleteTitle": "Supprimer le compte",
   "deleteConfirm": "Supprimer définitivement le compte \"{{name}}\" et toutes ses données (trades associés) ?\n\nCette action est irréversible.",
   "form": {
     "editTitle": "Modifier le compte",

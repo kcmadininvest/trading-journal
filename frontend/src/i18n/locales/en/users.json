@@ -57,8 +57,11 @@
     },
     "confirm": {
       "deleteUser": "Are you sure you want to delete user {{email}}?",
-      "bulkDelete": "Are you sure you want to delete {{count}} user(s)?"
-    }
+      "deleteUserTitle": "Delete User",
+      "bulkDelete": "Are you sure you want to delete {{count}} user(s)?",
+      "bulkDeleteTitle": "Delete Multiple Users"
+    },
+    "delete": "Delete"
   },
   "bulkActions": {
     "selected": "{{count}} user selected",
