@@ -86,6 +86,10 @@ CORS_ALLOWED_ORIGINS=http://localhost:3000
 # Redis
 CELERY_BROKER_URL=redis://localhost:6379/0
 REDIS_URL=redis://localhost:6379/1
+
+# Login History (optionnel)
+LOGIN_HISTORY_RETENTION_DAYS=90
+LOGIN_HISTORY_MAX_ENTRIES_PER_USER=None
 ```
 
 ## 🧪 Tests
@@ -93,6 +97,25 @@ REDIS_URL=redis://localhost:6379/1
 ```bash
 python manage.py test
 ```
+
+## 🔧 Commandes de Gestion
+
+### Nettoyage de l'Historique de Connexion
+
+Pour nettoyer automatiquement l'historique de connexion :
+
+```bash
+# Mode dry-run (test sans suppression)
+python manage.py cleanup_login_history --dry-run
+
+# Exécution réelle
+python manage.py cleanup_login_history
+
+# Avec paramètres personnalisés
+python manage.py cleanup_login_history --retention-days 30 --max-entries 50
+```
+
+Pour plus de détails, consultez le README principal du projet.
 
 ## 📦 Dépendances Principales
 

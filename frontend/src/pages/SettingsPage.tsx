@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import userService, { UserPreferences, ActiveSession, LoginHistoryEntry, PasswordChangeData } from '../services/userService';
 import authService from '../services/auth';
 import { changeLanguage } from '../i18n/config';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
 import { CustomSelect } from '../components/common/CustomSelect';
+import PaginationControls from '../components/ui/PaginationControls';
 
 const TIMEZONES = [
   'Europe/Paris',
@@ -54,6 +55,8 @@ const SettingsPage: React.FC = () => {
   const [loginHistory, setLoginHistory] = useState<LoginHistoryEntry[]>([]);
   const [sessionsExpanded, setSessionsExpanded] = useState(false);
   const [historyExpanded, setHistoryExpanded] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(5);
 
   // Suppression de compte
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -276,6 +279,13 @@ const SettingsPage: React.FC = () => {
       timeZone: preferences.timezone,
     });
   };
+
+  // Pagination de l'historique des connexions
+  const paginatedHistory = useMemo(() => {
+    const startIndex = (historyPage - 1) * historyPageSize;
+    const endIndex = startIndex + historyPageSize;
+    return loginHistory.slice(startIndex, endIndex);
+  }, [loginHistory, historyPage, historyPageSize]);
 
   const tabs = [
     { id: 'profile' as const, label: t('settings:profile'), icon: '👤' },
@@ -505,7 +515,12 @@ const SettingsPage: React.FC = () => {
               {/* Historique des connexions */}
               <div>
                 <button
-                  onClick={() => setHistoryExpanded(!historyExpanded)}
+                  onClick={() => {
+                    setHistoryExpanded(!historyExpanded);
+                    if (!historyExpanded) {
+                      setHistoryPage(1);
+                    }
+                  }}
                   className="flex items-center text-xl font-semibold text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300 mb-4"
                 >
                   <svg
@@ -529,36 +544,54 @@ const SettingsPage: React.FC = () => {
                         <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">{t('settings:loginHistoryInfo')}</p>
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
-                          <thead className="bg-gray-50 dark:bg-gray-800">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:date')}</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:ip')}</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:device')}</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:status')}</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                            {loginHistory.map((entry, index) => (
-                              <tr key={index}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{formatDate(entry.date)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{entry.ip_address || t('common:na')}</td>
-                                <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={entry.user_agent || t('common:na')}>{entry.user_agent || t('common:na')}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                    entry.success 
-                                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-                                      : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                                  }`}>
-                                    {entry.success ? t('settings:success') : t('settings:failed')}
-                                  </span>
-                                </td>
+                      <>
+                        <div className="overflow-x-auto">
+                          <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead className="bg-gray-50 dark:bg-gray-800">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:date')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:ip')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:device')}</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:status')}</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                              {paginatedHistory.map((entry, index) => (
+                                <tr key={index}>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">{formatDate(entry.date)}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">{entry.ip_address || t('common:na')}</td>
+                                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={entry.user_agent || t('common:na')}>{entry.user_agent || t('common:na')}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                      entry.success 
+                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                                        : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                                    }`}>
+                                      {entry.success ? t('settings:success') : t('settings:failed')}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {loginHistory.length > historyPageSize && (
+                          <PaginationControls
+                            currentPage={historyPage}
+                            totalPages={Math.max(1, Math.ceil(loginHistory.length / historyPageSize))}
+                            totalItems={loginHistory.length}
+                            itemsPerPage={historyPageSize}
+                            startIndex={(historyPage - 1) * historyPageSize + 1}
+                            endIndex={Math.min(historyPage * historyPageSize, loginHistory.length)}
+                            onPageChange={(page) => setHistoryPage(page)}
+                            onPageSizeChange={(size) => {
+                              setHistoryPageSize(size);
+                              setHistoryPage(1);
+                            }}
+                            pageSizeOptions={[5, 10, 25, 50]}
+                          />
+                        )}
+                      </>
                     )}
                   </>
                 )}
