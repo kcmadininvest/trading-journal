@@ -463,8 +463,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     if (filteredBalanceData.length === 0) {
       return { totalReturn: 0, isPositive: false, maxDrawdown: 0, highestValue: 0, lowestValue: 0 };
     }
-    // Solde final de la période filtrée
-    const endingBalance = filteredBalanceData[filteredBalanceData.length - 1]?.cumulative || 0;
     // Calculer la perte/gain total : somme des PnL de la période filtrée
     // C'est plus fiable car cela représente exactement la variation pendant la période sélectionnée
     const totalReturn = filteredBalanceData.reduce((sum, d) => sum + d.pnl, 0);
@@ -1429,7 +1427,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             // Masquer les points si trop de données (> 100 points)
                             const dataLength = accountBalanceChartData.labels.length;
                             if (dataLength > 100) return 0;
-                            const value = context.parsed.y;
+                            // Vérifier que context.parsed existe avant d'accéder à y
+                            const value = context.parsed?.y;
                             return value !== null && value !== undefined ? 4 : 0;
                           },
                           pointBackgroundColor: '#3b82f6',
@@ -1453,7 +1452,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             // Masquer les points si trop de données (> 100 points)
                             const dataLength = accountBalanceChartData.labels.length;
                             if (dataLength > 100) return 0;
-                            const value = context.parsed.y;
+                            // Vérifier que context.parsed existe avant d'accéder à y
+                            const value = context.parsed?.y;
                             return value !== null && value !== undefined ? 4 : 0;
                           },
                           pointBackgroundColor: '#ec4899',

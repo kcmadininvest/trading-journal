@@ -885,7 +885,14 @@ const AnalyticsPage: React.FC = () => {
                       borderColor: '#ec4899',
                       backgroundColor: 'rgba(236, 72, 153, 0.1)',
                       borderWidth: 3,
-                      pointRadius: 5,
+                      pointRadius: (context: any) => {
+                        // Masquer les points si trop de données (> 100 points)
+                        const dataLength = drawdownData.length;
+                        if (dataLength > 100) return 0;
+                        // Vérifier que context.parsed existe avant d'accéder à y
+                        const value = context.parsed?.y;
+                        return value !== null && value !== undefined ? 5 : 0;
+                      },
                       pointBackgroundColor: '#ec4899',
                       pointBorderColor: '#fff',
                       pointBorderWidth: 2,
