@@ -309,15 +309,42 @@ const AnalyticsPage: React.FC = () => {
     const dailyData: { [date: string]: number } = {};
     
     trades.forEach(trade => {
-      if (trade.trade_day && trade.net_pnl) {
-        const date = trade.trade_day;
-        const pnl = parseFloat(trade.net_pnl);
-        // P/L journalier : somme du net_pnl pour chaque jour
-        dailyData[date] = (dailyData[date] || 0) + pnl;
+      // Vérifications plus robustes pour s'assurer que les données sont valides
+      if (!trade.trade_day || trade.net_pnl === null || trade.net_pnl === undefined) {
+        return;
       }
+      
+      const date = String(trade.trade_day).trim();
+      if (!date) return;
+      
+      // Conversion sécurisée du P/L
+      const pnlStr = String(trade.net_pnl).trim();
+      const pnl = parseFloat(pnlStr);
+      
+      // Vérifier que le parsing a réussi (pas NaN)
+      if (isNaN(pnl)) {
+        console.warn('Trade avec net_pnl invalide:', trade.net_pnl, trade);
+        return;
+      }
+      
+      // Vérifier que la date est valide
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) {
+        console.warn('Trade avec trade_day invalide:', trade.trade_day, trade);
+        return;
+      }
+      
+      // P/L journalier : somme du net_pnl pour chaque jour
+      dailyData[date] = (dailyData[date] || 0) + pnl;
     });
 
     const sortedDates = Object.keys(dailyData).sort();
+    
+    // Si pas de données, retourner un tableau vide
+    if (sortedDates.length === 0) {
+      return [];
+    }
+    
     let cumulativePnl = 0; // P/L cumulé : addition progressive du P/L journalier
     let peak = 0; // Pic de performance (peak_pnl) : valeur maximale du P/L cumulé atteinte jusqu'alors
     
@@ -331,9 +358,23 @@ const AnalyticsPage: React.FC = () => {
       // drawdown = peak_pnl - cumulative_pnl
       // Le drawdown représente la distance depuis le pic (0 = au pic, jamais négatif)
       const drawdownAmount = cumulativePnl < peak ? peak - cumulativePnl : 0;
-      const drawdownPercent = peak > 0 && cumulativePnl < peak 
-        ? ((peak - cumulativePnl) / peak) * 100 
-        : 0;
+      
+      // Calcul du pourcentage de drawdown
+      // Cas 1: Peak positif et cumulative en dessous du peak
+      // Cas 2: Peak négatif et cumulative encore plus négatif (plus de perte)
+      // Cas 3: Peak à 0 (pas de pourcentage possible, utiliser seulement le montant)
+      let drawdownPercent = 0;
+      if (drawdownAmount > 0) {
+        if (peak > 0) {
+          // Peak positif : calcul standard (pourcentage de perte depuis le peak)
+          drawdownPercent = ((peak - cumulativePnl) / peak) * 100;
+        } else if (peak < 0) {
+          // Peak négatif : le pourcentage représente l'aggravation de la perte
+          // Utiliser la valeur absolue pour le calcul
+          drawdownPercent = (drawdownAmount / Math.abs(peak)) * 100;
+        }
+        // Si peak === 0, drawdownPercent reste à 0 (on ne peut pas diviser par 0)
+      }
       
       const localeMap: Record<string, string> = {
         'fr': 'fr-FR',
@@ -348,16 +389,35 @@ const AnalyticsPage: React.FC = () => {
       };
       const locale = localeMap[preferences.language] || 'fr-FR';
       
-      return {
-        date: new Date(date).toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
-        drawdown: drawdownPercent,
-        drawdownAmount: drawdownAmount,
-        cumulativePnl,
-      };
-    });
+      try {
+        const dateObj = new Date(date);
+        const formattedDate = dateObj.toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: preferences.timezone });
+        
+        return {
+          date: formattedDate,
+          drawdown: drawdownPercent,
+          drawdownAmount: drawdownAmount,
+          cumulativePnl,
+          rawDate: date, // Garder la date originale pour le tri/affichage
+        };
+      } catch (error) {
+        console.warn('Erreur lors du formatage de la date:', date, error);
+        return {
+          date: date,
+          drawdown: drawdownPercent,
+          drawdownAmount: drawdownAmount,
+          cumulativePnl,
+          rawDate: date,
+        };
+      }
+    }).filter(item => item !== null && !isNaN(item.drawdown) && !isNaN(item.drawdownAmount));
     
-    // Filtrage : affiche uniquement les jours avec drawdown > 0
-    return allData.filter(data => data.drawdown > 0);
+    // Retourner tous les points de données pour avoir une référence visuelle complète
+    // Cela permet d'afficher :
+    // - Les points avec drawdown > 0 (en dessous du peak)
+    // - Les points avec drawdown = 0 (au peak ou au-dessus)
+    // Cela garantit qu'on a toujours un graphique visible, même si toujours au pic (ligne à 0)
+    return allData;
   }, [trades, preferences.timezone, preferences.language]);
 
   // Heatmap Jour × Heure
@@ -875,33 +935,45 @@ const AnalyticsPage: React.FC = () => {
               </TooltipComponent>
             </div>
             <div style={{ height: '320px', position: 'relative' }}>
-              <ChartLine
-                data={{
-                  labels: drawdownData.map(d => d.date),
-                  datasets: [
-                    {
-                      label: t('analytics:charts.drawdown.label'),
-                      data: drawdownData.map(d => d.drawdown),
-                      borderColor: '#ec4899',
-                      backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                      borderWidth: 3,
-                      pointRadius: (context: any) => {
-                        // Masquer les points si trop de données (> 100 points)
-                        const dataLength = drawdownData.length;
-                        if (dataLength > 100) return 0;
-                        // Vérifier que context.parsed existe avant d'accéder à y
-                        const value = context.parsed?.y;
-                        return value !== null && value !== undefined ? 5 : 0;
+              {drawdownData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                  <div className="text-center">
+                    <p className="text-sm">{t('analytics:charts.drawdown.noData', { defaultValue: 'Aucune donnée de drawdown disponible pour cette période' })}</p>
+                    {trades.length === 0 && (
+                      <p className="text-xs mt-2 text-gray-400 dark:text-gray-500">
+                        {t('analytics:noTrades', { defaultValue: 'Aucun trade trouvé' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <ChartLine
+                  data={{
+                    labels: drawdownData.map(d => d.date),
+                    datasets: [
+                      {
+                        label: t('analytics:charts.drawdown.label'),
+                        data: drawdownData.map(d => d.drawdown),
+                        borderColor: '#ec4899',
+                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: (context: any) => {
+                          // Masquer les points si trop de données (> 100 points)
+                          const dataLength = drawdownData.length;
+                          if (dataLength > 100) return 0;
+                          // Vérifier que context.parsed existe avant d'accéder à y
+                          const value = context.parsed?.y;
+                          return value !== null && value !== undefined ? 5 : 0;
+                        },
+                        pointBackgroundColor: '#ec4899',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0, // Ligne droite, pas de courbe
                       },
-                      pointBackgroundColor: '#ec4899',
-                      pointBorderColor: '#fff',
-                      pointBorderWidth: 2,
-                      pointHoverRadius: 7,
-                      fill: true,
-                      tension: 0, // Ligne droite, pas de courbe
-                    },
-                  ],
-                }}
+                    ],
+                  }}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
@@ -993,7 +1065,8 @@ const AnalyticsPage: React.FC = () => {
                     },
                   },
                 }}
-              />
+                />
+              )}
             </div>
           </div>
 

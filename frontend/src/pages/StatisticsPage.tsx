@@ -12,6 +12,8 @@ import { usePreferences } from '../hooks/usePreferences';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { getMonthNames } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { FloatingActionButton } from '../components/ui/FloatingActionButton';
+import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
@@ -21,11 +23,27 @@ function StatisticsPage() {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [showImport, setShowImport] = useState(false);
   
   // Hooks pour les données
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts();
   const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(selectedAccountId, selectedYear, selectedMonth);
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(selectedAccountId, selectedYear, selectedMonth);
+  
+  // Fonction pour recharger les statistiques après un import
+  const reloadStatistics = () => {
+    // Forcer le rechargement en modifiant temporairement selectedYear puis en le remettant
+    // Cela déclenchera le useEffect des hooks useStatistics et useAnalytics
+    const currentYear = selectedYear;
+    const currentMonth = selectedMonth;
+    setSelectedYear(null);
+    setSelectedMonth(null);
+    // Remettre les valeurs originales au prochain cycle de rendu
+    setTimeout(() => {
+      setSelectedYear(currentYear);
+      setSelectedMonth(currentMonth);
+    }, 0);
+  };
   
   // Charger les devises
   useEffect(() => {
@@ -787,6 +805,18 @@ function StatisticsPage() {
           </div>
         </div>
       </div>
+
+      <FloatingActionButton onClick={() => setShowImport(true)} title={t('statistics:importTrades', { defaultValue: 'Importer des trades' })} />
+      <ImportTradesModal 
+        open={showImport} 
+        onClose={(done) => {
+          setShowImport(false);
+          if (done) {
+            // Recharger les statistiques après un import réussi
+            reloadStatistics();
+          }
+        }} 
+      />
     </div>
   );
 }
