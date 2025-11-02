@@ -277,7 +277,13 @@ LOGIN_HISTORY_RETENTION_DAYS = config('LOGIN_HISTORY_RETENTION_DAYS', default=90
 
 # Nombre maximum d'entrées d'historique à conserver par utilisateur (None = illimité)
 # Si défini, les entrées les plus anciennes seront supprimées au-delà de cette limite
-LOGIN_HISTORY_MAX_ENTRIES_PER_USER = config('LOGIN_HISTORY_MAX_ENTRIES_PER_USER', default=None, cast=lambda v: int(v) if v else None)
+def cast_max_entries(value):
+    """Convertit une valeur en int ou None."""
+    if not value or str(value).strip().lower() in ('none', ''):
+        return None
+    return int(value)
+
+LOGIN_HISTORY_MAX_ENTRIES_PER_USER = config('LOGIN_HISTORY_MAX_ENTRIES_PER_USER', default=None, cast=cast_max_entries)
 
 # Celery Settings
 CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
