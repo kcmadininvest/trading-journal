@@ -374,10 +374,10 @@ const UserManagementPage: React.FC = () => {
             setDeleteUser(null);
           }}
           onConfirm={confirmDeleteUser}
-          title={t('users:page.confirm.deleteUserTitle', 'Delete User')}
+          title={t('users:page.confirm.deleteUserTitle', { defaultValue: 'Delete User' })}
           message={deleteUser ? t('users:page.confirm.deleteUser', { email: deleteUser.email }) : ''}
           isLoading={deleteLoading}
-          confirmButtonText={t('users:delete', 'Delete')}
+          confirmButtonText={t('users:delete', { defaultValue: 'Delete' })}
         />
 
         {/* Modal de suppression en masse */}
@@ -385,10 +385,10 @@ const UserManagementPage: React.FC = () => {
           isOpen={showBulkDeleteModal}
           onClose={() => setShowBulkDeleteModal(false)}
           onConfirm={confirmBulkDelete}
-          title={t('users:page.confirm.bulkDeleteTitle', 'Delete Multiple Users')}
+          title={t('users:page.confirm.bulkDeleteTitle', { defaultValue: 'Delete Multiple Users' })}
           message={t('users:page.confirm.bulkDelete', { count: selectedUsers.length })}
           isLoading={bulkDeleteLoading}
-          confirmButtonText={t('users:delete', 'Delete')}
+          confirmButtonText={t('users:delete', { defaultValue: 'Delete' })}
         />
       </div>
     </div>
