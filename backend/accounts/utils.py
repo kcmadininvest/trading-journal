@@ -13,18 +13,30 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def send_activation_email(user: User, activation_token: EmailActivationToken) -> bool:
+def send_activation_email(user: User, activation_token: EmailActivationToken, language: str = None) -> bool:
     """
     Envoie un email d'activation à l'utilisateur
     
     Args:
         user: L'utilisateur à qui envoyer l'email
         activation_token: Le token d'activation
+        language: Langue pour l'email (optionnel, sera détectée depuis les préférences si non fournie)
     
     Returns:
         bool: True si l'email a été envoyé avec succès, False sinon
     """
     try:
+        # Récupérer la langue de l'utilisateur
+        if language is None:
+            # Essayer de récupérer depuis les préférences de l'utilisateur
+            try:
+                if hasattr(user, 'preferences') and user.preferences.language:
+                    language = user.preferences.language
+                else:
+                    language = 'fr'  # Par défaut
+            except Exception:
+                language = 'fr'  # Par défaut si erreur
+        
         # Construire l'URL d'activation
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
         activation_url = f"{frontend_url}/activate-account/{activation_token.token}/"
@@ -35,12 +47,25 @@ def send_activation_email(user: User, activation_token: EmailActivationToken) ->
             'activation_url': activation_url,
         }
         
+        # Sélectionner le template selon la langue
+        template_path = 'emails/activation_email.html'  # Par défaut (français)
+        subject = 'Activez votre compte Trading Journal'  # Par défaut (français)
+        
+        if language == 'es':
+            template_path = 'emails/es/activation_email.html'
+            subject = 'Activa tu cuenta Trading Journal'
+        elif language == 'de':
+            template_path = 'emails/de/activation_email.html'
+            subject = 'Aktivieren Sie Ihr Trading Journal Konto'
+        elif language == 'en':
+            # Si on ajoute l'anglais plus tard, on peut créer emails/en/activation_email.html
+            template_path = 'emails/activation_email.html'
+            subject = 'Activate your Trading Journal account'
+        
         # Rendre les templates HTML et texte
-        html_content = render_to_string('emails/activation_email.html', context)
+        html_content = render_to_string(template_path, context)
         text_content = strip_tags(html_content)
         
-        # Créer le message email
-        subject = 'Activez votre compte Trading Journal'
         from_email = settings.DEFAULT_FROM_EMAIL
         to_email = [user.email]
         
@@ -49,7 +74,7 @@ def send_activation_email(user: User, activation_token: EmailActivationToken) ->
         msg.attach_alternative(html_content, "text/html")
         msg.send()
         
-        logger.info(f"Email d'activation envoyé avec succès à {user.email}")
+        logger.info(f"Email d'activation envoyé avec succès à {user.email} (langue: {language})")
         return True
         
     except Exception as e:

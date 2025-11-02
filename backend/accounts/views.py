@@ -147,12 +147,22 @@ class UserRegistrationView(APIView):
             if serializer.is_valid():
                 user = serializer.save()
                 
+                # Détecter la langue depuis les headers ou les données de la requête
+                language = None
+                if 'language' in request.data:
+                    language = request.data.get('language')
+                elif 'Accept-Language' in request.headers:
+                    # Extraire la langue principale depuis Accept-Language
+                    accept_lang = request.headers.get('Accept-Language', '').split(',')[0].split('-')[0].lower()
+                    if accept_lang in ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh']:
+                        language = accept_lang
+                
                 # Créer un token d'activation
                 try:
                     activation_token = create_activation_token(user)
                     
-                    # Envoyer l'email d'activation
-                    email_sent = send_activation_email(user, activation_token)
+                    # Envoyer l'email d'activation avec la langue détectée
+                    email_sent = send_activation_email(user, activation_token, language=language)
                     
                     if not email_sent:
                         # Si l'email n'a pas pu être envoyé, on retourne quand même un succès
