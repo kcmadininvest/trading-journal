@@ -1523,8 +1523,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             },
                           },
                           grid: {
-                            color: chartColors.grid,
-                            lineWidth: 1,
+                            display: false,
                           },
                           border: {
                             color: chartColors.border,

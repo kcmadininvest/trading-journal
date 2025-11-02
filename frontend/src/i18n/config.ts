@@ -115,6 +115,13 @@ import zhAccounts from './locales/zh/accounts.json';
 
 import frAuth from './locales/fr/auth.json';
 import enAuth from './locales/en/auth.json';
+import esAuth from './locales/es/auth.json';
+import deAuth from './locales/de/auth.json';
+import itAuth from './locales/it/auth.json';
+import ptAuth from './locales/pt/auth.json';
+import jaAuth from './locales/ja/auth.json';
+import koAuth from './locales/ko/auth.json';
+import zhAuth from './locales/zh/auth.json';
 
 import frHome from './locales/fr/home.json';
 import enHome from './locales/en/home.json';
@@ -162,6 +169,7 @@ const resources = {
     analytics: esAnalytics,
     users: esUsers,
     accounts: esAccounts,
+    auth: esAuth,
   },
   de: {
     common: deCommon,
@@ -175,6 +183,7 @@ const resources = {
     analytics: deAnalytics,
     users: deUsers,
     accounts: deAccounts,
+    auth: deAuth,
   },
   it: {
     common: itCommon,
@@ -188,6 +197,7 @@ const resources = {
     analytics: itAnalytics,
     users: itUsers,
     accounts: itAccounts,
+    auth: itAuth,
   },
   pt: {
     common: ptCommon,
@@ -201,6 +211,7 @@ const resources = {
     analytics: ptAnalytics,
     users: ptUsers,
     accounts: ptAccounts,
+    auth: ptAuth,
   },
   ja: {
     common: jaCommon,
@@ -214,6 +225,7 @@ const resources = {
     analytics: jaAnalytics,
     users: jaUsers,
     accounts: jaAccounts,
+    auth: jaAuth,
   },
   ko: {
     common: koCommon,
@@ -227,6 +239,7 @@ const resources = {
     analytics: koAnalytics,
     users: koUsers,
     accounts: koAccounts,
+    auth: koAuth,
   },
   zh: {
     common: zhCommon,
@@ -240,6 +253,7 @@ const resources = {
     analytics: zhAnalytics,
     users: zhUsers,
     accounts: zhAccounts,
+    auth: zhAuth,
   },
 };
 

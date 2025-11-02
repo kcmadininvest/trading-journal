@@ -955,8 +955,7 @@ const AnalyticsPage: React.FC = () => {
                         },
                       },
                       grid: {
-                        color: chartColors.grid,
-                        lineWidth: 1,
+                        display: false,
                       },
                       border: {
                         color: chartColors.border,

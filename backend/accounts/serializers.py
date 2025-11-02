@@ -14,11 +14,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         validators=[validate_password],
-        style={'input_type': 'password'}
+        style={'input_type': 'password'},
+        error_messages={
+            'required': 'Le mot de passe est requis.',
+            'min_length': 'Le mot de passe doit contenir au minimum 8 caractères.',
+        }
     )
     password_confirm = serializers.CharField(
         write_only=True,
-        style={'input_type': 'password'}
+        style={'input_type': 'password'},
+        error_messages={
+            'required': 'La confirmation du mot de passe est requise.',
+        }
     )
     
     class Meta:
@@ -28,18 +35,91 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'password', 'password_confirm'
         )
         extra_kwargs = {
-            'email': {'required': True},
-            'first_name': {'required': True},
-            'last_name': {'required': True},
+            'email': {
+                'required': True,
+                'error_messages': {
+                    'required': 'L\'adresse email est requise.',
+                    'invalid': 'Veuillez entrer une adresse email valide.',
+                }
+            },
+            'username': {
+                'error_messages': {
+                    'required': 'Le nom d\'utilisateur est requis.',
+                }
+            },
+            'first_name': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Le prénom est requis.',
+                }
+            },
+            'last_name': {
+                'required': True,
+                'error_messages': {
+                    'required': 'Le nom est requis.',
+                }
+            },
         }
+    
+    def validate_email(self, value):
+        """Vérifier si l'email est déjà utilisé"""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Un compte avec ces informations existe déjà.")
+        return value
+    
+    def validate_username(self, value):
+        """Vérifier si le nom d'utilisateur est déjà utilisé"""
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Un compte avec ces informations existe déjà.")
+        return value
+    
+    def validate_password(self, value):
+        """Valider le mot de passe avec des messages d'erreur personnalisés"""
+        try:
+            validate_password(value)
+        except Exception as e:
+            # Formater les messages d'erreur Django pour qu'ils soient plus clairs
+            error_messages = []
+            
+            # Django ValidationError a un attribut messages ou error_list
+            if hasattr(e, 'messages'):
+                messages = e.messages
+            elif hasattr(e, 'error_list'):
+                messages = [str(err) for err in e.error_list]
+            elif hasattr(e, 'message'):
+                messages = [str(e.message)]
+            else:
+                messages = [str(e)]
+            
+            for error in messages:
+                error_str = str(error).lower()
+                if 'too short' in error_str or 'trop court' in error_str or 'au minimum' in error_str:
+                    error_messages.append("Le mot de passe doit contenir au minimum 8 caractères.")
+                elif 'too common' in error_str or 'trop commun' in error_str:
+                    error_messages.append("Ce mot de passe est trop commun. Veuillez choisir un mot de passe plus sécurisé.")
+                elif 'similar' in error_str or 'similaire' in error_str:
+                    error_messages.append("Le mot de passe ne peut pas être trop similaire à vos informations personnelles.")
+                elif 'numeric' in error_str or 'numérique' in error_str:
+                    error_messages.append("Le mot de passe ne peut pas être entièrement numérique.")
+                else:
+                    # Nettoyer le message d'erreur Django
+                    cleaned_msg = str(error).replace('Ce mot de passe ', '').replace('This password ', '')
+                    error_messages.append(cleaned_msg if cleaned_msg else "Le mot de passe ne respecte pas les critères de sécurité.")
+            
+            raise serializers.ValidationError(error_messages[0] if len(error_messages) == 1 else error_messages)
+        return value
     
     def validate(self, attrs):
         if attrs['password'] != attrs['password_confirm']:
-            raise serializers.ValidationError("Les mots de passe ne correspondent pas.")
+            raise serializers.ValidationError({
+                'password_confirm': "Les mots de passe ne correspondent pas. Veuillez les saisir à nouveau."
+            })
         return attrs
     
     def create(self, validated_data):
         validated_data.pop('password_confirm')
+        # Désactiver le compte par défaut - l'utilisateur devra l'activer via email
+        validated_data['is_active'] = False
         user = User.objects.create_user(**validated_data)
         return user
 
@@ -73,7 +153,7 @@ class UserLoginSerializer(serializers.Serializer):
             
             if not user.is_active:
                 raise serializers.ValidationError(
-                    'Ce compte utilisateur est désactivé.',
+                    'Ce compte n\'est pas activé. Veuillez vérifier votre email et cliquer sur le lien d\'activation.',
                     code='authorization'
                 )
             

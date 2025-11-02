@@ -11,6 +11,7 @@ import StrategiesPage from './pages/StrategiesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import TradingAccountsPage from './pages/TradingAccountsPage';
 import SettingsPage from './pages/SettingsPage';
+import ActivateAccountPage from './pages/ActivateAccountPage';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { useTheme } from './hooks/useTheme';
@@ -143,6 +144,14 @@ function App() {
   }, []);
 
   const renderPage = () => {
+    // Vérifier si on est sur la page d'activation
+    const pathname = window.location.pathname;
+    const activateMatch = pathname.match(/^\/activate-account\/([^/]+)\/?$/);
+    if (activateMatch) {
+      const token = activateMatch[1];
+      return <ActivateAccountPage token={token} />;
+    }
+
     if (!currentUser) {
       return <HomePage />;
     }

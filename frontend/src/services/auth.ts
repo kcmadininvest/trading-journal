@@ -97,7 +97,7 @@ class AuthService {
     }
   }
 
-  async register(username: string, email: string, password: string): Promise<LoginResponse> {
+  async register(username: string, email: string, password: string, firstName: string, lastName: string): Promise<LoginResponse> {
     try {
       const response = await fetch(`${this.BASE_URL}/api/accounts/auth/register/`, {
         method: 'POST',
@@ -108,18 +108,62 @@ class AuthService {
           username, 
           email, 
           password,
-          first_name: '',
-          last_name: '',
+          first_name: firstName,
+          last_name: lastName,
           password_confirm: password
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Erreur d\'inscription');
+        // Gérer les erreurs de validation du backend
+        if (errorData && typeof errorData === 'object') {
+          // Créer un mapping des champs pour des messages plus clairs
+          const fieldLabels: { [key: string]: string } = {
+            'email': 'Adresse email',
+            'username': 'Nom d\'utilisateur',
+            'password': 'Mot de passe',
+            'password_confirm': 'Confirmation du mot de passe',
+            'first_name': 'Prénom',
+            'last_name': 'Nom',
+          };
+          
+          // Formater les messages d'erreur de manière plus lisible
+          const errorMessages: string[] = [];
+          
+          Object.entries(errorData).forEach(([key, value]: [string, any]) => {
+            const fieldLabel = fieldLabels[key] || key;
+            
+            if (Array.isArray(value)) {
+              // Pour chaque erreur du champ
+              value.forEach((msg: string) => {
+                // Format standardisé : "Champ : Message"
+                // Le composant se chargera de la traduction
+                errorMessages.push(`${fieldLabel} : ${msg}`);
+              });
+            } else if (typeof value === 'string') {
+              errorMessages.push(`${fieldLabel} : ${value}`);
+            }
+          });
+          
+          // Retourner les messages formatés, un par ligne
+          if (errorMessages.length > 0) {
+            throw new Error(errorMessages.join('\n'));
+          }
+        }
+        throw new Error(errorData.detail || errorData.message || errorData.error || 'Erreur d\'inscription');
       }
 
       const data = await response.json();
+      
+      // Le compte n'est pas activé, donc pas de tokens
+      // On ne doit pas sauvegarder les tokens si le compte n'est pas actif
+      if (data.is_active === false || !data.access) {
+        // Le compte nécessite une activation par email
+        // Ne pas connecter l'utilisateur automatiquement
+        throw new Error(data.message || 'Votre compte a été créé. Veuillez vérifier votre email pour l\'activer.');
+      }
+      
       const { access, refresh, user } = data;
       
       this.saveTokensToStorage(access, refresh, user);

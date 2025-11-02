@@ -45,5 +45,10 @@
     "nextPage": "Page suivante",
     "lastPage": "Dernière page",
     "pageNumber": "Page {{number}}"
+  },
+  "apiStatus": {
+    "online": "API fonctionnel",
+    "offline": "API inaccessible",
+    "checking": "API inaccessible"
   }
 }

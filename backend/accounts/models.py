@@ -2,6 +2,9 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+import uuid
+from django.utils import timezone
+from datetime import timedelta
 
 
 class User(AbstractUser):
@@ -210,3 +213,57 @@ class LoginHistory(models.Model):
     def __str__(self):
         status = "Réussie" if self.success else "Échouée"
         return f"{self.user.email} - {self.date} - {status}"
+
+
+class EmailActivationToken(models.Model):
+    """
+    Modèle pour stocker les tokens d'activation par email
+    """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='activation_token',
+        verbose_name=_('Utilisateur')
+    )
+    token = models.UUIDField(
+        default=uuid.uuid4,
+        unique=True,
+        verbose_name=_('Token')
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Date de création')
+    )
+    expires_at = models.DateTimeField(
+        verbose_name=_('Date d\'expiration')
+    )
+    is_used = models.BooleanField(
+        default=False,
+        verbose_name=_('Utilisé')
+    )
+    
+    class Meta:
+        verbose_name = _('Token d\'activation email')
+        verbose_name_plural = _('Tokens d\'activation email')
+        db_table = 'accounts_emailactivationtoken'
+        indexes = [
+            models.Index(fields=['token']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+    
+    def __str__(self):
+        return f"Token d'activation pour {self.user.email}"
+    
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            # Token valide pendant 7 jours
+            self.expires_at = timezone.now() + timedelta(days=7)
+        return super().save(*args, **kwargs)
+    
+    def is_expired(self):
+        """Vérifie si le token a expiré"""
+        return timezone.now() > self.expires_at
+    
+    def is_valid(self):
+        """Vérifie si le token est valide (non utilisé et non expiré)"""
+        return not self.is_used and not self.is_expired()

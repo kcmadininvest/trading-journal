@@ -10,10 +10,12 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 from rolepermissions.decorators import has_permission_decorator
 from rolepermissions.checkers import has_permission
 
-from .models import User, UserPreferences, LoginHistory
+from .models import User, UserPreferences, LoginHistory, EmailActivationToken
+from .utils import send_activation_email, create_activation_token
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -135,23 +137,253 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class UserRegistrationView(APIView):
     """
     Vue pour l'inscription des utilisateurs
+    Le compte est désactivé par défaut et nécessite une activation par email
     """
     permission_classes = [permissions.AllowAny]
     
     def post(self, request):
-        serializer = UserRegistrationSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            refresh = RefreshToken.for_user(user)  # type: ignore
+        try:
+            serializer = UserRegistrationSerializer(data=request.data)
+            if serializer.is_valid():
+                user = serializer.save()
+                
+                # Créer un token d'activation
+                try:
+                    activation_token = create_activation_token(user)
+                    
+                    # Envoyer l'email d'activation
+                    email_sent = send_activation_email(user, activation_token)
+                    
+                    if not email_sent:
+                        # Si l'email n'a pas pu être envoyé, on retourne quand même un succès
+                        # mais avec un message d'avertissement
+                        return Response({
+                            'message': 'Compte créé avec succès, mais l\'email d\'activation n\'a pas pu être envoyé. Veuillez contacter le support.',
+                            'user': UserProfileSerializer(user).data,
+                            'email_sent': False,
+                            'is_active': False
+                        }, status=status.HTTP_201_CREATED)
+                    
+                    return Response({
+                        'message': 'Compte créé avec succès. Un email d\'activation a été envoyé à votre adresse email.',
+                        'user': UserProfileSerializer(user).data,
+                        'email_sent': True,
+                        'is_active': False
+                    }, status=status.HTTP_201_CREATED)
+                except Exception as e:
+                    # Logger l'erreur pour le debugging
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Erreur lors de la création du token d'activation ou de l'envoi de l'email: {str(e)}")
+                    
+                    # Retourner quand même un succès si l'utilisateur a été créé
+                    return Response({
+                        'message': 'Compte créé avec succès, mais l\'email d\'activation n\'a pas pu être envoyé. Veuillez contacter le support.',
+                        'user': UserProfileSerializer(user).data,
+                        'email_sent': False,
+                        'is_active': False
+                    }, status=status.HTTP_201_CREATED)
+            
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            # Logger l'erreur pour le debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de l'inscription: {str(e)}", exc_info=True)
+            
+            # Retourner une réponse d'erreur JSON
+            return Response({
+                'error': 'Une erreur est survenue lors de la création du compte.',
+                'detail': str(e) if settings.DEBUG else None
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class AccountActivationView(APIView):
+    """
+    Vue pour activer un compte utilisateur via le token d'activation
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request, token=None):
+        """
+        Active un compte utilisateur avec un token d'activation
+        """
+        if not token:
+            return Response(
+                {'error': 'Token d\'activation requis'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Récupérer le token d'activation
+            activation_token = EmailActivationToken.objects.get(token=token)
+            user = activation_token.user
+            
+            # Vérifier si le compte est déjà activé
+            if user.is_active:
+                return Response(
+                    {
+                        'message': 'Ce compte est déjà activé. Vous pouvez vous connecter.',
+                        'already_activated': True,
+                        'user': UserProfileSerializer(user).data
+                    },
+                    status=status.HTTP_200_OK
+                )
+            
+            # Vérifier si le token est valide
+            if not activation_token.is_valid():
+                if activation_token.is_used:
+                    # Si le token est utilisé mais le compte n'est pas actif, il y a un problème
+                    # Mais normalement, si le token est utilisé, le compte devrait être actif
+                    return Response(
+                        {'error': 'Ce lien d\'activation a déjà été utilisé'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                elif activation_token.is_expired():
+                    # Proposer de renvoyer un nouvel email
+                    return Response(
+                        {
+                            'error': 'Ce lien d\'activation a expiré',
+                            'can_resend': True,
+                            'user_id': activation_token.user.id
+                        },
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Activer le compte
+            user.is_active = True
+            user.is_verified = True
+            user.save()
+            
+            # Marquer le token comme utilisé
+            activation_token.is_used = True
+            activation_token.save()
             
             return Response({
-                'message': 'Utilisateur créé avec succès',
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
+                'message': 'Compte activé avec succès. Vous pouvez maintenant vous connecter.',
+                'already_activated': False,
                 'user': UserProfileSerializer(user).data
-            }, status=status.HTTP_201_CREATED)
+            }, status=status.HTTP_200_OK)
+            
+        except EmailActivationToken.DoesNotExist:
+            return Response(
+                {'error': 'Token d\'activation invalide'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de l'activation du compte: {str(e)}")
+            return Response(
+                {'error': 'Une erreur est survenue lors de l\'activation du compte'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def get(self, request, token=None):
+        """
+        Méthode GET pour la vérification du token (optionnel)
+        """
+        if not token:
+            return Response(
+                {'error': 'Token d\'activation requis'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            activation_token = EmailActivationToken.objects.get(token=token)
+            
+            if not activation_token.is_valid():
+                if activation_token.is_used:
+                    return Response(
+                        {'valid': False, 'error': 'Ce lien d\'activation a déjà été utilisé'},
+                        status=status.HTTP_200_OK
+                    )
+                elif activation_token.is_expired():
+                    return Response(
+                        {
+                            'valid': False,
+                            'error': 'Ce lien d\'activation a expiré',
+                            'can_resend': True,
+                            'user_id': activation_token.user.id
+                        },
+                        status=status.HTTP_200_OK
+                    )
+            
+            return Response({
+                'valid': True,
+                'message': 'Token valide'
+            }, status=status.HTTP_200_OK)
+            
+        except EmailActivationToken.DoesNotExist:
+            return Response(
+                {'valid': False, 'error': 'Token d\'activation invalide'},
+                status=status.HTTP_200_OK
+            )
+
+
+class ResendActivationEmailView(APIView):
+    """
+    Vue pour renvoyer un email d'activation
+    """
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        """
+        Renvoie un email d'activation à l'utilisateur
+        """
+        email = request.data.get('email')
+        user_id = request.data.get('user_id')
+        
+        if not email and not user_id:
+            return Response(
+                {'error': 'Email ou ID utilisateur requis'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Récupérer l'utilisateur
+            if user_id:
+                user = User.objects.get(id=user_id)
+            else:
+                user = User.objects.get(email=email)
+            
+            # Vérifier que le compte n'est pas déjà activé
+            if user.is_active:
+                return Response(
+                    {'error': 'Ce compte est déjà activé'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Créer un nouveau token d'activation
+            activation_token = create_activation_token(user)
+            
+            # Envoyer l'email d'activation
+            email_sent = send_activation_email(user, activation_token)
+            
+            if not email_sent:
+                return Response(
+                    {'error': 'L\'email d\'activation n\'a pas pu être envoyé. Veuillez réessayer plus tard.'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
+            return Response({
+                'message': 'Un nouvel email d\'activation a été envoyé à votre adresse email.'
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            # Ne pas révéler si l'email existe ou non pour des raisons de sécurité
+            return Response({
+                'message': 'Si ce compte existe et n\'est pas activé, un email d\'activation a été envoyé.'
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors du renvoi de l'email d'activation: {str(e)}")
+            return Response(
+                {'error': 'Une erreur est survenue. Veuillez réessayer plus tard.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class UserProfileView(APIView):
