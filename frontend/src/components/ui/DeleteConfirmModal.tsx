@@ -42,17 +42,17 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
     }
   };
 
-  const defaultTitle = title || t('common:deleteConfirm', 'Are you sure?');
+  const defaultTitle = title || t('common:deleteConfirm', { defaultValue: 'Are you sure?' });
   const defaultMessage = message || (
     <p className="text-gray-600 dark:text-gray-400">
       {itemName 
-        ? t('common:deleteItemConfirm', { item: itemName }, `Are you sure you want to delete ${itemName}? This action cannot be undone.`)
-        : t('common:deleteConfirmGeneric', 'This action cannot be undone.')
+        ? t('common:deleteItemConfirm', { item: itemName, defaultValue: `Are you sure you want to delete ${itemName}? This action cannot be undone.` })
+        : t('common:deleteConfirmGeneric', { defaultValue: 'This action cannot be undone.' })
       }
     </p>
   );
-  const defaultConfirmText = confirmButtonText || t('common:delete', 'Delete');
-  const defaultCancelText = cancelButtonText || t('common:cancel', 'Cancel');
+  const defaultConfirmText = confirmButtonText || t('common:delete', { defaultValue: 'Delete' });
+  const defaultCancelText = cancelButtonText || t('common:cancel', { defaultValue: 'Cancel' });
 
   return (
     <div 
@@ -121,7 +121,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               {isLoading ? (
                 <span className="flex items-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {t('common:deleting', 'Deleting...')}
+                  {t('common:deleting', { defaultValue: 'Deleting...' })}
                 </span>
               ) : (
                 defaultConfirmText
