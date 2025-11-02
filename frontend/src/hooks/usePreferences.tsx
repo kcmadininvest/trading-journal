@@ -5,6 +5,7 @@
 import { useState, useEffect, useContext, createContext } from 'react';
 import userService, { UserPreferences } from '../services/userService';
 import { changeLanguage } from '../i18n/config';
+import { authService } from '../services/auth';
 
 interface PreferencesContextType {
   preferences: UserPreferences;
@@ -45,6 +46,12 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [loading, setLoading] = useState(true);
 
   const refreshPreferences = async () => {
+    // Ne pas charger les préférences si l'utilisateur n'est pas authentifié
+    if (!authService.isAuthenticated()) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const prefs = await userService.getPreferences();
       if (prefs && prefs.date_format) {
@@ -68,9 +75,16 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           changeLanguage(prefs.language);
         }
       }
-    } catch (error) {
-      // Utiliser les valeurs par défaut si erreur
-      console.error('[usePreferences] Erreur lors du chargement des préférences:', error);
+    } catch (error: any) {
+      // Utiliser les valeurs par défaut si erreur (par exemple si l'utilisateur n'est pas authentifié)
+      // Ne pas logger l'erreur si c'est juste une erreur d'authentification (401)
+      const isAuthError = error?.message?.includes('401') || 
+                          error?.message?.includes('Unauthorized') ||
+                          (error?.response?.status === 401);
+      
+      if (!isAuthError) {
+        console.error('[usePreferences] Erreur lors du chargement des préférences:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -79,15 +93,39 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     refreshPreferences();
     
-    // Écouter les mises à jour des préférences
+    // Écouter les mises à jour des préférences et les changements d'authentification
     const handlePreferencesUpdated = async () => {
-      await refreshPreferences();
+      // Vérifier à nouveau l'authentification avant de rafraîchir
+      if (authService.isAuthenticated()) {
+        await refreshPreferences();
+      }
+    };
+    
+    const handleAuthChange = async () => {
+      // Si l'utilisateur vient de se connecter, charger les préférences
+      if (authService.isAuthenticated()) {
+        await refreshPreferences();
+      } else {
+        // Si l'utilisateur vient de se déconnecter, réinitialiser les préférences par défaut
+        setPreferences({
+          language: 'fr',
+          timezone: 'Europe/Paris',
+          date_format: 'EU',
+          number_format: 'comma',
+          theme: getInitialTheme(),
+          font_size: 'medium',
+        });
+      }
     };
     
     window.addEventListener('preferences:updated', handlePreferencesUpdated);
+    window.addEventListener('auth:login', handleAuthChange);
+    window.addEventListener('auth:logout', handleAuthChange);
     
     return () => {
       window.removeEventListener('preferences:updated', handlePreferencesUpdated);
+      window.removeEventListener('auth:login', handleAuthChange);
+      window.removeEventListener('auth:logout', handleAuthChange);
     };
   }, []);
 

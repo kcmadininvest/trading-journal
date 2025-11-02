@@ -84,7 +84,12 @@ class TradingAccountsService {
 
   async get(id: number): Promise<TradingAccount> {
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/`);
-    if (!res.ok) throw new Error('Erreur lors du chargement du compte');
+    if (!res.ok) {
+      const error: any = new Error('Erreur lors du chargement du compte');
+      error.status = res.status;
+      error.message = res.status === 404 ? 'Compte introuvable' : 'Erreur lors du chargement du compte';
+      throw error;
+    }
     return res.json();
   }
 

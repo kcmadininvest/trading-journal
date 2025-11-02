@@ -113,6 +113,12 @@ import jaAccounts from './locales/ja/accounts.json';
 import koAccounts from './locales/ko/accounts.json';
 import zhAccounts from './locales/zh/accounts.json';
 
+import frAuth from './locales/fr/auth.json';
+import enAuth from './locales/en/auth.json';
+
+import frHome from './locales/fr/home.json';
+import enHome from './locales/en/home.json';
+
 const resources = {
   fr: {
     common: frCommon,
@@ -126,6 +132,8 @@ const resources = {
     analytics: frAnalytics,
     users: frUsers,
     accounts: frAccounts,
+    auth: frAuth,
+    home: frHome,
   },
   en: {
     common: enCommon,
@@ -139,6 +147,8 @@ const resources = {
     analytics: enAnalytics,
     users: enUsers,
     accounts: enAccounts,
+    auth: enAuth,
+    home: enHome,
   },
   es: {
     common: esCommon,
@@ -233,26 +243,69 @@ const resources = {
   },
 };
 
+// Fonction pour obtenir la langue par défaut depuis le navigateur
+// Utilise navigator.language (standard) ou navigator.userLanguage (IE legacy)
+// Format retourné : 'fr-FR', 'en-US', 'es-ES', etc.
+// On extrait le code langue principal (ex: 'fr' de 'fr-FR')
+// Pour le moment, seules 'fr' et 'en' sont complètement traduites
+// Les autres langues utiliseront 'en' par défaut
+const getDefaultLanguage = (): string => {
+  if (typeof navigator !== 'undefined') {
+    // navigator.language est la propriété standard qui retourne la langue préférée du navigateur
+    // Format BCP 47 : 'fr-FR', 'en-US', 'en-GB', 'es-ES', etc.
+    // navigator.userLanguage est un fallback pour les anciennes versions d'Internet Explorer
+    const browserLang = navigator.language || (navigator as any).userLanguage;
+    if (browserLang) {
+      // Extraire le code langue principal (ex: 'fr' de 'fr-FR')
+      const lang = browserLang.split('-')[0].toLowerCase();
+      
+      // Pour le moment, seules le français et l'anglais sont complètement traduites
+      // Les autres langues utiliseront l'anglais par défaut
+      if (lang === 'fr') {
+        return 'fr';
+      }
+      // Pour 'en' et toutes les autres langues, utiliser 'en'
+      return 'en';
+    }
+  }
+  // Par défaut, retourner 'en'
+  return 'en';
+};
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     resources,
-    fallbackLng: 'fr',
+    fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
     },
     
     detection: {
-      // Ne pas détecter automatiquement, on utilisera les préférences utilisateur
-      order: [],
-      caches: [],
+      // Détecter la langue du navigateur, mais seulement si pas de langue sauvegardée
+      // L'ordre est important : on vérifie d'abord localStorage (préférence utilisateur)
+      // puis le navigateur si aucune préférence n'est sauvegardée
+      order: ['localStorage', 'navigator'],
+      caches: ['localStorage'],
+      lookupLocalStorage: 'i18nextLng',
+      // Fonction pour convertir la langue détectée par le navigateur
+      // Assure que seules 'fr' et 'en' sont utilisées
+      convertDetectedLanguage: (lng: string): string => {
+        if (!lng) return 'en';
+        const lang = lng.split('-')[0].toLowerCase();
+        // Seules le français et l'anglais sont complètement traduites
+        return lang === 'fr' ? 'fr' : 'en';
+      },
     },
   });
+
+// La détection de langue est gérée par i18next avec le fallbackLng qui utilise getDefaultLanguage()
+// getDefaultLanguage() retourne 'fr' si le navigateur est en français, sinon 'en'
 
 // Fonction pour changer la langue depuis les préférences utilisateur
 export const changeLanguage = (lang: string) => {

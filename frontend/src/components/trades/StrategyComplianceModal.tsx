@@ -134,11 +134,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
 
       setTrades(tradesWithStrategy);
     } catch (e: any) {
-      setError(e?.message || 'Erreur lors du chargement des données');
+      setError(e?.message || t('common:error'));
     } finally {
       setIsLoading(false);
     }
-  }, [date, tradingAccount]);
+  }, [date, tradingAccount, t]);
 
   useEffect(() => {
     if (open && date) {

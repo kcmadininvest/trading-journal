@@ -300,7 +300,9 @@ class UserService {
     const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/preferences/`);
 
     if (!response.ok) {
-      throw new Error('Erreur lors de la récupération des préférences');
+      const error = new Error('Erreur lors de la récupération des préférences') as any;
+      error.response = { status: response.status };
+      throw error;
     }
 
     return response.json();

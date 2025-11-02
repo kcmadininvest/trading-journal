@@ -72,5 +72,14 @@
   "sessionRevoked": "Session revoked successfully",
   "allSessionsRevoked": "All other sessions have been revoked",
   "dataExported": "Data exported successfully",
-  "accountDeleted": "Account deleted successfully"
+  "accountDeleted": "Account deleted successfully",
+  "errorProfileUpdate": "Error updating profile",
+  "errorPasswordChange": "Error changing password",
+  "errorPreferencesUpdate": "Error updating preferences",
+  "errorThemeSave": "Error saving theme",
+  "errorSessionDisconnect": "Error disconnecting session",
+  "errorSessionsDisconnect": "Error disconnecting sessions",
+  "errorDataExport": "Error exporting data",
+  "errorAccountDelete": "Error deleting account",
+  "passwordMismatch": "Passwords do not match"
 }

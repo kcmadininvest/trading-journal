@@ -115,7 +115,7 @@ const SettingsPage: React.FC = () => {
     setLoading(true);
     try {
       const result = await userService.updateCurrentUserProfile(profile);
-      showMessage('success', result.message || t('settings:profileUpdated'));
+      showMessage('success', t('settings:profileUpdated'));
       
       // Mettre à jour l'utilisateur dans authService et localStorage
       if (result.user) {
@@ -126,7 +126,7 @@ const SettingsPage: React.FC = () => {
         }));
       }
     } catch (error: any) {
-      showMessage('error', error.message || 'Erreur lors de la mise à jour du profil');
+      showMessage('error', error.message || t('settings:errorProfileUpdate'));
     } finally {
       setLoading(false);
     }
@@ -135,7 +135,7 @@ const SettingsPage: React.FC = () => {
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordForm.new_password !== passwordForm.new_password_confirm) {
-      showMessage('error', t('settings:passwordMismatch', { defaultValue: 'Les mots de passe ne correspondent pas' }));
+      showMessage('error', t('settings:passwordMismatch'));
       return;
     }
     setLoading(true);
@@ -144,7 +144,7 @@ const SettingsPage: React.FC = () => {
       showMessage('success', t('settings:passwordUpdated'));
       setPasswordForm({ old_password: '', new_password: '', new_password_confirm: '' });
     } catch (error: any) {
-      showMessage('error', error.message || 'Erreur lors du changement de mot de passe');
+      showMessage('error', error.message || t('settings:errorPasswordChange'));
     } finally {
       setLoading(false);
     }
@@ -168,7 +168,7 @@ const SettingsPage: React.FC = () => {
       // Déclencher un événement pour rafraîchir les préférences dans tous les composants
       window.dispatchEvent(new CustomEvent('preferences:updated'));
     } catch (error: any) {
-      showMessage('error', error.message || 'Erreur lors de la mise à jour des préférences');
+      showMessage('error', error.message || t('settings:errorPreferencesUpdate'));
     } finally {
       setLoading(false);
     }
@@ -190,7 +190,7 @@ const SettingsPage: React.FC = () => {
       const previousTheme = theme;
       setPreferences({ ...preferences, theme: previousTheme });
       await setTheme(previousTheme);
-      showMessage('error', 'Erreur lors de la sauvegarde du thème');
+      showMessage('error', t('settings:errorThemeSave'));
     }
   };
 
@@ -202,7 +202,7 @@ const SettingsPage: React.FC = () => {
       showMessage('success', t('settings:sessionRevoked'));
       await loadSecurityData();
     } catch (error: any) {
-      showMessage('error', error.message || 'Erreur lors de la déconnexion de la session');
+      showMessage('error', error.message || t('settings:errorSessionDisconnect'));
     } finally {
       setLoading(false);
     }
@@ -216,7 +216,7 @@ const SettingsPage: React.FC = () => {
       showMessage('success', t('settings:allSessionsRevoked'));
       await loadSecurityData();
     } catch (error: any) {
-      showMessage('error', error.message || 'Erreur lors de la déconnexion des sessions');
+      showMessage('error', error.message || t('settings:errorSessionsDisconnect'));
     } finally {
       setLoading(false);
     }
@@ -236,7 +236,7 @@ const SettingsPage: React.FC = () => {
       document.body.removeChild(a);
       showMessage('success', t('settings:dataExported'));
     } catch (error: any) {
-      showMessage('error', error.message || 'Erreur lors de l\'export des données');
+      showMessage('error', error.message || t('settings:errorDataExport'));
     } finally {
       setLoading(false);
     }
@@ -258,7 +258,7 @@ const SettingsPage: React.FC = () => {
         window.location.href = '/login';
       }, 2000);
     } catch (error: any) {
-      showMessage('error', error.message || 'Erreur lors de la suppression du compte');
+      showMessage('error', error.message || t('settings:errorAccountDelete'));
     } finally {
       setLoading(false);
     }

@@ -9,17 +9,23 @@ import { StatisticsPageSkeleton } from '../components/ui/StatisticsPageSkeleton'
 import { currenciesService, Currency } from '../services/currencies';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
+import { CustomSelect } from '../components/common/CustomSelect';
+import { getMonthNames } from '../utils/dateFormat';
+import { useTradingAccount } from '../contexts/TradingAccountContext';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
-  const { loading: preferencesLoading } = usePreferences();
+  const { preferences, loading: preferencesLoading } = usePreferences();
+  const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   
   // Hooks pour les données
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts();
-  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(selectedAccount?.id);
-  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(selectedAccount?.id);
+  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(selectedAccountId, selectedYear, selectedMonth);
+  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(selectedAccountId, selectedYear, selectedMonth);
   
   // Charger les devises
   useEffect(() => {
@@ -40,6 +46,24 @@ function StatisticsPage() {
     const currency = currencies.find(c => c.code === selectedAccount.currency);
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
+
+  // Générer les années disponibles (année en cours et 5 ans précédents)
+  const currentYear = new Date().getFullYear();
+  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
+  const yearOptions = useMemo(() => [
+    { value: null, label: t('statistics:allYears') },
+    ...availableYears.map(year => ({ value: year, label: year.toString() }))
+  ], [availableYears, t]);
+  
+  // Utiliser les noms de mois traduits
+  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
+  const monthOptions = useMemo(() => {
+    const availableMonths = monthNames.map((name, index) => ({ value: index + 1, label: name }));
+    return [
+      { value: null, label: t('statistics:allMonths') },
+      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
+    ];
+  }, [monthNames, t]);
   
   // Gérer l'invalidation des queries quand les trades sont mis à jour
   useTradesUpdateInvalidation();
@@ -49,13 +73,25 @@ function StatisticsPage() {
   const isLoading = preferencesLoading || accountsLoading || statisticsLoading || analyticsLoading;
   const hasError = statisticsError || analyticsError;
   
-  // Sélection automatique du compte par défaut
-  React.useEffect(() => {
-    if (accounts && accounts.length > 0 && !selectedAccount) {
-      const defaultAccount = accounts.find(acc => acc.is_default) || accounts[0];
-      setSelectedAccount(defaultAccount);
-    }
-  }, [accounts, selectedAccount]);
+  // Charger les détails du compte sélectionné pour obtenir la devise
+  useEffect(() => {
+    const loadAccount = async () => {
+      if (!selectedAccountId) {
+        setSelectedAccount(null);
+        return;
+      }
+      try {
+        const account = accounts?.find(acc => acc.id === selectedAccountId);
+        if (account) {
+          setSelectedAccount(account);
+        }
+      } catch (err) {
+        console.error('Erreur lors du chargement du compte', err);
+        setSelectedAccount(null);
+      }
+    };
+    loadAccount();
+  }, [selectedAccountId, accounts]);
   
   // Gestion des erreurs
   if (hasError) {
@@ -114,12 +150,58 @@ function StatisticsPage() {
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="w-full">
-        {/* Sélecteur de compte de trading */}
-        <div className="mb-6">
-          <TradingAccountSelector
-            selectedAccountId={selectedAccount?.id}
-            onAccountChange={setSelectedAccount}
-          />
+        {/* Filtres */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('statistics:tradingAccount')}
+              </label>
+              <TradingAccountSelector
+                selectedAccountId={selectedAccountId}
+                onAccountChange={(account) => {
+                  setSelectedAccountId(account?.id ?? null);
+                  setSelectedAccount(account);
+                }}
+                hideLabel
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('statistics:year')}
+              </label>
+              <CustomSelect
+                value={selectedYear}
+                onChange={(value) => setSelectedYear(value as number | null)}
+                options={yearOptions}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('statistics:month')}
+              </label>
+              <CustomSelect
+                value={selectedMonth}
+                onChange={(value) => setSelectedMonth(value as number | null)}
+                options={monthOptions}
+                disabled={!selectedYear}
+              />
+            </div>
+            
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  setSelectedYear(null);
+                  setSelectedMonth(null);
+                }}
+                className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                {t('statistics:reset')}
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Section 1: Vue d'overview */}

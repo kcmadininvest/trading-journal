@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { authService } from '../../services/auth';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess, 
   initialMode = 'login' 
 }) => {
+  const { t } = useI18nTranslation();
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [formData, setFormData] = useState({
     username: '',
@@ -43,14 +45,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
         await authService.login(formData.username, formData.password);
       } else {
         if (formData.password !== formData.confirmPassword) {
-          throw new Error('Les mots de passe ne correspondent pas');
+          throw new Error(t('auth:passwordMismatch'));
         }
         await authService.register(formData.username, formData.email, formData.password);
       }
       
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue');
+      setError(err.message || t('auth:errorOccurred'));
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +76,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900">
-            {mode === 'login' ? 'Connexion' : 'Inscription'}
+            {mode === 'login' ? t('auth:connexion') : t('auth:inscription')}
           </h2>
           <button
             onClick={onClose}
@@ -95,7 +97,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-              Nom d'utilisateur
+              {t('auth:username')}
             </label>
             <input
               type="text"
@@ -112,7 +114,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           {mode === 'register' && (
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email
+                {t('auth:email')}
               </label>
               <input
                 type="email"
@@ -129,7 +131,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Mot de passe
+              {t('auth:password')}
             </label>
             <input
               type="password"
@@ -146,7 +148,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           {mode === 'register' && (
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirmer le mot de passe
+                {t('auth:confirmPassword')}
               </label>
               <input
                 type="password"
@@ -166,7 +168,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             disabled={isLoading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Chargement...' : (mode === 'login' ? 'Se connecter' : 'S\'inscrire')}
+            {isLoading ? t('auth:loading') : (mode === 'login' ? t('auth:login') : t('auth:register'))}
           </button>
         </form>
 
@@ -176,8 +178,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
             className="text-blue-600 hover:text-blue-800 text-sm"
           >
             {mode === 'login' 
-              ? 'Pas encore de compte ? S\'inscrire' 
-              : 'Déjà un compte ? Se connecter'
+              ? t('auth:noAccountYet') 
+              : t('auth:alreadyHaveAccount')
             }
           </button>
         </div>

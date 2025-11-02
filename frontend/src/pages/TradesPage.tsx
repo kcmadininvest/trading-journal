@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { tradesService, TradeListItem } from '../services/trades';
 import { AccountSelector } from '../components/accounts/AccountSelector';
-import { tradingAccountsService } from '../services/tradingAccounts';
 import { TradesFilters } from '../components/trades/TradesFilters';
 import { TradesTable } from '../components/trades/TradesTable';
 import { TradeModal } from '../components/trades/TradeModal';
@@ -10,9 +9,11 @@ import PaginationControls from '../components/ui/PaginationControls';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { useTradingAccount } from '../contexts/TradingAccountContext';
 
 const TradesPage: React.FC = () => {
   const { t } = useI18nTranslation();
+  const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
   const [items, setItems] = useState<TradeListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -102,6 +103,13 @@ const TradesPage: React.FC = () => {
     }
   };
 
+  // Synchroniser filters.trading_account avec le contexte global
+  useEffect(() => {
+    if (filters.trading_account !== selectedAccountId) {
+      setFilters(prev => ({ ...prev, trading_account: selectedAccountId }));
+    }
+  }, [selectedAccountId, filters.trading_account]);
+
   useEffect(() => {
     // Initialiser le compte sélectionné depuis le stockage ou le compte par défaut (une seule fois)
     if (hasInitialized) {
@@ -114,52 +122,14 @@ const TradesPage: React.FC = () => {
       }
       isInitializing.current = true;
       
-      // Toujours utiliser le compte par défaut du serveur (fiable)
-      // Le localStorage peut contenir un compte obsolète ou d'un autre utilisateur
-      try {
-        const def = await tradingAccountsService.default();
-        if (def && def.status === 'active') {
-          // Mettre à jour les filtres
-          setFilters(prev => {
-            const needsUpdate = prev.trading_account !== def.id;
-            if (needsUpdate) {
-              // Réinitialiser les stats pour éviter d'afficher des valeurs incorrectes
-              setStats(null);
-            }
-            // Toujours retourner un nouvel objet pour forcer le déclenchement des dépendances
-            return { ...prev, trading_account: def.id };
-          });
-          
-          // Marquer comme initialisé APRÈS avoir mis à jour les filtres
-          // Utiliser useState pour déclencher les re-renders et useEffect
-          setHasInitialized(true);
-          isInitializing.current = false;
-        } else {
-          setHasInitialized(true);
-          isInitializing.current = false;
-        }
-      } catch (e) {
-        console.error('[TradesPage] Error fetching default account', e);
-        setHasInitialized(true);
-        isInitializing.current = false;
-      }
+      // Ne plus initialiser ici, c'est géré par TradingAccountProvider
+      // On synchronise juste filters.trading_account avec selectedAccountId
+      setHasInitialized(true);
+      isInitializing.current = false;
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    // Persister le compte sélectionné (seulement après l'initialisation)
-    if (!hasInitialized || isInitializing.current) {
-      return;
-    }
-    
-    if (filters.trading_account) {
-      localStorage.setItem('current_account_id', String(filters.trading_account));
-    } else {
-      localStorage.removeItem('current_account_id');
-    }
-  }, [filters.trading_account, hasInitialized]);
+  }, []); // Ne s'exécute qu'une fois au montage
 
   useEffect(() => {
     // Attendre la fin de l'initialisation avant de charger
@@ -222,6 +192,7 @@ const TradesPage: React.FC = () => {
  
 
   const resetFilters = () => {
+    setSelectedAccountId(null);
     setFilters({ trading_account: null, contract: '', type: '', start_date: '', end_date: '', profitable: '' });
     setPage(1);
   };
@@ -300,8 +271,11 @@ const TradesPage: React.FC = () => {
       <div className="px-4 sm:px-6 lg:px-8">
         {/* Sélecteur de compte */}
         <AccountSelector
-          value={filters.trading_account}
-          onChange={(accountId) => setFilters(prev => ({ ...prev, trading_account: accountId }))}
+          value={selectedAccountId}
+          onChange={(accountId) => {
+            setSelectedAccountId(accountId);
+            setFilters(prev => ({ ...prev, trading_account: accountId }));
+          }}
         />
 
         {/* Filtres */}

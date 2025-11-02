@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { PreferencesProvider } from './hooks/usePreferences';
+import { TradingAccountProvider } from './contexts/TradingAccountContext';
 import './i18n/config'; // Initialiser i18n
 
 const root = ReactDOM.createRoot(
@@ -12,7 +13,9 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <PreferencesProvider>
-      <App />
+      <TradingAccountProvider>
+        <App />
+      </TradingAccountProvider>
     </PreferencesProvider>
   </React.StrictMode>
 );

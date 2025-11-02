@@ -72,5 +72,14 @@
   "sessionRevoked": "Session révoquée avec succès",
   "allSessionsRevoked": "Toutes les autres sessions ont été révoquées",
   "dataExported": "Données exportées avec succès",
-  "accountDeleted": "Compte supprimé avec succès"
+  "accountDeleted": "Compte supprimé avec succès",
+  "errorProfileUpdate": "Erreur lors de la mise à jour du profil",
+  "errorPasswordChange": "Erreur lors du changement de mot de passe",
+  "errorPreferencesUpdate": "Erreur lors de la mise à jour des préférences",
+  "errorThemeSave": "Erreur lors de la sauvegarde du thème",
+  "errorSessionDisconnect": "Erreur lors de la déconnexion de la session",
+  "errorSessionsDisconnect": "Erreur lors de la déconnexion des sessions",
+  "errorDataExport": "Erreur lors de l'export des données",
+  "errorAccountDelete": "Erreur lors de la suppression du compte",
+  "passwordMismatch": "Les mots de passe ne correspondent pas"
 }

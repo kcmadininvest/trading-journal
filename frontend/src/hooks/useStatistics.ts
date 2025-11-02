@@ -62,7 +62,7 @@ export interface GlobalStrategyData {
   percentage: number;
 }
 
-export function useStatistics(tradingAccountId?: number | null) {
+export function useStatistics(tradingAccountId?: number | null, year?: number | null, month?: number | null) {
   const [data, setData] = useState<StatisticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -72,7 +72,11 @@ export function useStatistics(tradingAccountId?: number | null) {
       setIsLoading(true);
       setError(null);
       try {
-        const result = await tradesService.detailedStatistics(tradingAccountId || undefined);
+        const result = await tradesService.detailedStatistics(
+          tradingAccountId || undefined,
+          year || undefined,
+          month || undefined
+        );
         setData(result);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Erreur lors du chargement des statistiques'));
@@ -86,12 +90,12 @@ export function useStatistics(tradingAccountId?: number | null) {
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId]);
+  }, [tradingAccountId, year, month]);
 
   return { data, isLoading, error };
 }
 
-export function useAnalytics(tradingAccountId?: number | null) {
+export function useAnalytics(tradingAccountId?: number | null, year?: number | null, month?: number | null) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -101,7 +105,11 @@ export function useAnalytics(tradingAccountId?: number | null) {
       setIsLoading(true);
       setError(null);
       try {
-        const result = await tradesService.analytics(tradingAccountId || undefined);
+        const result = await tradesService.analytics(
+          tradingAccountId || undefined,
+          year || undefined,
+          month || undefined
+        );
         setData(result);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Erreur lors du chargement des analytics'));
@@ -115,7 +123,7 @@ export function useAnalytics(tradingAccountId?: number | null) {
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId]);
+  }, [tradingAccountId, year, month]);
 
   return { data, isLoading, error };
 }
