@@ -3,6 +3,7 @@ import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { RespectRateCard } from '../components/common/RespectRateCard';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
@@ -49,7 +50,7 @@ const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => ({
@@ -125,8 +126,12 @@ const StrategiesPage: React.FC = () => {
 
   // Charger les statistiques
   useEffect(() => {
+    // Attendre que le compte soit chargé avant de charger les statistiques
+    if (accountLoading) {
+      return;
+    }
     loadStatistics();
-  }, [loadStatistics]);
+  }, [loadStatistics, accountLoading]);
 
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
@@ -164,16 +169,7 @@ const StrategiesPage: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       datalabels: {
-        display: true,
-        color: '#ffffff',
-        font: {
-          weight: 600,
-          size: 13,
-        },
-        formatter: function(value: number) {
-          // Afficher la valeur avec le symbole %
-          return value > 0 ? `${value.toFixed(2)}%` : '';
-        },
+        display: false,
       },
       legend: {
         display: true,
@@ -246,13 +242,7 @@ const StrategiesPage: React.FC = () => {
           display: false,
         },
         title: {
-          display: true,
-          text: t('strategies:percentage'),
-          color: chartColors.text,
-          font: {
-            size: 13,
-            weight: 600,
-          },
+          display: false,
         },
       },
       x: {
@@ -386,13 +376,7 @@ const StrategiesPage: React.FC = () => {
           display: false,
         },
         title: {
-          display: true,
-          text: t('strategies:percentage'),
-          color: chartColors.text,
-          font: {
-            size: 13,
-            weight: 600,
-          },
+          display: false,
         },
       },
       x: {
@@ -693,6 +677,49 @@ const StrategiesPage: React.FC = () => {
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
+  // Taux de respect du compte (pour la période sélectionnée - prend en compte les filtres année/mois)
+  const accountRespect = statistics?.statistics?.respect_percentage || 0;
+  
+  // Fonction pour déterminer la couleur du gradient selon le taux de respect
+  // Bonnes pratiques de trading : >80% excellent, 70-80% bon, 50-70% moyen, <50% à améliorer
+  const getRespectRateColor = (rate: number) => {
+    if (rate >= 80) {
+      // Excellent : vert foncé vers vert moyen
+      return {
+        from: 'from-green-600',
+        to: 'to-emerald-500',
+        darkFrom: 'dark:from-green-700',
+        darkTo: 'dark:to-emerald-600'
+      };
+    } else if (rate >= 70) {
+      // Bon : vert moyen vers vert clair
+      return {
+        from: 'from-green-500',
+        to: 'to-emerald-400',
+        darkFrom: 'dark:from-green-600',
+        darkTo: 'dark:to-emerald-500'
+      };
+    } else if (rate >= 50) {
+      // Moyen : orange/ambre
+      return {
+        from: 'from-amber-500',
+        to: 'to-orange-500',
+        darkFrom: 'dark:from-amber-600',
+        darkTo: 'dark:to-orange-600'
+      };
+    } else {
+      // À améliorer : rouge
+      return {
+        from: 'from-red-500',
+        to: 'to-rose-500',
+        darkFrom: 'dark:from-red-600',
+        darkTo: 'dark:to-rose-600'
+      };
+    }
+  };
+  
+  const accountRespectColor = getRespectRateColor(accountRespect);
+  const allTimeRespectColor = getRespectRateColor(allTimeRespect);
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -751,14 +778,31 @@ const StrategiesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Indicateur global */}
+        {/* Indicateurs de respect */}
         {statistics && (
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-lg shadow-lg p-6 mb-6 text-white">
-            <h2 className="text-lg font-semibold mb-2">{t('strategies:totalRespectRate')}</h2>
-            <p className="text-3xl font-bold mb-1">{allTimeRespect.toFixed(2)}%</p>
-            <p className="text-sm opacity-90">
-              {t('strategies:allPeriodsAndAccounts')} ({statistics.all_time.total_strategies} {t('strategies:strategies')})
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Taux de respect total */}
+            <RespectRateCard
+              title={t('strategies:totalRespectRate')}
+              subtitle={`(${t('strategies:allPeriodsAndAccounts')})`}
+              percentage={allTimeRespect}
+              tradesCount={statistics?.all_time?.respected_count || 0}
+              totalTrades={statistics?.all_time?.total_strategies || 0}
+              tradesLabel={t('trades:trades')}
+              outOfLabel={t('strategies:outOf')}
+              gradientColors={allTimeRespectColor}
+            />
+            
+            {/* Taux de respect du compte */}
+            <RespectRateCard
+              title={t('strategies:accountRespectRate')}
+              percentage={accountRespect}
+              tradesCount={statistics?.statistics?.respected_count || 0}
+              totalTrades={statistics?.statistics?.total_strategies || 0}
+              tradesLabel={t('trades:trades')}
+              outOfLabel={t('strategies:outOf')}
+              gradientColors={accountRespectColor}
+            />
           </div>
         )}
 

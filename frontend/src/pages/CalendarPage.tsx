@@ -22,7 +22,7 @@ const CalendarPage: React.FC = () => {
   const [viewType, setViewType] = useState<ViewType>('daily');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { selectedAccountId: selectedAccount, setSelectedAccountId: setSelectedAccount } = useTradingAccount();
+  const { selectedAccountId: selectedAccount, setSelectedAccountId: setSelectedAccount, loading: accountLoading } = useTradingAccount();
   const [selectedAccountData, setSelectedAccountData] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [showImport, setShowImport] = useState(false);
@@ -112,13 +112,18 @@ const CalendarPage: React.FC = () => {
 
   // Charger les données quand la vue change ou quand les dates changent
   useEffect(() => {
+    // Attendre que le compte soit chargé avant de charger les données
+    if (accountLoading) {
+      return;
+    }
+
     const tradingAccount = selectedAccount && selectedAccount > 0 ? selectedAccount : undefined;
     if (viewType === 'daily') {
       loadDailyData();
     } else {
       loadYearlyData(yearlyYear, tradingAccount);
     }
-  }, [viewType, currentYear, currentMonth, yearlyYear, selectedAccount, loadDailyData, loadYearlyData]);
+  }, [viewType, currentYear, currentMonth, yearlyYear, selectedAccount, accountLoading, loadDailyData, loadYearlyData]);
 
   const handleMonthChange = (year: number, month: number) => {
     setCurrentYear(year);

@@ -2,6 +2,11 @@ import React from 'react'
 
 
 
+export interface SubMetric {
+  label: string
+  value: string | number
+}
+
 interface ModernStatCardProps {
 
   label: string
@@ -17,6 +22,14 @@ interface ModernStatCardProps {
   variant?: 'default' | 'success' | 'danger' | 'warning' | 'info'
 
   size?: 'small' | 'medium' | 'large'
+
+  subMetrics?: SubMetric[]
+
+  progressValue?: number
+
+  progressMax?: number
+
+  progressLabel?: string
 
 }
 
@@ -36,7 +49,15 @@ function ModernStatCard({
 
   variant = 'default',
 
-  size = 'medium'
+  size = 'medium',
+
+  subMetrics,
+
+  progressValue,
+
+  progressMax,
+
+  progressLabel
 
 }: ModernStatCardProps) {
 
@@ -274,37 +295,132 @@ function ModernStatCard({
 
         
 
-        {/* Valeur principale */}
+        {/* Contenu principal */}
+        <div className="flex-1 flex flex-col justify-between">
 
-        <div className="flex-1 flex flex-col justify-center">
+          {/* Section principale : Valeur et progression */}
+          <div>
+            <div className={`
 
-          <div className={`
+              ${sizeStyles.value}
 
-            ${sizeStyles.value}
+              font-semibold 
 
-            font-semibold 
+              text-gray-900 dark:text-gray-100
 
-            text-gray-900 dark:text-gray-100
+              mb-2
 
-            mb-2
+            `}>
 
-          `}>
+              {value}
 
-            {value}
+            </div>
 
+            {/* Barre de progression pour objectif */}
+            {progressValue !== undefined && progressMax !== undefined && (
+              <div className="mb-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    {progressLabel || `${progressValue} / ${progressMax}`}
+                  </span>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    {Math.min(Math.round((progressValue / progressMax) * 100), 100)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden relative">
+                  <div
+                    className="h-full rounded-full transition-all duration-500 relative"
+                    style={{ 
+                      width: `${Math.min((progressValue / progressMax) * 100, 100)}%`,
+                      background: (() => {
+                        const progress = progressValue / progressMax;
+                        if (progressValue >= progressMax) {
+                          return 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)'; // Vert émeraude gradient pour succès
+                        }
+                        
+                        // Gradient dynamique qui s'éclaircit et devient plus vibrant vers l'objectif
+                        if (variant === 'info' || variant === 'default') {
+                          // Pour "Respect Stratégie" : bleu qui devient plus clair et vibrant
+                          if (progress >= 0.8) {
+                            return 'linear-gradient(90deg, #3b82f6 0%, #60a5fa 30%, #93c5fd 60%, #dbeafe 100%)'; // Très clair et lumineux
+                          } else if (progress >= 0.6) {
+                            return 'linear-gradient(90deg, #2563eb 0%, #3b82f6 40%, #60a5fa 80%, #93c5fd 100%)'; // Plus clair
+                          } else if (progress >= 0.4) {
+                            return 'linear-gradient(90deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)'; // Moyen
+                          } else {
+                            return 'linear-gradient(90deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)'; // Foncé au début
+                          }
+                        }
+                        
+                        if (variant === 'success') {
+                          return 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)'; // Vert émeraude gradient
+                        }
+                        if (variant === 'warning') {
+                          return 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%)'; // Amber gradient
+                        }
+                        if (variant === 'danger') {
+                          return 'linear-gradient(90deg, #ef4444 0%, #f87171 50%, #fca5a5 100%)'; // Rose gradient
+                        }
+                        return 'linear-gradient(90deg, #6366f1 0%, #818cf8 50%, #a78bfa 100%)'; // Indigo gradient par défaut
+                      })()
+                    }}
+                  >
+                    {/* Effet de brillance animé pour encourager */}
+                    {progressValue > 0 && progressValue < progressMax && (
+                      <div 
+                        className="absolute inset-0 rounded-full"
+                        style={{
+                          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)',
+                          animation: 'shimmer 2s ease-in-out infinite',
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Espace équivalent à la barre de progression pour aligner les métriques secondaires */}
+            {progressValue === undefined && progressMax === undefined && subMetrics && subMetrics.length > 0 && (
+              <div className="mb-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 opacity-0">
+                    {/* Espace invisible pour correspondre à la hauteur du label */}
+                    &nbsp;
+                  </span>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 opacity-0">
+                    {/* Espace invisible pour correspondre à la hauteur du pourcentage */}
+                    &nbsp;
+                  </span>
+                </div>
+                <div className="w-full h-2">
+                  {/* Espace invisible pour correspondre à la hauteur de la barre */}
+                </div>
+              </div>
+            )}
+
+            {/* Métriques secondaires */}
+            {subMetrics && subMetrics.length > 0 && (
+              <div className="pt-1.5 border-t border-gray-200 dark:border-gray-700">
+                <div className="space-y-1">
+                  {subMetrics.map((metric, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600 dark:text-gray-400">{metric.label}</span>
+                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{metric.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
-          
-
-          {/* Trend indicator */}
-
-          <div className="min-h-[24px] flex items-center">
-
+          {/* Section footer : Badge de statut */}
+          <div className="mt-auto">
             {trendValue ? (
 
               <div className={`
 
-                flex items-center gap-1.5
+                flex items-center justify-center gap-1.5
 
                 ${sizeStyles.trend}
 
@@ -316,6 +432,8 @@ function ModernStatCard({
 
                 rounded-md
 
+                w-full
+
               `}>
 
                 {trend && trendIcons[trend]}
@@ -325,7 +443,6 @@ function ModernStatCard({
               </div>
 
             ) : null}
-
           </div>
 
         </div>

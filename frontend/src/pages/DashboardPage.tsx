@@ -181,7 +181,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
   
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
@@ -271,6 +271,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   // Charger les trades avec filtres
   useEffect(() => {
+    // Attendre que le compte soit chargé avant de charger les données
+    if (accountLoading) {
+      return;
+    }
+
     const loadTrades = async () => {
       setIsLoading(true);
       setError(null);
@@ -393,7 +398,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
 
     loadTrades();
-  }, [accountId, selectedYear, selectedMonth, t]);
+  }, [accountId, selectedYear, selectedMonth, accountLoading, t]);
 
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative }
   const accountBalanceData = useMemo(() => {
@@ -962,10 +967,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }, 0);
 
     // Calculer les séquences consécutives avec/sans respect de la stratégie
-    let maxConsecutiveRespected = 0;
-    let maxConsecutiveNotRespected = 0;
-    let currentConsecutiveRespected = 0;
-    let currentConsecutiveNotRespected = 0;
+    // 1. Séquences de trades consécutifs
+    let maxConsecutiveTradesRespected = 0;
+    let maxConsecutiveTradesNotRespected = 0;
+    let currentConsecutiveTradesRespected = 0;
+    let currentConsecutiveTradesNotRespected = 0;
+
+    // 2. Séquences de jours consécutifs
+    let maxConsecutiveDaysRespected = 0;
+    let maxConsecutiveDaysNotRespected = 0;
+    let currentConsecutiveDaysRespected = 0;
+    let currentConsecutiveDaysNotRespected = 0;
 
     // Trier les trades par date d'entrée pour calculer les séquences consécutives
     const sortedTrades = [...trades].sort((a, b) => {
@@ -974,23 +986,107 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       return dateA - dateB;
     });
 
+    // Calculer les séquences de trades consécutifs
     sortedTrades.forEach(trade => {
       const strategy = strategies.get(trade.id);
       const isRespected = strategy?.strategy_respected;
 
       if (isRespected === true) {
-        currentConsecutiveRespected++;
-        currentConsecutiveNotRespected = 0;
-        maxConsecutiveRespected = Math.max(maxConsecutiveRespected, currentConsecutiveRespected);
+        currentConsecutiveTradesRespected++;
+        currentConsecutiveTradesNotRespected = 0;
+        maxConsecutiveTradesRespected = Math.max(maxConsecutiveTradesRespected, currentConsecutiveTradesRespected);
       } else if (isRespected === false) {
-        currentConsecutiveNotRespected++;
-        currentConsecutiveRespected = 0;
-        maxConsecutiveNotRespected = Math.max(maxConsecutiveNotRespected, currentConsecutiveNotRespected);
+        currentConsecutiveTradesNotRespected++;
+        currentConsecutiveTradesRespected = 0;
+        maxConsecutiveTradesNotRespected = Math.max(maxConsecutiveTradesNotRespected, currentConsecutiveTradesNotRespected);
       } else {
         // Si strategy_respected est null ou undefined (pas de stratégie), réinitialiser les compteurs
         // pour ne compter que les séquences de trades avec stratégie définie
-        currentConsecutiveRespected = 0;
-        currentConsecutiveNotRespected = 0;
+        currentConsecutiveTradesRespected = 0;
+        currentConsecutiveTradesNotRespected = 0;
+      }
+    });
+
+    // Calculer les séquences de jours consécutifs
+    // Grouper les trades par jour
+    const tradesByDay = new Map<string, typeof sortedTrades>();
+    sortedTrades.forEach(trade => {
+      if (trade.trade_day || trade.entered_at) {
+        const dateStr = trade.trade_day || trade.entered_at;
+        if (dateStr) {
+          const date = new Date(dateStr);
+          const dayKey = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+          if (!tradesByDay.has(dayKey)) {
+            tradesByDay.set(dayKey, []);
+          }
+          tradesByDay.get(dayKey)!.push(trade);
+        }
+      }
+    });
+
+    // Trier les jours par date et convertir en Date pour vérifier la consécutivité
+    const sortedDays = Array.from(tradesByDay.keys()).sort().map(dayKey => ({
+      key: dayKey,
+      date: new Date(dayKey + 'T00:00:00')
+    }));
+
+    let previousDay: Date | null = null;
+    
+    sortedDays.forEach(({ key: dayKey, date: currentDay }) => {
+      const dayTrades = tradesByDay.get(dayKey)!;
+      
+      // Vérifier si le jour est consécutif au jour précédent
+      const isConsecutive = previousDay === null || 
+        (currentDay.getTime() - previousDay.getTime()) === 86400000; // 1 jour = 86400000 ms
+      
+      if (!isConsecutive) {
+        // Si le jour n'est pas consécutif, réinitialiser les compteurs
+        currentConsecutiveDaysRespected = 0;
+        currentConsecutiveDaysNotRespected = 0;
+      }
+      
+      previousDay = currentDay;
+      
+      // Vérifier si tous les trades du jour ont une stratégie
+      const tradesWithStrategy = dayTrades.filter(trade => {
+        const strategy = strategies.get(trade.id);
+        return strategy?.strategy_respected !== null && strategy?.strategy_respected !== undefined;
+      });
+
+      // Si aucun trade du jour n'a de stratégie, réinitialiser les compteurs
+      if (tradesWithStrategy.length === 0) {
+        currentConsecutiveDaysRespected = 0;
+        currentConsecutiveDaysNotRespected = 0;
+        return;
+      }
+
+      // Vérifier si tous les trades du jour respectent la stratégie
+      const allRespected = tradesWithStrategy.every(trade => {
+        const strategy = strategies.get(trade.id);
+        return strategy?.strategy_respected === true;
+      });
+
+      // Vérifier si tous les trades du jour ne respectent pas la stratégie
+      const allNotRespected = tradesWithStrategy.every(trade => {
+        const strategy = strategies.get(trade.id);
+        return strategy?.strategy_respected === false;
+      });
+
+      // Si tous les trades du jour respectent la stratégie, incrémenter le compteur de jours consécutifs
+      if (allRespected && tradesWithStrategy.length === dayTrades.length) {
+        // Tous les trades du jour ont une stratégie et tous respectent
+        currentConsecutiveDaysRespected++;
+        currentConsecutiveDaysNotRespected = 0;
+        maxConsecutiveDaysRespected = Math.max(maxConsecutiveDaysRespected, currentConsecutiveDaysRespected);
+      } else if (allNotRespected && tradesWithStrategy.length === dayTrades.length) {
+        // Tous les trades du jour ont une stratégie et aucun ne respecte
+        currentConsecutiveDaysNotRespected++;
+        currentConsecutiveDaysRespected = 0;
+        maxConsecutiveDaysNotRespected = Math.max(maxConsecutiveDaysNotRespected, currentConsecutiveDaysNotRespected);
+      } else {
+        // Mix de respect/non-respect ou certains trades sans stratégie
+        currentConsecutiveDaysRespected = 0;
+        currentConsecutiveDaysNotRespected = 0;
       }
     });
     
@@ -1001,8 +1097,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       totalFees,
       winningTrades: winningTrades.length,
       losingTrades: losingTrades.length,
-      maxConsecutiveRespected,
-      maxConsecutiveNotRespected,
+      maxConsecutiveTradesRespected,
+      maxConsecutiveTradesNotRespected,
+      maxConsecutiveDaysRespected,
+      maxConsecutiveDaysNotRespected,
+      currentConsecutiveTradesRespected,
+      currentConsecutiveTradesNotRespected,
+      currentConsecutiveDaysRespected,
+      currentConsecutiveDaysNotRespected,
     };
   }, [trades, strategies]);
 
@@ -1286,45 +1388,80 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               />
               
               <ModernStatCard
-                label={t('dashboard:totalFees')}
-                value={formatCurrency(additionalStats.totalFees, currencySymbol)}
-                variant="warning"
+                label={additionalStats.currentConsecutiveDaysRespected > 0 
+                  ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`
+                  : additionalStats.currentConsecutiveDaysNotRespected > 0
+                  ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceNotRespect')}`
+                  : t('dashboard:currentSeries')
+                }
+                value={additionalStats.currentConsecutiveDaysRespected > 0 
+                  ? `${additionalStats.currentConsecutiveDaysRespected} ${t('dashboard:days')}`
+                  : additionalStats.currentConsecutiveDaysNotRespected > 0
+                  ? `${additionalStats.currentConsecutiveDaysNotRespected} ${t('dashboard:days')}`
+                  : `0 ${t('dashboard:days')}`
+                }
+                variant={additionalStats.currentConsecutiveDaysRespected > 0 ? 'success' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'danger' : 'default'}
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
-                trend={undefined}
-                trendValue={Math.abs(additionalStats.totalPnl) > 0 ? `${((additionalStats.totalFees / Math.abs(additionalStats.totalPnl)) * 100).toFixed(1)}${t('dashboard:ofPnL')}` : t('common:na')}
+                subMetrics={[
+                  {
+                    label: additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:currentRespectDays') : t('dashboard:currentNotRespectDays'),
+                    value: `${additionalStats.currentConsecutiveDaysRespected > 0 ? additionalStats.currentConsecutiveDaysRespected : additionalStats.currentConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`
+                  },
+                  {
+                    label: additionalStats.currentConsecutiveTradesRespected > 0 ? t('dashboard:currentRespectTrades') : t('dashboard:currentNotRespectTrades'),
+                    value: `${additionalStats.currentConsecutiveTradesRespected > 0 ? additionalStats.currentConsecutiveTradesRespected : additionalStats.currentConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
+                  }
+                ]}
+                trend={additionalStats.currentConsecutiveDaysRespected > 0 ? 'up' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
+                trendValue={additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:sequenceRespect') : additionalStats.currentConsecutiveDaysNotRespected > 0 ? t('dashboard:sequenceNotRespect') : undefined}
               />
               
               <ModernStatCard
                 label={t('dashboard:sequenceRespect')}
-                value={additionalStats.maxConsecutiveRespected || 0}
-                variant={additionalStats.maxConsecutiveRespected >= 21 ? 'success' : additionalStats.maxConsecutiveRespected > 0 ? 'info' : 'default'}
+                value={`${additionalStats.maxConsecutiveDaysRespected || 0} ${t('dashboard:days')}`}
+                variant={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'success' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'info' : 'default'}
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
-                trend={additionalStats.maxConsecutiveRespected > 0 ? 'up' : undefined}
-                trendValue={additionalStats.maxConsecutiveRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveRespected} ${t('trades:trades')} (${t('dashboard:objective')}: 21)` : t('dashboard:noDataAvailable')}
+                progressValue={additionalStats.maxConsecutiveDaysRespected || 0}
+                progressMax={21}
+                progressLabel={t('dashboard:objective')}
+                subMetrics={additionalStats.maxConsecutiveDaysRespected > 0 ? [
+                  {
+                    label: t('dashboard:maxTrades'),
+                    value: `${additionalStats.maxConsecutiveTradesRespected || 0} ${t('trades:trades')}`
+                  }
+                ] : undefined}
+                trend={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'up' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'up' : undefined}
+                trendValue={additionalStats.maxConsecutiveDaysRespected >= 21 ? t('dashboard:objectiveAchieved') : additionalStats.maxConsecutiveDaysRespected > 0 ? `${21 - (additionalStats.maxConsecutiveDaysRespected || 0)} ${t('dashboard:daysRemaining')}` : undefined}
               />
               
               <ModernStatCard
                 label={t('dashboard:sequenceNotRespect')}
-                value={additionalStats.maxConsecutiveNotRespected || 0}
-                variant={additionalStats.maxConsecutiveNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveNotRespected > 0 ? 'warning' : 'default'}
+                value={`${additionalStats.maxConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`}
+                variant={additionalStats.maxConsecutiveDaysNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'warning' : 'default'}
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 }
-                trend={additionalStats.maxConsecutiveNotRespected > 0 ? 'down' : undefined}
-                trendValue={additionalStats.maxConsecutiveNotRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveNotRespected} ${t('trades:trades')}` : t('dashboard:noDataAvailable')}
+                subMetrics={additionalStats.maxConsecutiveDaysNotRespected > 0 ? [
+                  {
+                    label: t('dashboard:maxTrades'),
+                    value: `${additionalStats.maxConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
+                  }
+                ] : undefined}
+                trend={additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
+                trendValue={additionalStats.maxConsecutiveDaysNotRespected > 0 ? t('dashboard:needsAttention') : undefined}
               />
             </div>
           )}
@@ -1635,16 +1772,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         anchor: 'end' as const,
                         align: 'top' as const,
                         color: function(context: any) {
-                          const value = context.parsed?.y || context.raw;
-                          return value >= 0 ? '#3b82f6' : '#ec4899';
+                          // Dans chartjs-plugin-datalabels, accéder à la valeur via le dataset
+                          const dataset = context.dataset;
+                          const dataIndex = context.dataIndex;
+                          const value = dataset?.data?.[dataIndex] ?? 0;
+                          // S'assurer que la valeur est un nombre
+                          const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+                          return numValue >= 0 ? '#3b82f6' : '#ec4899';
                         },
                         font: {
                           size: 12,
                           weight: 600 as const
                         },
                         formatter: function(value: any, context: any) {
-                          const actualValue = context.parsed?.y || value;
-                          return formatCurrency(actualValue, currencySymbol);
+                          // Accéder à la valeur de différentes manières pour être sûr
+                          const dataset = context.dataset;
+                          const dataIndex = context.dataIndex;
+                          const actualValue = dataset?.data?.[dataIndex] ?? value ?? 0;
+                          const numValue = typeof actualValue === 'number' ? actualValue : parseFloat(actualValue) || 0;
+                          return formatCurrency(numValue, currencySymbol);
                         }
                       }
                     },

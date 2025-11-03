@@ -375,9 +375,10 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         
         # Calculs des ratios
         # 1. Profit Factor
+        # Ratio des gains totaux sur les pertes totales (en valeur absolue)
         profit_factor = 0
         if total_losses != 0:
-            profit_factor = abs(total_gains / abs(total_losses))
+            profit_factor = abs(total_gains) / abs(total_losses)
         
         # 2. Ratio Win/Loss
         win_loss_ratio = 0
@@ -388,10 +389,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         consistency_ratio = win_rate
         
         # 4. Ratio de Récupération
+        # Ratio du meilleur trade sur le pire trade (en valeur absolue)
         recovery_ratio = 0
         if worst_trade and best_trade:
             if worst_trade != 0:
-                recovery_ratio = abs(best_trade / worst_trade)
+                recovery_ratio = abs(best_trade) / abs(worst_trade)
         
         # 5. Ratio P/L par Trade
         pnl_per_trade = 0
@@ -399,9 +401,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             pnl_per_trade = aggregates['total_pnl'] / total_trades
         
         # 6. Ratio de Frais
+        # Le ratio représente le pourcentage des frais par rapport au P/L (en valeur absolue)
+        # Cela permet d'avoir un ratio cohérent même quand le P/L est négatif
         fees_ratio = 0
         if aggregates['total_pnl'] and aggregates['total_pnl'] != 0:
-            fees_ratio = abs(aggregates['total_fees'] / aggregates['total_pnl'])
+            fees_ratio = abs(aggregates['total_fees']) / abs(aggregates['total_pnl'])
         
         # 7. Ratio Volume/P/L
         volume_pnl_ratio = 0
@@ -1731,9 +1735,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # Les sessions gagnantes sont celles où le trade est gagnant (net_pnl > 0)
         winning_sessions = queryset.filter(trade__net_pnl__gt=0)
         winning_count = winning_sessions.count()
-        tp1_only = winning_sessions.filter(tp1_reached=True, tp2_plus_reached=False).count()
+        # TP1 : toutes les sessions où TP1 est atteint (même si TP2+ est aussi atteint)
+        tp1_only = winning_sessions.filter(tp1_reached=True).count()
+        # TP2+ : toutes les sessions où TP2+ est atteint
         tp2_plus = winning_sessions.filter(tp2_plus_reached=True).count()
-        no_tp = winning_count - tp1_only - tp2_plus
+        # No TP : sessions gagnantes sans TP1 ni TP2+ atteint
+        no_tp = winning_sessions.filter(tp1_reached=False, tp2_plus_reached=False).count()
         
         # 4. Répartition des émotions dominantes
         emotion_counts = defaultdict(int)
@@ -1828,6 +1835,8 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 'total_strategies': total_all_time,
                 'respect_percentage': round(all_time_respect_percentage, 2),
                 'not_respect_percentage': round(all_time_not_respect_percentage, 2),
+                'respected_count': all_time_respected,
+                'not_respected_count': all_time_not_respected,
             }
         })
     
