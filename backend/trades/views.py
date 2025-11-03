@@ -375,9 +375,10 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         
         # Calculs des ratios
         # 1. Profit Factor
+        # Ratio des gains totaux sur les pertes totales (en valeur absolue)
         profit_factor = 0
         if total_losses != 0:
-            profit_factor = abs(total_gains / abs(total_losses))
+            profit_factor = abs(total_gains) / abs(total_losses)
         
         # 2. Ratio Win/Loss
         win_loss_ratio = 0
@@ -388,10 +389,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         consistency_ratio = win_rate
         
         # 4. Ratio de Récupération
+        # Ratio du meilleur trade sur le pire trade (en valeur absolue)
         recovery_ratio = 0
         if worst_trade and best_trade:
             if worst_trade != 0:
-                recovery_ratio = abs(best_trade / worst_trade)
+                recovery_ratio = abs(best_trade) / abs(worst_trade)
         
         # 5. Ratio P/L par Trade
         pnl_per_trade = 0
