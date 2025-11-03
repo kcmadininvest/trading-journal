@@ -1748,16 +1748,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         anchor: 'end' as const,
                         align: 'top' as const,
                         color: function(context: any) {
-                          const value = context.parsed?.y || context.raw;
-                          return value >= 0 ? '#3b82f6' : '#ec4899';
+                          // Dans chartjs-plugin-datalabels, accéder à la valeur via le dataset
+                          const dataset = context.dataset;
+                          const dataIndex = context.dataIndex;
+                          const value = dataset?.data?.[dataIndex] ?? 0;
+                          // S'assurer que la valeur est un nombre
+                          const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+                          return numValue >= 0 ? '#3b82f6' : '#ec4899';
                         },
                         font: {
                           size: 12,
                           weight: 600 as const
                         },
                         formatter: function(value: any, context: any) {
-                          const actualValue = context.parsed?.y || value;
-                          return formatCurrency(actualValue, currencySymbol);
+                          // Accéder à la valeur de différentes manières pour être sûr
+                          const dataset = context.dataset;
+                          const dataIndex = context.dataIndex;
+                          const actualValue = dataset?.data?.[dataIndex] ?? value ?? 0;
+                          const numValue = typeof actualValue === 'number' ? actualValue : parseFloat(actualValue) || 0;
+                          return formatCurrency(numValue, currencySymbol);
                         }
                       }
                     },
