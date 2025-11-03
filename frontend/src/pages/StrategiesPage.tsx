@@ -398,7 +398,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [t, chartColors]);
+  }), [chartColors]);
 
   // Graphique 3: Répartition des sessions gagnantes selon TP1 et TP2+
   const winningSessionsData = useMemo(() => {
