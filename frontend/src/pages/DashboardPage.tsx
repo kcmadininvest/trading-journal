@@ -1021,7 +1021,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   // Calculer les statistiques supplémentaires pour les cartes
   const additionalStats = useMemo(() => {
-    if (trades.length === 0) return null;
+    // Utiliser les trades complets (sans filtres date) pour les séquences
+    // Si allTradesForSequences est vide, utiliser les trades filtrés (fallback)
+    const tradesForSequences = allTradesForSequences.length > 0 ? allTradesForSequences : trades;
+    const strategiesForSequences = allTradesForSequences.length > 0 ? allStrategiesForSequences : strategies;
+    
+    // Vérifier qu'on a au moins des trades pour calculer les statistiques
+    if (trades.length === 0 && tradesForSequences.length === 0) return null;
 
     const totalTrades = trades.filter(t => t.is_profitable !== null).length;
     const winningTrades = trades.filter(t => t.is_profitable === true && t.net_pnl);
@@ -1041,7 +1047,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }, 0);
 
     // Calculer les séquences consécutives avec/sans respect de la stratégie
-    // Utiliser allTradesForSequences et allStrategiesForSequences (sans filtres date)
+    // Utiliser tradesForSequences et strategiesForSequences (sans filtres date si disponibles)
     // pour calculer les séquences globales du compte
     // 1. Séquences de trades consécutifs
     let maxConsecutiveTradesRespected = 0;
@@ -1054,11 +1060,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     let maxConsecutiveDaysNotRespected = 0;
     let currentConsecutiveDaysRespected = 0;
     let currentConsecutiveDaysNotRespected = 0;
-
-    // Utiliser les trades complets (sans filtres date) pour les séquences
-    // Si allTradesForSequences est vide, utiliser les trades filtrés (fallback)
-    const tradesForSequences = allTradesForSequences.length > 0 ? allTradesForSequences : trades;
-    const strategiesForSequences = allTradesForSequences.length > 0 ? allStrategiesForSequences : strategies;
     
     const sortedTradesForSequences = [...tradesForSequences].sort((a, b) => {
       const dateA = a.entered_at ? new Date(a.entered_at).getTime() : 0;
@@ -1104,28 +1105,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       }
     });
 
-    // Trier les jours par date et convertir en Date pour vérifier la consécutivité
-    const sortedDays = Array.from(tradesByDay.keys()).sort().map(dayKey => ({
-      key: dayKey,
-      date: new Date(dayKey + 'T00:00:00')
-    }));
-
-    let previousDay: Date | null = null;
+    // Trier les jours par date (seulement les jours avec trades)
+    // La consécutivité est basée sur les jours avec trades, pas sur les jours calendaires
+    // Deux jours avec trades sont consécutifs s'il n'y a pas d'autre jour avec trades entre eux
+    // Puisque la liste est triée et ne contient que les jours avec trades,
+    // chaque jour dans cette liste est automatiquement consécutif au précédent
+    const sortedDays = Array.from(tradesByDay.keys()).sort();
     
-    sortedDays.forEach(({ key: dayKey, date: currentDay }) => {
+    // Parcourir les jours avec trades dans l'ordre chronologique
+    sortedDays.forEach((dayKey) => {
       const dayTrades = tradesByDay.get(dayKey)!;
-      
-      // Vérifier si le jour est consécutif au jour précédent
-      const isConsecutive = previousDay === null || 
-        (currentDay.getTime() - previousDay.getTime()) === 86400000; // 1 jour = 86400000 ms
-      
-      if (!isConsecutive) {
-        // Si le jour n'est pas consécutif, réinitialiser les compteurs
-        currentConsecutiveDaysRespected = 0;
-        currentConsecutiveDaysNotRespected = 0;
-      }
-      
-      previousDay = currentDay;
       
       // Vérifier si tous les trades du jour ont une stratégie
       const tradesWithStrategy = dayTrades.filter(trade => {
