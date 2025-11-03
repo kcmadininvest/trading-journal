@@ -3,6 +3,7 @@ import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { RespectRateCard } from '../components/common/RespectRateCard';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
@@ -781,24 +782,27 @@ const StrategiesPage: React.FC = () => {
         {statistics && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Taux de respect total */}
-            <div className={`bg-gradient-to-r ${allTimeRespectColor.from} ${allTimeRespectColor.to} ${allTimeRespectColor.darkFrom} ${allTimeRespectColor.darkTo} rounded-lg shadow-lg p-6 text-white`}>
-              <h2 className="text-lg font-semibold mb-2">
-                {t('strategies:totalRespectRate')} <span className="text-xs font-normal opacity-75">({t('strategies:allPeriodsAndAccounts')})</span>
-              </h2>
-              <p className="text-3xl font-bold mb-1">{allTimeRespect.toFixed(2)}%</p>
-              <p className="text-sm opacity-90">
-                {statistics?.all_time?.respected_count || 0} {t('strategies:outOf')} {statistics?.all_time?.total_strategies || 0} {t('trades:trades')}
-              </p>
-            </div>
+            <RespectRateCard
+              title={t('strategies:totalRespectRate')}
+              subtitle={`(${t('strategies:allPeriodsAndAccounts')})`}
+              percentage={allTimeRespect}
+              tradesCount={statistics?.all_time?.respected_count || 0}
+              totalTrades={statistics?.all_time?.total_strategies || 0}
+              tradesLabel={t('trades:trades')}
+              outOfLabel={t('strategies:outOf')}
+              gradientColors={allTimeRespectColor}
+            />
             
             {/* Taux de respect du compte */}
-            <div className={`bg-gradient-to-r ${accountRespectColor.from} ${accountRespectColor.to} ${accountRespectColor.darkFrom} ${accountRespectColor.darkTo} rounded-lg shadow-lg p-6 text-white`}>
-              <h2 className="text-lg font-semibold mb-2">{t('strategies:accountRespectRate')}</h2>
-              <p className="text-3xl font-bold mb-1">{accountRespect.toFixed(2)}%</p>
-              <p className="text-sm opacity-90">
-                {statistics?.statistics?.respected_count || 0} {t('strategies:outOf')} {statistics?.statistics?.total_strategies || 0} {t('trades:trades')}
-              </p>
-            </div>
+            <RespectRateCard
+              title={t('strategies:accountRespectRate')}
+              percentage={accountRespect}
+              tradesCount={statistics?.statistics?.respected_count || 0}
+              totalTrades={statistics?.statistics?.total_strategies || 0}
+              tradesLabel={t('trades:trades')}
+              outOfLabel={t('strategies:outOf')}
+              gradientColors={accountRespectColor}
+            />
           </div>
         )}
 
