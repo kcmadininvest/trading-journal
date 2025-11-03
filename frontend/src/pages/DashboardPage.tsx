@@ -191,6 +191,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [strategies, setStrategies] = useState<Map<number, TradeStrategy>>(new Map());
+  // Trades et stratégies pour le calcul des séquences consécutives (sans filtres date)
+  const [allTradesForSequences, setAllTradesForSequences] = useState<TradeListItem[]>([]);
+  const [allStrategiesForSequences, setAllStrategiesForSequences] = useState<Map<number, TradeStrategy>>(new Map());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
@@ -399,6 +402,77 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
     loadTrades();
   }, [accountId, selectedYear, selectedMonth, accountLoading, t]);
+
+  // Charger tous les trades pour le calcul des séquences consécutives (sans filtres date)
+  useEffect(() => {
+    // Attendre que le compte soit chargé avant de charger les données
+    if (accountLoading) {
+      return;
+    }
+
+    const loadAllTradesForSequences = async () => {
+      try {
+        const filters: any = {
+          trading_account: accountId ?? undefined,
+          page_size: 10000, // Limite raisonnable pour toutes les périodes
+        };
+
+        const response = await tradesService.list(filters);
+        
+        // Trier par date d'entrée croissante
+        const sortedTrades = [...response.results].sort((a, b) => {
+          const dateA = a.entered_at ? new Date(a.entered_at).getTime() : 0;
+          const dateB = b.entered_at ? new Date(b.entered_at).getTime() : 0;
+          return dateA - dateB;
+        });
+        
+        setAllTradesForSequences(sortedTrades);
+
+        // Charger les stratégies pour tous les trades
+        (async () => {
+          const strategiesMap = new Map<number, TradeStrategy>();
+          try {
+            // Récupérer toutes les dates uniques des trades
+            const uniqueDates = new Set<string>();
+            sortedTrades.forEach(trade => {
+              if (trade.trade_day) {
+                uniqueDates.add(trade.trade_day);
+              }
+            });
+
+            // Limiter le nombre de dates à traiter (max 2 ans pour les séquences)
+            const datesArray = Array.from(uniqueDates).slice(0, 730); // Max 2 ans de dates
+            
+            // Charger les stratégies en parallèle (batch de 10 à la fois)
+            const batchSize = 10;
+            for (let i = 0; i < datesArray.length; i += batchSize) {
+              const batch = datesArray.slice(i, i + batchSize);
+              await Promise.all(
+                batch.map(async (date) => {
+                  try {
+                    const dateStrategies = await tradeStrategiesService.byDate(date, accountId ?? undefined);
+                    dateStrategies.forEach(strategy => {
+                      strategiesMap.set(strategy.trade, strategy);
+                    });
+                  } catch (e) {
+                    // Ignorer les erreurs pour les dates sans stratégies
+                  }
+                })
+              );
+            }
+          } catch (err) {
+            console.error('Erreur lors du chargement des stratégies pour séquences', err);
+          }
+
+          setAllStrategiesForSequences(strategiesMap);
+        })();
+      } catch (err) {
+        console.error('Erreur lors du chargement des trades pour séquences', err);
+      }
+    };
+
+    loadAllTradesForSequences();
+  }, [accountId, accountLoading]);
 
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative }
   const accountBalanceData = useMemo(() => {
@@ -967,6 +1041,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }, 0);
 
     // Calculer les séquences consécutives avec/sans respect de la stratégie
+    // Utiliser allTradesForSequences et allStrategiesForSequences (sans filtres date)
+    // pour calculer les séquences globales du compte
     // 1. Séquences de trades consécutifs
     let maxConsecutiveTradesRespected = 0;
     let maxConsecutiveTradesNotRespected = 0;
@@ -979,16 +1055,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     let currentConsecutiveDaysRespected = 0;
     let currentConsecutiveDaysNotRespected = 0;
 
-    // Trier les trades par date d'entrée pour calculer les séquences consécutives
-    const sortedTrades = [...trades].sort((a, b) => {
+    // Utiliser les trades complets (sans filtres date) pour les séquences
+    // Si allTradesForSequences est vide, utiliser les trades filtrés (fallback)
+    const tradesForSequences = allTradesForSequences.length > 0 ? allTradesForSequences : trades;
+    const strategiesForSequences = allTradesForSequences.length > 0 ? allStrategiesForSequences : strategies;
+    
+    const sortedTradesForSequences = [...tradesForSequences].sort((a, b) => {
       const dateA = a.entered_at ? new Date(a.entered_at).getTime() : 0;
       const dateB = b.entered_at ? new Date(b.entered_at).getTime() : 0;
       return dateA - dateB;
     });
 
     // Calculer les séquences de trades consécutifs
-    sortedTrades.forEach(trade => {
-      const strategy = strategies.get(trade.id);
+    sortedTradesForSequences.forEach(trade => {
+      const strategy = strategiesForSequences.get(trade.id);
       const isRespected = strategy?.strategy_respected;
 
       if (isRespected === true) {
@@ -1009,8 +1089,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
     // Calculer les séquences de jours consécutifs
     // Grouper les trades par jour
-    const tradesByDay = new Map<string, typeof sortedTrades>();
-    sortedTrades.forEach(trade => {
+    const tradesByDay = new Map<string, typeof sortedTradesForSequences>();
+    sortedTradesForSequences.forEach(trade => {
       if (trade.trade_day || trade.entered_at) {
         const dateStr = trade.trade_day || trade.entered_at;
         if (dateStr) {
@@ -1049,7 +1129,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       
       // Vérifier si tous les trades du jour ont une stratégie
       const tradesWithStrategy = dayTrades.filter(trade => {
-        const strategy = strategies.get(trade.id);
+        const strategy = strategiesForSequences.get(trade.id);
         return strategy?.strategy_respected !== null && strategy?.strategy_respected !== undefined;
       });
 
@@ -1062,13 +1142,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       // Vérifier si tous les trades du jour respectent la stratégie
       const allRespected = tradesWithStrategy.every(trade => {
-        const strategy = strategies.get(trade.id);
+        const strategy = strategiesForSequences.get(trade.id);
         return strategy?.strategy_respected === true;
       });
 
       // Vérifier si tous les trades du jour ne respectent pas la stratégie
       const allNotRespected = tradesWithStrategy.every(trade => {
-        const strategy = strategies.get(trade.id);
+        const strategy = strategiesForSequences.get(trade.id);
         return strategy?.strategy_respected === false;
       });
 
@@ -1106,7 +1186,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       currentConsecutiveDaysRespected,
       currentConsecutiveDaysNotRespected,
     };
-  }, [trades, strategies]);
+  }, [trades, strategies, allTradesForSequences, allStrategiesForSequences]);
 
   // Helper function pour obtenir les couleurs selon le thème
   const chartColors = useMemo(() => ({
