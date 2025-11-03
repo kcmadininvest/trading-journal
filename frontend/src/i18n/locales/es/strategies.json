@@ -23,8 +23,8 @@
   "ifStrategyRespected": "Si estrategia respetada (%)",
   "ifStrategyNotRespected": "Si estrategia no respetada (%)",
   "winningSessionsDistribution": "Distribución de sesiones ganadoras según TP alcanzado",
-  "winningSessionsDistributionTooltip": "Este gráfico muestra cómo se distribuyen las sesiones ganadoras (operaciones rentables) según el Take Profit alcanzado. Solo TP1: se alcanzó el primer Take Profit pero no TP2+. TP2+: se alcanzó el segundo Take Profit o más. Sin TP: no se alcanzó ningún Take Profit pero la operación sigue siendo rentable.",
-  "tp1Only": "Solo TP1",
+  "winningSessionsDistributionTooltip": "Este gráfico muestra cómo se distribuyen las sesiones ganadoras (operaciones rentables) según el Take Profit alcanzado. TP1: se alcanzó el primer Take Profit (independientemente de si TP2+ también se alcanzó). TP2+: se alcanzó el segundo Take Profit o más. Sin TP: no se alcanzó ningún Take Profit pero la operación sigue siendo rentable.",
+  "tp1Only": "TP1",
   "tp2Plus": "TP2+",
   "noTp": "Sin TP",
   "numberOfWinningSessions": "Número de sesiones ganadoras",
@@ -35,6 +35,7 @@
   "percentage": "Porcentaje (%)",
   "trades": "operaciones",
   "on": "en",
+  "outOf": "de",
   "strategyRespect": "Respeto de la estrategia",
   "tradesRespected": "operaciones respetadas",
   "emotions": {

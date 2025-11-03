@@ -782,10 +782,12 @@ const StrategiesPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Taux de respect total */}
             <div className={`bg-gradient-to-r ${allTimeRespectColor.from} ${allTimeRespectColor.to} ${allTimeRespectColor.darkFrom} ${allTimeRespectColor.darkTo} rounded-lg shadow-lg p-6 text-white`}>
-              <h2 className="text-lg font-semibold mb-2">{t('strategies:totalRespectRate')}</h2>
+              <h2 className="text-lg font-semibold mb-2">
+                {t('strategies:totalRespectRate')} <span className="text-xs font-normal opacity-75">({t('strategies:allPeriodsAndAccounts')})</span>
+              </h2>
               <p className="text-3xl font-bold mb-1">{allTimeRespect.toFixed(2)}%</p>
               <p className="text-sm opacity-90">
-                {t('strategies:allPeriodsAndAccounts')} ({statistics.all_time.total_strategies} {t('trades:trades')})
+                {statistics?.all_time?.respected_count || 0} {t('strategies:outOf')} {statistics?.all_time?.total_strategies || 0} {t('trades:trades')}
               </p>
             </div>
             
@@ -794,7 +796,7 @@ const StrategiesPage: React.FC = () => {
               <h2 className="text-lg font-semibold mb-2">{t('strategies:accountRespectRate')}</h2>
               <p className="text-3xl font-bold mb-1">{accountRespect.toFixed(2)}%</p>
               <p className="text-sm opacity-90">
-                {statistics?.statistics?.total_strategies || 0} {t('trades:trades')}
+                {statistics?.statistics?.respected_count || 0} {t('strategies:outOf')} {statistics?.statistics?.total_strategies || 0} {t('trades:trades')}
               </p>
             </div>
           </div>

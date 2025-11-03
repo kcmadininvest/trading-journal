@@ -1735,9 +1735,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # Les sessions gagnantes sont celles où le trade est gagnant (net_pnl > 0)
         winning_sessions = queryset.filter(trade__net_pnl__gt=0)
         winning_count = winning_sessions.count()
-        tp1_only = winning_sessions.filter(tp1_reached=True, tp2_plus_reached=False).count()
+        # TP1 : toutes les sessions où TP1 est atteint (même si TP2+ est aussi atteint)
+        tp1_only = winning_sessions.filter(tp1_reached=True).count()
+        # TP2+ : toutes les sessions où TP2+ est atteint
         tp2_plus = winning_sessions.filter(tp2_plus_reached=True).count()
-        no_tp = winning_count - tp1_only - tp2_plus
+        # No TP : sessions gagnantes sans TP1 ni TP2+ atteint
+        no_tp = winning_sessions.filter(tp1_reached=False, tp2_plus_reached=False).count()
         
         # 4. Répartition des émotions dominantes
         emotion_counts = defaultdict(int)
@@ -1832,6 +1835,8 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 'total_strategies': total_all_time,
                 'respect_percentage': round(all_time_respect_percentage, 2),
                 'not_respect_percentage': round(all_time_not_respect_percentage, 2),
+                'respected_count': all_time_respected,
+                'not_respected_count': all_time_not_respected,
             }
         })
     
