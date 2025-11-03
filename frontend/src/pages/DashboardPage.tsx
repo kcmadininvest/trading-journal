@@ -967,10 +967,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }, 0);
 
     // Calculer les séquences consécutives avec/sans respect de la stratégie
-    let maxConsecutiveRespected = 0;
-    let maxConsecutiveNotRespected = 0;
-    let currentConsecutiveRespected = 0;
-    let currentConsecutiveNotRespected = 0;
+    // 1. Séquences de trades consécutifs
+    let maxConsecutiveTradesRespected = 0;
+    let maxConsecutiveTradesNotRespected = 0;
+    let currentConsecutiveTradesRespected = 0;
+    let currentConsecutiveTradesNotRespected = 0;
+
+    // 2. Séquences de jours consécutifs
+    let maxConsecutiveDaysRespected = 0;
+    let maxConsecutiveDaysNotRespected = 0;
+    let currentConsecutiveDaysRespected = 0;
+    let currentConsecutiveDaysNotRespected = 0;
 
     // Trier les trades par date d'entrée pour calculer les séquences consécutives
     const sortedTrades = [...trades].sort((a, b) => {
@@ -979,23 +986,107 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       return dateA - dateB;
     });
 
+    // Calculer les séquences de trades consécutifs
     sortedTrades.forEach(trade => {
       const strategy = strategies.get(trade.id);
       const isRespected = strategy?.strategy_respected;
 
       if (isRespected === true) {
-        currentConsecutiveRespected++;
-        currentConsecutiveNotRespected = 0;
-        maxConsecutiveRespected = Math.max(maxConsecutiveRespected, currentConsecutiveRespected);
+        currentConsecutiveTradesRespected++;
+        currentConsecutiveTradesNotRespected = 0;
+        maxConsecutiveTradesRespected = Math.max(maxConsecutiveTradesRespected, currentConsecutiveTradesRespected);
       } else if (isRespected === false) {
-        currentConsecutiveNotRespected++;
-        currentConsecutiveRespected = 0;
-        maxConsecutiveNotRespected = Math.max(maxConsecutiveNotRespected, currentConsecutiveNotRespected);
+        currentConsecutiveTradesNotRespected++;
+        currentConsecutiveTradesRespected = 0;
+        maxConsecutiveTradesNotRespected = Math.max(maxConsecutiveTradesNotRespected, currentConsecutiveTradesNotRespected);
       } else {
         // Si strategy_respected est null ou undefined (pas de stratégie), réinitialiser les compteurs
         // pour ne compter que les séquences de trades avec stratégie définie
-        currentConsecutiveRespected = 0;
-        currentConsecutiveNotRespected = 0;
+        currentConsecutiveTradesRespected = 0;
+        currentConsecutiveTradesNotRespected = 0;
+      }
+    });
+
+    // Calculer les séquences de jours consécutifs
+    // Grouper les trades par jour
+    const tradesByDay = new Map<string, typeof sortedTrades>();
+    sortedTrades.forEach(trade => {
+      if (trade.trade_day || trade.entered_at) {
+        const dateStr = trade.trade_day || trade.entered_at;
+        if (dateStr) {
+          const date = new Date(dateStr);
+          const dayKey = date.toISOString().split('T')[0]; // Format YYYY-MM-DD
+          if (!tradesByDay.has(dayKey)) {
+            tradesByDay.set(dayKey, []);
+          }
+          tradesByDay.get(dayKey)!.push(trade);
+        }
+      }
+    });
+
+    // Trier les jours par date et convertir en Date pour vérifier la consécutivité
+    const sortedDays = Array.from(tradesByDay.keys()).sort().map(dayKey => ({
+      key: dayKey,
+      date: new Date(dayKey + 'T00:00:00')
+    }));
+
+    let previousDay: Date | null = null;
+    
+    sortedDays.forEach(({ key: dayKey, date: currentDay }) => {
+      const dayTrades = tradesByDay.get(dayKey)!;
+      
+      // Vérifier si le jour est consécutif au jour précédent
+      const isConsecutive = previousDay === null || 
+        (currentDay.getTime() - previousDay.getTime()) === 86400000; // 1 jour = 86400000 ms
+      
+      if (!isConsecutive) {
+        // Si le jour n'est pas consécutif, réinitialiser les compteurs
+        currentConsecutiveDaysRespected = 0;
+        currentConsecutiveDaysNotRespected = 0;
+      }
+      
+      previousDay = currentDay;
+      
+      // Vérifier si tous les trades du jour ont une stratégie
+      const tradesWithStrategy = dayTrades.filter(trade => {
+        const strategy = strategies.get(trade.id);
+        return strategy?.strategy_respected !== null && strategy?.strategy_respected !== undefined;
+      });
+
+      // Si aucun trade du jour n'a de stratégie, réinitialiser les compteurs
+      if (tradesWithStrategy.length === 0) {
+        currentConsecutiveDaysRespected = 0;
+        currentConsecutiveDaysNotRespected = 0;
+        return;
+      }
+
+      // Vérifier si tous les trades du jour respectent la stratégie
+      const allRespected = tradesWithStrategy.every(trade => {
+        const strategy = strategies.get(trade.id);
+        return strategy?.strategy_respected === true;
+      });
+
+      // Vérifier si tous les trades du jour ne respectent pas la stratégie
+      const allNotRespected = tradesWithStrategy.every(trade => {
+        const strategy = strategies.get(trade.id);
+        return strategy?.strategy_respected === false;
+      });
+
+      // Si tous les trades du jour respectent la stratégie, incrémenter le compteur de jours consécutifs
+      if (allRespected && tradesWithStrategy.length === dayTrades.length) {
+        // Tous les trades du jour ont une stratégie et tous respectent
+        currentConsecutiveDaysRespected++;
+        currentConsecutiveDaysNotRespected = 0;
+        maxConsecutiveDaysRespected = Math.max(maxConsecutiveDaysRespected, currentConsecutiveDaysRespected);
+      } else if (allNotRespected && tradesWithStrategy.length === dayTrades.length) {
+        // Tous les trades du jour ont une stratégie et aucun ne respecte
+        currentConsecutiveDaysNotRespected++;
+        currentConsecutiveDaysRespected = 0;
+        maxConsecutiveDaysNotRespected = Math.max(maxConsecutiveDaysNotRespected, currentConsecutiveDaysNotRespected);
+      } else {
+        // Mix de respect/non-respect ou certains trades sans stratégie
+        currentConsecutiveDaysRespected = 0;
+        currentConsecutiveDaysNotRespected = 0;
       }
     });
     
@@ -1006,8 +1097,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       totalFees,
       winningTrades: winningTrades.length,
       losingTrades: losingTrades.length,
-      maxConsecutiveRespected,
-      maxConsecutiveNotRespected,
+      maxConsecutiveTradesRespected,
+      maxConsecutiveTradesNotRespected,
+      maxConsecutiveDaysRespected,
+      maxConsecutiveDaysNotRespected,
     };
   }, [trades, strategies]);
 
@@ -1306,30 +1399,45 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               
               <ModernStatCard
                 label={t('dashboard:sequenceRespect')}
-                value={additionalStats.maxConsecutiveRespected || 0}
-                variant={additionalStats.maxConsecutiveRespected >= 21 ? 'success' : additionalStats.maxConsecutiveRespected > 0 ? 'info' : 'default'}
+                value={`${additionalStats.maxConsecutiveDaysRespected || 0} ${t('dashboard:days')}`}
+                variant={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'success' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'info' : 'default'}
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
-                trend={additionalStats.maxConsecutiveRespected > 0 ? 'up' : undefined}
-                trendValue={additionalStats.maxConsecutiveRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveRespected} ${t('trades:trades')} (${t('dashboard:objective')}: 21)` : t('dashboard:noDataAvailable')}
+                progressValue={additionalStats.maxConsecutiveDaysRespected || 0}
+                progressMax={21}
+                progressLabel={t('dashboard:objective')}
+                subMetrics={additionalStats.maxConsecutiveDaysRespected > 0 ? [
+                  {
+                    label: t('dashboard:maxTrades'),
+                    value: `${additionalStats.maxConsecutiveTradesRespected || 0} ${t('trades:trades')}`
+                  }
+                ] : undefined}
+                trend={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'up' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'up' : undefined}
+                trendValue={additionalStats.maxConsecutiveDaysRespected >= 21 ? t('dashboard:objectiveAchieved') : additionalStats.maxConsecutiveDaysRespected > 0 ? `${21 - (additionalStats.maxConsecutiveDaysRespected || 0)} ${t('dashboard:daysRemaining')}` : undefined}
               />
               
               <ModernStatCard
                 label={t('dashboard:sequenceNotRespect')}
-                value={additionalStats.maxConsecutiveNotRespected || 0}
-                variant={additionalStats.maxConsecutiveNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveNotRespected > 0 ? 'warning' : 'default'}
+                value={`${additionalStats.maxConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`}
+                variant={additionalStats.maxConsecutiveDaysNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'warning' : 'default'}
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 }
-                trend={additionalStats.maxConsecutiveNotRespected > 0 ? 'down' : undefined}
-                trendValue={additionalStats.maxConsecutiveNotRespected > 0 ? `${t('dashboard:maxTrades')}: ${additionalStats.maxConsecutiveNotRespected} ${t('trades:trades')}` : t('dashboard:noDataAvailable')}
+                subMetrics={additionalStats.maxConsecutiveDaysNotRespected > 0 ? [
+                  {
+                    label: t('dashboard:maxTrades'),
+                    value: `${additionalStats.maxConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
+                  }
+                ] : undefined}
+                trend={additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
+                trendValue={additionalStats.maxConsecutiveDaysNotRespected > 0 ? t('dashboard:needsAttention') : undefined}
               />
             </div>
           )}

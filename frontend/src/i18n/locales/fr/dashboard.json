@@ -72,11 +72,13 @@
   "profitFactor": "Profit Factor",
   "wlRatio": "Ratio W/L",
   "totalFees": "Frais Totaux",
-  "sequenceRespect": "Séquence Respect",
-  "sequenceNotRespect": "Séquence Non-Respect",
+  "sequenceRespect": "Respect Stratégie",
+  "sequenceNotRespect": "Non Respect Stratégie",
   "profitable": "Rentable",
   "losing": "Perdant",
-  "maxTrades": "Max",
+  "maxTrades": "Max trades",
+  "maxDays": "Max jours",
+  "days": "jours",
   "noDataAvailable": "Pas de données",
   "avg": "Avg",
   "ofPnL": "% du P/L",
@@ -93,6 +95,9 @@
   "balance": "Solde",
   "dayPnLShort": "PnL jour",
   "numberOfTrades": "Nombre de trades",
-  "tradingAccount": "Compte de trading"
+  "tradingAccount": "Compte de trading",
+  "objectiveAchieved": "Objectif atteint !",
+  "daysRemaining": "jours restants",
+  "needsAttention": "Attention requise"
 }
 
