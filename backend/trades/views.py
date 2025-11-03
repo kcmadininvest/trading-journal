@@ -399,9 +399,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             pnl_per_trade = aggregates['total_pnl'] / total_trades
         
         # 6. Ratio de Frais
+        # Le ratio représente le pourcentage des frais par rapport au P/L (en valeur absolue)
+        # Cela permet d'avoir un ratio cohérent même quand le P/L est négatif
         fees_ratio = 0
         if aggregates['total_pnl'] and aggregates['total_pnl'] != 0:
-            fees_ratio = abs(aggregates['total_fees'] / aggregates['total_pnl'])
+            fees_ratio = abs(aggregates['total_fees']) / abs(aggregates['total_pnl'])
         
         # 7. Ratio Volume/P/L
         volume_pnl_ratio = 0
