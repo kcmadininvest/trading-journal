@@ -9,6 +9,7 @@
   "allMonths": "Todos los meses",
   "reset": "Restablecer",
   "totalRespectRate": "Tasa de respeto total",
+  "accountRespectRate": "Tasa de respeto de la cuenta",
   "allPeriodsAndAccounts": "Todos los períodos y todas las cuentas combinadas",
   "strategies": "estrategias",
   "noDataForPeriod": "No hay datos disponibles para el período seleccionado.",
