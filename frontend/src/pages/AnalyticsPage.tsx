@@ -66,7 +66,7 @@ const AnalyticsPage: React.FC = () => {
     tooltipBody: isDark ? '#f3f4f6' : '#1f2937',
     tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
   }), [isDark]);
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
   const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -143,6 +143,11 @@ const AnalyticsPage: React.FC = () => {
   }, [monthNames, t]);
 
   useEffect(() => {
+    // Attendre que le compte soit chargé avant de charger les données
+    if (accountLoading) {
+      return;
+    }
+
     const loadTrades = async () => {
       setIsLoading(true);
       setError(null);
@@ -202,7 +207,7 @@ const AnalyticsPage: React.FC = () => {
     };
 
     loadTrades();
-  }, [accountId, selectedYear, selectedMonth, t]);
+  }, [accountId, selectedYear, selectedMonth, accountLoading, t]);
 
   // Performance par heure (nuage de points)
   const hourlyPerformanceScatter = useMemo(() => {

@@ -14,7 +14,7 @@ import { useTradingAccount } from '../contexts/TradingAccountContext';
 
 const TradesPage: React.FC = () => {
   const { t } = useI18nTranslation();
-  const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
+  const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
   const [items, setItems] = useState<TradeListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -138,18 +138,18 @@ const TradesPage: React.FC = () => {
   }, []); // Ne s'exécute qu'une fois au montage
 
   useEffect(() => {
-    // Attendre la fin de l'initialisation avant de charger
-    if (!hasInitialized) {
+    // Attendre la fin de l'initialisation et que le compte soit chargé avant de charger
+    if (!hasInitialized || accountLoading) {
       return;
     }
     
     // Passer explicitement page et pageSize pour garantir les bonnes valeurs au premier chargement
     load(page, pageSize);
-  }, [load, hasInitialized, page, pageSize]);
+  }, [load, hasInitialized, accountLoading, page, pageSize]);
 
   useEffect(() => {
-    // Attendre la fin de l'initialisation avant de charger les stats
-    if (!hasInitialized) {
+    // Attendre la fin de l'initialisation et que le compte soit chargé avant de charger les stats
+    if (!hasInitialized || accountLoading) {
       return;
     }
     
@@ -174,7 +174,7 @@ const TradesPage: React.FC = () => {
     };
     loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey, hasInitialized]);
+  }, [filtersKey, hasInitialized, accountLoading]);
 
   useEffect(() => {
     const loadInstruments = async () => {

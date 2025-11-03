@@ -49,7 +49,7 @@ const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => ({
@@ -125,8 +125,12 @@ const StrategiesPage: React.FC = () => {
 
   // Charger les statistiques
   useEffect(() => {
+    // Attendre que le compte soit chargé avant de charger les statistiques
+    if (accountLoading) {
+      return;
+    }
     loadStatistics();
-  }, [loadStatistics]);
+  }, [loadStatistics, accountLoading]);
 
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte

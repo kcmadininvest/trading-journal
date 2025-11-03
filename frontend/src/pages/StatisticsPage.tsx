@@ -18,7 +18,7 @@ import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 function StatisticsPage() {
   const { t } = useI18nTranslation();
   const { preferences, loading: preferencesLoading } = usePreferences();
-  const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
+  const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
@@ -27,8 +27,9 @@ function StatisticsPage() {
   
   // Hooks pour les données
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts();
-  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(selectedAccountId, selectedYear, selectedMonth);
-  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(selectedAccountId, selectedYear, selectedMonth);
+  // Passer undefined si le compte est en cours de chargement pour éviter de charger avec un mauvais accountId
+  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(accountLoading ? undefined : selectedAccountId, selectedYear, selectedMonth);
+  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(accountLoading ? undefined : selectedAccountId, selectedYear, selectedMonth);
   
   // Fonction pour recharger les statistiques après un import
   const reloadStatistics = () => {
@@ -87,8 +88,8 @@ function StatisticsPage() {
   useTradesUpdateInvalidation();
   
   // États de chargement
-  // Inclure preferencesLoading pour éviter d'afficher le skeleton avant que le thème soit chargé
-  const isLoading = preferencesLoading || accountsLoading || statisticsLoading || analyticsLoading;
+  // Inclure preferencesLoading et accountLoading pour éviter d'afficher le skeleton avant que le thème et le compte soient chargés
+  const isLoading = preferencesLoading || accountLoading || accountsLoading || statisticsLoading || analyticsLoading;
   const hasError = statisticsError || analyticsError;
   
   // Charger les détails du compte sélectionné pour obtenir la devise

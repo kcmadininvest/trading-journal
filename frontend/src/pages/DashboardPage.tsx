@@ -181,7 +181,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
   
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
@@ -271,6 +271,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   // Charger les trades avec filtres
   useEffect(() => {
+    // Attendre que le compte soit chargé avant de charger les données
+    if (accountLoading) {
+      return;
+    }
+
     const loadTrades = async () => {
       setIsLoading(true);
       setError(null);
@@ -393,7 +398,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
 
     loadTrades();
-  }, [accountId, selectedYear, selectedMonth, t]);
+  }, [accountId, selectedYear, selectedMonth, accountLoading, t]);
 
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative }
   const accountBalanceData = useMemo(() => {

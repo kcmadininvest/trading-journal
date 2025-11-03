@@ -31,6 +31,17 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
       }
     };
     load();
+
+    // Recharger les comptes après une connexion pour s'assurer d'avoir la liste à jour
+    const handleLogin = () => {
+      load();
+    };
+
+    window.addEventListener('user:login', handleLogin);
+
+    return () => {
+      window.removeEventListener('user:login', handleLogin);
+    };
   }, []);
 
   // L'initialisation du compte par défaut est maintenant gérée par TradingAccountProvider
