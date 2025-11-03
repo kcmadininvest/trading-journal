@@ -95,9 +95,17 @@
   "noDataInPeriod": "Aucune donnée dans la période sélectionnée",
   "positiveBalance": "Solde positif",
   "negativeBalance": "Solde négatif",
-  "balance": "Solde",
-  "dayPnLShort": "PnL jour",
-  "numberOfTrades": "Nombre de trades",
-  "tradingAccount": "Compte de trading"
+  "balance": "Saldo",
+  "dayPnLShort": "PnL dia",
+  "numberOfTrades": "Número de negociações",
+  "tradingAccount": "Conta de negociação",
+  "objectiveAchieved": "Objetivo alcançado!",
+  "daysRemaining": "dias restantes",
+  "needsAttention": "Atenção necessária",
+  "currentSeries": "Série Atual",
+  "currentRespectDays": "Dias de respeito",
+  "currentRespectTrades": "Negociações de respeito",
+  "currentNotRespectDays": "Dias sem respeito",
+  "currentNotRespectTrades": "Negociações sem respeito"
 }
 

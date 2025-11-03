@@ -95,9 +95,17 @@
   "noDataInPeriod": "Aucune donnée dans la période sélectionnée",
   "positiveBalance": "Solde positif",
   "negativeBalance": "Solde négatif",
-  "balance": "Solde",
-  "dayPnLShort": "PnL jour",
-  "numberOfTrades": "Nombre de trades",
-  "tradingAccount": "Compte de trading"
+  "balance": "残高",
+  "dayPnLShort": "1日のPnL",
+  "numberOfTrades": "取引数",
+  "tradingAccount": "取引口座",
+  "objectiveAchieved": "目標達成！",
+  "daysRemaining": "残り日数",
+  "needsAttention": "注意が必要",
+  "currentSeries": "現在のシリーズ",
+  "currentRespectDays": "尊重日",
+  "currentRespectTrades": "尊重取引",
+  "currentNotRespectDays": "非尊重日",
+  "currentNotRespectTrades": "非尊重取引"
 }
 

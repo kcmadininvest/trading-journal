@@ -98,5 +98,13 @@
   "balance": "Saldo",
   "dayPnLShort": "Tages-PnL",
   "numberOfTrades": "Anzahl der Trades",
-  "tradingAccount": "Handelskonto"
+  "tradingAccount": "Handelskonto",
+  "objectiveAchieved": "Ziel erreicht!",
+  "daysRemaining": "verbleibende Tage",
+  "needsAttention": "Aufmerksamkeit erforderlich",
+  "currentSeries": "Aktuelle Serie",
+  "currentRespectDays": "Respekt-Tage",
+  "currentRespectTrades": "Respekt-Trades",
+  "currentNotRespectDays": "Nicht-Respekt-Tage",
+  "currentNotRespectTrades": "Nicht-Respekt-Trades"
 }

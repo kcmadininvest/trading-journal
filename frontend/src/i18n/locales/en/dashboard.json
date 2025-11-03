@@ -98,6 +98,14 @@
   "balance": "Balance",
   "dayPnLShort": "Day PnL",
   "numberOfTrades": "Number of trades",
-  "tradingAccount": "Trading Account"
+  "tradingAccount": "Trading Account",
+  "objectiveAchieved": "Objective achieved!",
+  "daysRemaining": "days remaining",
+  "needsAttention": "Attention required",
+  "currentSeries": "Current Series",
+  "currentRespectDays": "Respect days",
+  "currentRespectTrades": "Respect trades",
+  "currentNotRespectDays": "Non-respect days",
+  "currentNotRespectTrades": "Non-respect trades"
 }
 

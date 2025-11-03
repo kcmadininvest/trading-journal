@@ -98,6 +98,11 @@
   "tradingAccount": "Compte de trading",
   "objectiveAchieved": "Objectif atteint !",
   "daysRemaining": "jours restants",
-  "needsAttention": "Attention requise"
+  "needsAttention": "Attention requise",
+  "currentSeries": "Série en cours",
+  "currentRespectDays": "Jours respect",
+  "currentRespectTrades": "Trades respect",
+  "currentNotRespectDays": "Jours non-respect",
+  "currentNotRespectTrades": "Trades non-respect"
 }
 

@@ -1101,6 +1101,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       maxConsecutiveTradesNotRespected,
       maxConsecutiveDaysRespected,
       maxConsecutiveDaysNotRespected,
+      currentConsecutiveTradesRespected,
+      currentConsecutiveTradesNotRespected,
+      currentConsecutiveDaysRespected,
+      currentConsecutiveDaysNotRespected,
     };
   }, [trades, strategies]);
 
@@ -1384,17 +1388,37 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               />
               
               <ModernStatCard
-                label={t('dashboard:totalFees')}
-                value={formatCurrency(additionalStats.totalFees, currencySymbol)}
-                variant="warning"
+                label={additionalStats.currentConsecutiveDaysRespected > 0 
+                  ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`
+                  : additionalStats.currentConsecutiveDaysNotRespected > 0
+                  ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceNotRespect')}`
+                  : t('dashboard:currentSeries')
+                }
+                value={additionalStats.currentConsecutiveDaysRespected > 0 
+                  ? `${additionalStats.currentConsecutiveDaysRespected} ${t('dashboard:days')}`
+                  : additionalStats.currentConsecutiveDaysNotRespected > 0
+                  ? `${additionalStats.currentConsecutiveDaysNotRespected} ${t('dashboard:days')}`
+                  : `0 ${t('dashboard:days')}`
+                }
+                variant={additionalStats.currentConsecutiveDaysRespected > 0 ? 'success' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'danger' : 'default'}
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
-                trend={undefined}
-                trendValue={Math.abs(additionalStats.totalPnl) > 0 ? `${((additionalStats.totalFees / Math.abs(additionalStats.totalPnl)) * 100).toFixed(1)}${t('dashboard:ofPnL')}` : t('common:na')}
+                subMetrics={[
+                  {
+                    label: additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:currentRespectDays') : t('dashboard:currentNotRespectDays'),
+                    value: `${additionalStats.currentConsecutiveDaysRespected > 0 ? additionalStats.currentConsecutiveDaysRespected : additionalStats.currentConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`
+                  },
+                  {
+                    label: additionalStats.currentConsecutiveTradesRespected > 0 ? t('dashboard:currentRespectTrades') : t('dashboard:currentNotRespectTrades'),
+                    value: `${additionalStats.currentConsecutiveTradesRespected > 0 ? additionalStats.currentConsecutiveTradesRespected : additionalStats.currentConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
+                  }
+                ]}
+                trend={additionalStats.currentConsecutiveDaysRespected > 0 ? 'up' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
+                trendValue={additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:sequenceRespect') : additionalStats.currentConsecutiveDaysNotRespected > 0 ? t('dashboard:sequenceNotRespect') : undefined}
               />
               
               <ModernStatCard

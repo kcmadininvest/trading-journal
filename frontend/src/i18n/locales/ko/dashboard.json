@@ -95,9 +95,17 @@
   "noDataInPeriod": "Aucune donnée dans la période sélectionnée",
   "positiveBalance": "Solde positif",
   "negativeBalance": "Solde négatif",
-  "balance": "Solde",
-  "dayPnLShort": "PnL jour",
-  "numberOfTrades": "Nombre de trades",
-  "tradingAccount": "Compte de trading"
+  "balance": "잔액",
+  "dayPnLShort": "일일 손익",
+  "numberOfTrades": "거래 수",
+  "tradingAccount": "거래 계좌",
+  "objectiveAchieved": "목표 달성!",
+  "daysRemaining": "남은 일수",
+  "needsAttention": "주의 필요",
+  "currentSeries": "현재 시리즈",
+  "currentRespectDays": "준수 일수",
+  "currentRespectTrades": "준수 거래",
+  "currentNotRespectDays": "비준수 일수",
+  "currentNotRespectTrades": "비준수 거래"
 }
 
