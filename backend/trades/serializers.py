@@ -278,6 +278,14 @@ class TradeStatisticsSerializer(serializers.Serializer):
     volume_pnl_ratio = serializers.FloatField()
     frequency_ratio = serializers.FloatField()
     duration_ratio = serializers.FloatField()
+    recovery_time = serializers.FloatField()
+    max_drawdown = serializers.FloatField()
+    expectancy = serializers.FloatField()
+    break_even_trades = serializers.IntegerField()
+    sharpe_ratio = serializers.FloatField()
+    sortino_ratio = serializers.FloatField()
+    calmar_ratio = serializers.FloatField()
+    trade_efficiency = serializers.FloatField()
 
 
 class TradingMetricsSerializer(serializers.Serializer):

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../../services/auth';
 import Sidebar from './Sidebar';
 import Header from './Header';
@@ -12,6 +12,8 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'sidebar_collapsed';
+
 const Layout: React.FC<LayoutProps> = ({
   currentUser,
   currentPage,
@@ -19,6 +21,19 @@ const Layout: React.FC<LayoutProps> = ({
   onLogout,
   children,
 }) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
       {/* Sidebar */}
@@ -26,10 +41,12 @@ const Layout: React.FC<LayoutProps> = ({
         currentUser={currentUser}
         currentPage={currentPage}
         onNavigate={onNavigate}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
       />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col">
         {/* Header */}
         <Header
           currentUser={currentUser}
