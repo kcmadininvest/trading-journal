@@ -58,6 +58,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                 </div>
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:date')}</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:account')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:contract')}</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:type')}</th>
               <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:size')}</th>
@@ -73,11 +74,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {isLoading ? (
               <tr>
-                <td colSpan={11} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
+                <td colSpan={12} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
+                <td colSpan={12} className="px-4 py-6 text-center text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
               </tr>
             ) : (
               items.map((trade) => (
@@ -93,6 +94,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{formatTradeDate(trade.entered_at)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{trade.trading_account_name || '-'}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
                       {trade.contract_name}
@@ -157,7 +159,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
           {(!isLoading && items.length > 0 && totals) && (
             <tfoot className="bg-gray-50 dark:bg-gray-700/50">
               <tr className="border-t-2 border-gray-200 dark:border-gray-600">
-                <td colSpan={7} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                <td colSpan={8} className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
                   <span className="inline-flex items-center gap-2 font-medium">
                     <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

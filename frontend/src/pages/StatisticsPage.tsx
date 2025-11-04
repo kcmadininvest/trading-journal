@@ -14,7 +14,6 @@ import { getMonthNames } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
-import { HeroMetricCard } from '../components/statistics/HeroMetricCard';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
 import { MetricGroup } from '../components/statistics/MetricGroup';
 
