@@ -1,16 +1,52 @@
 import React, { useState } from 'react';
 import { User } from '../../services/auth';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { useApiStatus } from '../../hooks/useApiStatus';
+import { VERSION } from '../../version';
 
 interface SidebarProps {
   currentUser: User;
   currentPage: string;
   onNavigate: (page: string) => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate, isCollapsed = false, onToggleCollapse }) => {
   const { t } = useI18nTranslation();
+  const { status } = useApiStatus();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'online':
+        return {
+          color: 'bg-green-400',
+          text: t('common:apiStatus.online'),
+          blink: false,
+        };
+      case 'offline':
+        return {
+          color: 'bg-red-400',
+          text: t('common:apiStatus.offline'),
+          blink: true,
+        };
+      case 'checking':
+        return {
+          color: 'bg-yellow-400',
+          text: t('common:apiStatus.checking'),
+          blink: true,
+        };
+      default:
+        return {
+          color: 'bg-gray-400',
+          text: t('common:apiStatus.offline'),
+          blink: true,
+        };
+    }
+  };
+
+  const statusConfig = getStatusConfig();
   const menuItems = [
     {
       id: 'dashboard',
@@ -135,69 +171,106 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate 
       )}
 
       {/* Sidebar */}
-      <div className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+      <div className={`fixed lg:static inset-y-0 left-0 z-50 bg-gray-900 text-white border-r border-gray-700 dark:border-gray-600 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      } ${isCollapsed ? 'w-20' : 'w-64'}`}>
       {/* Logo */}
-      <div className="p-6 border-b border-gray-700">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+      <div className={`h-20 flex items-center border-b border-gray-700 ${isCollapsed ? 'px-4' : 'px-6'}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            {!isCollapsed && <h1 className="text-xl font-bold whitespace-nowrap">Trading Journal</h1>}
           </div>
-          <h1 className="text-xl font-bold">Trading Journal</h1>
+          {/* Toggle button for desktop */}
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className="hidden lg:flex items-center justify-center w-8 h-8 rounded-lg hover:bg-gray-700 transition-colors group"
+              aria-label={isCollapsed ? t('navigation:expand', { defaultValue: 'Déplier' }) : t('navigation:collapse', { defaultValue: 'Replier' })}
+              style={{ cursor: 'default' }}
+            >
+              <svg
+                className={`w-5 h-5 text-gray-300 group-hover:text-white transition-transform duration-250 ${isCollapsed ? '' : 'rotate-180'}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Menu */}
       <nav className="mt-6">
-        <div className="px-3">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            {t('navigation:navigation')}
-          </p>
-        </div>
-        <ul className="space-y-1 px-3">
+        {!isCollapsed && (
+          <div className="px-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+              {t('navigation:navigation')}
+            </p>
+          </div>
+        )}
+        <ul className={`space-y-1 ${isCollapsed ? 'px-2' : 'px-3'}`}>
           {menuItems
             .filter(item => item.visible)
             .map((item) => (
               <li key={item.id}>
-                    <button
-                      onClick={() => handleNavigate(item.id)}
-                      className={`w-full flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors ${
-                        currentPage === item.id
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                      }`}
-                    >
-                  <span className="mr-3">{item.icon}</span>
-                  {item.label}
+                <button
+                  onClick={() => handleNavigate(item.id)}
+                  className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-3'} py-2 text-base font-medium rounded-md transition-colors group relative ${
+                    currentPage === item.id
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  }`}
+                  title={isCollapsed ? item.label : undefined}
+                >
+                  <span className={isCollapsed ? '' : 'mr-3'}>{item.icon}</span>
+                  {!isCollapsed && <span>{item.label}</span>}
+                  {/* Tooltip pour mode plié */}
+                  {isCollapsed && (
+                    <div className="absolute left-full ml-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
+                      {item.label}
+                      <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-800"></div>
+                    </div>
+                  )}
                 </button>
               </li>
             ))}
         </ul>
       </nav>
 
-      {/* User info */}
-      <div className="absolute bottom-0 w-64 p-4 border-t border-gray-700">
-        <div className="flex items-center">
-          <div className="flex-shrink-0">
-            <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-              <span className="text-sm font-medium text-white">
-                {currentUser.first_name?.charAt(0) || currentUser.email.charAt(0).toUpperCase()}
-              </span>
+      {/* API Status and Version */}
+      <div className={`absolute bottom-0 ${isCollapsed ? 'w-20 px-2' : 'w-64 px-4'} py-4 border-t border-gray-700`}>
+        <div className={`flex flex-col ${isCollapsed ? 'items-center' : ''} space-y-1`}>
+          {/* API Status */}
+          {!isCollapsed && (
+            <div className="flex items-center space-x-2">
+              <div 
+                className={`w-2 h-2 ${statusConfig.color} rounded-full flex-shrink-0 ${
+                  statusConfig.blink ? 'animate-pulse' : ''
+                }`}
+              ></div>
+              <span className="text-xs text-gray-400 truncate">{statusConfig.text}</span>
             </div>
-          </div>
-              <div className="ml-3">
-                <p className="text-base font-medium text-white truncate">
-                  {currentUser.first_name && currentUser.last_name 
-                    ? `${currentUser.first_name} ${currentUser.last_name}` 
-                    : currentUser.email}
-                </p>
-                <p className="text-sm text-gray-400 truncate">
-                  {currentUser.is_admin ? t('navigation:admin') : t('navigation:user')}
-                </p>
-              </div>
+          )}
+          {isCollapsed && (
+            <div 
+              className={`w-2 h-2 ${statusConfig.color} rounded-full flex-shrink-0 ${
+                statusConfig.blink ? 'animate-pulse' : ''
+              }`}
+            ></div>
+          )}
+          {/* Version */}
+          {!isCollapsed && (
+            <span className="text-xs text-gray-400 truncate ml-[18px]">
+              Version {VERSION}
+            </span>
+          )}
         </div>
       </div>
       </div>

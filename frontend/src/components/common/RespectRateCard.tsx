@@ -30,28 +30,28 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
 }) => {
   return (
     <div
-      className={`bg-gradient-to-r ${gradientColors.from} ${gradientColors.to} ${gradientColors.darkFrom} ${gradientColors.darkTo} rounded-lg shadow-lg p-6 text-white`}
+      className={`bg-gradient-to-r ${gradientColors.from} ${gradientColors.to} ${gradientColors.darkFrom} ${gradientColors.darkTo} rounded-lg shadow-lg py-3 px-6 text-white`}
     >
-      <div className="grid grid-cols-2 gap-x-2 gap-y-1 items-center">
-        {/* Ligne 1 : Titre et Pourcentage */}
-        <h2 className="text-sm font-semibold leading-tight line-clamp-1 col-span-1">
-          {title}
-        </h2>
-        <p className="text-2xl font-bold whitespace-nowrap justify-self-end col-span-1">
-          {percentage.toFixed(2)}%
-        </p>
+      <div className="flex items-center justify-between gap-4">
+        {/* Titre et sous-titre à gauche */}
+        <div className="flex items-center gap-2 min-w-0">
+          <h2 className="text-base font-semibold leading-tight">
+            {title}
+            {subtitle && (
+              <span className="text-sm opacity-75 ml-1 italic">{subtitle}</span>
+            )}
+          </h2>
+        </div>
 
-        {/* Ligne 2 : Sous-titre et Compteur de trades */}
-        {subtitle ? (
-          <p className="text-xs opacity-75 leading-tight line-clamp-1 col-span-1">
-            {subtitle}
+        {/* Pourcentage et compteur de trades à droite */}
+        <div className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
+          <p className="text-2xl font-bold">
+            {percentage.toFixed(2)}%
           </p>
-        ) : (
-          <span className="col-span-1"></span>
-        )}
-        <p className="text-xs opacity-90 whitespace-nowrap justify-self-end col-span-1">
-          {tradesCount} {outOfLabel} {totalTrades} {tradesLabel}
-        </p>
+          <p className="text-xs opacity-90 italic">
+            ({tradesCount} {outOfLabel} {totalTrades} {tradesLabel})
+          </p>
+        </div>
       </div>
     </div>
   );

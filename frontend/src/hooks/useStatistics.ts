@@ -27,6 +27,14 @@ export interface StatisticsData {
   volume_pnl_ratio: number;
   frequency_ratio: number;
   duration_ratio: number;
+  recovery_time: number;
+  max_drawdown: number;
+  expectancy: number;
+  break_even_trades: number;
+  sharpe_ratio: number;
+  sortino_ratio: number;
+  calmar_ratio: number;
+  trade_efficiency: number;
 }
 
 export interface AnalyticsData {
@@ -39,6 +47,13 @@ export interface AnalyticsData {
     max_loss_per_day: number;
     avg_trades_per_day: number;
     median_trades_per_day: number;
+    days_with_profit: number;
+    days_with_loss: number;
+    days_break_even: number;
+    best_day: string | null;
+    best_day_pnl: number;
+    worst_day: string | null;
+    worst_day_pnl: number;
   };
   trade_stats: {
     max_gain_per_trade: number;
@@ -54,6 +69,10 @@ export interface AnalyticsData {
     max_consecutive_wins: number;
     max_consecutive_losses: number;
   };
+  monthly_performance: Array<{
+    month: string;
+    pnl: number;
+  }>;
 }
 
 export interface GlobalStrategyData {

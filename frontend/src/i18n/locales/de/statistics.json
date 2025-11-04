@@ -49,7 +49,26 @@
     "frequencyTooltip": "Durchschnittliche Anzahl von Trades pro Handelstag. Zeigt Aktivität und Handelsstil",
     "tradesPerDay": "Trades/Tag",
     "durationRatio": "Dauerverhältnis",
-    "durationRatioTooltip": "Verhältnis zwischen durchschnittlicher Dauer gewinnender und verlierender Trades. > 1.0 = gewinnende Trades dauern länger als verlierende"
+    "durationRatioTooltip": "Verhältnis zwischen durchschnittlicher Dauer gewinnender und verlierender Trades. > 1.0 = gewinnende Trades dauern länger als verlierende",
+    "recoveryTime": "Erholungszeit",
+    "recoveryTimeTooltip": "Durchschnittliche Zeit (in Anzahl von Trades), die benötigt wird, um nach einem Drawdown zum vorherigen Niveau zurückzukehren. Niedriger = bessere Erholung. N/A = keine vollständige Erholung",
+    "trades": "Trades",
+    "noRecovery": "N/A (keine Erholung)",
+    "maxDrawdown": "Maximaler Drawdown",
+    "maxDrawdownTooltip": "Größter Rückgang von einem Höchststand (in %). Risikoindikator. Niedriger = weniger Risiko",
+    "riskRewardRatio": "Risiko/Rendite-Verhältnis",
+    "riskRewardRatioTooltip": "Durchschnittliches Verhältnis zwischen durchschnittlichem Gewinn und durchschnittlichem Verlust. > 1.0 = durchschnittliche Gewinne sind größer als durchschnittliche Verluste",
+    "expectancy": "Erwartungswert",
+    "expectancyTooltip": "Mathematischer Erwartungswert pro Trade = (Gewinnrate × Durchschnittlicher Gewinn) - (Verlustrate × Durchschnittlicher Verlust). > 0 = profitable Strategie",
+    "sharpeRatio": "Sharpe-Verhältnis",
+    "sharpeRatioTooltip": "Rendite angepasst an die Gesamtvolatilität. Misst die überschüssige Rendite pro Risikoeinheit. > 1.0 = gut, > 2.0 = ausgezeichnet",
+    "sortinoRatio": "Sortino-Verhältnis",
+    "sortinoRatioTooltip": "Rendite angepasst nur an negative Volatilität. Ähnlich wie Sharpe, bestraft aber nur Verluste. > 1.0 = gut",
+    "calmarRatio": "Calmar-Verhältnis",
+    "calmarRatioTooltip": "Jahresrendite / Maximaler Drawdown. > 1.0 = gute Rendite relativ zum Risiko",
+    "riskAdjustedPerformance": "Risikoadjustierte Leistung",
+    "tradeEfficiency": "Trade-Effizienz",
+    "tradeEfficiencyTooltip": "Prozentsatz der Trades, bei denen der Take Profit erreicht wurde. Höher = bessere Ausführung"
   },
   "tradesAnalysis": {
     "title": "Trade-Analyse",
@@ -58,7 +77,14 @@
     "losingTrades": "Verlierende Trades",
     "count": "Anzahl",
     "bestTrade": "Bester Trade",
-    "worstTrade": "Schlechtester Trade"
+    "worstTrade": "Schlechtester Trade",
+    "averageWinVsLoss": "Durchschnittlicher Gewinn vs Durchschnittlicher Verlust",
+    "averageWin": "Durchschnittlicher Gewinn",
+    "averageLoss": "Durchschnittlicher Verlust",
+    "averageWinLossRatio": "Gewinn/Verlust-Verhältnis",
+    "averageWinLossRatioTooltip": "Verhältnis zwischen durchschnittlichem Gewinn und durchschnittlichem Verlust. > 1.0 = durchschnittliche Gewinne sind größer als durchschnittliche Verluste (profitable Strategie)",
+    "breakEvenTrades": "Break-even Trades",
+    "breakEvenTradesTooltip": "Anzahl der Trades mit P/L von 0 (weder Gewinn noch Verlust)"
   },
   "advancedAnalysis": {
     "title": "Erweiterte Analyse",
@@ -75,6 +101,14 @@
     "maxGain": "Maximaler Gewinn",
     "maxLoss": "Maximaler Verlust",
     "consecutiveGains": "Aufeinanderfolgende Gewinne",
-    "consecutiveLosses": "Aufeinanderfolgende Verluste"
+    "consecutiveLosses": "Aufeinanderfolgende Verluste",
+    "daysWithProfit": "Tage mit Gewinn",
+    "daysWithLoss": "Tage mit Verlust",
+    "daysBreakEven": "Break-even Tage",
+    "bestDay": "Bester Tag",
+    "worstDay": "Schlechtester Tag",
+    "monthlyPerformance": "Monatliche Leistung",
+    "month": "Monat",
+    "pnl": "P/L"
   }
 }

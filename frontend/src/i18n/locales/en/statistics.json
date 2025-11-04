@@ -49,7 +49,26 @@
     "frequencyTooltip": "Average number of trades per trading day. Indicates activity and trading style",
     "tradesPerDay": "trades/day",
     "durationRatio": "Duration Ratio",
-    "durationRatioTooltip": "Ratio between average duration of winning and losing trades. > 1.0 = winning trades last longer than losing ones"
+    "durationRatioTooltip": "Ratio between average duration of winning and losing trades. > 1.0 = winning trades last longer than losing ones",
+    "recoveryTime": "Recovery Time",
+    "recoveryTimeTooltip": "Average time (in number of trades) needed to recover to previous level after a drawdown. Lower = better recovery. N/A = no complete recovery occurred",
+    "trades": "trades",
+    "noRecovery": "N/A (no recovery)",
+    "maxDrawdown": "Maximum Drawdown",
+    "maxDrawdownTooltip": "Largest decline from a peak (in %). Risk indicator. Lower = less risk",
+    "riskRewardRatio": "Risk/Reward Ratio",
+    "riskRewardRatioTooltip": "Average ratio between average win and average loss. > 1.0 = average wins are greater than average losses",
+    "expectancy": "Expectancy",
+    "expectancyTooltip": "Mathematical expectation per trade = (Win Rate × Avg Win) - (Loss Rate × Avg Loss). > 0 = profitable strategy",
+    "sharpeRatio": "Sharpe Ratio",
+    "sharpeRatioTooltip": "Return adjusted to total volatility. Measures excess return per unit of risk. > 1.0 = good, > 2.0 = excellent",
+    "sortinoRatio": "Sortino Ratio",
+    "sortinoRatioTooltip": "Return adjusted to negative volatility only. Similar to Sharpe but only penalizes losses. > 1.0 = good",
+    "calmarRatio": "Calmar Ratio",
+    "calmarRatioTooltip": "Annual return / Maximum Drawdown. > 1.0 = good return relative to risk",
+    "riskAdjustedPerformance": "Risk-Adjusted Performance",
+    "tradeEfficiency": "Trade Efficiency",
+    "tradeEfficiencyTooltip": "Percentage of trades where Take Profit was reached. Higher = better execution"
   },
   "tradesAnalysis": {
     "title": "Trades Analysis",
@@ -58,7 +77,14 @@
     "losingTrades": "Losing Trades",
     "count": "Count",
     "bestTrade": "Best trade",
-    "worstTrade": "Worst trade"
+    "worstTrade": "Worst trade",
+    "averageWinVsLoss": "Average Win vs Average Loss",
+    "averageWin": "Average win",
+    "averageLoss": "Average loss",
+    "averageWinLossRatio": "Win/Loss Ratio",
+    "averageWinLossRatioTooltip": "Ratio between average win and average loss. > 1.0 = average wins are greater than average losses (profitable strategy)",
+    "breakEvenTrades": "Break-even Trades",
+    "breakEvenTradesTooltip": "Number of trades with P/L of 0 (neither gain nor loss)"
   },
   "advancedAnalysis": {
     "title": "Advanced Analysis",
@@ -75,7 +101,15 @@
     "maxGain": "Max gain",
     "maxLoss": "Max loss",
     "consecutiveGains": "Consecutive gains",
-    "consecutiveLosses": "Consecutive losses"
+    "consecutiveLosses": "Consecutive losses",
+    "daysWithProfit": "Days with Profit",
+    "daysWithLoss": "Days with Loss",
+    "daysBreakEven": "Break-even Days",
+    "bestDay": "Best Day",
+    "worstDay": "Worst Day",
+    "monthlyPerformance": "Monthly Performance",
+    "month": "Month",
+    "pnl": "P/L"
   }
 }
 

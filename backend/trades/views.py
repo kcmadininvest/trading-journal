@@ -332,7 +332,15 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'fees_ratio': 0,
                 'volume_pnl_ratio': 0,
                 'frequency_ratio': 0,
-                'duration_ratio': 0
+                'duration_ratio': 0,
+                'recovery_time': 0,
+                'max_drawdown': 0.0,
+                'expectancy': 0.0,
+                'break_even_trades': 0,
+                'sharpe_ratio': 0.0,
+                'sortino_ratio': 0.0,
+                'calmar_ratio': 0.0,
+                'trade_efficiency': 0.0
             })
         
         # Statistiques de base
@@ -435,6 +443,51 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             if losing_seconds > 0:
                 duration_ratio = winning_seconds / losing_seconds
         
+        # 10. Recovery Time (temps moyen de récupération en trades)
+        # Calcul du temps nécessaire pour revenir au niveau précédent après un drawdown
+        recovery_time = 0
+        if trades.exists():
+            trades_ordered = list(trades.order_by('entered_at'))
+            cumulative_capital = Decimal('0')
+            peak_capital = Decimal('0')
+            recovery_times = []
+            drawdown_start_index = None
+            drawdown_peak_value = Decimal('0')
+            current_drawdown_start = None
+            
+            for idx, trade in enumerate(trades_ordered):
+                cumulative_capital += trade.net_pnl
+                
+                # Si on dépasse ou égale le pic précédent, on a récupéré
+                if cumulative_capital >= peak_capital:
+                    # Si on était en drawdown, calculer le temps de récupération
+                    if drawdown_start_index is not None:
+                        recovery_trades = idx - drawdown_start_index
+                        if recovery_trades > 0:
+                            recovery_times.append(recovery_trades)
+                        drawdown_start_index = None
+                        drawdown_peak_value = Decimal('0')
+                    
+                    # Mettre à jour le pic si on a un nouveau pic
+                    if cumulative_capital > peak_capital:
+                        peak_capital = cumulative_capital
+                        current_drawdown_start = None  # Réinitialiser le drawdown actuel
+                # Si on est en drawdown (en dessous du pic)
+                elif cumulative_capital < peak_capital:
+                    if drawdown_start_index is None:
+                        drawdown_start_index = idx
+                        drawdown_peak_value = peak_capital
+                    # Garder trace du drawdown actuel (le plus récent)
+                    if current_drawdown_start is None:
+                        current_drawdown_start = idx
+            
+            # Calculer la moyenne des temps de récupération
+            if recovery_times:
+                recovery_time = sum(recovery_times) / len(recovery_times)
+            # Si on est toujours en drawdown et qu'on n'a aucune récupération, 
+            # on peut retourner le temps depuis le début du drawdown actuel
+            # Mais pour l'instant, on retourne 0 si aucune récupération n'a eu lieu
+        
         # Durée moyenne
         avg_duration = trades.filter(trade_duration__isnull=False).aggregate(
             avg=Avg('trade_duration')
@@ -452,6 +505,118 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         most_traded = trades.values('contract_name').annotate(
             count=Count('id')
         ).order_by('-count').first()
+        
+        # 11. Maximum Drawdown (MDD)
+        max_drawdown = 0.0
+        if trades.exists():
+            trades_ordered = trades.order_by('entered_at')
+            cumulative_capital = Decimal('0')
+            peak_capital = Decimal('0')
+            max_dd = Decimal('0')
+            
+            for trade in trades_ordered:
+                cumulative_capital += trade.net_pnl
+                if cumulative_capital > peak_capital:
+                    peak_capital = cumulative_capital
+                
+                if peak_capital > 0:
+                    current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                    if current_dd > max_dd:
+                        max_dd = current_dd
+            
+            max_drawdown = float(max_dd)
+        
+        # 12. Expectancy
+        expectancy = 0.0
+        if total_trades > 0:
+            win_rate_decimal = win_rate / 100
+            loss_rate = 1 - win_rate_decimal
+            avg_win = float(total_gains / winning_trades) if winning_trades > 0 else 0
+            avg_loss = abs(float(total_losses / losing_trades)) if losing_trades > 0 else 0
+            expectancy = (win_rate_decimal * avg_win) - (loss_rate * avg_loss)
+        
+        # 13. Break-even Trades
+        break_even_trades = trades.filter(net_pnl=0).count()
+        
+        # 14. Sharpe Ratio (rendement ajusté à la volatilité)
+        sharpe_ratio = 0.0
+        if total_trades > 1:
+            pnl_values = list(trades.values_list('net_pnl', flat=True))
+            if len(pnl_values) > 1:
+                import statistics
+                mean_pnl = statistics.mean([float(v) for v in pnl_values])
+                std_pnl = statistics.stdev([float(v) for v in pnl_values])
+                if std_pnl > 0:
+                    sharpe_ratio = mean_pnl / std_pnl
+        
+        # 15. Sortino Ratio (similaire au Sharpe mais ne pénalise que la volatilité négative)
+        sortino_ratio = 0.0
+        if total_trades > 1:
+            pnl_values = list(trades.values_list('net_pnl', flat=True))
+            if len(pnl_values) > 1:
+                import statistics
+                mean_pnl = statistics.mean([float(v) for v in pnl_values])
+                # Calculer l'écart-type des pertes uniquement
+                negative_pnls = [float(v) for v in pnl_values if v < 0]
+                if len(negative_pnls) > 1:
+                    downside_deviation = statistics.stdev(negative_pnls)
+                    if downside_deviation > 0:
+                        sortino_ratio = mean_pnl / downside_deviation
+        
+        # 16. Calmar Ratio (rendement annuel en % / maximum drawdown en %)
+        calmar_ratio = 0.0
+        if max_drawdown > 0 and max_drawdown < 100 and trades.exists():
+            # Calculer le rendement annuel en pourcentage
+            # On utilise le capital au pic comme référence pour calculer le rendement
+            trades_ordered = trades.order_by('entered_at')
+            first_trade = trades_ordered.first()
+            last_trade = trades_ordered.last()
+            if first_trade and last_trade and first_trade.entered_at < last_trade.entered_at:
+                days_diff = (last_trade.entered_at - first_trade.entered_at).days
+                if days_diff > 0:
+                    # Calculer le capital cumulatif au pic pour avoir une référence
+                    cumulative_capital = Decimal('0')
+                    peak_capital = Decimal('0')
+                    for trade in trades_ordered:
+                        cumulative_capital += trade.net_pnl
+                        if cumulative_capital > peak_capital:
+                            peak_capital = cumulative_capital
+                    
+                    # Calculer le rendement annuel en pourcentage
+                    # Si on a un pic de capital, on peut calculer un rendement relatif
+                    if peak_capital > 0:
+                        total_pnl_decimal = float(aggregates['total_pnl'] or Decimal('0'))
+                        # Taux de croissance annuel composé approximatif
+                        if total_pnl_decimal > 0:
+                            # Utiliser le capital au pic comme base pour le rendement
+                            annual_return_pct = (total_pnl_decimal / float(peak_capital)) * (365 / days_diff) * 100
+                            if max_drawdown > 0:
+                                calmar_ratio = annual_return_pct / max_drawdown
+                        elif total_pnl_decimal < 0:
+                            # Pour les pertes, on utilise aussi le pic comme référence
+                            annual_return_pct = (total_pnl_decimal / float(peak_capital)) * (365 / days_diff) * 100
+                            if max_drawdown > 0:
+                                calmar_ratio = annual_return_pct / max_drawdown
+                    else:
+                        # Si pas de pic positif, on ne peut pas calculer un ratio fiable
+                        calmar_ratio = 0.0
+        
+        # 17. Trade Efficiency (% de trades où TP atteint)
+        from django.db.models import Q, Exists, OuterRef
+        # Filtrer les trades qui ont une stratégie avec TP1 ou TP2+ atteint
+        trade_efficiency = 0.0
+        if total_trades > 0:
+            # Les trades sont déjà filtrés par utilisateur via get_queryset()
+            # On cherche les trades qui ont une stratégie associée avec TP atteint
+            trades_with_tp = trades.filter(
+                Exists(
+                    TradeStrategy.objects.filter(
+                        trade=OuterRef('pk')
+                    ).filter(Q(tp1_reached=True) | Q(tp2_plus_reached=True))
+                )
+            )
+            trades_with_tp_count = trades_with_tp.count()
+            trade_efficiency = (trades_with_tp_count / total_trades) * 100
         
         stats = {
             'total_trades': total_trades,
@@ -478,7 +643,15 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'fees_ratio': round(float(fees_ratio), 2),
             'volume_pnl_ratio': round(float(volume_pnl_ratio), 6),
             'frequency_ratio': round(frequency_ratio, 2),
-            'duration_ratio': round(duration_ratio, 2)
+            'duration_ratio': round(duration_ratio, 2),
+            'recovery_time': round(recovery_time, 1),
+            'max_drawdown': round(max_drawdown, 2),
+            'expectancy': round(expectancy, 2),
+            'break_even_trades': break_even_trades,
+            'sharpe_ratio': round(sharpe_ratio, 2),
+            'sortino_ratio': round(sortino_ratio, 2),
+            'calmar_ratio': round(calmar_ratio, 2),
+            'trade_efficiency': round(trade_efficiency, 2)
         }
         
         serializer = TradeStatisticsSerializer(stats)
@@ -1203,6 +1376,13 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     'max_loss_per_day': 0.0,
                     'avg_trades_per_day': 0.0,
                     'median_trades_per_day': 0.0,
+                    'days_with_profit': 0,
+                    'days_with_loss': 0,
+                    'days_break_even': 0,
+                    'best_day': None,
+                    'best_day_pnl': 0.0,
+                    'worst_day': None,
+                    'worst_day_pnl': 0.0,
                 },
                 'trade_stats': {
                     'max_gain_per_trade': 0.0,
@@ -1217,7 +1397,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     'max_consecutive_losses_per_day': 0,
                     'max_consecutive_wins': 0,
                     'max_consecutive_losses': 0,
-                }
+                },
+                'monthly_performance': []
             })
 
         # Agréger par jour
@@ -1309,6 +1490,40 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             else:
                 return sorted_values[n//2]
 
+        # Days with Profit / Days with Loss
+        days_with_profit = len([pnl for pnl in daily_pnls if pnl > 0])
+        days_with_loss = len([pnl for pnl in daily_pnls if pnl < 0])
+        days_break_even = len([pnl for pnl in daily_pnls if pnl == 0])
+        
+        # Best Day / Worst Day avec dates
+        best_day = None
+        worst_day = None
+        best_day_pnl = 0.0
+        worst_day_pnl = 0.0
+        
+        for day_key, day_data in daily_data.items():
+            day_pnl = day_data['pnl']
+            if day_pnl > best_day_pnl:
+                best_day_pnl = day_pnl
+                best_day = day_key.isoformat()
+            if day_pnl < worst_day_pnl:
+                worst_day_pnl = day_pnl
+                worst_day = day_key.isoformat()
+        
+        # Monthly Performance
+        monthly_performance = {}
+        for trade in trades:
+            month_key = trade.entered_at.strftime('%Y-%m')
+            if month_key not in monthly_performance:
+                monthly_performance[month_key] = 0.0
+            monthly_performance[month_key] += float(trade.net_pnl)
+        
+        # Convertir en liste triée
+        monthly_list = [
+            {'month': month, 'pnl': pnl}
+            for month, pnl in sorted(monthly_performance.items())
+        ]
+
         return Response({
             'daily_stats': {
                 'avg_gain_per_day': sum(daily_gains) / len(daily_gains) if daily_gains else 0.0,  # type: ignore
@@ -1319,6 +1534,13 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'max_loss_per_day': min(daily_losses) if daily_losses else 0.0,  # type: ignore
                 'avg_trades_per_day': sum(daily_trade_counts) / len(daily_trade_counts) if daily_trade_counts else 0.0,  # type: ignore
                 'median_trades_per_day': calculate_median(daily_trade_counts),
+                'days_with_profit': days_with_profit,
+                'days_with_loss': days_with_loss,
+                'days_break_even': days_break_even,
+                'best_day': best_day,
+                'best_day_pnl': best_day_pnl,
+                'worst_day': worst_day,
+                'worst_day_pnl': worst_day_pnl,
             },
             'trade_stats': {
                 'max_gain_per_trade': max(winning_trades) if winning_trades else 0.0,
@@ -1333,7 +1555,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'max_consecutive_losses_per_day': max_consecutive_losses_per_day,
                 'max_consecutive_wins': max_consecutive_wins,
                 'max_consecutive_losses': max_consecutive_losses,
-            }
+            },
+            'monthly_performance': monthly_list
         })
 
     @action(detail=False, methods=['get'])

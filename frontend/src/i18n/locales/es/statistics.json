@@ -49,7 +49,26 @@
     "frequencyTooltip": "Número promedio de operaciones por día de trading. Indica actividad y estilo de trading",
     "tradesPerDay": "operaciones/día",
     "durationRatio": "Ratio de Duración",
-    "durationRatioTooltip": "Ratio entre duración promedio de operaciones ganadoras y perdedoras. > 1.0 = las operaciones ganadoras duran más que las perdedoras"
+    "durationRatioTooltip": "Ratio entre duración promedio de operaciones ganadoras y perdedoras. > 1.0 = las operaciones ganadoras duran más que las perdedoras",
+    "recoveryTime": "Tiempo de Recuperación",
+    "recoveryTimeTooltip": "Tiempo promedio (en número de operaciones) necesario para recuperar el nivel anterior después de un drawdown. Más bajo = mejor recuperación. N/A = no hubo recuperación completa",
+    "trades": "operaciones",
+    "noRecovery": "N/A (sin recuperación)",
+    "maxDrawdown": "Drawdown Máximo",
+    "maxDrawdownTooltip": "Mayor caída desde un pico (en %). Indicador de riesgo. Más bajo = menos riesgo",
+    "riskRewardRatio": "Ratio Riesgo/Recompensa",
+    "riskRewardRatioTooltip": "Ratio promedio entre ganancia promedio y pérdida promedio. > 1.0 = las ganancias promedio son superiores a las pérdidas promedio",
+    "expectancy": "Expectativa",
+    "expectancyTooltip": "Expectativa matemática por operación = (Tasa de Aciertos × Ganancia Promedio) - (Tasa de Pérdidas × Pérdida Promedio). > 0 = estrategia rentable",
+    "sharpeRatio": "Ratio Sharpe",
+    "sharpeRatioTooltip": "Retorno ajustado a la volatilidad total. Mide el retorno excedente por unidad de riesgo. > 1.0 = bueno, > 2.0 = excelente",
+    "sortinoRatio": "Ratio Sortino",
+    "sortinoRatioTooltip": "Retorno ajustado solo a la volatilidad negativa. Similar al Sharpe pero solo penaliza las pérdidas. > 1.0 = bueno",
+    "calmarRatio": "Ratio Calmar",
+    "calmarRatioTooltip": "Retorno anual / Drawdown Máximo. > 1.0 = buen retorno relativo al riesgo",
+    "riskAdjustedPerformance": "Rendimiento Ajustado al Riesgo",
+    "tradeEfficiency": "Eficiencia de Operaciones",
+    "tradeEfficiencyTooltip": "Porcentaje de operaciones donde se alcanzó el Take Profit. Más alto = mejor ejecución"
   },
   "tradesAnalysis": {
     "title": "Análisis de Operaciones",
@@ -58,7 +77,14 @@
     "losingTrades": "Operaciones Perdedoras",
     "count": "Cantidad",
     "bestTrade": "Mejor operación",
-    "worstTrade": "Peor operación"
+    "worstTrade": "Peor operación",
+    "averageWinVsLoss": "Ganancia Promedio vs Pérdida Promedio",
+    "averageWin": "Ganancia promedio",
+    "averageLoss": "Pérdida promedio",
+    "averageWinLossRatio": "Ratio Ganancia/Pérdida",
+    "averageWinLossRatioTooltip": "Ratio entre la ganancia promedio y la pérdida promedio. > 1.0 = las ganancias promedio son superiores a las pérdidas promedio (estrategia rentable)",
+    "breakEvenTrades": "Operaciones Break-even",
+    "breakEvenTradesTooltip": "Número de operaciones con P/L de 0 (ni ganancia ni pérdida)"
   },
   "advancedAnalysis": {
     "title": "Análisis Avanzado",
@@ -75,6 +101,14 @@
     "maxGain": "Ganancia máxima",
     "maxLoss": "Pérdida máxima",
     "consecutiveGains": "Ganancias consecutivas",
-    "consecutiveLosses": "Pérdidas consecutivas"
+    "consecutiveLosses": "Pérdidas consecutivas",
+    "daysWithProfit": "Días con Ganancia",
+    "daysWithLoss": "Días con Pérdida",
+    "daysBreakEven": "Días Break-even",
+    "bestDay": "Mejor Día",
+    "worstDay": "Peor Día",
+    "monthlyPerformance": "Rendimiento Mensual",
+    "month": "Mes",
+    "pnl": "P/L"
   }
 }
