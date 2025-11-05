@@ -258,6 +258,7 @@ class TradesService {
     sortino_ratio: number;
     calmar_ratio: number;
     trade_efficiency: number;
+    current_winning_streak_days: number;
   }> {
     const queryParams = new URLSearchParams();
     if (tradingAccountId) {

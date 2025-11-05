@@ -286,6 +286,7 @@ class TradeStatisticsSerializer(serializers.Serializer):
     sortino_ratio = serializers.FloatField()
     calmar_ratio = serializers.FloatField()
     trade_efficiency = serializers.FloatField()
+    current_winning_streak_days = serializers.IntegerField()
 
 
 class TradingMetricsSerializer(serializers.Serializer):

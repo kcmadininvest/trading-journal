@@ -340,7 +340,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'sharpe_ratio': 0.0,
                 'sortino_ratio': 0.0,
                 'calmar_ratio': 0.0,
-                'trade_efficiency': 0.0
+                'trade_efficiency': 0.0,
+                'current_winning_streak_days': 0
             })
         
         # Statistiques de base
@@ -629,6 +630,28 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             trades_with_tp_count = trades_with_tp.count()
             trade_efficiency = (trades_with_tp_count / total_trades) * 100
         
+        # Calculer la série en cours de jours consécutifs avec P/L positif
+        # Cette série compte depuis le jour le plus récent jusqu'à trouver une perte
+        current_winning_streak_days = 0
+        if trades.exists():
+            # Agréger les trades par jour
+            daily_data = defaultdict(lambda: {'pnl': Decimal('0.0')})
+            for trade in trades:
+                day_key = trade.entered_at.date()
+                daily_data[day_key]['pnl'] += trade.net_pnl
+            
+            # Trier les jours par date (du plus récent au plus ancien)
+            sorted_days = sorted(daily_data.keys(), reverse=True)
+            
+            # Compter les jours consécutifs avec P/L positif depuis le plus récent
+            for day_key in sorted_days:
+                day_pnl = daily_data[day_key]['pnl']
+                if day_pnl > 0:
+                    current_winning_streak_days += 1
+                else:
+                    # Dès qu'on trouve une perte ou un break-even, on s'arrête
+                    break
+        
         stats = {
             'total_trades': total_trades,
             'winning_trades': winning_trades,
@@ -662,7 +685,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'sharpe_ratio': round(sharpe_ratio, 2),
             'sortino_ratio': round(sortino_ratio, 2),
             'calmar_ratio': round(calmar_ratio, 2),
-            'trade_efficiency': round(trade_efficiency, 2)
+            'trade_efficiency': round(trade_efficiency, 2),
+            'current_winning_streak_days': current_winning_streak_days
         }
         
         serializer = TradeStatisticsSerializer(stats)
