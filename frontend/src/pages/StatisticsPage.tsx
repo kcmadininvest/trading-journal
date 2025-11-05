@@ -651,11 +651,13 @@ function StatisticsPage() {
                     label={t('statistics:advancedAnalysis.consecutiveGains')}
                     value={analyticsData.consecutive_stats.max_consecutive_wins_per_day}
                     variant="success"
+                    tooltip={t('statistics:advancedAnalysis.consecutiveGainsTooltip')}
                   />
                   <MetricItem
                     label={t('statistics:advancedAnalysis.consecutiveLosses')}
                     value={analyticsData.consecutive_stats.max_consecutive_losses_per_day}
                     variant="danger"
+                    tooltip={t('statistics:advancedAnalysis.consecutiveLossesTooltip')}
                   />
                 </MetricCard>
 
@@ -671,11 +673,13 @@ function StatisticsPage() {
                     label={t('statistics:advancedAnalysis.consecutiveGains')}
                     value={analyticsData.consecutive_stats.max_consecutive_wins}
                     variant="success"
+                    tooltip={t('statistics:advancedAnalysis.consecutiveGainsGlobalTooltip')}
                   />
                   <MetricItem
                     label={t('statistics:advancedAnalysis.consecutiveLosses')}
                     value={analyticsData.consecutive_stats.max_consecutive_losses}
                     variant="danger"
+                    tooltip={t('statistics:advancedAnalysis.consecutiveLossesGlobalTooltip')}
                   />
                 </MetricCard>
 

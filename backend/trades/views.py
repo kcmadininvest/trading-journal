@@ -519,8 +519,19 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 if cumulative_capital > peak_capital:
                     peak_capital = cumulative_capital
                 
-                if peak_capital > 0:
-                    current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                # Calculer le drawdown actuel seulement si on est en dessous du pic
+                if cumulative_capital < peak_capital and peak_capital != 0:
+                    # Calculer le drawdown en pourcentage depuis le pic
+                    # Si le pic est positif, calcul standard
+                    if peak_capital > 0:
+                        current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                    # Si le pic est négatif, on mesure l'aggravation de la perte
+                    # en utilisant la valeur absolue du pic comme référence
+                    else:
+                        # Pour un pic négatif, cumulative est encore plus négatif
+                        # Le drawdown représente l'augmentation de la perte en pourcentage
+                        current_dd = ((cumulative_capital - peak_capital) / abs(peak_capital)) * 100
+                    
                     if current_dd > max_dd:
                         max_dd = current_dd
             
@@ -732,9 +743,19 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 if cumulative_capital > peak_capital:
                     peak_capital = cumulative_capital
                 
-                # Calculer le drawdown actuel
-                if peak_capital > 0:
-                    current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                # Calculer le drawdown actuel seulement si on est en dessous du pic
+                if cumulative_capital < peak_capital and peak_capital != 0:
+                    # Calculer le drawdown en pourcentage depuis le pic
+                    # Si le pic est positif, calcul standard
+                    if peak_capital > 0:
+                        current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                    # Si le pic est négatif, on mesure l'aggravation de la perte
+                    # en utilisant la valeur absolue du pic comme référence
+                    else:
+                        # Pour un pic négatif, cumulative est encore plus négatif
+                        # Le drawdown représente l'augmentation de la perte en pourcentage
+                        current_dd = ((cumulative_capital - peak_capital) / abs(peak_capital)) * 100
+                    
                     if current_dd > max_dd:
                         max_dd = current_dd
             
@@ -1420,41 +1441,35 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         losing_trades = [float(trade.net_pnl) for trade in trades if trade.net_pnl < 0]
         all_trade_pnls = [float(trade.net_pnl) for trade in trades]
 
-        # Calculer les séquences consécutives par jour
+        # Calculer les séquences consécutives de jours (seulement les jours avec trades)
+        # La consécutivité est basée sur les jours avec trades, pas sur les jours calendaires
         max_consecutive_wins_per_day = 0
         max_consecutive_losses_per_day = 0
         
-        for day_data in daily_data.values():
-            trades_list = day_data['trades']
-            if not trades_list:
-                continue
-                
-            # Trier les trades par heure d'entrée
-            trades_list.sort(key=lambda t: t.entered_at)  # type: ignore
+        # Trier les jours par date (seulement les jours avec trades)
+        sorted_days = sorted(daily_data.keys())
+        
+        current_consecutive_wins_days = 0
+        current_consecutive_losses_days = 0
+        
+        for day_key in sorted_days:
+            day_data = daily_data[day_key]
+            day_pnl = day_data['pnl']
             
-            current_consecutive_wins = 0
-            current_consecutive_losses = 0
-            max_day_wins = 0
-            max_day_losses = 0
-            
-            for trade in trades_list:  # type: ignore
-                if trade.net_pnl > 0:
-                    # Trade gagnant
-                    current_consecutive_wins += 1
-                    current_consecutive_losses = 0
-                    max_day_wins = max(max_day_wins, current_consecutive_wins)
-                elif trade.net_pnl < 0:
-                    # Trade perdant
-                    current_consecutive_losses += 1
-                    current_consecutive_wins = 0
-                    max_day_losses = max(max_day_losses, current_consecutive_losses)
-                else:
-                    # Trade break-even (P/L = 0) - interrompt les séquences
-                    current_consecutive_wins = 0
-                    current_consecutive_losses = 0
-            
-            max_consecutive_wins_per_day = max(max_consecutive_wins_per_day, max_day_wins)
-            max_consecutive_losses_per_day = max(max_consecutive_losses_per_day, max_day_losses)
+            if day_pnl > 0:
+                # Jour gagnant (P/L positif)
+                current_consecutive_wins_days += 1
+                current_consecutive_losses_days = 0
+                max_consecutive_wins_per_day = max(max_consecutive_wins_per_day, current_consecutive_wins_days)
+            elif day_pnl < 0:
+                # Jour perdant (P/L négatif)
+                current_consecutive_losses_days += 1
+                current_consecutive_wins_days = 0
+                max_consecutive_losses_per_day = max(max_consecutive_losses_per_day, current_consecutive_losses_days)
+            else:
+                # Jour break-even (P/L = 0) - interrompt les séquences
+                current_consecutive_wins_days = 0
+                current_consecutive_losses_days = 0
 
         # Calculer les séquences consécutives globales (tous les trades)
         trades_sorted = sorted(trades, key=lambda t: t.entered_at)
