@@ -1436,12 +1436,20 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     'median_winning_trade': 0.0,
                     'avg_losing_trade': 0.0,
                     'median_losing_trade': 0.0,
+                    'avg_duration_winning_trade': '00:00:00',
+                    'avg_duration_losing_trade': '00:00:00',
                 },
                 'consecutive_stats': {
                     'max_consecutive_wins_per_day': 0,
                     'max_consecutive_losses_per_day': 0,
                     'max_consecutive_wins': 0,
                     'max_consecutive_losses': 0,
+                },
+                'trade_type_stats': {
+                    'long_percentage': 0.0,
+                    'short_percentage': 0.0,
+                    'long_count': 0,
+                    'short_count': 0,
                 },
                 'monthly_performance': []
             })
@@ -1464,6 +1472,34 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         winning_trades = [float(trade.net_pnl) for trade in trades if trade.net_pnl > 0]
         losing_trades = [float(trade.net_pnl) for trade in trades if trade.net_pnl < 0]
         all_trade_pnls = [float(trade.net_pnl) for trade in trades]
+        
+        # Calculer les durées moyennes des trades gagnants et perdants
+        winning_trades_duration = trades.filter(net_pnl__gt=0, trade_duration__isnull=False).aggregate(
+            avg_duration=Avg('trade_duration')
+        )['avg_duration']
+        losing_trades_duration = trades.filter(net_pnl__lt=0, trade_duration__isnull=False).aggregate(
+            avg_duration=Avg('trade_duration')
+        )['avg_duration']
+        
+        # Convertir les durées en format HH:MM:SS
+        def format_duration(timedelta_obj):
+            if timedelta_obj is None:
+                return "00:00:00"
+            total_seconds = int(timedelta_obj.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+        avg_duration_winning_trade = format_duration(winning_trades_duration)
+        avg_duration_losing_trade = format_duration(losing_trades_duration)
+        
+        # Calculer les pourcentages de trades Long vs Short
+        long_trades_count = trades.filter(trade_type='Long').count()
+        short_trades_count = trades.filter(trade_type='Short').count()
+        total_trades_with_type = long_trades_count + short_trades_count
+        
+        long_percentage = (long_trades_count / total_trades_with_type * 100) if total_trades_with_type > 0 else 0.0
+        short_percentage = (short_trades_count / total_trades_with_type * 100) if total_trades_with_type > 0 else 0.0
 
         # Calculer les séquences consécutives de jours (seulement les jours avec trades)
         # La consécutivité est basée sur les jours avec trades, pas sur les jours calendaires
@@ -1588,12 +1624,20 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'median_winning_trade': calculate_median(winning_trades),
                 'avg_losing_trade': sum(losing_trades) / len(losing_trades) if losing_trades else 0.0,
                 'median_losing_trade': calculate_median(losing_trades),
+                'avg_duration_winning_trade': avg_duration_winning_trade,
+                'avg_duration_losing_trade': avg_duration_losing_trade,
             },
             'consecutive_stats': {
                 'max_consecutive_wins_per_day': max_consecutive_wins_per_day,
                 'max_consecutive_losses_per_day': max_consecutive_losses_per_day,
                 'max_consecutive_wins': max_consecutive_wins,
                 'max_consecutive_losses': max_consecutive_losses,
+            },
+            'trade_type_stats': {
+                'long_percentage': round(long_percentage, 2),
+                'short_percentage': round(short_percentage, 2),
+                'long_count': long_trades_count,
+                'short_count': short_trades_count,
             },
             'monthly_performance': monthly_list
         })
