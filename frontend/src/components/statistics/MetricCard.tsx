@@ -104,9 +104,9 @@ export const MetricItem: React.FC<MetricItemProps> = ({
           </Tooltip>
         )}
       </div>
-      <span className={`${sizeClasses[size]} font-semibold ${variantColors[variant]}`}>
+      <div className={`${sizeClasses[size]} font-semibold ${variantColors[variant]} flex items-center`}>
         {value}
-      </span>
+      </div>
     </div>
   );
 };

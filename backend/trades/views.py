@@ -340,7 +340,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'sharpe_ratio': 0.0,
                 'sortino_ratio': 0.0,
                 'calmar_ratio': 0.0,
-                'trade_efficiency': 0.0
+                'trade_efficiency': 0.0,
+                'current_winning_streak_days': 0
             })
         
         # Statistiques de base
@@ -519,8 +520,19 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 if cumulative_capital > peak_capital:
                     peak_capital = cumulative_capital
                 
-                if peak_capital > 0:
-                    current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                # Calculer le drawdown actuel seulement si on est en dessous du pic
+                if cumulative_capital < peak_capital and peak_capital != 0:
+                    # Calculer le drawdown en pourcentage depuis le pic
+                    # Si le pic est positif, calcul standard
+                    if peak_capital > 0:
+                        current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                    # Si le pic est négatif, on mesure l'aggravation de la perte
+                    # en utilisant la valeur absolue du pic comme référence
+                    else:
+                        # Pour un pic négatif, cumulative est encore plus négatif
+                        # Le drawdown représente l'augmentation de la perte en pourcentage
+                        current_dd = ((cumulative_capital - peak_capital) / abs(peak_capital)) * 100
+                    
                     if current_dd > max_dd:
                         max_dd = current_dd
             
@@ -618,6 +630,28 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             trades_with_tp_count = trades_with_tp.count()
             trade_efficiency = (trades_with_tp_count / total_trades) * 100
         
+        # Calculer la série en cours de jours consécutifs avec P/L positif
+        # Cette série compte depuis le jour le plus récent jusqu'à trouver une perte
+        current_winning_streak_days = 0
+        if trades.exists():
+            # Agréger les trades par jour
+            daily_data = defaultdict(lambda: {'pnl': Decimal('0.0')})
+            for trade in trades:
+                day_key = trade.entered_at.date()
+                daily_data[day_key]['pnl'] += trade.net_pnl
+            
+            # Trier les jours par date (du plus récent au plus ancien)
+            sorted_days = sorted(daily_data.keys(), reverse=True)
+            
+            # Compter les jours consécutifs avec P/L positif depuis le plus récent
+            for day_key in sorted_days:
+                day_pnl = daily_data[day_key]['pnl']
+                if day_pnl > 0:
+                    current_winning_streak_days += 1
+                else:
+                    # Dès qu'on trouve une perte ou un break-even, on s'arrête
+                    break
+        
         stats = {
             'total_trades': total_trades,
             'winning_trades': winning_trades,
@@ -651,7 +685,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'sharpe_ratio': round(sharpe_ratio, 2),
             'sortino_ratio': round(sortino_ratio, 2),
             'calmar_ratio': round(calmar_ratio, 2),
-            'trade_efficiency': round(trade_efficiency, 2)
+            'trade_efficiency': round(trade_efficiency, 2),
+            'current_winning_streak_days': current_winning_streak_days
         }
         
         serializer = TradeStatisticsSerializer(stats)
@@ -732,9 +767,19 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 if cumulative_capital > peak_capital:
                     peak_capital = cumulative_capital
                 
-                # Calculer le drawdown actuel
-                if peak_capital > 0:
-                    current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                # Calculer le drawdown actuel seulement si on est en dessous du pic
+                if cumulative_capital < peak_capital and peak_capital != 0:
+                    # Calculer le drawdown en pourcentage depuis le pic
+                    # Si le pic est positif, calcul standard
+                    if peak_capital > 0:
+                        current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
+                    # Si le pic est négatif, on mesure l'aggravation de la perte
+                    # en utilisant la valeur absolue du pic comme référence
+                    else:
+                        # Pour un pic négatif, cumulative est encore plus négatif
+                        # Le drawdown représente l'augmentation de la perte en pourcentage
+                        current_dd = ((cumulative_capital - peak_capital) / abs(peak_capital)) * 100
+                    
                     if current_dd > max_dd:
                         max_dd = current_dd
             
@@ -1391,12 +1436,20 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     'median_winning_trade': 0.0,
                     'avg_losing_trade': 0.0,
                     'median_losing_trade': 0.0,
+                    'avg_duration_winning_trade': '00:00:00',
+                    'avg_duration_losing_trade': '00:00:00',
                 },
                 'consecutive_stats': {
                     'max_consecutive_wins_per_day': 0,
                     'max_consecutive_losses_per_day': 0,
                     'max_consecutive_wins': 0,
                     'max_consecutive_losses': 0,
+                },
+                'trade_type_stats': {
+                    'long_percentage': 0.0,
+                    'short_percentage': 0.0,
+                    'long_count': 0,
+                    'short_count': 0,
                 },
                 'monthly_performance': []
             })
@@ -1419,42 +1472,64 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         winning_trades = [float(trade.net_pnl) for trade in trades if trade.net_pnl > 0]
         losing_trades = [float(trade.net_pnl) for trade in trades if trade.net_pnl < 0]
         all_trade_pnls = [float(trade.net_pnl) for trade in trades]
+        
+        # Calculer les durées moyennes des trades gagnants et perdants
+        winning_trades_duration = trades.filter(net_pnl__gt=0, trade_duration__isnull=False).aggregate(
+            avg_duration=Avg('trade_duration')
+        )['avg_duration']
+        losing_trades_duration = trades.filter(net_pnl__lt=0, trade_duration__isnull=False).aggregate(
+            avg_duration=Avg('trade_duration')
+        )['avg_duration']
+        
+        # Convertir les durées en format HH:MM:SS
+        def format_duration(timedelta_obj):
+            if timedelta_obj is None:
+                return "00:00:00"
+            total_seconds = int(timedelta_obj.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        
+        avg_duration_winning_trade = format_duration(winning_trades_duration)
+        avg_duration_losing_trade = format_duration(losing_trades_duration)
+        
+        # Calculer les pourcentages de trades Long vs Short
+        long_trades_count = trades.filter(trade_type='Long').count()
+        short_trades_count = trades.filter(trade_type='Short').count()
+        total_trades_with_type = long_trades_count + short_trades_count
+        
+        long_percentage = (long_trades_count / total_trades_with_type * 100) if total_trades_with_type > 0 else 0.0
+        short_percentage = (short_trades_count / total_trades_with_type * 100) if total_trades_with_type > 0 else 0.0
 
-        # Calculer les séquences consécutives par jour
+        # Calculer les séquences consécutives de jours (seulement les jours avec trades)
+        # La consécutivité est basée sur les jours avec trades, pas sur les jours calendaires
         max_consecutive_wins_per_day = 0
         max_consecutive_losses_per_day = 0
         
-        for day_data in daily_data.values():
-            trades_list = day_data['trades']
-            if not trades_list:
-                continue
-                
-            # Trier les trades par heure d'entrée
-            trades_list.sort(key=lambda t: t.entered_at)  # type: ignore
+        # Trier les jours par date (seulement les jours avec trades)
+        sorted_days = sorted(daily_data.keys())
+        
+        current_consecutive_wins_days = 0
+        current_consecutive_losses_days = 0
+        
+        for day_key in sorted_days:
+            day_data = daily_data[day_key]
+            day_pnl = day_data['pnl']
             
-            current_consecutive_wins = 0
-            current_consecutive_losses = 0
-            max_day_wins = 0
-            max_day_losses = 0
-            
-            for trade in trades_list:  # type: ignore
-                if trade.net_pnl > 0:
-                    # Trade gagnant
-                    current_consecutive_wins += 1
-                    current_consecutive_losses = 0
-                    max_day_wins = max(max_day_wins, current_consecutive_wins)
-                elif trade.net_pnl < 0:
-                    # Trade perdant
-                    current_consecutive_losses += 1
-                    current_consecutive_wins = 0
-                    max_day_losses = max(max_day_losses, current_consecutive_losses)
-                else:
-                    # Trade break-even (P/L = 0) - interrompt les séquences
-                    current_consecutive_wins = 0
-                    current_consecutive_losses = 0
-            
-            max_consecutive_wins_per_day = max(max_consecutive_wins_per_day, max_day_wins)
-            max_consecutive_losses_per_day = max(max_consecutive_losses_per_day, max_day_losses)
+            if day_pnl > 0:
+                # Jour gagnant (P/L positif)
+                current_consecutive_wins_days += 1
+                current_consecutive_losses_days = 0
+                max_consecutive_wins_per_day = max(max_consecutive_wins_per_day, current_consecutive_wins_days)
+            elif day_pnl < 0:
+                # Jour perdant (P/L négatif)
+                current_consecutive_losses_days += 1
+                current_consecutive_wins_days = 0
+                max_consecutive_losses_per_day = max(max_consecutive_losses_per_day, current_consecutive_losses_days)
+            else:
+                # Jour break-even (P/L = 0) - interrompt les séquences
+                current_consecutive_wins_days = 0
+                current_consecutive_losses_days = 0
 
         # Calculer les séquences consécutives globales (tous les trades)
         trades_sorted = sorted(trades, key=lambda t: t.entered_at)
@@ -1549,12 +1624,20 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'median_winning_trade': calculate_median(winning_trades),
                 'avg_losing_trade': sum(losing_trades) / len(losing_trades) if losing_trades else 0.0,
                 'median_losing_trade': calculate_median(losing_trades),
+                'avg_duration_winning_trade': avg_duration_winning_trade,
+                'avg_duration_losing_trade': avg_duration_losing_trade,
             },
             'consecutive_stats': {
                 'max_consecutive_wins_per_day': max_consecutive_wins_per_day,
                 'max_consecutive_losses_per_day': max_consecutive_losses_per_day,
                 'max_consecutive_wins': max_consecutive_wins,
                 'max_consecutive_losses': max_consecutive_losses,
+            },
+            'trade_type_stats': {
+                'long_percentage': round(long_percentage, 2),
+                'short_percentage': round(short_percentage, 2),
+                'long_count': long_trades_count,
+                'short_count': short_trades_count,
             },
             'monthly_performance': monthly_list
         })

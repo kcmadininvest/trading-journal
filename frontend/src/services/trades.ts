@@ -258,6 +258,7 @@ class TradesService {
     sortino_ratio: number;
     calmar_ratio: number;
     trade_efficiency: number;
+    current_winning_streak_days: number;
   }> {
     const queryParams = new URLSearchParams();
     if (tradingAccountId) {
@@ -318,12 +319,20 @@ class TradesService {
       median_winning_trade: number;
       avg_losing_trade: number;
       median_losing_trade: number;
+      avg_duration_winning_trade: string;
+      avg_duration_losing_trade: string;
     };
     consecutive_stats: {
       max_consecutive_wins_per_day: number;
       max_consecutive_losses_per_day: number;
       max_consecutive_wins: number;
       max_consecutive_losses: number;
+    };
+    trade_type_stats: {
+      long_percentage: number;
+      short_percentage: number;
+      long_count: number;
+      short_count: number;
     };
     monthly_performance: Array<{
       month: string;

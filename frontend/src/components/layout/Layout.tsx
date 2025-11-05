@@ -35,7 +35,7 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex lg:h-screen lg:overflow-hidden">
       {/* Sidebar */}
       <Sidebar
         currentUser={currentUser}
@@ -46,7 +46,7 @@ const Layout: React.FC<LayoutProps> = ({
       />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0 lg:overflow-hidden">
         {/* Header */}
         <Header
           currentUser={currentUser}

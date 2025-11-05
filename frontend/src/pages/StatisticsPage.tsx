@@ -544,7 +544,7 @@ function StatisticsPage() {
         <MetricGroup
           title={t('statistics:advancedAnalysis.title')}
           subtitle={t('statistics:advancedAnalysis.subtitle')}
-          defaultCollapsed={true}
+          defaultCollapsed={false}
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
             {statisticsData && analyticsData && (
@@ -640,6 +640,26 @@ function StatisticsPage() {
                 </MetricCard>
 
                 <MetricCard
+                  title={t('statistics:advancedAnalysis.tradeDurations')}
+                  icon={
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
+                >
+                  <MetricItem
+                    label={t('statistics:advancedAnalysis.avgDurationWinningTrade')}
+                    value={analyticsData.trade_stats.avg_duration_winning_trade}
+                    variant="success"
+                  />
+                  <MetricItem
+                    label={t('statistics:advancedAnalysis.avgDurationLosingTrade')}
+                    value={analyticsData.trade_stats.avg_duration_losing_trade}
+                    variant="danger"
+                  />
+                </MetricCard>
+
+                <MetricCard
                   title={t('statistics:advancedAnalysis.dailySequences')}
                   icon={
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -651,11 +671,13 @@ function StatisticsPage() {
                     label={t('statistics:advancedAnalysis.consecutiveGains')}
                     value={analyticsData.consecutive_stats.max_consecutive_wins_per_day}
                     variant="success"
+                    tooltip={t('statistics:advancedAnalysis.consecutiveGainsTooltip')}
                   />
                   <MetricItem
                     label={t('statistics:advancedAnalysis.consecutiveLosses')}
                     value={analyticsData.consecutive_stats.max_consecutive_losses_per_day}
                     variant="danger"
+                    tooltip={t('statistics:advancedAnalysis.consecutiveLossesTooltip')}
                   />
                 </MetricCard>
 
@@ -671,11 +693,33 @@ function StatisticsPage() {
                     label={t('statistics:advancedAnalysis.consecutiveGains')}
                     value={analyticsData.consecutive_stats.max_consecutive_wins}
                     variant="success"
+                    tooltip={t('statistics:advancedAnalysis.consecutiveGainsGlobalTooltip')}
                   />
                   <MetricItem
                     label={t('statistics:advancedAnalysis.consecutiveLosses')}
                     value={analyticsData.consecutive_stats.max_consecutive_losses}
                     variant="danger"
+                    tooltip={t('statistics:advancedAnalysis.consecutiveLossesGlobalTooltip')}
+                  />
+                </MetricCard>
+
+                <MetricCard
+                  title={t('statistics:advancedAnalysis.longVsShort')}
+                  icon={
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                    </svg>
+                  }
+                >
+                  <MetricItem
+                    label={t('statistics:advancedAnalysis.longPercentage')}
+                    value={`${analyticsData.trade_type_stats.long_percentage.toFixed(1)}%`}
+                    variant="info"
+                  />
+                  <MetricItem
+                    label={t('statistics:advancedAnalysis.shortPercentage')}
+                    value={`${analyticsData.trade_type_stats.short_percentage.toFixed(1)}%`}
+                    variant="warning"
                   />
                 </MetricCard>
 

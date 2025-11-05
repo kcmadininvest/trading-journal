@@ -11,6 +11,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import { tradeStrategiesService, TradeStrategy } from '../services/tradeStrategies';
 import ModernStatCard from '../components/common/ModernStatCard';
 import DurationDistributionChart from '../components/charts/DurationDistributionChart';
+import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
@@ -1158,6 +1159,27 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         currentConsecutiveDaysNotRespected = 0;
       }
     });
+
+    // Calculer la série en cours de jours consécutifs avec P/L positif
+    // Cette série compte depuis le jour le plus récent jusqu'à trouver une perte
+    let currentWinningStreakDays = 0;
+    if (sortedDays.length > 0) {
+      // Trier les jours par date (du plus récent au plus ancien)
+      const sortedDaysReverse = [...sortedDays].sort().reverse();
+      
+      // Compter les jours consécutifs avec P/L positif depuis le plus récent
+      for (const dayKey of sortedDaysReverse) {
+        const dayTrades = tradesByDay.get(dayKey)!;
+        const dayPnl = dayTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
+        
+        if (dayPnl > 0) {
+          currentWinningStreakDays++;
+        } else {
+          // Dès qu'on trouve une perte ou un break-even, on s'arrête
+          break;
+        }
+      }
+    }
     
     return {
       totalTrades,
@@ -1174,6 +1196,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       currentConsecutiveTradesNotRespected,
       currentConsecutiveDaysRespected,
       currentConsecutiveDaysNotRespected,
+      currentWinningStreakDays,
     };
   }, [trades, strategies, allTradesForSequences, allStrategiesForSequences]);
 
@@ -1410,7 +1433,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <ModernStatCard
                 label={t('dashboard:totalPnL')}
-                value={formatCurrency(additionalStats.totalPnl, currencySymbol)}
+                value={
+                  <div className="flex items-center justify-between w-full">
+                    <span>{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
+                    {additionalStats.currentWinningStreakDays > 0 && (
+                      <div className="flex items-baseline gap-2 ml-auto">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {t('statistics:overview.currentWinningStreak', { defaultValue: 'Gains consécutifs en cours' })}:
+                        </span>
+                        <Tooltip content={t('statistics:overview.currentWinningStreakTooltip')}>
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 cursor-help inline-flex items-center">
+                            {additionalStats.currentWinningStreakDays} {additionalStats.currentWinningStreakDays === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                          </span>
+                        </Tooltip>
+                      </div>
+                    )}
+                  </div>
+                }
                 variant={additionalStats.totalPnl >= 0 ? 'success' : 'danger'}
                 size="small"
                 icon={
