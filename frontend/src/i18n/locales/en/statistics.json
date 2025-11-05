@@ -20,6 +20,7 @@
     "totalPnL": "Total P/L",
     "day": "day",
     "days": "days",
+    "currentWinningStreak": "Current consecutive gains",
     "currentWinningStreakTooltip": "Current streak of consecutive days with positive P/L. Only days with trades are counted (calendar days without trades are ignored). The streak resets to 0 in case of a loss.",
     "totalGains": "Total gains",
     "totalLosses": "Total losses",

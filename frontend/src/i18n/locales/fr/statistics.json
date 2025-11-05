@@ -20,6 +20,7 @@
     "totalPnL": "P/L total",
     "day": "jour",
     "days": "jours",
+    "currentWinningStreak": "Gains consécutifs en cours",
     "currentWinningStreakTooltip": "Série en cours de jours consécutifs avec un P/L positif. Seuls les jours avec trades sont comptés (les jours calendaires sans trades sont ignorés). La série se réinitialise à 0 en cas de perte.",
     "totalGains": "Gains totaux",
     "totalLosses": "Pertes totales",

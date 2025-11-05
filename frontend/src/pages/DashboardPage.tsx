@@ -1437,11 +1437,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="flex items-center justify-between w-full">
                     <span>{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
                     {additionalStats.currentWinningStreakDays > 0 && (
-                      <Tooltip content={t('statistics:overview.currentWinningStreakTooltip')}>
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 cursor-help ml-auto">
-                          {additionalStats.currentWinningStreakDays} {additionalStats.currentWinningStreakDays === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                      <div className="flex items-baseline gap-2 ml-auto">
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {t('statistics:overview.currentWinningStreak', { defaultValue: 'Gains consécutifs en cours' })}:
                         </span>
-                      </Tooltip>
+                        <Tooltip content={t('statistics:overview.currentWinningStreakTooltip')}>
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 cursor-help inline-flex items-center">
+                            {additionalStats.currentWinningStreakDays} {additionalStats.currentWinningStreakDays === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                          </span>
+                        </Tooltip>
+                      </div>
                     )}
                   </div>
                 }

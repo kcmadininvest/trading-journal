@@ -20,6 +20,7 @@
     "totalPnL": "P/L Total",
     "day": "día",
     "days": "días",
+    "currentWinningStreak": "Ganancias consecutivas en curso",
     "currentWinningStreakTooltip": "Racha actual de días consecutivos con P/L positivo. Solo se cuentan los días con operaciones (los días calendario sin operaciones se ignoran). La racha se reinicia a 0 en caso de pérdida.",
     "totalGains": "Ganancias totales",
     "totalLosses": "Pérdidas totales",

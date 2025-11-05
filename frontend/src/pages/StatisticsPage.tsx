@@ -16,7 +16,6 @@ import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
 import { MetricGroup } from '../components/statistics/MetricGroup';
-import Tooltip from '../components/ui/Tooltip';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
@@ -244,18 +243,7 @@ function StatisticsPage() {
               >
                 <MetricItem
                   label={t('statistics:overview.totalPnL')}
-                  value={
-                    <div className="flex items-center justify-between w-full">
-                      <span>{formatCurrency(parseFloat(statisticsData.total_pnl), currencySymbol)}</span>
-                      {statisticsData.current_winning_streak_days > 0 && (
-                        <Tooltip content={t('statistics:overview.currentWinningStreakTooltip')}>
-                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 cursor-help ml-auto">
-                            {statisticsData.current_winning_streak_days} {statisticsData.current_winning_streak_days === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
-                          </span>
-                        </Tooltip>
-                      )}
-                    </div>
-                  }
+                  value={formatCurrency(parseFloat(statisticsData.total_pnl), currencySymbol)}
                   tooltip={t('statistics:overview.totalPnL')}
                   variant={parseFloat(statisticsData.total_pnl) >= 0 ? 'success' : 'danger'}
                 />
