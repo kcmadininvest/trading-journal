@@ -240,6 +240,8 @@ class TradeStrategiesService {
   async statistics(params?: {
     year?: number;
     month?: number;
+    start_date?: string;
+    end_date?: string;
     tradingAccount?: number;
   }): Promise<{
     period: {
@@ -281,12 +283,19 @@ class TradeStrategiesService {
     };
   }> {
     const queryParams = new URLSearchParams();
-    if (params?.year) {
+    
+    // Si start_date/end_date sont fournis, les utiliser (priorité)
+    if (params?.start_date && params?.end_date) {
+      queryParams.append('start_date', params.start_date);
+      queryParams.append('end_date', params.end_date);
+    } else if (params?.year) {
+      // Sinon, utiliser year/month (rétrocompatibilité)
       queryParams.append('year', String(params.year));
+      if (params?.month) {
+        queryParams.append('month', String(params.month));
+      }
     }
-    if (params?.month) {
-      queryParams.append('month', String(params.month));
-    }
+    
     if (params?.tradingAccount) {
       queryParams.append('trading_account', String(params.tradingAccount));
     }

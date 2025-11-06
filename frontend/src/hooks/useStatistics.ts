@@ -90,7 +90,13 @@ export interface GlobalStrategyData {
   percentage: number;
 }
 
-export function useStatistics(tradingAccountId?: number | null, year?: number | null, month?: number | null) {
+export function useStatistics(
+  tradingAccountId?: number | null, 
+  year?: number | null, 
+  month?: number | null,
+  startDate?: string | null,
+  endDate?: string | null
+) {
   const [data, setData] = useState<StatisticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -100,10 +106,14 @@ export function useStatistics(tradingAccountId?: number | null, year?: number | 
       setIsLoading(true);
       setError(null);
       try {
+        // Si startDate/endDate sont fournis, les utiliser (priorité)
+        // Sinon, utiliser year/month (rétrocompatibilité)
         const result = await tradesService.detailedStatistics(
           tradingAccountId || undefined,
-          year || undefined,
-          month || undefined
+          startDate && endDate ? undefined : (year || undefined),
+          startDate && endDate ? undefined : (month || undefined),
+          startDate || undefined,
+          endDate || undefined
         );
         setData(result);
       } catch (err) {
@@ -118,12 +128,18 @@ export function useStatistics(tradingAccountId?: number | null, year?: number | 
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId, year, month]);
+  }, [tradingAccountId, year, month, startDate, endDate]);
 
   return { data, isLoading, error };
 }
 
-export function useAnalytics(tradingAccountId?: number | null, year?: number | null, month?: number | null) {
+export function useAnalytics(
+  tradingAccountId?: number | null, 
+  year?: number | null, 
+  month?: number | null,
+  startDate?: string | null,
+  endDate?: string | null
+) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -133,10 +149,14 @@ export function useAnalytics(tradingAccountId?: number | null, year?: number | n
       setIsLoading(true);
       setError(null);
       try {
+        // Si startDate/endDate sont fournis, les utiliser (priorité)
+        // Sinon, utiliser year/month (rétrocompatibilité)
         const result = await tradesService.analytics(
           tradingAccountId || undefined,
-          year || undefined,
-          month || undefined
+          startDate && endDate ? undefined : (year || undefined),
+          startDate && endDate ? undefined : (month || undefined),
+          startDate || undefined,
+          endDate || undefined
         );
         setData(result);
       } catch (err) {
@@ -151,7 +171,7 @@ export function useAnalytics(tradingAccountId?: number | null, year?: number | n
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId, year, month]);
+  }, [tradingAccountId, year, month, startDate, endDate]);
 
   return { data, isLoading, error };
 }

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import TooltipComponent from '../components/ui/Tooltip';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -26,8 +27,6 @@ import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
-import { CustomSelect } from '../components/common/CustomSelect';
-import { getMonthNames } from '../utils/dateFormat';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -67,7 +66,19 @@ const AnalyticsPage: React.FC = () => {
     tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
   }), [isDark]);
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
-  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
+  // Utiliser un sélecteur de période moderne
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
+    // Par défaut: 3 derniers mois
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    return {
+      start: `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`,
+      end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+      preset: 'last3Months',
+    };
+  });
+  // Garder pour compatibilité
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
@@ -124,23 +135,6 @@ const AnalyticsPage: React.FC = () => {
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
 
-  // Générer les années disponibles (année en cours et 5 ans précédents)
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const yearOptions = useMemo(() => [
-    { value: null, label: t('analytics:allYears') },
-    ...availableYears.map(year => ({ value: year, label: year.toString() }))
-  ], [availableYears, t]);
-  
-  // Utiliser les noms de mois traduits
-  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
-  const monthOptions = useMemo(() => {
-    const availableMonths = monthNames.map((name, index) => ({ value: index + 1, label: name }));
-    return [
-      { value: null, label: t('analytics:allMonths') },
-      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
-    ];
-  }, [monthNames, t]);
 
   useEffect(() => {
     // Attendre que le compte soit chargé avant de charger les données
@@ -157,8 +151,12 @@ const AnalyticsPage: React.FC = () => {
           page_size: 1000, // Récupérer beaucoup de trades pour les analyses
         };
 
-        // Ajouter le filtre de date selon l'année et le mois
-        if (selectedYear) {
+        // Ajouter le filtre de date selon la période sélectionnée
+        if (selectedPeriod) {
+          filters.start_date = selectedPeriod.start;
+          filters.end_date = selectedPeriod.end;
+        } else if (selectedYear) {
+          // Rétrocompatibilité avec l'ancien système
           const startDate = selectedMonth 
             ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
             : `${selectedYear}-01-01`;
@@ -181,23 +179,8 @@ const AnalyticsPage: React.FC = () => {
 
         const response = await tradesService.list(filters);
         
-        // Filtrer par année/mois côté client aussi pour être sûr
-        let filteredTrades = response.results;
-        if (selectedYear) {
-          filteredTrades = filteredTrades.filter(trade => {
-            if (!trade.trade_day) return false;
-            const tradeDate = new Date(trade.trade_day);
-            const tradeYear = tradeDate.getFullYear();
-            const tradeMonth = tradeDate.getMonth() + 1;
-            
-            if (selectedMonth) {
-              return tradeYear === selectedYear && tradeMonth === selectedMonth;
-            }
-            return tradeYear === selectedYear;
-          });
-        }
-        
-        setTrades(filteredTrades);
+        // Les filtres sont déjà appliqués côté serveur, pas besoin de filtrer à nouveau
+        setTrades(response.results);
       } catch (err) {
         setError(t('analytics:errorLoadingData'));
         console.error(err);
@@ -207,7 +190,7 @@ const AnalyticsPage: React.FC = () => {
     };
 
     loadTrades();
-  }, [accountId, selectedYear, selectedMonth, accountLoading, t]);
+  }, [accountId, selectedPeriod, selectedYear, selectedMonth, accountLoading, t]);
 
   // Performance par heure (nuage de points)
   const hourlyPerformanceScatter = useMemo(() => {
@@ -589,47 +572,29 @@ const AnalyticsPage: React.FC = () => {
     <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Filtres */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+          {/* Compte de trading */}
+          <div className="flex-shrink-0 lg:w-80">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('analytics:tradingAccount')}
             </label>
             <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
           </div>
           
-          <div>
+          {/* Sélecteur de période moderne */}
+          <div className="flex-shrink-0 lg:w-80">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('analytics:year')}
+              {t('analytics:period', { defaultValue: 'Période' })}
             </label>
-            <CustomSelect
-              value={selectedYear}
-              onChange={(value) => setSelectedYear(value as number | null)}
-              options={yearOptions}
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('analytics:month')}
-            </label>
-            <CustomSelect
-              value={selectedMonth}
-              onChange={(value) => setSelectedMonth(value as number | null)}
-              options={monthOptions}
-              disabled={!selectedYear}
-            />
-          </div>
-          
-          <div className="flex items-end">
-            <button
-              onClick={() => {
+            <PeriodSelector
+              value={selectedPeriod}
+              onChange={(period) => {
+                setSelectedPeriod(period);
+                // Réinitialiser les anciens sélecteurs
                 setSelectedYear(null);
                 setSelectedMonth(null);
               }}
-              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-            >
-              {t('analytics:reset')}
-            </button>
+            />
           </div>
         </div>
       </div>
@@ -972,12 +937,12 @@ const AnalyticsPage: React.FC = () => {
                         backgroundColor: 'rgba(236, 72, 153, 0.1)',
                         borderWidth: 3,
                         pointRadius: (context: any) => {
-                          // Masquer les points si trop de données (> 100 points)
+                          // Afficher les points seulement si le volume de données est faible (< 30 points)
                           const dataLength = drawdownData.length;
-                          if (dataLength > 100) return 0;
+                          if (dataLength > 30) return 0;
                           // Vérifier que context.parsed existe avant d'accéder à y
                           const value = context.parsed?.y;
-                          return value !== null && value !== undefined ? 5 : 0;
+                          return value !== null && value !== undefined ? 4 : 0;
                         },
                         pointBackgroundColor: '#ec4899',
                         pointBorderColor: '#fff',

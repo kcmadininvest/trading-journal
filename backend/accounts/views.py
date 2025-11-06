@@ -1349,11 +1349,15 @@ class DataExportView(APIView):
                         'exit_price': str(trade.exit_price) if trade.exit_price else None,
                         'fees': str(trade.fees) if trade.fees else None,
                         'pnl': str(trade.pnl) if trade.pnl else None,
-                        'size': trade.size,
-                        'type': trade.type,
+                        'net_pnl': str(trade.net_pnl) if trade.net_pnl else None,
+                        'size': str(trade.size) if trade.size else None,
+                        'trade_type': trade.trade_type,
+                        'commissions': str(trade.commissions) if trade.commissions else None,
                         'trade_day': trade.trade_day.isoformat() if trade.trade_day else None,
                         'trade_duration': str(trade.trade_duration) if trade.trade_duration else None,
-                        'created_at': trade.created_at.isoformat() if trade.created_at else None,
+                        'trading_account_id': trade.trading_account.id if trade.trading_account else None,
+                        'imported_at': trade.imported_at.isoformat() if trade.imported_at else None,
+                        'updated_at': trade.updated_at.isoformat() if trade.updated_at else None,
                     })
             except Exception as e:
                 export_data['trades_error'] = str(e)
@@ -1361,13 +1365,24 @@ class DataExportView(APIView):
             # Stratégies
             try:
                 from trades.models import TradeStrategy
-                strategies = TradeStrategy.objects.filter(user=user)
+                strategies = TradeStrategy.objects.filter(user=user).select_related('trade')
                 for strategy in strategies:
                     export_data['strategies'].append({
                         'id': strategy.id,
-                        'name': strategy.name,
-                        'description': strategy.description,
+                        'trade_id': strategy.trade.id if strategy.trade else None,
+                        'trade_topstep_id': strategy.trade.topstep_id if strategy.trade else None,
+                        'strategy_respected': strategy.strategy_respected,
+                        'gain_if_strategy_respected': strategy.gain_if_strategy_respected,
+                        'dominant_emotions': strategy.dominant_emotions,
+                        'tp1_reached': strategy.tp1_reached,
+                        'tp2_plus_reached': strategy.tp2_plus_reached,
+                        'session_rating': strategy.session_rating,
+                        'emotion_details': strategy.emotion_details,
+                        'possible_improvements': strategy.possible_improvements,
+                        'screenshot_url': strategy.screenshot_url,
+                        'video_url': strategy.video_url,
                         'created_at': strategy.created_at.isoformat() if strategy.created_at else None,
+                        'updated_at': strategy.updated_at.isoformat() if strategy.updated_at else None,
                     })
             except Exception as e:
                 export_data['strategies_error'] = str(e)

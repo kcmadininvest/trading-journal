@@ -20,7 +20,7 @@
     "totalPnL": "Gesamt-P/L",
     "day": "Tag",
     "days": "Tage",
-    "currentWinningStreak": "Laufende aufeinanderfolgende Gewinne",
+    "currentWinningStreak": "Gewinnserie :",
     "currentWinningStreakTooltip": "Aktuelle Serie von aufeinanderfolgenden Tagen mit positivem P/L. Es werden nur Tage mit Trades gezählt (Kalendertage ohne Trades werden ignoriert). Die Serie wird bei einem Verlust auf 0 zurückgesetzt.",
     "totalGains": "Gesamtgewinne",
     "totalLosses": "Gesamtverluste",

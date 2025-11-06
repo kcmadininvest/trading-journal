@@ -9,8 +9,7 @@ import { StatisticsPageSkeleton } from '../components/ui/StatisticsPageSkeleton'
 import { currenciesService, Currency } from '../services/currencies';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
-import { CustomSelect } from '../components/common/CustomSelect';
-import { getMonthNames } from '../utils/dateFormat';
+import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
@@ -23,29 +22,60 @@ function StatisticsPage() {
   const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
+  // Utiliser un sélecteur de période moderne
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
+    // Par défaut: 3 derniers mois
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    return {
+      start: `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`,
+      end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+      preset: 'last3Months',
+    };
+  });
+  // Garder pour compatibilité
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   
   // Hooks pour les données
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts();
   // Passer undefined si le compte est en cours de chargement pour éviter de charger avec un mauvais accountId
-  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(accountLoading ? undefined : selectedAccountId, selectedYear, selectedMonth);
-  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(accountLoading ? undefined : selectedAccountId, selectedYear, selectedMonth);
+  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(
+    accountLoading ? undefined : selectedAccountId, 
+    selectedPeriod ? null : selectedYear, 
+    selectedPeriod ? null : selectedMonth,
+    selectedPeriod?.start || null,
+    selectedPeriod?.end || null
+  );
+  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(
+    accountLoading ? undefined : selectedAccountId, 
+    selectedPeriod ? null : selectedYear, 
+    selectedPeriod ? null : selectedMonth,
+    selectedPeriod?.start || null,
+    selectedPeriod?.end || null
+  );
   
   // Fonction pour recharger les statistiques après un import
   const reloadStatistics = () => {
-    // Forcer le rechargement en modifiant temporairement selectedYear puis en le remettant
+    // Forcer le rechargement en modifiant temporairement la période puis en la remettant
     // Cela déclenchera le useEffect des hooks useStatistics et useAnalytics
+    const currentPeriod = selectedPeriod;
     const currentYear = selectedYear;
     const currentMonth = selectedMonth;
-    setSelectedYear(null);
-    setSelectedMonth(null);
-    // Remettre les valeurs originales au prochain cycle de rendu
-    setTimeout(() => {
-      setSelectedYear(currentYear);
-      setSelectedMonth(currentMonth);
-    }, 0);
+    if (currentPeriod) {
+      setSelectedPeriod(null);
+      setTimeout(() => {
+        setSelectedPeriod(currentPeriod);
+      }, 0);
+    } else {
+      setSelectedYear(null);
+      setSelectedMonth(null);
+      setTimeout(() => {
+        setSelectedYear(currentYear);
+        setSelectedMonth(currentMonth);
+      }, 0);
+    }
   };
   
   // Charger les devises
@@ -69,22 +99,6 @@ function StatisticsPage() {
   }, [selectedAccount, currencies]);
 
   // Générer les années disponibles (année en cours et 5 ans précédents)
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const yearOptions = useMemo(() => [
-    { value: null, label: t('statistics:allYears') },
-    ...availableYears.map(year => ({ value: year, label: year.toString() }))
-  ], [availableYears, t]);
-  
-  // Utiliser les noms de mois traduits
-  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
-  const monthOptions = useMemo(() => {
-    const availableMonths = monthNames.map((name, index) => ({ value: index + 1, label: name }));
-    return [
-      { value: null, label: t('statistics:allMonths') },
-      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
-    ];
-  }, [monthNames, t]);
   
   // Gérer l'invalidation des queries quand les trades sont mis à jour
   useTradesUpdateInvalidation();
@@ -173,8 +187,9 @@ function StatisticsPage() {
       <div className="w-full">
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+            {/* Compte de trading */}
+            <div className="flex-shrink-0 lg:w-80">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('statistics:tradingAccount')}
               </label>
@@ -188,39 +203,20 @@ function StatisticsPage() {
               />
             </div>
             
-            <div>
+            {/* Sélecteur de période moderne */}
+            <div className="flex-shrink-0 lg:w-80">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('statistics:year')}
+                {t('statistics:period', { defaultValue: 'Période' })}
               </label>
-              <CustomSelect
-                value={selectedYear}
-                onChange={(value) => setSelectedYear(value as number | null)}
-                options={yearOptions}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('statistics:month')}
-              </label>
-              <CustomSelect
-                value={selectedMonth}
-                onChange={(value) => setSelectedMonth(value as number | null)}
-                options={monthOptions}
-                disabled={!selectedYear}
-              />
-            </div>
-            
-            <div className="flex items-end">
-              <button
-                onClick={() => {
+              <PeriodSelector
+                value={selectedPeriod}
+                onChange={(period) => {
+                  setSelectedPeriod(period);
+                  // Réinitialiser les anciens sélecteurs
                   setSelectedYear(null);
                   setSelectedMonth(null);
                 }}
-                className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                {t('statistics:reset')}
-              </button>
+              />
             </div>
           </div>
         </div>

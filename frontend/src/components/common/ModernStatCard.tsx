@@ -329,7 +329,7 @@ function ModernStatCard({
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden relative">
                   <div
-                    className="h-full rounded-full transition-all duration-500 relative"
+                    className="h-full rounded-full transition-all duration-500 relative overflow-hidden"
                     style={{ 
                       width: `${Math.min((progressValue / progressMax) * 100, 100)}%`,
                       background: (() => {
@@ -364,18 +364,19 @@ function ModernStatCard({
                         return 'linear-gradient(90deg, #6366f1 0%, #818cf8 50%, #a78bfa 100%)'; // Indigo gradient par défaut
                       })()
                     }}
-                  >
-                    {/* Effet de brillance animé pour encourager */}
-                    {progressValue > 0 && progressValue < progressMax && (
-                      <div 
-                        className="absolute inset-0 rounded-full"
-                        style={{
-                          background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 50%, transparent 100%)',
-                          animation: 'shimmer 2s ease-in-out infinite',
-                        }}
-                      />
-                    )}
-                  </div>
+                  />
+                  {/* Effet de brillance animé pour encourager - positionné sur toute la largeur de la barre grise */}
+                  {progressValue > 0 && progressValue < progressMax && (
+                    <div 
+                      className="absolute top-0 left-0 bottom-0 rounded-full pointer-events-none"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent 0%, transparent 45%, rgba(255,255,255,0.9) 50%, transparent 55%, transparent 100%)',
+                        animation: 'shimmer 3s linear infinite',
+                        width: '100%',
+                        height: '100%',
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             )}

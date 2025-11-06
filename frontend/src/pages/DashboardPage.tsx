@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
-import { CustomSelect } from '../components/common/CustomSelect';
 import { DateInput } from '../components/common/DateInput';
+import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { User } from '../services/auth';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -11,6 +11,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import { tradeStrategiesService, TradeStrategy } from '../services/tradeStrategies';
 import ModernStatCard from '../components/common/ModernStatCard';
 import DurationDistributionChart from '../components/charts/DurationDistributionChart';
+import AccountBalanceChart from '../components/charts/AccountBalanceChart';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
@@ -22,27 +23,21 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  LineElement,
-  PointElement,
   Title,
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
-  Filler,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Bar as ChartBar, Line as ChartLine } from 'react-chartjs-2';
+import { Bar as ChartBar } from 'react-chartjs-2';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  LineElement,
-  PointElement,
   Title,
   ChartTooltip,
   ChartLegend,
-  Filler,
   ChartDataLabels
 );
 
@@ -188,46 +183,39 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
     return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
   };
-  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
+  // Utiliser un sélecteur de période moderne au lieu de année/mois
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
+    // Par défaut: 3 derniers mois
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    return {
+      start: `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`,
+      end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+      preset: 'last3Months',
+    };
+  });
+  
+  // Garder selectedYear et selectedMonth pour compatibilité avec le code existant
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [strategies, setStrategies] = useState<Map<number, TradeStrategy>>(new Map());
+  // Données agrégées par jour (beaucoup plus rapide)
+  const [dailyAggregates, setDailyAggregates] = useState<Array<{
+    date: string;
+    pnl: number;
+    trade_count: number;
+    winning_count: number;
+    losing_count: number;
+  }>>([]);
   // Trades et stratégies pour le calcul des séquences consécutives (sans filtres date)
   const [allTradesForSequences, setAllTradesForSequences] = useState<TradeListItem[]>([]);
   const [allStrategiesForSequences, setAllStrategiesForSequences] = useState<Map<number, TradeStrategy>>(new Map());
+  const [strategiesLoading, setStrategiesLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-
-  // Générer les années disponibles (année en cours et 5 ans précédents)
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const yearOptions = useMemo(() => [
-    { value: null, label: t('dashboard:allYears') },
-    ...availableYears.map(year => ({ value: year, label: year.toString() }))
-  ], [availableYears, t]);
-  
-  const monthOptions = useMemo(() => {
-    const availableMonths = [
-      { value: 1, label: t('dashboard:january') },
-      { value: 2, label: t('dashboard:february') },
-      { value: 3, label: t('dashboard:march') },
-      { value: 4, label: t('dashboard:april') },
-      { value: 5, label: t('dashboard:may') },
-      { value: 6, label: t('dashboard:june') },
-      { value: 7, label: t('dashboard:july') },
-      { value: 8, label: t('dashboard:august') },
-      { value: 9, label: t('dashboard:september') },
-      { value: 10, label: t('dashboard:october') },
-      { value: 11, label: t('dashboard:november') },
-      { value: 12, label: t('dashboard:december') },
-    ];
-    return [
-      { value: null, label: t('dashboard:allMonths') },
-      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
-    ];
-  }, [t]);
 
   // Récupérer la liste des devises
   useEffect(() => {
@@ -284,73 +272,67 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       setIsLoading(true);
       setError(null);
       try {
-        const filters: any = {
-          trading_account: accountId ?? undefined,
-          // Utiliser une limite raisonnable : 10000 par défaut, ou plus si une année spécifique est sélectionnée
-          page_size: selectedYear ? 10000 : 5000, // Limiter pour éviter les timeouts
-        };
-
-        // Ajouter le filtre de date selon l'année et le mois
-        if (selectedYear) {
-          const startDate = selectedMonth 
-            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
-            : `${selectedYear}-01-01`;
+        // Utiliser la période sélectionnée (priorité) ou calculer depuis année/mois (rétrocompatibilité)
+        let startDate: string;
+        let endDate: string;
+        
+        if (selectedPeriod) {
+          // Utiliser la période du sélecteur moderne
+          startDate = selectedPeriod.start;
+          endDate = selectedPeriod.end;
+        } else if (selectedYear) {
+          // Rétrocompatibilité avec l'ancien système année/mois
+          const yearToLoad = selectedYear;
+          startDate = selectedMonth 
+            ? `${yearToLoad}-${selectedMonth.toString().padStart(2, '0')}-01`
+            : `${yearToLoad}-01-01`;
           
-          let endDate: string;
           if (selectedMonth) {
-            // Calculer le dernier jour du mois sélectionné
-            // selectedMonth est 1-12, donc on utilise selectedMonth comme index (1=janvier devient mois 1 en JS = février)
-            // Le jour 0 du mois suivant donne le dernier jour du mois actuel
-            const lastDay = new Date(selectedYear, selectedMonth, 0);
+            const lastDay = new Date(yearToLoad, selectedMonth, 0);
             const year = lastDay.getFullYear();
             const month = String(lastDay.getMonth() + 1).padStart(2, '0');
             const day = String(lastDay.getDate()).padStart(2, '0');
             endDate = `${year}-${month}-${day}`;
           } else {
-            endDate = `${selectedYear}-12-31`;
+            endDate = `${yearToLoad}-12-31`;
           }
-          
-          filters.start_date = startDate;
-          filters.end_date = endDate;
+        } else {
+          // Par défaut: 3 derniers mois
+          const now = new Date();
+          const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+          startDate = `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`;
+          endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         }
 
-        // Ajouter un timeout pour éviter les chargements infinis
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Timeout: La requête a pris trop de temps')), 60000); // 60 secondes
+        // CHARGER LES DONNÉES AGRÉGÉES PAR JOUR (beaucoup plus rapide)
+        // Cela permet d'afficher les graphiques immédiatement
+        const aggregatesResponse = await tradesService.dailyAggregates({
+          trading_account: accountId ?? undefined,
+          start_date: startDate,
+          end_date: endDate,
         });
+        
+        setDailyAggregates(aggregatesResponse.results);
+        
+        // Charger les trades individuels seulement pour les statistiques détaillées
+        // Limiter à 1000 trades max pour les statistiques
+        const filters: any = {
+          trading_account: accountId ?? undefined,
+          page_size: 1000, // Limite réduite car on utilise les agrégats pour les graphiques
+          start_date: startDate,
+          end_date: endDate,
+        };
 
-        const response = await Promise.race([
-          tradesService.list(filters),
-          timeoutPromise
-        ]);
+        const response = await tradesService.list(filters);
         
-        // Filtrer par année/mois côté client aussi pour être sûr
-        let filteredTrades = response.results;
-        if (selectedYear) {
-          filteredTrades = filteredTrades.filter(trade => {
-            // Utiliser trade_day si disponible, sinon entered_at comme fallback
-            const dateStr = trade.trade_day || trade.entered_at;
-            if (!dateStr) return false;
-            
-            const tradeDate = new Date(dateStr);
-            const tradeYear = tradeDate.getFullYear();
-            const tradeMonth = tradeDate.getMonth() + 1;
-            
-            if (selectedMonth) {
-              return tradeYear === selectedYear && tradeMonth === selectedMonth;
-            }
-            return tradeYear === selectedYear;
-          });
-        }
-        
-        // Trier par date d'entrée croissante pour le calcul du solde
-        filteredTrades.sort((a, b) => {
+        // Trier par date d'entrée croissante
+        const sortedTrades = [...response.results].sort((a, b) => {
           const dateA = a.entered_at ? new Date(a.entered_at).getTime() : 0;
           const dateB = b.entered_at ? new Date(b.entered_at).getTime() : 0;
           return dateA - dateB;
         });
         
-        setTrades(filteredTrades);
+        setTrades(sortedTrades);
 
         // Charger les stratégies de manière asynchrone (non bloquant)
         // pour ne pas ralentir l'affichage initial des données
@@ -359,7 +341,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           try {
             // Récupérer toutes les dates uniques des trades
             const uniqueDates = new Set<string>();
-            filteredTrades.forEach(trade => {
+            sortedTrades.forEach((trade: TradeListItem) => {
               if (trade.trade_day) {
                 uniqueDates.add(trade.trade_day);
               }
@@ -402,7 +384,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
 
     loadTrades();
-  }, [accountId, selectedYear, selectedMonth, accountLoading, t]);
+  }, [accountId, selectedPeriod, selectedYear, selectedMonth, accountLoading, t]);
 
   // Charger tous les trades pour le calcul des séquences consécutives (sans filtres date)
   useEffect(() => {
@@ -431,6 +413,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
         // Charger les stratégies pour tous les trades
         (async () => {
+          setStrategiesLoading(true);
           const strategiesMap = new Map<number, TradeStrategy>();
           try {
             // Récupérer toutes les dates uniques des trades
@@ -438,11 +421,21 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             sortedTrades.forEach(trade => {
               if (trade.trade_day) {
                 uniqueDates.add(trade.trade_day);
+              } else if (trade.entered_at) {
+                // Utiliser entered_at si trade_day n'est pas disponible
+                const date = new Date(trade.entered_at);
+                uniqueDates.add(date.toISOString().split('T')[0]);
               }
             });
 
-            // Limiter le nombre de dates à traiter (max 2 ans pour les séquences)
-            const datesArray = Array.from(uniqueDates).slice(0, 730); // Max 2 ans de dates
+            // Limiter l'historique pour les séquences consécutives
+            // 12 mois glissant (365 jours) pour avoir un historique complet
+            // Les séquences consécutives sont calculées sur les 12 derniers mois
+            const allDates = Array.from(uniqueDates).sort().reverse(); // Du plus récent au plus ancien
+            const maxDays = 365; // 12 mois glissant
+            const datesArray = allDates.slice(0, maxDays);
+            
+            console.log(`Chargement des stratégies pour ${datesArray.length} dates (limité à ${maxDays} jours, ${allDates.length} dates disponibles au total)...`);
             
             // Charger les stratégies en parallèle (batch de 10 à la fois)
             const batchSize = 10;
@@ -457,12 +450,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     });
                   } catch (e) {
                     // Ignorer les erreurs pour les dates sans stratégies
+                    console.debug(`Aucune stratégie pour la date ${date}`);
                   }
                 })
               );
             }
+            
+            console.log(`Stratégies chargées: ${strategiesMap.size} trades avec stratégies`);
           } catch (err) {
             console.error('Erreur lors du chargement des stratégies pour séquences', err);
+          } finally {
+            setStrategiesLoading(false);
           }
 
           setAllStrategiesForSequences(strategiesMap);
@@ -476,8 +474,24 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   }, [accountId, accountLoading]);
 
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative }
+  // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
   const accountBalanceData = useMemo(() => {
-    // Créer des entrées par date pour chaque trade
+    // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
+    if (dailyAggregates.length > 0) {
+      const sortedDates = [...dailyAggregates].sort((a, b) => a.date.localeCompare(b.date));
+      let cumulativeBalance = 0;
+      
+      return sortedDates.map(item => {
+        cumulativeBalance += item.pnl;
+        return {
+          date: item.date,
+          pnl: item.pnl,
+          cumulative: cumulativeBalance,
+        };
+      });
+    }
+    
+    // Fallback: utiliser les trades individuels si les agrégats ne sont pas disponibles
     const tradesWithDates = trades
       .filter(trade => trade.net_pnl && trade.entered_at)
       .map(trade => ({
@@ -505,7 +519,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         cumulative: cumulativeBalance,
       };
     });
-  }, [trades]);
+  }, [dailyAggregates, trades]);
 
   // États pour les filtres de date
   const { defaultStartDate, defaultEndDate } = useMemo(() => {
@@ -557,90 +571,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     return { totalReturn, isPositive, highestValue, lowestValue };
   }, [filteredBalanceData]);
 
-  // Préparer les données du graphique avec deux datasets (positif/négatif)
-  const accountBalanceChartData = useMemo(() => {
-    if (filteredBalanceData.length === 0) return null;
-
-    const labels = filteredBalanceData.map(d => 
-      new Date(d.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone })
-    );
-    const cumulativeValues = filteredBalanceData.map(d => d.cumulative);
-    const pnlValues = filteredBalanceData.map(d => d.pnl);
-
-    // Créer deux datasets : un pour les valeurs positives (>= 0), un pour les négatives (< 0)
-    const positiveValues: (number | null)[] = [];
-    const negativeValues: (number | null)[] = [];
-    const chartLabels: string[] = [];
-    // Mapping pour retrouver l'index original et le PnL depuis l'index du graphique
-    const indexMapping: number[] = [];
-    const pnlMapping: number[] = [];
-
-    filteredBalanceData.forEach((point, index) => {
-      const value = point.cumulative;
-      
-      if (index === 0) {
-        // Premier point
-        chartLabels.push(labels[index]);
-        indexMapping.push(index);
-        pnlMapping.push(point.pnl);
-        if (value >= 0) {
-          positiveValues.push(value);
-          negativeValues.push(null);
-        } else {
-          positiveValues.push(null);
-          negativeValues.push(value);
-        }
-      } else {
-        const prevValue = filteredBalanceData[index - 1].cumulative;
-        
-        // Si transition entre positif et négatif
-        if ((prevValue >= 0 && value < 0) || (prevValue < 0 && value >= 0)) {
-          // Ajouter un point à 0 pour la transition
-          chartLabels.push(labels[index]);
-          indexMapping.push(index);
-          pnlMapping.push(point.pnl);
-          positiveValues.push(0);
-          negativeValues.push(0);
-          // Puis ajouter le point actuel
-          chartLabels.push(labels[index]);
-          indexMapping.push(index);
-          pnlMapping.push(point.pnl);
-          if (value >= 0) {
-            positiveValues.push(value);
-            negativeValues.push(null);
-          } else {
-            positiveValues.push(null);
-            negativeValues.push(value);
-          }
-        } else {
-          // Pas de transition
-          chartLabels.push(labels[index]);
-          indexMapping.push(index);
-          pnlMapping.push(point.pnl);
-          if (value >= 0) {
-            positiveValues.push(value);
-            negativeValues.push(null);
-          } else {
-            positiveValues.push(null);
-            negativeValues.push(value);
-          }
-        }
-      }
-    });
-
-    const textColor = performanceStats.isPositive ? 'text-blue-600' : 'text-pink-600';
-
-    return {
-      labels: chartLabels,
-      positiveValues,
-      negativeValues,
-      cumulativeValues,
-      pnlValues,
-      indexMapping,
-      pnlMapping,
-      textColor,
-    };
-  }, [filteredBalanceData, performanceStats, preferences.timezone]);
 
   // Calculer la répartition des trades par durée (gagnants et perdants)
   const durationDistribution = useMemo(() => {
@@ -687,8 +617,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   }, [durationDistribution]);
 
   // Préparer les données pour le graphique waterfall
+  // Utiliser les données agrégées si disponibles
   const waterfallData = useMemo(() => {
-    // Créer des entrées par date pour chaque trade
+    // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
+    if (dailyAggregates.length > 0) {
+      const sortedDates = [...dailyAggregates].sort((a, b) => a.date.localeCompare(b.date));
+      let cumulativeBalance = 0;
+      
+      return sortedDates.map(item => {
+        cumulativeBalance += item.pnl;
+        return {
+          date: new Date(item.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
+          pnl: item.pnl,
+          cumulative: cumulativeBalance,
+          is_positive: item.pnl >= 0,
+        };
+      });
+    }
+    
+    // Fallback: utiliser les trades individuels
     const tradesWithDates = trades
       .filter(trade => trade.net_pnl && trade.entered_at)
       .map(trade => ({
@@ -717,7 +664,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         is_positive: dailyPnl >= 0,
       };
     });
-  }, [trades, preferences.timezone]);
+  }, [dailyAggregates, trades, preferences.timezone]);
 
   // Préparer les données pour le graphique waterfall avec barres flottantes
   const waterfallChartData = useMemo(() => {
@@ -1025,10 +972,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     // Utiliser les trades complets (sans filtres date) pour les séquences
     // Si allTradesForSequences est vide, utiliser les trades filtrés (fallback)
     const tradesForSequences = allTradesForSequences.length > 0 ? allTradesForSequences : trades;
-    const strategiesForSequences = allTradesForSequences.length > 0 ? allStrategiesForSequences : strategies;
+    // Utiliser allStrategiesForSequences seulement si on a des trades complets ET que les stratégies sont chargées
+    const strategiesForSequences = (allTradesForSequences.length > 0 && allStrategiesForSequences.size > 0 && !strategiesLoading) 
+      ? allStrategiesForSequences 
+      : strategies;
     
     // Vérifier qu'on a au moins des trades pour calculer les statistiques
     if (trades.length === 0 && tradesForSequences.length === 0) return null;
+    
+    // Debug: afficher le nombre de stratégies disponibles
+    if (tradesForSequences.length > 0) {
+      const tradesWithStrategies = tradesForSequences.filter(t => strategiesForSequences.has(t.id));
+      console.log(`Calcul séquences: ${tradesForSequences.length} trades, ${strategiesForSequences.size} stratégies, ${tradesWithStrategies.length} trades avec stratégie`);
+    }
 
     const totalTrades = trades.filter(t => t.is_profitable !== null).length;
     const winningTrades = trades.filter(t => t.is_profitable === true && t.net_pnl);
@@ -1198,7 +1154,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       currentConsecutiveDaysNotRespected,
       currentWinningStreakDays,
     };
-  }, [trades, strategies, allTradesForSequences, allStrategiesForSequences]);
+  }, [trades, strategies, allTradesForSequences, allStrategiesForSequences, strategiesLoading]);
 
   // Helper function pour obtenir les couleurs selon le thème
   const chartColors = useMemo(() => ({
@@ -1215,47 +1171,29 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     <div className="px-4 sm:px-6 lg:px-8 py-6">
       {/* Filtres */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+          {/* Compte de trading */}
+          <div className="flex-shrink-0 lg:w-80">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('dashboard:tradingAccount')}
             </label>
             <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
           </div>
           
-          <div>
+          {/* Sélecteur de période moderne */}
+          <div className="flex-shrink-0 lg:w-80">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('dashboard:year')}
+              {t('dashboard:period', { defaultValue: 'Période' })}
             </label>
-            <CustomSelect
-              value={selectedYear}
-              onChange={(value) => setSelectedYear(value as number | null)}
-              options={yearOptions}
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('dashboard:month')}
-            </label>
-            <CustomSelect
-              value={selectedMonth}
-              onChange={(value) => setSelectedMonth(value as number | null)}
-              options={monthOptions}
-              disabled={!selectedYear}
-            />
-          </div>
-          
-          <div className="flex items-end">
-            <button
-              onClick={() => {
+            <PeriodSelector
+              value={selectedPeriod}
+              onChange={(period) => {
+                setSelectedPeriod(period);
+                // Réinitialiser les anciens sélecteurs
                 setSelectedYear(null);
                 setSelectedMonth(null);
               }}
-              className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-            >
-              {t('dashboard:reset')}
-            </button>
+            />
           </div>
         </div>
       </div>
@@ -1276,17 +1214,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
           {/* Graphique 1: Métriques de trading (jauges circulaires) */}
           {tradingMetrics && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-full flex flex-col">
               <div className="text-center mb-6">
                 <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{t('dashboard:traderPerformanceTracker')}</h2>
                 <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto"></div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('dashboard:objectivesBasedOnHistory')}</p>
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4 flex-1">
                 {/* Jauge Win Rate */}
                 <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
                   <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-4 text-center uppercase tracking-wide">
@@ -1430,24 +1368,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           {/* Cartes de statistiques à droite */}
           {additionalStats && tradingMetrics && (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="h-full flex flex-col min-h-0">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 flex-1 grid-auto-rows-[1fr] items-stretch">
               <ModernStatCard
                 label={t('dashboard:totalPnL')}
                 value={
                   <div className="flex items-center justify-between w-full">
                     <span>{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
-                    {additionalStats.currentWinningStreakDays > 0 && (
-                      <div className="flex items-baseline gap-2 ml-auto">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {t('statistics:overview.currentWinningStreak', { defaultValue: 'Gains consécutifs en cours' })}:
-                        </span>
-                        <Tooltip content={t('statistics:overview.currentWinningStreakTooltip')}>
-                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 cursor-help inline-flex items-center">
-                            {additionalStats.currentWinningStreakDays} {additionalStats.currentWinningStreakDays === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
-                          </span>
-                        </Tooltip>
-                      </div>
-                    )}
+                    <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full cursor-help inline-flex items-center ${
+                        additionalStats.currentWinningStreakDays > 0 
+                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' 
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                      }`}>
+                        {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })} {additionalStats.currentWinningStreakDays || 0} {(additionalStats.currentWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                      </span>
+                    </Tooltip>
                   </div>
                 }
                 variant={additionalStats.totalPnl >= 0 ? 'success' : 'danger'}
@@ -1495,87 +1431,108 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 trendValue={`${t('dashboard:avg')}: ${formatCurrency(Math.abs(tradingMetrics.avgWinningTrade), currencySymbol)} / ${formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}`}
               />
               
-              <ModernStatCard
-                label={additionalStats.currentConsecutiveDaysRespected > 0 
-                  ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`
-                  : additionalStats.currentConsecutiveDaysNotRespected > 0
-                  ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceNotRespect')}`
-                  : t('dashboard:currentSeries')
-                }
-                value={additionalStats.currentConsecutiveDaysRespected > 0 
-                  ? `${additionalStats.currentConsecutiveDaysRespected} ${t('dashboard:days')}`
-                  : additionalStats.currentConsecutiveDaysNotRespected > 0
-                  ? `${additionalStats.currentConsecutiveDaysNotRespected} ${t('dashboard:days')}`
-                  : `0 ${t('dashboard:days')}`
-                }
-                variant={additionalStats.currentConsecutiveDaysRespected > 0 ? 'success' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'danger' : 'default'}
-                size="small"
-                icon={
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                }
-                subMetrics={[
-                  {
-                    label: additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:currentRespectDays') : t('dashboard:currentNotRespectDays'),
-                    value: `${additionalStats.currentConsecutiveDaysRespected > 0 ? additionalStats.currentConsecutiveDaysRespected : additionalStats.currentConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`
-                  },
-                  {
-                    label: additionalStats.currentConsecutiveTradesRespected > 0 ? t('dashboard:currentRespectTrades') : t('dashboard:currentNotRespectTrades'),
-                    value: `${additionalStats.currentConsecutiveTradesRespected > 0 ? additionalStats.currentConsecutiveTradesRespected : additionalStats.currentConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
-                  }
-                ]}
-                trend={additionalStats.currentConsecutiveDaysRespected > 0 ? 'up' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
-                trendValue={additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:sequenceRespect') : additionalStats.currentConsecutiveDaysNotRespected > 0 ? t('dashboard:sequenceNotRespect') : undefined}
-              />
+              <Tooltip content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}>
+                <div className="h-full">
+                  <ModernStatCard
+                    label={additionalStats.currentConsecutiveDaysRespected > 0 
+                      ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`
+                      : additionalStats.currentConsecutiveDaysNotRespected > 0
+                      ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceNotRespect')}`
+                      : t('dashboard:currentSeries')
+                    }
+                    value={additionalStats.currentConsecutiveDaysRespected > 0 
+                      ? `${additionalStats.currentConsecutiveDaysRespected} ${t('dashboard:days')}`
+                      : additionalStats.currentConsecutiveDaysNotRespected > 0
+                      ? `${additionalStats.currentConsecutiveDaysNotRespected} ${t('dashboard:days')}`
+                      : `0 ${t('dashboard:days')}`
+                    }
+                    variant={additionalStats.currentConsecutiveDaysRespected > 0 ? 'success' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'danger' : 'default'}
+                    size="small"
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    }
+                    subMetrics={[
+                      {
+                        label: additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:currentRespectDays') : t('dashboard:currentNotRespectDays'),
+                        value: `${additionalStats.currentConsecutiveDaysRespected > 0 ? additionalStats.currentConsecutiveDaysRespected : additionalStats.currentConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`
+                      },
+                      {
+                        label: additionalStats.currentConsecutiveTradesRespected > 0 ? t('dashboard:currentRespectTrades') : t('dashboard:currentNotRespectTrades'),
+                        value: `${additionalStats.currentConsecutiveTradesRespected > 0 ? additionalStats.currentConsecutiveTradesRespected : additionalStats.currentConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
+                      }
+                    ]}
+                    trend={additionalStats.currentConsecutiveDaysRespected > 0 ? 'up' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
+                    trendValue={additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:sequenceRespect') : additionalStats.currentConsecutiveDaysNotRespected > 0 ? t('dashboard:sequenceNotRespect') : undefined}
+                  />
+                </div>
+              </Tooltip>
               
-              <ModernStatCard
-                label={t('dashboard:sequenceRespect')}
-                value={`${additionalStats.maxConsecutiveDaysRespected || 0} ${t('dashboard:days')}`}
-                variant={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'success' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'info' : 'default'}
-                size="small"
-                icon={
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                }
-                progressValue={additionalStats.maxConsecutiveDaysRespected || 0}
-                progressMax={21}
-                progressLabel={t('dashboard:objective')}
-                subMetrics={additionalStats.maxConsecutiveDaysRespected > 0 ? [
-                  {
-                    label: t('dashboard:maxTrades'),
-                    value: `${additionalStats.maxConsecutiveTradesRespected || 0} ${t('trades:trades')}`
-                  }
-                ] : undefined}
-                trend={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'up' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'up' : undefined}
-                trendValue={additionalStats.maxConsecutiveDaysRespected >= 21 ? t('dashboard:objectiveAchieved') : additionalStats.maxConsecutiveDaysRespected > 0 ? `${21 - (additionalStats.maxConsecutiveDaysRespected || 0)} ${t('dashboard:daysRemaining')}` : undefined}
-              />
+              <Tooltip content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}>
+                <div className="h-full">
+                  <ModernStatCard
+                    label={t('dashboard:sequenceRespect')}
+                    value={`${additionalStats.maxConsecutiveDaysRespected || 0} ${t('dashboard:days')}`}
+                    variant={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'success' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'info' : 'default'}
+                    size="small"
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    }
+                    progressValue={additionalStats.maxConsecutiveDaysRespected || 0}
+                    progressMax={21}
+                    progressLabel={t('dashboard:objective')}
+                    subMetrics={[
+                      {
+                        label: t('dashboard:maxTrades'),
+                        value: `${additionalStats.maxConsecutiveTradesRespected || 0} ${t('trades:trades')}`
+                      },
+                      {
+                        label: '',
+                        value: ''
+                      }
+                    ]}
+                    trend={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'up' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'up' : undefined}
+                    trendValue={additionalStats.maxConsecutiveDaysRespected >= 21 ? t('dashboard:objectiveAchieved') : additionalStats.maxConsecutiveDaysRespected > 0 ? `${21 - (additionalStats.maxConsecutiveDaysRespected || 0)} ${t('dashboard:daysRemaining')}` : undefined}
+                  />
+                </div>
+              </Tooltip>
               
-              <ModernStatCard
-                label={t('dashboard:sequenceNotRespect')}
-                value={`${additionalStats.maxConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`}
-                variant={additionalStats.maxConsecutiveDaysNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'warning' : 'default'}
-                size="small"
-                icon={
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                }
-                subMetrics={additionalStats.maxConsecutiveDaysNotRespected > 0 ? [
-                  {
-                    label: t('dashboard:maxTrades'),
-                    value: `${additionalStats.maxConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
-                  }
-                ] : undefined}
-                trend={additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
-                trendValue={additionalStats.maxConsecutiveDaysNotRespected > 0 ? t('dashboard:needsAttention') : undefined}
-              />
+              <Tooltip content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}>
+                <div className="h-full">
+                  <ModernStatCard
+                    label={t('dashboard:sequenceNotRespect')}
+                    value={`${additionalStats.maxConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`}
+                    variant={additionalStats.maxConsecutiveDaysNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'warning' : 'default'}
+                    size="small"
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    }
+                    subMetrics={[
+                      {
+                        label: t('dashboard:maxTrades'),
+                        value: `${additionalStats.maxConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
+                      },
+                      {
+                        label: '',
+                        value: ''
+                      }
+                    ]}
+                    trend={additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
+                    trendValue={additionalStats.maxConsecutiveDaysNotRespected > 0 ? t('dashboard:needsAttention') : undefined}
+                  />
+                </div>
+              </Tooltip>
+              </div>
             </div>
           )}
 
           {/* Graphique 2: Solde du compte dans le temps */}
-          {accountBalanceData.length > 0 && accountBalanceChartData && (
+          {accountBalanceData.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="mb-4">
                 <div className="flex items-start justify-between mb-3">
@@ -1642,162 +1599,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               </div>
 
               <div className="h-80">
-                {filteredBalanceData.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                    {t('dashboard:noDataInPeriod')}
-                  </div>
-                ) : (
-                  <ChartLine
-                    key={`chart-${performanceStats.totalReturn}`}
-                    data={{
-                      labels: accountBalanceChartData.labels,
-                      datasets: [
-                        {
-                          label: t('dashboard:positiveBalance'),
-                          data: accountBalanceChartData.positiveValues,
-                          borderColor: '#3b82f6',
-                          backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                          borderWidth: 3,
-                          fill: true,
-                          tension: 0.4,
-                          pointRadius: (context: any) => {
-                            // Masquer les points si trop de données (> 100 points)
-                            const dataLength = accountBalanceChartData.labels.length;
-                            if (dataLength > 100) return 0;
-                            // Vérifier que context.parsed existe avant d'accéder à y
-                            const value = context.parsed?.y;
-                            return value !== null && value !== undefined ? 4 : 0;
-                          },
-                          pointBackgroundColor: '#3b82f6',
-                          pointBorderColor: '#ffffff',
-                          pointBorderWidth: 2,
-                          pointHoverRadius: 6,
-                          pointHoverBackgroundColor: '#2563eb',
-                          pointHoverBorderColor: '#ffffff',
-                          pointHoverBorderWidth: 3,
-                          spanGaps: false,
-                        },
-                        {
-                          label: t('dashboard:negativeBalance'),
-                          data: accountBalanceChartData.negativeValues,
-                          borderColor: '#ec4899',
-                          backgroundColor: 'rgba(236, 72, 153, 0.2)',
-                          borderWidth: 3,
-                          fill: true,
-                          tension: 0.4,
-                          pointRadius: (context: any) => {
-                            // Masquer les points si trop de données (> 100 points)
-                            const dataLength = accountBalanceChartData.labels.length;
-                            if (dataLength > 100) return 0;
-                            // Vérifier que context.parsed existe avant d'accéder à y
-                            const value = context.parsed?.y;
-                            return value !== null && value !== undefined ? 4 : 0;
-                          },
-                          pointBackgroundColor: '#ec4899',
-                          pointBorderColor: '#ffffff',
-                          pointBorderWidth: 2,
-                          pointHoverRadius: 6,
-                          pointHoverBackgroundColor: '#db2777',
-                          pointHoverBorderColor: '#ffffff',
-                          pointHoverBorderWidth: 3,
-                          spanGaps: false,
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        datalabels: {
-                          display: false,
-                        },
-                        legend: {
-                          display: false,
-                        },
-                        tooltip: {
-                          backgroundColor: chartColors.tooltipBg,
-                          titleColor: chartColors.text,
-                          bodyColor: chartColors.text,
-                          borderColor: chartColors.tooltipBorder,
-                          borderWidth: 1,
-                          padding: 16,
-                          titleFont: {
-                            size: 14,
-                            weight: 600,
-                          },
-                          bodyFont: {
-                            size: 13,
-                            weight: 500,
-                          },
-                          displayColors: false,
-                          mode: 'index' as const,
-                          intersect: false,
-                          callbacks: {
-                            title: function(context: any) {
-                              return accountBalanceChartData.labels[context[0].dataIndex] || '';
-                            },
-                            label: function(context: any) {
-                              const value = context.parsed.y || 0;
-                              const index = context.dataIndex;
-                              // Utiliser le mapping pour trouver le PnL
-                              const pnl = accountBalanceChartData.pnlMapping[index] ?? 0;
-                              return [
-                                `${t('dashboard:balance')}: ${formatCurrency(value, currencySymbol)}`,
-                                `${t('dashboard:dayPnLShort')}: ${formatCurrency(pnl, currencySymbol)}`,
-                              ];
-                            },
-                          },
-                        },
-                      },
-                      scales: {
-                        x: {
-                          ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
-                            color: chartColors.textSecondary,
-                            font: {
-                              size: 11,
-                            },
-                          },
-                          grid: {
-                            display: false,
-                          },
-                          border: {
-                            color: chartColors.border,
-                          },
-                        },
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            color: chartColors.textSecondary,
-                            font: {
-                              size: 12,
-                            },
-                            callback: function(value) {
-                              const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-                              return formatCurrency(numValue, currencySymbol);
-                            },
-                          },
-                          grid: {
-                            color: chartColors.grid,
-                            lineWidth: 1,
-                          },
-                          border: {
-                            color: chartColors.border,
-                            display: false,
-                          },
-                          title: {
-                            display: false,
-                          },
-                        },
-                      },
-                      animation: {
-                        duration: 1000,
-                        easing: 'easeInOutQuart' as const,
-                      },
-                    }}
-                  />
-                )}
+                <AccountBalanceChart
+                  data={filteredBalanceData}
+                  currencySymbol={currencySymbol}
+                  formatCurrency={formatCurrency}
+                />
               </div>
             </div>
           )}

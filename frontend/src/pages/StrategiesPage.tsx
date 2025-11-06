@@ -2,13 +2,11 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
-import { CustomSelect } from '../components/common/CustomSelect';
+import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { RespectRateCard } from '../components/common/RespectRateCard';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import Tooltip from '../components/ui/Tooltip';
-import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
-import { getMonthNames } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import {
@@ -46,7 +44,6 @@ ChartJS.register(
 );
 
 const StrategiesPage: React.FC = () => {
-  const { preferences } = usePreferences();
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
@@ -65,29 +62,25 @@ const StrategiesPage: React.FC = () => {
     tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
   }), [isDark]);
   const [showImport, setShowImport] = useState(false);
-  const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear());
+  // Utiliser un sélecteur de période moderne
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
+    // Par défaut: 3 derniers mois
+    const now = new Date();
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    return {
+      start: `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`,
+      end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+      preset: 'last3Months',
+    };
+  });
+  // Garder pour compatibilité
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<any>(null);
 
   // Générer les années disponibles (année en cours et 5 ans précédents)
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const yearOptions = useMemo(() => [
-    { value: null, label: t('strategies:allYears') },
-    ...availableYears.map(year => ({ value: year, label: year.toString() }))
-  ], [availableYears, t]);
-  
-  // Utiliser les noms de mois traduits
-  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
-  const monthOptions = useMemo(() => {
-    const availableMonths = monthNames.map((name, index) => ({ value: index + 1, label: name }));
-    return [
-      { value: null, label: t('strategies:allMonths') },
-      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
-    ];
-  }, [monthNames, t]);
 
   // Fonction pour obtenir le label d'une émotion traduit
   const getEmotionLabel = useCallback((emotion: string): string => {
@@ -101,15 +94,22 @@ const StrategiesPage: React.FC = () => {
       const params: {
         year?: number;
         month?: number;
+        start_date?: string;
+        end_date?: string;
         tradingAccount?: number;
       } = {};
       
-      if (selectedYear) {
+      // Utiliser la période sélectionnée (priorité) ou calculer depuis année/mois (rétrocompatibilité)
+      if (selectedPeriod) {
+        params.start_date = selectedPeriod.start;
+        params.end_date = selectedPeriod.end;
+      } else if (selectedYear) {
         params.year = selectedYear;
+        if (selectedMonth) {
+          params.month = selectedMonth;
+        }
       }
-      if (selectedMonth) {
-        params.month = selectedMonth;
-      }
+      
       if (accountId) {
         params.tradingAccount = accountId;
       }
@@ -122,7 +122,7 @@ const StrategiesPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedYear, selectedMonth, accountId, t]);
+  }, [selectedPeriod, selectedYear, selectedMonth, accountId, t]);
 
   // Charger les statistiques
   useEffect(() => {
@@ -726,47 +726,29 @@ const StrategiesPage: React.FC = () => {
       <div className="mb-6">
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+            {/* Compte de trading */}
+            <div className="flex-shrink-0 lg:w-80">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:tradingAccount')}
               </label>
               <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
             </div>
             
-            <div>
+            {/* Sélecteur de période moderne */}
+            <div className="flex-shrink-0 lg:w-80">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('strategies:year')}
+                {t('strategies:period', { defaultValue: 'Période' })}
               </label>
-              <CustomSelect
-                value={selectedYear}
-                onChange={(value) => setSelectedYear(value as number | null)}
-                options={yearOptions}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('strategies:month')}
-              </label>
-              <CustomSelect
-                value={selectedMonth}
-                onChange={(value) => setSelectedMonth(value as number | null)}
-                options={monthOptions}
-                disabled={!selectedYear}
-              />
-            </div>
-            
-            <div className="flex items-end">
-              <button
-                onClick={() => {
+              <PeriodSelector
+                value={selectedPeriod}
+                onChange={(period) => {
+                  setSelectedPeriod(period);
+                  // Réinitialiser les anciens sélecteurs
                   setSelectedYear(null);
                   setSelectedMonth(null);
                 }}
-                className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                {t('strategies:reset')}
-              </button>
+              />
             </div>
           </div>
         </div>
