@@ -27,8 +27,6 @@ import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
-import { CustomSelect } from '../components/common/CustomSelect';
-import { getMonthNames } from '../utils/dateFormat';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -137,23 +135,6 @@ const AnalyticsPage: React.FC = () => {
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
 
-  // Générer les années disponibles (année en cours et 5 ans précédents)
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const yearOptions = useMemo(() => [
-    { value: null, label: t('analytics:allYears') },
-    ...availableYears.map(year => ({ value: year, label: year.toString() }))
-  ], [availableYears, t]);
-  
-  // Utiliser les noms de mois traduits
-  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
-  const monthOptions = useMemo(() => {
-    const availableMonths = monthNames.map((name, index) => ({ value: index + 1, label: name }));
-    return [
-      { value: null, label: t('analytics:allMonths') },
-      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
-    ];
-  }, [monthNames, t]);
 
   useEffect(() => {
     // Attendre que le compte soit chargé avant de charger les données

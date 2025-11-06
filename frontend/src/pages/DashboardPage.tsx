@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
-import { CustomSelect } from '../components/common/CustomSelect';
 import { DateInput } from '../components/common/DateInput';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { User } from '../services/auth';
@@ -217,35 +216,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-
-  // Générer les années disponibles (année en cours et 5 ans précédents)
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const yearOptions = useMemo(() => [
-    { value: null, label: t('dashboard:allYears') },
-    ...availableYears.map(year => ({ value: year, label: year.toString() }))
-  ], [availableYears, t]);
-  
-  const monthOptions = useMemo(() => {
-    const availableMonths = [
-      { value: 1, label: t('dashboard:january') },
-      { value: 2, label: t('dashboard:february') },
-      { value: 3, label: t('dashboard:march') },
-      { value: 4, label: t('dashboard:april') },
-      { value: 5, label: t('dashboard:may') },
-      { value: 6, label: t('dashboard:june') },
-      { value: 7, label: t('dashboard:july') },
-      { value: 8, label: t('dashboard:august') },
-      { value: 9, label: t('dashboard:september') },
-      { value: 10, label: t('dashboard:october') },
-      { value: 11, label: t('dashboard:november') },
-      { value: 12, label: t('dashboard:december') },
-    ];
-    return [
-      { value: null, label: t('dashboard:allMonths') },
-      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
-    ];
-  }, [t]);
 
   // Récupérer la liste des devises
   useEffect(() => {
@@ -469,7 +439,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             
             // Charger les stratégies en parallèle (batch de 10 à la fois)
             const batchSize = 10;
-            let loadedCount = 0;
             for (let i = 0; i < datesArray.length; i += batchSize) {
               const batch = datesArray.slice(i, i + batchSize);
               await Promise.all(
@@ -479,7 +448,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     dateStrategies.forEach(strategy => {
                       strategiesMap.set(strategy.trade, strategy);
                     });
-                    loadedCount += dateStrategies.length;
                   } catch (e) {
                     // Ignorer les erreurs pour les dates sans stratégies
                     console.debug(`Aucune stratégie pour la date ${date}`);
@@ -488,7 +456,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               );
             }
             
-            console.log(`Stratégies chargées: ${loadedCount} stratégies pour ${strategiesMap.size} trades`);
+            console.log(`Stratégies chargées: ${strategiesMap.size} trades avec stratégies`);
           } catch (err) {
             console.error('Erreur lors du chargement des stratégies pour séquences', err);
           } finally {

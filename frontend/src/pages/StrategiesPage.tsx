@@ -2,14 +2,11 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
-import { CustomSelect } from '../components/common/CustomSelect';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { RespectRateCard } from '../components/common/RespectRateCard';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import Tooltip from '../components/ui/Tooltip';
-import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
-import { getMonthNames } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import {
@@ -47,7 +44,6 @@ ChartJS.register(
 );
 
 const StrategiesPage: React.FC = () => {
-  const { preferences } = usePreferences();
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
@@ -85,22 +81,6 @@ const StrategiesPage: React.FC = () => {
   const [statistics, setStatistics] = useState<any>(null);
 
   // Générer les années disponibles (année en cours et 5 ans précédents)
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 6 }, (_, i) => currentYear - i);
-  const yearOptions = useMemo(() => [
-    { value: null, label: t('strategies:allYears') },
-    ...availableYears.map(year => ({ value: year, label: year.toString() }))
-  ], [availableYears, t]);
-  
-  // Utiliser les noms de mois traduits
-  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
-  const monthOptions = useMemo(() => {
-    const availableMonths = monthNames.map((name, index) => ({ value: index + 1, label: name }));
-    return [
-      { value: null, label: t('strategies:allMonths') },
-      ...availableMonths.map(month => ({ value: month.value, label: month.label }))
-    ];
-  }, [monthNames, t]);
 
   // Fonction pour obtenir le label d'une émotion traduit
   const getEmotionLabel = useCallback((emotion: string): string => {
