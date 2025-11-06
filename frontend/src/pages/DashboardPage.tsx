@@ -11,6 +11,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import { tradeStrategiesService, TradeStrategy } from '../services/tradeStrategies';
 import ModernStatCard from '../components/common/ModernStatCard';
 import DurationDistributionChart from '../components/charts/DurationDistributionChart';
+import AccountBalanceChart from '../components/charts/AccountBalanceChart';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
@@ -22,27 +23,21 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  LineElement,
-  PointElement,
   Title,
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
-  Filler,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Bar as ChartBar, Line as ChartLine } from 'react-chartjs-2';
+import { Bar as ChartBar } from 'react-chartjs-2';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  LineElement,
-  PointElement,
   Title,
   ChartTooltip,
   ChartLegend,
-  Filler,
   ChartDataLabels
 );
 
@@ -557,90 +552,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     return { totalReturn, isPositive, highestValue, lowestValue };
   }, [filteredBalanceData]);
 
-  // Préparer les données du graphique avec deux datasets (positif/négatif)
-  const accountBalanceChartData = useMemo(() => {
-    if (filteredBalanceData.length === 0) return null;
-
-    const labels = filteredBalanceData.map(d => 
-      new Date(d.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone })
-    );
-    const cumulativeValues = filteredBalanceData.map(d => d.cumulative);
-    const pnlValues = filteredBalanceData.map(d => d.pnl);
-
-    // Créer deux datasets : un pour les valeurs positives (>= 0), un pour les négatives (< 0)
-    const positiveValues: (number | null)[] = [];
-    const negativeValues: (number | null)[] = [];
-    const chartLabels: string[] = [];
-    // Mapping pour retrouver l'index original et le PnL depuis l'index du graphique
-    const indexMapping: number[] = [];
-    const pnlMapping: number[] = [];
-
-    filteredBalanceData.forEach((point, index) => {
-      const value = point.cumulative;
-      
-      if (index === 0) {
-        // Premier point
-        chartLabels.push(labels[index]);
-        indexMapping.push(index);
-        pnlMapping.push(point.pnl);
-        if (value >= 0) {
-          positiveValues.push(value);
-          negativeValues.push(null);
-        } else {
-          positiveValues.push(null);
-          negativeValues.push(value);
-        }
-      } else {
-        const prevValue = filteredBalanceData[index - 1].cumulative;
-        
-        // Si transition entre positif et négatif
-        if ((prevValue >= 0 && value < 0) || (prevValue < 0 && value >= 0)) {
-          // Ajouter un point à 0 pour la transition
-          chartLabels.push(labels[index]);
-          indexMapping.push(index);
-          pnlMapping.push(point.pnl);
-          positiveValues.push(0);
-          negativeValues.push(0);
-          // Puis ajouter le point actuel
-          chartLabels.push(labels[index]);
-          indexMapping.push(index);
-          pnlMapping.push(point.pnl);
-          if (value >= 0) {
-            positiveValues.push(value);
-            negativeValues.push(null);
-          } else {
-            positiveValues.push(null);
-            negativeValues.push(value);
-          }
-        } else {
-          // Pas de transition
-          chartLabels.push(labels[index]);
-          indexMapping.push(index);
-          pnlMapping.push(point.pnl);
-          if (value >= 0) {
-            positiveValues.push(value);
-            negativeValues.push(null);
-          } else {
-            positiveValues.push(null);
-            negativeValues.push(value);
-          }
-        }
-      }
-    });
-
-    const textColor = performanceStats.isPositive ? 'text-blue-600' : 'text-pink-600';
-
-    return {
-      labels: chartLabels,
-      positiveValues,
-      negativeValues,
-      cumulativeValues,
-      pnlValues,
-      indexMapping,
-      pnlMapping,
-      textColor,
-    };
-  }, [filteredBalanceData, performanceStats, preferences.timezone]);
 
   // Calculer la répartition des trades par durée (gagnants et perdants)
   const durationDistribution = useMemo(() => {
@@ -1439,7 +1350,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     {additionalStats.currentWinningStreakDays > 0 && (
                       <div className="flex items-baseline gap-2 ml-auto">
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {t('statistics:overview.currentWinningStreak', { defaultValue: 'Gains consécutifs en cours' })}:
+                          {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak :' })}
                         </span>
                         <Tooltip content={t('statistics:overview.currentWinningStreakTooltip')}>
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 cursor-help inline-flex items-center">
@@ -1575,7 +1486,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           )}
 
           {/* Graphique 2: Solde du compte dans le temps */}
-          {accountBalanceData.length > 0 && accountBalanceChartData && (
+          {accountBalanceData.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="mb-4">
                 <div className="flex items-start justify-between mb-3">
@@ -1642,162 +1553,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               </div>
 
               <div className="h-80">
-                {filteredBalanceData.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                    {t('dashboard:noDataInPeriod')}
-                  </div>
-                ) : (
-                  <ChartLine
-                    key={`chart-${performanceStats.totalReturn}`}
-                    data={{
-                      labels: accountBalanceChartData.labels,
-                      datasets: [
-                        {
-                          label: t('dashboard:positiveBalance'),
-                          data: accountBalanceChartData.positiveValues,
-                          borderColor: '#3b82f6',
-                          backgroundColor: 'rgba(59, 130, 246, 0.2)',
-                          borderWidth: 3,
-                          fill: true,
-                          tension: 0.4,
-                          pointRadius: (context: any) => {
-                            // Masquer les points si trop de données (> 100 points)
-                            const dataLength = accountBalanceChartData.labels.length;
-                            if (dataLength > 100) return 0;
-                            // Vérifier que context.parsed existe avant d'accéder à y
-                            const value = context.parsed?.y;
-                            return value !== null && value !== undefined ? 4 : 0;
-                          },
-                          pointBackgroundColor: '#3b82f6',
-                          pointBorderColor: '#ffffff',
-                          pointBorderWidth: 2,
-                          pointHoverRadius: 6,
-                          pointHoverBackgroundColor: '#2563eb',
-                          pointHoverBorderColor: '#ffffff',
-                          pointHoverBorderWidth: 3,
-                          spanGaps: false,
-                        },
-                        {
-                          label: t('dashboard:negativeBalance'),
-                          data: accountBalanceChartData.negativeValues,
-                          borderColor: '#ec4899',
-                          backgroundColor: 'rgba(236, 72, 153, 0.2)',
-                          borderWidth: 3,
-                          fill: true,
-                          tension: 0.4,
-                          pointRadius: (context: any) => {
-                            // Masquer les points si trop de données (> 100 points)
-                            const dataLength = accountBalanceChartData.labels.length;
-                            if (dataLength > 100) return 0;
-                            // Vérifier que context.parsed existe avant d'accéder à y
-                            const value = context.parsed?.y;
-                            return value !== null && value !== undefined ? 4 : 0;
-                          },
-                          pointBackgroundColor: '#ec4899',
-                          pointBorderColor: '#ffffff',
-                          pointBorderWidth: 2,
-                          pointHoverRadius: 6,
-                          pointHoverBackgroundColor: '#db2777',
-                          pointHoverBorderColor: '#ffffff',
-                          pointHoverBorderWidth: 3,
-                          spanGaps: false,
-                        },
-                      ],
-                    }}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        datalabels: {
-                          display: false,
-                        },
-                        legend: {
-                          display: false,
-                        },
-                        tooltip: {
-                          backgroundColor: chartColors.tooltipBg,
-                          titleColor: chartColors.text,
-                          bodyColor: chartColors.text,
-                          borderColor: chartColors.tooltipBorder,
-                          borderWidth: 1,
-                          padding: 16,
-                          titleFont: {
-                            size: 14,
-                            weight: 600,
-                          },
-                          bodyFont: {
-                            size: 13,
-                            weight: 500,
-                          },
-                          displayColors: false,
-                          mode: 'index' as const,
-                          intersect: false,
-                          callbacks: {
-                            title: function(context: any) {
-                              return accountBalanceChartData.labels[context[0].dataIndex] || '';
-                            },
-                            label: function(context: any) {
-                              const value = context.parsed.y || 0;
-                              const index = context.dataIndex;
-                              // Utiliser le mapping pour trouver le PnL
-                              const pnl = accountBalanceChartData.pnlMapping[index] ?? 0;
-                              return [
-                                `${t('dashboard:balance')}: ${formatCurrency(value, currencySymbol)}`,
-                                `${t('dashboard:dayPnLShort')}: ${formatCurrency(pnl, currencySymbol)}`,
-                              ];
-                            },
-                          },
-                        },
-                      },
-                      scales: {
-                        x: {
-                          ticks: {
-                            maxRotation: 45,
-                            minRotation: 45,
-                            color: chartColors.textSecondary,
-                            font: {
-                              size: 11,
-                            },
-                          },
-                          grid: {
-                            display: false,
-                          },
-                          border: {
-                            color: chartColors.border,
-                          },
-                        },
-                        y: {
-                          beginAtZero: true,
-                          ticks: {
-                            color: chartColors.textSecondary,
-                            font: {
-                              size: 12,
-                            },
-                            callback: function(value) {
-                              const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-                              return formatCurrency(numValue, currencySymbol);
-                            },
-                          },
-                          grid: {
-                            color: chartColors.grid,
-                            lineWidth: 1,
-                          },
-                          border: {
-                            color: chartColors.border,
-                            display: false,
-                          },
-                          title: {
-                            display: false,
-                          },
-                        },
-                      },
-                      animation: {
-                        duration: 1000,
-                        easing: 'easeInOutQuart' as const,
-                      },
-                    }}
-                  />
-                )}
+                <AccountBalanceChart
+                  data={filteredBalanceData}
+                  currencySymbol={currencySymbol}
+                  formatCurrency={formatCurrency}
+                />
               </div>
             </div>
           )}
