@@ -129,6 +129,23 @@ class TradesService {
     return res.json();
   }
 
+  async dailyAggregates(filters: { trading_account?: number; start_date?: string; end_date?: string }): Promise<{
+    results: Array<{
+      date: string;
+      pnl: number;
+      trade_count: number;
+      winning_count: number;
+      losing_count: number;
+    }>;
+    count: number;
+  }> {
+    const qs = this.toQuery(filters as any);
+    const url = `${this.BASE_URL}/api/trades/topstep/daily_aggregates/${qs ? `?${qs}` : ''}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des données agrégées');
+    return res.json();
+  }
+
   async instruments(): Promise<string[]> {
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/instruments/`);
     if (!res.ok) return [];
@@ -226,7 +243,13 @@ class TradesService {
     return data;
   }
 
-  async detailedStatistics(tradingAccountId?: number, year?: number | null, month?: number | null): Promise<{
+  async detailedStatistics(
+    tradingAccountId?: number, 
+    year?: number | null, 
+    month?: number | null,
+    startDate?: string | null,
+    endDate?: string | null
+  ): Promise<{
     total_trades: number;
     winning_trades: number;
     losing_trades: number;
@@ -265,26 +288,29 @@ class TradesService {
       queryParams.append('trading_account', String(tradingAccountId));
     }
     
-    // Ajouter les filtres de date si fournis
-    if (year) {
-      const startDate = month 
+    // Ajouter les filtres de date si fournis (priorité à startDate/endDate)
+    if (startDate && endDate) {
+      queryParams.append('start_date', startDate);
+      queryParams.append('end_date', endDate);
+    } else if (year) {
+      const calculatedStartDate = month 
         ? `${year}-${month.toString().padStart(2, '0')}-01`
         : `${year}-01-01`;
       
-      let endDate: string;
+      let calculatedEndDate: string;
       if (month) {
         // Calculer le dernier jour du mois sélectionné
         const lastDay = new Date(year, month, 0);
         const yearStr = lastDay.getFullYear();
         const monthStr = String(lastDay.getMonth() + 1).padStart(2, '0');
         const dayStr = String(lastDay.getDate()).padStart(2, '0');
-        endDate = `${yearStr}-${monthStr}-${dayStr}`;
+        calculatedEndDate = `${yearStr}-${monthStr}-${dayStr}`;
       } else {
-        endDate = `${year}-12-31`;
+        calculatedEndDate = `${year}-12-31`;
       }
       
-      queryParams.append('start_date', startDate);
-      queryParams.append('end_date', endDate);
+      queryParams.append('start_date', calculatedStartDate);
+      queryParams.append('end_date', calculatedEndDate);
     }
     
     const qs = queryParams.toString();
@@ -294,7 +320,13 @@ class TradesService {
     return res.json();
   }
 
-  async analytics(tradingAccountId?: number, year?: number | null, month?: number | null): Promise<{
+  async analytics(
+    tradingAccountId?: number, 
+    year?: number | null, 
+    month?: number | null,
+    startDate?: string | null,
+    endDate?: string | null
+  ): Promise<{
     daily_stats: {
       avg_gain_per_day: number;
       median_gain_per_day: number;
@@ -344,26 +376,29 @@ class TradesService {
       queryParams.append('trading_account', String(tradingAccountId));
     }
     
-    // Ajouter les filtres de date si fournis
-    if (year) {
-      const startDate = month 
+    // Ajouter les filtres de date si fournis (priorité à startDate/endDate)
+    if (startDate && endDate) {
+      queryParams.append('start_date', startDate);
+      queryParams.append('end_date', endDate);
+    } else if (year) {
+      const calculatedStartDate = month 
         ? `${year}-${month.toString().padStart(2, '0')}-01`
         : `${year}-01-01`;
       
-      let endDate: string;
+      let calculatedEndDate: string;
       if (month) {
         // Calculer le dernier jour du mois sélectionné
         const lastDay = new Date(year, month, 0);
         const yearStr = lastDay.getFullYear();
         const monthStr = String(lastDay.getMonth() + 1).padStart(2, '0');
         const dayStr = String(lastDay.getDate()).padStart(2, '0');
-        endDate = `${yearStr}-${monthStr}-${dayStr}`;
+        calculatedEndDate = `${yearStr}-${monthStr}-${dayStr}`;
       } else {
-        endDate = `${year}-12-31`;
+        calculatedEndDate = `${year}-12-31`;
       }
       
-      queryParams.append('start_date', startDate);
-      queryParams.append('end_date', endDate);
+      queryParams.append('start_date', calculatedStartDate);
+      queryParams.append('end_date', calculatedEndDate);
     }
     
     const qs = queryParams.toString();

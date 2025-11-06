@@ -2,7 +2,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.db.models import Sum, Count, Avg, Max, Min
+from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField
+from django.db.models.functions import TruncDate, Cast
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta, datetime
@@ -1404,6 +1405,87 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         })
 
     @action(detail=False, methods=['get'])
+    def daily_aggregates(self, request):
+        """
+        Retourne les données agrégées par jour (beaucoup plus rapide que de charger tous les trades).
+        Utilise des requêtes SQL GROUP BY pour optimiser les performances.
+        """
+        # Récupérer les filtres
+        trading_account_id = request.query_params.get('trading_account', None)
+        start_date = request.query_params.get('start_date', None)
+        end_date = request.query_params.get('end_date', None)
+        
+        # Construire le queryset de base
+        queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+        
+        if trading_account_id:
+            queryset = queryset.filter(trading_account_id=trading_account_id)
+        
+        if start_date:
+            try:
+                start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                paris_tz = pytz.timezone('Europe/Paris')
+                start_datetime = paris_tz.localize(start_datetime)
+                queryset = queryset.filter(entered_at__gte=start_datetime)
+            except ValueError:
+                pass
+        
+        if end_date:
+            try:
+                end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+                paris_tz = pytz.timezone('Europe/Paris')
+                end_datetime = paris_tz.localize(end_datetime.replace(hour=23, minute=59, second=59))
+                queryset = queryset.filter(entered_at__lte=end_datetime)
+            except ValueError:
+                pass
+        
+        # Agréger par jour en utilisant SQL GROUP BY (beaucoup plus rapide)
+        # Utiliser trade_day si disponible, sinon utiliser la date de entered_at
+        from django.db.models import Q
+        from django.db.models.functions import Coalesce
+        
+        # Utiliser trade_day si disponible, sinon extraire la date de entered_at
+        # trade_day est un DateField, donc on peut l'utiliser directement
+        daily_aggregates = queryset.annotate(
+            date=Coalesce(
+                'trade_day',
+                TruncDate('entered_at')
+            )
+        ).values('date').annotate(
+            pnl=Sum('net_pnl'),
+            trade_count=Count('id'),
+            winning_count=Count('id', filter=Q(net_pnl__gt=0)),
+            losing_count=Count('id', filter=Q(net_pnl__lt=0)),
+        ).order_by('date')
+        
+        # Convertir en format attendu
+        result = []
+        for item in daily_aggregates:
+            if item['date']:  # Ignorer les dates None
+                # Convertir la date en string YYYY-MM-DD
+                date_str = item['date']
+                if hasattr(date_str, 'strftime'):
+                    date_str = date_str.strftime('%Y-%m-%d')
+                elif isinstance(date_str, str):
+                    # Si c'est déjà une string, vérifier le format
+                    pass
+                else:
+                    date_str = str(date_str)
+                
+                result.append({
+                    'date': date_str,
+                    'pnl': float(item['pnl'] or 0),
+                    'trade_count': item['trade_count'],
+                    'winning_count': item['winning_count'],
+                    'losing_count': item['losing_count'],
+                })
+        
+        return Response({
+            'results': result,
+            'count': len(result)
+        })
+
+    @action(detail=False, methods=['get'])
     def analytics(self, request):
         """
         Retourne les analyses détaillées avec toutes les métriques avancées.
@@ -1967,12 +2049,23 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         now = timezone.now()
         
         # Paramètres de filtrage
+        start_date_param = request.query_params.get('start_date')
+        end_date_param = request.query_params.get('end_date')
         year = request.query_params.get('year')
         month = request.query_params.get('month')
         trading_account_id = request.query_params.get('trading_account')
         
-        # Déterminer la période
-        if year:
+        # Déterminer la période (priorité à start_date/end_date)
+        if start_date_param and end_date_param:
+            # Utiliser les dates fournies directement
+            try:
+                start_date = timezone.datetime.strptime(start_date_param, '%Y-%m-%d')
+                end_date = timezone.datetime.strptime(end_date_param, '%Y-%m-%d')
+                # Ajouter un jour à end_date pour inclure toute la journée
+                end_date = end_date + timezone.timedelta(days=1)
+            except ValueError:
+                return Response({'error': 'Format de date invalide. Utilisez YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+        elif year:
             year = int(year)
             if month:
                 # Filtrer par mois spécifique
