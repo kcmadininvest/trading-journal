@@ -151,10 +151,29 @@ function AccountBalanceChart({
                 }
               },
             },
-            fill: false,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            spanGaps: false,
+          fill: false,
+          pointRadius: (context: any) => {
+            // Afficher les points seulement si le volume de données est faible (< 30 points)
+            const dataLength = processedBalances.length;
+            if (dataLength > 30) return 0;
+            // Vérifier que context.parsed existe avant d'accéder à y
+            const value = context.parsed?.y;
+            return value !== null && value !== undefined ? 4 : 0;
+          },
+          pointBackgroundColor: (context: any) => {
+            const value = context.parsed?.y;
+            return value >= 0 ? '#3b82f6' : '#ec4899';
+          },
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: (context: any) => {
+            const value = context.parsed?.y;
+            return value >= 0 ? '#3b82f6' : '#ec4899';
+          },
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 3,
+          spanGaps: false,
             _pnlMapping: processedPnlMapping, // Stocker le mapping pour les tooltips
           },
         ],
