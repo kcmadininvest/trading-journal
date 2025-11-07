@@ -32,6 +32,10 @@ export interface StatisticsData {
   max_drawdown_pct: number;
   max_drawdown_global: number;
   max_drawdown_global_pct: number;
+  max_runup: number;
+  max_runup_pct: number;
+  max_runup_global: number;
+  max_runup_global_pct: number;
   expectancy: number;
   break_even_trades: number;
   sharpe_ratio: number;
@@ -118,7 +122,14 @@ export function useStatistics(
           startDate || undefined,
           endDate || undefined
         );
-        setData(result);
+        // S'assurer que toutes les propriétés requises sont présentes avec des valeurs par défaut
+        setData({
+          ...result,
+          max_runup: result.max_runup ?? 0,
+          max_runup_pct: result.max_runup_pct ?? 0,
+          max_runup_global: result.max_runup_global ?? 0,
+          max_runup_global_pct: result.max_runup_global_pct ?? 0,
+        } as StatisticsData);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Erreur lors du chargement des statistiques'));
       } finally {

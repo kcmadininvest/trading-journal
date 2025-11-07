@@ -71,9 +71,23 @@ export const TradingAccountProvider: React.FC<{ children: ReactNode }> = ({ chil
           // Première connexion : charger le compte par défaut
           await initializeDefaultAccount();
         } else if (saved === 'null') {
-          // L'utilisateur a choisi "tous les comptes"
-          setSelectedAccountIdState(null);
-          setLoading(false);
+          // L'utilisateur a choisi "tous les comptes", mais vérifier s'il y a un compte par défaut disponible
+          // Si un compte par défaut existe, l'utiliser au lieu de null
+          try {
+            const defaultAccount = await tradingAccountsService.default();
+            if (defaultAccount && defaultAccount.status === 'active') {
+              setSelectedAccountIdState(defaultAccount.id);
+              localStorage.setItem('selectedTradingAccountId', String(defaultAccount.id));
+            } else {
+              // Pas de compte par défaut, on reste à null (tous les comptes)
+              setSelectedAccountIdState(null);
+            }
+          } catch {
+            // Erreur ou pas de compte par défaut, on reste à null
+            setSelectedAccountIdState(null);
+          } finally {
+            setLoading(false);
+          }
         } else {
           // Restaurer le compte sauvegardé mais vérifier qu'il existe et appartient à l'utilisateur
           const accountId = parseInt(saved, 10);

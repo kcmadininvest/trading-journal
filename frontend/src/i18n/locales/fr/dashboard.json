@@ -103,6 +103,9 @@
   "currentRespectDays": "Jours respect",
   "currentRespectTrades": "Trades respect",
   "currentNotRespectDays": "Jours non-respect",
-  "currentNotRespectTrades": "Trades non-respect"
+  "currentNotRespectTrades": "Trades non-respect",
+  "initialBalance": "Solde initial",
+  "currentBalance": "Solde actuel",
+  "period": "Période"
 }
 

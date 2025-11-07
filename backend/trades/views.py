@@ -339,6 +339,10 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'max_drawdown_pct': 0.0,
                 'max_drawdown_global': 0.0,
                 'max_drawdown_global_pct': 0.0,
+                'max_runup': 0.0,
+                'max_runup_pct': 0.0,
+                'max_runup_global': 0.0,
+                'max_runup_global_pct': 0.0,
                 'expectancy': 0.0,
                 'break_even_trades': 0,
                 'sharpe_ratio': 0.0,
@@ -559,6 +563,83 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             
             return (float(max_dd), max_dd_pct, float(peak_capital))
         
+        # 11b. Maximum Run-up (MRU) - Fonction helper
+        def calculate_max_runup(trades_queryset, initial_capital=None):
+            """
+            Calcule le maximum run-up pour un queryset de trades donné.
+            Le run-up est la plus grande hausse depuis un point bas (inverse du drawdown).
+            Retourne (max_ru_absolu, max_ru_pourcentage, trough_capital)
+            """
+            max_ru = Decimal('0')
+            trough_capital = Decimal('0')
+            trough_at_runup = Decimal('0')  # Le creux au moment du max run-up
+            
+            if trades_queryset.exists():
+                # Récupérer le capital initial du compte si non fourni
+                if initial_capital is None:
+                    # Essayer de récupérer le capital initial du premier trade
+                    first_trade = trades_queryset.first()
+                    if first_trade and first_trade.trading_account:
+                        initial_capital = first_trade.trading_account.initial_capital or Decimal('0')
+                    else:
+                        initial_capital = Decimal('0')
+                else:
+                    initial_capital = Decimal(str(initial_capital))
+                
+                trades_ordered = trades_queryset.order_by('entered_at')
+                cumulative_pnl = Decimal('0')
+                trough_capital = initial_capital  # Le creux commence au capital initial
+                peak_since_trough = initial_capital  # Le pic depuis le dernier creux
+                
+                for trade in trades_ordered:
+                    cumulative_pnl += trade.net_pnl
+                    current_capital = initial_capital + cumulative_pnl
+                    
+                    # Si on descend en dessous du creux actuel, c'est un nouveau creux
+                    if current_capital < trough_capital:
+                        # Avant de mettre à jour le creux, calculer le run-up depuis l'ancien creux
+                        if peak_since_trough > trough_capital:
+                            current_ru = peak_since_trough - trough_capital
+                            if current_ru > max_ru:
+                                max_ru = current_ru
+                                trough_at_runup = trough_capital
+                        
+                        # Nouveau creux, réinitialiser le pic
+                        trough_capital = current_capital
+                        peak_since_trough = current_capital
+                    else:
+                        # Mettre à jour le pic depuis le dernier creux
+                        if current_capital > peak_since_trough:
+                            peak_since_trough = current_capital
+                            # Calculer le run-up à chaque fois qu'on met à jour le pic
+                            current_ru = peak_since_trough - trough_capital
+                            if current_ru > max_ru:
+                                max_ru = current_ru
+                                trough_at_runup = trough_capital
+                
+                # Calculer le run-up final depuis le dernier creux
+                if peak_since_trough > trough_capital:
+                    current_ru = peak_since_trough - trough_capital
+                    if current_ru > max_ru:
+                        max_ru = current_ru
+                        trough_at_runup = trough_capital
+            
+            # Calculer le pourcentage de run-up
+            max_ru_pct = 0.0
+            if max_ru > 0:
+                # Utiliser le creux au moment du max run-up pour le calcul du pourcentage
+                if trough_at_runup > 0:
+                    max_ru_pct = float((max_ru / trough_at_runup) * 100)
+                elif trough_at_runup < 0:
+                    # Si le creux est négatif, on calcule le pourcentage par rapport à la valeur absolue
+                    max_ru_pct = float((max_ru / abs(trough_at_runup)) * 100)
+                else:
+                    # Si le creux est 0, on utilise le capital initial comme référence
+                    if initial_capital and initial_capital > 0:
+                        max_ru_pct = float((max_ru / initial_capital) * 100)
+            
+            return (float(max_ru), max_ru_pct, float(trough_at_runup if max_ru > 0 else trough_capital))
+        
         # Récupérer le capital initial du compte si un compte est sélectionné
         trading_account_id = request.query_params.get('trading_account', None)
         initial_capital = None
@@ -569,8 +650,74 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             except TradingAccount.DoesNotExist:  # type: ignore
                 pass
         
+        # Si pas de capital initial trouvé, essayer de le récupérer du premier trade
+        if initial_capital is None and trades.exists():
+            first_trade = trades.first()
+            if first_trade and first_trade.trading_account:
+                initial_capital = first_trade.trading_account.initial_capital
+        
+        # Si toujours None, utiliser 0 comme valeur par défaut
+        if initial_capital is None:
+            initial_capital = Decimal('0')
+        
+        # Calculer le capital au début de la période filtrée (si des filtres de date sont appliqués)
+        # Pour cela, on additionne le PnL de tous les trades avant la période filtrée
+        period_start_capital = initial_capital
+        if trades.exists():
+            # Déterminer la date de début de la période filtrée
+            start_datetime = None
+            start_date = request.query_params.get('start_date', None)
+            year = request.query_params.get('year', None)
+            month = request.query_params.get('month', None)
+            
+            if start_date:
+                # Utiliser start_date si fourni
+                try:
+                    start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                    paris_tz = pytz.timezone('Europe/Paris')
+                    start_datetime = paris_tz.localize(start_datetime)
+                except ValueError:
+                    pass
+            elif year:
+                # Utiliser year/month si fourni
+                try:
+                    year_int = int(year)
+                    if month:
+                        month_int = int(month)
+                        start_datetime = timezone.datetime(year_int, month_int, 1)
+                    else:
+                        start_datetime = timezone.datetime(year_int, 1, 1)
+                    paris_tz = pytz.timezone('Europe/Paris')
+                    start_datetime = paris_tz.localize(start_datetime)
+                except (ValueError, TypeError):
+                    pass
+            else:
+                # Si aucun filtre de date explicite, utiliser la date du premier trade filtré
+                # pour déterminer s'il y a des trades avant
+                first_trade = trades.order_by('entered_at').first()
+                if first_trade:
+                    start_datetime = first_trade.entered_at
+            
+            # Si on a une date de début, calculer le capital au début de la période
+            if start_datetime:
+                try:
+                    # Calculer le PnL cumulé de tous les trades avant la période filtrée
+                    trades_before_period = (
+                        TopStepTrade.objects
+                        .filter(user=request.user)  # type: ignore
+                    )
+                    if trading_account_id:
+                        trades_before_period = trades_before_period.filter(trading_account_id=trading_account_id)
+                    trades_before_period = trades_before_period.filter(entered_at__lt=start_datetime)
+                    
+                    pnl_before_period = trades_before_period.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+                    period_start_capital = initial_capital + pnl_before_period
+                except Exception:
+                    # En cas d'erreur, utiliser le capital initial
+                    period_start_capital = initial_capital
+        
         # Max drawdown de la période (avec filtres de date)
-        max_drawdown, max_drawdown_pct, peak_capital = calculate_max_drawdown(trades, initial_capital)
+        max_drawdown, max_drawdown_pct, peak_capital = calculate_max_drawdown(trades, period_start_capital)
         
         # Max drawdown global (sans filtres de date, mais avec les autres filtres comme le compte)
         # Créer un queryset global en gardant les filtres de compte mais sans les filtres de date
@@ -585,6 +732,24 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             global_trades = global_trades.filter(trading_account_id=trading_account_id)
         
         max_drawdown_global, max_drawdown_global_pct, peak_capital_global = calculate_max_drawdown(global_trades, initial_capital)
+        
+        # Max run-up de la période (avec filtres de date) - utiliser le capital au début de la période
+        try:
+            max_runup, max_runup_pct, trough_capital = calculate_max_runup(trades, period_start_capital)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur calcul max_runup période: {e}")
+            max_runup, max_runup_pct, trough_capital = (0.0, 0.0, 0.0)
+        
+        # Max run-up global (sans filtres de date, mais avec les autres filtres comme le compte)
+        try:
+            max_runup_global, max_runup_global_pct, trough_capital_global = calculate_max_runup(global_trades, initial_capital)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur calcul max_runup global: {e}")
+            max_runup_global, max_runup_global_pct, trough_capital_global = (0.0, 0.0, 0.0)
         
         # 12. Expectancy
         expectancy = 0.0
@@ -716,6 +881,10 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'max_drawdown_pct': round(max_drawdown_pct, 2),
             'max_drawdown_global': round(max_drawdown_global, 2),
             'max_drawdown_global_pct': round(max_drawdown_global_pct, 2),
+            'max_runup': round(max_runup, 2),
+            'max_runup_pct': round(max_runup_pct, 2),
+            'max_runup_global': round(max_runup_global, 2),
+            'max_runup_global_pct': round(max_runup_global_pct, 2),
             'expectancy': round(expectancy, 2),
             'break_even_trades': break_even_trades,
             'sharpe_ratio': round(sharpe_ratio, 2),

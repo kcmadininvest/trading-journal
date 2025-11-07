@@ -228,7 +228,7 @@ function StatisticsPage() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('statistics:overview.title')}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">{t('statistics:overview.subtitle')}</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
                 title={t('statistics:overview.performance', { defaultValue: 'Performance' })}
                 icon={
@@ -249,15 +249,27 @@ function StatisticsPage() {
                   tooltip={t('statistics:overview.winRate')}
                   variant={statisticsData.win_rate >= 50 ? 'success' : statisticsData.win_rate >= 40 ? 'warning' : 'danger'}
                 />
+              </MetricCard>
+
+              <MetricCard
+                title={t('statistics:performanceRatios.drawdownAndRunup', { defaultValue: 'Drawdown & Run-up' })}
+                icon={
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                }
+              >
                 <MetricItem
-                  label={t('statistics:performanceRatios.maxDrawdown')}
-                  value={
-                    <span>
-                      {t('statistics:performanceRatios.maxDrawdownGlobal', { defaultValue: 'global' })} : {statisticsData.max_drawdown_global_pct.toFixed(2)}% ({t('statistics:performanceRatios.maxDrawdownPeriod', { defaultValue: 'période' })} : {statisticsData.max_drawdown_pct.toFixed(2)}%)
-                    </span>
-                  }
-                  tooltip={t('statistics:performanceRatios.maxDrawdownTooltip')}
-                  variant={statisticsData.max_drawdown_global_pct <= 5 ? 'success' : statisticsData.max_drawdown_global_pct <= 15 ? 'warning' : 'danger'}
+                  label={t('statistics:performanceRatios.maxDrawdown', { defaultValue: 'Max Drawdown' })}
+                  value={`${statisticsData.max_drawdown_global_pct.toFixed(2)}% (${formatCurrency(statisticsData.max_drawdown_global, currencySymbol)})`}
+                  tooltip={t('statistics:performanceRatios.maxDrawdownGlobalTooltip', { defaultValue: 'Plus grande baisse depuis un pic (tous les temps). Indicateur de risque. Plus bas = moins de risque.' })}
+                  variant="default"
+                />
+                <MetricItem
+                  label={t('statistics:performanceRatios.maxRunupGlobal', { defaultValue: 'Max Run-up Global' })}
+                  value={`${statisticsData.max_runup_global_pct.toFixed(2)}% (${formatCurrency(statisticsData.max_runup_global, currencySymbol)})`}
+                  tooltip={t('statistics:performanceRatios.maxRunupTooltip', { defaultValue: 'Plus grande hausse depuis un point bas' })}
+                  variant="default"
                 />
               </MetricCard>
 
