@@ -357,9 +357,10 @@ const AnalyticsPage: React.FC = () => {
       // Le drawdown représente la distance depuis le pic (0 = au pic, jamais négatif)
       const drawdownAmount = currentCapital < peakCapital ? peakCapital - currentCapital : 0;
       
-      // Le drawdown est maintenant en montant absolu, pas en pourcentage
-      // On garde drawdownPercent à 0 car on n'utilise plus le pourcentage
-      const drawdownPercent = 0;
+      // Calculer le pourcentage de drawdown par rapport au pic de capital
+      const drawdownPercent = peakCapital > 0 && drawdownAmount > 0 
+        ? (drawdownAmount / peakCapital) * 100 
+        : 0;
       
       const localeMap: Record<string, string> = {
         'fr': 'fr-FR',
@@ -382,6 +383,7 @@ const AnalyticsPage: React.FC = () => {
           date: formattedDate,
           drawdown: drawdownAmount, // Utiliser le montant absolu pour le graphique
           drawdownAmount: drawdownAmount,
+          drawdownPercent: drawdownPercent, // Pourcentage de drawdown
           cumulativePnl,
           currentCapital, // Ajouter le capital actuel pour les tooltips
           rawDate: date, // Garder la date originale pour le tri/affichage
@@ -392,6 +394,7 @@ const AnalyticsPage: React.FC = () => {
           date: date,
           drawdown: drawdownAmount, // Utiliser le montant absolu pour le graphique
           drawdownAmount: drawdownAmount,
+          drawdownPercent: drawdownPercent, // Pourcentage de drawdown
           cumulativePnl,
           currentCapital, // Ajouter le capital actuel pour les tooltips
           rawDate: date,
@@ -980,7 +983,7 @@ const AnalyticsPage: React.FC = () => {
                           const index = context.dataIndex;
                           const data = drawdownData[index];
                           return [
-                            `${t('analytics:charts.drawdown.amount')}: ${formatCurrency(data.drawdownAmount, currencySymbol)}`,
+                            `${t('analytics:charts.drawdown.amount')}: ${formatCurrency(data.drawdownAmount, currencySymbol)} (${data.drawdownPercent.toFixed(2)}%)`,
                             `${t('analytics:charts.drawdown.cumulativePnl')}: ${formatCurrency(data.cumulativePnl, currencySymbol)}`,
                           ];
                         },
