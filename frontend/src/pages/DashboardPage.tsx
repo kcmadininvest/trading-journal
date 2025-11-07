@@ -1156,6 +1156,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [trades, strategies, allTradesForSequences, allStrategiesForSequences, strategiesLoading]);
 
+  // Calculer le solde initial et actuel du compte
+  const accountBalance = useMemo(() => {
+    if (!selectedAccount) {
+      return { initial: 0, current: 0 };
+    }
+
+    const initialCapital = selectedAccount.initial_capital 
+      ? parseFloat(String(selectedAccount.initial_capital)) 
+      : 0;
+
+    // Calculer le PnL total de tous les trades du compte (pas seulement la période sélectionnée)
+    const allTradesForBalance = allTradesForSequences.length > 0 ? allTradesForSequences : trades;
+    const totalPnl = allTradesForBalance.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
+
+    const currentBalance = initialCapital + totalPnl;
+
+    return {
+      initial: initialCapital,
+      current: currentBalance,
+    };
+  }, [selectedAccount, allTradesForSequences, trades]);
+
   // Helper function pour obtenir les couleurs selon le thème
   const chartColors = useMemo(() => ({
     text: isDark ? '#d1d5db' : '#374151',
@@ -1195,6 +1217,48 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               }}
             />
           </div>
+
+          {/* Soldes du compte */}
+          {selectedAccount && (
+            <div className="flex flex-wrap items-end gap-6 flex-1">
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
+                </span>
+                <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {formatCurrency(accountBalance.initial, currencySymbol)}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                  {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
+                </span>
+                <span className={`text-lg font-semibold ${
+                  accountBalance.current >= accountBalance.initial 
+                    ? 'text-blue-600 dark:text-blue-400' 
+                    : 'text-pink-600 dark:text-pink-400'
+                }`}>
+                  {formatCurrency(accountBalance.current, currencySymbol)}
+                </span>
+              </div>
+              {accountBalance.initial > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {t('dashboard:variation', { defaultValue: 'Variation' })}
+                  </span>
+                  <span className={`text-lg font-semibold ${
+                    accountBalance.current >= accountBalance.initial 
+                      ? 'text-blue-600 dark:text-blue-400' 
+                      : 'text-pink-600 dark:text-pink-400'
+                  }`}>
+                    {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
+                    {' '}
+                    ({((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100).toFixed(2)}%)
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

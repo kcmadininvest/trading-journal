@@ -267,6 +267,10 @@ class TradesService {
     profit_factor: number;
     win_loss_ratio: number;
     consistency_ratio: number;
+    max_runup?: number;
+    max_runup_pct?: number;
+    max_runup_global?: number;
+    max_runup_global_pct?: number;
     recovery_ratio: number;
     pnl_per_trade: number;
     fees_ratio: number;

@@ -106,5 +106,8 @@
   "currentRespectDays": "Respekt-Tage",
   "currentRespectTrades": "Respekt-Trades",
   "currentNotRespectDays": "Nicht-Respekt-Tage",
-  "currentNotRespectTrades": "Nicht-Respekt-Trades"
+  "currentNotRespectTrades": "Nicht-Respekt-Trades",
+  "initialBalance": "Anfangssaldo",
+  "currentBalance": "Aktueller Saldo",
+  "period": "Zeitraum"
 }
