@@ -21,6 +21,7 @@ class TradingAccountSerializer(serializers.ModelSerializer):
             'account_type',
             'broker_account_id',
             'currency',
+            'initial_capital',
             'status',
             'broker_config',
             'description',
@@ -84,6 +85,7 @@ class TradingAccountListSerializer(serializers.ModelSerializer):
             'name',
             'account_type',
             'currency',
+            'initial_capital',
             'status',
             'is_default',
             'trades_count',
@@ -280,6 +282,9 @@ class TradeStatisticsSerializer(serializers.Serializer):
     duration_ratio = serializers.FloatField()
     recovery_time = serializers.FloatField()
     max_drawdown = serializers.FloatField()
+    max_drawdown_pct = serializers.FloatField()
+    max_drawdown_global = serializers.FloatField()
+    max_drawdown_global_pct = serializers.FloatField()
     expectancy = serializers.FloatField()
     break_even_trades = serializers.IntegerField()
     sharpe_ratio = serializers.FloatField()

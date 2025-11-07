@@ -251,9 +251,13 @@ function StatisticsPage() {
                 />
                 <MetricItem
                   label={t('statistics:performanceRatios.maxDrawdown')}
-                  value={`${statisticsData.max_drawdown.toFixed(2)}%`}
+                  value={
+                    <span>
+                      {t('statistics:performanceRatios.maxDrawdownGlobal', { defaultValue: 'global' })} : {statisticsData.max_drawdown_global_pct.toFixed(2)}% ({t('statistics:performanceRatios.maxDrawdownPeriod', { defaultValue: 'période' })} : {statisticsData.max_drawdown_pct.toFixed(2)}%)
+                    </span>
+                  }
                   tooltip={t('statistics:performanceRatios.maxDrawdownTooltip')}
-                  variant={statisticsData.max_drawdown <= 20 ? 'success' : statisticsData.max_drawdown <= 50 ? 'warning' : 'danger'}
+                  variant={statisticsData.max_drawdown_global_pct <= 5 ? 'success' : statisticsData.max_drawdown_global_pct <= 15 ? 'warning' : 'danger'}
                 />
               </MetricCard>
 

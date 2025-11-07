@@ -8,6 +8,7 @@
     "account": "Konto",
     "type": "Typ",
     "status": "Status",
+    "initialCapital": "Anfangskapital",
     "trades": "Trades",
     "actions": "Aktionen"
   },
@@ -48,6 +49,9 @@
     "brokerIdPlaceholder": "Broker-seitige Kennung",
     "currency": "Währung",
     "currencyDescription": "Währung auswählen; nur das Symbol wird angezeigt.",
+    "initialCapital": "Anfangskapital",
+    "initialCapitalPlaceholder": "50000.00",
+    "initialCapitalDescription": "Anfangskapital des Kontos",
     "status": "Status",
     "statusDescription": "Wählen Sie, ob das Konto aktiv oder inaktiv ist.",
     "description": "Beschreibung",

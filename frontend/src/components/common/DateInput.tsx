@@ -302,7 +302,7 @@ export const DateInput: React.FC<DateInputProps> = ({
       </div>
       
       {showCalendar && (
-        <div className="absolute z-50 mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-3 min-w-[280px]">
+        <div className="absolute z-[60] mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-3 min-w-[280px]">
           {/* En-tête du calendrier */}
           <div className="flex items-center justify-between mb-3">
             <button

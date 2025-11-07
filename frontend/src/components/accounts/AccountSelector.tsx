@@ -16,6 +16,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
   const [open, setOpen] = useState(false);
   const selectedId = value ?? null;
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const isMountedRef = useRef(false);
 
   useEffect(() => {
     const load = async () => {
@@ -44,8 +45,44 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
     };
   }, []);
 
-  // L'initialisation du compte par défaut est maintenant gérée par TradingAccountProvider
-  // Plus besoin d'initialiser ici
+  // Initialiser le compte par défaut si aucune valeur n'est fournie
+  // Ne pas réinitialiser si value est explicitement null (choix "Tous les comptes")
+  useEffect(() => {
+    // Au premier montage uniquement, initialiser le compte par défaut si aucune valeur n'est fournie
+    // value === undefined signifie qu'aucune valeur n'a été fournie
+    // value === null signifie que l'utilisateur a choisi "Tous les comptes"
+    if (!isMountedRef.current && value === undefined && onChange && !loading) {
+      // D'abord, vérifier si un compte par défaut existe dans la liste déjà chargée
+      const defaultAccount = accounts.find(a => a.is_default && a.status === 'active');
+      if (defaultAccount) {
+        onChange(defaultAccount.id);
+        isMountedRef.current = true;
+        return;
+      }
+      
+      // Si aucun compte par défaut dans la liste, faire un appel API
+      // (peut arriver si les comptes ne sont pas encore chargés)
+      if (accounts.length === 0) {
+        const initDefault = async () => {
+          try {
+            const def = await tradingAccountsService.default();
+            if (def && def.status === 'active') {
+              onChange(def.id);
+            }
+          } catch {
+            // noop
+          } finally {
+            isMountedRef.current = true;
+          }
+        };
+        initDefault();
+      } else {
+        isMountedRef.current = true;
+      }
+    }
+    // Ne pas réinitialiser après le premier montage - respecter le choix de l'utilisateur
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts, loading]);
 
   const options = useMemo(() => {
     const base = accounts.map(a => ({ value: a.id, label: a.name, isDefault: !!a.is_default }));

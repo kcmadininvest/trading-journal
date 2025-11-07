@@ -28,6 +28,7 @@
       "yAxis": "Drawdown (%)",
       "tooltip": "Dieses Diagramm zeigt die Entfernung von Ihrem besten Niveau (Peak). Die Linie bei 0 stellt Ihren Peak dar. Je höher der Wert, desto weiter sind Sie von Ihrem besten Niveau entfernt. Wenn Sie einen neuen Peak erreichen, kehrt der Drawdown auf 0 zurück. Prozentsätze (%) stellen den Prozentsatz des Verlusts vom Peak dar. Zum Beispiel bedeutet 10%, dass Sie 10% im Vergleich zu Ihrem besten Niveau verloren haben.",
       "amount": "Betrag",
+      "cumulativePnl": "Kumuliertes P/L",
       "percentage": "Prozentsatz",
       "lossFromPeak": "Verlust vom Peak"
     },

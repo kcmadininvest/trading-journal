@@ -28,6 +28,7 @@
       "yAxis": "Drawdown (%)",
       "tooltip": "This chart shows the distance from your best level (peak). The line at 0 represents your peak. The higher the value, the further you are from your best level. When you reach a new peak, the drawdown returns to 0. Percentages (%) represent the percentage of loss from the peak. For example, 10% means you have lost 10% compared to your best level.",
       "amount": "Amount",
+      "cumulativePnl": "Cumulative P/L",
       "percentage": "Percentage",
       "lossFromPeak": "loss from peak"
     },

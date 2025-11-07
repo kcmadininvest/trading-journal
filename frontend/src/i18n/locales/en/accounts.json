@@ -8,6 +8,7 @@
     "account": "Account",
     "type": "Type",
     "status": "Status",
+    "initialCapital": "Initial Capital",
     "trades": "Trades",
     "actions": "Actions"
   },
@@ -48,6 +49,9 @@
     "brokerIdPlaceholder": "Broker-side identifier",
     "currency": "Currency",
     "currencyDescription": "Select the currency; only the symbol will be displayed.",
+    "initialCapital": "Initial Capital",
+    "initialCapitalPlaceholder": "50000.00",
+    "initialCapitalDescription": "Starting capital of the account",
     "status": "Status",
     "statusDescription": "Choose whether the account is active or inactive.",
     "description": "Description",

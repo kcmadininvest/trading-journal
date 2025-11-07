@@ -8,6 +8,7 @@
     "account": "Compte",
     "type": "Type",
     "status": "Statut",
+    "initialCapital": "Capital initial",
     "trades": "Trades",
     "actions": "Actions"
   },
@@ -48,6 +49,9 @@
     "brokerIdPlaceholder": "Identifiant côté broker",
     "currency": "Devise",
     "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
+    "initialCapital": "Capital initial",
+    "initialCapitalPlaceholder": "50000.00",
+    "initialCapitalDescription": "Capital de départ du compte",
     "status": "Statut",
     "statusDescription": "Choisissez si le compte est actif ou inactif.",
     "description": "Description",

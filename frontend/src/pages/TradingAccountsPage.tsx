@@ -56,6 +56,23 @@ const TradingAccountsPage: React.FC = () => {
     return currencies.find(c => c.code === code) || (currencies.length ? currencies[0] : undefined);
   }, [currencies, form.currency]);
 
+  // Helper pour obtenir le symbole de devise d'un compte
+  const getCurrencySymbol = (currencyCode: string): string => {
+    const currency = currencies.find(c => c.code === currencyCode);
+    return currency?.symbol || '';
+  };
+
+  // Helper pour formater le capital initial
+  const formatInitialCapital = (account: TradingAccount): string => {
+    if (!account.initial_capital) return '-';
+    const value = typeof account.initial_capital === 'string' 
+      ? parseFloat(account.initial_capital) 
+      : account.initial_capital;
+    if (isNaN(value)) return '-';
+    const symbol = getCurrencySymbol(account.currency);
+    return `${symbol}${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
   const load = async () => {
     setLoading(true);
     try {
@@ -119,6 +136,7 @@ const TradingAccountsPage: React.FC = () => {
       name: acc.name,
       account_type: acc.account_type,
       currency: acc.currency,
+      initial_capital: acc.initial_capital,
       status: acc.status,
       description: acc.description || '',
       broker_account_id: acc.broker_account_id || '',
@@ -205,6 +223,7 @@ const TradingAccountsPage: React.FC = () => {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.account')}</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.type')}</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.status')}</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.initialCapital')}</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.trades')}</th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
                     </tr>
@@ -216,13 +235,14 @@ const TradingAccountsPage: React.FC = () => {
                           <td className="px-6 py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/3 animate-pulse" /></td>
                           <td className="px-6 py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
                           <td className="px-6 py-4"><div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
+                          <td className="px-6 py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
                           <td className="px-6 py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
                           <td className="px-6 py-4 text-right"><div className="h-8 bg-gray-100 dark:bg-gray-700 rounded w-40 ml-auto animate-pulse" /></td>
                         </tr>
                       ))
                     ) : accounts.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-10 text-center">
+                        <td colSpan={6} className="px-6 py-10 text-center">
                           <div className="text-gray-500 dark:text-gray-400">{t('accounts:noAccounts')}</div>
                         </td>
                       </tr>
@@ -253,6 +273,9 @@ const TradingAccountsPage: React.FC = () => {
                                 ? t('accounts:status.inactive') 
                                 : t('accounts:status.archived')}
                             </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
+                            {formatInitialCapital(acc)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">
                             {acc.trades_count ?? 0}
@@ -437,45 +460,59 @@ const TradingAccountsPage: React.FC = () => {
                   <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.currencyDescription')}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('accounts:form.status')}</label>
-                  <div ref={statusRef} className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setIsStatusOpen(v => !v)}
-                      className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs ${
-                        (form.status || 'active') === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
-                      }`}>
-                        {(form.status || 'active') === 'active' ? t('accounts:status.active') : t('accounts:status.inactive')}
-                      </span>
-                      <svg className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${isStatusOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                    </button>
-                    {isStatusOpen && (
-                      <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
-                        <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">
-                          {[{ value: 'active' }, { value: 'inactive' }].map(opt => (
-                            <li key={opt.value}>
-                              <button
-                                type="button"
-                                onClick={() => { setForm(prev => ({ ...prev, status: opt.value as TradingAccount['status'] })); setIsStatusOpen(false); }}
-                                className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${opt.value === (form.status || 'active') ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
-                              >
-                                <span>{t(`accounts:status.${opt.value}`)}</span>
-                                <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs ${
-                                  opt.value === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
-                                }`}>
-                                  {t(`accounts:status.${opt.value}`)}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.statusDescription')}</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('accounts:form.initialCapital')}</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base px-2 py-1"
+                    value={(form as any).initial_capital || ''}
+                    onChange={(e) => setForm(prev => ({ ...prev, initial_capital: e.target.value ? parseFloat(e.target.value) : null } as any))}
+                    placeholder={t('accounts:form.initialCapitalPlaceholder')}
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.initialCapitalDescription')}</p>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('accounts:form.status')}</label>
+                <div ref={statusRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsStatusOpen(v => !v)}
+                    className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs ${
+                      (form.status || 'active') === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                    }`}>
+                      {(form.status || 'active') === 'active' ? t('accounts:status.active') : t('accounts:status.inactive')}
+                    </span>
+                    <svg className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${isStatusOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                  </button>
+                  {isStatusOpen && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
+                      <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">
+                        {[{ value: 'active' }, { value: 'inactive' }].map(opt => (
+                          <li key={opt.value}>
+                            <button
+                              type="button"
+                              onClick={() => { setForm(prev => ({ ...prev, status: opt.value as TradingAccount['status'] })); setIsStatusOpen(false); }}
+                              className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${opt.value === (form.status || 'active') ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
+                            >
+                              <span>{t(`accounts:status.${opt.value}`)}</span>
+                              <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs ${
+                                opt.value === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                              }`}>
+                                {t(`accounts:status.${opt.value}`)}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.statusDescription')}</p>
               </div>
 
               <div>
