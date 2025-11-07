@@ -1,0 +1,45 @@
+{
+  "section": {
+    "title": "Discipline & Strategy",
+    "subtitle": "Track your strategy compliance and earn rewards"
+  },
+  "streak": {
+    "title": "Strategy Respect Streak",
+    "subtitle": "Consecutive days with 100% compliance",
+    "sinceWithArticle": "since",
+    "nextBadge": "Next badge",
+    "daysLeft": "days remaining",
+    "days": "days"
+  },
+  "badges": {
+    "title": "Discipline Badges",
+    "earned": "Earned badges",
+    "locked": "Badges to unlock",
+    "days": "days"
+  },
+  "metrics": {
+    "overall": "Overall Rate",
+    "respected": "Respected",
+    "notRespected": "Not Respected",
+    "last7Days": "Last 7 days",
+    "last30Days": "Last 30 days",
+    "last90Days": "Last 90 days"
+  },
+  "compliance": {
+    "rate": "Compliance Rate (%)",
+    "evolution": "Compliance Rate Evolution",
+    "trades": "trades respected"
+  },
+  "performance": {
+    "title": "Impact of Strategy Compliance",
+    "subtitle": "Performance comparison based on strategy compliance",
+    "respected": "Strategy Respected",
+    "notRespected": "Strategy Not Respected",
+    "trades": "Trades",
+    "winRate": "Win Rate",
+    "avgPnl": "Avg PnL",
+    "totalPnl": "Total PnL",
+    "insight": "When you respect your strategy, your win rate is {{diff}}% higher and your average PnL is {{pnlDiff}} higher."
+  }
+}
+

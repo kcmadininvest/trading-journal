@@ -2486,6 +2486,252 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['get'])
+    def strategy_compliance_stats(self, request):
+        """
+        Retourne les statistiques de respect de stratégie avec streaks et badges.
+        """
+        from collections import defaultdict
+        from datetime import timedelta
+        
+        trading_account_id = request.query_params.get('trading_account')
+        
+        # Récupérer tous les trades du compte pour vérifier si tous ont une stratégie
+        from .models import TopStepTrade
+        trades_queryset = TopStepTrade.objects.filter(  # type: ignore
+            trading_account__user=self.request.user
+        )
+        if trading_account_id:
+            trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
+        
+        # Récupérer toutes les stratégies de l'utilisateur avec leurs trades
+        strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
+            user=self.request.user
+        ).select_related('trade')
+        
+        if trading_account_id:
+            strategies_queryset = strategies_queryset.filter(trade__trading_account_id=trading_account_id)
+        
+        # Créer un dictionnaire pour accéder rapidement aux stratégies par trade_id
+        strategies_dict = {strategy.trade_id: strategy for strategy in strategies_queryset}
+        
+        # Agréger par jour de trading
+        daily_compliance = defaultdict(lambda: {'total': 0, 'with_strategy': 0, 'respected': 0, 'not_respected': 0})
+        all_dates = []
+        
+        for trade in trades_queryset:
+            if trade.trade_day:
+                date_str = trade.trade_day.isoformat()
+                daily_compliance[date_str]['total'] += 1
+                strategy = strategies_dict.get(trade.id)
+                if strategy and strategy.strategy_respected is not None:
+                    daily_compliance[date_str]['with_strategy'] += 1
+                    if strategy.strategy_respected:
+                        daily_compliance[date_str]['respected'] += 1
+                    else:
+                        daily_compliance[date_str]['not_respected'] += 1
+                if date_str not in all_dates:
+                    all_dates.append(date_str)
+        
+        # Trier les dates (seulement les jours avec trades)
+        # La consécutivité est basée sur les jours avec trades, pas sur les jours calendaires
+        # Deux jours avec trades sont consécutifs s'il n'y a pas d'autre jour avec trades entre eux
+        # Puisque la liste est triée et ne contient que les jours avec trades,
+        # chaque jour dans cette liste est automatiquement consécutif au précédent
+        all_dates.sort()
+        
+        # Calculer le streak actuel et le meilleur streak
+        current_streak = 0
+        best_streak = 0
+        temp_streak = 0
+        streak_start_date = None
+        current_streak_start = None
+        
+        # Calculer le meilleur streak de tous les temps en parcourant toutes les dates dans l'ordre chronologique
+        # On ne compte que les jours où il y a eu au moins un trade pour l'aspect consécutif
+        for date_str in all_dates:
+            data = daily_compliance[date_str]
+            # Un jour compte comme "respecté" si tous les trades ont une stratégie et tous respectent
+            # Vérifier que tous les trades du jour ont une stratégie
+            if data['total'] > 0 and data['with_strategy'] == data['total'] and data['not_respected'] == 0:
+                # Tous les trades du jour ont une stratégie et tous respectent
+                # Date consécutive (dans la liste triée des jours avec trades), on continue le streak
+                temp_streak += 1
+                if temp_streak > best_streak:
+                    best_streak = temp_streak
+            elif data['total'] > 0:
+                # Le streak est cassé (jour avec trades mais non respectés ou certains sans stratégie)
+                temp_streak = 0
+        
+        # Calculer le streak actuel en parcourant de la plus récente à la plus ancienne
+        # On ne compte que les jours où il y a eu au moins un trade pour l'aspect consécutif
+        current_streak = 0
+        for date_str in reversed(all_dates):
+            data = daily_compliance[date_str]
+            # Un jour compte comme "respecté" si tous les trades ont une stratégie et tous respectent
+            if data['total'] > 0 and data['with_strategy'] == data['total'] and data['not_respected'] == 0:
+                # Tous les trades du jour ont une stratégie et tous respectent
+                # Date consécutive (dans la liste triée des jours avec trades), on continue le streak
+                if current_streak == 0:
+                    current_streak_start = date_str
+                current_streak += 1
+            elif data['total'] > 0:
+                # Le streak actuel est cassé (jour avec trades mais non respectés ou certains sans stratégie), on s'arrête
+                break
+        
+        # Calculer les taux de respect (seulement pour les trades avec stratégie)
+        total_trades_with_strategy = sum(d['with_strategy'] for d in daily_compliance.values())
+        total_respected = sum(d['respected'] for d in daily_compliance.values())
+        total_not_respected = sum(d['not_respected'] for d in daily_compliance.values())
+        
+        overall_compliance_rate = (total_respected / total_trades_with_strategy * 100) if total_trades_with_strategy > 0 else 0
+        
+        # Calculer les taux pour différentes périodes
+        now = timezone.now().date()
+        last_7_days = (now - timedelta(days=7)).isoformat()
+        last_30_days = (now - timedelta(days=30)).isoformat()
+        last_90_days = (now - timedelta(days=90)).isoformat()
+        
+        def calculate_period_rate(start_date_str):
+            period_trades_with_strategy = 0
+            period_respected = 0
+            for date_str, data in daily_compliance.items():
+                if date_str >= start_date_str:
+                    period_trades_with_strategy += data['with_strategy']
+                    period_respected += data['respected']
+            return (period_respected / period_trades_with_strategy * 100) if period_trades_with_strategy > 0 else 0
+        
+        compliance_7d = calculate_period_rate(last_7_days)
+        compliance_30d = calculate_period_rate(last_30_days)
+        compliance_90d = calculate_period_rate(last_90_days)
+        
+        # Calculer les badges obtenus de manière séquentielle
+        # Un badge ne peut être obtenu que si tous les badges précédents sont obtenus
+        badges = []
+        badge_definitions = [
+            {'id': 'beginner', 'name': 'Débutant discipliné', 'days': 3},
+            {'id': 'week', 'name': 'Semaine parfaite', 'days': 7},
+            {'id': 'two_weeks', 'name': 'Deux semaines exemplaires', 'days': 14},
+            {'id': 'month', 'name': 'Mois de discipline', 'days': 30},
+            {'id': 'two_months', 'name': 'Maître de la discipline', 'days': 60},
+            {'id': 'three_months', 'name': 'Légende de la stratégie', 'days': 90},
+            {'id': 'centurion', 'name': 'Centurion', 'days': 100},
+            {'id': 'year', 'name': 'Année parfaite', 'days': 365},
+        ]
+        
+        # Utiliser le streak actuel pour déterminer les badges obtenus
+        # Les badges doivent être obtenus séquentiellement
+        # Pour les badges obtenus, on utilise best_streak (pour garder les badges même si le streak actuel est cassé)
+        # Pour la progression vers le prochain badge, on utilise current_streak
+        all_previous_earned = True
+        for i, badge in enumerate(badge_definitions):
+            # Vérifier si tous les badges précédents sont obtenus
+            if not all_previous_earned:
+                # Si un badge précédent n'est pas obtenu, ce badge ne peut pas être obtenu
+                badges.append({
+                    'id': badge['id'],
+                    'name': badge['name'],
+                    'days': badge['days'],
+                    'earned': False,
+                    'progress': 0,
+                    'locked': True  # Badge verrouillé car un badge précédent n'est pas obtenu
+                })
+            elif best_streak >= badge['days']:
+                # Le badge est obtenu si le meilleur streak atteint le nombre de jours requis
+                badges.append({
+                    'id': badge['id'],
+                    'name': badge['name'],
+                    'days': badge['days'],
+                    'earned': True,
+                    'earned_date': None
+                })
+            else:
+                # Le badge n'est pas encore obtenu, mais peut être débloqué
+                # Utiliser current_streak pour la progression (streak actuel en cours)
+                all_previous_earned = False
+                badges.append({
+                    'id': badge['id'],
+                    'name': badge['name'],
+                    'days': badge['days'],
+                    'earned': False,
+                    'progress': min((current_streak / badge['days']) * 100, 100),
+                    'locked': False
+                })
+        
+        # Prochain objectif : le premier badge non obtenu qui n'est pas verrouillé
+        next_badge = next((b for b in badges if not b.get('earned', False) and not b.get('locked', False)), None)
+        
+        # Comparaison de performance (respecté vs non respecté)
+        performance_comparison = {
+            'respected': {'count': 0, 'total_pnl': Decimal('0'), 'winning_trades': 0},
+            'not_respected': {'count': 0, 'total_pnl': Decimal('0'), 'winning_trades': 0}
+        }
+        
+        for strategy in strategies_queryset:
+            if strategy.strategy_respected is not None and strategy.trade.net_pnl is not None:
+                if strategy.strategy_respected:
+                    performance_comparison['respected']['count'] += 1
+                    performance_comparison['respected']['total_pnl'] += strategy.trade.net_pnl
+                    if strategy.trade.net_pnl > 0:
+                        performance_comparison['respected']['winning_trades'] += 1
+                else:
+                    performance_comparison['not_respected']['count'] += 1
+                    performance_comparison['not_respected']['total_pnl'] += strategy.trade.net_pnl
+                    if strategy.trade.net_pnl > 0:
+                        performance_comparison['not_respected']['winning_trades'] += 1
+        
+        # Calculer les moyennes et win rates
+        respected_avg_pnl = (performance_comparison['respected']['total_pnl'] / 
+                            performance_comparison['respected']['count']) if performance_comparison['respected']['count'] > 0 else Decimal('0')
+        not_respected_avg_pnl = (performance_comparison['not_respected']['total_pnl'] / 
+                                performance_comparison['not_respected']['count']) if performance_comparison['not_respected']['count'] > 0 else Decimal('0')
+        
+        respected_win_rate = (performance_comparison['respected']['winning_trades'] / 
+                            performance_comparison['respected']['count'] * 100) if performance_comparison['respected']['count'] > 0 else 0
+        not_respected_win_rate = (performance_comparison['not_respected']['winning_trades'] / 
+                                performance_comparison['not_respected']['count'] * 100) if performance_comparison['not_respected']['count'] > 0 else 0
+        
+        return Response({
+            'current_streak': current_streak,
+            'current_streak_start': current_streak_start,
+            'best_streak': best_streak,
+            'overall_compliance_rate': round(overall_compliance_rate, 2),
+            'compliance_7d': round(compliance_7d, 2),
+            'compliance_30d': round(compliance_30d, 2),
+            'compliance_90d': round(compliance_90d, 2),
+            'total_trades': total_trades_with_strategy,
+            'total_respected': total_respected,
+            'total_not_respected': total_not_respected,
+            'badges': badges,
+            'next_badge': next_badge,
+            'performance_comparison': {
+                'respected': {
+                    'count': performance_comparison['respected']['count'],
+                    'avg_pnl': str(respected_avg_pnl),
+                    'total_pnl': str(performance_comparison['respected']['total_pnl']),
+                    'win_rate': round(respected_win_rate, 2),
+                    'winning_trades': performance_comparison['respected']['winning_trades']
+                },
+                'not_respected': {
+                    'count': performance_comparison['not_respected']['count'],
+                    'avg_pnl': str(not_respected_avg_pnl),
+                    'total_pnl': str(performance_comparison['not_respected']['total_pnl']),
+                    'win_rate': round(not_respected_win_rate, 2),
+                    'winning_trades': performance_comparison['not_respected']['winning_trades']
+                }
+            },
+            'daily_compliance': [
+                {
+                    'date': date_str,
+                    'total': data['total'],
+                    'respected': data['respected'],
+                    'not_respected': data['not_respected'],
+                    'compliance_rate': round((data['respected'] / data['total'] * 100) if data['total'] > 0 else 0, 2)
+                }
+                for date_str, data in sorted(daily_compliance.items())
+            ]
+        })
 
 
 class PositionStrategyViewSet(viewsets.ModelViewSet):

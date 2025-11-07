@@ -1,5 +1,9 @@
 {
     "venvPath": "backend",
-    "venv": "venv"
+    "venv": "venv",
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": false,
+    "pythonVersion": "3.11",
+    "typeCheckingMode": "basic"
 }
 

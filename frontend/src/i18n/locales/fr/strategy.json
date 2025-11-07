@@ -1,0 +1,45 @@
+{
+  "section": {
+    "title": "Discipline & Stratégie",
+    "subtitle": "Suivez votre respect de la stratégie et obtenez des récompenses"
+  },
+  "streak": {
+    "title": "Streak de Respect",
+    "subtitle": "Jours consécutifs avec 100% de respect",
+    "sinceWithArticle": "depuis le",
+    "nextBadge": "Prochain badge",
+    "daysLeft": "jours restants",
+    "days": "jours"
+  },
+  "badges": {
+    "title": "Badges de Discipline",
+    "earned": "Badges obtenus",
+    "locked": "Badges à débloquer",
+    "days": "jours"
+  },
+  "metrics": {
+    "overall": "Taux Global",
+    "respected": "Respectés",
+    "notRespected": "Non respectés",
+    "last7Days": "7 derniers jours",
+    "last30Days": "30 derniers jours",
+    "last90Days": "90 derniers jours"
+  },
+  "compliance": {
+    "rate": "Taux de respect (%)",
+    "evolution": "Évolution du taux de respect",
+    "trades": "trades respectés"
+  },
+  "performance": {
+    "title": "Impact du Respect de la Stratégie",
+    "subtitle": "Comparaison des performances selon le respect de la stratégie",
+    "respected": "Stratégie Respectée",
+    "notRespected": "Stratégie Non Respectée",
+    "trades": "Trades",
+    "winRate": "Win Rate",
+    "avgPnl": "PnL Moyen",
+    "totalPnl": "PnL Total",
+    "insight": "Quand vous respectez votre stratégie, votre win rate est {{diff}}% supérieur et votre PnL moyen est {{pnlDiff}} supérieur."
+  }
+}
+
