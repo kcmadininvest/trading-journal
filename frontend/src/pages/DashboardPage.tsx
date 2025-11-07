@@ -1376,12 +1376,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="flex items-center justify-between w-full">
                     <span>{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
                     <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full cursor-help inline-flex items-center ${
-                        additionalStats.currentWinningStreakDays > 0 
-                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300' 
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })} {additionalStats.currentWinningStreakDays || 0} {(additionalStats.currentWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                      <span className="inline-flex items-center gap-1 cursor-help">
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })}
+                        </span>
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                          additionalStats.currentWinningStreakDays > 0 
+                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        }`}>
+                          {additionalStats.currentWinningStreakDays || 0} {(additionalStats.currentWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                        </span>
                       </span>
                     </Tooltip>
                   </div>
