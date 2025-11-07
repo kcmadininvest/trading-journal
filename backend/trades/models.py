@@ -81,6 +81,16 @@ class TradingAccount(models.Model):
         help_text='Devise principale du compte'
     )
     
+    initial_capital = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=Decimal('50000.00'),
+        null=True,
+        blank=True,
+        verbose_name='Capital initial',
+        help_text='Capital de départ du compte (utilisé pour le calcul du drawdown)'
+    )
+    
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

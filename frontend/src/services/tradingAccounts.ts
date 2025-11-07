@@ -8,6 +8,7 @@ export interface TradingAccount {
   account_type: 'topstep' | 'ibkr' | 'ninjatrader' | 'tradovate' | 'other';
   broker_account_id?: string;
   currency: string;
+  initial_capital?: string | number;
   status: 'active' | 'inactive' | 'archived';
   broker_config?: Record<string, any>;
   description?: string;

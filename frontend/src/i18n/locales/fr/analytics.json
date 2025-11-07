@@ -28,6 +28,7 @@
       "yAxis": "Drawdown (%)",
       "tooltip": "Ce graphique montre la distance depuis votre meilleur niveau (pic). La ligne à 0 représente votre pic. Plus la valeur est élevée, plus vous êtes loin de votre meilleur niveau. Quand vous atteignez un nouveau pic, le drawdown revient à 0. Les pourcentages (%) représentent le pourcentage de perte depuis le pic. Par exemple, 10% signifie que vous avez perdu 10% par rapport à votre meilleur niveau.",
       "amount": "Montant",
+      "cumulativePnl": "P/L cumulé",
       "percentage": "Pourcentage",
       "lossFromPeak": "perte depuis le pic"
     },

@@ -333,45 +333,33 @@ const AnalyticsPage: React.FC = () => {
       return [];
     }
     
+    // Récupérer le capital initial du compte sélectionné
+    const initialCapital = selectedAccount?.initial_capital 
+      ? parseFloat(String(selectedAccount.initial_capital)) 
+      : 0;
+    
     let cumulativePnl = 0; // P/L cumulé : addition progressive du P/L journalier
-    let peak: number | null = null; // Pic de performance (peak_pnl) : valeur maximale du P/L cumulé atteinte jusqu'alors
-    // Initialiser avec null pour détecter le premier calcul
+    let peakCapital = initialCapital; // Pic de capital : commence au capital initial
     
     const allData = sortedDates.map(date => {
       // Addition progressive du P/L journalier
       cumulativePnl += dailyData[date];
       
-      // Initialiser le peak avec le premier P/L cumulé, puis le mettre à jour
-      if (peak === null) {
-        peak = cumulativePnl;
-      } else {
-        // Mettre à jour le pic si le P/L cumulé dépasse le pic précédent
-        peak = Math.max(peak, cumulativePnl);
+      // Calculer le capital actuel (capital initial + P/L cumulé)
+      const currentCapital = initialCapital + cumulativePnl;
+      
+      // Mettre à jour le pic si le capital actuel dépasse le pic précédent
+      if (currentCapital > peakCapital) {
+        peakCapital = currentCapital;
       }
       
-      // Drawdown : différence entre le pic et le P/L cumulé actuel
-      // drawdown = peak_pnl - cumulative_pnl
+      // Drawdown absolu : différence entre le pic de capital et le capital actuel
       // Le drawdown représente la distance depuis le pic (0 = au pic, jamais négatif)
-      // peak ne peut plus être null ici car il a été initialisé au premier passage
-      const peakValue = peak!;
-      const drawdownAmount = cumulativePnl < peakValue ? peakValue - cumulativePnl : 0;
+      const drawdownAmount = currentCapital < peakCapital ? peakCapital - currentCapital : 0;
       
-      // Calcul du pourcentage de drawdown
-      // Cas 1: Peak positif et cumulative en dessous du peak
-      // Cas 2: Peak négatif et cumulative encore plus négatif (plus de perte)
-      // Cas 3: Peak à 0 (pas de pourcentage possible, utiliser seulement le montant)
-      let drawdownPercent = 0;
-      if (drawdownAmount > 0 && peakValue !== 0) {
-        if (peakValue > 0) {
-          // Peak positif : calcul standard (pourcentage de perte depuis le peak)
-          drawdownPercent = ((peakValue - cumulativePnl) / peakValue) * 100;
-        } else if (peakValue < 0) {
-          // Peak négatif : le pourcentage représente l'aggravation de la perte
-          // Utiliser la valeur absolue pour le calcul
-          drawdownPercent = (drawdownAmount / Math.abs(peakValue)) * 100;
-        }
-        // Si peak === 0, drawdownPercent reste à 0 (on ne peut pas diviser par 0)
-      }
+      // Le drawdown est maintenant en montant absolu, pas en pourcentage
+      // On garde drawdownPercent à 0 car on n'utilise plus le pourcentage
+      const drawdownPercent = 0;
       
       const localeMap: Record<string, string> = {
         'fr': 'fr-FR',
@@ -392,22 +380,26 @@ const AnalyticsPage: React.FC = () => {
         
         return {
           date: formattedDate,
-          drawdown: drawdownPercent,
+          drawdown: drawdownAmount, // Utiliser le montant absolu pour le graphique
           drawdownAmount: drawdownAmount,
           cumulativePnl,
+          currentCapital, // Ajouter le capital actuel pour les tooltips
           rawDate: date, // Garder la date originale pour le tri/affichage
         };
       } catch (error) {
         console.warn('Erreur lors du formatage de la date:', date, error);
         return {
           date: date,
-          drawdown: drawdownPercent,
+          drawdown: drawdownAmount, // Utiliser le montant absolu pour le graphique
           drawdownAmount: drawdownAmount,
           cumulativePnl,
+          currentCapital, // Ajouter le capital actuel pour les tooltips
           rawDate: date,
         };
       }
     }).filter(item => item !== null && !isNaN(item.drawdown) && !isNaN(item.drawdownAmount));
+    
+    // Mettre à jour la dépendance du useMemo pour inclure selectedAccount
     
     // Retourner tous les points de données pour avoir une référence visuelle complète
     // Cela permet d'afficher :
@@ -415,7 +407,7 @@ const AnalyticsPage: React.FC = () => {
     // - Les points avec drawdown = 0 (au peak ou au-dessus)
     // Cela garantit qu'on a toujours un graphique visible, même si toujours au pic (ligne à 0)
     return allData;
-  }, [trades, preferences.timezone, preferences.language]);
+  }, [trades, preferences.timezone, preferences.language, selectedAccount]);
 
   // Heatmap Jour × Heure
   const heatmapData = useMemo(() => {
@@ -989,7 +981,7 @@ const AnalyticsPage: React.FC = () => {
                           const data = drawdownData[index];
                           return [
                             `${t('analytics:charts.drawdown.amount')}: ${formatCurrency(data.drawdownAmount, currencySymbol)}`,
-                            `${t('analytics:charts.drawdown.percentage')}: ${data.drawdown.toFixed(2)}% (${t('analytics:charts.drawdown.lossFromPeak')})`,
+                            `${t('analytics:charts.drawdown.cumulativePnl')}: ${formatCurrency(data.cumulativePnl, currencySymbol)}`,
                           ];
                         },
                       },
@@ -1021,7 +1013,7 @@ const AnalyticsPage: React.FC = () => {
                         },
                         callback: function(value) {
                           const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-                          return numValue.toFixed(1) + '%';
+                          return formatCurrency(numValue, currencySymbol);
                         },
                       },
                       grid: {

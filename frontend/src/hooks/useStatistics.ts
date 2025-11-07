@@ -29,6 +29,9 @@ export interface StatisticsData {
   duration_ratio: number;
   recovery_time: number;
   max_drawdown: number;
+  max_drawdown_pct: number;
+  max_drawdown_global: number;
+  max_drawdown_global_pct: number;
   expectancy: number;
   break_even_trades: number;
   sharpe_ratio: number;

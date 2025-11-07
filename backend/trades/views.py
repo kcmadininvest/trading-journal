@@ -336,6 +336,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'duration_ratio': 0,
                 'recovery_time': 0,
                 'max_drawdown': 0.0,
+                'max_drawdown_pct': 0.0,
+                'max_drawdown_global': 0.0,
+                'max_drawdown_global_pct': 0.0,
                 'expectancy': 0.0,
                 'break_even_trades': 0,
                 'sharpe_ratio': 0.0,
@@ -508,36 +511,80 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             count=Count('id')
         ).order_by('-count').first()
         
-        # 11. Maximum Drawdown (MDD)
-        max_drawdown = 0.0
-        if trades.exists():
-            trades_ordered = trades.order_by('entered_at')
-            cumulative_capital = Decimal('0')
-            peak_capital = Decimal('0')
+        # 11. Maximum Drawdown (MDD) - Fonction helper
+        def calculate_max_drawdown(trades_queryset, initial_capital=None):
+            """
+            Calcule le maximum drawdown pour un queryset de trades donné.
+            Utilise le capital initial si fourni, sinon utilise 0 comme référence.
+            Retourne (max_dd_absolu, max_dd_pourcentage, peak_capital)
+            """
             max_dd = Decimal('0')
-            
-            for trade in trades_ordered:
-                cumulative_capital += trade.net_pnl
-                if cumulative_capital > peak_capital:
-                    peak_capital = cumulative_capital
-                
-                # Calculer le drawdown actuel seulement si on est en dessous du pic
-                if cumulative_capital < peak_capital and peak_capital != 0:
-                    # Calculer le drawdown en pourcentage depuis le pic
-                    # Si le pic est positif, calcul standard
-                    if peak_capital > 0:
-                        current_dd = ((peak_capital - cumulative_capital) / peak_capital) * 100
-                    # Si le pic est négatif, on mesure l'aggravation de la perte
-                    # en utilisant la valeur absolue du pic comme référence
+            peak_capital = Decimal('0')
+            if trades_queryset.exists():
+                # Récupérer le capital initial du compte si non fourni
+                if initial_capital is None:
+                    # Essayer de récupérer le capital initial du premier trade
+                    first_trade = trades_queryset.first()
+                    if first_trade and first_trade.trading_account:
+                        initial_capital = first_trade.trading_account.initial_capital or Decimal('0')
                     else:
-                        # Pour un pic négatif, cumulative est encore plus négatif
-                        # Le drawdown représente l'augmentation de la perte en pourcentage
-                        current_dd = ((cumulative_capital - peak_capital) / abs(peak_capital)) * 100
+                        initial_capital = Decimal('0')
+                else:
+                    initial_capital = Decimal(str(initial_capital))
+                
+                trades_ordered = trades_queryset.order_by('entered_at')
+                cumulative_pnl = Decimal('0')
+                peak_capital = initial_capital  # Le pic commence au capital initial
+                
+                for trade in trades_ordered:
+                    cumulative_pnl += trade.net_pnl
+                    current_capital = initial_capital + cumulative_pnl
                     
-                    if current_dd > max_dd:
-                        max_dd = current_dd
+                    # Mettre à jour le pic si on dépasse le pic précédent
+                    if current_capital > peak_capital:
+                        peak_capital = current_capital
+                    
+                    # Calculer le drawdown absolu seulement si on est en dessous du pic
+                    if current_capital < peak_capital:
+                        # Drawdown absolu : différence entre le pic et la valeur actuelle
+                        current_dd = peak_capital - current_capital
+                        
+                        if current_dd > max_dd:
+                            max_dd = current_dd
             
-            max_drawdown = float(max_dd)
+            # Calculer le pourcentage de drawdown
+            max_dd_pct = 0.0
+            if peak_capital > 0 and max_dd > 0:
+                max_dd_pct = float((max_dd / peak_capital) * 100)
+            
+            return (float(max_dd), max_dd_pct, float(peak_capital))
+        
+        # Récupérer le capital initial du compte si un compte est sélectionné
+        trading_account_id = request.query_params.get('trading_account', None)
+        initial_capital = None
+        if trading_account_id:
+            try:
+                account = TradingAccount.objects.get(id=trading_account_id, user=request.user)  # type: ignore
+                initial_capital = account.initial_capital
+            except TradingAccount.DoesNotExist:  # type: ignore
+                pass
+        
+        # Max drawdown de la période (avec filtres de date)
+        max_drawdown, max_drawdown_pct, peak_capital = calculate_max_drawdown(trades, initial_capital)
+        
+        # Max drawdown global (sans filtres de date, mais avec les autres filtres comme le compte)
+        # Créer un queryset global en gardant les filtres de compte mais sans les filtres de date
+        global_trades = (
+            TopStepTrade.objects
+            .filter(user=request.user)  # type: ignore
+            .select_related('trading_account', 'user')
+        )
+        
+        # Appliquer le filtre de compte de trading si présent
+        if trading_account_id:
+            global_trades = global_trades.filter(trading_account_id=trading_account_id)
+        
+        max_drawdown_global, max_drawdown_global_pct, peak_capital_global = calculate_max_drawdown(global_trades, initial_capital)
         
         # 12. Expectancy
         expectancy = 0.0
@@ -577,42 +624,27 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                         sortino_ratio = mean_pnl / downside_deviation
         
         # 16. Calmar Ratio (rendement annuel en % / maximum drawdown en %)
+        # Pour le Calmar Ratio, on utilise le drawdown en pourcentage du capital initial
         calmar_ratio = 0.0
-        if max_drawdown > 0 and max_drawdown < 100 and trades.exists():
-            # Calculer le rendement annuel en pourcentage
-            # On utilise le capital au pic comme référence pour calculer le rendement
+        if max_drawdown > 0 and trades.exists() and initial_capital and initial_capital > 0:
+            # Calculer le rendement annuel en pourcentage basé sur le capital initial
             trades_ordered = trades.order_by('entered_at')
             first_trade = trades_ordered.first()
             last_trade = trades_ordered.last()
             if first_trade and last_trade and first_trade.entered_at < last_trade.entered_at:
                 days_diff = (last_trade.entered_at - first_trade.entered_at).days
                 if days_diff > 0:
-                    # Calculer le capital cumulatif au pic pour avoir une référence
-                    cumulative_capital = Decimal('0')
-                    peak_capital = Decimal('0')
-                    for trade in trades_ordered:
-                        cumulative_capital += trade.net_pnl
-                        if cumulative_capital > peak_capital:
-                            peak_capital = cumulative_capital
+                    total_pnl_decimal = float(aggregates['total_pnl'] or Decimal('0'))
+                    initial_capital_float = float(initial_capital)
                     
-                    # Calculer le rendement annuel en pourcentage
-                    # Si on a un pic de capital, on peut calculer un rendement relatif
-                    if peak_capital > 0:
-                        total_pnl_decimal = float(aggregates['total_pnl'] or Decimal('0'))
-                        # Taux de croissance annuel composé approximatif
-                        if total_pnl_decimal > 0:
-                            # Utiliser le capital au pic comme base pour le rendement
-                            annual_return_pct = (total_pnl_decimal / float(peak_capital)) * (365 / days_diff) * 100
-                            if max_drawdown > 0:
-                                calmar_ratio = annual_return_pct / max_drawdown
-                        elif total_pnl_decimal < 0:
-                            # Pour les pertes, on utilise aussi le pic comme référence
-                            annual_return_pct = (total_pnl_decimal / float(peak_capital)) * (365 / days_diff) * 100
-                            if max_drawdown > 0:
-                                calmar_ratio = annual_return_pct / max_drawdown
-                    else:
-                        # Si pas de pic positif, on ne peut pas calculer un ratio fiable
-                        calmar_ratio = 0.0
+                    # Calculer le rendement annuel en pourcentage basé sur le capital initial
+                    annual_return_pct = (total_pnl_decimal / initial_capital_float) * (365 / days_diff) * 100
+                    
+                    # Calculer le drawdown en pourcentage du capital initial pour le Calmar Ratio
+                    max_drawdown_pct = (max_drawdown / initial_capital_float) * 100
+                    
+                    if max_drawdown_pct > 0:
+                        calmar_ratio = annual_return_pct / max_drawdown_pct
         
         # 17. Trade Efficiency (% de trades où TP atteint)
         from django.db.models import Q, Exists, OuterRef
@@ -681,6 +713,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'duration_ratio': round(duration_ratio, 2),
             'recovery_time': round(recovery_time, 1),
             'max_drawdown': round(max_drawdown, 2),
+            'max_drawdown_pct': round(max_drawdown_pct, 2),
+            'max_drawdown_global': round(max_drawdown_global, 2),
+            'max_drawdown_global_pct': round(max_drawdown_global_pct, 2),
             'expectancy': round(expectancy, 2),
             'break_even_trades': break_even_trades,
             'sharpe_ratio': round(sharpe_ratio, 2),
