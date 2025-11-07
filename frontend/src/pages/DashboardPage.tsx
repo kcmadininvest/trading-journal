@@ -8,7 +8,11 @@ import { User } from '../services/auth';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
-import { tradeStrategiesService, TradeStrategy } from '../services/tradeStrategies';
+import { tradeStrategiesService, TradeStrategy, StrategyComplianceStats } from '../services/tradeStrategies';
+import { StrategyStreakCard } from '../components/strategy/StrategyStreakCard';
+import { StrategyBadges } from '../components/strategy/StrategyBadges';
+import { PerformanceComparison } from '../components/strategy/PerformanceComparison';
+import { MetricGroup } from '../components/statistics/MetricGroup';
 import ModernStatCard from '../components/common/ModernStatCard';
 import DurationDistributionChart from '../components/charts/DurationDistributionChart';
 import AccountBalanceChart from '../components/charts/AccountBalanceChart';
@@ -216,6 +220,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [complianceStats, setComplianceStats] = useState<StrategyComplianceStats | null>(null);
+  const [complianceLoading, setComplianceLoading] = useState(false);
 
   // Récupérer la liste des devises
   useEffect(() => {
@@ -253,6 +259,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
     loadAccount();
   }, [accountId, setAccountId]);
+
+  // Charger les statistiques de compliance
+  useEffect(() => {
+    if (accountLoading) {
+      return;
+    }
+
+    const loadComplianceStats = async () => {
+      setComplianceLoading(true);
+      try {
+        const stats = await tradeStrategiesService.strategyComplianceStats(accountId ?? undefined);
+        setComplianceStats(stats);
+      } catch (err) {
+        console.error('Erreur lors du chargement des statistiques de compliance', err);
+        setComplianceStats(null);
+      } finally {
+        setComplianceLoading(false);
+      }
+    };
+
+    loadComplianceStats();
+  }, [accountId, accountLoading]);
 
   // Obtenir le symbole de devise
   const currencySymbol = useMemo(() => {
@@ -435,8 +463,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             const maxDays = 365; // 12 mois glissant
             const datesArray = allDates.slice(0, maxDays);
             
-            console.log(`Chargement des stratégies pour ${datesArray.length} dates (limité à ${maxDays} jours, ${allDates.length} dates disponibles au total)...`);
-            
             // Charger les stratégies en parallèle (batch de 10 à la fois)
             const batchSize = 10;
             for (let i = 0; i < datesArray.length; i += batchSize) {
@@ -455,8 +481,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 })
               );
             }
-            
-            console.log(`Stratégies chargées: ${strategiesMap.size} trades avec stratégies`);
           } catch (err) {
             console.error('Erreur lors du chargement des stratégies pour séquences', err);
           } finally {
@@ -979,12 +1003,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     
     // Vérifier qu'on a au moins des trades pour calculer les statistiques
     if (trades.length === 0 && tradesForSequences.length === 0) return null;
-    
-    // Debug: afficher le nombre de stratégies disponibles
-    if (tradesForSequences.length > 0) {
-      const tradesWithStrategies = tradesForSequences.filter(t => strategiesForSequences.has(t.id));
-      console.log(`Calcul séquences: ${tradesForSequences.length} trades, ${strategiesForSequences.size} stratégies, ${tradesWithStrategies.length} trades avec stratégie`);
-    }
 
     const totalTrades = trades.filter(t => t.is_profitable !== null).length;
     const winningTrades = trades.filter(t => t.is_profitable === true && t.net_pnl);
@@ -1267,6 +1285,33 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
           <p className="text-red-800 dark:text-red-300">{error}</p>
         </div>
+      )}
+
+      {/* Section Discipline & Stratégie */}
+      {complianceStats && !complianceLoading && (
+        <MetricGroup
+          title={t('strategy:section.title', { defaultValue: 'Discipline & Stratégie' })}
+          subtitle={t('strategy:section.subtitle', { defaultValue: 'Suivez votre respect de la stratégie et obtenez des récompenses' })}
+          defaultCollapsed={false}
+        >
+          {/* Streak Card */}
+          <div className="mb-6">
+            <StrategyStreakCard
+              currentStreak={complianceStats.current_streak}
+              streakStartDate={complianceStats.current_streak_start}
+              nextBadge={complianceStats.next_badge}
+            />
+          </div>
+
+          {/* Impact du respect de la stratégie et badges */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+            <PerformanceComparison
+              performanceComparison={complianceStats.performance_comparison}
+              currencySymbol={currencySymbol}
+            />
+            <StrategyBadges badges={complianceStats.badges} />
+          </div>
+        </MetricGroup>
       )}
 
       {/* Graphiques */}

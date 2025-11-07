@@ -29,6 +29,56 @@ export interface TradeStrategy {
   updated_at: string;
 }
 
+export interface StrategyComplianceStats {
+  current_streak: number;
+  current_streak_start: string | null;
+  best_streak: number;
+  overall_compliance_rate: number;
+  compliance_7d: number;
+  compliance_30d: number;
+  compliance_90d: number;
+  total_trades: number;
+  total_respected: number;
+  total_not_respected: number;
+  badges: Badge[];
+  next_badge: Badge | null;
+  performance_comparison: {
+    respected: {
+      count: number;
+      avg_pnl: string;
+      total_pnl: string;
+      win_rate: number;
+      winning_trades: number;
+    };
+    not_respected: {
+      count: number;
+      avg_pnl: string;
+      total_pnl: string;
+      win_rate: number;
+      winning_trades: number;
+    };
+  };
+  daily_compliance: DailyCompliance[];
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  days: number;
+  earned: boolean;
+  earned_date?: string | null;
+  progress?: number;
+  locked?: boolean;
+}
+
+export interface DailyCompliance {
+  date: string;
+  total: number;
+  respected: number;
+  not_respected: number;
+  compliance_rate: number;
+}
+
 export interface BulkStrategyData {
   trade_id: string;
   strategy_respected?: boolean | null;
@@ -306,6 +356,24 @@ class TradeStrategiesService {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Erreur lors de la récupération des statistiques');
+    }
+    return res.json();
+  }
+
+  /**
+   * Récupère les statistiques de respect de stratégie avec streaks et badges
+   */
+  async strategyComplianceStats(tradingAccount?: number): Promise<StrategyComplianceStats> {
+    const queryParams = new URLSearchParams();
+    if (tradingAccount) {
+      queryParams.append('trading_account', String(tradingAccount));
+    }
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/trade-strategies/strategy_compliance_stats/?${queryParams}`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erreur lors de la récupération des statistiques de compliance');
     }
     return res.json();
   }
