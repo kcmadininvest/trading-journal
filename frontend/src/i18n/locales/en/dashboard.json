@@ -109,6 +109,11 @@
   "currentNotRespectTrades": "Non-respect trades",
   "initialBalance": "Initial Balance",
   "currentBalance": "Current Balance",
-  "period": "Period"
+  "period": "Period",
+  "consistencyTarget": "Consistency Target",
+  "consistencyTargetCompliant": "Compliant",
+  "consistencyTargetNonCompliant": "Non Compliant",
+  "consistencyTargetBestDayDate": "Best day",
+  "additionalProfitNeeded": "Additional profit needed: {amount}"
 }
 
