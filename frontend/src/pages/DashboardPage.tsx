@@ -20,6 +20,7 @@ import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
+import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import {
@@ -1196,6 +1197,90 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [selectedAccount, allTradesForSequences, trades]);
 
+  // Calculer le meilleur et le pire jour pour la période filtrée
+  const bestAndWorstDays = useMemo(() => {
+    if (filteredBalanceData.length === 0) {
+      return { bestDay: null, worstDay: null };
+    }
+
+    const bestDay = filteredBalanceData.reduce((max, day) => 
+      day.pnl > max.pnl ? day : max, 
+      filteredBalanceData[0]
+    );
+    
+    const worstDay = filteredBalanceData.reduce((min, day) => 
+      day.pnl < min.pnl ? day : min, 
+      filteredBalanceData[0]
+    );
+
+    return {
+      bestDay: bestDay.pnl > 0 ? bestDay : null,
+      worstDay: worstDay.pnl < 0 ? worstDay : null,
+    };
+  }, [filteredBalanceData]);
+
+  // Calculer le Consistency Target pour les comptes TopStep
+  // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
+  const consistencyTarget = useMemo(() => {
+    if (!selectedAccount || selectedAccount.account_type !== 'topstep') {
+      return null;
+    }
+
+    const overallProfit = accountBalance.current - accountBalance.initial;
+    if (overallProfit <= 0) {
+      return null;
+    }
+
+    // Calculer le meilleur jour de tous les temps à partir de tous les trades du compte
+    const allTradesForBestDay = allTradesForSequences.length > 0 ? allTradesForSequences : trades;
+    if (allTradesForBestDay.length === 0) {
+      return null;
+    }
+
+    // Grouper les trades par date pour trouver le meilleur jour
+    const dailyData: { [date: string]: number } = {};
+    allTradesForBestDay.forEach(trade => {
+      if (trade.net_pnl && trade.trade_day) {
+        const date = trade.trade_day;
+        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
+      }
+    });
+
+    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
+    if (dailyEntries.length === 0) {
+      return null;
+    }
+
+    const bestDay = dailyEntries.reduce((max, day) => 
+      day.pnl > max.pnl ? day : max, 
+      dailyEntries[0]
+    );
+
+    if (bestDay.pnl <= 0) {
+      return null;
+    }
+
+    const bestDayProfit = bestDay.pnl;
+    const bestDayPercentage = (bestDayProfit / overallProfit) * 100;
+    const isCompliant = bestDayPercentage < 50;
+    const targetPercentage = 50;
+
+    // Calculer le profit total nécessaire si non conforme
+    const requiredTotalProfit = bestDayProfit / 0.5;
+    const additionalProfitNeeded = requiredTotalProfit - overallProfit;
+
+    return {
+      bestDayProfit,
+      bestDayDate: bestDay.date,
+      overallProfit,
+      bestDayPercentage,
+      isCompliant,
+      targetPercentage,
+      requiredTotalProfit,
+      additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
+    };
+  }, [selectedAccount, accountBalance, allTradesForSequences, trades]);
+
   // Helper function pour obtenir les couleurs selon le thème
   const chartColors = useMemo(() => ({
     text: isDark ? '#d1d5db' : '#374151',
@@ -1239,7 +1324,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {/* Soldes du compte */}
           {selectedAccount && (
             <div className="flex flex-wrap items-end gap-6 flex-1">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
                 </span>
@@ -1247,7 +1332,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   {formatCurrency(accountBalance.initial, currencySymbol)}
                 </span>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                 <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                   {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
                 </span>
@@ -1260,7 +1345,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </span>
               </div>
               {accountBalance.initial > 0 && (
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     {t('dashboard:variation', { defaultValue: 'Variation' })}
                   </span>
@@ -1273,6 +1358,96 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     {' '}
                     ({((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100).toFixed(2)}%)
                   </span>
+                </div>
+              )}
+              {trades !== undefined && (
+                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
+                  </span>
+                  <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {trades.length}
+                  </span>
+                </div>
+              )}
+              {bestAndWorstDays.bestDay && (
+                <div className="flex flex-col gap-1 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      {t('dashboard:bestDay', { defaultValue: 'Meilleur jour' })}
+                    </span>
+                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                      {formatDate(bestAndWorstDays.bestDay.date, preferences.date_format, false, preferences.timezone)}
+                    </span>
+                  </div>
+                  <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                    {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol)}
+                  </span>
+                </div>
+              )}
+              {bestAndWorstDays.worstDay && (
+                <div className="flex flex-col gap-1 p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-pink-700 dark:text-pink-300">
+                      {t('dashboard:worstDay', { defaultValue: 'Pire jour' })}
+                    </span>
+                    <span className="text-xs text-pink-600 dark:text-pink-400">
+                      {formatDate(bestAndWorstDays.worstDay.date, preferences.date_format, false, preferences.timezone)}
+                    </span>
+                  </div>
+                  <span className="text-lg font-semibold text-pink-600 dark:text-pink-400">
+                    {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol)}
+                  </span>
+                </div>
+              )}
+              {consistencyTarget && (
+                <div className={`flex flex-col gap-1 p-3 rounded-lg border ${
+                  consistencyTarget.isCompliant
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                    : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                }`}>
+                  <span className={`text-sm font-medium ${
+                    consistencyTarget.isCompliant
+                      ? 'text-green-700 dark:text-green-300'
+                      : 'text-orange-700 dark:text-orange-300'
+                  }`}>
+                    {t('dashboard:consistencyTarget', { defaultValue: 'Consistency Target' })}
+                  </span>
+                  <span className={`text-lg font-semibold ${
+                    consistencyTarget.isCompliant
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-orange-600 dark:text-orange-400'
+                  }`}>
+                    {consistencyTarget.bestDayPercentage.toFixed(2)}% / {consistencyTarget.targetPercentage}%
+                  </span>
+                  {!consistencyTarget.isCompliant && 
+                   typeof consistencyTarget.additionalProfitNeeded === 'number' &&
+                   consistencyTarget.additionalProfitNeeded > 0 && (() => {
+                    const formattedAmount = formatCurrency(consistencyTarget.additionalProfitNeeded, currencySymbol);
+                    // Ne pas afficher si le montant formaté est invalide, vide ou contient des caractères non désirés
+                    if (!formattedAmount || 
+                        formattedAmount === '-' || 
+                        formattedAmount.trim() === '' || 
+                        formattedAmount.includes('{amount}') ||
+                        formattedAmount.includes('NaN') ||
+                        formattedAmount.includes('undefined')) {
+                      return null;
+                    }
+                    // Construire le texte avec interpolation
+                    const label = t('dashboard:additionalProfitNeeded', { 
+                      defaultValue: 'Profit supplémentaire requis: {amount}',
+                      amount: formattedAmount
+                    });
+                    // Si l'interpolation n'a pas fonctionné (le placeholder est encore présent), ne pas afficher
+                    if (label.includes('{amount}')) {
+                      return null;
+                    }
+                    return (
+                      <span className="text-xs text-orange-600 dark:text-orange-400">
+                        {label}
+                      </span>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -1292,7 +1467,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         <MetricGroup
           title={t('strategy:section.title', { defaultValue: 'Discipline & Stratégie' })}
           subtitle={t('strategy:section.subtitle', { defaultValue: 'Suivez votre respect de la stratégie et obtenez des récompenses' })}
-          defaultCollapsed={false}
+          defaultCollapsed={true}
         >
           {/* Streak Card */}
           <div className="mb-6">

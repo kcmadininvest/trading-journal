@@ -109,5 +109,10 @@
   "currentNotRespectTrades": "Operaciones sin respeto",
   "initialBalance": "Saldo inicial",
   "currentBalance": "Saldo actual",
-  "period": "Período"
+  "period": "Período",
+  "consistencyTarget": "Objetivo de Consistencia",
+  "consistencyTargetCompliant": "Conforme",
+  "consistencyTargetNonCompliant": "No Conforme",
+  "consistencyTargetBestDayDate": "Mejor día",
+  "additionalProfitNeeded": "Beneficio adicional necesario: {amount}"
 }

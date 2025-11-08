@@ -5,8 +5,14 @@ import { AccountSelector } from '../components/accounts/AccountSelector';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { RespectRateCard } from '../components/common/RespectRateCard';
 import { tradeStrategiesService } from '../services/tradeStrategies';
+import { tradesService, TradeListItem } from '../services/trades';
+import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
+import { currenciesService, Currency } from '../services/currencies';
 import Tooltip from '../components/ui/Tooltip';
 import { useTheme } from '../hooks/useTheme';
+import { usePreferences } from '../hooks/usePreferences';
+import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
+import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import {
@@ -45,9 +51,15 @@ ChartJS.register(
 
 const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
+  const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+
+  // Wrapper pour formatCurrency avec préférences
+  const formatCurrency = (value: number, currencySymbol: string = ''): string => {
+    return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
+  };
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => ({
@@ -79,6 +91,10 @@ const StrategiesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statistics, setStatistics] = useState<any>(null);
+  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
+  const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
 
   // Générer les années disponibles (année en cours et 5 ans précédents)
 
@@ -132,6 +148,166 @@ const StrategiesPage: React.FC = () => {
     }
     loadStatistics();
   }, [loadStatistics, accountLoading]);
+
+  // Charger les devises
+  useEffect(() => {
+    const loadCurrencies = async () => {
+      try {
+        const list = await currenciesService.list();
+        setCurrencies(list);
+      } catch (error) {
+        console.error('Error loading currencies:', error);
+      }
+    };
+    loadCurrencies();
+  }, []);
+
+  // Charger le compte sélectionné
+  useEffect(() => {
+    const loadAccount = async () => {
+      if (!accountId) {
+        setSelectedAccount(null);
+        return;
+      }
+      try {
+        const account = await tradingAccountsService.get(accountId);
+        setSelectedAccount(account);
+      } catch (err) {
+        console.error('Erreur lors du chargement du compte', err);
+        setSelectedAccount(null);
+      }
+    };
+    loadAccount();
+  }, [accountId]);
+
+  // Charger tous les trades du compte pour calculer le solde
+  useEffect(() => {
+    const loadAllTrades = async () => {
+      if (!accountId || accountLoading) {
+        setAllTrades([]);
+        return;
+      }
+      try {
+        const response = await tradesService.list({
+          trading_account: accountId,
+          page_size: 10000, // Charger tous les trades
+        });
+        setAllTrades(response.results);
+      } catch (err) {
+        console.error('Erreur lors du chargement des trades', err);
+        setAllTrades([]);
+      }
+    };
+    loadAllTrades();
+  }, [accountId, accountLoading]);
+
+  // Obtenir le symbole de la devise du compte sélectionné
+  const currencySymbol = useMemo(() => {
+    if (!selectedAccount?.currency) return '';
+    const currency = currencies.find(c => c.code === selectedAccount.currency);
+    return currency?.symbol || '';
+  }, [selectedAccount, currencies]);
+
+  // Charger les trades filtrés par période pour calculer le meilleur/pire jour
+  useEffect(() => {
+    const loadFilteredTrades = async () => {
+      if (!accountId || accountLoading) {
+        setFilteredTrades([]);
+        return;
+      }
+      try {
+        const filters: any = {
+          trading_account: accountId,
+          page_size: 10000,
+        };
+
+        if (selectedPeriod) {
+          filters.start_date = selectedPeriod.start;
+          filters.end_date = selectedPeriod.end;
+        } else if (selectedYear) {
+          const startDate = selectedMonth 
+            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+            : `${selectedYear}-01-01`;
+          
+          let endDate: string;
+          if (selectedMonth) {
+            const lastDay = new Date(selectedYear, selectedMonth, 0);
+            endDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+          } else {
+            endDate = `${selectedYear}-12-31`;
+          }
+          
+          filters.start_date = startDate;
+          filters.end_date = endDate;
+        }
+
+        const response = await tradesService.list(filters);
+        setFilteredTrades(response.results);
+      } catch (err) {
+        console.error('Erreur lors du chargement des trades filtrés', err);
+        setFilteredTrades([]);
+      }
+    };
+    loadFilteredTrades();
+  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
+
+  // Calculer le solde initial et actuel du compte
+  const accountBalance = useMemo(() => {
+    if (!selectedAccount) {
+      return { initial: 0, current: 0 };
+    }
+
+    const initialCapital = selectedAccount.initial_capital 
+      ? parseFloat(String(selectedAccount.initial_capital)) 
+      : 0;
+
+    // Calculer le PnL total de tous les trades du compte
+    const totalPnl = allTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
+
+    const currentBalance = initialCapital + totalPnl;
+
+    return {
+      initial: initialCapital,
+      current: currentBalance,
+    };
+  }, [selectedAccount, allTrades]);
+
+  // Calculer le meilleur et le pire jour pour la période filtrée
+  const bestAndWorstDays = useMemo(() => {
+    if (filteredTrades.length === 0) {
+      return { bestDay: null, worstDay: null };
+    }
+
+    // Grouper les trades par date
+    const dailyData: { [date: string]: number } = {};
+    filteredTrades.forEach(trade => {
+      if (trade.net_pnl && trade.trade_day) {
+        const date = trade.trade_day;
+        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
+      }
+    });
+
+    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
+
+    if (dailyEntries.length === 0) {
+      return { bestDay: null, worstDay: null };
+    }
+
+    const bestDay = dailyEntries.reduce((max, day) => 
+      day.pnl > max.pnl ? day : max, 
+      dailyEntries[0]
+    );
+    
+    const worstDay = dailyEntries.reduce((min, day) => 
+      day.pnl < min.pnl ? day : min, 
+      dailyEntries[0]
+    );
+
+    return {
+      bestDay: bestDay.pnl > 0 ? bestDay : null,
+      worstDay: worstDay.pnl < 0 ? worstDay : null,
+    };
+  }, [filteredTrades]);
 
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
@@ -750,6 +926,88 @@ const StrategiesPage: React.FC = () => {
                 }}
               />
             </div>
+
+            {/* Soldes du compte */}
+            {selectedAccount && (
+              <div className="flex flex-wrap items-end gap-6 flex-1">
+                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
+                  </span>
+                  <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {formatCurrency(accountBalance.initial, currencySymbol)}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
+                  </span>
+                  <span className={`text-lg font-semibold ${
+                    accountBalance.current >= accountBalance.initial 
+                      ? 'text-blue-600 dark:text-blue-400' 
+                      : 'text-pink-600 dark:text-pink-400'
+                  }`}>
+                    {formatCurrency(accountBalance.current, currencySymbol)}
+                  </span>
+                </div>
+                {accountBalance.initial > 0 && (
+                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      {t('dashboard:variation', { defaultValue: 'Variation' })}
+                    </span>
+                    <span className={`text-lg font-semibold ${
+                      accountBalance.current >= accountBalance.initial 
+                        ? 'text-blue-600 dark:text-blue-400' 
+                        : 'text-pink-600 dark:text-pink-400'
+                    }`}>
+                      {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
+                      {' '}
+                      ({((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100).toFixed(2)}%)
+                    </span>
+                  </div>
+                )}
+                {statistics?.statistics?.total_strategies !== undefined && (
+                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                      {statistics.statistics.total_strategies}
+                    </span>
+                  </div>
+                )}
+                {bestAndWorstDays.bestDay && (
+                  <div className="flex flex-col gap-1 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                        {t('dashboard:bestDay', { defaultValue: 'Meilleur jour' })}
+                      </span>
+                      <span className="text-xs text-blue-600 dark:text-blue-400">
+                        {formatDate(bestAndWorstDays.bestDay.date, preferences.date_format, false, preferences.timezone)}
+                      </span>
+                    </div>
+                    <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                      {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol)}
+                    </span>
+                  </div>
+                )}
+                {bestAndWorstDays.worstDay && (
+                  <div className="flex flex-col gap-1 p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-pink-700 dark:text-pink-300">
+                        {t('dashboard:worstDay', { defaultValue: 'Pire jour' })}
+                      </span>
+                      <span className="text-xs text-pink-600 dark:text-pink-400">
+                        {formatDate(bestAndWorstDays.worstDay.date, preferences.date_format, false, preferences.timezone)}
+                      </span>
+                    </div>
+                    <span className="text-lg font-semibold text-pink-600 dark:text-pink-400">
+                      {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
