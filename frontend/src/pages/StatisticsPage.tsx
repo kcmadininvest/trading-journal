@@ -171,6 +171,67 @@ function StatisticsPage() {
       current: currentBalance,
     };
   }, [selectedAccount, allTrades]);
+
+  // Calculer le Consistency Target pour les comptes TopStep
+  // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
+  const consistencyTarget = useMemo(() => {
+    if (!selectedAccount || selectedAccount.account_type !== 'topstep') {
+      return null;
+    }
+
+    const overallProfit = accountBalance.current - accountBalance.initial;
+    if (overallProfit <= 0) {
+      return null;
+    }
+
+    // Calculer le meilleur jour de tous les temps à partir de tous les trades du compte
+    if (allTrades.length === 0) {
+      return null;
+    }
+
+    // Grouper les trades par date pour trouver le meilleur jour
+    const dailyData: { [date: string]: number } = {};
+    allTrades.forEach(trade => {
+      if (trade.net_pnl && trade.trade_day) {
+        const date = trade.trade_day;
+        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
+      }
+    });
+
+    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
+    if (dailyEntries.length === 0) {
+      return null;
+    }
+
+    const bestDay = dailyEntries.reduce((max, day) => 
+      day.pnl > max.pnl ? day : max, 
+      dailyEntries[0]
+    );
+
+    if (bestDay.pnl <= 0) {
+      return null;
+    }
+
+    const bestDayProfit = bestDay.pnl;
+    const bestDayPercentage = (bestDayProfit / overallProfit) * 100;
+    const isCompliant = bestDayPercentage < 50;
+    const targetPercentage = 50;
+
+    // Calculer le profit total nécessaire si non conforme
+    const requiredTotalProfit = bestDayProfit / 0.5;
+    const additionalProfitNeeded = requiredTotalProfit - overallProfit;
+
+    return {
+      bestDayProfit,
+      bestDayDate: bestDay.date,
+      overallProfit,
+      bestDayPercentage,
+      isCompliant,
+      targetPercentage,
+      requiredTotalProfit,
+      additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
+    };
+  }, [selectedAccount, accountBalance, allTrades]);
   
   // Gestion des erreurs
   if (hasError) {
@@ -340,6 +401,56 @@ function StatisticsPage() {
                     <span className="text-lg font-semibold text-pink-600 dark:text-pink-400">
                       {formatCurrency(analyticsData.daily_stats.worst_day_pnl, currencySymbol)}
                     </span>
+                  </div>
+                )}
+                {consistencyTarget && (
+                  <div className={`flex flex-col gap-1 p-3 rounded-lg border ${
+                    consistencyTarget.isCompliant
+                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                      : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                  }`}>
+                    <span className={`text-sm font-medium ${
+                      consistencyTarget.isCompliant
+                        ? 'text-green-700 dark:text-green-300'
+                        : 'text-orange-700 dark:text-orange-300'
+                    }`}>
+                      {t('dashboard:consistencyTarget', { defaultValue: 'Consistency Target' })}
+                    </span>
+                    <span className={`text-lg font-semibold ${
+                      consistencyTarget.isCompliant
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-orange-600 dark:text-orange-400'
+                    }`}>
+                      {consistencyTarget.bestDayPercentage.toFixed(2)}% / {consistencyTarget.targetPercentage}%
+                    </span>
+                    {!consistencyTarget.isCompliant && 
+                     typeof consistencyTarget.additionalProfitNeeded === 'number' &&
+                     consistencyTarget.additionalProfitNeeded > 0 && (() => {
+                      const formattedAmount = formatCurrency(consistencyTarget.additionalProfitNeeded, currencySymbol);
+                      // Ne pas afficher si le montant formaté est invalide, vide ou contient des caractères non désirés
+                      if (!formattedAmount || 
+                          formattedAmount === '-' || 
+                          formattedAmount.trim() === '' || 
+                          formattedAmount.includes('{amount}') ||
+                          formattedAmount.includes('NaN') ||
+                          formattedAmount.includes('undefined')) {
+                        return null;
+                      }
+                      // Construire le texte avec interpolation
+                      const label = t('dashboard:additionalProfitNeeded', { 
+                        defaultValue: 'Profit supplémentaire requis: {amount}',
+                        amount: formattedAmount
+                      });
+                      // Si l'interpolation n'a pas fonctionné (le placeholder est encore présent), ne pas afficher
+                      if (label.includes('{amount}')) {
+                        return null;
+                      }
+                      return (
+                        <span className="text-xs text-orange-600 dark:text-orange-400">
+                          {label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 )}
               </div>
