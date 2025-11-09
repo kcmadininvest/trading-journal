@@ -1,0 +1,45 @@
+{
+  "section": {
+    "title": "Disziplin & Strategie",
+    "subtitle": "Verfolgen Sie Ihre Strategieeinhaltung und verdienen Sie Belohnungen"
+  },
+  "streak": {
+    "title": "Strategie-Respekt-Serie",
+    "subtitle": "Aufeinanderfolgende Tage mit 100% Einhaltung",
+    "sinceWithArticle": "seit dem",
+    "nextBadge": "Nächstes Abzeichen",
+    "daysLeft": "Tage verbleibend",
+    "days": "Tage"
+  },
+  "badges": {
+    "title": "Disziplin-Abzeichen",
+    "earned": "Verdiente Abzeichen",
+    "locked": "Zu entsperrende Abzeichen",
+    "days": "Tage"
+  },
+  "metrics": {
+    "overall": "Gesamtrate",
+    "respected": "Eingehalten",
+    "notRespected": "Nicht eingehalten",
+    "last7Days": "Letzte 7 Tage",
+    "last30Days": "Letzte 30 Tage",
+    "last90Days": "Letzte 90 Tage"
+  },
+  "compliance": {
+    "rate": "Einhaltungsrate (%)",
+    "evolution": "Entwicklung der Einhaltungsrate",
+    "trades": "eingehaltene Trades"
+  },
+  "performance": {
+    "title": "Auswirkung der Strategieeinhaltung",
+    "subtitle": "Leistungsvergleich basierend auf Strategieeinhaltung",
+    "respected": "Strategie eingehalten",
+    "notRespected": "Strategie nicht eingehalten",
+    "trades": "Trades",
+    "winRate": "Gewinnrate",
+    "avgPnl": "Durchschn. PnL",
+    "totalPnl": "Gesamt-PnL",
+    "insight": "Wenn Sie Ihre Strategie einhalten, ist Ihre Gewinnrate {{diff}}% höher und Ihr durchschnittliches PnL ist {{pnlDiff}} höher."
+  }
+}
+

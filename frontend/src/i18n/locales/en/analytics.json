@@ -9,6 +9,7 @@
   "allYears": "All Years",
   "allMonths": "All Months",
   "reset": "Reset",
+  "period": "Period",
   "charts": {
     "hourlyPerformanceScatter": {
       "title": "Performance by Hour (Scatter Plot)",

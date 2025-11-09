@@ -1464,11 +1464,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       {/* Section Discipline & Stratégie */}
       {complianceStats && !complianceLoading && (
-        <MetricGroup
-          title={t('strategy:section.title', { defaultValue: 'Discipline & Stratégie' })}
-          subtitle={t('strategy:section.subtitle', { defaultValue: 'Suivez votre respect de la stratégie et obtenez des récompenses' })}
-          defaultCollapsed={true}
-        >
+        <div className="mb-3">
+          <MetricGroup
+            title={t('strategy:section.title', { defaultValue: 'Discipline & Stratégie' })}
+            subtitle={t('strategy:section.subtitle', { defaultValue: 'Suivez votre respect de la stratégie et obtenez des récompenses' })}
+            defaultCollapsed={true}
+            className="mb-0"
+          >
           {/* Streak Card */}
           <div className="mb-6">
             <StrategyStreakCard
@@ -1487,6 +1489,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             <StrategyBadges badges={complianceStats.badges} />
           </div>
         </MetricGroup>
+        </div>
       )}
 
       {/* Graphiques */}
@@ -1498,7 +1501,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch mt-3">
           {/* Graphique 1: Métriques de trading (jauges circulaires) */}
           {tradingMetrics && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-full flex flex-col">
