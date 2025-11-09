@@ -6,6 +6,7 @@ from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField
 from django.db.models.functions import TruncDate, Cast
 from django.db import models
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from datetime import timedelta, datetime
 import pytz
 from decimal import Decimal
@@ -2813,6 +2814,54 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
         else:
             # Mise à jour directe (pour les brouillons ou si create_new_version=False)
             serializer.save()
+    
+    def destroy(self, request, *args, **kwargs):
+        """
+        Supprime une stratégie en gérant correctement le versioning.
+        Si la stratégie est un parent (parent_strategy est null) et qu'elle a des versions,
+        on transfère le parentage à la première version enfant avant de supprimer.
+        """
+        strategy = self.get_object()
+        
+        # Si la stratégie est un parent (parent_strategy est null) et qu'elle a des versions enfants
+        if strategy.parent_strategy is None and strategy.versions.exists():  # type: ignore
+            # Récupérer toutes les versions enfants
+            child_versions = strategy.versions.all().order_by('version')  # type: ignore
+            
+            if child_versions.exists():
+                # Prendre la première version enfant comme nouveau parent
+                new_parent = child_versions.first()
+                
+                # Transférer toutes les autres versions enfants vers le nouveau parent
+                for child in child_versions:
+                    if child.id != new_parent.id:
+                        child.parent_strategy = new_parent
+                        child.save()
+                
+                # Le nouveau parent devient le parent racine (parent_strategy = null)
+                new_parent.parent_strategy = None
+                new_parent.save()
+        
+        # Supprimer la stratégie (maintenant elle n'a plus de versions enfants ou n'est pas un parent)
+        self.perform_destroy(strategy)
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    def get_object(self):
+        """
+        Override get_object pour les actions de modification (update, destroy) 
+        afin d'inclure les stratégies archivées.
+        """
+        # Pour les actions de modification, utiliser un queryset de base sans filtre d'archivage
+        if self.action in ['update', 'partial_update', 'destroy', 'versions', 'restore_version']:
+            queryset = PositionStrategy.objects.filter(user=self.request.user)  # type: ignore
+            lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+            filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+            obj = get_object_or_404(queryset, **filter_kwargs)
+            self.check_object_permissions(self.request, obj)
+            return obj
+        # Pour les autres actions, utiliser le queryset normal avec filtres
+        return super().get_object()
     
     @action(detail=True, methods=['get'])
     def versions(self, request, pk=None):
