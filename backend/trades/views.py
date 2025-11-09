@@ -12,7 +12,7 @@ import pytz
 from decimal import Decimal
 from collections import defaultdict
 
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -28,6 +28,8 @@ from .serializers import (
     TradingAccountSerializer,
     TradingAccountListSerializer,
     CurrencySerializer,
+    TradingGoalSerializer,
+    TradingGoalProgressSerializer,
 )
 from .utils import TopStepCSVImporter
 
@@ -3015,3 +3017,111 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             read_mode_data['sections'].append(section_data)
         
         return Response(read_mode_data)
+
+
+class TradingGoalViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les objectifs de trading.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = TradingGoalSerializer
+    
+    def get_queryset(self):
+        """Retourne uniquement les objectifs de l'utilisateur connecté."""
+        if not self.request.user.is_authenticated:
+            return TradingGoal.objects.none()  # type: ignore
+        queryset = TradingGoal.objects.filter(user=self.request.user)  # type: ignore
+        
+        # Filtres optionnels
+        status = self.request.query_params.get('status', None)
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        period_type = self.request.query_params.get('period_type', None)
+        if period_type:
+            queryset = queryset.filter(period_type=period_type)
+        
+        trading_account = self.request.query_params.get('trading_account', None)
+        if trading_account:
+            queryset = queryset.filter(trading_account_id=trading_account)
+        
+        return queryset.order_by('-priority', '-created_at')
+    
+    def perform_create(self, serializer):
+        """Associe automatiquement l'objectif à l'utilisateur connecté."""
+        goal = serializer.save(user=self.request.user)
+        # Calculer la progression initiale
+        goal.update_progress()
+    
+    def perform_update(self, serializer):
+        """Met à jour l'objectif et recalcule la progression."""
+        goal = serializer.save()
+        goal.update_progress()
+    
+    @action(detail=True, methods=['get'])
+    def progress(self, request, pk=None):
+        """
+        Retourne les données de progression détaillées d'un objectif.
+        """
+        goal = self.get_object()
+        from .services import GoalProgressCalculator
+        
+        calculator = GoalProgressCalculator()
+        progress_data = calculator.calculate_progress(goal)
+        
+        # Mettre à jour l'objectif avec les nouvelles valeurs
+        goal.current_value = progress_data['current_value']
+        if progress_data['status'] != goal.status:
+            goal.status = progress_data['status']
+        goal.save(update_fields=['current_value', 'status', 'updated_at'])
+        
+        serializer = TradingGoalProgressSerializer(progress_data)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'])
+    def update_all_progress(self, request):
+        """
+        Met à jour la progression de tous les objectifs actifs de l'utilisateur.
+        """
+        active_goals = self.get_queryset().filter(status='active')
+        updated_count = 0
+        
+        for goal in active_goals:
+            goal.update_progress()
+            updated_count += 1
+        
+        return Response({
+            'message': f'{updated_count} objectif(s) mis à jour',
+            'updated_count': updated_count
+        })
+    
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """
+        Retourne des statistiques globales sur les objectifs de l'utilisateur.
+        """
+        goals = self.get_queryset()
+        
+        total_goals = goals.count()
+        active_goals = goals.filter(status='active').count()
+        achieved_goals = goals.filter(status='achieved').count()
+        failed_goals = goals.filter(status='failed').count()
+        
+        # Objectifs par type
+        goals_by_type = {}
+        for goal_type, label in TradingGoal.GOAL_TYPE_CHOICES:  # type: ignore
+            goals_by_type[goal_type] = goals.filter(goal_type=goal_type).count()
+        
+        # Objectifs par période
+        goals_by_period = {}
+        for period_type, label in TradingGoal.PERIOD_TYPE_CHOICES:  # type: ignore
+            goals_by_period[period_type] = goals.filter(period_type=period_type).count()
+        
+        return Response({
+            'total_goals': total_goals,
+            'active_goals': active_goals,
+            'achieved_goals': achieved_goals,
+            'failed_goals': failed_goals,
+            'goals_by_type': goals_by_type,
+            'goals_by_period': goals_by_period,
+        })

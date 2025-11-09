@@ -138,6 +138,9 @@ import enPositionStrategies from './locales/en/positionStrategies.json';
 import dePositionStrategies from './locales/de/positionStrategies.json';
 import esPositionStrategies from './locales/es/positionStrategies.json';
 
+import frGoals from './locales/fr/goals.json';
+import enGoals from './locales/en/goals.json';
+
 const resources = {
   fr: {
     common: frCommon,
@@ -155,6 +158,7 @@ const resources = {
     home: frHome,
     strategy: frStrategy,
     positionStrategies: frPositionStrategies,
+    goals: frGoals,
   },
   en: {
     common: enCommon,
@@ -172,6 +176,7 @@ const resources = {
     home: enHome,
     strategy: enStrategy,
     positionStrategies: enPositionStrategies,
+    goals: enGoals,
   },
   es: {
     common: esCommon,
@@ -321,7 +326,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

@@ -1,0 +1,63 @@
+{
+  "title": "Mes Objectifs",
+  "subtitle": "Définissez et suivez vos objectifs de trading",
+  "loading": "Chargement des objectifs...",
+  "errorLoading": "Erreur lors du chargement des objectifs",
+  "noGoals": "Aucun objectif défini",
+  "createFirstGoal": "Créer mon premier objectif",
+  "createGoal": "Nouvel objectif",
+  "editGoal": "Modifier l'objectif",
+  "activeGoals": "Objectifs en cours",
+  "achievedGoals": "Objectifs atteints",
+  "failedGoals": "Objectifs échoués",
+  "filterByStatus": "Filtrer par statut",
+  "allStatuses": "Tous les statuts",
+  "allAccounts": "Tous les comptes",
+  "startDate": "Date de début",
+  "endDate": "Date de fin",
+  "status": {
+    "active": "En cours",
+    "achieved": "Atteint",
+    "failed": "Échoué",
+    "cancelled": "Annulé"
+  },
+  "goalTypes": {
+    "pnl_total": "PnL Total",
+    "win_rate": "Taux de Réussite",
+    "trades_count": "Nombre de Trades",
+    "profit_factor": "Profit Factor",
+    "max_drawdown": "Drawdown Maximum",
+    "strategy_respect": "Respect de la Stratégie",
+    "winning_days": "Jours Gagnants"
+  },
+  "periodTypes": {
+    "monthly": "Mensuel",
+    "quarterly": "Trimestriel",
+    "yearly": "Annuel",
+    "custom": "Personnalisé"
+  },
+  "dayRemaining": "jour restant",
+  "daysRemaining": "jours restants",
+  "form": {
+    "goalType": "Type d'objectif",
+    "periodType": "Type de période",
+    "targetValue": "Valeur cible",
+    "tradingAccount": "Compte de trading",
+    "priority": "Priorité",
+    "notes": "Notes",
+    "notesPlaceholder": "Ajoutez des notes ou commentaires sur cet objectif...",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet objectif ?",
+    "saveError": "Erreur lors de l'enregistrement",
+    "deleteError": "Erreur lors de la suppression",
+    "percentageHint": "Valeur en pourcentage (ex: 70 pour 70%)",
+    "currencyHint": "Valeur en devise du compte",
+    "numberHint": "Valeur numérique",
+    "createDescription": "Créer un nouvel objectif de trading",
+    "editDescription": "Modifier votre objectif de trading"
+  }
+}
+

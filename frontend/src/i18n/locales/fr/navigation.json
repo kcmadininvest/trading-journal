@@ -5,6 +5,7 @@
   "positionStrategies": "Gestion de Stratégie",
   "statistics": "Statistiques",
   "analytics": "Analyses",
+  "goals": "Mes Objectifs",
   "trades": "Mes Trades",
   "accounts": "Comptes de trading",
   "users": "Gestion des utilisateurs",
@@ -14,6 +15,7 @@
   "user": "Utilisateur",
   "header": {
     "dashboardDescription": "Vue d'ensemble de vos activités de trading",
+    "goalsDescription": "Définissez et suivez vos objectifs de trading",
     "managementPrefix": "Gestion des",
     "logout": "Se déconnecter",
     "appName": "Trading Journal"

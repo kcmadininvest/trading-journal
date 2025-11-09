@@ -869,3 +869,192 @@ class PositionStrategy(models.Model):
             self.save()
         
         return new_strategy
+
+
+class TradingGoal(models.Model):
+    """
+    Modèle pour gérer les objectifs de trading (goals).
+    Permet de définir et suivre des objectifs de performance.
+    """
+    
+    GOAL_TYPE_CHOICES = [
+        ('pnl_total', 'PnL Total'),
+        ('win_rate', 'Taux de Réussite (Win Rate)'),
+        ('trades_count', 'Nombre de Trades'),
+        ('profit_factor', 'Profit Factor'),
+        ('max_drawdown', 'Drawdown Maximum'),
+        ('strategy_respect', 'Respect de la Stratégie'),
+        ('winning_days', 'Nombre de Jours Gagnants'),
+    ]
+    
+    PERIOD_TYPE_CHOICES = [
+        ('monthly', 'Mensuel'),
+        ('quarterly', 'Trimestriel'),
+        ('yearly', 'Annuel'),
+        ('custom', 'Personnalisé'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('active', 'En cours'),
+        ('achieved', 'Atteint'),
+        ('failed', 'Échoué'),
+        ('cancelled', 'Annulé'),
+    ]
+    
+    # Identification
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_goals',
+        verbose_name='Utilisateur'
+    )
+    
+    # Type d'objectif
+    goal_type = models.CharField(
+        max_length=20,
+        choices=GOAL_TYPE_CHOICES,
+        verbose_name='Type d\'objectif',
+        help_text='Type de métrique à suivre'
+    )
+    
+    # Période
+    period_type = models.CharField(
+        max_length=20,
+        choices=PERIOD_TYPE_CHOICES,
+        verbose_name='Type de période',
+        help_text='Période de l\'objectif'
+    )
+    
+    # Valeurs
+    target_value = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        verbose_name='Valeur cible',
+        help_text='Valeur à atteindre'
+    )
+    
+    current_value = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        default=0,
+        verbose_name='Valeur actuelle',
+        help_text='Valeur actuelle (calculée automatiquement)'
+    )
+    
+    # Dates
+    start_date = models.DateField(
+        verbose_name='Date de début',
+        help_text='Date de début de l\'objectif'
+    )
+    
+    end_date = models.DateField(
+        verbose_name='Date de fin',
+        help_text='Date de fin de l\'objectif'
+    )
+    
+    # Statut
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active',
+        verbose_name='Statut'
+    )
+    
+    # Compte de trading associé (optionnel, None = tous les comptes)
+    trading_account = models.ForeignKey(
+        TradingAccount,
+        on_delete=models.CASCADE,
+        related_name='goals',
+        null=True,
+        blank=True,
+        verbose_name='Compte de trading',
+        help_text='Compte spécifique (vide = tous les comptes)'
+    )
+    
+    # Priorité
+    priority = models.IntegerField(
+        default=1,  # type: ignore
+        verbose_name='Priorité',
+        help_text='Priorité de l\'objectif (1-5, 5 = plus important)'
+    )
+    
+    # Notes
+    notes = models.TextField(
+        blank=True,
+        verbose_name='Notes',
+        help_text='Notes et commentaires sur l\'objectif'
+    )
+    
+    # Métadonnées
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Créé le'
+    )
+    
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Modifié le'
+    )
+    
+    class Meta:
+        ordering = ['-priority', '-created_at']
+        verbose_name = 'Objectif de Trading'
+        verbose_name_plural = 'Objectifs de Trading'
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['user', 'period_type', 'start_date', 'end_date']),
+            models.Index(fields=['trading_account']),
+        ]
+    
+    def __str__(self):
+        account_name = self.trading_account.name if self.trading_account else "Tous les comptes"
+        return f"{self.get_goal_type_display()} - {account_name} ({self.get_period_type_display()})"  # type: ignore
+    
+    @property
+    def progress_percentage(self):
+        """Calcule le pourcentage de progression."""
+        target_val = float(self.target_value) if self.target_value is not None else 0  # type: ignore
+        current_val = float(self.current_value) if self.current_value is not None else 0  # type: ignore
+        if target_val == 0:
+            return 0
+        return min(100, (current_val / target_val) * 100)
+    
+    @property
+    def remaining_days(self):
+        """Calcule le nombre de jours restants."""
+        from django.utils import timezone
+        from datetime import date
+        today = timezone.now().date()
+        end_date_value = self.end_date  # type: ignore
+        if end_date_value is None:
+            return 0
+        # Convertir en date si nécessaire
+        if isinstance(end_date_value, date):
+            end = end_date_value
+        else:
+            end = end_date_value
+        if today > end:
+            return 0
+        delta = end - today  # type: ignore
+        return delta.days  # type: ignore
+    
+    @property
+    def is_overdue(self):
+        """Vérifie si l'objectif est en retard."""
+        from django.utils import timezone
+        today = timezone.now().date()
+        return today > self.end_date and self.status == 'active'
+    
+    def update_progress(self):
+        """Met à jour la progression de l'objectif."""
+        from .services import GoalProgressCalculator
+        calculator = GoalProgressCalculator()
+        progress_data = calculator.calculate_progress(self)
+        
+        self.current_value = progress_data['current_value']
+        
+        # Mettre à jour le statut si nécessaire
+        if progress_data['status'] != self.status:
+            self.status = progress_data['status']
+        
+        self.save(update_fields=['current_value', 'status', 'updated_at'])

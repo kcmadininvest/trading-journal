@@ -56,6 +56,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
       'position-strategies': t('navigation:positionStrategies'),
       analytics: t('navigation:analytics'),
       accounts: t('navigation:accounts'),
+      goals: t('navigation:goals'),
       users: t('navigation:users'),
       settings: t('navigation:settings'),
     };
@@ -65,6 +66,9 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
   const pageDescription = useMemo(() => {
     if (currentPage === 'dashboard') {
       return t('navigation:header.dashboardDescription');
+    }
+    if (currentPage === 'goals') {
+      return t('navigation:header.goalsDescription');
     }
     return `${t('navigation:header.managementPrefix')} ${pageTitle.toLowerCase()}`;
   }, [currentPage, pageTitle, t]);

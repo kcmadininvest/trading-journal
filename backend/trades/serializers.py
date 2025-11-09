@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -576,3 +576,94 @@ class PositionStrategyUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"Les règles de la section {i+1} doivent être une liste")
         
         return value
+
+
+class TradingGoalSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les objectifs de trading.
+    """
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    trading_account_name = serializers.CharField(source='trading_account.name', read_only=True, allow_null=True)
+    progress_percentage = serializers.FloatField(read_only=True)
+    remaining_days = serializers.IntegerField(read_only=True)
+    is_overdue = serializers.BooleanField(read_only=True)
+    
+    class Meta:
+        model = TradingGoal
+        fields = [
+            'id',
+            'user',
+            'user_username',
+            'goal_type',
+            'period_type',
+            'target_value',
+            'current_value',
+            'start_date',
+            'end_date',
+            'status',
+            'trading_account',
+            'trading_account_name',
+            'priority',
+            'notes',
+            'progress_percentage',
+            'remaining_days',
+            'is_overdue',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['user', 'current_value', 'created_at', 'updated_at']
+    
+    def validate(self, data):
+        """Valide les données de l'objectif."""
+        # Vérifier que end_date est après start_date
+        if 'start_date' in data and 'end_date' in data:
+            if data['end_date'] <= data['start_date']:
+                raise serializers.ValidationError({
+                    'end_date': 'La date de fin doit être après la date de début.'
+                })
+        
+        # Vérifier que target_value est positif
+        if 'target_value' in data and data['target_value'] <= 0:
+            raise serializers.ValidationError({
+                'target_value': 'La valeur cible doit être positive.'
+            })
+        
+        # Vérifier que priority est entre 1 et 5
+        if 'priority' in data:
+            if data['priority'] < 1 or data['priority'] > 5:
+                raise serializers.ValidationError({
+                    'priority': 'La priorité doit être entre 1 et 5.'
+                })
+        
+        return data
+    
+    def validate_target_value(self, value):
+        """Valide la valeur cible selon le type d'objectif."""
+        goal_type = self.initial_data.get('goal_type')
+        
+        # Pour win_rate et strategy_respect, la valeur doit être entre 0 et 100
+        if goal_type in ['win_rate', 'strategy_respect']:
+            if value < 0 or value > 100:
+                raise serializers.ValidationError(
+                    'Pour un objectif de taux (win rate, respect stratégie), '
+                    'la valeur cible doit être entre 0 et 100.'
+                )
+        
+        # Pour max_drawdown en pourcentage, la valeur doit être positive
+        if goal_type == 'max_drawdown' and value < 0:
+            raise serializers.ValidationError(
+                'Le drawdown maximum doit être une valeur positive.'
+            )
+        
+        return value
+
+
+class TradingGoalProgressSerializer(serializers.Serializer):
+    """
+    Serializer pour les données de progression d'un objectif.
+    """
+    current_value = serializers.DecimalField(max_digits=18, decimal_places=9)
+    percentage = serializers.FloatField()
+    status = serializers.CharField()
+    remaining_days = serializers.IntegerField()
+    remaining_amount = serializers.DecimalField(max_digits=18, decimal_places=9)

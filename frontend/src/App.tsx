@@ -13,6 +13,7 @@ import TradingAccountsPage from './pages/TradingAccountsPage';
 import SettingsPage from './pages/SettingsPage';
 import ActivateAccountPage from './pages/ActivateAccountPage';
 import PositionStrategiesPage from './pages/PositionStrategiesPage';
+import GoalsPage from './pages/GoalsPage';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { useTheme } from './hooks/useTheme';
@@ -57,7 +58,7 @@ function App() {
     // Gérer la navigation par hash
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').trim();
-      const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts'];
+      const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'goals'];
       const page = currentPageRef.current;
       
       // Si on a un hash valide et qu'il est différent de la page actuelle
@@ -81,7 +82,7 @@ function App() {
     
     // Initialiser la page selon le hash actuel au premier rendu
     const currentHash = window.location.hash.replace('#', '').trim();
-    const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'analytics', 'users', 'settings', 'accounts'];
+    const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'analytics', 'users', 'settings', 'accounts', 'goals'];
     const page = currentPageRef.current;
     
     if (currentHash && validPages.includes(currentHash)) {
@@ -172,6 +173,8 @@ function App() {
             return <AnalyticsPage />;
           case 'accounts':
             return <TradingAccountsPage />;
+          case 'goals':
+            return <GoalsPage />;
           case 'users':
             return <UserManagementPage />;
           case 'settings':
