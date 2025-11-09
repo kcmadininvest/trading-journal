@@ -9,6 +9,7 @@
   "allYears": "Toutes les années",
   "allMonths": "Tous les mois",
   "reset": "Réinitialiser",
+  "period": "Période",
   "charts": {
     "hourlyPerformanceScatter": {
       "title": "Performance par heure (Nuage de points)",

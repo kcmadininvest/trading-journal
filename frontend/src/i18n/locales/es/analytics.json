@@ -9,6 +9,7 @@
   "allYears": "Todos los Años",
   "allMonths": "Todos los Meses",
   "reset": "Restablecer",
+  "period": "Período",
   "charts": {
     "hourlyPerformanceScatter": {
       "title": "Rendimiento por Hora (Gráfico de Dispersión)",

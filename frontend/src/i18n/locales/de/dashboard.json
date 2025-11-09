@@ -114,5 +114,6 @@
   "consistencyTargetCompliant": "Konform",
   "consistencyTargetNonCompliant": "Nicht Konform",
   "consistencyTargetBestDayDate": "Bester Tag",
-  "additionalProfitNeeded": "Zusätzlicher Gewinn erforderlich: {amount}"
+  "additionalProfitNeeded": "Zusätzlicher Gewinn erforderlich: {amount}",
+  "sequencesPeriodTooltip": "Berechnet über die letzten 12 gleitenden Monate"
 }

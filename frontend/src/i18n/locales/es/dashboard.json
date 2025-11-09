@@ -114,5 +114,6 @@
   "consistencyTargetCompliant": "Conforme",
   "consistencyTargetNonCompliant": "No Conforme",
   "consistencyTargetBestDayDate": "Mejor día",
-  "additionalProfitNeeded": "Beneficio adicional necesario: {amount}"
+  "additionalProfitNeeded": "Beneficio adicional necesario: {amount}",
+  "sequencesPeriodTooltip": "Calculado sobre los últimos 12 meses móviles"
 }

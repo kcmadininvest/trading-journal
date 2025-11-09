@@ -9,6 +9,7 @@
   "allYears": "Alle Jahre",
   "allMonths": "Alle Monate",
   "reset": "Zurücksetzen",
+  "period": "Zeitraum",
   "charts": {
     "hourlyPerformanceScatter": {
       "title": "Leistung nach Stunde (Streudiagramm)",

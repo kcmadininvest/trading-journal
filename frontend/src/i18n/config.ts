@@ -130,6 +130,8 @@ import deHome from './locales/de/home.json';
 
 import frStrategy from './locales/fr/strategy.json';
 import enStrategy from './locales/en/strategy.json';
+import esStrategy from './locales/es/strategy.json';
+import deStrategy from './locales/de/strategy.json';
 
 import frPositionStrategies from './locales/fr/positionStrategies.json';
 import enPositionStrategies from './locales/en/positionStrategies.json';
@@ -185,6 +187,7 @@ const resources = {
     accounts: esAccounts,
     auth: esAuth,
     home: esHome,
+    strategy: esStrategy,
     positionStrategies: esPositionStrategies,
   },
   de: {
@@ -201,6 +204,7 @@ const resources = {
     accounts: deAccounts,
     auth: deAuth,
     home: deHome,
+    strategy: deStrategy,
     positionStrategies: dePositionStrategies,
   },
   it: {

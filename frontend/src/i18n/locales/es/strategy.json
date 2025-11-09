@@ -1,0 +1,45 @@
+{
+  "section": {
+    "title": "Disciplina y Estrategia",
+    "subtitle": "Rastrea el cumplimiento de tu estrategia y gana recompensas"
+  },
+  "streak": {
+    "title": "Racha de Respeto",
+    "subtitle": "Días consecutivos con 100% de cumplimiento",
+    "sinceWithArticle": "desde el",
+    "nextBadge": "Próxima insignia",
+    "daysLeft": "días restantes",
+    "days": "días"
+  },
+  "badges": {
+    "title": "Insignias de Disciplina",
+    "earned": "Insignias obtenidas",
+    "locked": "Insignias por desbloquear",
+    "days": "días"
+  },
+  "metrics": {
+    "overall": "Tasa Global",
+    "respected": "Respetados",
+    "notRespected": "No respetados",
+    "last7Days": "Últimos 7 días",
+    "last30Days": "Últimos 30 días",
+    "last90Days": "Últimos 90 días"
+  },
+  "compliance": {
+    "rate": "Tasa de cumplimiento (%)",
+    "evolution": "Evolución de la tasa de cumplimiento",
+    "trades": "operaciones respetadas"
+  },
+  "performance": {
+    "title": "Impacto del Respeto de la Estrategia",
+    "subtitle": "Comparación de rendimientos según el cumplimiento de la estrategia",
+    "respected": "Estrategia Respetada",
+    "notRespected": "Estrategia No Respetada",
+    "trades": "Operaciones",
+    "winRate": "Tasa de aciertos",
+    "avgPnl": "PnL Promedio",
+    "totalPnl": "PnL Total",
+    "insight": "Cuando respetas tu estrategia, tu tasa de aciertos es {{diff}}% superior y tu PnL promedio es {{pnlDiff}} superior."
+  }
+}
+
