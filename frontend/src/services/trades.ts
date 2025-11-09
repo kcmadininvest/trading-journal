@@ -12,6 +12,7 @@ export interface TradeListItem {
   entry_price: string;
   exit_price: string | null;
   size: string;
+  point_value: string | null;
   fees: string;
   commissions: string;
   pnl: string | null;
@@ -21,6 +22,8 @@ export interface TradeListItem {
   trade_duration: string | null;
   duration_str: string | null;
   trade_day: string | null; // YYYY-MM-DD
+  position_strategy: number | null;
+  position_strategy_title: string | null;
 }
 
 export interface TradeDetail extends TradeListItem {
@@ -29,6 +32,8 @@ export interface TradeDetail extends TradeListItem {
   trading_account_type: string;
   notes: string;
   strategy: string;
+  position_strategy: number | null;
+  position_strategy_title: string | null;
   formatted_entry_date: string;
   formatted_exit_date: string | null;
   imported_at: string;

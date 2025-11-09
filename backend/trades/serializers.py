@@ -112,6 +112,7 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
     user_username = serializers.CharField(source='user.username', read_only=True)
     trading_account_name = serializers.CharField(source='trading_account.name', read_only=True)
     trading_account_type = serializers.CharField(source='trading_account.account_type', read_only=True)
+    position_strategy_title = serializers.CharField(source='position_strategy.title', read_only=True)
     
     class Meta:
         model = TopStepTrade
@@ -140,13 +141,26 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
             'duration_str',
             'notes',
             'strategy',
+            'position_strategy',
+            'position_strategy_title',
             'is_profitable',
             'formatted_entry_date',
             'formatted_exit_date',
             'imported_at',
             'updated_at'
         ]
-        read_only_fields = ['user', 'topstep_id', 'imported_at', 'updated_at']
+        read_only_fields = ['user', 'topstep_id', 'imported_at', 'updated_at', 'position_strategy_title', 'net_pnl', 'pnl_percentage', 'is_profitable', 'duration_str', 'formatted_entry_date', 'formatted_exit_date', 'user_username', 'trading_account_name', 'trading_account_type']
+
+    def validate_position_strategy(self, value):
+        """Valide que la stratégie appartient à l'utilisateur."""
+        if value is None:
+            return value
+        
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            if value.user != request.user:
+                raise serializers.ValidationError("Cette stratégie ne vous appartient pas.")
+        return value
 
     def create(self, validated_data):
         """
@@ -176,6 +190,11 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Aucun compte de trading par défaut. Veuillez en créer un et le définir par défaut.")
             validated_data['trading_account'] = default_account
 
+        # Valider que la stratégie appartient à l'utilisateur
+        position_strategy = validated_data.get('position_strategy')
+        if position_strategy and position_strategy.user != request.user:
+            raise serializers.ValidationError("Cette stratégie ne vous appartient pas.")
+
         # Déduire trade_day si possible
         entered_at = validated_data.get('entered_at')
         if entered_at and not validated_data.get('trade_day'):
@@ -194,6 +213,7 @@ class TopStepTradeListSerializer(serializers.ModelSerializer):
     is_profitable = serializers.BooleanField(read_only=True)
     duration_str = serializers.CharField(read_only=True)
     trading_account_name = serializers.CharField(source='trading_account.name', read_only=True)
+    position_strategy_title = serializers.CharField(source='position_strategy.title', read_only=True)
     
     class Meta:
         model = TopStepTrade
@@ -209,6 +229,7 @@ class TopStepTradeListSerializer(serializers.ModelSerializer):
             'entry_price',
             'exit_price',
             'size',
+            'point_value',
             'fees',
             'commissions',
             'pnl',
@@ -217,7 +238,9 @@ class TopStepTradeListSerializer(serializers.ModelSerializer):
             'is_profitable',
             'trade_duration',
             'duration_str',
-            'trade_day'
+            'trade_day',
+            'position_strategy',
+            'position_strategy_title'
         ]
 
 

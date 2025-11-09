@@ -4,6 +4,7 @@ import { AccountSelector } from '../components/accounts/AccountSelector';
 import { TradesFilters } from '../components/trades/TradesFilters';
 import { TradesTable } from '../components/trades/TradesTable';
 import { TradeModal } from '../components/trades/TradeModal';
+import { CreateTradeModal } from '../components/trades/CreateTradeModal';
  
 import PaginationControls from '../components/ui/PaginationControls';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
@@ -44,6 +45,7 @@ const TradesPage: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Créer une clé stable pour les dépendances des useEffect basée sur les valeurs de filters
   const filtersKey = useMemo(() => {
@@ -386,7 +388,7 @@ const TradesPage: React.FC = () => {
   return (
     <div className="bg-gray-50 dark:bg-gray-900 py-8">
       <div className="px-4 sm:px-6 lg:px-8">
-        {/* Sélecteur de compte et bouton d'export */}
+        {/* Sélecteur de compte et boutons d'action */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex-1 max-w-md">
             <AccountSelector
@@ -397,16 +399,28 @@ const TradesPage: React.FC = () => {
               }}
             />
           </div>
-          <button
-            onClick={handleExportTrades}
-            disabled={isLoading}
-            className="ml-4 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {t('trades:export', { defaultValue: 'Exporter' })}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              disabled={isLoading}
+              className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {t('trades:create', { defaultValue: 'Créer un trade' })}
+            </button>
+            <button
+              onClick={handleExportTrades}
+              disabled={isLoading}
+              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {t('trades:export', { defaultValue: 'Exporter' })}
+            </button>
+          </div>
         </div>
 
         {/* Filtres */}
@@ -516,6 +530,17 @@ const TradesPage: React.FC = () => {
           reloadStats();
         }
       }} />
+      
+      {/* Modale de création de trade */}
+      <CreateTradeModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSave={() => {
+          // Recharger la liste et les stats
+          load();
+          reloadStats();
+        }}
+      />
     </div>
   );
 };

@@ -12,6 +12,7 @@ interface NumberInputProps {
   step?: string | number;
   digits?: number;
   required?: boolean;
+  disabled?: boolean;
 }
 
 /**
@@ -29,6 +30,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   step = '0.01',
   digits = 2,
   required = false,
+  disabled = false,
 }) => {
   const { preferences } = usePreferences();
   const [displayValue, setDisplayValue] = useState('');
@@ -89,6 +91,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleFocus = () => {
+    if (disabled) return;
     setIsFocused(true);
     // Afficher la valeur numérique standard pendant la saisie
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
@@ -118,6 +121,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     setDisplayValue(e.target.value);
   };
 
@@ -140,6 +144,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
       placeholder={placeholder}
       className={className}
       required={required}
+      disabled={disabled}
       min={min}
       max={max}
       step={step}

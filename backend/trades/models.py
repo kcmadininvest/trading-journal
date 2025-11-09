@@ -271,6 +271,17 @@ class TopStepTrade(models.Model):
         help_text='Nombre de contrats'
     )
     
+    # Point value (valeur du point du contrat, ex: $20 pour NQ, $50 pour ES)
+    point_value = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        verbose_name='Valeur du point',
+        help_text='Valeur d\'un point de mouvement pour ce contrat (ex: 20 pour NQ, 50 pour ES)'
+    )
+    
     # Type (Long ou Short)
     trade_type = models.CharField(
         max_length=10,
@@ -339,11 +350,23 @@ class TopStepTrade(models.Model):
         help_text='Notes personnelles sur ce trade'
     )
     
+    position_strategy = models.ForeignKey(
+        'PositionStrategy',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='trades',
+        verbose_name='Stratégie de position',
+        help_text='Stratégie de position utilisée pour ce trade'
+    )
+    
+    # Champ strategy conservé pour compatibilité (déprécié, utiliser position_strategy)
     strategy = models.CharField(
         max_length=100,
         blank=True,
-        verbose_name='Stratégie',
-        help_text='Stratégie de trading utilisée'
+        verbose_name='Stratégie (déprécié)',
+        help_text='Stratégie de trading utilisée (déprécié, utiliser position_strategy)',
+        editable=False  # Ne plus permettre l'édition via ce champ
     )
     
     # Métadonnées système
@@ -375,8 +398,33 @@ class TopStepTrade(models.Model):
     
     def save(self, *args, **kwargs):
         """
-        Calcule automatiquement le PnL net et le pourcentage avant sauvegarde.
+        Calcule automatiquement le PnL, la durée, le PnL net et le pourcentage avant sauvegarde.
         """
+        # Calculer la durée si entered_at et exited_at sont présents
+        if self.entered_at and self.exited_at and not self.trade_duration:
+            self.trade_duration = self.exited_at - self.entered_at  # type: ignore
+        
+        # Calculer le trade_day à partir de entered_at si non défini
+        if self.entered_at and not self.trade_day:
+            self.trade_day = self.entered_at.date()  # type: ignore
+        
+        # Calculer le PnL automatiquement si non fourni mais que les prix et la taille sont disponibles
+        if self.pnl is None and self.entry_price and self.exit_price and self.size and self.trade_type:
+            if self.trade_type == 'Long':
+                # Long: gain si prix monte
+                price_diff = self.exit_price - self.entry_price  # type: ignore
+            else:  # Short
+                # Short: gain si prix baisse
+                price_diff = self.entry_price - self.exit_price  # type: ignore
+            
+            # Calculer le PnL brut (différence de prix * valeur du point * taille)
+            if self.point_value:
+                # Calcul précis avec la valeur du point
+                self.pnl = price_diff * self.point_value * self.size  # type: ignore
+            else:
+                # Approximation sans valeur du point (pour compatibilité)
+                self.pnl = price_diff * self.size  # type: ignore
+        
         # Calculer le PnL net
         if self.pnl is not None:
             self.net_pnl = self.pnl - self.fees - self.commissions  # type: ignore

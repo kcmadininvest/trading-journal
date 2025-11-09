@@ -1,0 +1,614 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { toast } from 'react-hot-toast';
+import { tradesService } from '../../services/trades';
+import { AccountSelector } from '../accounts/AccountSelector';
+import { positionStrategiesService, PositionStrategy } from '../../services/positionStrategies';
+import { CustomSelect } from '../common/CustomSelect';
+import { NumberInput } from '../common/NumberInput';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { useTradingAccount } from '../../contexts/TradingAccountContext';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatNumber } from '../../utils/numberFormat';
+import { formatDate } from '../../utils/dateFormat';
+
+interface CreateTradeModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: () => void;
+}
+
+export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
+  isOpen,
+  onClose,
+  onSave,
+}) => {
+  const { t } = useI18nTranslation();
+  const { preferences, loading: preferencesLoading } = usePreferences();
+  const { selectedAccountId } = useTradingAccount();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [strategies, setStrategies] = useState<PositionStrategy[]>([]);
+  const [loadingStrategies, setLoadingStrategies] = useState(false);
+  const [isPnlManuallyEdited, setIsPnlManuallyEdited] = useState(false);
+
+  const [formData, setFormData] = useState({
+    trading_account: null as number | null,
+    contract_name: '',
+    trade_type: 'Long' as 'Long' | 'Short',
+    entered_at: '',
+    exited_at: '',
+    entry_price: '',
+    exit_price: '',
+    size: '',
+    point_value: '',
+    fees: '0',
+    commissions: '0',
+    pnl: '',
+    notes: '',
+    position_strategy: null as number | null,
+  });
+
+
+  // Charger les stratégies de position
+  useEffect(() => {
+    if (isOpen) {
+      const loadStrategies = async () => {
+        setLoadingStrategies(true);
+        try {
+          const list = await positionStrategiesService.list({ 
+            status: 'active',
+            is_current: true 
+          });
+          setStrategies(list);
+        } catch {
+          setStrategies([]);
+        } finally {
+          setLoadingStrategies(false);
+        }
+      };
+      loadStrategies();
+    }
+  }, [isOpen]);
+
+  // Options pour le type de trade
+  const tradeTypeOptions = useMemo(() => [
+    { value: 'Long', label: t('trades:createModal.long', { defaultValue: 'Long' }) },
+    { value: 'Short', label: t('trades:createModal.short', { defaultValue: 'Short' }) },
+  ], [t]);
+
+  // Options pour les stratégies
+  const strategyOptions = useMemo(() => [
+    { value: null, label: t('trades:createModal.noStrategy', { defaultValue: 'Aucune stratégie' }) },
+    ...strategies.map(strategy => ({
+      value: strategy.id,
+      label: `${strategy.title}${strategy.version > 1 ? ` (v${strategy.version})` : ''}`
+    }))
+  ], [strategies, t]);
+
+  // Placeholders formatés selon les préférences utilisateur
+  const pricePlaceholder = useMemo(() => formatNumber(0, 4, preferences.number_format), [preferences.number_format]);
+  const pnlPlaceholder = useMemo(() => formatNumber(0, 4, preferences.number_format), [preferences.number_format]);
+  const feesPlaceholder = useMemo(() => formatNumber(0, 4, preferences.number_format), [preferences.number_format]);
+  const sizePlaceholder = useMemo(() => formatNumber(1, 4, preferences.number_format), [preferences.number_format]);
+  const pointValuePlaceholder = useMemo(() => formatNumber(20, 2, preferences.number_format), [preferences.number_format]);
+  
+  // Format de date/heure pour l'aide
+  const dateTimeFormatExample = useMemo(() => {
+    if (preferencesLoading) {
+      // Retourner un format par défaut pendant le chargement
+      return 'DD/MM/YYYY HH:MM';
+    }
+    const now = new Date();
+    // S'assurer que date_format est bien défini (par défaut 'EU' si non défini)
+    const dateFormat = preferences.date_format || 'EU';
+    
+    // Ne pas passer le timezone pour éviter que Intl.DateTimeFormat force le format US
+    const formattedDate = formatDate(now, dateFormat as 'EU' | 'US', false, undefined);
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${formattedDate} ${hours}:${minutes}`;
+  }, [preferences.date_format, preferencesLoading]);
+
+  // Initialiser avec le compte sélectionné dans le contexte
+  useEffect(() => {
+    if (isOpen && selectedAccountId) {
+      setFormData(prev => ({ ...prev, trading_account: selectedAccountId }));
+    }
+  }, [isOpen, selectedAccountId]);
+
+  // Réinitialiser le formulaire quand la modale s'ouvre
+  useEffect(() => {
+    if (isOpen) {
+      const now = new Date();
+      // Formater la date/heure au format datetime-local (YYYY-MM-DDTHH:mm)
+      const formatDateTimeLocal = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+      };
+      
+      setFormData({
+        trading_account: selectedAccountId || null,
+        contract_name: '',
+        trade_type: 'Long',
+        entered_at: formatDateTimeLocal(now), // Format datetime-local avec date/heure actuelle
+        exited_at: formatDateTimeLocal(now), // Initialiser avec la date/heure actuelle pour éviter le placeholder natif
+        entry_price: '',
+        exit_price: '',
+        size: '',
+        point_value: '',
+        fees: '0',
+        commissions: '0',
+        pnl: '',
+        notes: '',
+        position_strategy: null,
+      });
+      setError(null);
+      setIsPnlManuallyEdited(false);
+    }
+  }, [isOpen, selectedAccountId]);
+
+  // Empêcher le scroll du body quand la modale est ouverte
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  // Calculer automatiquement le PnL si les prix d'entrée et de sortie sont fournis
+  useEffect(() => {
+    // Ne pas calculer si l'utilisateur a modifié manuellement le PnL
+    if (isPnlManuallyEdited) {
+      return;
+    }
+
+    if (formData.entry_price && formData.exit_price && formData.size && formData.trade_type) {
+      const entryPrice = parseFloat(formData.entry_price);
+      const exitPrice = parseFloat(formData.exit_price);
+      const size = parseFloat(formData.size);
+      const pointValue = formData.point_value ? parseFloat(formData.point_value) : null;
+
+      if (!isNaN(entryPrice) && !isNaN(exitPrice) && !isNaN(size) && entryPrice > 0 && exitPrice > 0 && size > 0) {
+        let priceDiff: number;
+        if (formData.trade_type === 'Long') {
+          // Long: gain si prix monte
+          priceDiff = exitPrice - entryPrice;
+        } else {
+          // Short: gain si prix baisse
+          priceDiff = entryPrice - exitPrice;
+        }
+
+        // Calculer le PnL
+        let calculatedPnl: number;
+        if (pointValue && !isNaN(pointValue) && pointValue > 0) {
+          // Calcul précis avec la valeur du point
+          calculatedPnl = priceDiff * pointValue * size;
+        } else {
+          // Approximation sans valeur du point
+          calculatedPnl = priceDiff * size;
+        }
+
+        // Mettre à jour le PnL
+        setFormData(prev => ({ ...prev, pnl: String(calculatedPnl) }));
+      } else if (!formData.entry_price || !formData.exit_price || !formData.size) {
+        // Réinitialiser le PnL si les champs requis ne sont plus remplis
+        setFormData(prev => ({ ...prev, pnl: '' }));
+      }
+    } else {
+      // Réinitialiser le PnL si les champs requis ne sont plus remplis
+      setFormData(prev => ({ ...prev, pnl: '' }));
+    }
+  }, [formData.entry_price, formData.exit_price, formData.size, formData.trade_type, formData.point_value, isPnlManuallyEdited]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Validation des champs requis
+      if (!formData.contract_name.trim()) {
+        throw new Error(t('trades:createModal.errors.contractRequired', { defaultValue: 'Le nom du contrat est requis' }));
+      }
+      if (!formData.entered_at) {
+        throw new Error(t('trades:createModal.errors.entryDateRequired', { defaultValue: 'La date d\'entrée est requise' }));
+      }
+      if (!formData.entry_price || parseFloat(formData.entry_price) <= 0) {
+        throw new Error(t('trades:createModal.errors.entryPriceRequired', { defaultValue: 'Le prix d\'entrée est requis et doit être supérieur à 0' }));
+      }
+      if (!formData.size || parseFloat(formData.size) <= 0) {
+        throw new Error(t('trades:createModal.errors.sizeRequired', { defaultValue: 'La taille est requise et doit être supérieure à 0' }));
+      }
+
+      // Préparer le payload
+      const payload: any = {
+        contract_name: formData.contract_name.trim(),
+        trade_type: formData.trade_type,
+        entered_at: new Date(formData.entered_at).toISOString(),
+        entry_price: formData.entry_price,
+        size: formData.size,
+        fees: formData.fees || '0',
+        commissions: formData.commissions || '0',
+      };
+
+      // Ajouter les champs optionnels s'ils sont remplis
+      if (formData.trading_account) {
+        payload.trading_account = formData.trading_account;
+      }
+      if (formData.exited_at && formData.exited_at.trim() !== '') {
+        payload.exited_at = new Date(formData.exited_at).toISOString();
+      }
+      if (formData.exit_price) {
+        payload.exit_price = formData.exit_price;
+      }
+      if (formData.point_value) {
+        payload.point_value = formData.point_value;
+      }
+      if (formData.pnl) {
+        payload.pnl = formData.pnl;
+      }
+      if (formData.notes.trim()) {
+        payload.notes = formData.notes.trim();
+      }
+      if (formData.position_strategy) {
+        payload.position_strategy = formData.position_strategy;
+      }
+
+      await tradesService.create(payload);
+      toast.success(t('trades:createModal.success', { defaultValue: 'Trade créé avec succès' }));
+      onSave();
+      onClose();
+    } catch (err: any) {
+      const errorMessage = err.message || t('trades:createModal.errors.createError', { defaultValue: 'Erreur lors de la création du trade' });
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isLoading) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                {t('trades:createModal.title', { defaultValue: 'Créer un trade manuellement' })}
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {t('trades:createModal.description', { defaultValue: 'Saisissez les informations du trade' })}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={isLoading}
+            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {/* Compte de trading */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('trades:createModal.tradingAccount', { defaultValue: 'Compte de trading' })}
+                <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+              </label>
+              <AccountSelector
+                value={formData.trading_account}
+                onChange={(accountId) => setFormData(prev => ({ ...prev, trading_account: accountId }))}
+                allowAllActive={false}
+                hideLabel
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('trades:createModal.tradingAccountHelp', { defaultValue: 'Si non spécifié, le compte par défaut sera utilisé' })}
+              </p>
+            </div>
+
+            {/* Nom du contrat et Type */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.contractName', { defaultValue: 'Nom du contrat' })} *
+                </label>
+                <input
+                  type="text"
+                  value={formData.contract_name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contract_name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="ex: NQZ5, ESH5"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.tradeType', { defaultValue: 'Type' })} *
+                </label>
+                <CustomSelect
+                  value={formData.trade_type}
+                  onChange={(value) => setFormData(prev => ({ ...prev, trade_type: value as 'Long' | 'Short' }))}
+                  options={tradeTypeOptions}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            {/* Dates d'entrée et de sortie */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.entryDate', { defaultValue: 'Date/Heure d\'entrée' })} *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.entered_at}
+                  onChange={(e) => setFormData(prev => ({ ...prev, entered_at: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                  disabled={isLoading}
+                  title={t('trades:createModal.dateTimeFormat', { defaultValue: `Format: ${dateTimeFormatExample}`, dateTimeFormatExample })}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Format: {dateTimeFormatExample}
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.exitDate', { defaultValue: 'Date/Heure de sortie' })}
+                  <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.exited_at || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, exited_at: e.target.value || '' }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={isLoading}
+                  title={t('trades:createModal.dateTimeFormat', { defaultValue: `Format: ${dateTimeFormatExample}`, dateTimeFormatExample })}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Format: {dateTimeFormatExample}
+                </p>
+              </div>
+            </div>
+
+            {/* Prix d'entrée et de sortie */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.entryPrice', { defaultValue: 'Prix d\'entrée' })} *
+                </label>
+                <NumberInput
+                  value={formData.entry_price}
+                  onChange={(value) => setFormData(prev => ({ ...prev, entry_price: value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={pricePlaceholder}
+                  required
+                  min={0}
+                  step="any"
+                  digits={4}
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.exitPrice', { defaultValue: 'Prix de sortie' })}
+                  <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+                </label>
+                <NumberInput
+                  value={formData.exit_price}
+                  onChange={(value) => setFormData(prev => ({ ...prev, exit_price: value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={pricePlaceholder}
+                  min={0}
+                  step="any"
+                  digits={4}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            {/* Taille et Valeur du point */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.size', { defaultValue: 'Taille (Quantité)' })} *
+                </label>
+                <NumberInput
+                  value={formData.size}
+                  onChange={(value) => setFormData(prev => ({ ...prev, size: value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={sizePlaceholder}
+                  required
+                  min={0.0001}
+                  step="any"
+                  digits={4}
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.pointValue', { defaultValue: 'Valeur du point' })}
+                  <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+                </label>
+                <NumberInput
+                  value={formData.point_value}
+                  onChange={(value) => setFormData(prev => ({ ...prev, point_value: value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={pointValuePlaceholder}
+                  min={0.01}
+                  step="any"
+                  digits={2}
+                  disabled={isLoading}
+                />
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('trades:createModal.pointValueHelp', { defaultValue: 'Ex: 20 pour NQ, 50 pour ES, 5 pour YM' })}
+                </p>
+              </div>
+            </div>
+
+            {/* Frais et Commissions */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.fees', { defaultValue: 'Frais' })}
+                </label>
+                <NumberInput
+                  value={formData.fees}
+                  onChange={(value) => setFormData(prev => ({ ...prev, fees: value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={feesPlaceholder}
+                  min={0}
+                  step="any"
+                  digits={4}
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('trades:createModal.commissions', { defaultValue: 'Commissions' })}
+                </label>
+                <NumberInput
+                  value={formData.commissions}
+                  onChange={(value) => setFormData(prev => ({ ...prev, commissions: value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder={feesPlaceholder}
+                  min={0}
+                  step="any"
+                  digits={4}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            {/* PnL */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('trades:createModal.pnl', { defaultValue: 'Profit/Perte (PnL)' })}
+                <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+              </label>
+              <NumberInput
+                value={formData.pnl}
+                onChange={(value) => {
+                  setIsPnlManuallyEdited(true);
+                  setFormData(prev => ({ ...prev, pnl: value }));
+                }}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder={pnlPlaceholder}
+                step="any"
+                digits={4}
+                disabled={isLoading}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('trades:createModal.pnlHelp', { defaultValue: 'Si non spécifié, le PnL peut être calculé automatiquement' })}
+              </p>
+            </div>
+
+            {/* Stratégie */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('trades:createModal.strategy', { defaultValue: 'Stratégie' })}
+                <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+              </label>
+              <CustomSelect
+                value={formData.position_strategy}
+                onChange={(value) => setFormData(prev => ({ ...prev, position_strategy: value as number | null }))}
+                options={strategyOptions}
+                disabled={isLoading || loadingStrategies}
+              />
+              {loadingStrategies && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('trades:createModal.loadingStrategies', { defaultValue: 'Chargement des stratégies...' })}
+                </p>
+              )}
+              {!loadingStrategies && strategies.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('trades:createModal.noStrategiesAvailable', { defaultValue: 'Aucune stratégie active disponible' })}
+                </p>
+              )}
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('trades:createModal.notes', { defaultValue: 'Notes' })}
+                <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+              </label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder={t('trades:createModal.notesPlaceholder', { defaultValue: 'Notes personnelles sur ce trade' })}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+        </form>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50 rounded-b-xl">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+          >
+            {t('common:cancel', { defaultValue: 'Annuler' })}
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {isLoading
+              ? t('common:saving', { defaultValue: 'Enregistrement...' })
+              : t('common:create', { defaultValue: 'Créer' })}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
