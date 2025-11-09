@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useStatistics, useAnalytics, useTradesUpdateInvalidation } from '../hooks/useStatistics';
 import { useTradingAccounts } from '../hooks/useStatistics';
-import { formatCurrency } from '../utils/formatCurrency';
+import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { formatDate } from '../utils/dateFormat';
 import { TradingAccountSelector } from '../components/TradingAccount/TradingAccountSelector';
 import { TradingAccount } from '../services/tradingAccounts';
@@ -233,6 +233,16 @@ function StatisticsPage() {
     };
   }, [selectedAccount, accountBalance, allTrades]);
   
+  // Fonctions utilitaires - DOIT être avant tous les return conditionnels
+  // Wrapper pour formatCurrency avec préférences
+  const formatCurrency = useCallback((value: number, currencySymbol: string = ''): string => {
+    return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
+  }, [preferences.number_format]);
+
+  const formatNumber = useCallback((value: number, digits: number = 2) => {
+    return formatNumberUtil(value, digits, preferences.number_format);
+  }, [preferences.number_format]);
+  
   // Gestion des erreurs
   if (hasError) {
     return (
@@ -254,20 +264,19 @@ function StatisticsPage() {
   if (isLoading) {
     return <StatisticsPageSkeleton />;
   }
-  
-  // Fonctions utilitaires
+
   const formatVolume = (volume: string) => {
     if (!volume) return 'N/A';
     const num = parseFloat(volume);
     
     if (num >= 1000000) {
-      return `${(num / 1000000).toFixed(1)}M`;
+      return `${formatNumber(num / 1000000, 1)}M`;
     } else if (num >= 1000) {
-      return `${(num / 1000).toFixed(1)}K`;
+      return `${formatNumber(num / 1000, 1)}K`;
     } else if (num >= 1) {
-      return num.toFixed(0);
+      return formatNumber(num, 0);
     } else {
-      return num.toFixed(2);
+      return formatNumber(num, 2);
     }
   };
   
@@ -275,16 +284,12 @@ function StatisticsPage() {
     const absRatio = Math.abs(ratio);
     
     if (absRatio >= 1) {
-      return ratio.toFixed(2);
+      return formatNumber(ratio, 2);
     } else if (absRatio >= 0.01) {
-      return ratio.toFixed(4);
+      return formatNumber(ratio, 4);
     } else {
-      return ratio.toFixed(6);
+      return formatNumber(ratio, 6);
     }
-  };
-
-  const formatNumber = (value: number) => {
-    return value.toFixed(2);
   };
 
   return (
@@ -359,7 +364,7 @@ function StatisticsPage() {
                     }`}>
                       {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
                       {' '}
-                      ({((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100).toFixed(2)}%)
+                      ({formatNumber(((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100), 2)}%)
                     </span>
                   </div>
                 )}
@@ -421,7 +426,7 @@ function StatisticsPage() {
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-orange-600 dark:text-orange-400'
                     }`}>
-                      {consistencyTarget.bestDayPercentage.toFixed(2)}% / {consistencyTarget.targetPercentage}%
+                      {formatNumber(consistencyTarget.bestDayPercentage, 2)}% / {formatNumber(consistencyTarget.targetPercentage, 2)}%
                     </span>
                     {!consistencyTarget.isCompliant && 
                      typeof consistencyTarget.additionalProfitNeeded === 'number' &&
@@ -482,7 +487,7 @@ function StatisticsPage() {
                 />
                 <MetricItem
                   label={t('statistics:overview.winRate')}
-                  value={`${statisticsData.win_rate.toFixed(1)}%`}
+                  value={`${formatNumber(statisticsData.win_rate, 1)}%`}
                   tooltip={t('statistics:overview.winRate')}
                   variant={statisticsData.win_rate >= 50 ? 'success' : statisticsData.win_rate >= 40 ? 'warning' : 'danger'}
                 />
@@ -498,13 +503,13 @@ function StatisticsPage() {
               >
                 <MetricItem
                   label={t('statistics:performanceRatios.maxDrawdown', { defaultValue: 'Max Drawdown' })}
-                  value={`${statisticsData.max_drawdown_global_pct.toFixed(2)}% (${formatCurrency(statisticsData.max_drawdown_global, currencySymbol)})`}
+                  value={`${formatNumber(statisticsData.max_drawdown_global_pct, 2)}% (${formatCurrency(statisticsData.max_drawdown_global, currencySymbol)})`}
                   tooltip={t('statistics:performanceRatios.maxDrawdownGlobalTooltip', { defaultValue: 'Plus grande baisse depuis un pic (tous les temps). Indicateur de risque. Plus bas = moins de risque.' })}
                   variant="default"
                 />
                 <MetricItem
                   label={t('statistics:performanceRatios.maxRunupGlobal', { defaultValue: 'Max Run-up Global' })}
-                  value={`${statisticsData.max_runup_global_pct.toFixed(2)}% (${formatCurrency(statisticsData.max_runup_global, currencySymbol)})`}
+                  value={`${formatNumber(statisticsData.max_runup_global_pct, 2)}% (${formatCurrency(statisticsData.max_runup_global, currencySymbol)})`}
                   tooltip={t('statistics:performanceRatios.maxRunupTooltip', { defaultValue: 'Plus grande hausse depuis un point bas' })}
                   variant="default"
                 />
@@ -520,7 +525,7 @@ function StatisticsPage() {
               >
                 <MetricItem
                   label={t('statistics:performanceRatios.frequency')}
-                  value={`${statisticsData.frequency_ratio.toFixed(1)} ${t('statistics:performanceRatios.tradesPerDay')}`}
+                  value={`${formatNumber(statisticsData.frequency_ratio, 1)} ${t('statistics:performanceRatios.tradesPerDay')}`}
                   tooltip={t('statistics:performanceRatios.frequencyTooltip')}
                   variant="info"
                 />
@@ -531,7 +536,7 @@ function StatisticsPage() {
                 />
                 <MetricItem
                   label={t('statistics:performanceRatios.durationRatio')}
-                  value={statisticsData.duration_ratio.toFixed(2)}
+                  value={formatNumber(statisticsData.duration_ratio, 2)}
                   tooltip={t('statistics:performanceRatios.durationRatioTooltip')}
                   variant={statisticsData.duration_ratio >= 1.0 ? 'success' : 'warning'}
                 />
@@ -594,13 +599,13 @@ function StatisticsPage() {
                 >
                   <MetricItem
                     label={t('statistics:performanceRatios.profitFactor')}
-                    value={statisticsData.profit_factor.toFixed(2)}
+                    value={formatNumber(statisticsData.profit_factor, 2)}
                     tooltip={t('statistics:performanceRatios.profitFactorTooltip')}
                     variant={statisticsData.profit_factor >= 1.0 ? 'success' : 'danger'}
                   />
                   <MetricItem
                     label={t('statistics:performanceRatios.winLossRatio')}
-                    value={statisticsData.win_loss_ratio.toFixed(2)}
+                    value={formatNumber(statisticsData.win_loss_ratio, 2)}
                     tooltip={t('statistics:performanceRatios.winLossRatioTooltip')}
                     variant={statisticsData.win_loss_ratio >= 1.0 ? 'success' : 'danger'}
                   />
@@ -622,7 +627,7 @@ function StatisticsPage() {
                 >
                   <MetricItem
                     label={t('statistics:performanceRatios.feesRatio')}
-                    value={`${(statisticsData.fees_ratio * 100).toFixed(1)}%`}
+                    value={`${formatNumber(statisticsData.fees_ratio * 100, 1)}%`}
                     tooltip={t('statistics:performanceRatios.feesRatioTooltip')}
                     variant={statisticsData.fees_ratio <= 0.1 ? 'success' : 'warning'}
                   />
@@ -634,7 +639,7 @@ function StatisticsPage() {
                   />
                   <MetricItem
                     label={t('statistics:performanceRatios.tradeEfficiency')}
-                    value={`${statisticsData.trade_efficiency.toFixed(1)}%`}
+                    value={`${formatNumber(statisticsData.trade_efficiency, 1)}%`}
                     tooltip={t('statistics:performanceRatios.tradeEfficiencyTooltip')}
                     variant={statisticsData.trade_efficiency >= 50 ? 'success' : statisticsData.trade_efficiency >= 30 ? 'warning' : 'danger'}
                   />
@@ -650,19 +655,19 @@ function StatisticsPage() {
                 >
                   <MetricItem
                     label={t('statistics:performanceRatios.sharpeRatio')}
-                    value={statisticsData.sharpe_ratio.toFixed(2)}
+                    value={formatNumber(statisticsData.sharpe_ratio, 2)}
                     tooltip={t('statistics:performanceRatios.sharpeRatioTooltip')}
                     variant={statisticsData.sharpe_ratio >= 1.0 ? 'success' : 'warning'}
                   />
                   <MetricItem
                     label={t('statistics:performanceRatios.sortinoRatio')}
-                    value={statisticsData.sortino_ratio.toFixed(2)}
+                    value={formatNumber(statisticsData.sortino_ratio, 2)}
                     tooltip={t('statistics:performanceRatios.sortinoRatioTooltip')}
                     variant={statisticsData.sortino_ratio >= 1.0 ? 'success' : 'warning'}
                   />
                   <MetricItem
                     label={t('statistics:performanceRatios.calmarRatio')}
-                    value={statisticsData.calmar_ratio.toFixed(2)}
+                    value={formatNumber(statisticsData.calmar_ratio, 2)}
                     tooltip={t('statistics:performanceRatios.calmarRatioTooltip')}
                     variant={statisticsData.calmar_ratio >= 1.0 ? 'success' : 'warning'}
                   />
@@ -678,7 +683,7 @@ function StatisticsPage() {
                 >
                   <MetricItem
                     label={t('statistics:performanceRatios.recoveryRatio')}
-                    value={statisticsData.recovery_ratio.toFixed(2)}
+                    value={formatNumber(statisticsData.recovery_ratio, 2)}
                     tooltip={t('statistics:performanceRatios.recoveryRatioTooltip')}
                     variant={statisticsData.recovery_ratio >= 1.0 ? 'success' : 'warning'}
                   />
@@ -686,7 +691,7 @@ function StatisticsPage() {
                     label={t('statistics:performanceRatios.recoveryTime')}
                     value={
                       statisticsData.recovery_time !== undefined && statisticsData.recovery_time !== null && statisticsData.recovery_time > 0
-                        ? `${statisticsData.recovery_time.toFixed(1)} ${t('statistics:performanceRatios.trades')}`
+                        ? `${formatNumber(statisticsData.recovery_time, 1)} ${t('statistics:performanceRatios.trades')}`
                         : t('statistics:performanceRatios.noRecovery', { defaultValue: 'N/A' })
                     }
                     tooltip={t('statistics:performanceRatios.recoveryTimeTooltip')}
@@ -962,12 +967,12 @@ function StatisticsPage() {
                 >
                   <MetricItem
                     label={t('statistics:advancedAnalysis.longPercentage')}
-                    value={`${analyticsData.trade_type_stats.long_percentage.toFixed(1)}%`}
+                    value={`${formatNumber(analyticsData.trade_type_stats.long_percentage, 1)}%`}
                     variant="info"
                   />
                   <MetricItem
                     label={t('statistics:advancedAnalysis.shortPercentage')}
-                    value={`${analyticsData.trade_type_stats.short_percentage.toFixed(1)}%`}
+                    value={`${formatNumber(analyticsData.trade_type_stats.short_percentage, 1)}%`}
                     variant="warning"
                   />
                 </MetricCard>

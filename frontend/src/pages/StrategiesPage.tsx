@@ -11,7 +11,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import Tooltip from '../components/ui/Tooltip';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
-import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
+import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
@@ -57,9 +57,14 @@ const StrategiesPage: React.FC = () => {
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
 
   // Wrapper pour formatCurrency avec préférences
-  const formatCurrency = (value: number, currencySymbol: string = ''): string => {
+  const formatCurrency = useCallback((value: number, currencySymbol: string = ''): string => {
     return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
-  };
+  }, [preferences.number_format]);
+  
+  // Wrapper pour formatNumber avec préférences
+  const formatNumber = useCallback((value: number, digits: number = 2): string => {
+    return formatNumberUtil(value, digits, preferences.number_format);
+  }, [preferences.number_format]);
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => ({
@@ -451,7 +456,7 @@ const StrategiesPage: React.FC = () => {
             const value = context.parsed.y || 0;
             const total = statistics?.statistics?.period_data?.[context.dataIndex]?.total || 0;
             const count = Math.round((value / 100) * total);
-            return `${label}: ${value.toFixed(2)}% (${count} ${t('strategies:trades')} ${t('strategies:on')} ${total})`;
+            return `${label}: ${formatNumber(value, 2)}% (${count} ${t('strategies:trades')} ${t('strategies:on')} ${total})`;
           },
         },
       },
@@ -502,7 +507,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.period_data, t, chartColors]);
+  }), [statistics?.statistics?.period_data, t, chartColors, formatNumber]);
 
   // Graphique 2: Taux de réussite selon respect de la stratégie
   const successRateData = useMemo(() => {
@@ -547,7 +552,7 @@ const StrategiesPage: React.FC = () => {
         },
         formatter: function(value: number) {
           // Afficher la valeur avec le symbole %
-          return value > 0 ? `${value.toFixed(2)}%` : '';
+          return value > 0 ? `${formatNumber(value, 2)}%` : '';
         },
       },
       legend: {
@@ -587,7 +592,7 @@ const StrategiesPage: React.FC = () => {
           label: function(context: any) {
             const label = context.dataset.label || '';
             const value = context.parsed.y || 0;
-            return `${label}: ${value.toFixed(2)}%`;
+            return `${label}: ${formatNumber(value, 2)}%`;
           },
         },
       },
@@ -635,7 +640,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [chartColors]);
+  }), [chartColors, formatNumber]);
 
   // Graphique 3: Répartition des sessions gagnantes selon TP1 et TP2+
   const winningSessionsData = useMemo(() => {
@@ -723,8 +728,8 @@ const StrategiesPage: React.FC = () => {
             const label = context.dataset.label || '';
             const value = context.parsed.y || 0;
             const total = statistics?.statistics?.winning_sessions_distribution?.total_winning || 1;
-            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-            return `${label}: ${value} (${percentage}%)`;
+            const percentage = total > 0 ? (value / total) * 100 : 0;
+            return `${label}: ${value} (${formatNumber(percentage, 1)}%)`;
           },
         },
       },
@@ -779,7 +784,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t, chartColors]);
+  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t, chartColors, formatNumber]);
 
   // Graphique 4: Répartition des émotions dominantes (camembert)
   const generateColors = (count: number) => {
@@ -872,9 +877,9 @@ const StrategiesPage: React.FC = () => {
         formatter: function(value: number, context: any) {
           const label = context.chart.data.labels[context.dataIndex] || '';
           const total = emotionsData?.total || 1;
-          const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+          const percentage = total > 0 ? (value / total) * 100 : 0;
           // Afficher seulement si le segment est assez grand (> 3%)
-          return value > 0 && (value / total) * 100 > 3 ? `${label}\n${percentage}%` : '';
+          return value > 0 && (value / total) * 100 > 3 ? `${label}\n${formatNumber(percentage, 1)}%` : '';
         },
       },
       legend: {
@@ -904,13 +909,13 @@ const StrategiesPage: React.FC = () => {
             const label = context.label || '';
             const value = context.parsed || 0;
             const total = emotionsData?.total || 1;
-            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-            return `${label}: ${value} (${percentage}%)`;
+            const percentage = total > 0 ? (value / total) * 100 : 0;
+            return `${label}: ${value} (${formatNumber(percentage, 1)}%)`;
           },
         },
       },
     },
-  }), [emotionsData, chartColors]);
+  }), [emotionsData, chartColors, formatNumber]);
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
@@ -1023,7 +1028,7 @@ const StrategiesPage: React.FC = () => {
                     }`}>
                       {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
                       {' '}
-                      ({((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100).toFixed(2)}%)
+                      ({formatNumber(((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100), 2)}%)
                     </span>
                   </div>
                 )}
@@ -1085,7 +1090,7 @@ const StrategiesPage: React.FC = () => {
                         ? 'text-green-600 dark:text-green-400'
                         : 'text-orange-600 dark:text-orange-400'
                     }`}>
-                      {consistencyTarget.bestDayPercentage.toFixed(2)}% / {consistencyTarget.targetPercentage}%
+                      {formatNumber(consistencyTarget.bestDayPercentage, 2)}% / {formatNumber(consistencyTarget.targetPercentage, 2)}%
                     </span>
                     {!consistencyTarget.isCompliant && 
                      typeof consistencyTarget.additionalProfitNeeded === 'number' &&
