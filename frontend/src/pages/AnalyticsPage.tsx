@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
@@ -24,7 +24,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar, Line as ChartLine, Scatter as ChartScatter } from 'react-chartjs-2';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
-import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
+import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
@@ -50,9 +50,14 @@ const AnalyticsPage: React.FC = () => {
   const isDark = theme === 'dark';
   
   // Wrapper pour formatCurrency avec préférences
-  const formatCurrency = (value: number, currencySymbol: string = ''): string => {
+  const formatCurrency = useCallback((value: number, currencySymbol: string = ''): string => {
     return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
-  };
+  }, [preferences.number_format]);
+  
+  // Wrapper pour formatNumber avec préférences
+  const formatNumber = useCallback((value: number, digits: number = 2): string => {
+    return formatNumberUtil(value, digits, preferences.number_format);
+  }, [preferences.number_format]);
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => ({
@@ -647,8 +652,8 @@ const AnalyticsPage: React.FC = () => {
       const end = minPnl + (i + 1) * binWidth;
       const midpoint = start + binWidth / 2;
       return {
-        range: `${start.toFixed(0)}`,
-        rangeLabel: `${start.toFixed(0)} - ${end.toFixed(0)}`,
+        range: `${formatNumber(start, 0)}`,
+        rangeLabel: `${formatNumber(start, 0)} - ${formatNumber(end, 0)}`,
         count: histogram[i] || 0,
         midpoint: midpoint,
         isPositive: midpoint >= 0, // Pour déterminer la couleur
@@ -657,7 +662,7 @@ const AnalyticsPage: React.FC = () => {
         binWidth: binWidth, // Stocker pour référence
       };
     }).filter(bin => bin.count > 0); // Filtrer pour ne garder que les bins avec des données
-  }, [trades]);
+  }, [trades, formatNumber]);
 
   // Fonction pour obtenir la couleur de la heatmap (améliorée avec support dark mode)
   const getHeatmapColor = (value: number, maxAbs: number): string => {
@@ -769,7 +774,7 @@ const AnalyticsPage: React.FC = () => {
                   }`}>
                     {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
                     {' '}
-                    ({((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100).toFixed(2)}%)
+                    ({formatNumber(((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100), 2)}%)
                   </span>
                 </div>
               )}
@@ -831,7 +836,7 @@ const AnalyticsPage: React.FC = () => {
                       ? 'text-green-600 dark:text-green-400'
                       : 'text-orange-600 dark:text-orange-400'
                   }`}>
-                    {consistencyTarget.bestDayPercentage.toFixed(2)}% / {consistencyTarget.targetPercentage}%
+                    {formatNumber(consistencyTarget.bestDayPercentage, 2)}% / {formatNumber(consistencyTarget.targetPercentage, 2)}%
                   </span>
                   {!consistencyTarget.isCompliant && 
                    typeof consistencyTarget.additionalProfitNeeded === 'number' &&
@@ -1257,7 +1262,7 @@ const AnalyticsPage: React.FC = () => {
                           const index = context.dataIndex;
                           const data = drawdownData[index];
                           return [
-                            `${t('analytics:charts.drawdown.amount')}: ${formatCurrency(data.drawdownAmount, currencySymbol)} (${data.drawdownPercent.toFixed(2)}%)`,
+                            `${t('analytics:charts.drawdown.amount')}: ${formatCurrency(data.drawdownAmount, currencySymbol)} (${formatNumber(data.drawdownPercent, 2)}%)`,
                             `${t('analytics:charts.drawdown.cumulativePnl')}: ${formatCurrency(data.cumulativePnl, currencySymbol)}`,
                           ];
                         },
@@ -1635,7 +1640,7 @@ const AnalyticsPage: React.FC = () => {
                           const totalTrades = pnlDistribution.reduce((sum, d) => sum + d.count, 0);
                           return [
                             `${count} ${count > 1 ? t('analytics:common.trades') : t('analytics:common.trade')}`,
-                            `${percentage.toFixed(1)}% (${t('analytics:charts.pnlDistribution.onTotal', { total: totalTrades })})`
+                            `${formatNumber(percentage, 1)}% (${t('analytics:charts.pnlDistribution.onTotal', { total: totalTrades })})`
                           ];
                         },
                       },
@@ -1679,7 +1684,7 @@ const AnalyticsPage: React.FC = () => {
                         },
                         callback: function(value) {
                           const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-                          return numValue.toFixed(1) + '%';
+                          return formatNumber(numValue, 1) + '%';
                         },
                       },
                       grid: {

@@ -19,7 +19,7 @@ import AccountBalanceChart from '../components/charts/AccountBalanceChart';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
-import { formatCurrency as formatCurrencyUtil } from '../utils/numberFormat';
+import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
@@ -187,6 +187,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
     return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
+  };
+  
+  // Wrapper pour formatNumber avec préférences
+  const formatNumber = (value: number, digits: number = 2): string => {
+    return formatNumberUtil(value, digits, preferences.number_format);
   };
   // Utiliser un sélecteur de période moderne au lieu de année/mois
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
@@ -1356,7 +1361,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   }`}>
                     {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
                     {' '}
-                    ({((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100).toFixed(2)}%)
+                    ({formatNumber(((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100), 2)}%)
                   </span>
                 </div>
               )}
@@ -1418,7 +1423,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       ? 'text-green-600 dark:text-green-400'
                       : 'text-orange-600 dark:text-orange-400'
                   }`}>
-                    {consistencyTarget.bestDayPercentage.toFixed(2)}% / {consistencyTarget.targetPercentage}%
+                    {formatNumber(consistencyTarget.bestDayPercentage, 2)}% / {formatNumber(consistencyTarget.targetPercentage, 2)}%
                   </span>
                   {!consistencyTarget.isCompliant && 
                    typeof consistencyTarget.additionalProfitNeeded === 'number' &&
@@ -1691,7 +1696,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               
               <ModernStatCard
                 label={t('dashboard:profitFactor')}
-                value={additionalStats.profitFactor.toFixed(2)}
+                value={formatNumber(additionalStats.profitFactor, 2)}
                 variant={additionalStats.profitFactor >= 1.5 ? 'success' : additionalStats.profitFactor >= 1 ? 'warning' : 'danger'}
                 size="small"
                 icon={
@@ -1711,7 +1716,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               
               <ModernStatCard
                 label={t('dashboard:wlRatio')}
-                value={tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 ? (Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade)).toFixed(2) : '0.00'}
+                value={tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 ? formatNumber(Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade), 2) : formatNumber(0, 2)}
                 variant={tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 && Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade) >= 2 ? 'success' : tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 && Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade) >= 1.5 ? 'warning' : 'info'}
                 size="small"
                 icon={
@@ -2089,7 +2094,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       </div>
                       <div className="flex items-center gap-1">
                         <span>{t('dashboard:winningDays')} :</span>
-                        <span className="font-medium text-gray-700">{waterfallStats.positiveDays}/{waterfallData.length} ({waterfallStats.winRate.toFixed(1)}%)</span>
+                        <span className="font-medium text-gray-700">{waterfallStats.positiveDays}/{waterfallData.length} ({formatNumber(waterfallStats.winRate, 1)}%)</span>
                       </div>
                     </div>
                   )}

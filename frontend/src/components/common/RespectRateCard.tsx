@@ -1,4 +1,6 @@
 import React from 'react';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatNumber as formatNumberUtil } from '../../utils/numberFormat';
 
 interface RespectRateColor {
   from: string;
@@ -28,6 +30,13 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
   outOfLabel,
   gradientColors,
 }) => {
+  const { preferences } = usePreferences();
+  
+  // Wrapper pour formatNumber avec préférences
+  const formatNumber = (value: number, digits: number = 2): string => {
+    return formatNumberUtil(value, digits, preferences.number_format);
+  };
+
   return (
     <div
       className={`bg-gradient-to-r ${gradientColors.from} ${gradientColors.to} ${gradientColors.darkFrom} ${gradientColors.darkTo} rounded-lg shadow-lg py-3 px-6 text-white`}
@@ -46,7 +55,7 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
         {/* Pourcentage et compteur de trades à droite */}
         <div className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
           <p className="text-2xl font-bold">
-            {percentage.toFixed(2)}%
+            {formatNumber(percentage, 2)}%
           </p>
           <p className="text-xs opacity-90 italic">
             ({tradesCount} {outOfLabel} {totalTrades} {tradesLabel})
