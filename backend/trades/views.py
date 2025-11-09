@@ -3056,7 +3056,10 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         """Met à jour l'objectif et recalcule la progression."""
         goal = serializer.save()
-        goal.update_progress()
+        # Ne pas recalculer la progression si le statut est 'cancelled'
+        # car cela pourrait écraser le statut que l'utilisateur vient de définir
+        if goal.status != 'cancelled':
+            goal.update_progress()
     
     @action(detail=True, methods=['get'])
     def progress(self, request, pk=None):

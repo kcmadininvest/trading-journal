@@ -1047,14 +1047,18 @@ class TradingGoal(models.Model):
     
     def update_progress(self):
         """Met à jour la progression de l'objectif."""
+        # Ne pas mettre à jour la progression si l'objectif est annulé
+        if self.status == 'cancelled':
+            return
+        
         from .services import GoalProgressCalculator
         calculator = GoalProgressCalculator()
         progress_data = calculator.calculate_progress(self)
         
         self.current_value = progress_data['current_value']
         
-        # Mettre à jour le statut si nécessaire
-        if progress_data['status'] != self.status:
+        # Mettre à jour le statut si nécessaire (mais ne pas écraser 'cancelled')
+        if progress_data['status'] != self.status and self.status != 'cancelled':
             self.status = progress_data['status']
         
         self.save(update_fields=['current_value', 'status', 'updated_at'])

@@ -639,7 +639,10 @@ class TradingGoalSerializer(serializers.ModelSerializer):
     
     def validate_target_value(self, value):
         """Valide la valeur cible selon le type d'objectif."""
+        # Récupérer le goal_type depuis les données ou l'instance existante
         goal_type = self.initial_data.get('goal_type')
+        if not goal_type and self.instance:
+            goal_type = self.instance.goal_type
         
         # Pour win_rate et strategy_respect, la valeur doit être entre 0 et 100
         if goal_type in ['win_rate', 'strategy_respect']:

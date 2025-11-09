@@ -152,7 +152,7 @@ class GoalsService {
   async update(id: number, data: Partial<TradingGoal>): Promise<TradingGoal> {
     const url = `${this.BASE_URL}/api/trades/goals/${id}/`;
     const res = await this.fetchWithAuth(url, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data),
     });
 

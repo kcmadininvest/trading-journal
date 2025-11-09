@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { toast } from 'react-hot-toast';
 import { TradingGoal } from '../../services/goals';
 import { TradingAccount } from '../../services/tradingAccounts';
 import { goalsService } from '../../services/goals';
 import { CustomSelect } from '../common/CustomSelect';
 import { DateInput } from '../common/DateInput';
 import { NumberInput } from '../common/NumberInput';
+import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber, formatCurrency } from '../../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -47,6 +49,8 @@ export const GoalModal: React.FC<GoalModalProps> = ({
   const { selectedAccountId } = useTradingAccount();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const goalTypeOptions = useMemo(() => 
     GOAL_TYPES.map(type => ({
@@ -67,6 +71,13 @@ export const GoalModal: React.FC<GoalModalProps> = ({
       label: account.name,
     })),
   ], [tradingAccounts, t]);
+
+  const statusOptions = useMemo(() => [
+    { value: 'active', label: t('goals:status.active') },
+    { value: 'achieved', label: t('goals:status.achieved') },
+    { value: 'failed', label: t('goals:status.failed') },
+    { value: 'cancelled', label: t('goals:status.cancelled') },
+  ], [t]);
   
   const [formData, setFormData] = useState({
     goal_type: 'pnl_total' as TradingGoal['goal_type'],
@@ -77,6 +88,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
     trading_account: null as number | null,
     priority: 1,
     notes: '',
+    status: 'active' as TradingGoal['status'],
   });
 
   useEffect(() => {
@@ -92,6 +104,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
           trading_account: goal.trading_account || null,
           priority: goal.priority,
           notes: goal.notes || '',
+          status: goal.status,
         });
       } else {
         // Mode création
@@ -108,6 +121,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
           trading_account: selectedAccountId || null,
           priority: 1,
           notes: '',
+          status: 'active',
         });
       }
       setError(null);
@@ -140,12 +154,15 @@ export const GoalModal: React.FC<GoalModalProps> = ({
         trading_account: formData.trading_account || undefined,
         priority: formData.priority,
         notes: formData.notes,
+        ...(goal && { status: formData.status }), // Permettre de changer le statut en édition
       };
 
       if (goal) {
         await goalsService.update(goal.id, payload);
+        toast.success(t('goals:form.updateSuccess', { defaultValue: 'Objectif mis à jour avec succès' }));
       } else {
         await goalsService.create(payload);
+        toast.success(t('goals:form.createSuccess', { defaultValue: 'Objectif créé avec succès' }));
       }
 
       onSave();
@@ -157,21 +174,26 @@ export const GoalModal: React.FC<GoalModalProps> = ({
     }
   };
 
-  const handleDelete = async () => {
-    if (!goal) return;
-    if (!window.confirm(t('goals:form.confirmDelete'))) return;
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
 
-    setIsLoading(true);
+  const handleDeleteConfirm = async () => {
+    if (!goal) return;
+
+    setIsDeleting(true);
     setError(null);
 
     try {
       await goalsService.delete(goal.id);
+      toast.success(t('goals:form.deleteSuccess', { defaultValue: 'Objectif supprimé avec succès' }));
+      setShowDeleteModal(false);
       onSave();
       onClose();
     } catch (err: any) {
       setError(err.message || t('goals:form.deleteError'));
     } finally {
-      setIsLoading(false);
+      setIsDeleting(false);
     }
   };
 
@@ -371,6 +393,20 @@ export const GoalModal: React.FC<GoalModalProps> = ({
               />
             </div>
 
+            {/* Statut (seulement en édition) */}
+            {goal && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('goals:form.status')}
+                </label>
+                <CustomSelect
+                  value={formData.status}
+                  onChange={(value) => setFormData({ ...formData, status: value as TradingGoal['status'] })}
+                  options={statusOptions}
+                />
+              </div>
+            )}
+
             {/* Notes */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -392,7 +428,7 @@ export const GoalModal: React.FC<GoalModalProps> = ({
             {goal && (
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={handleDeleteClick}
                 disabled={isLoading}
                 className="px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg disabled:opacity-50 transition-colors"
               >
@@ -420,6 +456,16 @@ export const GoalModal: React.FC<GoalModalProps> = ({
           </div>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title={t('goals:form.deleteConfirmTitle', { defaultValue: 'Supprimer l\'objectif' })}
+        message={t('goals:form.deleteConfirmMessage', { defaultValue: 'Êtes-vous sûr de vouloir supprimer cet objectif ? Cette action est irréversible.' })}
+        isLoading={isDeleting}
+        confirmButtonText={t('goals:form.delete', { defaultValue: 'Supprimer' })}
+      />
     </div>
   );
 };
