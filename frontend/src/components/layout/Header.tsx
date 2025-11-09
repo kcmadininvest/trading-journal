@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { User } from '../../services/auth';
 import { authService } from '../../services/auth';
 import { Tooltip } from '../ui';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { changeLanguage } from '../../i18n/config';
 
 interface HeaderProps {
   currentUser: User;
@@ -12,8 +13,38 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) => {
-  const { t } = useI18nTranslation();
+  const { t, i18n } = useI18nTranslation();
   const { theme, setTheme } = useTheme();
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
+  const languageDropdownRef = useRef<HTMLDivElement>(null);
+  
+  const languageOptions = [
+    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+    { value: 'en', label: 'English', flag: '🇬🇧' },
+    { value: 'de', label: 'Deutsch', flag: '🇩🇪' },
+    { value: 'es', label: 'Español', flag: '🇪🇸' },
+  ];
+
+  const currentLanguage = i18n.language?.split('-')[0] || 'en';
+
+  // Fermer le dropdown quand on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target as Node)) {
+        setIsLanguageDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLanguageChange = (lang: string) => {
+    changeLanguage(lang);
+    setIsLanguageDropdownOpen(false);
+  };
   
   const pageTitle = useMemo(() => {
     const titles: { [key: string]: string } = {
@@ -22,6 +53,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
       trades: t('navigation:trades'),
       statistics: t('navigation:statistics'),
       strategies: t('navigation:strategies'),
+      'position-strategies': t('navigation:positionStrategies'),
       analytics: t('navigation:analytics'),
       accounts: t('navigation:accounts'),
       users: t('navigation:users'),
@@ -57,6 +89,51 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
 
         {/* User info and actions */}
         <div className="flex items-center space-x-4">
+          {/* Language selector */}
+          <div className="relative" ref={languageDropdownRef}>
+            <Tooltip content={t('settings:language', { defaultValue: 'Language' })} position="left">
+              <button
+                onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+                className="inline-flex items-center justify-center w-10 h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                aria-label={t('settings:language', { defaultValue: 'Language' })}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                </svg>
+              </button>
+            </Tooltip>
+            
+            {isLanguageDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+                {languageOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleLanguageChange(option.value)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-150 ${
+                      currentLanguage === option.value 
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600 dark:border-blue-500' 
+                        : ''
+                    }`}
+                  >
+                    <span className="text-xl">{option.flag}</span>
+                    <span className={`font-medium flex-1 ${
+                      currentLanguage === option.value 
+                        ? 'text-blue-600 dark:text-blue-400' 
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}>
+                      {option.label}
+                    </span>
+                    {currentLanguage === option.value && (
+                      <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Theme toggle */}
           <Tooltip content={theme === 'dark' ? t('settings:themeLight') : t('settings:themeDark')} position="left">
             <button

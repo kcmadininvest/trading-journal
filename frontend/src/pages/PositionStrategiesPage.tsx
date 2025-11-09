@@ -350,16 +350,6 @@ const PositionStrategiesPage: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="w-full">
-        {/* En-tête */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            {t('positionStrategies:title', { defaultValue: 'Stratégies de Prise de Position' })}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('positionStrategies:subtitle', { defaultValue: 'Gérez vos stratégies de trading et leur historique de versions' })}
-          </p>
-        </div>
-
         {/* Filtres et recherche */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">

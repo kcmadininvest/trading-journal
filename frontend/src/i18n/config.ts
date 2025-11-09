@@ -131,6 +131,11 @@ import deHome from './locales/de/home.json';
 import frStrategy from './locales/fr/strategy.json';
 import enStrategy from './locales/en/strategy.json';
 
+import frPositionStrategies from './locales/fr/positionStrategies.json';
+import enPositionStrategies from './locales/en/positionStrategies.json';
+import dePositionStrategies from './locales/de/positionStrategies.json';
+import esPositionStrategies from './locales/es/positionStrategies.json';
+
 const resources = {
   fr: {
     common: frCommon,
@@ -147,6 +152,7 @@ const resources = {
     auth: frAuth,
     home: frHome,
     strategy: frStrategy,
+    positionStrategies: frPositionStrategies,
   },
   en: {
     common: enCommon,
@@ -163,6 +169,7 @@ const resources = {
     auth: enAuth,
     home: enHome,
     strategy: enStrategy,
+    positionStrategies: enPositionStrategies,
   },
   es: {
     common: esCommon,
@@ -178,6 +185,7 @@ const resources = {
     accounts: esAccounts,
     auth: esAuth,
     home: esHome,
+    positionStrategies: esPositionStrategies,
   },
   de: {
     common: deCommon,
@@ -193,6 +201,7 @@ const resources = {
     accounts: deAccounts,
     auth: deAuth,
     home: deHome,
+    positionStrategies: dePositionStrategies,
   },
   it: {
     common: itCommon,
@@ -308,7 +317,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
