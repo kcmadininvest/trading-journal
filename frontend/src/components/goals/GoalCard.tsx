@@ -103,25 +103,19 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, currencySymbol = '', o
   const handleCancelClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('Cancel button clicked for goal:', goal.id, 'onCancel callback:', onCancel);
     setOpenMenu(false);
     // Appeler le callback immédiatement
     if (onCancel) {
       onCancel(goal);
-    } else {
-      console.warn('onCancel callback is not defined');
     }
   };
 
   const handleReactivateClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('Reactivate button clicked for goal:', goal.id, 'onReactivate callback:', onReactivate);
     setOpenMenu(false);
     if (onReactivate) {
       onReactivate(goal);
-    } else {
-      console.warn('onReactivate callback is not defined');
     }
   };
 

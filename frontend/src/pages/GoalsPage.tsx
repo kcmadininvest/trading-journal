@@ -115,10 +115,7 @@ const GoalsPage: React.FC = () => {
 
   const handleCancelGoal = async (goal: TradingGoal) => {
     try {
-      console.log('Cancelling goal:', goal.id);
       const updatedGoal = await goalsService.update(goal.id, { status: 'cancelled' });
-      console.log('Goal cancelled successfully:', updatedGoal);
-      console.log('Updated goal status:', updatedGoal.status);
       
       toast.success(t('goals:cancelSuccess', { defaultValue: 'Objectif annulé avec succès' }), {
         duration: 3000,
@@ -136,7 +133,6 @@ const GoalsPage: React.FC = () => {
         );
       }
     } catch (err: any) {
-      console.error('Error cancelling goal:', err);
       toast.error(err.message || t('goals:cancelError', { defaultValue: 'Erreur lors de l\'annulation' }), {
         duration: 4000,
       });
@@ -145,10 +141,7 @@ const GoalsPage: React.FC = () => {
 
   const handleReactivateGoal = async (goal: TradingGoal) => {
     try {
-      console.log('Reactivating goal:', goal.id);
       const updatedGoal = await goalsService.update(goal.id, { status: 'active' });
-      console.log('Goal reactivated successfully:', updatedGoal);
-      console.log('Updated goal status:', updatedGoal.status);
       
       toast.success(t('goals:reactivateSuccess', { defaultValue: 'Objectif réactivé avec succès' }), {
         duration: 3000,
@@ -165,7 +158,6 @@ const GoalsPage: React.FC = () => {
         // Le useEffect se chargera de recharger les données
       }
     } catch (err: any) {
-      console.error('Error reactivating goal:', err);
       toast.error(err.message || t('goals:reactivateError', { defaultValue: 'Erreur lors de la réactivation' }), {
         duration: 4000,
       });

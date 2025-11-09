@@ -140,6 +140,8 @@ import esPositionStrategies from './locales/es/positionStrategies.json';
 
 import frGoals from './locales/fr/goals.json';
 import enGoals from './locales/en/goals.json';
+import esGoals from './locales/es/goals.json';
+import deGoals from './locales/de/goals.json';
 
 const resources = {
   fr: {
@@ -194,6 +196,7 @@ const resources = {
     home: esHome,
     strategy: esStrategy,
     positionStrategies: esPositionStrategies,
+    goals: esGoals,
   },
   de: {
     common: deCommon,
@@ -211,6 +214,7 @@ const resources = {
     home: deHome,
     strategy: deStrategy,
     positionStrategies: dePositionStrategies,
+    goals: deGoals,
   },
   it: {
     common: itCommon,
