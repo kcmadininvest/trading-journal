@@ -391,6 +391,9 @@ export const GoalModal: React.FC<GoalModalProps> = ({
                 onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) || 1 })}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('goals:form.priorityHint')}
+              </p>
             </div>
 
             {/* Statut (seulement en édition) */}

@@ -1023,7 +1023,7 @@ class TradingGoal(models.Model):
     priority = models.IntegerField(
         default=1,  # type: ignore
         verbose_name='Priorité',
-        help_text='Priorité de l\'objectif (1-5, 5 = plus important)'
+        help_text='Priorité de l\'objectif (1 = faible, 5 = élevée). Les objectifs avec une priorité élevée (5) apparaissent en premier dans la liste.'
     )
     
     # Notes
