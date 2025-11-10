@@ -96,6 +96,7 @@
     "possibleImprovements": "Possible improvements",
     "possibleImprovementsPlaceholder": "Identify improvement points for this trade...",
     "tradesWithStrategyRespected": "{{count}} / {{total}} trades with strategy respected",
+    "unsavedChanges": "Unsaved changes",
     "cancel": "Cancel",
     "saving": "Saving...",
     "save": "Save"

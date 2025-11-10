@@ -58,6 +58,16 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const [error, setError] = useState<string | null>(null);
   const [openRatingDropdowns, setOpenRatingDropdowns] = useState<Map<number, boolean>>(new Map());
   const ratingRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const isInitialLoad = useRef(true);
+  const serverDataRef = useRef<TradeWithStrategy[]>([]); // Garder une référence aux données du serveur
+
+  // Clé pour le localStorage basée sur la date et le compte de trading
+  const draftKey = useMemo(() => {
+    if (!date) return null;
+    const accountKey = tradingAccount ? `-${tradingAccount}` : '';
+    return `strategy-compliance-draft-${date}${accountKey}`;
+  }, [date, tradingAccount]);
 
   // Fermer les dropdowns quand on clique en dehors
   useEffect(() => {
@@ -132,21 +142,176 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         return dateA - dateB;
       });
 
+      // Restaurer les données depuis localStorage si disponibles
+      if (draftKey) {
+        try {
+          const draft = localStorage.getItem(draftKey);
+          if (draft) {
+            const draftData = JSON.parse(draft);
+            // Appliquer les données du brouillon aux trades correspondants
+            let hasChanges = false;
+            const tradesWithDraft = tradesWithStrategy.map((trade) => {
+              const draftTrade = draftData.find((d: any) => d.id === trade.id);
+              if (draftTrade) {
+                // Vérifier s'il y a des différences avec les données du serveur
+                // Normaliser les valeurs null/undefined pour la comparaison
+                const draftStrategyRespected = draftTrade.strategyRespected ?? null;
+                const serverStrategyRespected = trade.strategyRespected ?? null;
+                const draftGainIfStrategyRespected = draftTrade.gainIfStrategyRespected ?? null;
+                const serverGainIfStrategyRespected = trade.gainIfStrategyRespected ?? null;
+                const draftSessionRating = draftTrade.sessionRating ?? null;
+                const serverSessionRating = trade.sessionRating ?? null;
+                
+                const hasTradeChanges = 
+                  draftStrategyRespected !== serverStrategyRespected ||
+                  draftGainIfStrategyRespected !== serverGainIfStrategyRespected ||
+                  JSON.stringify(draftTrade.dominantEmotions || []) !== JSON.stringify(trade.dominantEmotions || []) ||
+                  (draftTrade.screenshotUrl || '') !== (trade.screenshotUrl || '') ||
+                  (draftTrade.videoUrl || '') !== (trade.videoUrl || '') ||
+                  (draftTrade.tp1Reached || false) !== (trade.tp1Reached || false) ||
+                  (draftTrade.tp2PlusReached || false) !== (trade.tp2PlusReached || false) ||
+                  (draftTrade.emotionDetails || '') !== (trade.emotionDetails || '') ||
+                  (draftTrade.possibleImprovements || '') !== (trade.possibleImprovements || '') ||
+                  draftSessionRating !== serverSessionRating;
+                
+                if (hasTradeChanges) {
+                  hasChanges = true;
+                }
+                
+                return {
+                  ...trade,
+                  strategyRespected: draftTrade.strategyRespected ?? trade.strategyRespected,
+                  gainIfStrategyRespected: draftTrade.gainIfStrategyRespected ?? trade.gainIfStrategyRespected,
+                  dominantEmotions: draftTrade.dominantEmotions ?? trade.dominantEmotions,
+                  screenshotUrl: draftTrade.screenshotUrl ?? trade.screenshotUrl,
+                  videoUrl: draftTrade.videoUrl ?? trade.videoUrl,
+                  tp1Reached: draftTrade.tp1Reached ?? trade.tp1Reached,
+                  tp2PlusReached: draftTrade.tp2PlusReached ?? trade.tp2PlusReached,
+                  emotionDetails: draftTrade.emotionDetails ?? trade.emotionDetails,
+                  possibleImprovements: draftTrade.possibleImprovements ?? trade.possibleImprovements,
+                  sessionRating: draftTrade.sessionRating ?? trade.sessionRating,
+                };
+              }
+              return trade;
+            });
+            serverDataRef.current = tradesWithStrategy; // Sauvegarder les données du serveur
+            setTrades(tradesWithDraft);
+            // Ne mettre hasUnsavedChanges à true que s'il y a vraiment des différences
+            setHasUnsavedChanges(hasChanges);
+            // Utiliser setTimeout pour éviter que le useEffect de sauvegarde auto se déclenche immédiatement
+            setTimeout(() => {
+              isInitialLoad.current = false;
+            }, 100);
+            return;
+          }
+        } catch (e) {
+          // Erreur lors de la lecture du localStorage, ignorer et continuer
+          console.warn('Erreur lors de la restauration du brouillon:', e);
+        }
+      }
+
+      serverDataRef.current = tradesWithStrategy; // Sauvegarder les données du serveur
       setTrades(tradesWithStrategy);
+      setHasUnsavedChanges(false);
+      // Utiliser setTimeout pour éviter que le useEffect de sauvegarde auto se déclenche immédiatement
+      setTimeout(() => {
+        isInitialLoad.current = false;
+      }, 100);
     } catch (e: any) {
       setError(e?.message || t('common:error'));
     } finally {
       setIsLoading(false);
     }
-  }, [date, tradingAccount, t]);
+  }, [date, tradingAccount, t, draftKey]);
+
+  // Sauvegarder automatiquement dans localStorage à chaque modification
+  useEffect(() => {
+    // Ne pas sauvegarder lors du chargement initial
+    if (isInitialLoad.current || !draftKey || trades.length === 0) {
+      return;
+    }
+
+    // Comparer avec les données du serveur pour voir s'il y a vraiment des changements
+    const serverData = serverDataRef.current;
+    let hasRealChanges = false;
+    
+    if (serverData.length > 0) {
+      for (let i = 0; i < trades.length; i++) {
+        const trade = trades[i];
+        const serverTrade = serverData.find(t => t.id === trade.id);
+        if (!serverTrade) continue;
+        
+        // Normaliser les valeurs pour la comparaison
+        const tradeStrategyRespected = trade.strategyRespected ?? null;
+        const serverStrategyRespected = serverTrade.strategyRespected ?? null;
+        const tradeGainIfStrategyRespected = trade.gainIfStrategyRespected ?? null;
+        const serverGainIfStrategyRespected = serverTrade.gainIfStrategyRespected ?? null;
+        const tradeSessionRating = trade.sessionRating ?? null;
+        const serverSessionRating = serverTrade.sessionRating ?? null;
+        
+        const hasTradeChanges = 
+          tradeStrategyRespected !== serverStrategyRespected ||
+          tradeGainIfStrategyRespected !== serverGainIfStrategyRespected ||
+          JSON.stringify(trade.dominantEmotions || []) !== JSON.stringify(serverTrade.dominantEmotions || []) ||
+          (trade.screenshotUrl || '') !== (serverTrade.screenshotUrl || '') ||
+          (trade.videoUrl || '') !== (serverTrade.videoUrl || '') ||
+          (trade.tp1Reached || false) !== (serverTrade.tp1Reached || false) ||
+          (trade.tp2PlusReached || false) !== (serverTrade.tp2PlusReached || false) ||
+          (trade.emotionDetails || '') !== (serverTrade.emotionDetails || '') ||
+          (trade.possibleImprovements || '') !== (serverTrade.possibleImprovements || '') ||
+          tradeSessionRating !== serverSessionRating;
+        
+        if (hasTradeChanges) {
+          hasRealChanges = true;
+          break;
+        }
+      }
+    } else {
+      // Si on n'a pas encore de données serveur, considérer qu'il y a des changements
+      hasRealChanges = true;
+    }
+
+    // Préparer les données à sauvegarder (seulement les champs modifiables)
+    const draftData = trades.map((trade) => ({
+      id: trade.id,
+      strategyRespected: trade.strategyRespected,
+      gainIfStrategyRespected: trade.gainIfStrategyRespected,
+      dominantEmotions: trade.dominantEmotions,
+      screenshotUrl: trade.screenshotUrl,
+      videoUrl: trade.videoUrl,
+      tp1Reached: trade.tp1Reached,
+      tp2PlusReached: trade.tp2PlusReached,
+      emotionDetails: trade.emotionDetails,
+      possibleImprovements: trade.possibleImprovements,
+      sessionRating: trade.sessionRating,
+    }));
+
+    try {
+      if (hasRealChanges) {
+        localStorage.setItem(draftKey, JSON.stringify(draftData));
+        setHasUnsavedChanges(true);
+      } else {
+        // Si pas de changements réels, nettoyer le localStorage
+        localStorage.removeItem(draftKey);
+        setHasUnsavedChanges(false);
+      }
+    } catch (e) {
+      // Erreur lors de l'écriture dans localStorage (quota dépassé, etc.)
+      console.warn('Erreur lors de la sauvegarde du brouillon:', e);
+    }
+  }, [trades, draftKey]);
 
   useEffect(() => {
     if (open && date) {
+      isInitialLoad.current = true;
       loadData();
     } else {
       setTrades([]);
       setError(null);
       setOpenRatingDropdowns(new Map());
+      // Ne pas réinitialiser hasUnsavedChanges ici car les données restent dans localStorage
+      // Le message réapparaîtra à la réouverture si un brouillon existe
+      isInitialLoad.current = true;
     }
   }, [open, date, tradingAccount, loadData]);
 
@@ -238,7 +403,20 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       }));
 
       await tradeStrategiesService.bulkCreateOrUpdate(strategiesToSave);
+      
+      // Nettoyer le localStorage après sauvegarde réussie (AVANT de recharger)
+      if (draftKey) {
+        try {
+          localStorage.removeItem(draftKey);
+        } catch (e) {
+          // Ignorer les erreurs de nettoyage
+        }
+      }
+      
+      setHasUnsavedChanges(false);
+      isInitialLoad.current = true; // Réinitialiser pour éviter la sauvegarde auto lors du rechargement
       // Recharger les données après la sauvegarde pour avoir les données à jour
+      // Le localStorage est déjà nettoyé, donc loadData() ne restaurera pas de brouillon
       await loadData();
       onClose(true);
     } catch (e: any) {
@@ -281,7 +459,17 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('trades:strategyCompliance.title')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{formatDate(date)}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400">{formatDate(date)}</p>
+                {hasUnsavedChanges && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {t('trades:strategyCompliance.unsavedChanges', { defaultValue: 'Modifications non sauvegardées' })}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <button
