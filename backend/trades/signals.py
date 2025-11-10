@@ -13,6 +13,16 @@ def update_goals_on_trade_save(sender, instance, **kwargs):
     Met à jour la progression de tous les objectifs actifs
     quand un trade est créé ou modifié.
     """
+    # Déterminer la date du trade pour la comparaison avec les objectifs
+    # Utiliser trade_day si disponible, sinon utiliser la date de entered_at
+    trade_date = instance.trade_day
+    if trade_date is None and instance.entered_at:
+        trade_date = instance.entered_at.date()
+    
+    # Si on n'a toujours pas de date, on ne peut pas mettre à jour les objectifs
+    if trade_date is None:
+        return
+    
     # Récupérer tous les objectifs actifs pour cet utilisateur
     # qui concernent ce compte (ou tous les comptes)
     active_goals = TradingGoal.objects.filter(  # type: ignore
@@ -27,7 +37,7 @@ def update_goals_on_trade_save(sender, instance, **kwargs):
     # Mettre à jour chaque objectif
     for goal in active_goals:
         # Vérifier si le trade est dans la période de l'objectif
-        if goal.start_date <= instance.trade_day <= goal.end_date:  # type: ignore
+        if goal.start_date <= trade_date <= goal.end_date:  # type: ignore
             goal.update_progress()
 
 
@@ -37,6 +47,16 @@ def update_goals_on_trade_delete(sender, instance, **kwargs):
     Met à jour la progression de tous les objectifs actifs
     quand un trade est supprimé.
     """
+    # Déterminer la date du trade pour la comparaison avec les objectifs
+    # Utiliser trade_day si disponible, sinon utiliser la date de entered_at
+    trade_date = instance.trade_day
+    if trade_date is None and instance.entered_at:
+        trade_date = instance.entered_at.date()
+    
+    # Si on n'a toujours pas de date, on ne peut pas mettre à jour les objectifs
+    if trade_date is None:
+        return
+    
     # Même logique que pour post_save
     active_goals = TradingGoal.objects.filter(  # type: ignore
         user=instance.user,
@@ -46,6 +66,6 @@ def update_goals_on_trade_delete(sender, instance, **kwargs):
     )
     
     for goal in active_goals:
-        if goal.start_date <= instance.trade_day <= goal.end_date:  # type: ignore
+        if goal.start_date <= trade_date <= goal.end_date:  # type: ignore
             goal.update_progress()
 
