@@ -15,12 +15,14 @@ interface CreateTradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  tradeId?: number | null; // ID du trade à éditer (null ou undefined = création)
 }
 
 export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  tradeId,
 }) => {
   const { t } = useI18nTranslation();
   const { preferences, loading: preferencesLoading } = usePreferences();
@@ -70,6 +72,55 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
     }
   }, [isOpen]);
 
+  // Charger les données du trade si on est en mode édition
+  useEffect(() => {
+    if (isOpen && tradeId) {
+      const loadTrade = async () => {
+        setIsLoading(true);
+        try {
+          const trade = await tradesService.retrieve(tradeId);
+          // Formater les dates pour datetime-local (YYYY-MM-DDTHH:mm)
+          const formatDateTimeLocal = (dateStr: string | null): string => {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+          };
+          
+          setFormData({
+            trading_account: trade.trading_account || null,
+            contract_name: trade.contract_name || '',
+            trade_type: trade.trade_type || 'Long',
+            entered_at: formatDateTimeLocal(trade.entered_at),
+            exited_at: formatDateTimeLocal(trade.exited_at),
+            entry_price: trade.entry_price || '',
+            exit_price: trade.exit_price || '',
+            size: trade.size || '',
+            point_value: trade.point_value || '',
+            fees: trade.fees || '0',
+            commissions: trade.commissions || '0',
+            pnl: trade.pnl || '',
+            notes: trade.notes || '',
+            position_strategy: trade.position_strategy || null,
+          });
+          // Si le PnL existe déjà, considérer qu'il a été édité manuellement
+          setIsPnlManuallyEdited(!!trade.pnl);
+        } catch (err: any) {
+          const errorMessage = err.message || t('trades:createModal.errors.loadError', { defaultValue: 'Erreur lors du chargement du trade' });
+          setError(errorMessage);
+          toast.error(errorMessage);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadTrade();
+    }
+  }, [isOpen, tradeId, t]);
+
   // Options pour le type de trade
   const tradeTypeOptions = useMemo(() => [
     { value: 'Long', label: t('trades:createModal.long', { defaultValue: 'Long' }) },
@@ -109,16 +160,16 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
     return `${formattedDate} ${hours}:${minutes}`;
   }, [preferences.date_format, preferencesLoading]);
 
-  // Initialiser avec le compte sélectionné dans le contexte
+  // Initialiser avec le compte sélectionné dans le contexte (seulement en mode création)
   useEffect(() => {
-    if (isOpen && selectedAccountId) {
+    if (isOpen && selectedAccountId && !tradeId) {
       setFormData(prev => ({ ...prev, trading_account: selectedAccountId }));
     }
-  }, [isOpen, selectedAccountId]);
+  }, [isOpen, selectedAccountId, tradeId]);
 
-  // Réinitialiser le formulaire quand la modale s'ouvre
+  // Réinitialiser le formulaire quand la modale s'ouvre (seulement si création, pas édition)
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !tradeId) {
       const now = new Date();
       // Formater la date/heure au format datetime-local (YYYY-MM-DDTHH:mm)
       const formatDateTimeLocal = (date: Date): string => {
@@ -149,7 +200,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       setError(null);
       setIsPnlManuallyEdited(false);
     }
-  }, [isOpen, selectedAccountId]);
+  }, [isOpen, selectedAccountId, tradeId]);
 
   // Empêcher le scroll du body quand la modale est ouverte
   useEffect(() => {
@@ -263,12 +314,23 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
         payload.position_strategy = formData.position_strategy;
       }
 
-      await tradesService.create(payload);
-      toast.success(t('trades:createModal.success', { defaultValue: 'Trade créé avec succès' }));
+      if (tradeId) {
+        // Mode édition
+        await tradesService.update(tradeId, payload);
+        toast.success(t('trades:createModal.updateSuccess', { defaultValue: 'Trade modifié avec succès' }));
+      } else {
+        // Mode création
+        await tradesService.create(payload);
+        toast.success(t('trades:createModal.success', { defaultValue: 'Trade créé avec succès' }));
+      }
       onSave();
       onClose();
     } catch (err: any) {
-      const errorMessage = err.message || t('trades:createModal.errors.createError', { defaultValue: 'Erreur lors de la création du trade' });
+      const errorMessage = err.message || (
+        tradeId 
+          ? t('trades:createModal.errors.updateError', { defaultValue: 'Erreur lors de la modification du trade' })
+          : t('trades:createModal.errors.createError', { defaultValue: 'Erreur lors de la création du trade' })
+      );
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -301,10 +363,14 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {t('trades:createModal.title', { defaultValue: 'Créer un trade manuellement' })}
+                {tradeId 
+                  ? t('trades:createModal.editTitle', { defaultValue: 'Modifier un trade' })
+                  : t('trades:createModal.title', { defaultValue: 'Créer un trade manuellement' })}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t('trades:createModal.description', { defaultValue: 'Saisissez les informations du trade' })}
+                {tradeId
+                  ? t('trades:createModal.editDescription', { defaultValue: 'Modifiez les informations du trade' })
+                  : t('trades:createModal.description', { defaultValue: 'Saisissez les informations du trade' })}
               </p>
             </div>
           </div>
@@ -604,7 +670,9 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
           >
             {isLoading
               ? t('common:saving', { defaultValue: 'Enregistrement...' })
-              : t('common:create', { defaultValue: 'Créer' })}
+              : tradeId
+                ? t('common:save', { defaultValue: 'Enregistrer' })
+                : t('common:create', { defaultValue: 'Créer' })}
           </button>
         </div>
       </div>

@@ -19,9 +19,10 @@ interface TradesTableProps {
   onToggleAll?: (selected: boolean, visibleIds: number[]) => void;
   totals?: { pnl?: number; fees?: number; net_pnl?: number; count?: number };
   onDelete?: (id: number) => void;
+  onRowClick?: (trade: TradeListItem) => void; // Callback pour le clic sur une ligne
 }
 
-export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete }) => {
+export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete, onRowClick }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -82,13 +83,40 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               </tr>
             ) : (
               items.map((trade) => (
-                <tr key={trade.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <tr 
+                  key={trade.id} 
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${onRowClick ? 'cursor-pointer' : ''}`}
+                  onClick={(e) => {
+                    // Ne pas déclencher le clic sur la ligne si on clique sur:
+                    // - la checkbox
+                    // - le bouton de suppression
+                    // - un lien ou un bouton
+                    const target = e.target as HTMLElement;
+                    if (
+                      target.closest('input[type="checkbox"]') ||
+                      target.closest('button') ||
+                      target.closest('a') ||
+                      target.tagName === 'BUTTON' ||
+                      target.tagName === 'INPUT' ||
+                      target.tagName === 'A'
+                    ) {
+                      return;
+                    }
+                    if (onRowClick) {
+                      onRowClick(trade);
+                    }
+                  }}
+                >
                   <td className="px-4 py-3 w-10">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(trade.id)}
-                        onChange={(e) => onToggleRow && onToggleRow(trade.id, e.target.checked)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          onToggleRow && onToggleRow(trade.id, e.target.checked);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
                         className="h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400"
                       />
                     </div>
@@ -142,7 +170,10 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-center">
                     {onDelete && (
                       <button
-                        onClick={() => onDelete(trade.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(trade.id);
+                        }}
                         className="p-1 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded transition-colors"
                         title={t('trades:delete')}
                       >

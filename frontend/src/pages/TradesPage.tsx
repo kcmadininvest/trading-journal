@@ -46,6 +46,7 @@ const TradesPage: React.FC = () => {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingTradeId, setEditingTradeId] = useState<number | null>(null);
 
   // Créer une clé stable pour les dépendances des useEffect basée sur les valeurs de filters
   const filtersKey = useMemo(() => {
@@ -401,7 +402,10 @@ const TradesPage: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                setEditingTradeId(null);
+                setShowCreateModal(true);
+              }}
               disabled={isLoading}
               className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
@@ -461,6 +465,10 @@ const TradesPage: React.FC = () => {
           count: stats?.total_trades,
         }}
         onDelete={handleDeleteOne}
+        onRowClick={(trade) => {
+          setEditingTradeId(trade.id);
+          setShowCreateModal(true);
+        }}
         />
 
       {/* Totaux filtrés rendus dans le tfoot du tableau */}
@@ -531,15 +539,19 @@ const TradesPage: React.FC = () => {
         }
       }} />
       
-      {/* Modale de création de trade */}
+      {/* Modale de création/édition de trade */}
       <CreateTradeModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => {
+          setShowCreateModal(false);
+          setEditingTradeId(null);
+        }}
         onSave={() => {
           // Recharger la liste et les stats
           load();
           reloadStats();
         }}
+        tradeId={editingTradeId}
       />
     </div>
   );
