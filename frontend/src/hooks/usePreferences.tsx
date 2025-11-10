@@ -42,6 +42,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     number_format: 'comma',
     theme: getInitialTheme(),
     font_size: 'medium',
+    email_goal_alerts: true,
   });
   const [loading, setLoading] = useState(true);
 

@@ -79,6 +79,8 @@
   "deleteError": "Erreur lors de la suppression",
   "deleteConfirmTitle": "Supprimer l'objectif",
   "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer cet objectif ? Cette action est irréversible.",
-  "delete": "Supprimer"
+  "delete": "Supprimer",
+  "goalAchievedNotification": "🎉 Objectif atteint : {{goalType}}",
+  "goalFailedNotification": "❌ Objectif échoué : {{goalType}}"
 }
 

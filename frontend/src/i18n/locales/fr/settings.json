@@ -81,5 +81,8 @@
   "errorSessionsDisconnect": "Erreur lors de la déconnexion des sessions",
   "errorDataExport": "Erreur lors de l'export des données",
   "errorAccountDelete": "Erreur lors de la suppression du compte",
-  "passwordMismatch": "Les mots de passe ne correspondent pas"
+  "passwordMismatch": "Les mots de passe ne correspondent pas",
+  "notifications": "Notifications",
+  "emailGoalAlerts": "Alertes email pour les objectifs",
+  "emailGoalAlertsDescription": "Recevoir des emails quand un objectif est atteint ou en danger"
 }

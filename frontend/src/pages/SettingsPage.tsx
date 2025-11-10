@@ -43,6 +43,7 @@ const SettingsPage: React.FC = () => {
     number_format: 'comma',
     theme: 'light',
     font_size: 'medium',
+    email_goal_alerts: true,
   });
 
   // Sécurité
@@ -625,6 +626,26 @@ const SettingsPage: React.FC = () => {
                       { value: 'point', label: t('settings:numberFormatPoint') },
                     ]}
                   />
+                </div>
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">{t('settings:notifications', { defaultValue: 'Notifications' })}</h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <label htmlFor="email_goal_alerts" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t('settings:emailGoalAlerts', { defaultValue: 'Alertes email pour les objectifs' })}
+                      </label>
+                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        {t('settings:emailGoalAlertsDescription', { defaultValue: 'Recevoir des emails quand un objectif est atteint ou en danger' })}
+                      </p>
+                    </div>
+                    <input
+                      id="email_goal_alerts"
+                      type="checkbox"
+                      checked={preferences.email_goal_alerts !== false}
+                      onChange={(e) => setPreferences({ ...preferences, email_goal_alerts: e.target.checked })}
+                      className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700"
+                    />
+                  </div>
                 </div>
                 <button
                   onClick={handlePreferencesUpdate}

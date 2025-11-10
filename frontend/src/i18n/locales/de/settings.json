@@ -81,5 +81,8 @@
   "errorSessionsDisconnect": "Fehler beim Trennen der Sitzungen",
   "errorDataExport": "Fehler beim Exportieren der Daten",
   "errorAccountDelete": "Fehler beim Löschen des Kontos",
-  "passwordMismatch": "Passwörter stimmen nicht überein"
+  "passwordMismatch": "Passwörter stimmen nicht überein",
+  "notifications": "Benachrichtigungen",
+  "emailGoalAlerts": "E-Mail-Benachrichtigungen für Ziele",
+  "emailGoalAlertsDescription": "E-Mails erhalten, wenn ein Ziel erreicht wird oder in Gefahr ist"
 }
