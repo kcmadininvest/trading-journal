@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
-import { goalsService, TradingGoal, GoalsFilters } from '../services/goals';
+import { goalsService, TradingGoal, GoalsFilters, GoalStatistics } from '../services/goals';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import { GoalCard } from '../components/goals/GoalCard';
@@ -25,6 +25,9 @@ const GoalsPage: React.FC = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<TradingGoal | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [statistics, setStatistics] = useState<GoalStatistics | null>(null);
+  const previousGoalsStatusRef = React.useRef<Map<number, string>>(new Map());
+  const notifiedGoalsRef = React.useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
   
   const loadGoals = React.useCallback(async () => {
     setLoading(true);
@@ -36,7 +39,76 @@ const GoalsPage: React.FC = () => {
       }
       const data = await goalsService.list(filters);
       // S'assurer que data est toujours un tableau
-      setGoals(Array.isArray(data) ? data : []);
+      const newGoals = Array.isArray(data) ? data : [];
+      
+      // Détecter les changements de statut pour afficher des notifications
+      const now = new Date();
+      newGoals.forEach((goal) => {
+        const previousStatus = previousGoalsStatusRef.current.get(goal.id);
+        const hasBeenNotified = notifiedGoalsRef.current.has(goal.id);
+        
+        // Vérifier si le statut a changé
+        if (previousStatus && previousStatus !== goal.status) {
+          // Statut a changé
+          if (goal.status === 'achieved' && previousStatus !== 'achieved') {
+            const goalTypeLabel = t(`goals:goalTypes.${goal.goal_type}`, { defaultValue: goal.goal_type });
+            toast.success(
+              t('goals:goalAchievedNotification', { 
+                defaultValue: `🎉 Objectif atteint : ${goalTypeLabel}`,
+                goalType: goalTypeLabel
+              }),
+              { duration: 5000, icon: '🎉' }
+            );
+            notifiedGoalsRef.current.add(goal.id);
+          } else if (goal.status === 'failed' && previousStatus !== 'failed') {
+            const goalTypeLabel = t(`goals:goalTypes.${goal.goal_type}`, { defaultValue: goal.goal_type });
+            toast.error(
+              t('goals:goalFailedNotification', { 
+                defaultValue: `❌ Objectif échoué : ${goalTypeLabel}`,
+                goalType: goalTypeLabel
+              }),
+              { duration: 5000, icon: '❌' }
+            );
+            notifiedGoalsRef.current.add(goal.id);
+          }
+        } else if (goal.status === 'achieved' && !hasBeenNotified) {
+          // Vérifier si l'objectif a été atteint récemment (dans les 5 dernières minutes)
+          // en utilisant last_achieved_alert_sent ou updated_at
+          let recentlyAchieved = false;
+          
+          if (goal.last_achieved_alert_sent) {
+            const alertSentDate = new Date(goal.last_achieved_alert_sent);
+            const minutesSinceAlert = (now.getTime() - alertSentDate.getTime()) / (1000 * 60);
+            recentlyAchieved = minutesSinceAlert <= 5; // Dans les 5 dernières minutes
+          } else if (goal.updated_at) {
+            const updatedDate = new Date(goal.updated_at);
+            const minutesSinceUpdate = (now.getTime() - updatedDate.getTime()) / (1000 * 60);
+            // Si mis à jour récemment et statut est "achieved", probablement vient d'être atteint
+            recentlyAchieved = minutesSinceUpdate <= 5 && goal.status === 'achieved';
+          }
+          
+          if (recentlyAchieved) {
+            const goalTypeLabel = t(`goals:goalTypes.${goal.goal_type}`, { defaultValue: goal.goal_type });
+            toast.success(
+              t('goals:goalAchievedNotification', { 
+                defaultValue: `🎉 Objectif atteint : ${goalTypeLabel}`,
+                goalType: goalTypeLabel
+              }),
+              { duration: 5000, icon: '🎉' }
+            );
+            notifiedGoalsRef.current.add(goal.id);
+          }
+        }
+      });
+      
+      // Mettre à jour le map des statuts précédents
+      const newStatusMap = new Map<number, string>();
+      newGoals.forEach((goal) => {
+        newStatusMap.set(goal.id, goal.status);
+      });
+      previousGoalsStatusRef.current = newStatusMap;
+      
+      setGoals(newGoals);
     } catch (err: any) {
       setError(err.message || t('goals:errorLoading'));
       setGoals([]);
@@ -48,6 +120,31 @@ const GoalsPage: React.FC = () => {
   useEffect(() => {
     loadGoals();
   }, [loadGoals]);
+
+  // Polling périodique pour détecter les changements de statut (toutes les 30 secondes)
+  useEffect(() => {
+    if (isModalOpen) return; // Ne pas poller si la modale est ouverte
+    
+    const interval = setInterval(() => {
+      loadGoals();
+    }, 30000); // 30 secondes
+
+    return () => clearInterval(interval);
+  }, [loadGoals, isModalOpen]);
+
+  // Charger les statistiques séparément pour avoir les compteurs corrects
+  useEffect(() => {
+    const loadStatistics = async () => {
+      try {
+        const stats = await goalsService.getStatistics();
+        setStatistics(stats);
+      } catch (err) {
+        // Ignorer les erreurs de statistiques, ce n'est pas critique
+        console.error('Failed to load goal statistics:', err);
+      }
+    };
+    loadStatistics();
+  }, [goals]); // Recharger quand les objectifs changent
   
   useEffect(() => {
     const loadAccounts = async () => {
@@ -186,10 +283,17 @@ const GoalsPage: React.FC = () => {
     }
   };
   
+  // Utiliser les statistiques pour les compteurs si disponibles, sinon calculer depuis la liste
   const activeGoals = useMemo(() => goals.filter(g => g.status === 'active'), [goals]);
   const achievedGoals = useMemo(() => goals.filter(g => g.status === 'achieved'), [goals]);
   const failedGoals = useMemo(() => goals.filter(g => g.status === 'failed'), [goals]);
   const cancelledGoals = useMemo(() => goals.filter(g => g.status === 'cancelled'), [goals]);
+  
+  // Compteurs pour les boutons de filtre (utiliser les statistiques si disponibles)
+  const activeCount = statistics?.active_goals ?? activeGoals.length;
+  const achievedCount = statistics?.achieved_goals ?? achievedGoals.length;
+  const failedCount = statistics?.failed_goals ?? failedGoals.length;
+  const totalCount = statistics?.total_goals ?? goals.length; // Utiliser les statistiques pour le total
   
   
   return (
@@ -212,7 +316,7 @@ const GoalsPage: React.FC = () => {
                   ? 'bg-gray-500 text-white'
                   : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
               }`}>
-                {goals.length}
+                {totalCount}
               </span>
             </button>
             <button
@@ -229,7 +333,7 @@ const GoalsPage: React.FC = () => {
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
               }`}>
-                {activeGoals.length}
+                {activeCount}
               </span>
             </button>
             <button
@@ -246,7 +350,7 @@ const GoalsPage: React.FC = () => {
                   ? 'bg-green-500 text-white'
                   : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
               }`}>
-                {achievedGoals.length}
+                {achievedCount}
               </span>
             </button>
             <button
@@ -263,7 +367,7 @@ const GoalsPage: React.FC = () => {
                   ? 'bg-red-500 text-white'
                   : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
               }`}>
-                {failedGoals.length}
+                {failedCount}
               </span>
             </button>
             <button

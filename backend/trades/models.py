@@ -1033,6 +1033,21 @@ class TradingGoal(models.Model):
         help_text='Notes et commentaires sur l\'objectif'
     )
     
+    # Suivi des alertes
+    last_achieved_alert_sent = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Dernière alerte "atteint" envoyée',
+        help_text='Date de la dernière alerte email envoyée pour objectif atteint'
+    )
+    
+    last_danger_alert_sent = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Dernière alerte "en danger" envoyée',
+        help_text='Date de la dernière alerte email envoyée pour objectif en danger'
+    )
+    
     # Métadonnées
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -1100,13 +1115,49 @@ class TradingGoal(models.Model):
             return
         
         from .services import GoalProgressCalculator
+        from django.utils import timezone
+        from datetime import timedelta
+        
         calculator = GoalProgressCalculator()
         progress_data = calculator.calculate_progress(self)
         
+        old_status = self.status
         self.current_value = progress_data['current_value']
         
         # Mettre à jour le statut si nécessaire (mais ne pas écraser 'cancelled')
         if progress_data['status'] != self.status and self.status != 'cancelled':
             self.status = progress_data['status']
         
-        self.save(update_fields=['current_value', 'status', 'updated_at'])
+        # Envoyer des alertes si nécessaire
+        now = timezone.now()
+        fields_to_update = ['current_value', 'status', 'updated_at']
+        
+        # Alerte "objectif atteint" : envoyer uniquement quand le statut passe à 'achieved'
+        if self.status == 'achieved' and old_status != 'achieved':
+            from .goal_alerts import send_goal_achieved_email
+            send_goal_achieved_email(self)
+            self.last_achieved_alert_sent = now
+            fields_to_update.append('last_achieved_alert_sent')
+        
+        # Alerte "objectif en danger" : envoyer si progression < 50% et moins de 7 jours restants
+        # Limiter à une alerte par jour maximum
+        progress_percentage = self.progress_percentage
+        remaining_days = self.remaining_days
+        
+        is_in_danger = progress_percentage < 50 and remaining_days < 7 and self.status == 'active'
+        should_send_danger_alert = False
+        
+        if is_in_danger:
+            # Envoyer une alerte si on n'en a jamais envoyé, ou si la dernière remonte à plus de 24h
+            if not self.last_danger_alert_sent:
+                should_send_danger_alert = True
+            elif (now - self.last_danger_alert_sent) > timedelta(days=1):
+                should_send_danger_alert = True
+        
+        if should_send_danger_alert:
+            from .goal_alerts import send_goal_danger_email
+            send_goal_danger_email(self)
+            self.last_danger_alert_sent = now
+            fields_to_update.append('last_danger_alert_sent')
+        
+        self.save(update_fields=fields_to_update)

@@ -5,6 +5,7 @@ import { AccountSelector } from '../accounts/AccountSelector';
 import { positionStrategiesService, PositionStrategy } from '../../services/positionStrategies';
 import { CustomSelect } from '../common/CustomSelect';
 import { NumberInput } from '../common/NumberInput';
+import { DateTimeInput } from '../common/DateTimeInput';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../../contexts/TradingAccountContext';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -74,21 +75,47 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
 
   // Charger les données du trade si on est en mode édition
   useEffect(() => {
-    if (isOpen && tradeId) {
+    if (isOpen && tradeId && !preferencesLoading) {
       const loadTrade = async () => {
         setIsLoading(true);
         try {
           const trade = await tradesService.retrieve(tradeId);
           // Formater les dates pour datetime-local (YYYY-MM-DDTHH:mm)
+          // en tenant compte du timezone de l'utilisateur
           const formatDateTimeLocal = (dateStr: string | null): string => {
             if (!dateStr) return '';
             const date = new Date(dateStr);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}`;
+            
+            let year: number, month: number, day: number, hours: number, minutes: number;
+            
+            if (preferences.timezone) {
+              // Utiliser Intl.DateTimeFormat pour obtenir les composants dans le timezone spécifié
+              const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: preferences.timezone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+              });
+              
+              const parts = formatter.formatToParts(date);
+              year = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
+              month = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10);
+              day = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
+              hours = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+              minutes = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+            } else {
+              // Fallback vers l'heure locale si pas de timezone
+              year = date.getFullYear();
+              month = date.getMonth() + 1;
+              day = date.getDate();
+              hours = date.getHours();
+              minutes = date.getMinutes();
+            }
+            
+            return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
           };
           
           setFormData({
@@ -119,7 +146,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       };
       loadTrade();
     }
-  }, [isOpen, tradeId, t]);
+  }, [isOpen, tradeId, t, preferences.timezone, preferencesLoading]);
 
   // Options pour le type de trade
   const tradeTypeOptions = useMemo(() => [
@@ -153,12 +180,13 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
     // S'assurer que date_format est bien défini (par défaut 'EU' si non défini)
     const dateFormat = preferences.date_format || 'EU';
     
-    // Ne pas passer le timezone pour éviter que Intl.DateTimeFormat force le format US
-    const formattedDate = formatDate(now, dateFormat as 'EU' | 'US', false, undefined);
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    return `${formattedDate} ${hours}:${minutes}`;
-  }, [preferences.date_format, preferencesLoading]);
+    // Utiliser le timezone de l'utilisateur pour formater correctement
+    const formattedDate = formatDate(now, dateFormat as 'EU' | 'US', false, preferences.timezone);
+    const formattedTime = formatDate(now, dateFormat as 'EU' | 'US', true, preferences.timezone);
+    // Extraire l'heure de la date formatée avec heure
+    const timePart = formattedTime.split(' ')[1] || '00:00';
+    return `${formattedDate} ${timePart}`;
+  }, [preferences.date_format, preferences.timezone, preferencesLoading]);
 
   // Initialiser avec le compte sélectionné dans le contexte (seulement en mode création)
   useEffect(() => {
@@ -169,24 +197,52 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
 
   // Réinitialiser le formulaire quand la modale s'ouvre (seulement si création, pas édition)
   useEffect(() => {
-    if (isOpen && !tradeId) {
+    if (isOpen && !tradeId && !preferencesLoading) {
+      // Obtenir la date/heure actuelle dans le timezone de l'utilisateur
       const now = new Date();
+      
       // Formater la date/heure au format datetime-local (YYYY-MM-DDTHH:mm)
+      // en tenant compte du timezone de l'utilisateur
       const formatDateTimeLocal = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day}T${hours}:${minutes}`;
+        // Si un timezone est configuré, convertir la date dans ce timezone
+        let year: number, month: number, day: number, hours: number, minutes: number;
+        
+        if (preferences.timezone) {
+          // Utiliser Intl.DateTimeFormat pour obtenir les composants dans le timezone spécifié
+          const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: preferences.timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          
+          const parts = formatter.formatToParts(date);
+          year = parseInt(parts.find(p => p.type === 'year')?.value || '0', 10);
+          month = parseInt(parts.find(p => p.type === 'month')?.value || '0', 10);
+          day = parseInt(parts.find(p => p.type === 'day')?.value || '0', 10);
+          hours = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+          minutes = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+        } else {
+          // Fallback vers l'heure locale si pas de timezone
+          year = date.getFullYear();
+          month = date.getMonth() + 1;
+          day = date.getDate();
+          hours = date.getHours();
+          minutes = date.getMinutes();
+        }
+        
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
       };
       
       setFormData({
         trading_account: selectedAccountId || null,
         contract_name: '',
         trade_type: 'Long',
-        entered_at: formatDateTimeLocal(now), // Format datetime-local avec date/heure actuelle
-        exited_at: formatDateTimeLocal(now), // Initialiser avec la date/heure actuelle pour éviter le placeholder natif
+        entered_at: formatDateTimeLocal(now), // Format datetime-local avec date/heure actuelle dans le timezone de l'utilisateur
+        exited_at: '', // Laisser vide par défaut car c'est optionnel
         entry_price: '',
         exit_price: '',
         size: '',
@@ -200,7 +256,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       setError(null);
       setIsPnlManuallyEdited(false);
     }
-  }, [isOpen, selectedAccountId, tradeId]);
+  }, [isOpen, selectedAccountId, tradeId, preferences.timezone, preferencesLoading]);
 
   // Empêcher le scroll du body quand la modale est ouverte
   useEffect(() => {
@@ -446,10 +502,9 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('trades:createModal.entryDate', { defaultValue: 'Date/Heure d\'entrée' })} *
                 </label>
-                <input
-                  type="datetime-local"
+                <DateTimeInput
                   value={formData.entered_at}
-                  onChange={(e) => setFormData(prev => ({ ...prev, entered_at: e.target.value }))}
+                  onChange={(value) => setFormData(prev => ({ ...prev, entered_at: value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                   disabled={isLoading}
@@ -464,10 +519,9 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                   {t('trades:createModal.exitDate', { defaultValue: 'Date/Heure de sortie' })}
                   <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
                 </label>
-                <input
-                  type="datetime-local"
+                <DateTimeInput
                   value={formData.exited_at || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, exited_at: e.target.value || '' }))}
+                  onChange={(value) => setFormData(prev => ({ ...prev, exited_at: value || '' }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isLoading}
                   title={t('trades:createModal.dateTimeFormat', { defaultValue: `Format: ${dateTimeFormatExample}`, dateTimeFormatExample })}

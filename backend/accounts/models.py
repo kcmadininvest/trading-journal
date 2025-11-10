@@ -153,6 +153,13 @@ class UserPreferences(models.Model):
         verbose_name=_('Taille de police')
     )
     
+    # Notifications
+    email_goal_alerts = models.BooleanField(
+        default=True,
+        verbose_name=_('Alertes email pour les objectifs'),
+        help_text=_('Recevoir des emails quand un objectif est atteint ou en danger')
+    )
+    
     # Métadonnées
     created_at = models.DateTimeField(
         auto_now_add=True,

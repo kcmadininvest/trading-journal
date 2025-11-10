@@ -79,6 +79,8 @@
   "deleteError": "Fehler beim Löschen des Ziels",
   "deleteConfirmTitle": "Ziel löschen",
   "deleteConfirmMessage": "Sind Sie sicher, dass Sie dieses Ziel löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
-  "delete": "Löschen"
+  "delete": "Löschen",
+  "goalAchievedNotification": "🎉 Ziel Erreicht: {{goalType}}",
+  "goalFailedNotification": "❌ Ziel Gescheitert: {{goalType}}"
 }
 

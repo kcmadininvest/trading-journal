@@ -81,5 +81,8 @@
   "errorSessionsDisconnect": "Error al desconectar las sesiones",
   "errorDataExport": "Error al exportar los datos",
   "errorAccountDelete": "Error al eliminar la cuenta",
-  "passwordMismatch": "Las contraseñas no coinciden"
+  "passwordMismatch": "Las contraseñas no coinciden",
+  "notifications": "Notificaciones",
+  "emailGoalAlerts": "Alertas por email para objetivos",
+  "emailGoalAlertsDescription": "Recibir emails cuando un objetivo se alcanza o está en peligro"
 }

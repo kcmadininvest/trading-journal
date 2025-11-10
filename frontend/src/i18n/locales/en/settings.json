@@ -81,5 +81,8 @@
   "errorSessionsDisconnect": "Error disconnecting sessions",
   "errorDataExport": "Error exporting data",
   "errorAccountDelete": "Error deleting account",
-  "passwordMismatch": "Passwords do not match"
+  "passwordMismatch": "Passwords do not match",
+  "notifications": "Notifications",
+  "emailGoalAlerts": "Email alerts for goals",
+  "emailGoalAlertsDescription": "Receive emails when a goal is achieved or in danger"
 }
