@@ -27,6 +27,7 @@ const GoalsPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [statistics, setStatistics] = useState<GoalStatistics | null>(null);
   const previousGoalsStatusRef = React.useRef<Map<number, string>>(new Map());
+  const notifiedGoalsRef = React.useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
   
   const loadGoals = React.useCallback(async () => {
     setLoading(true);
@@ -41,8 +42,12 @@ const GoalsPage: React.FC = () => {
       const newGoals = Array.isArray(data) ? data : [];
       
       // Détecter les changements de statut pour afficher des notifications
+      const now = new Date();
       newGoals.forEach((goal) => {
         const previousStatus = previousGoalsStatusRef.current.get(goal.id);
+        const hasBeenNotified = notifiedGoalsRef.current.has(goal.id);
+        
+        // Vérifier si le statut a changé
         if (previousStatus && previousStatus !== goal.status) {
           // Statut a changé
           if (goal.status === 'achieved' && previousStatus !== 'achieved') {
@@ -54,6 +59,7 @@ const GoalsPage: React.FC = () => {
               }),
               { duration: 5000, icon: '🎉' }
             );
+            notifiedGoalsRef.current.add(goal.id);
           } else if (goal.status === 'failed' && previousStatus !== 'failed') {
             const goalTypeLabel = t(`goals:goalTypes.${goal.goal_type}`, { defaultValue: goal.goal_type });
             toast.error(
@@ -63,6 +69,34 @@ const GoalsPage: React.FC = () => {
               }),
               { duration: 5000, icon: '❌' }
             );
+            notifiedGoalsRef.current.add(goal.id);
+          }
+        } else if (goal.status === 'achieved' && !hasBeenNotified) {
+          // Vérifier si l'objectif a été atteint récemment (dans les 5 dernières minutes)
+          // en utilisant last_achieved_alert_sent ou updated_at
+          let recentlyAchieved = false;
+          
+          if (goal.last_achieved_alert_sent) {
+            const alertSentDate = new Date(goal.last_achieved_alert_sent);
+            const minutesSinceAlert = (now.getTime() - alertSentDate.getTime()) / (1000 * 60);
+            recentlyAchieved = minutesSinceAlert <= 5; // Dans les 5 dernières minutes
+          } else if (goal.updated_at) {
+            const updatedDate = new Date(goal.updated_at);
+            const minutesSinceUpdate = (now.getTime() - updatedDate.getTime()) / (1000 * 60);
+            // Si mis à jour récemment et statut est "achieved", probablement vient d'être atteint
+            recentlyAchieved = minutesSinceUpdate <= 5 && goal.status === 'achieved';
+          }
+          
+          if (recentlyAchieved) {
+            const goalTypeLabel = t(`goals:goalTypes.${goal.goal_type}`, { defaultValue: goal.goal_type });
+            toast.success(
+              t('goals:goalAchievedNotification', { 
+                defaultValue: `🎉 Objectif atteint : ${goalTypeLabel}`,
+                goalType: goalTypeLabel
+              }),
+              { duration: 5000, icon: '🎉' }
+            );
+            notifiedGoalsRef.current.add(goal.id);
           }
         }
       });
@@ -86,6 +120,17 @@ const GoalsPage: React.FC = () => {
   useEffect(() => {
     loadGoals();
   }, [loadGoals]);
+
+  // Polling périodique pour détecter les changements de statut (toutes les 30 secondes)
+  useEffect(() => {
+    if (isModalOpen) return; // Ne pas poller si la modale est ouverte
+    
+    const interval = setInterval(() => {
+      loadGoals();
+    }, 30000); // 30 secondes
+
+    return () => clearInterval(interval);
+  }, [loadGoals, isModalOpen]);
 
   // Charger les statistiques séparément pour avoir les compteurs corrects
   useEffect(() => {
@@ -248,7 +293,6 @@ const GoalsPage: React.FC = () => {
   const activeCount = statistics?.active_goals ?? activeGoals.length;
   const achievedCount = statistics?.achieved_goals ?? achievedGoals.length;
   const failedCount = statistics?.failed_goals ?? failedGoals.length;
-  const cancelledCount = cancelledGoals.length; // Pas dans les statistiques, utiliser la liste filtrée
   const totalCount = statistics?.total_goals ?? goals.length; // Utiliser les statistiques pour le total
   
   

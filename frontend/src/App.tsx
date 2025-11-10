@@ -17,6 +17,8 @@ import GoalsPage from './pages/GoalsPage';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { useTheme } from './hooks/useTheme';
+import { goalsService, TradingGoal } from './services/goals';
+import { toast } from 'react-hot-toast';
 
 function App() {
   const { t } = useI18nTranslation();
@@ -25,6 +27,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const currentPageRef = useRef(currentPage);
   const { theme } = useTheme();
+  const notifiedGoalsRef = useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
   
   // Maintenir la ref à jour
   useEffect(() => {
@@ -48,6 +51,59 @@ function App() {
 
     checkAuth();
   }, []);
+
+  // Vérification globale des objectifs récemment atteints (même si pas sur la page Goals)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const checkRecentAchievements = async () => {
+      try {
+        // Charger uniquement les objectifs atteints récemment
+        const achievedGoals = await goalsService.list({ status: 'achieved' });
+        const now = new Date();
+        
+        achievedGoals.forEach((goal: TradingGoal) => {
+          if (notifiedGoalsRef.current.has(goal.id)) return; // Déjà notifié
+          
+          // Vérifier si l'objectif a été atteint récemment (dans les 5 dernières minutes)
+          let recentlyAchieved = false;
+          
+          if (goal.last_achieved_alert_sent) {
+            const alertSentDate = new Date(goal.last_achieved_alert_sent);
+            const minutesSinceAlert = (now.getTime() - alertSentDate.getTime()) / (1000 * 60);
+            recentlyAchieved = minutesSinceAlert <= 5;
+          } else if (goal.updated_at) {
+            const updatedDate = new Date(goal.updated_at);
+            const minutesSinceUpdate = (now.getTime() - updatedDate.getTime()) / (1000 * 60);
+            recentlyAchieved = minutesSinceUpdate <= 5 && goal.status === 'achieved';
+          }
+          
+          if (recentlyAchieved) {
+            const goalTypeLabel = t(`goals:goalTypes.${goal.goal_type}`, { defaultValue: goal.goal_type });
+            toast.success(
+              t('goals:goalAchievedNotification', { 
+                defaultValue: `🎉 Objectif atteint : ${goalTypeLabel}`,
+                goalType: goalTypeLabel
+              }),
+              { duration: 5000, icon: '🎉' }
+            );
+            notifiedGoalsRef.current.add(goal.id);
+          }
+        });
+      } catch (err) {
+        // Ignorer les erreurs silencieusement
+        console.error('Erreur lors de la vérification des objectifs:', err);
+      }
+    };
+
+    // Vérifier immédiatement au chargement
+    checkRecentAchievements();
+
+    // Vérifier périodiquement (toutes les 30 secondes)
+    const interval = setInterval(checkRecentAchievements, 30000);
+
+    return () => clearInterval(interval);
+  }, [currentUser, t]);
 
   // Gérer la navigation par hash - séparé pour avoir accès à currentUser à jour
   useEffect(() => {

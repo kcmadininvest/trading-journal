@@ -20,6 +20,7 @@ export interface TradingGoal {
   is_overdue?: boolean;
   created_at?: string;
   updated_at?: string;
+  last_achieved_alert_sent?: string;
 }
 
 export interface GoalProgress {

@@ -633,8 +633,9 @@ class TradingGoalSerializer(serializers.ModelSerializer):
             'is_overdue',
             'created_at',
             'updated_at',
+            'last_achieved_alert_sent',
         ]
-        read_only_fields = ['user', 'current_value', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'current_value', 'created_at', 'updated_at', 'last_achieved_alert_sent']
     
     def validate(self, data):
         """Valide les données de l'objectif."""

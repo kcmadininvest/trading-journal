@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { usePreferences } from '../../hooks/usePreferences';
-import { formatDate, formatDateTimeShort, getMonthNames, getDayNames } from '../../utils/dateFormat';
+import { formatDateTimeShort, getMonthNames, getDayNames } from '../../utils/dateFormat';
 
 interface DateTimeInputProps {
   value: string; // Format ISO (YYYY-MM-DDTHH:mm) ou vide
