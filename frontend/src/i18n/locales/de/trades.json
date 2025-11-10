@@ -96,6 +96,7 @@
     "possibleImprovements": "Mögliche Verbesserungen",
     "possibleImprovementsPlaceholder": "Identifizieren Sie Verbesserungspunkte für diesen Trade...",
     "tradesWithStrategyRespected": "{{count}} / {{total}} Trades mit Strategieeinhaltung",
+    "unsavedChanges": "Nicht gespeicherte Änderungen",
     "cancel": "Abbrechen",
     "saving": "Speichern...",
     "save": "Speichern"
