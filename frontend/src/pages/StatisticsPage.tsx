@@ -218,12 +218,12 @@ function StatisticsPage() {
   // Gestion des erreurs
   if (hasError) {
     return (
-      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div className="text-center py-12">
-          <div className="text-red-500 dark:text-red-400 text-lg mb-4">{t('statistics:errorLoadingData')}</div>
+      <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="text-center py-8 sm:py-12">
+          <div className="text-sm sm:text-base lg:text-lg text-red-500 dark:text-red-400 mb-3 sm:mb-4">{t('statistics:errorLoadingData')}</div>
           <button 
             onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700"
           >
             {t('statistics:retry')}
           </button>
@@ -265,13 +265,13 @@ function StatisticsPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="w-full">
         {/* Filtres */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4">
             {/* Compte de trading */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('statistics:tradingAccount')}
               </label>
@@ -286,7 +286,7 @@ function StatisticsPage() {
             </div>
             
             {/* Sélecteur de période moderne */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('statistics:period', { defaultValue: 'Période' })}
               </label>
@@ -305,7 +305,7 @@ function StatisticsPage() {
 
         {/* Soldes du compte */}
         {selectedAccount && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
             <AccountIndicatorsGrid 
               indicators={indicators} 
               currencySymbol={currencySymbol} 
@@ -315,12 +315,12 @@ function StatisticsPage() {
 
         {/* Niveau 1: Hero Metrics - KPIs Principaux */}
         {statisticsData && (
-          <div className="mb-6">
-            <div className="mb-3">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('statistics:overview.title')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('statistics:overview.subtitle')}</p>
+          <div className="mb-4 sm:mb-6">
+            <div className="mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('statistics:overview.title')}</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{t('statistics:overview.subtitle')}</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <MetricCard
                 title={t('statistics:overview.performance', { defaultValue: 'Performance' })}
                 icon={
@@ -405,14 +405,14 @@ function StatisticsPage() {
                   value={indicators.totalTrades}
                   variant="default"
                 />
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
                   <div className="flex items-center gap-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.winningTrades', { defaultValue: 'Gagnants' })} :</span>
-                    <span className="text-base font-semibold text-blue-500 dark:text-blue-400">{statisticsData.winning_trades}</span>
+                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.winningTrades', { defaultValue: 'Gagnants' })} :</span>
+                    <span className="text-sm sm:text-base font-semibold text-blue-500 dark:text-blue-400">{statisticsData.winning_trades}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.losingTrades', { defaultValue: 'Perdants' })} :</span>
-                    <span className="text-base font-semibold text-pink-500 dark:text-pink-400">{statisticsData.losing_trades}</span>
+                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.losingTrades', { defaultValue: 'Perdants' })} :</span>
+                    <span className="text-sm sm:text-base font-semibold text-pink-500 dark:text-pink-400">{statisticsData.losing_trades}</span>
                   </div>
                 </div>
                 <MetricItem
@@ -429,16 +429,16 @@ function StatisticsPage() {
         {statisticsData && (
           <>
             {/* Section Performance & Risque */}
-            <div className="mb-8">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+            <div className="mb-6 sm:mb-8">
+              <div className="mb-3 sm:mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
                   {t('statistics:performanceRatios.performance', { defaultValue: 'Performance' })} & {t('statistics:performanceRatios.riskManagement', { defaultValue: 'Gestion du Risque' })}
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                   {t('statistics:performanceRatios.performanceSubtitle', { defaultValue: 'Métriques de performance globale' })} • {t('statistics:performanceRatios.riskManagementSubtitle', { defaultValue: 'Indicateurs de risque et récupération' })}
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <MetricCard
                   title={t('statistics:performanceRatios.mainPerformance')}
                   icon={
@@ -560,7 +560,7 @@ function StatisticsPage() {
           subtitle={t('statistics:tradesAnalysis.subtitle')}
           defaultCollapsed={false}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {statisticsData && (
               <>
                 <MetricCard
@@ -650,7 +650,7 @@ function StatisticsPage() {
           subtitle={t('statistics:advancedAnalysis.subtitle')}
           defaultCollapsed={false}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
             {statisticsData && analyticsData && (
               <>
                 <MetricCard
@@ -862,11 +862,11 @@ function StatisticsPage() {
                     </svg>
                   }
                 >
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {bestAndWorstDays.bestDay && (
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('statistics:advancedAnalysis.bestDay')}</div>
-                        <div className="text-base font-semibold text-blue-500 dark:text-blue-400">
+                        <div className="text-sm sm:text-base font-semibold text-blue-500 dark:text-blue-400 break-words">
                           {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol)}
                         </div>
                         <div className="text-xs text-gray-400">
@@ -877,7 +877,7 @@ function StatisticsPage() {
                     {bestAndWorstDays.worstDay && (
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('statistics:advancedAnalysis.worstDay')}</div>
-                        <div className="text-base font-semibold text-pink-500 dark:text-pink-400">
+                        <div className="text-sm sm:text-base font-semibold text-pink-500 dark:text-pink-400 break-words">
                           {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol)}
                         </div>
                         <div className="text-xs text-gray-400">
