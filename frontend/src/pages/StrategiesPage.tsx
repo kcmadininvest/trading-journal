@@ -309,7 +309,17 @@ const StrategiesPage: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       datalabels: {
-        display: false,
+        display: true,
+        color: '#ffffff',
+        font: {
+          weight: 600,
+          size: 13,
+        },
+        formatter: function(value: number) {
+          return value > 0 ? formatNumber(value, 1) + '%' : '';
+        },
+        anchor: 'center' as const,
+        align: 'center' as const,
       },
       legend: {
         display: true,
@@ -592,7 +602,17 @@ const StrategiesPage: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       datalabels: {
-        display: false,
+        display: true,
+        color: '#ffffff',
+        font: {
+          weight: 600,
+          size: 13,
+        },
+        formatter: function(value: number) {
+          return value > 0 ? value.toString() : '';
+        },
+        anchor: 'center' as const,
+        align: 'center' as const,
       },
       legend: {
         display: false,
