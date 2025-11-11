@@ -11,11 +11,11 @@ import { currenciesService, Currency } from '../services/currencies';
 import Tooltip from '../components/ui/Tooltip';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
-import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
-import { formatDate } from '../utils/dateFormat';
+import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
+import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -56,11 +56,6 @@ const StrategiesPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
-
-  // Wrapper pour formatCurrency avec préférences
-  const formatCurrency = useCallback((value: number, currencySymbol: string = ''): string => {
-    return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
-  }, [preferences.number_format]);
   
   // Wrapper pour formatNumber avec préférences
   const formatNumber = useCallback((value: number, digits: number = 2): string => {
@@ -267,11 +262,6 @@ const StrategiesPage: React.FC = () => {
     allTrades,
     filteredTrades,
   });
-
-  // Alias pour compatibilité avec le code existant
-  const accountBalance = indicators.accountBalance;
-  const bestAndWorstDays = indicators.bestAndWorstDays;
-  const consistencyTarget = indicators.consistencyTarget;
 
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
@@ -915,140 +905,18 @@ const StrategiesPage: React.FC = () => {
                 }}
               />
             </div>
-
-            {/* Soldes du compte */}
-            {selectedAccount && (
-              <div className="flex flex-wrap items-end gap-6 flex-1">
-                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
-                  </span>
-                  <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {formatCurrency(accountBalance.initial, currencySymbol)}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
-                  </span>
-                  <span className={`text-lg font-semibold ${
-                    accountBalance.current >= accountBalance.initial 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-pink-600 dark:text-pink-400'
-                  }`}>
-                    {formatCurrency(accountBalance.current, currencySymbol)}
-                  </span>
-                </div>
-                {accountBalance.initial > 0 && (
-                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {t('dashboard:variation', { defaultValue: 'Variation' })}
-                    </span>
-                    <span className={`text-lg font-semibold ${
-                      accountBalance.current >= accountBalance.initial 
-                        ? 'text-blue-600 dark:text-blue-400' 
-                        : 'text-pink-600 dark:text-pink-400'
-                    }`}>
-                      {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
-                      {' '}
-                      ({formatNumber(((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100), 2)}%)
-                    </span>
-                  </div>
-                )}
-                {indicators.totalTrades > 0 && (
-                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
-                    </span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {indicators.totalTrades}
-                    </span>
-                  </div>
-                )}
-                {bestAndWorstDays.bestDay && (
-                  <div className="flex flex-col gap-1 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                        {t('dashboard:bestDay', { defaultValue: 'Meilleur jour' })}
-                      </span>
-                      <span className="text-xs text-blue-600 dark:text-blue-400">
-                        {formatDate(bestAndWorstDays.bestDay.date, preferences.date_format, false, preferences.timezone)}
-                      </span>
-                    </div>
-                    <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                      {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol)}
-                    </span>
-                  </div>
-                )}
-                {bestAndWorstDays.worstDay && (
-                  <div className="flex flex-col gap-1 p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-pink-700 dark:text-pink-300">
-                        {t('dashboard:worstDay', { defaultValue: 'Pire jour' })}
-                      </span>
-                      <span className="text-xs text-pink-600 dark:text-pink-400">
-                        {formatDate(bestAndWorstDays.worstDay.date, preferences.date_format, false, preferences.timezone)}
-                      </span>
-                    </div>
-                    <span className="text-lg font-semibold text-pink-600 dark:text-pink-400">
-                      {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol)}
-                    </span>
-                  </div>
-                )}
-                {consistencyTarget && (
-                  <div className={`flex flex-col gap-1 p-3 rounded-lg border ${
-                    consistencyTarget.isCompliant
-                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                      : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-                  }`}>
-                    <span className={`text-sm font-medium ${
-                      consistencyTarget.isCompliant
-                        ? 'text-green-700 dark:text-green-300'
-                        : 'text-orange-700 dark:text-orange-300'
-                    }`}>
-                      {t('dashboard:consistencyTarget', { defaultValue: 'Consistency Target' })}
-                    </span>
-                    <span className={`text-lg font-semibold ${
-                      consistencyTarget.isCompliant
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-orange-600 dark:text-orange-400'
-                    }`}>
-                      {formatNumber(consistencyTarget.bestDayPercentage, 2)}% / {formatNumber(consistencyTarget.targetPercentage, 2)}%
-                    </span>
-                    {!consistencyTarget.isCompliant && 
-                     typeof consistencyTarget.additionalProfitNeeded === 'number' &&
-                     consistencyTarget.additionalProfitNeeded > 0 && (() => {
-                      const formattedAmount = formatCurrency(consistencyTarget.additionalProfitNeeded, currencySymbol);
-                      // Ne pas afficher si le montant formaté est invalide, vide ou contient des caractères non désirés
-                      if (!formattedAmount || 
-                          formattedAmount === '-' || 
-                          formattedAmount.trim() === '' || 
-                          formattedAmount.includes('{amount}') ||
-                          formattedAmount.includes('NaN') ||
-                          formattedAmount.includes('undefined')) {
-                        return null;
-                      }
-                      // Construire le texte avec interpolation
-                      const label = t('dashboard:additionalProfitNeeded', { 
-                        defaultValue: 'Profit supplémentaire requis: {amount}',
-                        amount: formattedAmount
-                      });
-                      // Si l'interpolation n'a pas fonctionné (le placeholder est encore présent), ne pas afficher
-                      if (label.includes('{amount}')) {
-                        return null;
-                      }
-                      return (
-                        <span className="text-xs text-orange-600 dark:text-orange-400">
-                          {label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Soldes du compte */}
+        {selectedAccount && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+            <AccountIndicatorsGrid 
+              indicators={indicators} 
+              currencySymbol={currencySymbol} 
+            />
+          </div>
+        )}
 
         {/* Message d'erreur */}
         {error && (
