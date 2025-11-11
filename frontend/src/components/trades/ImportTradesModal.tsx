@@ -4,6 +4,7 @@ import { AccountSelector } from '../accounts/AccountSelector';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { useTradingAccount } from '../../contexts/TradingAccountContext';
 
 interface ImportTradesModalProps {
   open: boolean;
@@ -15,8 +16,9 @@ type ModalState = 'initial' | 'preview' | 'importing' | 'success';
 export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onClose }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
+  const { selectedAccountId } = useTradingAccount();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [accountId, setAccountId] = useState<number | null>(null);
+  const [accountId, setAccountId] = useState<number | null | undefined>(undefined);
   const [state, setState] = useState<ModalState>('initial');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
   const [showFormatGuide, setShowFormatGuide] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previousFileRef = useRef<File | null>(null);
-  const previousAccountRef = useRef<number | null>(null);
+  const previousAccountRef = useRef<number | null | undefined>(null);
 
   const CSV_COLUMNS = useMemo(() => [
     { name: 'Id', description: t('trades:importModal.formatGuide.columns.Id.description'), example: '1443101901', required: true },
@@ -75,19 +77,28 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      // Initialiser le compte avec le compte sélectionné dans le contexte
+      // Si un compte est sélectionné, l'utiliser, sinon laisser AccountSelector initialiser le compte par défaut
+      if (selectedAccountId !== null && selectedAccountId !== undefined) {
+        setAccountId(selectedAccountId);
+        previousAccountRef.current = selectedAccountId;
+      } else {
+        // Ne pas définir accountId pour permettre à AccountSelector d'initialiser le compte par défaut
+        // On utilise undefined pour que AccountSelector détecte qu'aucune valeur n'a été fournie
+        setAccountId(undefined);
+        previousAccountRef.current = null;
+      }
       // Réinitialiser les références précédentes pour éviter les faux positifs dans le useEffect suivant
       previousFileRef.current = null;
-      // Note: accountId est conservé, donc on met à jour previousAccountRef avec la valeur actuelle
-      previousAccountRef.current = accountId;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, selectedAccountId]);
 
   // Réinitialiser l'aperçu si le fichier ou le compte change
   React.useEffect(() => {
     if (
       (selectedFile !== previousFileRef.current || accountId !== previousAccountRef.current) &&
-      (previousFileRef.current !== null || previousAccountRef.current !== null)
+      (previousFileRef.current !== null || (previousAccountRef.current !== null && previousAccountRef.current !== undefined))
     ) {
       // Le fichier ou le compte a changé, réinitialiser l'aperçu
       setState('initial');
