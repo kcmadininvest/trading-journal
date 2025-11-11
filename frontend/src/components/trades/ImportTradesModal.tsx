@@ -239,7 +239,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-2 sm:p-4"
       onClick={() => state !== 'importing' && onClose(false)}
     >
       <div 
@@ -247,22 +247,22 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('trades:importModal.title')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('trades:importModal.format')}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{t('trades:importModal.title')}</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">{t('trades:importModal.format')}</p>
             </div>
           </div>
           <button 
             onClick={() => state !== 'importing' && onClose(false)} 
             disabled={state === 'importing'}
-            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50"
+            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50 flex-shrink-0"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -272,60 +272,60 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
 
         {/* Bandeau de résultats/erreurs (aperçu ou import) */}
         {(state === 'preview' && previewResult) && (
-          <div className={`px-6 py-4 border-b flex-shrink-0 ${
+          <div className={`px-3 sm:px-6 py-3 sm:py-4 border-b flex-shrink-0 ${
             previewResult.success && (!previewResult.missing_columns || previewResult.missing_columns.length === 0)
               ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
               : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
           }`}>
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2 sm:gap-3">
               {previewResult.success && (!previewResult.missing_columns || previewResult.missing_columns.length === 0) ? (
-                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               ) : (
-                <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               )}
-              <div className="flex-1">
-                <p className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('trades:importModal.preview.title')}</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('trades:importModal.preview.title')}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3 mb-2">
                   {previewResult.total_rows !== undefined && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.preview.totalRows')}</div>
-                      <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{previewResult.total_rows}</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-gray-200 dark:border-gray-700">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.preview.totalRows')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100">{previewResult.total_rows}</div>
                     </div>
                   )}
                   {previewResult.success_count !== undefined && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-green-200 dark:border-green-800">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.preview.importable')}</div>
-                      <div className="text-lg font-bold text-green-600 dark:text-green-400">{previewResult.success_count}</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-green-200 dark:border-green-800">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.preview.importable')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400">{previewResult.success_count}</div>
                     </div>
                   )}
                   {previewResult.error_count !== undefined && previewResult.error_count > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-rose-200 dark:border-rose-800">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.preview.errors')}</div>
-                      <div className="text-lg font-bold text-rose-600 dark:text-rose-400">{previewResult.error_count}</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-rose-200 dark:border-rose-800">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.preview.errors')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-rose-600 dark:text-rose-400">{previewResult.error_count}</div>
                     </div>
                   )}
                   {previewResult.skipped_count !== undefined && previewResult.skipped_count > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-amber-200 dark:border-amber-800">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.preview.duplicates')}</div>
-                      <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{previewResult.skipped_count}</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-amber-200 dark:border-amber-800">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.preview.duplicates')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-amber-600 dark:text-amber-400">{previewResult.skipped_count}</div>
                     </div>
                   )}
                   {previewResult.total_pnl !== undefined && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-blue-200 dark:border-blue-800">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.preview.totalPnl')}</div>
-                      <div className={`text-lg font-bold ${(previewResult.total_pnl ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-blue-200 dark:border-blue-800">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.preview.totalPnl')}</div>
+                      <div className={`text-sm sm:text-lg font-bold ${(previewResult.total_pnl ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {formatCurrencyWithSign(previewResult.total_pnl, '', preferences.number_format, 2)}
                       </div>
                     </div>
                   )}
                   {previewResult.total_fees !== undefined && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-purple-200 dark:border-purple-800">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.preview.totalFees')}</div>
-                      <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-purple-200 dark:border-purple-800">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.preview.totalFees')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-purple-600 dark:text-purple-400">
                         {formatNumber(previewResult.total_fees, 2, preferences.number_format)}
                       </div>
                     </div>
@@ -333,10 +333,10 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                 </div>
                 {previewResult.missing_columns && previewResult.missing_columns.length > 0 && (
                   <div className="mt-2 pt-2 border-t border-amber-300 dark:border-amber-700">
-                    <div className="font-medium text-amber-900 dark:text-amber-300 mb-1">{t('trades:importModal.preview.missingColumns')}</div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="text-xs sm:text-sm font-medium text-amber-900 dark:text-amber-300 mb-1">{t('trades:importModal.preview.missingColumns')}</div>
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {previewResult.missing_columns.map((col, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs rounded font-mono">
+                        <span key={idx} className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-[10px] sm:text-xs rounded font-mono">
                           {col}
                         </span>
                       ))}
@@ -350,36 +350,36 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
 
         {/* Bandeau de succès (après import) */}
         {state === 'success' && importResult && (
-          <div className="px-6 py-4 border-b bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 flex-shrink-0">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="px-3 sm:px-6 py-3 sm:py-4 border-b bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 flex-shrink-0">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="flex-1">
-                <p className="font-semibold text-green-900 dark:text-green-300 mb-2">{importResult.message || t('trades:importModal.success.message')}</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm sm:text-base font-semibold text-green-900 dark:text-green-300 mb-2 break-words">{importResult.message || t('trades:importModal.success.message')}</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                   {importResult.total_rows !== undefined && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.preview.totalRows')}</div>
-                      <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{importResult.total_rows}</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-gray-200 dark:border-gray-700">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.preview.totalRows')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-gray-900 dark:text-gray-100">{importResult.total_rows}</div>
                     </div>
                   )}
                   {importResult.success_count !== undefined && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-green-200 dark:border-green-800">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.success.imported')}</div>
-                      <div className="text-lg font-bold text-green-600 dark:text-green-400">{importResult.success_count}</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-green-200 dark:border-green-800">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.success.imported')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-green-600 dark:text-green-400">{importResult.success_count}</div>
                     </div>
                   )}
                   {importResult.error_count !== undefined && importResult.error_count > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-rose-200 dark:border-rose-800">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.preview.errors')}</div>
-                      <div className="text-lg font-bold text-rose-600 dark:text-rose-400">{importResult.error_count}</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-rose-200 dark:border-rose-800">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.preview.errors')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-rose-600 dark:text-rose-400">{importResult.error_count}</div>
                     </div>
                   )}
                   {importResult.skipped_count !== undefined && importResult.skipped_count > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border border-amber-200 dark:border-amber-800">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:importModal.success.skipped')}</div>
-                      <div className="text-lg font-bold text-amber-600 dark:text-amber-400">{importResult.skipped_count}</div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-1.5 sm:p-2 border border-amber-200 dark:border-amber-800">
+                      <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mb-0.5 sm:mb-1">{t('trades:importModal.success.skipped')}</div>
+                      <div className="text-sm sm:text-lg font-bold text-amber-600 dark:text-amber-400">{importResult.skipped_count}</div>
                     </div>
                   )}
                 </div>
@@ -389,7 +389,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
         )}
 
         {/* Content - Scrollable */}
-        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
           {/* Account Selector */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
@@ -407,7 +407,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`relative border-2 border-dashed rounded-xl p-8 transition-all ${
+              className={`relative border-2 border-dashed rounded-xl p-4 sm:p-6 md:p-8 transition-all ${
                 isDragging
                   ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20'
                   : selectedFile
@@ -425,41 +425,41 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
               />
               <div className="text-center">
                 {selectedFile ? (
-                  <div className="space-y-3">
-                    <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
-                      <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{selectedFile.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{formatFileSize(selectedFile.size)}</p>
+                      <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100 break-words">{selectedFile.name}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{formatFileSize(selectedFile.size)}</p>
                     </div>
                     {state !== 'importing' && state !== 'success' && (
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                        className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
                       >
                         {t('trades:importModal.changeFile')}
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto">
-                      <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto">
+                      <svg className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
+                      <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                         {t('trades:importModal.dragDrop')}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('trades:importModal.or')}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">{t('trades:importModal.or')}</p>
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={state === 'importing'}
-                        className="mt-2 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium text-sm disabled:opacity-50"
+                        className="mt-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-medium text-xs sm:text-sm disabled:opacity-50"
                       >
                         {t('trades:importModal.browseFiles')}
                       </button>
@@ -489,66 +489,66 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
 
           {/* Format Guide Section */}
           {showFormatGuide && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-5 space-y-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     {t('trades:importModal.formatGuide.title')}
                   </h3>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                    <p>{t('trades:importModal.formatGuide.separator')} <span className="font-mono font-semibold bg-white dark:bg-gray-800 px-2 py-0.5 rounded border dark:border-gray-700">,</span> {t('trades:importModal.formatGuide.separatorNote')}</p>
-                    <p>{t('trades:importModal.formatGuide.encoding')} <span className="font-mono font-semibold bg-white dark:bg-gray-800 px-2 py-0.5 rounded border dark:border-gray-700">UTF-8</span> {t('trades:importModal.formatGuide.encodingNote')}</p>
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    <p className="break-words">{t('trades:importModal.formatGuide.separator')} <span className="font-mono font-semibold bg-white dark:bg-gray-800 px-1.5 sm:px-2 py-0.5 rounded border dark:border-gray-700">,</span> {t('trades:importModal.formatGuide.separatorNote')}</p>
+                    <p className="break-words">{t('trades:importModal.formatGuide.encoding')} <span className="font-mono font-semibold bg-white dark:bg-gray-800 px-1.5 sm:px-2 py-0.5 rounded border dark:border-gray-700">UTF-8</span> {t('trades:importModal.formatGuide.encodingNote')}</p>
                   </div>
                 </div>
                 <button
                   onClick={downloadTemplate}
-                  className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center gap-2"
+                  className="px-2 sm:px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 flex-shrink-0"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  {t('trades:importModal.formatGuide.downloadTemplate')}
+                  <span>{t('trades:importModal.formatGuide.downloadTemplate')}</span>
                 </button>
               </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-800 overflow-hidden">
                 <div className="overflow-x-auto max-h-96 overflow-y-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-xs sm:text-sm">
                     <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                       <tr>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">{t('trades:importModal.formatGuide.column')}</th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">{t('trades:importModal.formatGuide.description')}</th>
-                        <th className="px-4 py-2 text-left font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">{t('trades:importModal.formatGuide.example')}</th>
-                        <th className="px-4 py-2 text-center font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">{t('trades:importModal.formatGuide.required')}</th>
+                        <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 text-[10px] sm:text-xs">{t('trades:importModal.formatGuide.column')}</th>
+                        <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 text-[10px] sm:text-xs">{t('trades:importModal.formatGuide.description')}</th>
+                        <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 text-[10px] sm:text-xs">{t('trades:importModal.formatGuide.example')}</th>
+                        <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-center font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 text-[10px] sm:text-xs">{t('trades:importModal.formatGuide.required')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                       {CSV_COLUMNS.map((col, idx) => (
                         <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                          <td className="px-4 py-2.5 font-mono font-medium text-gray-900 dark:text-gray-100">
+                          <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 font-mono font-medium text-gray-900 dark:text-gray-100 text-[10px] sm:text-xs">
                             {col.name}
                           </td>
-                          <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">
-                            {col.description}
+                          <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-gray-700 dark:text-gray-300 text-[10px] sm:text-xs">
+                            <span className="break-words">{col.description}</span>
                             {col.allowedValues && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400 block mt-1">{t('trades:importModal.formatGuide.values')} {col.allowedValues}</span>
+                              <span className="text-[9px] sm:text-xs text-gray-500 dark:text-gray-400 block mt-1 break-words">{t('trades:importModal.formatGuide.values')} {col.allowedValues}</span>
                             )}
                           </td>
-                          <td className="px-4 py-2.5">
-                            <code className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-800 dark:text-gray-200 break-all">
+                          <td className="px-2 sm:px-4 py-1.5 sm:py-2.5">
+                            <code className="text-[9px] sm:text-xs bg-gray-100 dark:bg-gray-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-gray-800 dark:text-gray-200 break-all">
                               {col.example}
                             </code>
                           </td>
-                          <td className="px-4 py-2.5 text-center">
+                          <td className="px-2 sm:px-4 py-1.5 sm:py-2.5 text-center">
                             {col.required ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                              <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
                                 {t('trades:importModal.formatGuide.yes')}
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                              <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded text-[9px] sm:text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
                                 {t('trades:importModal.formatGuide.optional')}
                               </span>
                             )}
@@ -560,15 +560,15 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-800 p-4">
-                <div className="flex items-start gap-3">
-                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-800 p-3 sm:p-4">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h2m0 0h2m-2 0v2m0-4V9m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-gray-100 mb-1">{t('trades:importModal.formatGuide.fullLineExample')}</p>
-                    <div className="bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded overflow-x-auto max-w-full">
-                      <code className="text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap block">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{t('trades:importModal.formatGuide.fullLineExample')}</p>
+                    <div className="bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 rounded overflow-x-auto max-w-full">
+                      <code className="text-[9px] sm:text-xs text-gray-800 dark:text-gray-200 whitespace-nowrap block">
                         <div>Id,ContractName,EnteredAt,ExitedAt,EntryPrice,ExitPrice,Fees,PnL,Size,Type,TradeDay,TradeDuration,Commissions</div>
                         <div className="mt-1">1443101901,NQZ5,10/08/2025 18:23:28 +02:00,10/08/2025 18:31:03 +02:00,25261.750000000,25245.750000000,8.40000,-960.000000000,3,Long,10/08/2025 00:00:00 -05:00,00:07:34.9942140,</div>
                       </code>
@@ -581,30 +581,30 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
 
           {/* Error Message */}
           {error && (
-            <div className="rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-4 flex items-start gap-3">
-              <svg className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 p-3 sm:p-4 flex items-start gap-2 sm:gap-3">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <div className="flex-1">
-                <p className="font-medium text-rose-900 dark:text-rose-300">{t('trades:importModal.error')}</p>
-                <p className="text-sm text-rose-700 dark:text-rose-400 mt-1">{error}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-rose-900 dark:text-rose-300">{t('trades:importModal.error')}</p>
+                <p className="text-xs sm:text-sm text-rose-700 dark:text-rose-400 mt-1 break-words">{error}</p>
               </div>
             </div>
           )}
 
           {/* Détails des erreurs (si aperçu) */}
           {state === 'preview' && previewResult && Array.isArray(previewResult.errors) && previewResult.errors.length > 0 && (
-            <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4">
-              <div className="font-medium text-gray-900 dark:text-gray-100 mb-2">{t('trades:importModal.preview.detailedErrors')}</div>
+            <div className="rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 sm:p-4">
+              <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">{t('trades:importModal.preview.detailedErrors')}</div>
               <div className="max-h-48 overflow-y-auto space-y-1">
                 {previewResult.errors.slice(0, 10).map((er, idx) => (
-                  <div key={idx} className="text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded p-2 border border-gray-200 dark:border-gray-700">
+                  <div key={idx} className="text-[10px] sm:text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded p-1.5 sm:p-2 border border-gray-200 dark:border-gray-700 break-words">
                     {er.row && <span className="font-mono font-medium">{t('trades:importModal.preview.line')} {er.row}: </span>}
                     {er.error}
                   </div>
                 ))}
                 {previewResult.errors.length > 10 && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 italic">
                     {t('trades:importModal.preview.andMoreErrors', { count: previewResult.errors.length - 10 })}
                   </div>
                 )}
@@ -614,7 +614,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl flex items-center justify-between flex-wrap gap-3 flex-shrink-0">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 flex-shrink-0">
           <button
             onClick={() => {
               if (fileInputRef.current) {
@@ -628,16 +628,16 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
               onClose(false);
             }}
             disabled={state === 'importing'}
-            className="px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50 w-full sm:w-auto"
           >
             {t('trades:importModal.cancel')}
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             {state === 'initial' && (
               <button
                 onClick={handlePreview}
                 disabled={!canPreview || isLoading}
-                className="px-6 py-2 rounded-lg bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2"
+                className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-lg bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-initial"
               >
                 {isLoading ? (
                   <>
@@ -662,7 +662,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
               <button
                 onClick={handleImport}
                 disabled={!canImport || isLoading}
-                className="px-6 py-2 rounded-lg bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2"
+                className="px-4 sm:px-6 py-2 text-sm sm:text-base rounded-lg bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-initial"
               >
                 {isLoading ? (
                   <>

@@ -398,7 +398,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-2 sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isLoading) {
           onClose();
@@ -410,20 +410,20 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
                 {tradeId 
                   ? t('trades:createModal.editTitle', { defaultValue: 'Modifier un trade' })
                   : t('trades:createModal.title', { defaultValue: 'Créer un trade manuellement' })}
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                 {tradeId
                   ? t('trades:createModal.editDescription', { defaultValue: 'Modifiez les informations du trade' })
                   : t('trades:createModal.description', { defaultValue: 'Saisissez les informations du trade' })}
@@ -433,7 +433,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50"
+            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50 flex-shrink-0"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -442,14 +442,14 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+            <div className="mb-3 sm:mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs sm:text-sm text-red-700 dark:text-red-300 break-words">
               {error}
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Compte de trading */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -468,7 +468,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             </div>
 
             {/* Nom du contrat et Type */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('trades:createModal.contractName', { defaultValue: 'Nom du contrat' })} *
@@ -497,7 +497,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             </div>
 
             {/* Dates d'entrée et de sortie */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('trades:createModal.entryDate', { defaultValue: 'Date/Heure d\'entrée' })} *
@@ -533,7 +533,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             </div>
 
             {/* Prix d'entrée et de sortie */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('trades:createModal.entryPrice', { defaultValue: 'Prix d\'entrée' })} *
@@ -569,7 +569,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             </div>
 
             {/* Taille et Valeur du point */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('trades:createModal.size', { defaultValue: 'Taille (Quantité)' })} *
@@ -608,7 +608,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             </div>
 
             {/* Frais et Commissions */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('trades:createModal.fees', { defaultValue: 'Frais' })}
@@ -698,7 +698,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
                 placeholder={t('trades:createModal.notesPlaceholder', { defaultValue: 'Notes personnelles sur ce trade' })}
                 disabled={isLoading}
               />
@@ -707,12 +707,12 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
         </form>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50 rounded-b-xl">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50 rounded-b-xl">
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors w-full sm:w-auto"
           >
             {t('common:cancel', { defaultValue: 'Annuler' })}
           </button>
@@ -720,7 +720,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             type="button"
             onClick={handleSubmit}
             disabled={isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors w-full sm:w-auto"
           >
             {isLoading
               ? t('common:saving', { defaultValue: 'Enregistrement...' })
