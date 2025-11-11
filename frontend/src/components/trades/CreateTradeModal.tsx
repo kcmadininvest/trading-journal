@@ -49,6 +49,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
     pnl: '',
     notes: '',
     position_strategy: null as number | null,
+    planned_stop_loss: '',
+    planned_take_profit: '',
   });
 
 
@@ -133,6 +135,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             pnl: trade.pnl || '',
             notes: trade.notes || '',
             position_strategy: trade.position_strategy || null,
+            planned_stop_loss: trade.planned_stop_loss || '',
+            planned_take_profit: trade.planned_take_profit || '',
           });
           // Si le PnL existe déjà, considérer qu'il a été édité manuellement
           setIsPnlManuallyEdited(!!trade.pnl);
@@ -252,6 +256,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
         pnl: '',
         notes: '',
         position_strategy: null,
+        planned_stop_loss: '',
+        planned_take_profit: '',
       });
       setError(null);
       setIsPnlManuallyEdited(false);
@@ -316,6 +322,40 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
     }
   }, [formData.entry_price, formData.exit_price, formData.size, formData.trade_type, formData.point_value, isPnlManuallyEdited]);
 
+  // Calculer automatiquement le R:R prévu si les prix sont fournis
+  const calculatedPlannedRR = useMemo(() => {
+    if (!formData.entry_price || !formData.planned_stop_loss || !formData.planned_take_profit || !formData.trade_type) {
+      return null;
+    }
+
+    const entryPrice = parseFloat(formData.entry_price);
+    const stopLoss = parseFloat(formData.planned_stop_loss);
+    const takeProfit = parseFloat(formData.planned_take_profit);
+
+    if (isNaN(entryPrice) || isNaN(stopLoss) || isNaN(takeProfit) || entryPrice <= 0 || stopLoss <= 0 || takeProfit <= 0) {
+      return null;
+    }
+
+    let risk: number;
+    let reward: number;
+
+    if (formData.trade_type === 'Long') {
+      // Long: risk = entry - stop_loss, reward = take_profit - entry
+      risk = entryPrice - stopLoss;
+      reward = takeProfit - entryPrice;
+    } else {
+      // Short: risk = stop_loss - entry, reward = entry - take_profit
+      risk = stopLoss - entryPrice;
+      reward = entryPrice - takeProfit;
+    }
+
+    if (risk > 0) {
+      return reward / risk;
+    }
+
+    return null;
+  }, [formData.entry_price, formData.planned_stop_loss, formData.planned_take_profit, formData.trade_type]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -368,6 +408,12 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       }
       if (formData.position_strategy) {
         payload.position_strategy = formData.position_strategy;
+      }
+      if (formData.planned_stop_loss) {
+        payload.planned_stop_loss = formData.planned_stop_loss;
+      }
+      if (formData.planned_take_profit) {
+        payload.planned_take_profit = formData.planned_take_profit;
       }
 
       if (tradeId) {
@@ -471,7 +517,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('trades:createModal.contractName', { defaultValue: 'Nom du contrat' })} *
+                  {t('trades:createModal.contractName', { defaultValue: 'Nom du contrat' })}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -485,7 +532,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('trades:createModal.tradeType', { defaultValue: 'Type' })} *
+                  {t('trades:createModal.tradeType', { defaultValue: 'Type' })}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <CustomSelect
                   value={formData.trade_type}
@@ -500,7 +548,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('trades:createModal.entryDate', { defaultValue: 'Date/Heure d\'entrée' })} *
+                  {t('trades:createModal.entryDate', { defaultValue: 'Date/Heure d\'entrée' })}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <DateTimeInput
                   value={formData.entered_at}
@@ -536,7 +585,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('trades:createModal.entryPrice', { defaultValue: 'Prix d\'entrée' })} *
+                  {t('trades:createModal.entryPrice', { defaultValue: 'Prix d\'entrée' })}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <NumberInput
                   value={formData.entry_price}
@@ -568,11 +618,60 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
               </div>
             </div>
 
+            {/* Risk/Reward Ratio - Planification */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                {t('trades:createModal.riskRewardPlanning', { defaultValue: 'Planification Risk/Reward' })}
+                <span className="text-gray-400 text-xs ml-1 font-normal">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:createModal.plannedStopLoss', { defaultValue: 'Stop Loss prévu' })}
+                  </label>
+                  <NumberInput
+                    value={formData.planned_stop_loss}
+                    onChange={(value) => setFormData(prev => ({ ...prev, planned_stop_loss: value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder={pricePlaceholder}
+                    min={0}
+                    step="any"
+                    digits={4}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:createModal.plannedTakeProfit', { defaultValue: 'Take Profit prévu' })}
+                  </label>
+                  <NumberInput
+                    value={formData.planned_take_profit}
+                    onChange={(value) => setFormData(prev => ({ ...prev, planned_take_profit: value }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder={pricePlaceholder}
+                    min={0}
+                    step="any"
+                    digits={4}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+              {calculatedPlannedRR !== null && (
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                    <span className="font-medium">{t('trades:createModal.plannedRR', { defaultValue: 'R:R prévu' })}:</span>{' '}
+                    <span className="font-semibold">1:{calculatedPlannedRR.toFixed(2)}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
             {/* Taille et Valeur du point */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('trades:createModal.size', { defaultValue: 'Taille (Quantité)' })} *
+                  {t('trades:createModal.size', { defaultValue: 'Taille (Quantité)' })}{' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <NumberInput
                   value={formData.size}

@@ -42,6 +42,20 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
     return formatDateTimeShort(dateStr, preferences.date_format, preferences.timezone);
   };
 
+  // Fonction pour vérifier si les deux R:R sont identiques (TP atteint)
+  const areRRIdentical = (planned: string | null | undefined, actual: string | null | undefined): boolean => {
+    if (!planned || !actual || planned === 'null' || actual === 'null' || planned === '' || actual === '') {
+      return false;
+    }
+    const plannedNum = parseFloat(planned);
+    const actualNum = parseFloat(actual);
+    if (isNaN(plannedNum) || isNaN(actualNum)) {
+      return false;
+    }
+    // Tolérance de 0.01 pour les arrondis
+    return Math.abs(plannedNum - actualNum) < 0.01;
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
       {/* Vue cartes pour mobile */}
@@ -158,6 +172,42 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     <div className="font-medium text-gray-900 dark:text-gray-100">{trade.duration_str ?? '-'}</div>
                   </div>
                 </div>
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                      {t('trades:plannedRR', { defaultValue: 'R:R prévu' })}
+                      {areRRIdentical(trade.planned_risk_reward_ratio, trade.actual_risk_reward_ratio) && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title={t('trades:tpReached', { defaultValue: 'TP atteint' })}>
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                    {trade.planned_risk_reward_ratio && trade.planned_risk_reward_ratio !== 'null' && trade.planned_risk_reward_ratio !== '' ? (
+                      <div className="font-medium text-blue-600 dark:text-blue-400 tabular-nums">
+                        1:{fmtNumber(trade.planned_risk_reward_ratio, 2)}
+                      </div>
+                    ) : (
+                      <div className="font-medium text-gray-400 dark:text-gray-500 text-xs">—</div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                      {t('trades:actualRR', { defaultValue: 'R:R réel' })}
+                      {areRRIdentical(trade.planned_risk_reward_ratio, trade.actual_risk_reward_ratio) && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title={t('trades:tpReached', { defaultValue: 'TP atteint' })}>
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                    {trade.actual_risk_reward_ratio && trade.actual_risk_reward_ratio !== 'null' && trade.actual_risk_reward_ratio !== '' ? (
+                      <div className="font-medium text-purple-600 dark:text-purple-400 tabular-nums">
+                        1:{fmtNumber(trade.actual_risk_reward_ratio, 2)}
+                      </div>
+                    ) : (
+                      <div className="font-medium text-gray-400 dark:text-gray-500 text-xs">—</div>
+                    )}
+                  </div>
+                </div>
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-3">
                   <div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:pnl')}</div>
@@ -261,17 +311,19 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:fees')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:netPnl')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:duration')}</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:plannedRR', { defaultValue: 'R:R prévu' })}</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:actualRR', { defaultValue: 'R:R réel' })}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:actions')}</th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {isLoading ? (
               <tr>
-                <td colSpan={12} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
+                <td colSpan={14} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
+                <td colSpan={14} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
               </tr>
             ) : (
               items.map((trade) => (
@@ -359,6 +411,38 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     {fmtCurrency(trade.net_pnl)}
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right text-gray-700 dark:text-gray-300">{trade.duration_str ?? '-'}</td>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right text-gray-700 dark:text-gray-300">
+                    {trade.planned_risk_reward_ratio && trade.planned_risk_reward_ratio !== 'null' && trade.planned_risk_reward_ratio !== '' ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="font-medium text-blue-600 dark:text-blue-400 tabular-nums">
+                          1:{fmtNumber(trade.planned_risk_reward_ratio, 2)}
+                        </span>
+                        {areRRIdentical(trade.planned_risk_reward_ratio, trade.actual_risk_reward_ratio) && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title={t('trades:tpReached', { defaultValue: 'TP atteint' })}>
+                            ✓
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500">—</span>
+                    )}
+                  </td>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right text-gray-700 dark:text-gray-300">
+                    {trade.actual_risk_reward_ratio && trade.actual_risk_reward_ratio !== 'null' && trade.actual_risk_reward_ratio !== '' ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="font-medium text-purple-600 dark:text-purple-400 tabular-nums">
+                          1:{fmtNumber(trade.actual_risk_reward_ratio, 2)}
+                        </span>
+                        {areRRIdentical(trade.planned_risk_reward_ratio, trade.actual_risk_reward_ratio) && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" title={t('trades:tpReached', { defaultValue: 'TP atteint' })}>
+                            ✓
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 dark:text-gray-500">—</span>
+                    )}
+                  </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-center">
                     {onDelete && (
                       <button
@@ -382,7 +466,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
           {(!isLoading && items.length > 0 && totals) && (
             <tfoot className="bg-gray-50 dark:bg-gray-700/50">
               <tr className="border-t-2 border-gray-200 dark:border-gray-600">
-                <td colSpan={8} className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                <td colSpan={10} className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                   <span className="inline-flex items-center gap-1 sm:gap-2 font-medium">
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -399,6 +483,8 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                 <td className="px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold" style={totals.net_pnl !== undefined ? { color: (totals.net_pnl ?? 0) >= 0 ? '#05967c' : '#e11d48' } : undefined}>
                   {totals.net_pnl !== undefined ? formatCurrencyWithSign(totals.net_pnl, '', preferences.number_format, 2) : ''}
                 </td>
+                <td className="p-0"></td>
+                <td className="p-0"></td>
                 <td className="p-0"></td>
                 <td className="p-0"></td>
               </tr>

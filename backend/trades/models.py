@@ -369,6 +369,46 @@ class TopStepTrade(models.Model):
         editable=False  # Ne plus permettre l'édition via ce champ
     )
     
+    # Risk/Reward Ratio - Planification
+    planned_stop_loss = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0.000000001'))],
+        verbose_name='Stop Loss prévu',
+        help_text='Prix de stop loss prévu à l\'entrée du trade'
+    )
+    
+    planned_take_profit = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0.000000001'))],
+        verbose_name='Take Profit prévu',
+        help_text='Prix de take profit prévu à l\'entrée du trade'
+    )
+    
+    planned_risk_reward_ratio = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        verbose_name='R:R prévu',
+        help_text='Risk/Reward ratio prévu calculé automatiquement'
+    )
+    
+    # Risk/Reward Ratio - Réalité
+    actual_risk_reward_ratio = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        verbose_name='R:R réel',
+        help_text='Risk/Reward ratio réel calculé à partir du prix de sortie'
+    )
+    
     # Métadonnées système
     imported_at = models.DateTimeField(
         auto_now_add=True,
@@ -398,7 +438,7 @@ class TopStepTrade(models.Model):
     
     def save(self, *args, **kwargs):
         """
-        Calcule automatiquement le PnL, la durée, le PnL net et le pourcentage avant sauvegarde.
+        Calcule automatiquement le PnL, la durée, le PnL net, le pourcentage et les R:R avant sauvegarde.
         """
         # Calculer la durée si entered_at et exited_at sont présents
         if self.entered_at and self.exited_at and not self.trade_duration:
@@ -407,6 +447,50 @@ class TopStepTrade(models.Model):
         # Calculer le trade_day à partir de entered_at si non défini
         if self.entered_at and not self.trade_day:
             self.trade_day = self.entered_at.date()  # type: ignore
+        
+        # Calculer le R:R prévu si stop loss et take profit sont fournis
+        if (self.entry_price and self.planned_stop_loss and self.planned_take_profit and self.trade_type):
+            risk = Decimal('0')
+            reward = Decimal('0')
+            
+            if self.trade_type == 'Long':
+                # Long: risk = entry - stop_loss, reward = take_profit - entry
+                risk = self.entry_price - self.planned_stop_loss  # type: ignore
+                reward = self.planned_take_profit - self.entry_price  # type: ignore
+            else:  # Short
+                # Short: risk = stop_loss - entry, reward = entry - take_profit
+                risk = self.planned_stop_loss - self.entry_price  # type: ignore
+                reward = self.entry_price - self.planned_take_profit  # type: ignore
+            
+            if risk > 0:
+                self.planned_risk_reward_ratio = reward / risk  # type: ignore
+            else:
+                self.planned_risk_reward_ratio = None  # type: ignore
+        elif not (self.planned_stop_loss and self.planned_take_profit):
+            # Si stop loss ou take profit manquent, R:R prévu = None
+            self.planned_risk_reward_ratio = None  # type: ignore
+        
+        # Calculer le R:R réel si exit_price est fourni
+        if (self.entry_price and self.exit_price and self.planned_stop_loss and self.trade_type):
+            risk = Decimal('0')
+            reward = Decimal('0')
+            
+            if self.trade_type == 'Long':
+                # Long: risk = entry - stop_loss, reward = exit - entry
+                risk = self.entry_price - self.planned_stop_loss  # type: ignore
+                reward = self.exit_price - self.entry_price  # type: ignore
+            else:  # Short
+                # Short: risk = stop_loss - entry, reward = entry - exit
+                risk = self.planned_stop_loss - self.entry_price  # type: ignore
+                reward = self.entry_price - self.exit_price  # type: ignore
+            
+            if risk > 0:
+                self.actual_risk_reward_ratio = reward / risk  # type: ignore
+            else:
+                self.actual_risk_reward_ratio = None  # type: ignore
+        else:
+            # Si exit_price ou stop_loss manquent, R:R réel = None
+            self.actual_risk_reward_ratio = None  # type: ignore
         
         # Calculer le PnL automatiquement si non fourni mais que les prix et la taille sont disponibles
         if self.pnl is None and self.entry_price and self.exit_price and self.size and self.trade_type:

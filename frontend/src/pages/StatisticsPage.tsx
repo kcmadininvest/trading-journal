@@ -551,6 +551,96 @@ function StatisticsPage() {
               </div>
             </div>
 
+            {/* Section Risk/Reward Ratio */}
+            {statisticsData && (
+              <div className="mb-6 sm:mb-8">
+                <div className="mb-3 sm:mb-4">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+                    {t('statistics:riskReward.title', { defaultValue: 'Risk/Reward Ratio' })}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    {t('statistics:riskReward.subtitle', { defaultValue: 'Analyse du ratio risque/récompense prévu vs réel' })}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  <MetricCard
+                    title={t('statistics:riskReward.plannedRR', { defaultValue: 'R:R Prévu' })}
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    }
+                  >
+                    <MetricItem
+                      label={t('statistics:riskReward.averagePlannedRR', { defaultValue: 'R:R moyen prévu' })}
+                      value={statisticsData.avg_planned_rr > 0 ? `1:${formatNumber(statisticsData.avg_planned_rr, 2)}` : '—'}
+                      tooltip={t('statistics:riskReward.averagePlannedRRTooltip', { defaultValue: 'Ratio Risk/Reward moyen prévu à l\'entrée des trades' })}
+                      variant={statisticsData.avg_planned_rr >= 2.0 ? 'success' : statisticsData.avg_planned_rr >= 1.5 ? 'warning' : 'default'}
+                    />
+                    <MetricItem
+                      label={t('statistics:riskReward.tradesWithPlannedRR', { defaultValue: 'Trades avec R:R prévu' })}
+                      value={`${statisticsData.trades_with_planned_rr} / ${statisticsData.total_trades}`}
+                      tooltip={t('statistics:riskReward.tradesWithPlannedRRTooltip', { defaultValue: 'Nombre de trades ayant un R:R prévu défini' })}
+                      variant="default"
+                    />
+                  </MetricCard>
+
+                  <MetricCard
+                    title={t('statistics:riskReward.actualRR', { defaultValue: 'R:R Réel' })}
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    }
+                  >
+                    <MetricItem
+                      label={t('statistics:riskReward.averageActualRR', { defaultValue: 'R:R moyen réel' })}
+                      value={statisticsData.avg_actual_rr > 0 ? `1:${formatNumber(statisticsData.avg_actual_rr, 2)}` : '—'}
+                      tooltip={t('statistics:riskReward.averageActualRRTooltip', { defaultValue: 'Ratio Risk/Reward moyen réel obtenu à la sortie des trades' })}
+                      variant={statisticsData.avg_actual_rr >= 2.0 ? 'success' : statisticsData.avg_actual_rr >= 1.5 ? 'warning' : 'default'}
+                    />
+                    <MetricItem
+                      label={t('statistics:riskReward.tradesWithActualRR', { defaultValue: 'Trades avec R:R réel' })}
+                      value={`${statisticsData.trades_with_actual_rr} / ${statisticsData.total_trades}`}
+                      tooltip={t('statistics:riskReward.tradesWithActualRRTooltip', { defaultValue: 'Nombre de trades ayant un R:R réel calculé' })}
+                      variant="default"
+                    />
+                  </MetricCard>
+
+                  <MetricCard
+                    title={t('statistics:riskReward.planRespect', { defaultValue: 'Respect du Plan' })}
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    }
+                  >
+                    <MetricItem
+                      label={t('statistics:riskReward.planRespectRate', { defaultValue: 'Taux de respect' })}
+                      value={`${formatNumber(statisticsData.plan_respect_rate, 1)}%`}
+                      tooltip={t('statistics:riskReward.planRespectRateTooltip', { defaultValue: 'Pourcentage de trades où le R:R réel est supérieur ou égal au R:R prévu' })}
+                      variant={statisticsData.plan_respect_rate >= 70 ? 'success' : statisticsData.plan_respect_rate >= 50 ? 'warning' : 'danger'}
+                    />
+                    <MetricItem
+                      label={t('statistics:riskReward.tradesWithBothRR', { defaultValue: 'Trades comparables' })}
+                      value={statisticsData.trades_with_both_rr}
+                      tooltip={t('statistics:riskReward.tradesWithBothRRTooltip', { defaultValue: 'Nombre de trades ayant à la fois un R:R prévu et un R:R réel' })}
+                      variant="default"
+                    />
+                  </MetricCard>
+                </div>
+                {statisticsData.trades_with_planned_rr === 0 && statisticsData.trades_with_actual_rr === 0 && (
+                  <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                      {t('statistics:riskReward.noDataMessage', { 
+                        defaultValue: 'Aucun R:R disponible. Ajoutez un Stop Loss et un Take Profit prévu lors de la création ou modification d\'un trade pour voir les statistiques R:R.' 
+                      })}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
           </>
         )}
 

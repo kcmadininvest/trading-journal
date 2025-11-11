@@ -24,6 +24,10 @@ export interface TradeListItem {
   trade_day: string | null; // YYYY-MM-DD
   position_strategy: number | null;
   position_strategy_title: string | null;
+  planned_stop_loss: string | null;
+  planned_take_profit: string | null;
+  planned_risk_reward_ratio: string | null;
+  actual_risk_reward_ratio: string | null;
 }
 
 export interface TradeDetail extends TradeListItem {
@@ -294,6 +298,12 @@ class TradesService {
     calmar_ratio: number;
     trade_efficiency: number;
     current_winning_streak_days: number;
+    avg_planned_rr: number;
+    avg_actual_rr: number;
+    trades_with_planned_rr: number;
+    trades_with_actual_rr: number;
+    trades_with_both_rr: number;
+    plan_respect_rate: number;
   }> {
     const queryParams = new URLSearchParams();
     if (tradingAccountId) {

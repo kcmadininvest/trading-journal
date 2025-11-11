@@ -43,6 +43,12 @@ export interface StatisticsData {
   calmar_ratio: number;
   trade_efficiency: number;
   current_winning_streak_days: number;
+  avg_planned_rr: number;
+  avg_actual_rr: number;
+  trades_with_planned_rr: number;
+  trades_with_actual_rr: number;
+  trades_with_both_rr: number;
+  plan_respect_rate: number;
 }
 
 export interface AnalyticsData {
@@ -129,6 +135,12 @@ export function useStatistics(
           max_runup_pct: result.max_runup_pct ?? 0,
           max_runup_global: result.max_runup_global ?? 0,
           max_runup_global_pct: result.max_runup_global_pct ?? 0,
+          avg_planned_rr: result.avg_planned_rr ?? 0,
+          avg_actual_rr: result.avg_actual_rr ?? 0,
+          trades_with_planned_rr: result.trades_with_planned_rr ?? 0,
+          trades_with_actual_rr: result.trades_with_actual_rr ?? 0,
+          trades_with_both_rr: result.trades_with_both_rr ?? 0,
+          plan_respect_rate: result.plan_respect_rate ?? 0,
         } as StatisticsData);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Erreur lors du chargement des statistiques'));

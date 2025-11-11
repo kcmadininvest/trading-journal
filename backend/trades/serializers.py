@@ -146,10 +146,14 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
             'is_profitable',
             'formatted_entry_date',
             'formatted_exit_date',
+            'planned_stop_loss',
+            'planned_take_profit',
+            'planned_risk_reward_ratio',
+            'actual_risk_reward_ratio',
             'imported_at',
             'updated_at'
         ]
-        read_only_fields = ['user', 'topstep_id', 'imported_at', 'updated_at', 'position_strategy_title', 'net_pnl', 'pnl_percentage', 'is_profitable', 'duration_str', 'formatted_entry_date', 'formatted_exit_date', 'user_username', 'trading_account_name', 'trading_account_type']
+        read_only_fields = ['user', 'topstep_id', 'imported_at', 'updated_at', 'position_strategy_title', 'net_pnl', 'pnl_percentage', 'is_profitable', 'duration_str', 'formatted_entry_date', 'formatted_exit_date', 'user_username', 'trading_account_name', 'trading_account_type', 'planned_risk_reward_ratio', 'actual_risk_reward_ratio']
 
     def validate_position_strategy(self, value):
         """Valide que la stratégie appartient à l'utilisateur."""
@@ -240,7 +244,11 @@ class TopStepTradeListSerializer(serializers.ModelSerializer):
             'duration_str',
             'trade_day',
             'position_strategy',
-            'position_strategy_title'
+            'position_strategy_title',
+            'planned_stop_loss',
+            'planned_take_profit',
+            'planned_risk_reward_ratio',
+            'actual_risk_reward_ratio'
         ]
 
 
@@ -319,6 +327,13 @@ class TradeStatisticsSerializer(serializers.Serializer):
     calmar_ratio = serializers.FloatField()
     trade_efficiency = serializers.FloatField()
     current_winning_streak_days = serializers.IntegerField()
+    # Statistiques Risk/Reward Ratio
+    avg_planned_rr = serializers.FloatField()
+    avg_actual_rr = serializers.FloatField()
+    trades_with_planned_rr = serializers.IntegerField()
+    trades_with_actual_rr = serializers.IntegerField()
+    trades_with_both_rr = serializers.IntegerField()
+    plan_respect_rate = serializers.FloatField()
 
 
 class TradingMetricsSerializer(serializers.Serializer):

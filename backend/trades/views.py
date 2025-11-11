@@ -352,7 +352,13 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'sortino_ratio': 0.0,
                 'calmar_ratio': 0.0,
                 'trade_efficiency': 0.0,
-                'current_winning_streak_days': 0
+                'current_winning_streak_days': 0,
+                'avg_planned_rr': 0.0,
+                'avg_actual_rr': 0.0,
+                'trades_with_planned_rr': 0,
+                'trades_with_actual_rr': 0,
+                'trades_with_both_rr': 0,
+                'plan_respect_rate': 0.0
             })
         
         # Statistiques de base
@@ -853,6 +859,36 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     # Dès qu'on trouve une perte ou un break-even, on s'arrête
                     break
         
+        # Statistiques Risk/Reward Ratio
+        trades_with_planned_rr = trades.filter(planned_risk_reward_ratio__isnull=False)
+        trades_with_actual_rr = trades.filter(actual_risk_reward_ratio__isnull=False)
+        trades_with_both_rr = trades.filter(
+            planned_risk_reward_ratio__isnull=False,
+            actual_risk_reward_ratio__isnull=False
+        )
+        
+        # R:R moyen prévu
+        avg_planned_rr = 0.0
+        if trades_with_planned_rr.exists():
+            avg_planned_rr_agg = trades_with_planned_rr.aggregate(avg=Avg('planned_risk_reward_ratio'))
+            avg_planned_rr = float(avg_planned_rr_agg['avg'] or 0.0)
+        
+        # R:R moyen réel
+        avg_actual_rr = 0.0
+        if trades_with_actual_rr.exists():
+            avg_actual_rr_agg = trades_with_actual_rr.aggregate(avg=Avg('actual_risk_reward_ratio'))
+            avg_actual_rr = float(avg_actual_rr_agg['avg'] or 0.0)
+        
+        # Taux de respect du plan (trades où R:R réel >= R:R prévu)
+        plan_respect_rate = 0.0
+        plan_respect_count = 0
+        if trades_with_both_rr.exists():
+            for trade in trades_with_both_rr:
+                if trade.actual_risk_reward_ratio and trade.planned_risk_reward_ratio:
+                    if trade.actual_risk_reward_ratio >= trade.planned_risk_reward_ratio:
+                        plan_respect_count += 1
+            plan_respect_rate = (plan_respect_count / trades_with_both_rr.count()) * 100 if trades_with_both_rr.count() > 0 else 0.0
+        
         stats = {
             'total_trades': total_trades,
             'winning_trades': winning_trades,
@@ -894,7 +930,14 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'sortino_ratio': round(sortino_ratio, 2),
             'calmar_ratio': round(calmar_ratio, 2),
             'trade_efficiency': round(trade_efficiency, 2),
-            'current_winning_streak_days': current_winning_streak_days
+            'current_winning_streak_days': current_winning_streak_days,
+            # Statistiques Risk/Reward Ratio
+            'avg_planned_rr': round(avg_planned_rr, 2),
+            'avg_actual_rr': round(avg_actual_rr, 2),
+            'trades_with_planned_rr': trades_with_planned_rr.count(),
+            'trades_with_actual_rr': trades_with_actual_rr.count(),
+            'trades_with_both_rr': trades_with_both_rr.count(),
+            'plan_respect_rate': round(plan_respect_rate, 2)
         }
         
         serializer = TradeStatisticsSerializer(stats)
