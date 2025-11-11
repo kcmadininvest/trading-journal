@@ -237,7 +237,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden mt-4 sm:mt-6 min-h-0">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden mt-4 sm:mt-6 min-h-0 sidebar-scrollbar">
         {!isCollapsed && (
           <div className="px-3 sm:px-4 sticky top-0 bg-gray-900 z-10 pt-2">
             <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 sm:mb-3">

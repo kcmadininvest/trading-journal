@@ -97,6 +97,35 @@ input[type="checkbox"]:checked {
   }
 }
 
+/* Sidebar scrollbar styles */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3); /* gray-400 with opacity */
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5); /* gray-400 with more opacity */
+  background-clip: padding-box;
+}
+
+/* Firefox scrollbar for sidebar */
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent; /* gray-400 transparent */
+}
+
 /* Font size preferences */
 html {
   font-size: 16px; /* Base size (medium) */
