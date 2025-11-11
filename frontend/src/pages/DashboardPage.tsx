@@ -1303,14 +1303,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('dashboard:objectivesBasedOnHistory')}</p>
               </div>
               
-              <div className="grid grid-cols-3 gap-4 flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-4 flex-1">
                 {/* Jauge Win Rate */}
-                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-4 text-center uppercase tracking-wide">
+                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-3 sm:p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
+                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 text-center uppercase tracking-wide">
                     {t('dashboard:winRate')}
                   </h3>
-                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
+                  <div className="relative w-[100px] h-[100px] sm:w-[140px] sm:h-[140px] mx-auto mb-3 sm:mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90 absolute top-0 left-0" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
                       <circle
                         cx="70"
                         cy="70"
@@ -1334,7 +1334,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {tradingMetrics.winRate.toFixed(1)}%
                       </div>
                     </div>
@@ -1351,12 +1351,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Jauge Avg Winning Trade */}
-                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-4 text-center uppercase tracking-wide">
+                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-3 sm:p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
+                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 text-center uppercase tracking-wide">
                     {t('dashboard:avgWinning')}
                   </h3>
-                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
+                  <div className="relative w-[100px] h-[100px] sm:w-[140px] sm:h-[140px] mx-auto mb-3 sm:mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90 absolute top-0 left-0" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
                       <circle
                         cx="70"
                         cy="70"
@@ -1380,7 +1380,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-sm font-bold text-gray-900 dark:text-gray-100 text-center px-2">
+                      <div className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 text-center px-2">
                         {formatCurrency(tradingMetrics.avgWinningTrade, currencySymbol)}
                       </div>
                     </div>
@@ -1397,12 +1397,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Jauge Avg Losing Trade */}
-                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-4 text-center uppercase tracking-wide">
+                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-3 sm:p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
+                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 text-center uppercase tracking-wide">
                     {t('dashboard:avgLosing')}
                   </h3>
-                  <div className="relative w-[140px] h-[140px] mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <svg width="140" height="140" className="transform -rotate-90 absolute top-0 left-0">
+                  <div className="relative w-[100px] h-[100px] sm:w-[140px] sm:h-[140px] mx-auto mb-3 sm:mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90 absolute top-0 left-0" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
                       <circle
                         cx="70"
                         cy="70"
@@ -1426,7 +1426,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-sm font-bold text-gray-900 dark:text-gray-100 text-center px-2">
+                      <div className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100 text-center px-2">
                         {formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}
                       </div>
                     </div>
@@ -1452,14 +1452,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               <ModernStatCard
                 label={t('dashboard:totalPnL')}
                 value={
-                  <div className="flex items-center justify-between w-full">
-                    <span>{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-2 sm:gap-0">
+                    <span className="break-words">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
                     <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
-                      <span className="inline-flex items-center gap-1 cursor-help">
-                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                      <span className="inline-flex items-center gap-1 cursor-help flex-shrink-0">
+                        <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
                           {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })}
                         </span>
-                        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${
                           additionalStats.currentWinningStreakDays > 0 
                             ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
@@ -1619,10 +1619,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {accountBalanceData.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="mb-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-3 gap-4">
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('dashboard:accountBalanceOverTime')}</h3>
-                    <div className="flex items-center gap-6 flex-wrap">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 flex-wrap">
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-500 dark:text-gray-400">
                           {performanceStats.totalReturn >= 0 ? t('dashboard:totalGain') : t('dashboard:totalLoss')} :
@@ -1631,7 +1631,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           {formatCurrency(performanceStats.totalReturn, currencySymbol)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-500 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <span>{t('dashboard:highest')} :</span>
                           <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
@@ -1647,33 +1647,33 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 ml-4">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:ml-4 flex-shrink-0">
                     {/* Start Date Picker */}
-                    <div className="relative">
+                    <div className="relative flex-1 sm:flex-initial">
                       <div className="absolute -top-2 left-3 bg-white dark:bg-gray-800 px-1 text-xs font-medium text-gray-600 dark:text-gray-400 z-10">
                         {t('dashboard:startDate')}
                       </div>
                       <DateInput
                         value={startDate || defaultStartDate}
                         onChange={(value) => setStartDate(value || defaultStartDate)}
-                        className="px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         min={defaultStartDate}
                         max={defaultEndDate}
                       />
                     </div>
                     
                     {/* Hyphen */}
-                    <span className="text-gray-500 dark:text-gray-400 text-xl font-medium">-</span>
+                    <span className="hidden sm:inline text-gray-500 dark:text-gray-400 text-xl font-medium">-</span>
 
                     {/* End Date Picker */}
-                    <div className="relative">
+                    <div className="relative flex-1 sm:flex-initial">
                       <div className="absolute -top-2 left-3 bg-white dark:bg-gray-800 px-1 text-xs font-medium text-gray-600 dark:text-gray-400 z-10">
                         {t('dashboard:endDate')}
                       </div>
                       <DateInput
                         value={endDate || defaultEndDate}
                         onChange={(value) => setEndDate(value || defaultEndDate)}
-                        className="px-4 py-2.5 text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        className="w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                         min={defaultStartDate}
                         max={defaultEndDate}
                       />
