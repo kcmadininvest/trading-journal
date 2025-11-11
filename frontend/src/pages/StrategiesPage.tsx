@@ -303,7 +303,7 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: 13,
+          size: window.innerWidth < 640 ? 10 : 13,
         },
         formatter: function(value: number) {
           return value > 0 ? formatNumber(value, 1) + '%' : '';
@@ -316,9 +316,9 @@ const StrategiesPage: React.FC = () => {
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 20,
+          padding: window.innerWidth < 640 ? 12 : 20,
           font: {
-            size: 12
+            size: window.innerWidth < 640 ? 10 : 12
           },
           color: chartColors.textSecondary,
         },
@@ -370,7 +370,7 @@ const StrategiesPage: React.FC = () => {
           },
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -390,7 +390,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -446,7 +446,7 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: 13,
+          size: window.innerWidth < 640 ? 10 : 13,
         },
         formatter: function(value: number) {
           // Afficher la valeur avec le symbole %
@@ -458,9 +458,9 @@ const StrategiesPage: React.FC = () => {
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 20,
+          padding: window.innerWidth < 640 ? 12 : 20,
           font: {
-            size: 12
+            size: window.innerWidth < 640 ? 10 : 12
           },
           color: chartColors.textSecondary,
         },
@@ -504,7 +504,7 @@ const StrategiesPage: React.FC = () => {
           },
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -526,7 +526,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -596,7 +596,7 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: 13,
+          size: window.innerWidth < 640 ? 10 : 13,
         },
         formatter: function(value: number) {
           return value > 0 ? value.toString() : '';
@@ -667,7 +667,7 @@ const StrategiesPage: React.FC = () => {
           text: t('strategies:numberOfWinningSessions'),
           color: chartColors.text,
           font: {
-            size: 13,
+            size: window.innerWidth < 640 ? 11 : 13,
             weight: 600,
           },
         },
@@ -677,7 +677,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -780,13 +780,17 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: 13,
+          size: window.innerWidth < 640 ? 10 : 13,
         },
         formatter: function(value: number, context: any) {
           const label = context.chart.data.labels[context.dataIndex] || '';
           const total = emotionsData?.total || 1;
           const percentage = total > 0 ? (value / total) * 100 : 0;
           // Afficher seulement si le segment est assez grand (> 3%)
+          // Sur mobile, afficher seulement le pourcentage si l'écran est petit
+          if (window.innerWidth < 640) {
+            return value > 0 && (value / total) * 100 > 3 ? `${formatNumber(percentage, 1)}%` : '';
+          }
           return value > 0 && (value / total) * 100 > 3 ? `${label}\n${formatNumber(percentage, 1)}%` : '';
         },
       },
@@ -877,13 +881,13 @@ const StrategiesPage: React.FC = () => {
   const periodRespectColor = getRespectRateColor(periodRespect);
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="mb-6">
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="mb-4 sm:mb-6">
         {/* Filtres */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4">
             {/* Compte de trading */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:tradingAccount')}
               </label>
@@ -891,7 +895,7 @@ const StrategiesPage: React.FC = () => {
             </div>
             
             {/* Sélecteur de période moderne */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:period', { defaultValue: 'Période' })}
               </label>
@@ -910,7 +914,7 @@ const StrategiesPage: React.FC = () => {
 
         {/* Soldes du compte */}
         {selectedAccount && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
             <AccountIndicatorsGrid 
               indicators={indicators} 
               currencySymbol={currencySymbol} 
@@ -920,14 +924,14 @@ const StrategiesPage: React.FC = () => {
 
         {/* Message d'erreur */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-800 dark:text-red-300">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <p className="text-sm sm:text-base text-red-800 dark:text-red-300 break-words">{error}</p>
           </div>
         )}
 
         {/* Indicateurs de respect */}
         {statistics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
             {/* Taux de respect total (avec période sélectionnée en dessous) */}
             <RespectRateCard
               title={t('strategies:totalRespectRate')}
@@ -966,31 +970,31 @@ const StrategiesPage: React.FC = () => {
 
         {/* Graphiques */}
         {isLoading ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-48 sm:h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">{t('strategies:loading')}</p>
+              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-3 sm:mb-4"></div>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('strategies:loading')}</p>
             </div>
           </div>
         ) : statistics ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Graphique 1: Respect de la stratégie en % */}
             {respectChartData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:strategyRespectPercentage')}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:strategyRespectPercentage')}</h3>
                   <Tooltip
                     content={t('strategies:strategyRespectPercentageTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
                       <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </Tooltip>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                   <Bar data={respectChartData} options={respectChartOptions} />
                 </div>
               </div>
@@ -998,21 +1002,21 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 2: Taux de réussite si respect de la stratégie */}
             {successRateData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:successRateByStrategyRespect')}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:successRateByStrategyRespect')}</h3>
                   <Tooltip
                     content={t('strategies:successRateByStrategyRespectTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
                       <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </Tooltip>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                   <Bar data={successRateData} options={successRateOptions} />
                 </div>
               </div>
@@ -1020,21 +1024,21 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 3: Répartition des sessions gagnantes */}
             {winningSessionsData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:winningSessionsDistribution')}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:winningSessionsDistribution')}</h3>
                   <Tooltip
                     content={t('strategies:winningSessionsDistributionTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
                       <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </Tooltip>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                   <Bar data={winningSessionsData} options={winningSessionsOptions} />
                 </div>
               </div>
@@ -1042,29 +1046,29 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 4: Répartition des émotions dominantes */}
             {emotionsData && emotionsData.labels.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:dominantEmotionsDistribution')}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:dominantEmotionsDistribution')}</h3>
                   <Tooltip
                     content={t('strategies:dominantEmotionsDistributionTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
                       <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </Tooltip>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                   <Doughnut data={emotionsData} options={emotionsOptions} />
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-600 dark:text-gray-400">
-            <p>{t('strategies:noDataForPeriod')}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 text-center text-gray-600 dark:text-gray-400">
+            <p className="text-sm sm:text-base">{t('strategies:noDataForPeriod')}</p>
           </div>
         )}
       </div>
