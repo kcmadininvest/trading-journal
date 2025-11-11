@@ -2424,25 +2424,34 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         ]
         
         # 5. Respect par période (pour graphique temporel)
+        # Utiliser tous les trades (pas seulement ceux avec stratégie) pour être cohérent avec les taux de respect
         period_data = []
         if month:
             # Par jour du mois
             current_date = start_date
             while current_date < end_date:
                 day_str = current_date.strftime('%Y-%m-%d')
+                # Compter tous les trades du jour (pas seulement ceux avec stratégie)
+                day_trades_queryset = period_trades_queryset.filter(trade_day=day_str)
+                if trading_account_id:
+                    day_trades_queryset = day_trades_queryset.filter(trading_account_id=trading_account_id)
+                day_total_trades = day_trades_queryset.count()  # Tous les trades
+                
+                # Compter les trades respectés (ceux avec stratégie respectée)
                 day_strategies = queryset.filter(trade__trade_day=day_str)
-                day_total = day_strategies.count()
                 day_with_respect = day_strategies.exclude(strategy_respected__isnull=True)
                 day_respected = day_with_respect.filter(strategy_respected=True).count()
                 day_not_respected = day_with_respect.filter(strategy_respected=False).count()
-                day_respect_percentage = (day_respected / day_total * 100) if day_total > 0 else 0
-                day_not_respect_percentage = (day_not_respected / day_total * 100) if day_total > 0 else 0
+                
+                # Pourcentages par rapport à TOUS les trades (pas seulement ceux avec stratégie)
+                day_respect_percentage = (day_respected / day_total_trades * 100) if day_total_trades > 0 else 0
+                day_not_respect_percentage = (day_not_respected / day_total_trades * 100) if day_total_trades > 0 else 0
                 period_data.append({
                     'period': current_date.strftime('%d/%m'),
                     'date': day_str,
                     'respect_percentage': round(day_respect_percentage, 2),
                     'not_respect_percentage': round(day_not_respect_percentage, 2),
-                    'total': day_total
+                    'total': day_total_trades  # Tous les trades
                 })
                 current_date += timedelta(days=1)
         else:
@@ -2457,22 +2466,33 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 
                 # Vérifier que le mois est dans la période
                 if month_start < end_date and month_end > start_date:
+                    # Compter tous les trades du mois (pas seulement ceux avec stratégie)
+                    month_trades_queryset = period_trades_queryset.filter(
+                        trade_day__gte=month_start.strftime('%Y-%m-%d'),
+                        trade_day__lt=month_end.strftime('%Y-%m-%d')
+                    )
+                    if trading_account_id:
+                        month_trades_queryset = month_trades_queryset.filter(trading_account_id=trading_account_id)
+                    month_total_trades = month_trades_queryset.count()  # Tous les trades
+                    
+                    # Compter les trades respectés (ceux avec stratégie respectée)
                     month_strategies = queryset.filter(
                         trade__trade_day__gte=month_start.strftime('%Y-%m-%d'),
                         trade__trade_day__lt=month_end.strftime('%Y-%m-%d')
                     )
-                    month_total = month_strategies.count()
                     month_with_respect = month_strategies.exclude(strategy_respected__isnull=True)
                     month_respected = month_with_respect.filter(strategy_respected=True).count()
                     month_not_respected = month_with_respect.filter(strategy_respected=False).count()
-                    month_respect_percentage = (month_respected / month_total * 100) if month_total > 0 else 0
-                    month_not_respect_percentage = (month_not_respected / month_total * 100) if month_total > 0 else 0
+                    
+                    # Pourcentages par rapport à TOUS les trades (pas seulement ceux avec stratégie)
+                    month_respect_percentage = (month_respected / month_total_trades * 100) if month_total_trades > 0 else 0
+                    month_not_respect_percentage = (month_not_respected / month_total_trades * 100) if month_total_trades > 0 else 0
                     period_data.append({
                         'period': month_start.strftime('%B %Y'),
                         'date': month_start.strftime('%Y-%m'),
                         'respect_percentage': round(month_respect_percentage, 2),
                         'not_respect_percentage': round(month_not_respect_percentage, 2),
-                        'total': month_total
+                        'total': month_total_trades  # Tous les trades
                     })
         
         return Response({
