@@ -96,3 +96,48 @@ input[type="checkbox"]:checked {
     transform: translateX(100%);
   }
 }
+
+/* Font size preferences */
+html {
+  font-size: 16px; /* Base size (medium) */
+}
+
+html.font-size-small {
+  font-size: 14px; /* Small - 87.5% of base */
+}
+
+html.font-size-medium {
+  font-size: 16px; /* Medium - 100% of base */
+}
+
+html.font-size-large {
+  font-size: 18px; /* Large - 112.5% of base */
+}
+
+/* Adjust rem-based sizes for better scaling */
+.font-size-small {
+  --text-xs: 0.625rem;    /* 10px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-lg: 1rem;        /* 16px */
+  --text-xl: 1.125rem;    /* 18px */
+  --text-2xl: 1.5rem;     /* 24px */
+}
+
+.font-size-medium {
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+}
+
+.font-size-large {
+  --text-xs: 0.875rem;    /* 14px */
+  --text-sm: 1rem;        /* 16px */
+  --text-base: 1.125rem;  /* 18px */
+  --text-lg: 1.25rem;     /* 20px */
+  --text-xl: 1.5rem;      /* 24px */
+  --text-2xl: 1.875rem;   /* 30px */
+}

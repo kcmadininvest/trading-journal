@@ -7,6 +7,21 @@ import { PreferencesProvider } from './hooks/usePreferences';
 import { TradingAccountProvider } from './contexts/TradingAccountContext';
 import './i18n/config'; // Initialiser i18n
 
+// Appliquer la taille de police depuis localStorage avant le premier rendu pour éviter le flash
+try {
+  const savedFontSize = localStorage.getItem('font_size');
+  if (savedFontSize === 'small' || savedFontSize === 'medium' || savedFontSize === 'large') {
+    document.documentElement.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+    document.documentElement.classList.add(`font-size-${savedFontSize}`);
+  } else {
+    // Appliquer la taille par défaut
+    document.documentElement.classList.add('font-size-medium');
+  }
+} catch (e) {
+  // Ignorer les erreurs de localStorage
+  document.documentElement.classList.add('font-size-medium');
+}
+
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );

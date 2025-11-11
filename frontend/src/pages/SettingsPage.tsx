@@ -164,6 +164,18 @@ const SettingsPage: React.FC = () => {
       if (updatedPreferences.theme) {
         setTheme(updatedPreferences.theme as 'light' | 'dark');
       }
+      // Appliquer la taille de police immédiatement si changée
+      if (updatedPreferences.font_size) {
+        const root = document.documentElement;
+        root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+        root.classList.add(`font-size-${updatedPreferences.font_size}`);
+        // Sauvegarder dans localStorage
+        try {
+          localStorage.setItem('font_size', updatedPreferences.font_size);
+        } catch (e) {
+          // Ignorer les erreurs de localStorage
+        }
+      }
       // Changer la langue i18n si elle a changé
       if (updatedPreferences.language) {
         changeLanguage(updatedPreferences.language);
@@ -297,7 +309,7 @@ const SettingsPage: React.FC = () => {
   ];
 
   return (
-    <div className="h-full flex flex-col -my-6">
+    <div className="h-full flex flex-col -my-6 relative">
       {message && (
         <div className={`m-3 sm:m-4 p-3 sm:p-4 rounded-lg text-xs sm:text-sm ${
           message.type === 'success' 
@@ -329,7 +341,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       {/* Contenu des onglets */}
-      <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8">
+      <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8" style={{ overflowX: 'visible' }}>
         {loading && (
           <div className="mb-4 text-gray-600 dark:text-gray-400">{t('common:loading')}</div>
         )}
