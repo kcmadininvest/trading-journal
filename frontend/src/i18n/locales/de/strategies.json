@@ -13,6 +13,7 @@
   "accountRespectRate": "Kontoeinhaltungsrate",
   "allPeriodsAndAccounts": "Alle Zeiträume und alle Konten kombiniert",
   "allPeriods": "Alle Zeiträume kombiniert",
+  "forSelectedPeriod": "Für den ausgewählten Zeitraum",
   "strategies": "Strategien",
   "noDataForPeriod": "Keine Daten für den ausgewählten Zeitraum verfügbar.",
   "importTrades": "Trades importieren",

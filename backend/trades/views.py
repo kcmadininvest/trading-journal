@@ -2308,6 +2308,18 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         all_time_trades_queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
         all_time_strategies_queryset = TradeStrategy.objects.filter(user=self.request.user)  # type: ignore
         
+        # Pour la période sélectionnée (tous comptes) : compter TOUS les trades de l'utilisateur pour la période
+        period_trades_queryset = TopStepTrade.objects.filter(  # type: ignore
+            user=self.request.user,
+            trade_day__gte=start_date.strftime('%Y-%m-%d'),
+            trade_day__lt=end_date.strftime('%Y-%m-%d')
+        )
+        period_strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
+            user=self.request.user,
+            trade__trade_day__gte=start_date.strftime('%Y-%m-%d'),
+            trade__trade_day__lt=end_date.strftime('%Y-%m-%d')
+        )
+        
         # Pour le compte : compter TOUS les trades du compte (toutes périodes, pas seulement la période sélectionnée)
         account_trades_queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
         account_strategies_queryset = TradeStrategy.objects.filter(user=self.request.user)  # type: ignore
@@ -2315,9 +2327,26 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             account_trades_queryset = account_trades_queryset.filter(trading_account_id=trading_account_id)
             account_strategies_queryset = account_strategies_queryset.filter(trade__trading_account_id=trading_account_id)
         
+        # Pour le compte et la période sélectionnée : compter TOUS les trades du compte pour la période
+        account_period_trades_queryset = TopStepTrade.objects.filter(  # type: ignore
+            user=self.request.user,
+            trade_day__gte=start_date.strftime('%Y-%m-%d'),
+            trade_day__lt=end_date.strftime('%Y-%m-%d')
+        )
+        account_period_strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
+            user=self.request.user,
+            trade__trade_day__gte=start_date.strftime('%Y-%m-%d'),
+            trade__trade_day__lt=end_date.strftime('%Y-%m-%d')
+        )
+        if trading_account_id:
+            account_period_trades_queryset = account_period_trades_queryset.filter(trading_account_id=trading_account_id)
+            account_period_strategies_queryset = account_period_strategies_queryset.filter(trade__trading_account_id=trading_account_id)
+        
         # Calculs
         total_strategies = queryset.count()  # Trades avec stratégie pour la période (pour les graphiques)
+        total_period_trades = period_trades_queryset.count()  # Tous les trades pour la période (tous comptes)
         total_account_trades = account_trades_queryset.count()  # Tous les trades du compte (toutes périodes)
+        total_account_period_trades = account_period_trades_queryset.count()  # Tous les trades du compte pour la période
         total_all_time_trades = all_time_trades_queryset.count()  # Tous les trades
         total_all_time_strategies = all_time_strategies_queryset.count()  # Trades avec stratégie
         
@@ -2329,6 +2358,14 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # Pourcentages par rapport au total des trades du compte (tous les trades, pas seulement ceux avec stratégie)
         account_respect_percentage = (account_respected_count / total_account_trades * 100) if total_account_trades > 0 else 0
         account_not_respect_percentage = (account_not_respected_count / total_account_trades * 100) if total_account_trades > 0 else 0
+        
+        # Respect du compte pour la période sélectionnée - calculer par rapport à TOUS les trades du compte pour la période
+        account_period_with_respect = account_period_strategies_queryset.exclude(strategy_respected__isnull=True)
+        account_period_respected = account_period_with_respect.filter(strategy_respected=True).count()
+        account_period_not_respected = account_period_with_respect.filter(strategy_respected=False).count()
+        # Pourcentage par rapport à TOUS les trades du compte pour la période (pas seulement ceux avec stratégie)
+        account_period_respect_percentage = (account_period_respected / total_account_period_trades * 100) if total_account_period_trades > 0 else 0
+        account_period_not_respect_percentage = (account_period_not_respected / total_account_period_trades * 100) if total_account_period_trades > 0 else 0
         
         # Pour la période (utilisé pour les graphiques uniquement)
         strategies_with_respect = queryset.exclude(strategy_respected__isnull=True)
@@ -2342,6 +2379,14 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # Pourcentage par rapport à TOUS les trades (pas seulement ceux avec stratégie)
         all_time_respect_percentage = (all_time_respected / total_all_time_trades * 100) if total_all_time_trades > 0 else 0
         all_time_not_respect_percentage = (all_time_not_respected / total_all_time_trades * 100) if total_all_time_trades > 0 else 0
+        
+        # Respect total pour la période sélectionnée (tous comptes) - calculer par rapport à TOUS les trades de la période
+        period_with_respect = period_strategies_queryset.exclude(strategy_respected__isnull=True)
+        period_respected = period_with_respect.filter(strategy_respected=True).count()
+        period_not_respected = period_with_respect.filter(strategy_respected=False).count()
+        # Pourcentage par rapport à TOUS les trades de la période (pas seulement ceux avec stratégie)
+        period_respect_percentage = (period_respected / total_period_trades * 100) if total_period_trades > 0 else 0
+        period_not_respect_percentage = (period_not_respected / total_period_trades * 100) if total_period_trades > 0 else 0
         
         # 2. Taux de réussite selon respect de la stratégie
         # Taux de réussite si stratégie respectée (trades gagnants quand strategy_respected = True)
@@ -2444,6 +2489,14 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 'not_respect_percentage': round(account_not_respect_percentage, 2),
                 'respected_count': account_respected_count,  # Trades respectés du compte (toutes périodes)
                 'not_respected_count': account_not_respected_count,
+                # Statistiques pour la période sélectionnée du compte
+                'period': {
+                    'total_trades': total_account_period_trades,  # Tous les trades du compte pour la période
+                    'respect_percentage': round(account_period_respect_percentage, 2),
+                    'not_respect_percentage': round(account_period_not_respect_percentage, 2),
+                    'respected_count': account_period_respected,
+                    'not_respected_count': account_period_not_respected,
+                },
                 'success_rate_if_respected': round(success_rate_if_respected, 2),
                 'success_rate_if_not_respected': round(success_rate_if_not_respected, 2),
                 'winning_sessions_distribution': {
@@ -2462,6 +2515,13 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 'not_respect_percentage': round(all_time_not_respect_percentage, 2),
                 'respected_count': all_time_respected,
                 'not_respected_count': all_time_not_respected,
+            },
+            'period': {
+                'total_trades': total_period_trades,  # Tous les trades pour la période (tous comptes)
+                'respect_percentage': round(period_respect_percentage, 2),
+                'not_respect_percentage': round(period_not_respect_percentage, 2),
+                'respected_count': period_respected,
+                'not_respected_count': period_not_respected,
             }
         })
     

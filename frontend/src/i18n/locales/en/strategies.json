@@ -13,6 +13,7 @@
   "accountRespectRate": "Account respect rate",
   "allPeriodsAndAccounts": "All periods and all accounts combined",
   "allPeriods": "All periods combined",
+  "forSelectedPeriod": "For the selected period",
   "strategies": "strategies",
   "noDataForPeriod": "No data available for the selected period.",
   "importTrades": "Import trades",

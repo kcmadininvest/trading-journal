@@ -817,8 +817,12 @@ const StrategiesPage: React.FC = () => {
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
-  // Taux de respect du compte (pour la période sélectionnée - prend en compte les filtres année/mois)
+  // Taux de respect total pour la période sélectionnée (tous comptes)
+  const periodRespect = statistics?.period?.respect_percentage || 0;
+  // Taux de respect du compte (toutes périodes)
   const accountRespect = statistics?.statistics?.respect_percentage || 0;
+  // Taux de respect du compte pour la période sélectionnée
+  const accountPeriodRespect = statistics?.statistics?.period?.respect_percentage || 0;
   
   // Fonction pour déterminer la couleur du gradient selon le taux de respect
   // Bonnes pratiques de trading : >80% excellent, 70-80% bon, 50-70% moyen, <50% à améliorer
@@ -860,6 +864,7 @@ const StrategiesPage: React.FC = () => {
   
   const accountRespectColor = getRespectRateColor(accountRespect);
   const allTimeRespectColor = getRespectRateColor(allTimeRespect);
+  const periodRespectColor = getRespectRateColor(periodRespect);
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -1035,7 +1040,7 @@ const StrategiesPage: React.FC = () => {
         {/* Indicateurs de respect */}
         {statistics && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Taux de respect total */}
+            {/* Taux de respect total (avec période sélectionnée en dessous) */}
             <RespectRateCard
               title={t('strategies:totalRespectRate')}
               subtitle={`(${t('strategies:allPeriodsAndAccounts')})`}
@@ -1045,9 +1050,14 @@ const StrategiesPage: React.FC = () => {
               tradesLabel={t('trades:trades')}
               outOfLabel={t('strategies:outOf')}
               gradientColors={allTimeRespectColor}
+              secondaryPercentage={periodRespect}
+              secondaryTradesCount={statistics?.period?.respected_count || 0}
+              secondaryTotalTrades={statistics?.period?.total_trades || 0}
+              secondarySubtitle={`(${t('strategies:forSelectedPeriod')})`}
+              secondaryGradientColors={periodRespectColor}
             />
             
-            {/* Taux de respect du compte */}
+            {/* Taux de respect du compte (avec période sélectionnée en dessous) */}
             <RespectRateCard
               title={t('strategies:accountRespectRate')}
               subtitle={`(${t('strategies:allPeriods')})`}
@@ -1057,6 +1067,11 @@ const StrategiesPage: React.FC = () => {
               tradesLabel={t('trades:trades')}
               outOfLabel={t('strategies:outOf')}
               gradientColors={accountRespectColor}
+              secondaryPercentage={accountPeriodRespect}
+              secondaryTradesCount={statistics?.statistics?.period?.respected_count || 0}
+              secondaryTotalTrades={statistics?.statistics?.period?.total_trades || 0}
+              secondarySubtitle={`(${t('strategies:forSelectedPeriod')})`}
+              secondaryGradientColors={accountRespectColor}
             />
           </div>
         )}
