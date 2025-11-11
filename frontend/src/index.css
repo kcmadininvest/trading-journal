@@ -96,3 +96,77 @@ input[type="checkbox"]:checked {
     transform: translateX(100%);
   }
 }
+
+/* Sidebar scrollbar styles */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 4px 0;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3); /* gray-400 with opacity */
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5); /* gray-400 with more opacity */
+  background-clip: padding-box;
+}
+
+/* Firefox scrollbar for sidebar */
+.sidebar-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent; /* gray-400 transparent */
+}
+
+/* Font size preferences */
+html {
+  font-size: 16px; /* Base size (medium) */
+}
+
+html.font-size-small {
+  font-size: 14px; /* Small - 87.5% of base */
+}
+
+html.font-size-medium {
+  font-size: 16px; /* Medium - 100% of base */
+}
+
+html.font-size-large {
+  font-size: 18px; /* Large - 112.5% of base */
+}
+
+/* Adjust rem-based sizes for better scaling */
+.font-size-small {
+  --text-xs: 0.625rem;    /* 10px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.875rem;  /* 14px */
+  --text-lg: 1rem;        /* 16px */
+  --text-xl: 1.125rem;    /* 18px */
+  --text-2xl: 1.5rem;     /* 24px */
+}
+
+.font-size-medium {
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+}
+
+.font-size-large {
+  --text-xs: 0.875rem;    /* 14px */
+  --text-sm: 1rem;        /* 16px */
+  --text-base: 1.125rem;  /* 18px */
+  --text-lg: 1.25rem;     /* 20px */
+  --text-xl: 1.5rem;      /* 24px */
+  --text-2xl: 1.875rem;   /* 30px */
+}

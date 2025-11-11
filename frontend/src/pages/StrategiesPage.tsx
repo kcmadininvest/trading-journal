@@ -11,10 +11,11 @@ import { currenciesService, Currency } from '../services/currencies';
 import Tooltip from '../components/ui/Tooltip';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
-import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
-import { formatDate } from '../utils/dateFormat';
+import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useAccountIndicators } from '../hooks/useAccountIndicators';
+import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -55,11 +56,6 @@ const StrategiesPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
-
-  // Wrapper pour formatCurrency avec préférences
-  const formatCurrency = useCallback((value: number, currencySymbol: string = ''): string => {
-    return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
-  }, [preferences.number_format]);
   
   // Wrapper pour formatNumber avec préférences
   const formatNumber = useCallback((value: number, digits: number = 2): string => {
@@ -185,26 +181,28 @@ const StrategiesPage: React.FC = () => {
     loadAccount();
   }, [accountId]);
 
+  // Fonction pour charger tous les trades du compte
+  const loadAllTrades = useCallback(async () => {
+    if (!accountId || accountLoading) {
+      setAllTrades([]);
+      return;
+    }
+    try {
+      const response = await tradesService.list({
+        trading_account: accountId,
+        page_size: 10000, // Charger tous les trades
+      });
+      setAllTrades(response.results);
+    } catch (err) {
+      console.error('Erreur lors du chargement des trades', err);
+      setAllTrades([]);
+    }
+  }, [accountId, accountLoading]);
+
   // Charger tous les trades du compte pour calculer le solde
   useEffect(() => {
-    const loadAllTrades = async () => {
-      if (!accountId || accountLoading) {
-        setAllTrades([]);
-        return;
-      }
-      try {
-        const response = await tradesService.list({
-          trading_account: accountId,
-          page_size: 10000, // Charger tous les trades
-        });
-        setAllTrades(response.results);
-      } catch (err) {
-        console.error('Erreur lors du chargement des trades', err);
-        setAllTrades([]);
-      }
-    };
     loadAllTrades();
-  }, [accountId, accountLoading]);
+  }, [loadAllTrades]);
 
   // Obtenir le symbole de la devise du compte sélectionné
   const currencySymbol = useMemo(() => {
@@ -213,167 +211,57 @@ const StrategiesPage: React.FC = () => {
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
 
-  // Charger les trades filtrés par période pour calculer le meilleur/pire jour
-  useEffect(() => {
-    const loadFilteredTrades = async () => {
-      if (!accountId || accountLoading) {
-        setFilteredTrades([]);
-        return;
-      }
-      try {
-        const filters: any = {
-          trading_account: accountId,
-          page_size: 10000,
-        };
+  // Fonction pour charger les trades filtrés par période
+  const loadFilteredTrades = useCallback(async () => {
+    if (!accountId || accountLoading) {
+      setFilteredTrades([]);
+      return;
+    }
+    try {
+      const filters: any = {
+        trading_account: accountId,
+        page_size: 10000,
+      };
 
-        if (selectedPeriod) {
-          filters.start_date = selectedPeriod.start;
-          filters.end_date = selectedPeriod.end;
-        } else if (selectedYear) {
-          const startDate = selectedMonth 
-            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
-            : `${selectedYear}-01-01`;
-          
-          let endDate: string;
-          if (selectedMonth) {
-            const lastDay = new Date(selectedYear, selectedMonth, 0);
-            endDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
-          } else {
-            endDate = `${selectedYear}-12-31`;
-          }
-          
-          filters.start_date = startDate;
-          filters.end_date = endDate;
+      if (selectedPeriod) {
+        filters.start_date = selectedPeriod.start;
+        filters.end_date = selectedPeriod.end;
+      } else if (selectedYear) {
+        const startDate = selectedMonth 
+          ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+          : `${selectedYear}-01-01`;
+        
+        let endDate: string;
+        if (selectedMonth) {
+          const lastDay = new Date(selectedYear, selectedMonth, 0);
+          endDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+        } else {
+          endDate = `${selectedYear}-12-31`;
         }
-
-        const response = await tradesService.list(filters);
-        setFilteredTrades(response.results);
-      } catch (err) {
-        console.error('Erreur lors du chargement des trades filtrés', err);
-        setFilteredTrades([]);
+        
+        filters.start_date = startDate;
+        filters.end_date = endDate;
       }
-    };
-    loadFilteredTrades();
+
+      const response = await tradesService.list(filters);
+      setFilteredTrades(response.results);
+    } catch (err) {
+      console.error('Erreur lors du chargement des trades filtrés', err);
+      setFilteredTrades([]);
+    }
   }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
 
-  // Calculer le solde initial et actuel du compte
-  const accountBalance = useMemo(() => {
-    if (!selectedAccount) {
-      return { initial: 0, current: 0 };
-    }
+  // Charger les trades filtrés par période pour calculer le meilleur/pire jour
+  useEffect(() => {
+    loadFilteredTrades();
+  }, [loadFilteredTrades]);
 
-    const initialCapital = selectedAccount.initial_capital 
-      ? parseFloat(String(selectedAccount.initial_capital)) 
-      : 0;
-
-    // Calculer le PnL total de tous les trades du compte
-    const totalPnl = allTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
-
-    const currentBalance = initialCapital + totalPnl;
-
-    return {
-      initial: initialCapital,
-      current: currentBalance,
-    };
-  }, [selectedAccount, allTrades]);
-
-  // Calculer le meilleur et le pire jour pour la période filtrée
-  const bestAndWorstDays = useMemo(() => {
-    if (filteredTrades.length === 0) {
-      return { bestDay: null, worstDay: null };
-    }
-
-    // Grouper les trades par date
-    const dailyData: { [date: string]: number } = {};
-    filteredTrades.forEach(trade => {
-      if (trade.net_pnl && trade.trade_day) {
-        const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
-      }
-    });
-
-    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
-
-    if (dailyEntries.length === 0) {
-      return { bestDay: null, worstDay: null };
-    }
-
-    const bestDay = dailyEntries.reduce((max, day) => 
-      day.pnl > max.pnl ? day : max, 
-      dailyEntries[0]
-    );
-    
-    const worstDay = dailyEntries.reduce((min, day) => 
-      day.pnl < min.pnl ? day : min, 
-      dailyEntries[0]
-    );
-
-    return {
-      bestDay: bestDay.pnl > 0 ? bestDay : null,
-      worstDay: worstDay.pnl < 0 ? worstDay : null,
-    };
-  }, [filteredTrades]);
-
-  // Calculer le Consistency Target pour les comptes TopStep
-  // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
-  const consistencyTarget = useMemo(() => {
-    if (!selectedAccount || selectedAccount.account_type !== 'topstep') {
-      return null;
-    }
-
-    const overallProfit = accountBalance.current - accountBalance.initial;
-    if (overallProfit <= 0) {
-      return null;
-    }
-
-    // Calculer le meilleur jour de tous les temps à partir de tous les trades du compte
-    if (allTrades.length === 0) {
-      return null;
-    }
-
-    // Grouper les trades par date pour trouver le meilleur jour
-    const dailyData: { [date: string]: number } = {};
-    allTrades.forEach(trade => {
-      if (trade.net_pnl && trade.trade_day) {
-        const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
-      }
-    });
-
-    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
-    if (dailyEntries.length === 0) {
-      return null;
-    }
-
-    const bestDay = dailyEntries.reduce((max, day) => 
-      day.pnl > max.pnl ? day : max, 
-      dailyEntries[0]
-    );
-
-    if (bestDay.pnl <= 0) {
-      return null;
-    }
-
-    const bestDayProfit = bestDay.pnl;
-    const bestDayPercentage = (bestDayProfit / overallProfit) * 100;
-    const isCompliant = bestDayPercentage < 50;
-    const targetPercentage = 50;
-
-    // Calculer le profit total nécessaire si non conforme
-    const requiredTotalProfit = bestDayProfit / 0.5;
-    const additionalProfitNeeded = requiredTotalProfit - overallProfit;
-
-    return {
-      bestDayProfit,
-      bestDayDate: bestDay.date,
-      overallProfit,
-      bestDayPercentage,
-      isCompliant,
-      targetPercentage,
-      requiredTotalProfit,
-      additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
-    };
-  }, [selectedAccount, accountBalance, allTrades]);
+  // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
+  const indicators = useAccountIndicators({
+    selectedAccount,
+    allTrades,
+    filteredTrades,
+  });
 
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
@@ -411,16 +299,26 @@ const StrategiesPage: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       datalabels: {
-        display: false,
+        display: true,
+        color: '#ffffff',
+        font: {
+          weight: 600,
+          size: window.innerWidth < 640 ? 10 : 13,
+        },
+        formatter: function(value: number) {
+          return value > 0 ? formatNumber(value, 1) + '%' : '';
+        },
+        anchor: 'center' as const,
+        align: 'center' as const,
       },
       legend: {
         display: true,
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 20,
+          padding: window.innerWidth < 640 ? 12 : 20,
           font: {
-            size: 12
+            size: window.innerWidth < 640 ? 10 : 12
           },
           color: chartColors.textSecondary,
         },
@@ -472,7 +370,7 @@ const StrategiesPage: React.FC = () => {
           },
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -492,7 +390,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -548,7 +446,7 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: 13,
+          size: window.innerWidth < 640 ? 10 : 13,
         },
         formatter: function(value: number) {
           // Afficher la valeur avec le symbole %
@@ -560,9 +458,9 @@ const StrategiesPage: React.FC = () => {
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: 20,
+          padding: window.innerWidth < 640 ? 12 : 20,
           font: {
-            size: 12
+            size: window.innerWidth < 640 ? 10 : 12
           },
           color: chartColors.textSecondary,
         },
@@ -606,7 +504,7 @@ const StrategiesPage: React.FC = () => {
           },
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -628,7 +526,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -694,7 +592,17 @@ const StrategiesPage: React.FC = () => {
     maintainAspectRatio: false,
     plugins: {
       datalabels: {
-        display: false,
+        display: true,
+        color: '#ffffff',
+        font: {
+          weight: 600,
+          size: window.innerWidth < 640 ? 10 : 13,
+        },
+        formatter: function(value: number) {
+          return value > 0 ? value.toString() : '';
+        },
+        anchor: 'center' as const,
+        align: 'center' as const,
       },
       legend: {
         display: false,
@@ -759,7 +667,7 @@ const StrategiesPage: React.FC = () => {
           text: t('strategies:numberOfWinningSessions'),
           color: chartColors.text,
           font: {
-            size: 13,
+            size: window.innerWidth < 640 ? 11 : 13,
             weight: 600,
           },
         },
@@ -769,7 +677,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            size: window.innerWidth < 640 ? 10 : 12,
           },
         },
         grid: {
@@ -872,13 +780,17 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: 13,
+          size: window.innerWidth < 640 ? 10 : 13,
         },
         formatter: function(value: number, context: any) {
           const label = context.chart.data.labels[context.dataIndex] || '';
           const total = emotionsData?.total || 1;
           const percentage = total > 0 ? (value / total) * 100 : 0;
           // Afficher seulement si le segment est assez grand (> 3%)
+          // Sur mobile, afficher seulement le pourcentage si l'écran est petit
+          if (window.innerWidth < 640) {
+            return value > 0 && (value / total) * 100 > 3 ? `${formatNumber(percentage, 1)}%` : '';
+          }
           return value > 0 && (value / total) * 100 > 3 ? `${label}\n${formatNumber(percentage, 1)}%` : '';
         },
       },
@@ -919,8 +831,12 @@ const StrategiesPage: React.FC = () => {
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
-  // Taux de respect du compte (pour la période sélectionnée - prend en compte les filtres année/mois)
+  // Taux de respect total pour la période sélectionnée (tous comptes)
+  const periodRespect = statistics?.period?.respect_percentage || 0;
+  // Taux de respect du compte (toutes périodes)
   const accountRespect = statistics?.statistics?.respect_percentage || 0;
+  // Taux de respect du compte pour la période sélectionnée
+  const accountPeriodRespect = statistics?.statistics?.period?.respect_percentage || 0;
   
   // Fonction pour déterminer la couleur du gradient selon le taux de respect
   // Bonnes pratiques de trading : >80% excellent, 70-80% bon, 50-70% moyen, <50% à améliorer
@@ -962,15 +878,16 @@ const StrategiesPage: React.FC = () => {
   
   const accountRespectColor = getRespectRateColor(accountRespect);
   const allTimeRespectColor = getRespectRateColor(allTimeRespect);
+  const periodRespectColor = getRespectRateColor(periodRespect);
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="mb-6">
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="mb-4 sm:mb-6">
         {/* Filtres */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4">
             {/* Compte de trading */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:tradingAccount')}
               </label>
@@ -978,7 +895,7 @@ const StrategiesPage: React.FC = () => {
             </div>
             
             {/* Sélecteur de période moderne */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:period', { defaultValue: 'Période' })}
               </label>
@@ -992,203 +909,92 @@ const StrategiesPage: React.FC = () => {
                 }}
               />
             </div>
-
-            {/* Soldes du compte */}
-            {selectedAccount && (
-              <div className="flex flex-wrap items-end gap-6 flex-1">
-                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
-                  </span>
-                  <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {formatCurrency(accountBalance.initial, currencySymbol)}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
-                  </span>
-                  <span className={`text-lg font-semibold ${
-                    accountBalance.current >= accountBalance.initial 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-pink-600 dark:text-pink-400'
-                  }`}>
-                    {formatCurrency(accountBalance.current, currencySymbol)}
-                  </span>
-                </div>
-                {accountBalance.initial > 0 && (
-                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {t('dashboard:variation', { defaultValue: 'Variation' })}
-                    </span>
-                    <span className={`text-lg font-semibold ${
-                      accountBalance.current >= accountBalance.initial 
-                        ? 'text-blue-600 dark:text-blue-400' 
-                        : 'text-pink-600 dark:text-pink-400'
-                    }`}>
-                      {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
-                      {' '}
-                      ({formatNumber(((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100), 2)}%)
-                    </span>
-                  </div>
-                )}
-                {statistics?.statistics?.total_strategies !== undefined && (
-                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
-                    </span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {statistics.statistics.total_strategies}
-                    </span>
-                  </div>
-                )}
-                {bestAndWorstDays.bestDay && (
-                  <div className="flex flex-col gap-1 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                        {t('dashboard:bestDay', { defaultValue: 'Meilleur jour' })}
-                      </span>
-                      <span className="text-xs text-blue-600 dark:text-blue-400">
-                        {formatDate(bestAndWorstDays.bestDay.date, preferences.date_format, false, preferences.timezone)}
-                      </span>
-                    </div>
-                    <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                      {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol)}
-                    </span>
-                  </div>
-                )}
-                {bestAndWorstDays.worstDay && (
-                  <div className="flex flex-col gap-1 p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-pink-700 dark:text-pink-300">
-                        {t('dashboard:worstDay', { defaultValue: 'Pire jour' })}
-                      </span>
-                      <span className="text-xs text-pink-600 dark:text-pink-400">
-                        {formatDate(bestAndWorstDays.worstDay.date, preferences.date_format, false, preferences.timezone)}
-                      </span>
-                    </div>
-                    <span className="text-lg font-semibold text-pink-600 dark:text-pink-400">
-                      {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol)}
-                    </span>
-                  </div>
-                )}
-                {consistencyTarget && (
-                  <div className={`flex flex-col gap-1 p-3 rounded-lg border ${
-                    consistencyTarget.isCompliant
-                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                      : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-                  }`}>
-                    <span className={`text-sm font-medium ${
-                      consistencyTarget.isCompliant
-                        ? 'text-green-700 dark:text-green-300'
-                        : 'text-orange-700 dark:text-orange-300'
-                    }`}>
-                      {t('dashboard:consistencyTarget', { defaultValue: 'Consistency Target' })}
-                    </span>
-                    <span className={`text-lg font-semibold ${
-                      consistencyTarget.isCompliant
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-orange-600 dark:text-orange-400'
-                    }`}>
-                      {formatNumber(consistencyTarget.bestDayPercentage, 2)}% / {formatNumber(consistencyTarget.targetPercentage, 2)}%
-                    </span>
-                    {!consistencyTarget.isCompliant && 
-                     typeof consistencyTarget.additionalProfitNeeded === 'number' &&
-                     consistencyTarget.additionalProfitNeeded > 0 && (() => {
-                      const formattedAmount = formatCurrency(consistencyTarget.additionalProfitNeeded, currencySymbol);
-                      // Ne pas afficher si le montant formaté est invalide, vide ou contient des caractères non désirés
-                      if (!formattedAmount || 
-                          formattedAmount === '-' || 
-                          formattedAmount.trim() === '' || 
-                          formattedAmount.includes('{amount}') ||
-                          formattedAmount.includes('NaN') ||
-                          formattedAmount.includes('undefined')) {
-                        return null;
-                      }
-                      // Construire le texte avec interpolation
-                      const label = t('dashboard:additionalProfitNeeded', { 
-                        defaultValue: 'Profit supplémentaire requis: {amount}',
-                        amount: formattedAmount
-                      });
-                      // Si l'interpolation n'a pas fonctionné (le placeholder est encore présent), ne pas afficher
-                      if (label.includes('{amount}')) {
-                        return null;
-                      }
-                      return (
-                        <span className="text-xs text-orange-600 dark:text-orange-400">
-                          {label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
+        {/* Soldes du compte */}
+        {selectedAccount && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+            <AccountIndicatorsGrid 
+              indicators={indicators} 
+              currencySymbol={currencySymbol} 
+            />
+          </div>
+        )}
+
         {/* Message d'erreur */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-800 dark:text-red-300">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <p className="text-sm sm:text-base text-red-800 dark:text-red-300 break-words">{error}</p>
           </div>
         )}
 
         {/* Indicateurs de respect */}
         {statistics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Taux de respect total */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+            {/* Taux de respect total (avec période sélectionnée en dessous) */}
             <RespectRateCard
               title={t('strategies:totalRespectRate')}
               subtitle={`(${t('strategies:allPeriodsAndAccounts')})`}
               percentage={allTimeRespect}
               tradesCount={statistics?.all_time?.respected_count || 0}
-              totalTrades={statistics?.all_time?.total_strategies || 0}
+              totalTrades={statistics?.all_time?.total_trades || 0}
               tradesLabel={t('trades:trades')}
               outOfLabel={t('strategies:outOf')}
               gradientColors={allTimeRespectColor}
+              secondaryPercentage={periodRespect}
+              secondaryTradesCount={statistics?.period?.respected_count || 0}
+              secondaryTotalTrades={statistics?.period?.total_trades || 0}
+              secondarySubtitle={`(${t('strategies:forSelectedPeriod')})`}
+              secondaryGradientColors={periodRespectColor}
             />
             
-            {/* Taux de respect du compte */}
+            {/* Taux de respect du compte (avec période sélectionnée en dessous) */}
             <RespectRateCard
               title={t('strategies:accountRespectRate')}
+              subtitle={`(${t('strategies:allPeriods')})`}
               percentage={accountRespect}
               tradesCount={statistics?.statistics?.respected_count || 0}
-              totalTrades={statistics?.statistics?.total_strategies || 0}
+              totalTrades={statistics?.statistics?.total_trades || 0}
               tradesLabel={t('trades:trades')}
               outOfLabel={t('strategies:outOf')}
               gradientColors={accountRespectColor}
+              secondaryPercentage={accountPeriodRespect}
+              secondaryTradesCount={statistics?.statistics?.period?.respected_count || 0}
+              secondaryTotalTrades={statistics?.statistics?.period?.total_trades || 0}
+              secondarySubtitle={`(${t('strategies:forSelectedPeriod')})`}
+              secondaryGradientColors={accountRespectColor}
             />
           </div>
         )}
 
         {/* Graphiques */}
         {isLoading ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-48 sm:h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">{t('strategies:loading')}</p>
+              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-3 sm:mb-4"></div>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('strategies:loading')}</p>
             </div>
           </div>
         ) : statistics ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Graphique 1: Respect de la stratégie en % */}
             {respectChartData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:strategyRespectPercentage')}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:strategyRespectPercentage')}</h3>
                   <Tooltip
                     content={t('strategies:strategyRespectPercentageTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
                       <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </Tooltip>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                   <Bar data={respectChartData} options={respectChartOptions} />
                 </div>
               </div>
@@ -1196,21 +1002,21 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 2: Taux de réussite si respect de la stratégie */}
             {successRateData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:successRateByStrategyRespect')}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:successRateByStrategyRespect')}</h3>
                   <Tooltip
                     content={t('strategies:successRateByStrategyRespectTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
                       <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </Tooltip>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                   <Bar data={successRateData} options={successRateOptions} />
                 </div>
               </div>
@@ -1218,21 +1024,21 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 3: Répartition des sessions gagnantes */}
             {winningSessionsData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:winningSessionsDistribution')}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:winningSessionsDistribution')}</h3>
                   <Tooltip
                     content={t('strategies:winningSessionsDistributionTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
                       <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </Tooltip>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                   <Bar data={winningSessionsData} options={winningSessionsOptions} />
                 </div>
               </div>
@@ -1240,35 +1046,44 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 4: Répartition des émotions dominantes */}
             {emotionsData && emotionsData.labels.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('strategies:dominantEmotionsDistribution')}</h3>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:dominantEmotionsDistribution')}</h3>
                   <Tooltip
                     content={t('strategies:dominantEmotionsDistributionTooltip')}
                     position="top"
                   >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
                       <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
                   </Tooltip>
                 </div>
-                <div className="h-80">
+                <div className="h-64 sm:h-72 md:h-80">
                   <Doughnut data={emotionsData} options={emotionsOptions} />
                 </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-600 dark:text-gray-400">
-            <p>{t('strategies:noDataForPeriod')}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 text-center text-gray-600 dark:text-gray-400">
+            <p className="text-sm sm:text-base">{t('strategies:noDataForPeriod')}</p>
           </div>
         )}
       </div>
 
       <FloatingActionButton onClick={() => setShowImport(true)} title={t('strategies:importTrades')} />
-      <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
+      <ImportTradesModal open={showImport} onClose={(done) => {
+        setShowImport(false);
+        if (done) {
+          // Recharger les statistiques après un import réussi
+          loadStatistics();
+          // Recharger aussi les trades pour mettre à jour les soldes et les graphiques
+          loadAllTrades();
+          loadFilteredTrades();
+        }
+      }} />
     </div>
   );
 };

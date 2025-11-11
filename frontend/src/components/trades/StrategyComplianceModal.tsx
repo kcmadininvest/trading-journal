@@ -438,7 +438,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose(false);
@@ -446,27 +446,28 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       }}
     >
       <div
-        className="bg-white dark:bg-gray-800 w-full max-w-6xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+        className="bg-white dark:bg-gray-800 w-full max-w-6xl rounded-xl shadow-2xl max-h-[90vh] sm:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-600 dark:bg-purple-500 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-600 dark:bg-purple-500 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('trades:strategyCompliance.title')}</h2>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600 dark:text-gray-400">{formatDate(date)}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{t('trades:strategyCompliance.title')}</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">{formatDate(date)}</p>
                 {hasUnsavedChanges && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 flex-shrink-0">
                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    {t('trades:strategyCompliance.unsavedChanges', { defaultValue: 'Modifications non sauvegardées' })}
+                    <span className="hidden sm:inline">{t('trades:strategyCompliance.unsavedChanges', { defaultValue: 'Modifications non sauvegardées' })}</span>
+                    <span className="sm:hidden">{t('trades:strategyCompliance.unsavedChanges', { defaultValue: 'Non sauvegardé' })}</span>
                   </span>
                 )}
               </div>
@@ -475,7 +476,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
           <button
             onClick={() => onClose(false)}
             disabled={isSaving}
-            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50"
+            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50 flex-shrink-0"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -484,7 +485,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <svg className="animate-spin h-8 w-8 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24">
@@ -513,9 +514,9 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
             <div className="space-y-6">
               {/* Bouton pour dupliquer le premier trade */}
               {trades.length > 1 && (
-                <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-purple-900 dark:text-purple-300">
                         {t('trades:strategyCompliance.duplicateConfiguration')}
                       </p>
@@ -526,7 +527,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                     <button
                       type="button"
                       onClick={duplicateFirstTradeToAll}
-                      className="px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors text-sm font-medium flex items-center gap-2 flex-shrink-0"
+                      className="px-3 sm:px-4 py-2 bg-purple-600 dark:bg-purple-500 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -538,14 +539,14 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               )}
               
               {trades.map((trade) => (
-                <div key={trade.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
+                <div key={trade.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
                   {/* En-tête du trade */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="font-semibold text-gray-900 dark:text-gray-100">{trade.contract_name}</span>
+                  <div className="flex items-start justify-between mb-3 sm:mb-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                        <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">{trade.contract_name}</span>
                         <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${
+                          className={`px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${
                             trade.trade_type === 'Long'
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                               : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
@@ -553,10 +554,10 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                         >
                           {trade.trade_type}
                         </span>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">{formatTimeLocal(trade.entered_at)}</span>
+                        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">{formatTimeLocal(trade.entered_at)}</span>
                         {trade.net_pnl && (
                           <span
-                            className={`text-sm font-medium ${
+                            className={`text-xs sm:text-sm font-medium flex-shrink-0 ${
                               parseFloat(trade.net_pnl) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                             }`}
                           >
@@ -568,24 +569,24 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </div>
 
                   {/* Respect de la stratégie et Take Profit */}
-                  <div className="mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                  <div className="mb-3 sm:mb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-start">
                       {/* Stratégie respectée */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           {t('trades:strategyCompliance.strategyRespected')}
                         </label>
-                        <div className="flex gap-3 flex-wrap">
+                        <div className="flex gap-2 sm:gap-3 flex-wrap">
                           <button
                             type="button"
                             onClick={() => updateTradeStrategy(trade.id, 'strategyRespected', trade.strategyRespected === true ? null : true)}
-                            className={`px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-2 ${
+                            className={`px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-1.5 sm:gap-2 text-sm ${
                               trade.strategyRespected === true
                                 ? 'bg-green-600 dark:bg-green-500 text-white border-green-600 dark:border-green-500'
                                 : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/20'
                             }`}
                           >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                             {t('trades:yes')}
@@ -593,13 +594,13 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                           <button
                             type="button"
                             onClick={() => updateTradeStrategy(trade.id, 'strategyRespected', trade.strategyRespected === false ? null : false)}
-                            className={`px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-2 ${
+                            className={`px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-1.5 sm:gap-2 text-sm ${
                               trade.strategyRespected === false
                                 ? 'bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500'
                                 : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20'
                             }`}
                           >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                             {t('trades:no')}
@@ -613,18 +614,18 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {t('trades:strategyCompliance.takeProfitReached')}
                           </label>
-                          <div className="flex gap-3 flex-wrap">
+                          <div className="flex gap-2 sm:gap-3 flex-wrap">
                             <button
                               type="button"
                               onClick={() => updateTradeStrategy(trade.id, 'tp1Reached', !trade.tp1Reached)}
-                              className={`w-24 px-4 py-2 rounded-lg border-2 transition-colors flex items-center justify-center gap-2 ${
+                              className={`w-20 sm:w-24 px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm ${
                                 trade.tp1Reached
                                   ? 'bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500'
                                   : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
                               }`}
                             >
                               {trade.tp1Reached && (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
@@ -633,14 +634,14 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                             <button
                               type="button"
                               onClick={() => updateTradeStrategy(trade.id, 'tp2PlusReached', !trade.tp2PlusReached)}
-                              className={`w-24 px-4 py-2 rounded-lg border-2 transition-colors flex items-center justify-center gap-2 ${
+                              className={`w-20 sm:w-24 px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm ${
                                 trade.tp2PlusReached
                                   ? 'bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500'
                                   : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
                               }`}
                             >
                               {trade.tp2PlusReached && (
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
@@ -653,14 +654,14 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       {/* Gain si stratégie respectée - seulement si le trade est perdant ET la stratégie n'a pas été respectée */}
                       {trade.strategyRespected === false && trade.net_pnl && parseFloat(trade.net_pnl) <= 0 && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                            <span>{t('trades:strategyCompliance.gainIfStrategyRespected')}</span>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2 flex-wrap">
+                            <span className="break-words">{t('trades:strategyCompliance.gainIfStrategyRespected')}</span>
                             <Tooltip 
                               content={t('trades:strategyCompliance.gainIfStrategyRespectedTooltip')} 
                               position="top"
                             >
                               <svg 
-                                className="w-4 h-4 text-gray-400 dark:text-gray-500 cursor-help" 
+                                className="w-4 h-4 text-gray-400 dark:text-gray-500 cursor-help flex-shrink-0" 
                                 fill="none" 
                                 viewBox="0 0 24 24" 
                                 stroke="currentColor"
@@ -669,17 +670,17 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                               </svg>
                             </Tooltip>
                           </label>
-                          <div className="flex gap-3 flex-wrap">
+                          <div className="flex gap-2 sm:gap-3 flex-wrap">
                             <button
                               type="button"
                               onClick={() => updateTradeStrategy(trade.id, 'gainIfStrategyRespected', trade.gainIfStrategyRespected === true ? null : true)}
-                              className={`px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-2 ${
+                              className={`px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-1.5 sm:gap-2 text-sm ${
                                 trade.gainIfStrategyRespected === true
                                   ? 'bg-green-600 dark:bg-green-500 text-white border-green-600 dark:border-green-500'
                                   : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/20'
                               }`}
                             >
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
                               {t('trades:yes')}
@@ -687,13 +688,13 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                             <button
                               type="button"
                               onClick={() => updateTradeStrategy(trade.id, 'gainIfStrategyRespected', trade.gainIfStrategyRespected === false ? null : false)}
-                              className={`px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-2 ${
+                              className={`px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-1.5 sm:gap-2 text-sm ${
                                 trade.gainIfStrategyRespected === false
                                   ? 'bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500'
                                   : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20'
                               }`}
                             >
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
                               {t('trades:no')}
@@ -705,11 +706,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </div>
 
                   {/* Émotions dominantes */}
-                  <div className="mb-4">
+                  <div className="mb-3 sm:mb-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('trades:strategyCompliance.dominantEmotions')}
                     </label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                       {TRADING_EMOTIONS.map((emotion) => {
                         const isSelected = trade.dominantEmotions.includes(emotion.value);
                         return (
@@ -717,7 +718,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                             key={emotion.value}
                             type="button"
                             onClick={() => toggleEmotion(trade.id, emotion.value)}
-                            className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                            className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm border transition-colors ${
                               isSelected
                                 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700 font-medium'
                                 : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -738,7 +739,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </div>
 
                   {/* Note subjective */}
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t('trades:strategyCompliance.subjectiveRating')}
                     </label>
@@ -750,7 +751,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                           ratingRefs.current.delete(trade.id);
                         }
                       }}
-                      className="relative w-56"
+                      className="relative w-full sm:w-56"
                     >
                       <button
                         type="button"
@@ -838,29 +839,30 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </div>
 
                   {/* Screenshot */}
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('trades:strategyCompliance.screenshotUrl')}
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <input
                         type="url"
                         value={trade.screenshotUrl || ''}
                         onChange={(e) => updateTradeStrategy(trade.id, 'screenshotUrl', e.target.value)}
                         placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
-                        className="w-2/3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       {trade.screenshotUrl && (
                         <button
                           type="button"
                           onClick={() => window.open(trade.screenshotUrl, '_blank', 'noopener,noreferrer')}
-                          className="px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-sm font-medium flex items-center gap-2 flex-shrink-0"
+                          className="px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0"
                           title={t('trades:strategyCompliance.openScreenshot')}
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          {t('trades:strategyCompliance.viewImage')}
+                          <span className="hidden sm:inline">{t('trades:strategyCompliance.viewImage')}</span>
+                          <span className="sm:hidden">{t('trades:strategyCompliance.viewImage', { defaultValue: 'Voir' })}</span>
                         </button>
                       )}
                     </div>
@@ -870,30 +872,31 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </div>
 
                   {/* Vidéo */}
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('trades:strategyCompliance.videoUrl')}
                     </label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <input
                         type="url"
                         value={trade.videoUrl || ''}
                         onChange={(e) => updateTradeStrategy(trade.id, 'videoUrl', e.target.value)}
                         placeholder={t('trades:strategyCompliance.videoPlaceholder')}
-                        className="w-2/3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
                       {trade.videoUrl && (
                         <button
                           type="button"
                           onClick={() => window.open(trade.videoUrl, '_blank', 'noopener,noreferrer')}
-                          className="px-3 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors text-sm font-medium flex items-center gap-2 flex-shrink-0"
+                          className="px-3 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0"
                           title={t('trades:strategyCompliance.openVideo')}
                         >
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          {t('trades:strategyCompliance.viewVideo')}
+                          <span className="hidden sm:inline">{t('trades:strategyCompliance.viewVideo')}</span>
+                          <span className="sm:hidden">{t('trades:strategyCompliance.viewVideo', { defaultValue: 'Voir' })}</span>
                         </button>
                       )}
                     </div>
@@ -903,7 +906,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </div>
 
                   {/* Détails des émotions */}
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('trades:strategyCompliance.emotionDetails')}
                     </label>
@@ -917,7 +920,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </div>
 
                   {/* Améliorations possibles */}
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('trades:strategyCompliance.possibleImprovements')}
                     </label>
@@ -936,8 +939,8 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl flex items-center justify-between flex-shrink-0">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-shrink-0">
+          <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
             {trades.length > 0 && (
               <span>
                 {t('trades:strategyCompliance.tradesWithStrategyRespected', {
@@ -947,18 +950,18 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => onClose(false)}
               disabled={isSaving}
-              className="px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors disabled:opacity-50"
+              className="px-3 sm:px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm sm:text-base font-medium transition-colors disabled:opacity-50 flex-1 sm:flex-initial"
             >
               {t('trades:strategyCompliance.cancel')}
             </button>
             <button
               onClick={handleSave}
               disabled={isSaving || isLoading}
-              className="px-6 py-2 rounded-lg bg-purple-600 dark:bg-purple-500 text-white hover:bg-purple-700 dark:hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors flex items-center gap-2"
+              className="px-4 sm:px-6 py-2 rounded-lg bg-purple-600 dark:bg-purple-500 text-white hover:bg-purple-700 dark:hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-initial"
             >
               {isSaving ? (
                 <>

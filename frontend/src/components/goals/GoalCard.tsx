@@ -127,29 +127,29 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, currencySymbol = '', o
 
   return (
     <div
-      className={`p-4 rounded-lg border-2 ${getStatusColor()} cursor-pointer hover:shadow-lg transition-shadow relative`}
+      className={`p-3 sm:p-4 rounded-lg border-2 ${getStatusColor()} cursor-pointer hover:shadow-lg transition-shadow relative`}
       onClick={handleCardClick}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+      <div className="flex items-start justify-between mb-2 sm:mb-3 gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <h3 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
               {getGoalTypeLabel(goal.goal_type)}
             </h3>
             {getStatusBadge()}
           </div>
           {goal.trading_account_name && (
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
               {goal.trading_account_name}
             </p>
           )}
         </div>
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-1 sm:gap-2 flex-shrink-0">
           <div className="text-right">
-            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
               {formatNumber(progressPercentage, 1, preferences.number_format)}%
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 break-words">
               {formatValue(goal.current_value, goal.goal_type)} / {formatValue(goal.target_value, goal.goal_type)}
             </div>
           </div>
@@ -160,16 +160,16 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, currencySymbol = '', o
                 e.stopPropagation();
                 setOpenMenu(!openMenu);
               }}
-              className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              className="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors flex-shrink-0"
               title={t('goals:actions', { defaultValue: 'Actions' })}
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
               </svg>
             </button>
             
             {openMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+              <div className="absolute right-0 mt-2 w-40 sm:w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                 {goal.status === 'active' && onCancel && (
                   <button
                     onClick={handleCancelClick}
@@ -215,10 +215,10 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, currencySymbol = '', o
       </div>
       
       {/* Barre de progression */}
-      <div className="mb-3">
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+      <div className="mb-2 sm:mb-3">
+        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 sm:h-3">
           <div
-            className={`h-3 rounded-full transition-all ${
+            className={`h-2 sm:h-3 rounded-full transition-all ${
               goal.status === 'achieved' ? 'bg-green-500' :
               goal.status === 'failed' ? 'bg-red-500' :
               progressPercentage < 50 && remainingDays < 7 ? 'bg-orange-500' :
@@ -230,12 +230,12 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, currencySymbol = '', o
       </div>
       
       {/* Informations supplémentaires */}
-      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-        <span>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+        <span className="break-words">
           {formatDate(goal.start_date, preferences.date_format, false, preferences.timezone)} - {formatDate(goal.end_date, preferences.date_format, false, preferences.timezone)}
         </span>
         {remainingDays > 0 && goal.status === 'active' && (
-          <span className="font-medium">
+          <span className="font-medium whitespace-nowrap">
             {remainingDays} {remainingDays === 1 ? t('goals:dayRemaining') : t('goals:daysRemaining')}
           </span>
         )}

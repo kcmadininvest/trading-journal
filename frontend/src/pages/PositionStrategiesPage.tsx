@@ -348,98 +348,101 @@ const PositionStrategiesPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="w-full">
         {/* Filtres et recherche */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            <div className="flex-1 w-full">
               <input
                 type="text"
                 placeholder={t('positionStrategies:searchPlaceholder', { defaultValue: 'Rechercher une stratégie...' })}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <div className="flex gap-2 flex-1">
+                <button
+                  onClick={() => setFilterStatus('all')}
+                  className={`flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-medium transition-colors whitespace-nowrap ${
+                    filterStatus === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('positionStrategies:all', { defaultValue: 'Toutes' })}
+                </button>
+                <button
+                  onClick={() => setFilterStatus('active')}
+                  className={`flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-medium transition-colors whitespace-nowrap ${
+                    filterStatus === 'active'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('positionStrategies:active', { defaultValue: 'Actives' })}
+                </button>
+                <button
+                  onClick={() => setFilterStatus('draft')}
+                  className={`flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-medium transition-colors whitespace-nowrap ${
+                    filterStatus === 'draft'
+                      ? 'bg-yellow-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('positionStrategies:draft', { defaultValue: 'Brouillons' })}
+                </button>
+                <button
+                  onClick={() => setFilterStatus('archived')}
+                  className={`flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg font-medium transition-colors whitespace-nowrap ${
+                    filterStatus === 'archived'
+                      ? 'bg-gray-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {t('positionStrategies:archived', { defaultValue: 'Archivées' })}
+                </button>
+              </div>
               <button
-                onClick={() => setFilterStatus('all')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  filterStatus === 'all'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
+                onClick={handleCreate}
+                className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-2"
               >
-                {t('positionStrategies:all', { defaultValue: 'Toutes' })}
-              </button>
-              <button
-                onClick={() => setFilterStatus('active')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  filterStatus === 'active'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t('positionStrategies:active', { defaultValue: 'Actives' })}
-              </button>
-              <button
-                onClick={() => setFilterStatus('draft')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  filterStatus === 'draft'
-                    ? 'bg-yellow-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t('positionStrategies:draft', { defaultValue: 'Brouillons' })}
-              </button>
-              <button
-                onClick={() => setFilterStatus('archived')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                  filterStatus === 'archived'
-                    ? 'bg-gray-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t('positionStrategies:archived', { defaultValue: 'Archivées' })}
+                <span>+</span>
+                <span>{t('positionStrategies:create', { defaultValue: 'Nouvelle stratégie' })}</span>
               </button>
             </div>
-            <button
-              onClick={handleCreate}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              + {t('positionStrategies:create', { defaultValue: 'Nouvelle stratégie' })}
-            </button>
           </div>
         </div>
 
         {/* Message d'erreur */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-800 dark:text-red-300">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <p className="text-sm sm:text-base text-red-800 dark:text-red-300 break-words">{error}</p>
           </div>
         )}
 
         {/* Liste des stratégies */}
         {isLoading && strategies.length === 0 ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-48 sm:h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600 dark:text-gray-400">{t('positionStrategies:loading', { defaultValue: 'Chargement...' })}</p>
+              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-3 sm:mb-4"></div>
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('positionStrategies:loading', { defaultValue: 'Chargement...' })}</p>
             </div>
           </div>
         ) : filteredStrategies.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
-            <p className="text-gray-600 dark:text-gray-400 text-lg">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sm:p-12 text-center">
+            <p className="text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-400">
               {t('positionStrategies:noStrategies', { defaultValue: 'Aucune stratégie trouvée' })}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredStrategies.map((strategy) => (
               <div
                 key={strategy.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -583,23 +586,46 @@ const PositionStrategiesPage: React.FC = () => {
 
         {/* Modal de création/édition */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {selectedStrategy 
-                    ? t('positionStrategies:editStrategy', { defaultValue: 'Modifier la stratégie' })
-                    : t('positionStrategies:createStrategy', { defaultValue: 'Nouvelle stratégie' })}
-                </h2>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowModal(false);
+              }
+            }}
+          >
+            <div
+              className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-600 dark:bg-blue-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
+                      {selectedStrategy 
+                        ? t('positionStrategies:editStrategy', { defaultValue: 'Modifier la stratégie' })
+                        : t('positionStrategies:createStrategy', { defaultValue: 'Nouvelle stratégie' })}
+                    </h2>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
                 >
-                  ✕
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
 
-              <div className="p-6 space-y-6">
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('positionStrategies:title', { defaultValue: 'Titre' })} *
@@ -608,7 +634,7 @@ const PositionStrategiesPage: React.FC = () => {
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                 </div>
@@ -621,7 +647,7 @@ const PositionStrategiesPage: React.FC = () => {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
                   />
                 </div>
 
@@ -632,7 +658,7 @@ const PositionStrategiesPage: React.FC = () => {
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="draft">{t('positionStrategies:draft', { defaultValue: 'Brouillon' })}</option>
                     <option value="active">{t('positionStrategies:active', { defaultValue: 'Active' })}</option>
@@ -641,22 +667,22 @@ const PositionStrategiesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       {t('positionStrategies:sections', { defaultValue: 'Sections de la stratégie' })} *
                     </label>
                     <button
                       type="button"
                       onClick={addSection}
-                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                      className="px-3 py-1.5 text-sm sm:text-base bg-green-600 text-white rounded hover:bg-green-700 transition-colors whitespace-nowrap"
                     >
                       + {t('positionStrategies:addSection', { defaultValue: 'Ajouter une section' })}
                     </button>
                   </div>
 
                   {formData.strategy_content.sections.map((section, sectionIndex) => (
-                    <div key={sectionIndex} className="mb-4 p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                      <div className="flex items-center justify-between mb-3">
+                    <div key={sectionIndex} className="mb-3 sm:mb-4 p-3 sm:p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
                         <input
                           type="text"
                           placeholder={t('positionStrategies:sectionTitle', { defaultValue: 'Titre de la section' })}
@@ -666,13 +692,14 @@ const PositionStrategiesPage: React.FC = () => {
                             newSections[sectionIndex].title = e.target.value;
                             setFormData({ ...formData, strategy_content: { sections: newSections } });
                           }}
-                          className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {formData.strategy_content.sections.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeSection(sectionIndex)}
-                            className="ml-2 px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                            className="px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex-shrink-0"
+                            title={t('positionStrategies:removeSection', { defaultValue: 'Supprimer la section' })}
                           >
                             ✕
                           </button>
@@ -699,13 +726,14 @@ const PositionStrategiesPage: React.FC = () => {
                                   newSections[sectionIndex].rules[ruleIndex] = e.target.value;
                                   setFormData({ ...formData, strategy_content: { sections: newSections } });
                                 }}
-                                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                               />
                             {section.rules.length > 1 && (
                               <button
                                 type="button"
                                 onClick={() => removeRule(sectionIndex, ruleIndex)}
-                                className="px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                className="px-2 sm:px-3 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex-shrink-0"
+                                title={t('positionStrategies:removeRule', { defaultValue: 'Supprimer la règle' })}
                               >
                                 ✕
                               </button>
@@ -716,7 +744,7 @@ const PositionStrategiesPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => addRule(sectionIndex)}
-                          className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                          className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           + {t('positionStrategies:addRule', { defaultValue: 'Ajouter une règle' })}
                         </button>
@@ -735,23 +763,24 @@ const PositionStrategiesPage: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, version_notes: e.target.value })}
                       rows={3}
                       placeholder={t('positionStrategies:versionNotesPlaceholder', { defaultValue: 'Décrivez les changements de cette version...' })}
-                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
                     />
                   </div>
                 )}
               </div>
 
-              <div className="sticky bottom-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-end gap-3">
+              {/* Footer */}
+              <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 flex-shrink-0">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="px-3 sm:px-4 py-2 text-sm sm:text-base text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
                   {t('positionStrategies:cancel', { defaultValue: 'Annuler' })}
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={!formData.title || formData.strategy_content.sections.length === 0 || isLoading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading 
                     ? t('positionStrategies:saving', { defaultValue: 'Enregistrement...' })
@@ -764,40 +793,66 @@ const PositionStrategiesPage: React.FC = () => {
 
         {/* Modal des versions */}
         {showVersionsModal && selectedStrategy && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {t('positionStrategies:versionHistory', { defaultValue: 'Historique des versions' })} - {selectedStrategy.title}
-                </h2>
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setShowVersionsModal(false);
+              }
+            }}
+          >
+            <div
+              className="bg-white dark:bg-gray-800 w-full max-w-3xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-600 dark:bg-purple-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
+                      {t('positionStrategies:versionHistory', { defaultValue: 'Historique des versions' })}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate mt-1">
+                      {selectedStrategy.title}
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowVersionsModal(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
                 >
-                  ✕
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
 
-              <div className="p-6">
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
                 {versions.length === 0 ? (
-                  <p className="text-gray-600 dark:text-gray-400 text-center py-8">
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 text-center py-6 sm:py-8">
                     {t('positionStrategies:noVersions', { defaultValue: 'Aucune version disponible' })}
                   </p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {versions.map((version) => (
                       <div
                         key={version.id}
-                        className={`p-4 border rounded-lg ${
+                        className={`p-3 sm:p-4 border rounded-lg ${
                           version.is_current
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                             : 'border-gray-200 dark:border-gray-700'
                         }`}
                       >
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100">
                                 {t('positionStrategies:version', { defaultValue: 'Version' })} {version.version}
                               </span>
                               {version.is_current && (
@@ -816,21 +871,21 @@ const PositionStrategiesPage: React.FC = () => {
                                  t('positionStrategies:archived', { defaultValue: 'Archivée' })}
                               </span>
                             </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                               {formatDate(version.created_at, preferences.date_format, false, preferences.timezone)}
                             </p>
                           </div>
                           {!version.is_current && (
                             <button
                               onClick={() => handleRestoreVersion(version.id)}
-                              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              className="px-3 py-1.5 text-xs sm:text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors whitespace-nowrap flex-shrink-0"
                             >
                               {t('positionStrategies:restore', { defaultValue: 'Restaurer' })}
                             </button>
                           )}
                         </div>
                         {version.version_notes && (
-                          <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                          <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 mt-2 break-words">
                             {version.version_notes}
                           </p>
                         )}
@@ -846,7 +901,7 @@ const PositionStrategiesPage: React.FC = () => {
         {/* Modal de visualisation */}
         {showViewModal && selectedStrategy && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 handleCloseViewModal();
@@ -858,19 +913,19 @@ const PositionStrategiesPage: React.FC = () => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-600 dark:bg-purple-500 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-600 dark:bg-purple-500 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
                       {selectedStrategy.title}
                     </h2>
                     {selectedStrategy.description && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
                         {selectedStrategy.description}
                       </p>
                     )}
@@ -878,7 +933,7 @@ const PositionStrategiesPage: React.FC = () => {
                 </div>
                 <button
                   onClick={handleCloseViewModal}
-                  className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
                 >
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -887,10 +942,10 @@ const PositionStrategiesPage: React.FC = () => {
               </div>
 
               {/* Contenu scrollable */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
                 {/* Informations générales */}
-                <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex flex-wrap gap-4 text-sm">
+                <div className="mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
                     <div>
                       <span className="font-medium text-gray-700 dark:text-gray-300">
                         {t('positionStrategies:status', { defaultValue: 'Statut' })}:
@@ -911,7 +966,7 @@ const PositionStrategiesPage: React.FC = () => {
                       <span className="font-medium text-gray-700 dark:text-gray-300">
                         {t('positionStrategies:createdAt', { defaultValue: 'Créé le' })}:
                       </span>
-                      <span className="ml-2 text-gray-600 dark:text-gray-400">
+                      <span className="ml-2 text-gray-600 dark:text-gray-400 break-words">
                         {formatDate(selectedStrategy.created_at, preferences.date_format, false, preferences.timezone)}
                       </span>
                     </div>
@@ -922,18 +977,18 @@ const PositionStrategiesPage: React.FC = () => {
                 {(() => {
                   const percentage = calculatePercentage(selectedStrategy, checkedRules);
                   return (
-                    <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                           {t('positionStrategies:compliance', { defaultValue: 'Respect de la stratégie' })}
                         </h3>
-                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
                           {percentage}%
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 sm:h-3">
                         <div
-                          className={`h-3 rounded-full transition-all duration-300 ${
+                          className={`h-2 sm:h-3 rounded-full transition-all duration-300 ${
                             percentage >= 80 ? 'bg-green-500' :
                             percentage >= 50 ? 'bg-yellow-500' :
                             'bg-red-500'
@@ -946,8 +1001,8 @@ const PositionStrategiesPage: React.FC = () => {
                 })()}
 
                 {/* Sections et règles */}
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <div className="space-y-4 sm:space-y-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                     {t('positionStrategies:sections', { defaultValue: 'Sections de la stratégie' })}
                   </h3>
                   
@@ -964,12 +1019,12 @@ const PositionStrategiesPage: React.FC = () => {
                         : 0;
                       
                       return (
-                        <div key={sectionIndex} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                        <div key={sectionIndex} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                            <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
                               {section.title || t('positionStrategies:sectionWithoutTitle', { defaultValue: 'Section sans titre' })}
                             </h4>
-                            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
                               {sectionChecked}/{sectionRules.length} ({sectionPercentage}%)
                             </span>
                           </div>
@@ -989,14 +1044,14 @@ const PositionStrategiesPage: React.FC = () => {
                                 const isChecked = checkedRules[ruleKey] || false;
                                 
                                 return ruleText && (
-                                  <li key={ruleIndex} className="flex items-start gap-3 text-gray-700 dark:text-gray-300">
+                                  <li key={ruleIndex} className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base text-gray-700 dark:text-gray-300">
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
                                       onChange={() => toggleRule(sectionIndex, ruleIndex)}
-                                      className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 cursor-pointer"
+                                      className="mt-1 w-4 h-4 sm:w-5 sm:h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 cursor-pointer flex-shrink-0"
                                     />
-                                    <span className={`flex-1 ${isChecked ? 'line-through text-gray-500 dark:text-gray-500' : ''}`}>
+                                    <span className={`flex-1 break-words ${isChecked ? 'line-through text-gray-500 dark:text-gray-500' : ''}`}>
                                       {ruleText}
                                     </span>
                                   </li>
@@ -1004,7 +1059,7 @@ const PositionStrategiesPage: React.FC = () => {
                               })}
                             </ul>
                           ) : (
-                            <p className="text-gray-500 dark:text-gray-400 italic">
+                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic">
                               {t('positionStrategies:noRules', { defaultValue: 'Aucune règle définie' })}
                             </p>
                           )}
@@ -1012,7 +1067,7 @@ const PositionStrategiesPage: React.FC = () => {
                       );
                     })
                   ) : (
-                    <p className="text-gray-500 dark:text-gray-400 italic">
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic">
                       {t('positionStrategies:noSections', { defaultValue: 'Aucune section définie' })}
                     </p>
                   )}
@@ -1020,11 +1075,11 @@ const PositionStrategiesPage: React.FC = () => {
 
                 {/* Notes de version si présentes */}
                 {selectedStrategy.version_notes && (
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 mb-2">
                       {t('positionStrategies:versionNotes', { defaultValue: 'Notes de version' })}
                     </h4>
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
                       {selectedStrategy.version_notes}
                     </p>
                   </div>
@@ -1032,10 +1087,10 @@ const PositionStrategiesPage: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl flex items-center justify-end flex-shrink-0">
+              <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 rounded-b-xl flex items-center justify-end flex-shrink-0">
                 <button
                   onClick={handleCloseViewModal}
-                  className="px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
+                  className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
                 >
                   {t('positionStrategies:close', { defaultValue: 'Fermer' })}
                 </button>

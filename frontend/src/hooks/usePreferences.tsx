@@ -15,25 +15,43 @@ interface PreferencesContextType {
 
 const PreferencesContext = createContext<PreferencesContextType | null>(null);
 
-export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Lire le thème depuis localStorage immédiatement pour éviter le flash
-  const getInitialTheme = (): 'light' | 'dark' => {
-    try {
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark' || savedTheme === 'light') {
-        // Appliquer immédiatement le thème au DOM avant le premier rendu
-        if (savedTheme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-        return savedTheme;
+// Lire le thème depuis localStorage immédiatement pour éviter le flash
+const getInitialTheme = (): 'light' | 'dark' => {
+  try {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark' || savedTheme === 'light') {
+      // Appliquer immédiatement le thème au DOM avant le premier rendu
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
       }
-    } catch (e) {
-      // Ignorer les erreurs de localStorage
+      return savedTheme;
     }
-    return 'light';
-  };
+  } catch (e) {
+    // Ignorer les erreurs de localStorage
+  }
+  return 'light';
+};
+
+// Lire la taille de police depuis localStorage immédiatement
+const getInitialFontSize = (): 'small' | 'medium' | 'large' => {
+  try {
+    const savedFontSize = localStorage.getItem('font_size');
+    if (savedFontSize === 'small' || savedFontSize === 'medium' || savedFontSize === 'large') {
+      // Appliquer immédiatement la taille de police au DOM avant le premier rendu
+      const root = document.documentElement;
+      root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+      root.classList.add(`font-size-${savedFontSize}`);
+      return savedFontSize;
+    }
+  } catch (e) {
+    // Ignorer les erreurs de localStorage
+  }
+  return 'medium';
+};
+
+export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const [preferences, setPreferences] = useState<UserPreferences>({
     language: 'fr',
@@ -41,7 +59,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     date_format: 'EU',
     number_format: 'comma',
     theme: getInitialTheme(),
-    font_size: 'medium',
+    font_size: getInitialFontSize(),
     email_goal_alerts: true,
   });
   const [loading, setLoading] = useState(true);
@@ -65,9 +83,14 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           root.classList.remove('dark');
         }
         
-        // Sauvegarder le thème dans localStorage pour éviter le flash au prochain chargement
+        // Appliquer la taille de police immédiatement
+        root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+        root.classList.add(`font-size-${prefs.font_size || 'medium'}`);
+        
+        // Sauvegarder le thème et la taille de police dans localStorage pour éviter le flash au prochain chargement
         try {
           localStorage.setItem('theme', prefs.theme || 'light');
+          localStorage.setItem('font_size', prefs.font_size || 'medium');
         } catch (e) {
           // Ignorer les erreurs de localStorage
         }
@@ -108,14 +131,19 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await refreshPreferences();
       } else {
         // Si l'utilisateur vient de se déconnecter, réinitialiser les préférences par défaut
+        const defaultFontSize = getInitialFontSize();
         setPreferences({
           language: 'fr',
           timezone: 'Europe/Paris',
           date_format: 'EU',
           number_format: 'comma',
           theme: getInitialTheme(),
-          font_size: 'medium',
+          font_size: defaultFontSize,
         });
+        // Réinitialiser la taille de police au document
+        const root = document.documentElement;
+        root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+        root.classList.add(`font-size-${defaultFontSize}`);
       }
     };
     
@@ -137,6 +165,20 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [preferences.language]);
 
+  // Écouter les changements de taille de police dans les préférences
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+    root.classList.add(`font-size-${preferences.font_size || 'medium'}`);
+    
+    // Sauvegarder dans localStorage
+    try {
+      localStorage.setItem('font_size', preferences.font_size || 'medium');
+    } catch (e) {
+      // Ignorer les erreurs de localStorage
+    }
+  }, [preferences.font_size]);
+
   return (
     <PreferencesContext.Provider value={{ preferences, loading, refreshPreferences }}>
       {children}
@@ -148,18 +190,19 @@ export const usePreferences = (): PreferencesContextType => {
   const context = useContext(PreferencesContext);
   if (!context) {
     // Retourner des valeurs par défaut si le contexte n'est pas disponible
-    return {
-      preferences: {
-        language: 'fr',
-        timezone: 'Europe/Paris',
-        date_format: 'EU',
-        number_format: 'comma',
-        theme: 'light',
-        font_size: 'medium',
-      },
-      loading: false,
-      refreshPreferences: async () => {},
-    };
+      const defaultFontSize = getInitialFontSize();
+      return {
+        preferences: {
+          language: 'fr',
+          timezone: 'Europe/Paris',
+          date_format: 'EU',
+          number_format: 'comma',
+          theme: 'light',
+          font_size: defaultFontSize,
+        },
+        loading: false,
+        refreshPreferences: async () => {},
+      };
   }
   return context;
 };

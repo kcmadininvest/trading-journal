@@ -70,44 +70,62 @@ export const TradeModal: React.FC<TradeModalProps> = ({ tradeId, onClose }) => {
   if (!tradeId) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="bg-white w-full max-w-xl rounded-lg shadow">
-        <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">{t('trades:modal.editTitle')}</h2>
-          <button onClick={() => onClose(false)} className="text-gray-500 hover:text-gray-700">✕</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate flex-1 min-w-0">{t('trades:modal.editTitle')}</h2>
+          <button 
+            onClick={() => onClose(false)} 
+            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div className="p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4">
           {isLoading || !trade ? (
-            <div className="text-gray-500">{t('trades:loading')}</div>
+            <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400 text-center py-4">{t('trades:loading')}</div>
           ) : (
             <>
-              <div className="text-sm text-gray-600">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
                 {trade.contract_name} • {formatDateTimeShort(trade.entered_at, preferences.date_format, preferences.timezone)} • {trade.trade_type}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('trades:modal.strategy')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('trades:modal.strategy')}</label>
                 <input
                   type="text"
                   value={strategy}
                   onChange={(e) => setStrategy(e.target.value)}
-                  className="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('trades:modal.notes')}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('trades:modal.notes')}</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={6}
-                  className="w-full border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y"
                 />
               </div>
             </>
           )}
         </div>
-        <div className="px-4 py-3 border-t flex items-center justify-end gap-2">
-          <button onClick={() => onClose(false)} className="px-3 py-2 rounded bg-gray-100">{t('trades:modal.cancel')}</button>
-          <button onClick={save} disabled={isSaving} className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50">{t('trades:modal.save')}</button>
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50 rounded-b-xl">
+          <button 
+            onClick={() => onClose(false)} 
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 w-full sm:w-auto"
+          >
+            {t('trades:modal.cancel')}
+          </button>
+          <button 
+            onClick={save} 
+            disabled={isSaving} 
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 w-full sm:w-auto"
+          >
+            {t('trades:modal.save')}
+          </button>
         </div>
       </div>
     </div>

@@ -241,17 +241,19 @@ function ModernStatCard({
 
       ${sizeStyles.container}
 
+      overflow-hidden
+
     `}>
 
       {/* Contenu principal */}
 
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full min-w-0">
 
         {/* En-tête avec icône et label */}
 
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 min-w-0">
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
 
             {icon && (
 
@@ -264,6 +266,8 @@ function ModernStatCard({
                 ${config.iconBg}
 
                 ${config.iconColor}
+
+                flex-shrink-0
 
               `}>
 
@@ -283,6 +287,8 @@ function ModernStatCard({
 
               text-gray-700 dark:text-gray-300 font-medium 
 
+              truncate min-w-0
+
             `}>
 
               {label}
@@ -299,7 +305,7 @@ function ModernStatCard({
         <div className="flex-1 flex flex-col justify-between">
 
           {/* Section principale : Valeur et progression */}
-          <div>
+          <div className="min-w-0">
             <div className={`
 
               ${sizeStyles.value}
@@ -309,6 +315,8 @@ function ModernStatCard({
               text-gray-900 dark:text-gray-100
 
               mb-2
+
+              break-words
 
             `}>
 
@@ -405,10 +413,12 @@ function ModernStatCard({
               <div className="pt-1.5 border-t border-gray-200 dark:border-gray-700">
                 <div className="space-y-1">
                   {subMetrics.map((metric, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 dark:text-gray-400">{metric.label}</span>
-                      <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{metric.value}</span>
-                    </div>
+                    metric.label && metric.value ? (
+                      <div key={index} className="flex items-center justify-between gap-2 min-w-0">
+                        <span className="text-xs text-gray-600 dark:text-gray-400 truncate min-w-0 flex-1">{metric.label}</span>
+                        <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap flex-shrink-0">{metric.value}</span>
+                      </div>
+                    ) : null
                   ))}
                 </div>
               </div>

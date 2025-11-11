@@ -29,12 +29,12 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
       </div>
       
       <div className="relative z-10">
-        <div className="flex items-start justify-between gap-6">
-          <div className="flex-1">
-            <h3 className="text-base font-semibold mb-0.5">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-semibold mb-0.5 break-words">
               {t('strategy:streak.title', { defaultValue: 'Streak de Respect' })}
               {currentStreak > 0 && streakStartDate && (
-                <span className="font-normal italic"> : {currentStreak} {t('strategy:streak.days', { defaultValue: 'jours' })} {t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} {formatDate(streakStartDate, preferences.date_format, false)}</span>
+                <span className="font-normal italic block sm:inline"> : {currentStreak} {t('strategy:streak.days', { defaultValue: 'jours' })} {t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} {formatDate(streakStartDate, preferences.date_format, false)}</span>
               )}
             </h3>
             <p className="text-xs opacity-90 leading-tight">
@@ -43,7 +43,7 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
           </div>
           
           {nextBadge && (
-            <div className="flex-1">
+            <div className="flex-1 min-w-0 sm:min-w-[200px]">
               <div className="text-sm font-medium mb-2">
                 {t('strategy:streak.nextBadge', { defaultValue: 'Prochain badge' })}
               </div>
@@ -55,7 +55,7 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer"></div>
                 </div>
               </div>
-              <div className="text-xs opacity-90">
+              <div className="text-xs opacity-90 break-words">
                 {nextBadge.name} ({daysToNextBadge} {t('strategy:streak.daysLeft', { defaultValue: 'jours restants' })})
               </div>
             </div>

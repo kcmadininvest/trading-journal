@@ -16,6 +16,8 @@ import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
 import { MetricGroup } from '../components/statistics/MetricGroup';
+import { useAccountIndicators } from '../hooks/useAccountIndicators';
+import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
@@ -24,6 +26,7 @@ function StatisticsPage() {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
+  const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
   // Utiliser un sélecteur de période moderne
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
     // Par défaut: 3 derniers mois
@@ -151,87 +154,56 @@ function StatisticsPage() {
     loadAllTrades();
   }, [selectedAccountId, accountLoading]);
 
-  // Calculer le solde initial et actuel du compte
-  const accountBalance = useMemo(() => {
-    if (!selectedAccount) {
-      return { initial: 0, current: 0 };
-    }
-
-    const initialCapital = selectedAccount.initial_capital 
-      ? parseFloat(String(selectedAccount.initial_capital)) 
-      : 0;
-
-    // Calculer le PnL total de tous les trades du compte
-    const totalPnl = allTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
-
-    const currentBalance = initialCapital + totalPnl;
-
-    return {
-      initial: initialCapital,
-      current: currentBalance,
-    };
-  }, [selectedAccount, allTrades]);
-
-  // Calculer le Consistency Target pour les comptes TopStep
-  // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
-  const consistencyTarget = useMemo(() => {
-    if (!selectedAccount || selectedAccount.account_type !== 'topstep') {
-      return null;
-    }
-
-    const overallProfit = accountBalance.current - accountBalance.initial;
-    if (overallProfit <= 0) {
-      return null;
-    }
-
-    // Calculer le meilleur jour de tous les temps à partir de tous les trades du compte
-    if (allTrades.length === 0) {
-      return null;
-    }
-
-    // Grouper les trades par date pour trouver le meilleur jour
-    const dailyData: { [date: string]: number } = {};
-    allTrades.forEach(trade => {
-      if (trade.net_pnl && trade.trade_day) {
-        const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
+  // Charger les trades filtrés pour la période sélectionnée
+  useEffect(() => {
+    const loadFilteredTrades = async () => {
+      if (!selectedAccountId || accountLoading) {
+        setFilteredTrades([]);
+        return;
       }
-    });
-
-    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
-    if (dailyEntries.length === 0) {
-      return null;
-    }
-
-    const bestDay = dailyEntries.reduce((max, day) => 
-      day.pnl > max.pnl ? day : max, 
-      dailyEntries[0]
-    );
-
-    if (bestDay.pnl <= 0) {
-      return null;
-    }
-
-    const bestDayProfit = bestDay.pnl;
-    const bestDayPercentage = (bestDayProfit / overallProfit) * 100;
-    const isCompliant = bestDayPercentage < 50;
-    const targetPercentage = 50;
-
-    // Calculer le profit total nécessaire si non conforme
-    const requiredTotalProfit = bestDayProfit / 0.5;
-    const additionalProfitNeeded = requiredTotalProfit - overallProfit;
-
-    return {
-      bestDayProfit,
-      bestDayDate: bestDay.date,
-      overallProfit,
-      bestDayPercentage,
-      isCompliant,
-      targetPercentage,
-      requiredTotalProfit,
-      additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
+      try {
+        const params: any = {
+          trading_account: selectedAccountId,
+          page_size: 10000,
+        };
+        
+        if (selectedPeriod) {
+          params.start_date = selectedPeriod.start;
+          params.end_date = selectedPeriod.end;
+        } else if (selectedYear) {
+          const startDate = selectedMonth 
+            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+            : `${selectedYear}-01-01`;
+          const endDate = selectedMonth
+            ? (() => {
+                const lastDay = new Date(selectedYear, selectedMonth, 0);
+                return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+              })()
+            : `${selectedYear}-12-31`;
+          params.start_date = startDate;
+          params.end_date = endDate;
+        }
+        
+        const response = await tradesService.list(params);
+        setFilteredTrades(response.results);
+      } catch (err) {
+        console.error('Erreur lors du chargement des trades filtrés', err);
+        setFilteredTrades([]);
+      }
     };
-  }, [selectedAccount, accountBalance, allTrades]);
+    loadFilteredTrades();
+  }, [selectedAccountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
+
+  // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
+  const indicators = useAccountIndicators({
+    selectedAccount,
+    allTrades,
+    filteredTrades,
+    analyticsData,
+  });
+
+  // Alias pour compatibilité avec le code existant
+  const bestAndWorstDays = indicators.bestAndWorstDays;
   
   // Fonctions utilitaires - DOIT être avant tous les return conditionnels
   // Wrapper pour formatCurrency avec préférences
@@ -246,12 +218,12 @@ function StatisticsPage() {
   // Gestion des erreurs
   if (hasError) {
     return (
-      <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-        <div className="text-center py-12">
-          <div className="text-red-500 dark:text-red-400 text-lg mb-4">{t('statistics:errorLoadingData')}</div>
+      <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900">
+        <div className="text-center py-8 sm:py-12">
+          <div className="text-sm sm:text-base lg:text-lg text-red-500 dark:text-red-400 mb-3 sm:mb-4">{t('statistics:errorLoadingData')}</div>
           <button 
             onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-700"
           >
             {t('statistics:retry')}
           </button>
@@ -293,13 +265,13 @@ function StatisticsPage() {
   };
 
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="w-full">
         {/* Filtres */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4">
             {/* Compte de trading */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('statistics:tradingAccount')}
               </label>
@@ -314,7 +286,7 @@ function StatisticsPage() {
             </div>
             
             {/* Sélecteur de période moderne */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('statistics:period', { defaultValue: 'Période' })}
               </label>
@@ -328,149 +300,27 @@ function StatisticsPage() {
                 }}
               />
             </div>
-
-            {/* Soldes du compte */}
-            {selectedAccount && (
-              <div className="flex flex-wrap items-end gap-6 flex-1">
-                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
-                  </span>
-                  <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {formatCurrency(accountBalance.initial, currencySymbol)}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
-                  </span>
-                  <span className={`text-lg font-semibold ${
-                    accountBalance.current >= accountBalance.initial 
-                      ? 'text-blue-600 dark:text-blue-400' 
-                      : 'text-pink-600 dark:text-pink-400'
-                  }`}>
-                    {formatCurrency(accountBalance.current, currencySymbol)}
-                  </span>
-                </div>
-                {accountBalance.initial > 0 && (
-                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {t('dashboard:variation', { defaultValue: 'Variation' })}
-                    </span>
-                    <span className={`text-lg font-semibold ${
-                      accountBalance.current >= accountBalance.initial 
-                        ? 'text-blue-600 dark:text-blue-400' 
-                        : 'text-pink-600 dark:text-pink-400'
-                    }`}>
-                      {formatCurrency(accountBalance.current - accountBalance.initial, currencySymbol)}
-                      {' '}
-                      ({formatNumber(((accountBalance.current - accountBalance.initial) / accountBalance.initial * 100), 2)}%)
-                    </span>
-                  </div>
-                )}
-                {statisticsData?.total_trades !== undefined && (
-                  <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
-                    </span>
-                    <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {statisticsData.total_trades}
-                    </span>
-                  </div>
-                )}
-                {analyticsData?.daily_stats?.best_day && (
-                  <div className="flex flex-col gap-1 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                        {t('dashboard:bestDay', { defaultValue: 'Meilleur jour' })}
-                      </span>
-                      <span className="text-xs text-blue-600 dark:text-blue-400">
-                        {formatDate(analyticsData.daily_stats.best_day, preferences.date_format, false, preferences.timezone)}
-                      </span>
-                    </div>
-                    <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                      {formatCurrency(analyticsData.daily_stats.best_day_pnl, currencySymbol)}
-                    </span>
-                  </div>
-                )}
-                {analyticsData?.daily_stats?.worst_day && (
-                  <div className="flex flex-col gap-1 p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-pink-700 dark:text-pink-300">
-                        {t('dashboard:worstDay', { defaultValue: 'Pire jour' })}
-                      </span>
-                      <span className="text-xs text-pink-600 dark:text-pink-400">
-                        {formatDate(analyticsData.daily_stats.worst_day, preferences.date_format, false, preferences.timezone)}
-                      </span>
-                    </div>
-                    <span className="text-lg font-semibold text-pink-600 dark:text-pink-400">
-                      {formatCurrency(analyticsData.daily_stats.worst_day_pnl, currencySymbol)}
-                    </span>
-                  </div>
-                )}
-                {consistencyTarget && (
-                  <div className={`flex flex-col gap-1 p-3 rounded-lg border ${
-                    consistencyTarget.isCompliant
-                      ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                      : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
-                  }`}>
-                    <span className={`text-sm font-medium ${
-                      consistencyTarget.isCompliant
-                        ? 'text-green-700 dark:text-green-300'
-                        : 'text-orange-700 dark:text-orange-300'
-                    }`}>
-                      {t('dashboard:consistencyTarget', { defaultValue: 'Consistency Target' })}
-                    </span>
-                    <span className={`text-lg font-semibold ${
-                      consistencyTarget.isCompliant
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-orange-600 dark:text-orange-400'
-                    }`}>
-                      {formatNumber(consistencyTarget.bestDayPercentage, 2)}% / {formatNumber(consistencyTarget.targetPercentage, 2)}%
-                    </span>
-                    {!consistencyTarget.isCompliant && 
-                     typeof consistencyTarget.additionalProfitNeeded === 'number' &&
-                     consistencyTarget.additionalProfitNeeded > 0 && (() => {
-                      const formattedAmount = formatCurrency(consistencyTarget.additionalProfitNeeded, currencySymbol);
-                      // Ne pas afficher si le montant formaté est invalide, vide ou contient des caractères non désirés
-                      if (!formattedAmount || 
-                          formattedAmount === '-' || 
-                          formattedAmount.trim() === '' || 
-                          formattedAmount.includes('{amount}') ||
-                          formattedAmount.includes('NaN') ||
-                          formattedAmount.includes('undefined')) {
-                        return null;
-                      }
-                      // Construire le texte avec interpolation
-                      const label = t('dashboard:additionalProfitNeeded', { 
-                        defaultValue: 'Profit supplémentaire requis: {amount}',
-                        amount: formattedAmount
-                      });
-                      // Si l'interpolation n'a pas fonctionné (le placeholder est encore présent), ne pas afficher
-                      if (label.includes('{amount}')) {
-                        return null;
-                      }
-                      return (
-                        <span className="text-xs text-orange-600 dark:text-orange-400">
-                          {label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
+        {/* Soldes du compte */}
+        {selectedAccount && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+            <AccountIndicatorsGrid 
+              indicators={indicators} 
+              currencySymbol={currencySymbol} 
+            />
+          </div>
+        )}
+
         {/* Niveau 1: Hero Metrics - KPIs Principaux */}
         {statisticsData && (
-          <div className="mb-6">
-            <div className="mb-3">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('statistics:overview.title')}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('statistics:overview.subtitle')}</p>
+          <div className="mb-4 sm:mb-6">
+            <div className="mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('statistics:overview.title')}</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{t('statistics:overview.subtitle')}</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <MetricCard
                 title={t('statistics:overview.performance', { defaultValue: 'Performance' })}
                 icon={
@@ -552,17 +402,17 @@ function StatisticsPage() {
               >
                 <MetricItem
                   label={t('statistics:overview.totalTrades')}
-                  value={statisticsData.total_trades}
+                  value={indicators.totalTrades}
                   variant="default"
                 />
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
                   <div className="flex items-center gap-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.winningTrades', { defaultValue: 'Gagnants' })} :</span>
-                    <span className="text-base font-semibold text-blue-500 dark:text-blue-400">{statisticsData.winning_trades}</span>
+                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.winningTrades', { defaultValue: 'Gagnants' })} :</span>
+                    <span className="text-sm sm:text-base font-semibold text-blue-500 dark:text-blue-400">{statisticsData.winning_trades}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <span className="text-sm text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.losingTrades', { defaultValue: 'Perdants' })} :</span>
-                    <span className="text-base font-semibold text-pink-500 dark:text-pink-400">{statisticsData.losing_trades}</span>
+                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.losingTrades', { defaultValue: 'Perdants' })} :</span>
+                    <span className="text-sm sm:text-base font-semibold text-pink-500 dark:text-pink-400">{statisticsData.losing_trades}</span>
                   </div>
                 </div>
                 <MetricItem
@@ -579,16 +429,16 @@ function StatisticsPage() {
         {statisticsData && (
           <>
             {/* Section Performance & Risque */}
-            <div className="mb-8">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+            <div className="mb-6 sm:mb-8">
+              <div className="mb-3 sm:mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
                   {t('statistics:performanceRatios.performance', { defaultValue: 'Performance' })} & {t('statistics:performanceRatios.riskManagement', { defaultValue: 'Gestion du Risque' })}
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                   {t('statistics:performanceRatios.performanceSubtitle', { defaultValue: 'Métriques de performance globale' })} • {t('statistics:performanceRatios.riskManagementSubtitle', { defaultValue: 'Indicateurs de risque et récupération' })}
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <MetricCard
                   title={t('statistics:performanceRatios.mainPerformance')}
                   icon={
@@ -710,7 +560,7 @@ function StatisticsPage() {
           subtitle={t('statistics:tradesAnalysis.subtitle')}
           defaultCollapsed={false}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {statisticsData && (
               <>
                 <MetricCard
@@ -800,7 +650,7 @@ function StatisticsPage() {
           subtitle={t('statistics:advancedAnalysis.subtitle')}
           defaultCollapsed={false}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
             {statisticsData && analyticsData && (
               <>
                 <MetricCard
@@ -1012,26 +862,26 @@ function StatisticsPage() {
                     </svg>
                   }
                 >
-                  <div className="grid grid-cols-2 gap-4">
-                    {analyticsData.daily_stats.best_day && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    {bestAndWorstDays.bestDay && (
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('statistics:advancedAnalysis.bestDay')}</div>
-                        <div className="text-base font-semibold text-blue-500 dark:text-blue-400">
-                          {formatCurrency(analyticsData.daily_stats.best_day_pnl, currencySymbol)}
+                        <div className="text-sm sm:text-base font-semibold text-blue-500 dark:text-blue-400 break-words">
+                          {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol)}
                         </div>
                         <div className="text-xs text-gray-400">
-                          {formatDate(analyticsData.daily_stats.best_day, preferences.date_format, false)}
+                          {formatDate(bestAndWorstDays.bestDay.date, preferences.date_format, false)}
                         </div>
                       </div>
                     )}
-                    {analyticsData.daily_stats.worst_day && (
+                    {bestAndWorstDays.worstDay && (
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('statistics:advancedAnalysis.worstDay')}</div>
-                        <div className="text-base font-semibold text-pink-500 dark:text-pink-400">
-                          {formatCurrency(analyticsData.daily_stats.worst_day_pnl, currencySymbol)}
+                        <div className="text-sm sm:text-base font-semibold text-pink-500 dark:text-pink-400 break-words">
+                          {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol)}
                         </div>
                         <div className="text-xs text-gray-400">
-                          {formatDate(analyticsData.daily_stats.worst_day, preferences.date_format, false)}
+                          {formatDate(bestAndWorstDays.worstDay.date, preferences.date_format, false)}
                         </div>
                       </div>
                     )}

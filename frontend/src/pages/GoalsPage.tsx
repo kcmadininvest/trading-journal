@@ -297,141 +297,143 @@ const GoalsPage: React.FC = () => {
   
   
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 bg-gray-50 dark:bg-gray-900">
       {/* Filtres avec boutons */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-4 justify-between">
-          <div className="flex flex-wrap gap-2">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex flex-wrap gap-2 flex-1 min-w-0">
+              <button
+                onClick={() => setFilterStatus('all')}
+                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
+                  filterStatus === 'all'
+                    ? 'bg-gray-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                {t('goals:allStatuses')}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  filterStatus === 'all'
+                    ? 'bg-gray-500 text-white'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}>
+                  {totalCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setFilterStatus('active')}
+                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
+                  filterStatus === 'active'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                {t('goals:status.active')}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  filterStatus === 'active'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}>
+                  {activeCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setFilterStatus('achieved')}
+                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
+                  filterStatus === 'achieved'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                {t('goals:status.achieved')}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  filterStatus === 'achieved'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}>
+                  {achievedCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setFilterStatus('failed')}
+                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
+                  filterStatus === 'failed'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                {t('goals:status.failed')}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  filterStatus === 'failed'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}>
+                  {failedCount}
+                </span>
+              </button>
+              <button
+                onClick={() => setFilterStatus('cancelled')}
+                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
+                  filterStatus === 'cancelled'
+                    ? 'bg-gray-600 text-white'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                {t('goals:status.cancelled')}
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  filterStatus === 'cancelled'
+                    ? 'bg-gray-500 text-white'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+                }`}>
+                  {cancelledGoals.length}
+                </span>
+              </button>
+            </div>
             <button
-              onClick={() => setFilterStatus('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                filterStatus === 'all'
-                  ? 'bg-gray-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
+              onClick={handleCreateGoal}
+              className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-2"
             >
-              {t('goals:allStatuses')}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                filterStatus === 'all'
-                  ? 'bg-gray-500 text-white'
-                  : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-              }`}>
-                {totalCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setFilterStatus('active')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                filterStatus === 'active'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              {t('goals:status.active')}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                filterStatus === 'active'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-              }`}>
-                {activeCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setFilterStatus('achieved')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                filterStatus === 'achieved'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              {t('goals:status.achieved')}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                filterStatus === 'achieved'
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-              }`}>
-                {achievedCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setFilterStatus('failed')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                filterStatus === 'failed'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              {t('goals:status.failed')}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                filterStatus === 'failed'
-                  ? 'bg-red-500 text-white'
-                  : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-              }`}>
-                {failedCount}
-              </span>
-            </button>
-            <button
-              onClick={() => setFilterStatus('cancelled')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                filterStatus === 'cancelled'
-                  ? 'bg-gray-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              {t('goals:status.cancelled')}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                filterStatus === 'cancelled'
-                  ? 'bg-gray-500 text-white'
-                  : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-              }`}>
-                {cancelledGoals.length}
-              </span>
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {t('goals:createGoal')}
             </button>
           </div>
-          <button
-            onClick={handleCreateGoal}
-            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            {t('goals:createGoal')}
-          </button>
         </div>
       </div>
       
       {error && (
-        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-800 dark:text-red-300">{error}</p>
+        <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-sm sm:text-base text-red-800 dark:text-red-300 break-words">{error}</p>
         </div>
       )}
       
       {loading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-8 sm:py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">{t('goals:loading')}</p>
+            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-3 sm:mb-4"></div>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('goals:loading')}</p>
           </div>
         </div>
       ) : goals.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-12 text-center">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">{t('goals:noGoals')}</p>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sm:p-12 text-center">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">{t('goals:noGoals')}</p>
           <button
             onClick={handleCreateGoal}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             {t('goals:createFirstGoal')}
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Objectifs actifs */}
           {activeGoals.length > 0 && (filterStatus === 'all' || filterStatus === 'active') && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 {t('goals:activeGoals')} ({activeGoals.length})
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {activeGoals.map(goal => (
                   <GoalCard
                     key={goal.id}
@@ -449,10 +451,10 @@ const GoalsPage: React.FC = () => {
           {/* Objectifs atteints */}
           {achievedGoals.length > 0 && (filterStatus === 'all' || filterStatus === 'achieved') && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 {t('goals:achievedGoals')} ({achievedGoals.length})
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {achievedGoals.map(goal => (
                   <GoalCard
                     key={goal.id}
@@ -469,10 +471,10 @@ const GoalsPage: React.FC = () => {
           {/* Objectifs échoués */}
           {failedGoals.length > 0 && (filterStatus === 'all' || filterStatus === 'failed') && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 {t('goals:failedGoals')} ({failedGoals.length})
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {failedGoals.map(goal => (
                   <GoalCard
                     key={goal.id}
@@ -489,10 +491,10 @@ const GoalsPage: React.FC = () => {
           {/* Objectifs annulés */}
           {cancelledGoals.length > 0 && (filterStatus === 'all' || filterStatus === 'cancelled') && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                 {t('goals:cancelledGoals', { defaultValue: 'Objectifs annulés' })} ({cancelledGoals.length})
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {cancelledGoals.map(goal => (
                   <GoalCard
                     key={goal.id}

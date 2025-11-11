@@ -189,14 +189,14 @@ const DailyView: React.FC<DailyViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Sélecteur de vue à gauche */}
         {onViewTypeChange && (
           <div className="inline-flex rounded-md shadow-sm" role="group">
             <button
               type="button"
               onClick={() => onViewTypeChange('daily')}
-              className={`px-4 py-2 text-sm font-medium rounded-l-lg border ${
+              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-l-lg border ${
                 viewType === 'daily'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -207,7 +207,7 @@ const DailyView: React.FC<DailyViewProps> = ({
             <button
               type="button"
               onClick={() => onViewTypeChange('monthly')}
-              className={`px-4 py-2 text-sm font-medium rounded-r-lg border-t border-r border-b ${
+              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-r-lg border-t border-r border-b ${
                 viewType === 'monthly'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -219,7 +219,7 @@ const DailyView: React.FC<DailyViewProps> = ({
         )}
 
         {/* Navigation de période centrée */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-center space-x-2 sm:space-x-4">
           <button
             onClick={() => navigateMonth('prev')}
             className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
@@ -230,7 +230,7 @@ const DailyView: React.FC<DailyViewProps> = ({
             </svg>
           </button>
 
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800 dark:text-gray-100 text-center">
             {monthNames[month - 1]} {year}
           </h2>
 
@@ -247,36 +247,34 @@ const DailyView: React.FC<DailyViewProps> = ({
           {(year !== currentYear || month !== currentMonth) && (
             <button
               onClick={goToToday}
-              className="ml-4 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+              className="ml-2 sm:ml-4 px-3 sm:px-4 py-2 text-xs sm:text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
             >
               {t('calendar:today')}
             </button>
           )}
         </div>
-
-        {/* Espaceur à droite pour équilibrer */}
-        {onViewTypeChange && <div className="w-[160px]"></div>}
       </div>
 
       {/* Calendrier */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        {/* En-têtes des jours */}
-        <div className="grid grid-cols-7 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-          {dayNames.map((dayName, index) => (
-            <div
-              key={index}
-              className={`px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 ${
-                index < 6 ? 'border-r border-gray-200 dark:border-gray-600' : ''
-              } ${index === 6 ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
-            >
-              {dayName}
-            </div>
-          ))}
-        </div>
+        <div className="overflow-x-auto">
+          {/* En-têtes des jours */}
+          <div className="grid grid-cols-7 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 min-w-[560px]">
+            {dayNames.map((dayName, index) => (
+              <div
+                key={index}
+                className={`px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 ${
+                  index < 6 ? 'border-r border-gray-200 dark:border-gray-600' : ''
+                } ${index === 6 ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+              >
+                {dayName}
+              </div>
+            ))}
+          </div>
 
-        {/* Grille du calendrier */}
-        <div>
-          {Array.from({ length: rows }).map((_, rowIndex) => {
+          {/* Grille du calendrier */}
+          <div className="min-w-[560px]">
+            {Array.from({ length: rows }).map((_, rowIndex) => {
             // Utiliser finalCalendarCells qui garantit que les jours hors du mois sont null
             const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
             
@@ -308,7 +306,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                       return (
                         <div
                           key={colIndex}
-                          className="h-32 p-2 bg-gray-200 dark:bg-gray-700"
+                          className="h-24 sm:h-32 p-1 sm:p-2 bg-gray-200 dark:bg-gray-700"
                         >
                           <div className="flex flex-col h-full justify-end items-center mt-auto">
                             {weeklyPnl !== 0 && (
@@ -324,7 +322,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                     return (
                       <div
                         key={colIndex}
-                        className={`h-32 bg-gray-200 dark:bg-gray-700 ${colIndex < 6 ? 'border-r border-gray-300 dark:border-gray-600' : ''}`}
+                        className={`h-24 sm:h-32 bg-gray-200 dark:bg-gray-700 ${colIndex < 6 ? 'border-r border-gray-300 dark:border-gray-600' : ''}`}
                       />
                     );
                   }
@@ -339,7 +337,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                   return (
                     <div
                       key={colIndex}
-                      className={`h-32 p-2 ${colIndex < 6 ? 'border-r border-gray-200 dark:border-gray-700' : ''} ${
+                      className={`h-24 sm:h-32 p-1 sm:p-2 ${colIndex < 6 ? 'border-r border-gray-200 dark:border-gray-700' : ''} ${
                         isSaturday 
                           ? `bg-blue-50 dark:bg-blue-900/30 ${weeklyPnl > 0 ? 'bg-green-50 dark:bg-green-900/20' : weeklyPnl < 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`
                           : `${getDayBgColor(dayNumber, pnl)} ${isToday ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-inset' : ''}`
@@ -365,7 +363,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                           </div>
                           <div className="flex flex-col h-full justify-end items-center mt-auto">
                             {weeklyPnl !== 0 && (
-                              <div className={`text-base font-semibold text-center ${getPnlColor(weeklyPnl)}`}>
+                              <div className={`text-xs sm:text-base font-semibold text-center ${getPnlColor(weeklyPnl)}`}>
                                 {formatPnl(weeklyPnl)}
                               </div>
                             )}
@@ -387,28 +385,28 @@ const DailyView: React.FC<DailyViewProps> = ({
                                 position="top"
                               >
                                 <div
-                                  className={`w-5 h-5 rounded-full ${getStrategyStatusColor(dayData.strategy_compliance_status)} cursor-help pointer-events-auto ${
+                                  className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${getStrategyStatusColor(dayData.strategy_compliance_status)} cursor-help pointer-events-auto ${
                                     dayData.strategy_compliance_status === 'compliant' ? 'animate-pulse' : ''
                                   }`}
                                 />
                               </Tooltip>
                             </div>
                           )}
-                          <div className="flex items-center justify-between mb-1 flex-wrap gap-1 z-10">
-                            <span className={`text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                          <div className="flex items-center justify-between mb-1 flex-wrap gap-0.5 sm:gap-1 z-10">
+                            <span className={`text-xs sm:text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                               {dayNumber}
                             </span>
-                            <div className="flex items-center gap-1 flex-wrap">
+                            <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
                               {/* Actions pour les jours avec trades */}
                               {tradeCount > 0 && (
                                 <>
                                   <Tooltip content={t('calendar:viewDayTrades')} position="top">
                                     <button
                                       onClick={() => handleTradesClick(dayNumber)}
-                                      className="p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors flex-shrink-0"
+                                      className="p-0.5 sm:p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors flex-shrink-0"
                                       aria-label={t('calendar:viewTrades')}
                                     >
-                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                       </svg>
@@ -417,10 +415,10 @@ const DailyView: React.FC<DailyViewProps> = ({
                                   <Tooltip content={t('calendar:manageStrategyCompliance')} position="top">
                                     <button
                                       onClick={() => handleStrategyClick(dayNumber)}
-                                      className="p-1 rounded hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 transition-colors flex-shrink-0"
+                                      className="p-0.5 sm:p-1 rounded hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 transition-colors flex-shrink-0"
                                       aria-label={t('calendar:manageStrategy')}
                                     >
-                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                       </svg>
                                     </button>
@@ -433,7 +431,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                                   content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} 
                                   position="top"
                                 >
-                                  <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full cursor-help flex-shrink-0">
+                                  <span className="text-[10px] sm:text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1 sm:px-1.5 py-0.5 rounded-full cursor-help flex-shrink-0">
                                     {tradeCount}
                                   </span>
                                 </Tooltip>
@@ -442,7 +440,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                           </div>
 
                           {pnl !== 0 && (
-                            <div className={`text-base font-semibold mt-auto ${getPnlColor(pnl)} z-10`}>
+                            <div className={`text-xs sm:text-base font-semibold mt-auto ${getPnlColor(pnl)} z-10 break-words`}>
                               {formatPnl(pnl)}
                             </div>
                           )}
@@ -455,13 +453,14 @@ const DailyView: React.FC<DailyViewProps> = ({
             );
           })}
 
-          {/* Ligne supplémentaire avec le total mensuel dans la colonne Samedi */}
-          <div className="grid grid-cols-7 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-            <div className="col-span-6 px-4 py-3 font-semibold text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600">
-              {t('calendar:total')} {monthNames[month - 1]} {year}
-            </div>
-            <div className={`px-4 py-3 font-bold text-center ${getPnlColor(monthlyPnlForSaturday)}`}>
-              {formatPnl(monthlyPnlForSaturday)}
+            {/* Ligne supplémentaire avec le total mensuel dans la colonne Samedi */}
+            <div className="grid grid-cols-7 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+              <div className="col-span-6 px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600">
+                {t('calendar:total')} {monthNames[month - 1]} {year}
+              </div>
+              <div className={`px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-bold text-center ${getPnlColor(monthlyPnlForSaturday)}`}>
+                {formatPnl(monthlyPnlForSaturday)}
+              </div>
             </div>
           </div>
         </div>

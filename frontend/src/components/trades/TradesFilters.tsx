@@ -37,8 +37,8 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
   ], [t]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 md:p-5 mb-4">
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-5 mb-4 sm:mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
         <CustomSelect
           value={values.contract}
           onChange={(value) => onChange({ contract: value as string })}
