@@ -387,11 +387,11 @@ const TradesPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="px-4 sm:px-6 lg:px-8">
+    <div className="bg-gray-50 dark:bg-gray-900 py-4 sm:py-6 md:py-8">
+      <div className="px-3 sm:px-4 md:px-6 lg:px-8">
         {/* Sélecteur de compte et boutons d'action */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex-1 max-w-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex-1 w-full sm:max-w-md">
             <AccountSelector
               value={selectedAccountId}
               onChange={(accountId) => {
@@ -400,16 +400,16 @@ const TradesPage: React.FC = () => {
               }}
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => {
                 setEditingTradeId(null);
                 setShowCreateModal(true);
               }}
               disabled={isLoading}
-              className="px-4 py-2 bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               {t('trades:create', { defaultValue: 'Créer un trade' })}
@@ -417,9 +417,9 @@ const TradesPage: React.FC = () => {
             <button
               onClick={handleExportTrades}
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               {t('trades:export', { defaultValue: 'Exporter' })}
@@ -437,11 +437,11 @@ const TradesPage: React.FC = () => {
         />
 
         {selectedIds.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4 flex items-center justify-between">
-            <div className="text-sm text-gray-700 dark:text-gray-300">{selectedIds.length} {t('trades:selected')}</div>
-            <div className="flex gap-2">
-              <button onClick={() => setSelectedIds([])} className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">{t('common:reset')}</button>
-              <button onClick={handleBulkDelete} className="px-3 py-2 bg-rose-600 dark:bg-rose-500 text-white rounded hover:bg-rose-700 dark:hover:bg-rose-600">{t('trades:deleteSelected')}</button>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300">{selectedIds.length} {t('trades:selected')}</div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <button onClick={() => setSelectedIds([])} className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">{t('common:reset')}</button>
+              <button onClick={handleBulkDelete} className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-rose-600 dark:bg-rose-500 text-white rounded hover:bg-rose-700 dark:hover:bg-rose-600">{t('trades:deleteSelected')}</button>
             </div>
           </div>
         )}
