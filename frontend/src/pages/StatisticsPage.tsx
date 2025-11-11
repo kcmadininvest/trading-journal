@@ -218,7 +218,7 @@ function StatisticsPage() {
   // Gestion des erreurs
   if (hasError) {
     return (
-      <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900">
         <div className="text-center py-8 sm:py-12">
           <div className="text-sm sm:text-base lg:text-lg text-red-500 dark:text-red-400 mb-3 sm:mb-4">{t('statistics:errorLoadingData')}</div>
           <button 

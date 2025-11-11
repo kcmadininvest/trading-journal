@@ -297,7 +297,7 @@ const GoalsPage: React.FC = () => {
   
   
   return (
-    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 bg-gray-50 dark:bg-gray-900">
       {/* Filtres avec boutons */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
         <div className="flex flex-col gap-3 sm:gap-4">
