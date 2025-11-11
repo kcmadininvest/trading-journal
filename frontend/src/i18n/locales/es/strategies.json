@@ -12,6 +12,7 @@
   "totalRespectRate": "Tasa de respeto total",
   "accountRespectRate": "Tasa de respeto de la cuenta",
   "allPeriodsAndAccounts": "Todos los períodos y todas las cuentas combinadas",
+  "allPeriods": "Todos los períodos combinados",
   "strategies": "estrategias",
   "noDataForPeriod": "No hay datos disponibles para el período seleccionado.",
   "importTrades": "Importar operaciones",
