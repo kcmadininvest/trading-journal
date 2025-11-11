@@ -171,12 +171,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
   return (
     <>
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div className="lg:hidden fixed top-3 left-3 sm:top-4 sm:left-4 z-50">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="bg-gray-900 text-white p-2 rounded-md"
+          className="bg-gray-900 dark:bg-gray-800 text-white p-2 sm:p-2.5 rounded-md shadow-lg hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
+          aria-label={t('navigation:menu', { defaultValue: 'Menu' })}
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
@@ -185,20 +186,34 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       {/* Mobile overlay */}
       {isMobileMenuOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 z-40"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Sidebar */}
       <div className={`fixed lg:sticky lg:top-0 lg:h-screen lg:max-h-screen left-0 z-50 bg-gray-900 text-white border-r border-gray-700 dark:border-gray-600 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
-        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-      } ${isCollapsed ? 'w-20' : 'w-64'} flex flex-col`}>
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      } ${isCollapsed ? 'w-20' : 'w-64 sm:w-72'} flex flex-col h-screen`}>
       {/* Logo */}
-      <div className={`h-20 flex items-center border-b border-gray-700 relative flex-shrink-0 ${isCollapsed ? 'px-4 justify-center' : 'px-6'}`}>
+      <div className={`h-16 sm:h-20 flex items-center border-b border-gray-700 relative flex-shrink-0 ${isCollapsed ? 'px-3 sm:px-4 justify-center' : 'px-4 sm:px-6'}`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-between w-full'}`}>
           <div className="flex items-center">
-            {!isCollapsed && <h1 className="text-xl font-bold whitespace-nowrap">Trading Journal</h1>}
+            {!isCollapsed && (
+              <>
+                {/* Close button for mobile */}
+                <button
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="lg:hidden mr-3 p-1.5 rounded-lg hover:bg-gray-700 transition-colors"
+                  aria-label={t('common:close', { defaultValue: 'Fermer' })}
+                >
+                  <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap">Trading Journal</h1>
+              </>
+            )}
           </div>
           {/* Toggle button for desktop */}
           {onToggleCollapse && (
@@ -222,33 +237,35 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden mt-6 min-h-0">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden mt-4 sm:mt-6 min-h-0">
         {!isCollapsed && (
-          <div className="px-3 sticky top-0 bg-gray-900 z-10 pt-2">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          <div className="px-3 sm:px-4 sticky top-0 bg-gray-900 z-10 pt-2">
+            <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 sm:mb-3">
               {t('navigation:navigation')}
             </p>
           </div>
         )}
-        <ul className={`space-y-1 ${isCollapsed ? 'px-2' : 'px-3'} pb-4`}>
+        <ul className={`space-y-1 ${isCollapsed ? 'px-2' : 'px-2 sm:px-3'} pb-4`}>
           {menuItems
             .filter(item => item.visible)
             .map((item) => (
               <li key={item.id}>
                 <button
                   onClick={() => handleNavigate(item.id)}
-                  className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-3'} py-2 text-base font-medium rounded-md transition-colors group relative ${
+                  className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-2 sm:px-3'} py-2 sm:py-2.5 text-sm sm:text-base font-medium rounded-md transition-colors group relative ${
                     currentPage === item.id
                       ? 'bg-blue-600 text-white'
                       : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                   }`}
                   title={isCollapsed ? item.label : undefined}
                 >
-                  <span className={isCollapsed ? '' : 'mr-3'}>{item.icon}</span>
-                  {!isCollapsed && <span>{item.label}</span>}
+                  <span className={`${isCollapsed ? '' : 'mr-2 sm:mr-3'} flex-shrink-0`}>
+                    {React.cloneElement(item.icon, { className: 'w-4 h-4 sm:w-5 sm:h-5' })}
+                  </span>
+                  {!isCollapsed && <span className="truncate">{item.label}</span>}
                   {/* Tooltip pour mode plié */}
                   {isCollapsed && (
-                    <div className="absolute left-full ml-2 px-3 py-2 bg-gray-800 text-white text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
+                    <div className="absolute left-full ml-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-gray-800 text-white text-xs sm:text-sm rounded-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-lg">
                       {item.label}
                       <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-800"></div>
                     </div>
@@ -260,8 +277,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       </nav>
 
       {/* API Status and Version */}
-      <div className={`flex-shrink-0 ${isCollapsed ? 'w-20 px-2' : 'w-64 px-4'} py-4 border-t border-gray-700`}>
-        <div className={`flex flex-col ${isCollapsed ? 'items-center' : ''} space-y-1`}>
+      <div className={`flex-shrink-0 ${isCollapsed ? 'w-20 px-2' : 'w-full px-3 sm:px-4'} py-3 sm:py-4 border-t border-gray-700`}>
+        <div className={`flex flex-col ${isCollapsed ? 'items-center' : ''} space-y-1.5 sm:space-y-2`}>
           {/* API Status */}
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
@@ -270,7 +287,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
                   statusConfig.blink ? 'animate-pulse' : ''
                 }`}
               ></div>
-              <span className="text-xs text-gray-400 truncate">{statusConfig.text}</span>
+              <span className="text-[10px] sm:text-xs text-gray-400 truncate">{statusConfig.text}</span>
             </div>
           )}
           {isCollapsed && (
@@ -278,11 +295,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
               className={`w-2 h-2 ${statusConfig.color} rounded-full flex-shrink-0 ${
                 statusConfig.blink ? 'animate-pulse' : ''
               }`}
+              title={statusConfig.text}
             ></div>
           )}
           {/* Version */}
           {!isCollapsed && (
-            <span className="text-xs text-gray-400 truncate ml-[18px]">
+            <span className="text-[10px] sm:text-xs text-gray-400 truncate ml-[18px]">
               Version {VERSION}
             </span>
           )}
