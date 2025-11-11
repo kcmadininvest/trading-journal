@@ -16,6 +16,7 @@ import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
 import { MetricGroup } from '../components/statistics/MetricGroup';
+import { useAccountIndicators } from '../hooks/useAccountIndicators';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
@@ -24,6 +25,7 @@ function StatisticsPage() {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
+  const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
   // Utiliser un sélecteur de période moderne
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
     // Par défaut: 3 derniers mois
@@ -151,87 +153,58 @@ function StatisticsPage() {
     loadAllTrades();
   }, [selectedAccountId, accountLoading]);
 
-  // Calculer le solde initial et actuel du compte
-  const accountBalance = useMemo(() => {
-    if (!selectedAccount) {
-      return { initial: 0, current: 0 };
-    }
-
-    const initialCapital = selectedAccount.initial_capital 
-      ? parseFloat(String(selectedAccount.initial_capital)) 
-      : 0;
-
-    // Calculer le PnL total de tous les trades du compte
-    const totalPnl = allTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
-
-    const currentBalance = initialCapital + totalPnl;
-
-    return {
-      initial: initialCapital,
-      current: currentBalance,
-    };
-  }, [selectedAccount, allTrades]);
-
-  // Calculer le Consistency Target pour les comptes TopStep
-  // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
-  const consistencyTarget = useMemo(() => {
-    if (!selectedAccount || selectedAccount.account_type !== 'topstep') {
-      return null;
-    }
-
-    const overallProfit = accountBalance.current - accountBalance.initial;
-    if (overallProfit <= 0) {
-      return null;
-    }
-
-    // Calculer le meilleur jour de tous les temps à partir de tous les trades du compte
-    if (allTrades.length === 0) {
-      return null;
-    }
-
-    // Grouper les trades par date pour trouver le meilleur jour
-    const dailyData: { [date: string]: number } = {};
-    allTrades.forEach(trade => {
-      if (trade.net_pnl && trade.trade_day) {
-        const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
+  // Charger les trades filtrés pour la période sélectionnée
+  useEffect(() => {
+    const loadFilteredTrades = async () => {
+      if (!selectedAccountId || accountLoading) {
+        setFilteredTrades([]);
+        return;
       }
-    });
-
-    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
-    if (dailyEntries.length === 0) {
-      return null;
-    }
-
-    const bestDay = dailyEntries.reduce((max, day) => 
-      day.pnl > max.pnl ? day : max, 
-      dailyEntries[0]
-    );
-
-    if (bestDay.pnl <= 0) {
-      return null;
-    }
-
-    const bestDayProfit = bestDay.pnl;
-    const bestDayPercentage = (bestDayProfit / overallProfit) * 100;
-    const isCompliant = bestDayPercentage < 50;
-    const targetPercentage = 50;
-
-    // Calculer le profit total nécessaire si non conforme
-    const requiredTotalProfit = bestDayProfit / 0.5;
-    const additionalProfitNeeded = requiredTotalProfit - overallProfit;
-
-    return {
-      bestDayProfit,
-      bestDayDate: bestDay.date,
-      overallProfit,
-      bestDayPercentage,
-      isCompliant,
-      targetPercentage,
-      requiredTotalProfit,
-      additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
+      try {
+        const params: any = {
+          trading_account: selectedAccountId,
+          page_size: 10000,
+        };
+        
+        if (selectedPeriod) {
+          params.start_date = selectedPeriod.start;
+          params.end_date = selectedPeriod.end;
+        } else if (selectedYear) {
+          const startDate = selectedMonth 
+            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+            : `${selectedYear}-01-01`;
+          const endDate = selectedMonth
+            ? (() => {
+                const lastDay = new Date(selectedYear, selectedMonth, 0);
+                return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+              })()
+            : `${selectedYear}-12-31`;
+          params.start_date = startDate;
+          params.end_date = endDate;
+        }
+        
+        const response = await tradesService.list(params);
+        setFilteredTrades(response.results);
+      } catch (err) {
+        console.error('Erreur lors du chargement des trades filtrés', err);
+        setFilteredTrades([]);
+      }
     };
-  }, [selectedAccount, accountBalance, allTrades]);
+    loadFilteredTrades();
+  }, [selectedAccountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
+
+  // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
+  const indicators = useAccountIndicators({
+    selectedAccount,
+    allTrades,
+    filteredTrades,
+    analyticsData,
+  });
+
+  // Alias pour compatibilité avec le code existant
+  const accountBalance = indicators.accountBalance;
+  const bestAndWorstDays = indicators.bestAndWorstDays;
+  const consistencyTarget = indicators.consistencyTarget;
   
   // Fonctions utilitaires - DOIT être avant tous les return conditionnels
   // Wrapper pour formatCurrency avec préférences
@@ -368,43 +341,43 @@ function StatisticsPage() {
                     </span>
                   </div>
                 )}
-                {statisticsData?.total_trades !== undefined && (
+                {indicators.totalTrades > 0 && (
                   <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                       {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
                     </span>
                     <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {statisticsData.total_trades}
+                      {indicators.totalTrades}
                     </span>
                   </div>
                 )}
-                {analyticsData?.daily_stats?.best_day && (
+                {bestAndWorstDays.bestDay && (
                   <div className="flex flex-col gap-1 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
                         {t('dashboard:bestDay', { defaultValue: 'Meilleur jour' })}
                       </span>
                       <span className="text-xs text-blue-600 dark:text-blue-400">
-                        {formatDate(analyticsData.daily_stats.best_day, preferences.date_format, false, preferences.timezone)}
+                        {formatDate(bestAndWorstDays.bestDay.date, preferences.date_format, false, preferences.timezone)}
                       </span>
                     </div>
                     <span className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                      {formatCurrency(analyticsData.daily_stats.best_day_pnl, currencySymbol)}
+                      {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol)}
                     </span>
                   </div>
                 )}
-                {analyticsData?.daily_stats?.worst_day && (
+                {bestAndWorstDays.worstDay && (
                   <div className="flex flex-col gap-1 p-3 bg-pink-50 dark:bg-pink-900/20 rounded-lg border border-pink-200 dark:border-pink-800">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-sm font-medium text-pink-700 dark:text-pink-300">
                         {t('dashboard:worstDay', { defaultValue: 'Pire jour' })}
                       </span>
                       <span className="text-xs text-pink-600 dark:text-pink-400">
-                        {formatDate(analyticsData.daily_stats.worst_day, preferences.date_format, false, preferences.timezone)}
+                        {formatDate(bestAndWorstDays.worstDay.date, preferences.date_format, false, preferences.timezone)}
                       </span>
                     </div>
                     <span className="text-lg font-semibold text-pink-600 dark:text-pink-400">
-                      {formatCurrency(analyticsData.daily_stats.worst_day_pnl, currencySymbol)}
+                      {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol)}
                     </span>
                   </div>
                 )}
@@ -552,7 +525,7 @@ function StatisticsPage() {
               >
                 <MetricItem
                   label={t('statistics:overview.totalTrades')}
-                  value={statisticsData.total_trades}
+                  value={indicators.totalTrades}
                   variant="default"
                 />
                 <div className="flex justify-between items-center">
@@ -1013,25 +986,25 @@ function StatisticsPage() {
                   }
                 >
                   <div className="grid grid-cols-2 gap-4">
-                    {analyticsData.daily_stats.best_day && (
+                    {bestAndWorstDays.bestDay && (
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('statistics:advancedAnalysis.bestDay')}</div>
                         <div className="text-base font-semibold text-blue-500 dark:text-blue-400">
-                          {formatCurrency(analyticsData.daily_stats.best_day_pnl, currencySymbol)}
+                          {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol)}
                         </div>
                         <div className="text-xs text-gray-400">
-                          {formatDate(analyticsData.daily_stats.best_day, preferences.date_format, false)}
+                          {formatDate(bestAndWorstDays.bestDay.date, preferences.date_format, false)}
                         </div>
                       </div>
                     )}
-                    {analyticsData.daily_stats.worst_day && (
+                    {bestAndWorstDays.worstDay && (
                       <div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('statistics:advancedAnalysis.worstDay')}</div>
                         <div className="text-base font-semibold text-pink-500 dark:text-pink-400">
-                          {formatCurrency(analyticsData.daily_stats.worst_day_pnl, currencySymbol)}
+                          {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol)}
                         </div>
                         <div className="text-xs text-gray-400">
-                          {formatDate(analyticsData.daily_stats.worst_day, preferences.date_format, false)}
+                          {formatDate(bestAndWorstDays.worstDay.date, preferences.date_format, false)}
                         </div>
                       </div>
                     )}

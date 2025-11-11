@@ -28,6 +28,7 @@ import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil 
 import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useAccountIndicators } from '../hooks/useAccountIndicators';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -220,124 +221,17 @@ const AnalyticsPage: React.FC = () => {
     loadAllTrades();
   }, [accountId, accountLoading]);
 
-  // Calculer le solde initial et actuel du compte
-  const accountBalance = useMemo(() => {
-    if (!selectedAccount) {
-      return { initial: 0, current: 0 };
-    }
+  // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
+  const indicators = useAccountIndicators({
+    selectedAccount,
+    allTrades,
+    filteredTrades: trades,
+  });
 
-    const initialCapital = selectedAccount.initial_capital 
-      ? parseFloat(String(selectedAccount.initial_capital)) 
-      : 0;
-
-    // Calculer le PnL total de tous les trades du compte
-    const totalPnl = allTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
-
-    const currentBalance = initialCapital + totalPnl;
-
-    return {
-      initial: initialCapital,
-      current: currentBalance,
-    };
-  }, [selectedAccount, allTrades]);
-
-  // Calculer le meilleur et le pire jour pour la période filtrée
-  const bestAndWorstDays = useMemo(() => {
-    if (trades.length === 0) {
-      return { bestDay: null, worstDay: null };
-    }
-
-    // Grouper les trades par date
-    const dailyData: { [date: string]: number } = {};
-    trades.forEach(trade => {
-      if (trade.net_pnl && trade.trade_day) {
-        const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
-      }
-    });
-
-    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
-
-    if (dailyEntries.length === 0) {
-      return { bestDay: null, worstDay: null };
-    }
-
-    const bestDay = dailyEntries.reduce((max, day) => 
-      day.pnl > max.pnl ? day : max, 
-      dailyEntries[0]
-    );
-    
-    const worstDay = dailyEntries.reduce((min, day) => 
-      day.pnl < min.pnl ? day : min, 
-      dailyEntries[0]
-    );
-
-    return {
-      bestDay: bestDay.pnl > 0 ? bestDay : null,
-      worstDay: worstDay.pnl < 0 ? worstDay : null,
-    };
-  }, [trades]);
-
-  // Calculer le Consistency Target pour les comptes TopStep
-  // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
-  const consistencyTarget = useMemo(() => {
-    if (!selectedAccount || selectedAccount.account_type !== 'topstep') {
-      return null;
-    }
-
-    const overallProfit = accountBalance.current - accountBalance.initial;
-    if (overallProfit <= 0) {
-      return null;
-    }
-
-    // Calculer le meilleur jour de tous les temps à partir de tous les trades du compte
-    if (allTrades.length === 0) {
-      return null;
-    }
-
-    // Grouper les trades par date pour trouver le meilleur jour
-    const dailyData: { [date: string]: number } = {};
-    allTrades.forEach(trade => {
-      if (trade.net_pnl && trade.trade_day) {
-        const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
-      }
-    });
-
-    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
-    if (dailyEntries.length === 0) {
-      return null;
-    }
-
-    const bestDay = dailyEntries.reduce((max, day) => 
-      day.pnl > max.pnl ? day : max, 
-      dailyEntries[0]
-    );
-
-    if (bestDay.pnl <= 0) {
-      return null;
-    }
-
-    const bestDayProfit = bestDay.pnl;
-    const bestDayPercentage = (bestDayProfit / overallProfit) * 100;
-    const isCompliant = bestDayPercentage < 50;
-    const targetPercentage = 50;
-
-    // Calculer le profit total nécessaire si non conforme
-    const requiredTotalProfit = bestDayProfit / 0.5;
-    const additionalProfitNeeded = requiredTotalProfit - overallProfit;
-
-    return {
-      bestDayProfit,
-      bestDayDate: bestDay.date,
-      overallProfit,
-      bestDayPercentage,
-      isCompliant,
-      targetPercentage,
-      requiredTotalProfit,
-      additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
-    };
-  }, [selectedAccount, accountBalance, allTrades]);
+  // Alias pour compatibilité avec le code existant
+  const accountBalance = indicators.accountBalance;
+  const bestAndWorstDays = indicators.bestAndWorstDays;
+  const consistencyTarget = indicators.consistencyTarget;
 
   // Performance par heure (nuage de points)
   const hourlyPerformanceScatter = useMemo(() => {
@@ -778,13 +672,13 @@ const AnalyticsPage: React.FC = () => {
                   </span>
                 </div>
               )}
-              {trades !== undefined && (
+              {indicators.totalTrades > 0 && (
                 <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                   <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                     {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
                   </span>
                   <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    {trades.length}
+                    {indicators.totalTrades}
                   </span>
                 </div>
               )}
