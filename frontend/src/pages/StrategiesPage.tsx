@@ -185,26 +185,28 @@ const StrategiesPage: React.FC = () => {
     loadAccount();
   }, [accountId]);
 
+  // Fonction pour charger tous les trades du compte
+  const loadAllTrades = useCallback(async () => {
+    if (!accountId || accountLoading) {
+      setAllTrades([]);
+      return;
+    }
+    try {
+      const response = await tradesService.list({
+        trading_account: accountId,
+        page_size: 10000, // Charger tous les trades
+      });
+      setAllTrades(response.results);
+    } catch (err) {
+      console.error('Erreur lors du chargement des trades', err);
+      setAllTrades([]);
+    }
+  }, [accountId, accountLoading]);
+
   // Charger tous les trades du compte pour calculer le solde
   useEffect(() => {
-    const loadAllTrades = async () => {
-      if (!accountId || accountLoading) {
-        setAllTrades([]);
-        return;
-      }
-      try {
-        const response = await tradesService.list({
-          trading_account: accountId,
-          page_size: 10000, // Charger tous les trades
-        });
-        setAllTrades(response.results);
-      } catch (err) {
-        console.error('Erreur lors du chargement des trades', err);
-        setAllTrades([]);
-      }
-    };
     loadAllTrades();
-  }, [accountId, accountLoading]);
+  }, [loadAllTrades]);
 
   // Obtenir le symbole de la devise du compte sélectionné
   const currencySymbol = useMemo(() => {
@@ -213,48 +215,50 @@ const StrategiesPage: React.FC = () => {
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
 
+  // Fonction pour charger les trades filtrés par période
+  const loadFilteredTrades = useCallback(async () => {
+    if (!accountId || accountLoading) {
+      setFilteredTrades([]);
+      return;
+    }
+    try {
+      const filters: any = {
+        trading_account: accountId,
+        page_size: 10000,
+      };
+
+      if (selectedPeriod) {
+        filters.start_date = selectedPeriod.start;
+        filters.end_date = selectedPeriod.end;
+      } else if (selectedYear) {
+        const startDate = selectedMonth 
+          ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+          : `${selectedYear}-01-01`;
+        
+        let endDate: string;
+        if (selectedMonth) {
+          const lastDay = new Date(selectedYear, selectedMonth, 0);
+          endDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+        } else {
+          endDate = `${selectedYear}-12-31`;
+        }
+        
+        filters.start_date = startDate;
+        filters.end_date = endDate;
+      }
+
+      const response = await tradesService.list(filters);
+      setFilteredTrades(response.results);
+    } catch (err) {
+      console.error('Erreur lors du chargement des trades filtrés', err);
+      setFilteredTrades([]);
+    }
+  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
+
   // Charger les trades filtrés par période pour calculer le meilleur/pire jour
   useEffect(() => {
-    const loadFilteredTrades = async () => {
-      if (!accountId || accountLoading) {
-        setFilteredTrades([]);
-        return;
-      }
-      try {
-        const filters: any = {
-          trading_account: accountId,
-          page_size: 10000,
-        };
-
-        if (selectedPeriod) {
-          filters.start_date = selectedPeriod.start;
-          filters.end_date = selectedPeriod.end;
-        } else if (selectedYear) {
-          const startDate = selectedMonth 
-            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
-            : `${selectedYear}-01-01`;
-          
-          let endDate: string;
-          if (selectedMonth) {
-            const lastDay = new Date(selectedYear, selectedMonth, 0);
-            endDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
-          } else {
-            endDate = `${selectedYear}-12-31`;
-          }
-          
-          filters.start_date = startDate;
-          filters.end_date = endDate;
-        }
-
-        const response = await tradesService.list(filters);
-        setFilteredTrades(response.results);
-      } catch (err) {
-        console.error('Erreur lors du chargement des trades filtrés', err);
-        setFilteredTrades([]);
-      }
-    };
     loadFilteredTrades();
-  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
+  }, [loadFilteredTrades]);
 
   // Calculer le solde initial et actuel du compte
   const accountBalance = useMemo(() => {
@@ -1032,13 +1036,13 @@ const StrategiesPage: React.FC = () => {
                     </span>
                   </div>
                 )}
-                {statistics?.statistics?.total_strategies !== undefined && (
+                {filteredTrades.length > 0 && (
                   <div className="flex flex-col gap-1 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                       {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
                     </span>
                     <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                      {statistics.statistics.total_strategies}
+                      {filteredTrades.length}
                     </span>
                   </div>
                 )}
@@ -1268,7 +1272,16 @@ const StrategiesPage: React.FC = () => {
       </div>
 
       <FloatingActionButton onClick={() => setShowImport(true)} title={t('strategies:importTrades')} />
-      <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
+      <ImportTradesModal open={showImport} onClose={(done) => {
+        setShowImport(false);
+        if (done) {
+          // Recharger les statistiques après un import réussi
+          loadStatistics();
+          // Recharger aussi les trades pour mettre à jour les soldes et les graphiques
+          loadAllTrades();
+          loadFilteredTrades();
+        }
+      }} />
     </div>
   );
 };
