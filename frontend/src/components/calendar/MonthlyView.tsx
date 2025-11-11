@@ -109,14 +109,14 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Navigation */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Sélecteur de vue à gauche */}
         {onViewTypeChange && (
           <div className="inline-flex rounded-md shadow-sm" role="group">
             <button
               type="button"
               onClick={() => onViewTypeChange('daily')}
-              className={`px-4 py-2 text-sm font-medium rounded-l-lg border ${
+              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-l-lg border ${
                 viewType === 'daily'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -127,7 +127,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
             <button
               type="button"
               onClick={() => onViewTypeChange('monthly')}
-              className={`px-4 py-2 text-sm font-medium rounded-r-lg border-t border-r border-b ${
+              className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-r-lg border-t border-r border-b ${
                 viewType === 'monthly'
                   ? 'bg-blue-600 text-white border-blue-600'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -139,7 +139,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
         )}
 
         {/* Navigation de période centrée */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center justify-center space-x-2 sm:space-x-4">
           <button
             onClick={() => navigateYear('prev')}
             className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
@@ -150,7 +150,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
             </svg>
           </button>
 
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800 dark:text-gray-100 text-center">
             {year}
           </h2>
 
@@ -167,35 +167,33 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
           {year !== currentYear && (
             <button
               onClick={goToToday}
-              className="ml-4 px-4 py-2 text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+              className="ml-2 sm:ml-4 px-3 sm:px-4 py-2 text-xs sm:text-sm bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
             >
               {t('calendar:today')}
             </button>
           )}
         </div>
-
-        {/* Espaceur à droite pour équilibrer */}
-        {onViewTypeChange && <div className="w-[160px]"></div>}
       </div>
 
       {/* Calendrier */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        {/* En-têtes des colonnes */}
-        <div className="grid grid-cols-4 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
+        <div className="overflow-x-auto">
+          {/* En-têtes des colonnes */}
+          <div className="grid grid-cols-4 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 min-w-[480px]">
+            <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
+            </div>
+            <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
+            </div>
+            <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
+            </div>
+            <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/30">
+              {t('calendar:weeklyPnL')}
+            </div>
           </div>
-          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
-          </div>
-          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
-          </div>
-          <div className="px-2 py-3 text-center text-sm font-semibold text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/30">
-            {t('calendar:weeklyPnL')}
-          </div>
-        </div>
 
-        {/* Grille du calendrier */}
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
-          {Array.from({ length: rows }).map((_, rowIndex) => {
+          {/* Grille du calendrier */}
+          <div className="divide-y divide-gray-200 dark:divide-gray-700 min-w-[480px]">
+            {Array.from({ length: rows }).map((_, rowIndex) => {
             const monthCells = calendarCells.slice(rowIndex * monthsPerRow, (rowIndex + 1) * monthsPerRow);
             
             // Calculer le PnL hebdomadaire pour cette ligne (somme des 3 mois de la ligne)
@@ -214,24 +212,24 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                   return (
                     <div
                       key={month}
-                      className={`h-32 p-2 cursor-pointer ${getMonthBgColor(month, monthlyPnl)} ${getMonthBorderClasses(month, colIndex, rowIndex)}`}
+                      className={`h-24 sm:h-32 p-1 sm:p-2 cursor-pointer ${getMonthBgColor(month, monthlyPnl)} ${getMonthBorderClasses(month, colIndex, rowIndex)}`}
                       onClick={() => onMonthClick(month)}
                     >
                       <div className="flex flex-col h-full">
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`text-sm font-medium ${isCurrentMonth ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                          <span className={`text-xs sm:text-sm font-medium ${isCurrentMonth ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                             {monthNames[month - 1]}
                           </span>
                           {tradeCount > 0 && (
                             <Tooltip content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} position="top">
-                              <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full cursor-help">
+                              <span className="text-[10px] sm:text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1 sm:px-1.5 py-0.5 rounded-full cursor-help">
                                 {tradeCount}
                               </span>
                             </Tooltip>
                           )}
                         </div>
                         {monthlyPnl !== 0 && (
-                          <div className={`text-base font-semibold mt-auto ${getPnlColor(monthlyPnl)}`}>
+                          <div className={`text-xs sm:text-base font-semibold mt-auto ${getPnlColor(monthlyPnl)} break-words`}>
                             {formatPnl(monthlyPnl)}
                           </div>
                         )}
@@ -247,18 +245,18 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                   return (
                     <div
                       key={`empty-${emptyIndex}`}
-                      className={`h-32 bg-gray-50 dark:bg-gray-700 ${emptyColIndex < monthsPerRow - 1 ? 'border-r border-gray-200 dark:border-gray-700' : ''}`}
+                      className={`h-24 sm:h-32 bg-gray-50 dark:bg-gray-700 ${emptyColIndex < monthsPerRow - 1 ? 'border-r border-gray-200 dark:border-gray-700' : ''}`}
                     />
                   );
                 })}
 
                 {/* Colonne PnL Hebdomadaire pour cette ligne */}
                 <div
-                  className={`h-32 p-2 bg-blue-50 dark:bg-blue-900/30 ${weeklyPnlForRow > 0 ? 'bg-green-50 dark:bg-green-900/20' : weeklyPnlForRow < 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
+                  className={`h-24 sm:h-32 p-1 sm:p-2 bg-blue-50 dark:bg-blue-900/30 ${weeklyPnlForRow > 0 ? 'bg-green-50 dark:bg-green-900/20' : weeklyPnlForRow < 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
                 >
                   <div className="flex flex-col h-full justify-center">
                     {weeklyPnlForRow !== 0 && (
-                      <div className={`text-base font-semibold text-center ${getPnlColor(weeklyPnlForRow)}`}>
+                      <div className={`text-xs sm:text-base font-semibold text-center ${getPnlColor(weeklyPnlForRow)}`}>
                         {formatPnl(weeklyPnlForRow)}
                       </div>
                     )}
@@ -268,13 +266,14 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
             );
           })}
 
-          {/* Ligne supplémentaire avec le total annuel dans la colonne PnL Hebdomadaire */}
-          <div className="grid grid-cols-4 bg-gray-100 dark:bg-gray-700 border-t-2 border-gray-300 dark:border-gray-600">
-            <div className="col-span-3 px-4 py-3 font-semibold text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600">
-              {t('calendar:total')} {year}
-            </div>
-            <div className={`px-4 py-3 font-bold text-center ${getPnlColor(yearlyTotal)}`}>
-              {formatPnl(yearlyTotal)}
+            {/* Ligne supplémentaire avec le total annuel dans la colonne PnL Hebdomadaire */}
+            <div className="grid grid-cols-4 bg-gray-100 dark:bg-gray-700 border-t-2 border-gray-300 dark:border-gray-600">
+              <div className="col-span-3 px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600">
+                {t('calendar:total')} {year}
+              </div>
+              <div className={`px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-bold text-center ${getPnlColor(yearlyTotal)}`}>
+                {formatPnl(yearlyTotal)}
+              </div>
             </div>
           </div>
         </div>
