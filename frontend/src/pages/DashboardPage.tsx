@@ -1946,10 +1946,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               const cumulative = waterfallBarData.cumulative;
                               const start = waterfallBarData.start;
                               
+                              // Calculer la variation en % par rapport à la barre précédente
+                              let variationPercent = 0;
+                              if (start !== 0) {
+                                variationPercent = ((cumulative - start) / Math.abs(start)) * 100;
+                              } else if (cumulative !== 0) {
+                                // Si start est 0, on ne peut pas calculer de pourcentage, on affiche juste le signe
+                                variationPercent = cumulative > 0 ? 100 : -100;
+                              }
+                              
                               return [
                                 `${t('dashboard:dayPnL')}: ${formatCurrency(pnl, currencySymbol)}`,
                                 `${t('dashboard:cumulativeCapital')}: ${formatCurrency(cumulative, currencySymbol)}`,
-                                `${t('dashboard:variation')}: ${formatCurrency(cumulative - start, currencySymbol)}`
+                                `${t('dashboard:variation')}: ${variationPercent >= 0 ? '+' : ''}${formatNumber(variationPercent, 2)}%`
                               ];
                             }
                           }
