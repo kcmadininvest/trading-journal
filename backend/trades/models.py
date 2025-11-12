@@ -1149,9 +1149,10 @@ class TradingGoal(models.Model):
         
         if is_in_danger:
             # Envoyer une alerte si on n'en a jamais envoyé, ou si la dernière remonte à plus de 24h
-            if not self.last_danger_alert_sent:
+            last_danger_alert = self.last_danger_alert_sent
+            if not last_danger_alert:
                 should_send_danger_alert = True
-            elif (now - self.last_danger_alert_sent) > timedelta(days=1):
+            elif last_danger_alert is not None and (now - last_danger_alert) > timedelta(days=1):  # type: ignore
                 should_send_danger_alert = True
         
         if should_send_danger_alert:

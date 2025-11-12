@@ -1784,12 +1784,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         anchor: 'center' as const,
                         align: 'center' as const,
                         color: function(context: any) {
-                          // Dans chartjs-plugin-datalabels, accéder à la valeur via le dataset
-                          const dataset = context.dataset;
-                          const dataIndex = context.dataIndex;
-                          const value = dataset?.data?.[dataIndex] ?? 0;
-                          // S'assurer que la valeur est un nombre
-                          const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
                           // Blanc sur fond bleu (positif) ou rose (négatif)
                           return '#ffffff';
                         },
