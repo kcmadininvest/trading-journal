@@ -95,6 +95,8 @@ const AnalyticsPage: React.FC = () => {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   // accountId vient maintenant du contexte global
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  // État pour gérer la largeur de l'écran (responsive)
+  const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const [heatmapTooltip, setHeatmapTooltip] = useState<{
     day: string;
     hour: number;
@@ -104,6 +106,18 @@ const AnalyticsPage: React.FC = () => {
   } | null>(null);
   
   const heatmapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Gérer le redimensionnement de la fenêtre pour le responsive
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   // Récupérer la liste des devises
   useEffect(() => {
@@ -1116,7 +1130,38 @@ const AnalyticsPage: React.FC = () => {
                   maintainAspectRatio: false,
                   plugins: {
                     datalabels: {
-                      display: false,
+                      display: true,
+                      color: function(context: any) {
+                        // Couleur adaptée selon si c'est positif (bleu) ou négatif (rose)
+                        const index = context.dataIndex;
+                        const pnl = hourlyPerformanceBars[index]?.pnl ?? 0;
+                        if (pnl >= 0) {
+                          return '#ffffff'; // Blanc sur fond bleu
+                        }
+                        return isDark ? '#f3f4f6' : '#ffffff'; // Clair sur fond rose
+                      },
+                      font: {
+                        weight: 700, // Plus gras pour meilleure lisibilité
+                        size: windowWidth < 640 ? 11 : 13,
+                      },
+                      backgroundColor: function(context: any) {
+                        // Ajouter un fond semi-transparent sur mobile pour améliorer la lisibilité
+                        if (windowWidth < 640) {
+                          return 'rgba(0, 0, 0, 0.4)';
+                        }
+                        return 'transparent';
+                      },
+                      padding: windowWidth < 640 ? 4 : 0,
+                      borderRadius: windowWidth < 640 ? 4 : 0,
+                      formatter: function(value: number, context: any) {
+                        // Afficher la valeur formatée en devise
+                        const index = context.dataIndex;
+                        const pnl = hourlyPerformanceBars[index]?.pnl ?? value;
+                        return formatCurrency(pnl, currencySymbol);
+                      },
+                      anchor: 'center' as const,
+                      align: 'center' as const,
+                      clamp: true, // Empêcher les labels de sortir du graphique
                     },
                     legend: {
                       display: false,
@@ -1336,7 +1381,8 @@ const AnalyticsPage: React.FC = () => {
                   labels: pnlDistribution.map((d, index) => {
                     // Format compact pour les labels : afficher seulement le début de l'intervalle
                     // L'intervalle complet est disponible dans le tooltip
-                    return formatCurrency(d.start || parseFloat(d.range), currencySymbol);
+                    // d.start est toujours défini (nombre), utiliser directement
+                    return formatCurrency(d.start, currencySymbol);
                   }),
                   datasets: [
                     {
@@ -1357,7 +1403,38 @@ const AnalyticsPage: React.FC = () => {
                   maintainAspectRatio: false,
                   plugins: {
                     datalabels: {
-                      display: false,
+                      display: true,
+                      color: function(context: any) {
+                        // Couleur adaptée selon si c'est positif (bleu) ou négatif (rose)
+                        const index = context.dataIndex;
+                        const bin = pnlDistribution[index];
+                        if (bin && bin.isPositive) {
+                          return '#ffffff'; // Blanc sur fond bleu
+                        }
+                        return isDark ? '#f3f4f6' : '#ffffff'; // Clair sur fond rose
+                      },
+                      font: {
+                        weight: 700, // Plus gras pour meilleure lisibilité
+                        size: windowWidth < 640 ? 11 : 13,
+                      },
+                      backgroundColor: function(context: any) {
+                        // Ajouter un fond semi-transparent sur mobile pour améliorer la lisibilité
+                        if (windowWidth < 640) {
+                          return 'rgba(0, 0, 0, 0.4)';
+                        }
+                        return 'transparent';
+                      },
+                      padding: windowWidth < 640 ? 4 : 0,
+                      borderRadius: windowWidth < 640 ? 4 : 0,
+                      formatter: function(value: number, context: any) {
+                        // Afficher le pourcentage seulement si la barre est assez grande
+                        // Masquer si la valeur est trop petite (< 3%) pour éviter le chevauchement
+                        if (value < 3) return '';
+                        return formatNumber(value, 1) + '%';
+                      },
+                      anchor: 'center' as const,
+                      align: 'center' as const,
+                      clamp: true, // Empêcher les labels de sortir du graphique
                     },
                     legend: {
                       display: false,
@@ -1382,19 +1459,9 @@ const AnalyticsPage: React.FC = () => {
                         title: (items) => {
                           const index = items[0].dataIndex;
                           const bin = pnlDistribution[index];
-                          // Extraire start et end du rangeLabel
-                          const rangeMatch = bin.rangeLabel.match(/^(.+?)\s*-\s*(.+?)$/);
-                          let startValue = parseFloat(bin.range);
-                          let endValue = startValue;
-                          
-                          if (rangeMatch && rangeMatch[2]) {
-                            endValue = parseFloat(rangeMatch[2].trim());
-                          } else if (pnlDistribution[index + 1]) {
-                            endValue = parseFloat(pnlDistribution[index + 1].range);
-                          } else {
-                            // Si c'est le dernier bin, utiliser binWidth
-                            endValue = startValue + (bin.binWidth || (startValue * 0.1));
-                          }
+                          // Utiliser directement bin.start et bin.end qui sont des nombres
+                          const startValue = bin.start;
+                          const endValue = bin.end || (startValue + (bin.binWidth || 0));
                           
                           const startFormatted = formatCurrency(startValue, currencySymbol);
                           const endFormatted = formatCurrency(endValue, currencySymbol);

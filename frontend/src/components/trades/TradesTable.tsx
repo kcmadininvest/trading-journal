@@ -478,7 +478,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   {totals.pnl !== undefined ? formatCurrencyWithSign(totals.pnl, '', preferences.number_format, 2) : ''}
                 </td>
                 <td className="px-2 sm:px-4 py-2 text-right text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                  {totals.fees !== undefined ? formatNumber(totals.fees, 2, preferences.number_format) : ''}
+                  {totals.fees !== undefined ? formatCurrencyWithSign(totals.fees, '', preferences.number_format, 2) : ''}
                 </td>
                 <td className="px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold" style={totals.net_pnl !== undefined ? { color: (totals.net_pnl ?? 0) >= 0 ? '#05967c' : '#e11d48' } : undefined}>
                   {totals.net_pnl !== undefined ? formatCurrencyWithSign(totals.net_pnl, '', preferences.number_format, 2) : ''}

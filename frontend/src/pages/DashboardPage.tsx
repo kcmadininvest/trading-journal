@@ -209,6 +209,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Garder selectedYear et selectedMonth pour compatibilité avec le code existant
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  // État pour gérer la largeur de l'écran (responsive)
+  const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [strategies, setStrategies] = useState<Map<number, TradeStrategy>>(new Map());
   // Données agrégées par jour (beaucoup plus rapide)
@@ -229,6 +231,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [complianceStats, setComplianceStats] = useState<StrategyComplianceStats | null>(null);
   const [complianceLoading, setComplianceLoading] = useState(false);
+
+  // Gérer le redimensionnement de la fenêtre pour le responsive
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   // Récupérer la liste des devises
   useEffect(() => {
@@ -1767,21 +1781,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       },
                       datalabels: {
                         display: true,
-                        anchor: 'end' as const,
-                        align: 'top' as const,
+                        anchor: 'center' as const,
+                        align: 'center' as const,
                         color: function(context: any) {
-                          // Dans chartjs-plugin-datalabels, accéder à la valeur via le dataset
-                          const dataset = context.dataset;
-                          const dataIndex = context.dataIndex;
-                          const value = dataset?.data?.[dataIndex] ?? 0;
-                          // S'assurer que la valeur est un nombre
-                          const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
-                          return numValue >= 0 ? '#3b82f6' : '#ec4899';
+                          // Blanc sur fond bleu (positif) ou rose (négatif)
+                          return '#ffffff';
                         },
                         font: {
-                          size: 12,
-                          weight: 600 as const
+                          weight: 700, // Plus gras pour meilleure lisibilité
+                          size: windowWidth < 640 ? 11 : 13,
                         },
+                        backgroundColor: function(context: any) {
+                          // Ajouter un fond semi-transparent sur mobile pour améliorer la lisibilité
+                          if (windowWidth < 640) {
+                            return 'rgba(0, 0, 0, 0.4)';
+                          }
+                          return 'transparent';
+                        },
+                        padding: windowWidth < 640 ? 4 : 0,
+                        borderRadius: windowWidth < 640 ? 4 : 0,
                         formatter: function(value: any, context: any) {
                           // Accéder à la valeur de différentes manières pour être sûr
                           const dataset = context.dataset;
@@ -1789,7 +1807,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           const actualValue = dataset?.data?.[dataIndex] ?? value ?? 0;
                           const numValue = typeof actualValue === 'number' ? actualValue : parseFloat(actualValue) || 0;
                           return formatCurrency(numValue, currencySymbol);
-                        }
+                        },
+                        clamp: true, // Empêcher les labels de sortir du graphique
                       }
                     },
                     scales: {
@@ -1921,10 +1940,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               const cumulative = waterfallBarData.cumulative;
                               const start = waterfallBarData.start;
                               
+                              // Calculer la variation en % par rapport à la barre précédente
+                              let variationPercent = 0;
+                              if (start !== 0) {
+                                variationPercent = ((cumulative - start) / Math.abs(start)) * 100;
+                              } else if (cumulative !== 0) {
+                                // Si start est 0, on ne peut pas calculer de pourcentage, on affiche juste le signe
+                                variationPercent = cumulative > 0 ? 100 : -100;
+                              }
+                              
                               return [
                                 `${t('dashboard:dayPnL')}: ${formatCurrency(pnl, currencySymbol)}`,
                                 `${t('dashboard:cumulativeCapital')}: ${formatCurrency(cumulative, currencySymbol)}`,
-                                `${t('dashboard:variation')}: ${formatCurrency(cumulative - start, currencySymbol)}`
+                                `${t('dashboard:variation')}: ${variationPercent >= 0 ? '+' : ''}${formatNumber(variationPercent, 2)}%`
                               ];
                             }
                           }
