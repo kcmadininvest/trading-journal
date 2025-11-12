@@ -24,6 +24,10 @@ export interface TradeListItem {
   trade_day: string | null; // YYYY-MM-DD
   position_strategy: number | null;
   position_strategy_title: string | null;
+  planned_stop_loss: string | null;
+  planned_take_profit: string | null;
+  planned_risk_reward_ratio: string | null;
+  actual_risk_reward_ratio: string | null;
 }
 
 export interface TradeDetail extends TradeListItem {
