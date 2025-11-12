@@ -1130,7 +1130,38 @@ const AnalyticsPage: React.FC = () => {
                   maintainAspectRatio: false,
                   plugins: {
                     datalabels: {
-                      display: false,
+                      display: true,
+                      color: function(context: any) {
+                        // Couleur adaptée selon si c'est positif (bleu) ou négatif (rose)
+                        const index = context.dataIndex;
+                        const pnl = hourlyPerformanceBars[index]?.pnl ?? 0;
+                        if (pnl >= 0) {
+                          return '#ffffff'; // Blanc sur fond bleu
+                        }
+                        return isDark ? '#f3f4f6' : '#ffffff'; // Clair sur fond rose
+                      },
+                      font: {
+                        weight: 700, // Plus gras pour meilleure lisibilité
+                        size: windowWidth < 640 ? 11 : 13,
+                      },
+                      backgroundColor: function(context: any) {
+                        // Ajouter un fond semi-transparent sur mobile pour améliorer la lisibilité
+                        if (windowWidth < 640) {
+                          return 'rgba(0, 0, 0, 0.4)';
+                        }
+                        return 'transparent';
+                      },
+                      padding: windowWidth < 640 ? 4 : 0,
+                      borderRadius: windowWidth < 640 ? 4 : 0,
+                      formatter: function(value: number, context: any) {
+                        // Afficher la valeur formatée en devise
+                        const index = context.dataIndex;
+                        const pnl = hourlyPerformanceBars[index]?.pnl ?? value;
+                        return formatCurrency(pnl, currencySymbol);
+                      },
+                      anchor: 'center' as const,
+                      align: 'center' as const,
+                      clamp: true, // Empêcher les labels de sortir du graphique
                     },
                     legend: {
                       display: false,
@@ -1383,9 +1414,18 @@ const AnalyticsPage: React.FC = () => {
                         return isDark ? '#f3f4f6' : '#ffffff'; // Clair sur fond rose
                       },
                       font: {
-                        weight: 600,
-                        size: windowWidth < 640 ? 10 : 13,
+                        weight: 700, // Plus gras pour meilleure lisibilité
+                        size: windowWidth < 640 ? 11 : 13,
                       },
+                      backgroundColor: function(context: any) {
+                        // Ajouter un fond semi-transparent sur mobile pour améliorer la lisibilité
+                        if (windowWidth < 640) {
+                          return 'rgba(0, 0, 0, 0.4)';
+                        }
+                        return 'transparent';
+                      },
+                      padding: windowWidth < 640 ? 4 : 0,
+                      borderRadius: windowWidth < 640 ? 4 : 0,
                       formatter: function(value: number, context: any) {
                         // Afficher le pourcentage seulement si la barre est assez grande
                         // Masquer si la valeur est trop petite (< 3%) pour éviter le chevauchement
