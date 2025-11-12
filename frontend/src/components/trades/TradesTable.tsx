@@ -319,11 +319,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {isLoading ? (
               <tr>
-                <td colSpan={14} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
+                <td colSpan={15} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={14} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
+                <td colSpan={15} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
               </tr>
             ) : (
               items.map((trade) => (
