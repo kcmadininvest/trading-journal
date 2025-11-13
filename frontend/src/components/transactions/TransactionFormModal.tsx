@@ -3,7 +3,6 @@ import { accountTransactionsService, AccountTransaction } from '../../services/a
 import { tradingAccountsService, TradingAccount } from '../../services/tradingAccounts';
 import { AccountSelector } from '../accounts/AccountSelector';
 import { DateInput } from '../common/DateInput';
-import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrency } from '../../utils/numberFormat';
 
@@ -24,7 +23,6 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   defaultAccountId,
   transaction,
 }) => {
-  const { t } = useI18nTranslation();
   const { preferences } = usePreferences();
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(defaultAccountId || null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);

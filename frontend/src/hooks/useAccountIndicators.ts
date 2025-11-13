@@ -70,7 +70,6 @@ export function useAccountIndicators({
 }: UseAccountIndicatorsParams): AccountIndicators {
   // État pour le solde avec transactions
   const [balanceWithTransactions, setBalanceWithTransactions] = useState<AccountBalanceData | null>(null);
-  const [balanceLoading, setBalanceLoading] = useState(false);
 
   // Fonction pour charger le solde
   const loadBalance = useCallback(async () => {
@@ -79,17 +78,14 @@ export function useAccountIndicators({
       return;
     }
 
-    setBalanceLoading(true);
     try {
       const balance = await accountTransactionsService.getBalance(selectedAccount.id);
       setBalanceWithTransactions(balance);
     } catch (error) {
       console.error('Erreur lors du chargement du solde avec transactions:', error);
       setBalanceWithTransactions(null);
-    } finally {
-      setBalanceLoading(false);
     }
-  }, [selectedAccount?.id]);
+  }, [selectedAccount]);
 
   // Charger le solde avec transactions depuis l'API
   useEffect(() => {

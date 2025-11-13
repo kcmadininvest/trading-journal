@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { accountTransactionsService, AccountTransaction } from '../../services/accountTransactions';
-import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrency } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
@@ -16,7 +15,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const { t } = useI18nTranslation();
   const { preferences } = usePreferences();
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,6 +55,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
   useEffect(() => {
     loadTransactions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tradingAccountId, filterType]);
 
   const handleDelete = async (id: number) => {
@@ -184,7 +183,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
               {transactions.map((transaction) => {
                 const currencySymbol = getCurrencySymbol(transaction);
                 const amount = parseFloat(transaction.amount.toString());
-                const signedAmount = transaction.transaction_type === 'deposit' ? amount : -amount;
 
                 return (
                   <tr

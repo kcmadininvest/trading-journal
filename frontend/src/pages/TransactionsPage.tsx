@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
-import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
+import { AccountTransaction } from '../services/accountTransactions';
 import { TransactionFormModal } from '../components/transactions/TransactionFormModal';
 import { TransactionHistory } from '../components/transactions/TransactionHistory';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
-import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 
 const TransactionsPage: React.FC = () => {
-  const { t } = useI18nTranslation();
   const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
