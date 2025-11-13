@@ -597,16 +597,11 @@ else
     echo "✅ Déploiement terminé (code déjà à jour)"
 fi
 
-# 16. 🧹 Nettoyage final : restaurer les fichiers modifiés par le déploiement
-info "Nettoyage final des fichiers modifiés par le déploiement..."
+# 16. 🧹 Nettoyage final : nettoyage des fichiers temporaires
+info "Nettoyage final des fichiers temporaires..."
 
-# Restaurer index.html à son état Git (les modifications de hash sont nécessaires pour le serveur,
-# mais on les restaure pour garder un working tree propre)
-if [ -f "$TEMPLATE_FILE" ] && ! git diff --quiet "$TEMPLATE_FILE" 2>/dev/null; then
-    # Il y a des modifications, on les restaure
-    info "🔄 Restauration de $TEMPLATE_FILE à son état Git..."
-    git restore "$TEMPLATE_FILE" 2>/dev/null || warn "Impossible de restaurer $TEMPLATE_FILE"
-fi
+# Note : index.html n'est PAS restauré car il doit rester modifié avec les nouveaux hash JS/CSS
+# pour que le serveur fonctionne correctement. Les modifications de hash sont nécessaires.
 
 # Nettoyage des fichiers de backup créés par le script
 info "🧹 Nettoyage des fichiers de backup..."
