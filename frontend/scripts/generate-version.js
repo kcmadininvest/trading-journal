@@ -7,7 +7,7 @@ function getGitVersion() {
   try {
     // S'assurer que les tags distants sont récupérés
     try {
-      execSync('git fetch --tags --quiet 2>/dev/null', {
+      execSync('git fetch origin --tags --quiet 2>/dev/null', {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'ignore'],
         cwd: path.join(__dirname, '../..')
@@ -16,41 +16,37 @@ function getGitVersion() {
       // Ignorer les erreurs de fetch
     }
     
-    // Essayer d'obtenir le tag exact du commit actuel
+    // Obtenir le dernier tag par version (pas seulement celui du commit actuel)
     let version = '';
     try {
-      version = execSync('git describe --tags --exact-match HEAD 2>/dev/null', {
+      // Récupérer tous les tags et trier par version (ordre décroissant)
+      const tags = execSync('git tag --sort=-version:refname 2>/dev/null', {
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'ignore'],
         cwd: path.join(__dirname, '../..')
       }).trim();
+      
+      if (tags) {
+        // Prendre le premier tag (le plus récent par version)
+        version = tags.split('\n')[0].trim();
+      }
     } catch (e) {
-      // Pas de tag exact, continuer
-    }
-    
-    // Si pas de tag exact, obtenir le dernier tag (trié par version)
-    if (!version) {
+      // Essayer la méthode alternative avec git describe
       try {
-        // Récupérer tous les tags et trier par version
-        const tags = execSync('git tag --sort=-v:refname 2>/dev/null', {
+        version = execSync('git describe --tags --abbrev=0 origin/main 2>/dev/null', {
           encoding: 'utf-8',
           stdio: ['pipe', 'pipe', 'ignore'],
           cwd: path.join(__dirname, '../..')
         }).trim();
-        
-        if (tags) {
-          // Prendre le premier tag (le plus récent)
-          version = tags.split('\n')[0].trim();
-        }
-      } catch (e) {
-        // Essayer la méthode alternative
+      } catch (e2) {
+        // Dernière tentative : tag local
         try {
           version = execSync('git describe --tags --abbrev=0 2>/dev/null', {
             encoding: 'utf-8',
             stdio: ['pipe', 'pipe', 'ignore'],
             cwd: path.join(__dirname, '../..')
           }).trim();
-        } catch (e2) {
+        } catch (e3) {
           // Pas de tags disponibles
         }
       }

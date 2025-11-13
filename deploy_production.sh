@@ -78,10 +78,22 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
         info "📌 Commit actuel: $PREVIOUS_COMMIT_SHORT ($(git log -1 --format='%s' $PREVIOUS_COMMIT 2>/dev/null || echo 'unknown'))"
     fi
     
-    # Sauvegarder les modifications locales si elles existent
+    # Récupérer les tags distants avant de vérifier les modifications
+    info "🔄 Récupération des tags distants..."
+    git fetch origin --tags --quiet 2>/dev/null || warn "Impossible de récupérer les tags distants"
+    
+    # Sauvegarder les modifications locales si elles existent (en excluant les fichiers générés)
     if ! git diff-index --quiet HEAD -- 2>/dev/null; then
-        warn "Modifications locales détectées, création d'un stash..."
-        git stash save "Stash avant déploiement production $(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+        # Vérifier s'il y a des modifications autres que les fichiers générés
+        MODIFIED_FILES=$(git diff-index --name-only HEAD -- 2>/dev/null | grep -v "frontend/src/version.ts" || true)
+        if [ ! -z "$MODIFIED_FILES" ]; then
+            warn "Modifications locales détectées, création d'un stash..."
+            git stash save "Stash avant déploiement production $(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
+        else
+            # Seulement version.ts modifié, on le restaure
+            info "ℹ️  Seul le fichier version.ts (généré) est modifié, restauration..."
+            git checkout -- frontend/src/version.ts 2>/dev/null || true
+        fi
     fi
     
     # Nettoyer les anciens stashes de déploiement (garder seulement les 5 derniers)
@@ -96,9 +108,9 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
         info "✅ Anciens stashes nettoyés"
     fi
     
-    # Passer sur main et récupérer les dernières modifications
+    # Passer sur main et récupérer les dernières modifications (avec tags)
     info "🔄 Récupération des changements depuis origin/main..."
-    git fetch origin main 2>/dev/null || warn "Impossible de récupérer depuis origin/main"
+    git fetch origin main --tags 2>/dev/null || warn "Impossible de récupérer depuis origin/main"
     
     # Vérifier s'il y a des nouveaux commits
     LOCAL_COMMIT=$(git rev-parse main 2>/dev/null || echo "")
