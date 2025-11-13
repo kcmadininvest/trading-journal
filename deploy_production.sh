@@ -118,16 +118,16 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
                 info "   ... et $(($REMAINING - 5)) autres commits"
             fi
             
-            # Afficher le dernier tag disponible (pas seulement celui du commit)
-            LATEST_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --abbrev=0 $REMOTE_COMMIT 2>/dev/null || echo "")
+            # Afficher le dernier tag disponible (par version, pas seulement celui du commit)
+            LATEST_TAG=$(git tag --sort=-version:refname 2>/dev/null | head -1 || git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --abbrev=0 $REMOTE_COMMIT 2>/dev/null || echo "")
             if [ ! -z "$LATEST_TAG" ]; then
                 info "🏷️  Version: $LATEST_TAG"
             fi
         fi
     else
         info "✅ Déjà à jour avec origin/main"
-        # Afficher le dernier tag disponible
-        CURRENT_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --exact-match HEAD 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "")
+        # Afficher le dernier tag disponible (par version)
+        CURRENT_TAG=$(git tag --sort=-version:refname 2>/dev/null | head -1 || git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --exact-match HEAD 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "")
         if [ ! -z "$CURRENT_TAG" ]; then
             info "🏷️  Version actuelle: $CURRENT_TAG"
         fi
@@ -575,7 +575,7 @@ echo ""
 
 if [ ! -z "$CURRENT_COMMIT" ] && [ ! -z "$PREVIOUS_COMMIT" ] && [ "$PREVIOUS_COMMIT" != "$CURRENT_COMMIT" ]; then
     echo "🎉 Nouvelle release de la branche main déployée avec succès !"
-    CURRENT_TAG=$(git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --exact-match HEAD 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "")
+    CURRENT_TAG=$(git tag --sort=-version:refname 2>/dev/null | head -1 || git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --exact-match HEAD 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "")
     if [ ! -z "$CURRENT_TAG" ]; then
         echo "🏷️  Version déployée: $CURRENT_TAG"
     fi
