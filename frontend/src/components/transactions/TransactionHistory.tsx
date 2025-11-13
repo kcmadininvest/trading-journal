@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { accountTransactionsService, AccountTransaction } from '../../services/accountTransactions';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrency } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
+import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 
 interface TransactionHistoryProps {
   tradingAccountId?: number;
@@ -17,10 +18,14 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 }) => {
   const { preferences } = usePreferences();
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
+  const [allTransactions, setAllTransactions] = useState<AccountTransaction[]>([]); // Toutes les transactions pour les compteurs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'deposit' | 'withdrawal'>('all');
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<AccountTransaction | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadTransactions = async () => {
     setLoading(true);
@@ -36,6 +41,14 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       
       const data = await accountTransactionsService.list(params);
       setTransactions(data);
+
+      // Charger toutes les transactions (sans filtre) pour les compteurs
+      const allParams: any = {};
+      if (tradingAccountId) {
+        allParams.trading_account = tradingAccountId;
+      }
+      const allData = await accountTransactionsService.list(allParams);
+      setAllTransactions(allData);
 
       // Charger le solde actuel si un compte est sélectionné
       if (tradingAccountId) {
@@ -58,19 +71,39 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tradingAccountId, filterType]);
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) {
-      return;
-    }
+  // Calculer les compteurs
+  const totalCount = useMemo(() => allTransactions.length, [allTransactions]);
+  const depositCount = useMemo(() => 
+    allTransactions.filter(t => t.transaction_type === 'deposit').length,
+    [allTransactions]
+  );
+  const withdrawalCount = useMemo(() => 
+    allTransactions.filter(t => t.transaction_type === 'withdrawal').length,
+    [allTransactions]
+  );
 
+  const handleDeleteClick = (transaction: AccountTransaction) => {
+    setTransactionToDelete(transaction);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!transactionToDelete || !transactionToDelete.id) return;
+    
+    setIsDeleting(true);
     try {
-      await accountTransactionsService.delete(id);
+      await accountTransactionsService.delete(transactionToDelete.id);
       loadTransactions();
       if (onDelete) {
-        onDelete(id);
+        onDelete(transactionToDelete.id);
       }
+      setDeleteModalOpen(false);
+      setTransactionToDelete(null);
     } catch (err: any) {
-      alert(err.message || 'Erreur lors de la suppression');
+      console.error('Erreur lors de la suppression:', err);
+      // L'erreur sera gérée par le composant parent si nécessaire
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -101,33 +134,54 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         <div className="flex gap-2">
           <button
             onClick={() => setFilterType('all')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               filterType === 'all'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             Tous
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              filterType === 'all'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+            }`}>
+              {totalCount}
+            </span>
           </button>
           <button
             onClick={() => setFilterType('deposit')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               filterType === 'deposit'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             Dépôts
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              filterType === 'deposit'
+                ? 'bg-green-500 text-white'
+                : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+            }`}>
+              {depositCount}
+            </span>
           </button>
           <button
             onClick={() => setFilterType('withdrawal')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               filterType === 'withdrawal'
                 ? 'bg-orange-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             Retraits
+            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              filterType === 'withdrawal'
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
+            }`}>
+              {withdrawalCount}
+            </span>
           </button>
         </div>
 
@@ -233,7 +287,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                           )}
                           {onDelete && (
                             <button
-                              onClick={() => handleDelete(transaction.id)}
+                              onClick={() => handleDeleteClick(transaction)}
                               className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                               title="Supprimer"
                             >
@@ -252,6 +306,20 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           </table>
         </div>
       )}
+
+      {/* Modale de confirmation de suppression */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setTransactionToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Supprimer la transaction"
+        message="Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action est irréversible."
+        isLoading={isDeleting}
+        confirmButtonText="Supprimer"
+      />
     </div>
   );
 };

@@ -57,7 +57,23 @@ class AccountTransactionsService {
       throw new Error(error.detail || error.message || 'Une erreur est survenue');
     }
 
-    return response.json();
+    // Pour les requêtes DELETE, la réponse peut être vide (204 No Content)
+    if (options.method === 'DELETE' || response.status === 204) {
+      return undefined as T;
+    }
+
+    // Vérifier si la réponse a du contenu avant de parser le JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      return undefined as T;
+    }
+
+    const text = await response.text();
+    if (!text) {
+      return undefined as T;
+    }
+
+    return JSON.parse(text);
   }
 
   /**
