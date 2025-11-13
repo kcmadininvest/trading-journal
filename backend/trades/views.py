@@ -12,7 +12,7 @@ import pytz
 from decimal import Decimal
 from collections import defaultdict
 
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -30,6 +30,7 @@ from .serializers import (
     CurrencySerializer,
     TradingGoalSerializer,
     TradingGoalProgressSerializer,
+    AccountTransactionSerializer,
 )
 from .utils import TopStepCSVImporter
 
@@ -166,6 +167,110 @@ class CurrencyViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return Currency.objects.all()
+
+
+class AccountTransactionViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les transactions de compte (dépôts et retraits).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = AccountTransactionSerializer  # type: ignore
+    
+    def get_queryset(self):
+        """Retourne uniquement les transactions de l'utilisateur connecté."""
+        if not self.request.user.is_authenticated:
+            return AccountTransaction.objects.none()  # type: ignore
+        
+        queryset = AccountTransaction.objects.filter(user=self.request.user)  # type: ignore
+        
+        # Filtre par compte de trading (optionnel)
+        trading_account_id = self.request.query_params.get('trading_account', None)
+        if trading_account_id:
+            queryset = queryset.filter(trading_account_id=trading_account_id)
+        
+        # Filtre par type de transaction (optionnel)
+        transaction_type = self.request.query_params.get('transaction_type', None)
+        if transaction_type:
+            queryset = queryset.filter(transaction_type=transaction_type)
+        
+        # Filtre par date de début (optionnel)
+        start_date = self.request.query_params.get('start_date', None)
+        if start_date:
+            try:
+                start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+                queryset = queryset.filter(transaction_date__gte=start_dt)
+            except ValueError:
+                pass
+        
+        # Filtre par date de fin (optionnel)
+        end_date = self.request.query_params.get('end_date', None)
+        if end_date:
+            try:
+                end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+                # Ajouter 23h59 pour inclure toute la journée
+                end_dt = end_dt.replace(hour=23, minute=59, second=59)
+                queryset = queryset.filter(transaction_date__lte=end_dt)
+            except ValueError:
+                pass
+        
+        return queryset.select_related('trading_account', 'user').order_by('-transaction_date', '-created_at')
+    
+    def perform_create(self, serializer):
+        """Associe automatiquement la transaction à l'utilisateur connecté."""
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def balance(self, request):
+        """
+        Retourne le solde actuel d'un compte en tenant compte des transactions.
+        """
+        trading_account_id = request.query_params.get('trading_account', None)
+        if not trading_account_id:
+            return Response(
+                {'error': 'Le paramètre trading_account est requis'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            account = TradingAccount.objects.get(id=trading_account_id, user=request.user)  # type: ignore
+        except TradingAccount.DoesNotExist:  # type: ignore
+            return Response(
+                {'error': 'Compte de trading non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Calculer le solde initial
+        initial_capital = account.initial_capital or Decimal('0')
+        
+        # Calculer le PnL total des trades
+        trades = account.topstep_trades.all()
+        total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+        
+        # Calculer le total des transactions (dépôts - retraits)
+        transactions = account.transactions.all()
+        total_deposits = transactions.filter(transaction_type='deposit').aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0')
+        total_withdrawals = transactions.filter(transaction_type='withdrawal').aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0')
+        net_transactions = total_deposits - total_withdrawals
+        
+        # Solde actuel = capital initial + PnL + transactions nettes
+        current_balance = initial_capital + total_pnl + net_transactions
+        
+        return Response({
+            'trading_account_id': account.id,
+            'trading_account_name': account.name,
+            'initial_capital': str(initial_capital),
+            'total_pnl': str(total_pnl),
+            'total_deposits': str(total_deposits),
+            'total_withdrawals': str(total_withdrawals),
+            'net_transactions': str(net_transactions),
+            'current_balance': str(current_balance),
+            'currency': account.currency,
+        })
+
 
 class TopStepTradeViewSet(viewsets.ModelViewSet):
     """

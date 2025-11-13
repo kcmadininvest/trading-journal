@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -709,3 +709,55 @@ class TradingGoalProgressSerializer(serializers.Serializer):
     status = serializers.CharField()
     remaining_days = serializers.IntegerField()
     remaining_amount = serializers.DecimalField(max_digits=18, decimal_places=9)
+
+
+class AccountTransactionSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les transactions de compte (dépôts et retraits).
+    """
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    trading_account_name = serializers.CharField(source='trading_account.name', read_only=True)
+    signed_amount = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    
+    class Meta:
+        model = AccountTransaction
+        fields = [
+            'id',
+            'user',
+            'user_username',
+            'trading_account',
+            'trading_account_name',
+            'transaction_type',
+            'amount',
+            'signed_amount',
+            'transaction_date',
+            'description',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def validate_trading_account(self, value):
+        """Valide que le compte appartient à l'utilisateur."""
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            if value.user != request.user:
+                raise serializers.ValidationError("Ce compte ne vous appartient pas.")
+        return value
+    
+    def validate_amount(self, value):
+        """Valide que le montant est positif."""
+        if value <= 0:
+            raise serializers.ValidationError("Le montant doit être positif.")
+        return value
+    
+    def create(self, validated_data):
+        """Assigne automatiquement l'utilisateur lors de la création."""
+        request = self.context.get('request')
+        if request and request.user and request.user.is_authenticated:
+            validated_data['user'] = request.user
+        else:
+            raise serializers.ValidationError('Utilisateur non authentifié')
+        
+        instance = AccountTransaction.objects.create(**validated_data)
+        return instance

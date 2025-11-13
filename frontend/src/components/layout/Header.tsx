@@ -56,6 +56,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
       'position-strategies': t('navigation:positionStrategies'),
       analytics: t('navigation:analytics'),
       accounts: t('navigation:accounts'),
+      transactions: t('navigation:transactions', { defaultValue: 'Transactions' }),
       goals: t('navigation:goals'),
       users: t('navigation:users'),
       settings: t('navigation:settings'),
@@ -69,6 +70,9 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
     }
     if (currentPage === 'goals') {
       return t('navigation:header.goalsDescription');
+    }
+    if (currentPage === 'transactions') {
+      return 'Gérez les dépôts et retraits de vos comptes de trading';
     }
     return `${t('navigation:header.managementPrefix')} ${pageTitle.toLowerCase()}`;
   }, [currentPage, pageTitle, t]);
