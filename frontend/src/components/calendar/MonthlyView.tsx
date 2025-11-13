@@ -166,7 +166,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
 
       {/* Calendrier */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Vue grille pour desktop (md et plus) */}
+        <div className="hidden md:block overflow-x-auto">
           {/* En-têtes des colonnes */}
           <div className="grid grid-cols-3 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 min-w-[360px]">
             <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
@@ -237,6 +238,70 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
             <div className="grid grid-cols-3 bg-gray-100 dark:bg-gray-700 border-t-2 border-gray-300 dark:border-gray-600">
               <div className="col-span-3 px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">
                 {t('calendar:total')} {year} : <span className={`font-bold ${getPnlColor(yearlyTotal)}`}>{formatPnl(yearlyTotal)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Vue liste pour mobile (moins de md) */}
+        <div className="md:hidden">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {calendarCells.map((month) => {
+              const monthData = monthlyDataMap.get(month);
+              const monthlyPnl = monthData?.pnl || 0;
+              const tradeCount = monthData?.trade_count || 0;
+              const isCurrentMonth = year === currentYear && month === currentMonth;
+
+              return (
+                <div
+                  key={month}
+                  className={`px-4 py-4 mx-2 rounded-lg ${
+                    isCurrentMonth 
+                      ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400' 
+                      : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  } ${monthlyPnl > 0 ? 'border-l-4 border-green-500' : monthlyPnl < 0 ? 'border-l-4 border-red-500' : ''}`}
+                  onClick={() => onMonthClick(month)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      {/* Nom du mois */}
+                      <div className="flex flex-col min-w-[100px]">
+                        <span className={`text-base font-bold ${isCurrentMonth ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                          {monthNames[month - 1]}
+                        </span>
+                        {tradeCount > 0 && (
+                          <Tooltip 
+                            content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} 
+                            position="top"
+                          >
+                            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {tradeCount} {tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}
+                            </span>
+                          </Tooltip>
+                        )}
+                      </div>
+
+                      {/* PnL */}
+                      {monthlyPnl !== 0 && (
+                        <div className={`text-lg font-bold ${getPnlColor(monthlyPnl)} flex-1 text-right`}>
+                          {formatPnl(monthlyPnl)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Total annuel */}
+            <div className="px-4 py-4 mx-2 mt-2 bg-gray-100 dark:bg-gray-700 rounded-lg border-t-2 border-gray-300 dark:border-gray-600">
+              <div className="flex items-center justify-between">
+                <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  {t('calendar:total')} {year}
+                </span>
+                <span className={`text-xl font-bold ${getPnlColor(yearlyTotal)}`}>
+                  {formatPnl(yearlyTotal)}
+                </span>
               </div>
             </div>
           </div>

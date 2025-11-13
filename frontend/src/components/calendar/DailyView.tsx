@@ -257,7 +257,8 @@ const DailyView: React.FC<DailyViewProps> = ({
 
       {/* Calendrier */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Vue grille pour desktop (md et plus) */}
+        <div className="hidden md:block overflow-x-auto">
           {/* En-têtes des jours */}
           <div className="grid grid-cols-8 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 min-w-[640px]">
             {dayNames.map((dayName, index) => (
@@ -424,6 +425,167 @@ const DailyView: React.FC<DailyViewProps> = ({
               </div>
               <div className={`px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-bold text-center ${getPnlColor(monthlyPnlForSaturday)}`}>
                 {formatPnl(monthlyPnlForSaturday)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Vue liste pour mobile (moins de md) */}
+        <div className="md:hidden">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {Array.from({ length: rows }).map((_, rowIndex) => {
+              const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
+              
+              // Calculer le PnL total pour cette semaine
+              const weeklyPnl = weekCells.reduce((acc: number, day) => {
+                if (day !== null) {
+                  const dayData = dailyDataMap.get(day);
+                  return acc + (dayData?.pnl || 0);
+                }
+                return acc;
+              }, 0);
+
+              // Filtrer les jours valides (non null) pour cette semaine
+              const validDays = weekCells.filter(day => day !== null) as number[];
+
+              if (validDays.length === 0) return null;
+
+              return (
+                <div key={rowIndex} className="py-2">
+                  {/* En-tête de semaine */}
+                  <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                        {t('calendar:week')} {rowIndex + 1}
+                      </span>
+                      {weeklyPnl !== 0 && (
+                        <span className={`text-sm font-bold ${getPnlColor(weeklyPnl)}`}>
+                          {formatPnl(weeklyPnl)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Liste des jours de la semaine */}
+                  <div className="space-y-1">
+                    {validDays.map((dayNumber) => {
+                      const dayData = dailyDataMap.get(dayNumber);
+                      const pnl = dayData?.pnl || 0;
+                      const tradeCount = dayData?.trade_count || 0;
+                      const isToday = year === currentYear && month === currentMonth && dayNumber === currentDay;
+                      const date = new Date(year, month - 1, dayNumber);
+                      const dayOfWeek = date.getDay();
+                      const dayName = dayNames[dayOfWeek];
+
+                      return (
+                        <div
+                          key={dayNumber}
+                          className={`px-4 py-3 mx-2 rounded-lg ${
+                            isToday 
+                              ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400' 
+                              : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          } ${pnl > 0 ? 'border-l-4 border-green-500' : pnl < 0 ? 'border-l-4 border-red-500' : ''}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {/* Numéro du jour et nom */}
+                              <div className="flex flex-col items-center min-w-[50px]">
+                                <span className={`text-lg font-bold ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                                  {dayNumber}
+                                </span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                                  {dayName}
+                                </span>
+                              </div>
+
+                              {/* PnL */}
+                              {pnl !== 0 && (
+                                <div className={`text-base font-semibold ${getPnlColor(pnl)} flex-1`}>
+                                  {formatPnl(pnl)}
+                                </div>
+                              )}
+
+                              {/* Badge de trades et actions */}
+                              <div className="flex items-center gap-2">
+                                {tradeCount > 0 && (
+                                  <>
+                                    {/* Pastille de statut de stratégie */}
+                                    {dayData?.strategy_compliance_status && dayData.strategy_compliance_status !== 'unknown' && (
+                                      <Tooltip 
+                                        content={
+                                          dayData.strategy_compliance_status === 'compliant' ? t('calendar:strategyRespected') :
+                                          dayData.strategy_compliance_status === 'non_compliant' ? t('calendar:strategyNotRespected') :
+                                          dayData.strategy_compliance_status === 'partial' ? t('calendar:strategyPartiallyRespected') :
+                                          ''
+                                        }
+                                        position="top"
+                                      >
+                                        <div
+                                          className={`w-4 h-4 rounded-full ${getStrategyStatusColor(dayData.strategy_compliance_status)} ${
+                                            dayData.strategy_compliance_status === 'compliant' ? 'animate-pulse' : ''
+                                          }`}
+                                        />
+                                      </Tooltip>
+                                    )}
+
+                                    {/* Badge nombre de trades */}
+                                    <Tooltip 
+                                      content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} 
+                                      position="top"
+                                    >
+                                      <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full">
+                                        {tradeCount}
+                                      </span>
+                                    </Tooltip>
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-1">
+                                      <Tooltip content={t('calendar:viewDayTrades')} position="top">
+                                        <button
+                                          onClick={() => handleTradesClick(dayNumber)}
+                                          className="p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors"
+                                          aria-label={t('calendar:viewTrades')}
+                                        >
+                                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                          </svg>
+                                        </button>
+                                      </Tooltip>
+                                      <Tooltip content={t('calendar:manageStrategyCompliance')} position="top">
+                                        <button
+                                          onClick={() => handleStrategyClick(dayNumber)}
+                                          className="p-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 transition-colors"
+                                          aria-label={t('calendar:manageStrategy')}
+                                        >
+                                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                          </svg>
+                                        </button>
+                                      </Tooltip>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Total mensuel */}
+            <div className="px-4 py-3 mx-2 mt-2 bg-gray-100 dark:bg-gray-700 rounded-lg border-t-2 border-gray-300 dark:border-gray-600">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {t('calendar:total')} {monthNames[month - 1]} {year}
+                </span>
+                <span className={`text-lg font-bold ${getPnlColor(monthlyPnlForSaturday)}`}>
+                  {formatPnl(monthlyPnlForSaturday)}
+                </span>
               </div>
             </div>
           </div>
