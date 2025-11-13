@@ -42,18 +42,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
     monthlyDataMap.set(month.month, month);
   });
 
-  // Calculer le PnL hebdomadaire par mois
-  const weeklyByMonth = new Map<number, number>();
-  weeklyData.forEach(week => {
-    if (week.saturday_date) {
-      const date = new Date(week.saturday_date);
-      const month = date.getMonth() + 1;
-      const existing = weeklyByMonth.get(month) || 0;
-      weeklyByMonth.set(month, existing + week.pnl);
-    }
-  });
-
-  // Organiser les mois en grille : 3 mois par ligne + 1 colonne hebdomadaire = 4 colonnes
+  // Organiser les mois en grille : 3 mois par ligne
   const monthsPerRow = 3;
   const rows = Math.ceil(12 / monthsPerRow);
 
@@ -84,8 +73,8 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   const getMonthBorderClasses = (month: number, colIndex: number, rowIndex: number): string => {
     const isCurrentMonth = year === currentYear && month === currentMonth;
     if (!isCurrentMonth) {
-      // Pour les mois non-actuels, garder la bordure droite standard
-      return 'border-r border-gray-200 dark:border-gray-700';
+      // Pour les mois non-actuels, ajouter la bordure droite sauf pour la dernière colonne
+      return colIndex < monthsPerRow - 1 ? 'border-r border-gray-200 dark:border-gray-700' : '';
     }
     // Pour le mois actuel, utiliser border-2 sur tous les côtés
     // La bordure bleue 2px remplace visuellement celle du divide-y (1px grise)
@@ -109,7 +98,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {/* Sélecteur de vue à gauche */}
         {onViewTypeChange && (
           <div className="inline-flex rounded-md shadow-sm" role="group">
@@ -139,7 +128,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
         )}
 
         {/* Navigation de période centrée */}
-        <div className="flex items-center justify-center space-x-2 sm:space-x-4">
+        <div className="flex items-center justify-center flex-1 space-x-2 sm:space-x-4">
           <button
             onClick={() => navigateYear('prev')}
             className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
@@ -177,32 +166,25 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
 
       {/* Calendrier */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Vue grille pour desktop (md et plus) */}
+        <div className="hidden md:block overflow-x-auto">
           {/* En-têtes des colonnes */}
-          <div className="grid grid-cols-4 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 min-w-[480px]">
+          <div className="grid grid-cols-3 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 min-w-[360px]">
             <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
             </div>
             <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
             </div>
-            <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 border-r border-gray-200 dark:border-gray-600">
-            </div>
-            <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/30">
-              {t('calendar:weeklyPnL')}
+            <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300">
             </div>
           </div>
 
           {/* Grille du calendrier */}
-          <div className="divide-y divide-gray-200 dark:divide-gray-700 min-w-[480px]">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700 min-w-[360px]">
             {Array.from({ length: rows }).map((_, rowIndex) => {
             const monthCells = calendarCells.slice(rowIndex * monthsPerRow, (rowIndex + 1) * monthsPerRow);
-            
-            // Calculer le PnL hebdomadaire pour cette ligne (somme des 3 mois de la ligne)
-            const weeklyPnlForRow = monthCells.reduce((sum, month) => {
-              return sum + (weeklyByMonth.get(month) || 0);
-            }, 0);
 
             return (
-              <div key={rowIndex} className="grid grid-cols-4">
+              <div key={rowIndex} className="grid grid-cols-3">
                 {monthCells.map((month, colIndex) => {
                   const monthData = monthlyDataMap.get(month);
                   const monthlyPnl = monthData?.pnl || 0;
@@ -241,7 +223,6 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                 {/* Cellules vides si moins de 3 mois dans la ligne */}
                 {monthCells.length < monthsPerRow && Array.from({ length: monthsPerRow - monthCells.length }).map((_, emptyIndex) => {
                   const emptyColIndex = monthCells.length + emptyIndex;
-                  // Ne pas ajouter de bordure droite si c'est la dernière colonne avant la colonne hebdomadaire
                   return (
                     <div
                       key={`empty-${emptyIndex}`}
@@ -249,30 +230,78 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
                     />
                   );
                 })}
-
-                {/* Colonne PnL Hebdomadaire pour cette ligne */}
-                <div
-                  className={`h-24 sm:h-32 p-1 sm:p-2 bg-blue-50 dark:bg-blue-900/30 ${weeklyPnlForRow > 0 ? 'bg-green-50 dark:bg-green-900/20' : weeklyPnlForRow < 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
-                >
-                  <div className="flex flex-col h-full justify-center">
-                    {weeklyPnlForRow !== 0 && (
-                      <div className={`text-xs sm:text-base font-semibold text-center ${getPnlColor(weeklyPnlForRow)}`}>
-                        {formatPnl(weeklyPnlForRow)}
-                      </div>
-                    )}
-                  </div>
-                </div>
               </div>
             );
           })}
 
-            {/* Ligne supplémentaire avec le total annuel dans la colonne PnL Hebdomadaire */}
-            <div className="grid grid-cols-4 bg-gray-100 dark:bg-gray-700 border-t-2 border-gray-300 dark:border-gray-600">
-              <div className="col-span-3 px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600">
-                {t('calendar:total')} {year}
+            {/* Ligne supplémentaire avec le total annuel */}
+            <div className="grid grid-cols-3 bg-gray-100 dark:bg-gray-700 border-t-2 border-gray-300 dark:border-gray-600">
+              <div className="col-span-3 px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100">
+                {t('calendar:total')} {year} : <span className={`font-bold ${getPnlColor(yearlyTotal)}`}>{formatPnl(yearlyTotal)}</span>
               </div>
-              <div className={`px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-bold text-center ${getPnlColor(yearlyTotal)}`}>
-                {formatPnl(yearlyTotal)}
+            </div>
+          </div>
+        </div>
+
+        {/* Vue liste pour mobile (moins de md) */}
+        <div className="md:hidden">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {calendarCells.map((month) => {
+              const monthData = monthlyDataMap.get(month);
+              const monthlyPnl = monthData?.pnl || 0;
+              const tradeCount = monthData?.trade_count || 0;
+              const isCurrentMonth = year === currentYear && month === currentMonth;
+
+              return (
+                <div
+                  key={month}
+                  className={`px-4 py-4 mx-2 rounded-lg ${
+                    isCurrentMonth 
+                      ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400' 
+                      : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  } ${monthlyPnl > 0 ? 'border-l-4 border-green-500' : monthlyPnl < 0 ? 'border-l-4 border-red-500' : ''}`}
+                  onClick={() => onMonthClick(month)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      {/* Nom du mois */}
+                      <div className="flex flex-col min-w-[100px]">
+                        <span className={`text-base font-bold ${isCurrentMonth ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                          {monthNames[month - 1]}
+                        </span>
+                        {tradeCount > 0 && (
+                          <Tooltip 
+                            content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} 
+                            position="top"
+                          >
+                            <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {tradeCount} {tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}
+                            </span>
+                          </Tooltip>
+                        )}
+                      </div>
+
+                      {/* PnL */}
+                      {monthlyPnl !== 0 && (
+                        <div className={`text-lg font-bold ${getPnlColor(monthlyPnl)} flex-1 text-right`}>
+                          {formatPnl(monthlyPnl)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Total annuel */}
+            <div className="px-4 py-4 mx-2 mt-2 bg-gray-100 dark:bg-gray-700 rounded-lg border-t-2 border-gray-300 dark:border-gray-600">
+              <div className="flex items-center justify-between">
+                <span className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                  {t('calendar:total')} {year}
+                </span>
+                <span className={`text-xl font-bold ${getPnlColor(yearlyTotal)}`}>
+                  {formatPnl(yearlyTotal)}
+                </span>
               </div>
             </div>
           </div>
