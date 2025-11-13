@@ -247,7 +247,7 @@ function AccountBalanceChart({
         },
       },
       y: {
-        beginAtZero: true,
+        beginAtZero: false,
         ticks: {
           color: chartThemeColors.textSecondary,
           font: {
@@ -268,6 +268,16 @@ function AccountBalanceChart({
         },
         title: {
           display: false,
+        },
+        // Adapter automatiquement l'échelle aux données avec un padding
+        afterDataLimits: (scale: any) => {
+          const min = scale.min;
+          const max = scale.max;
+          const range = max - min;
+          // Ajouter 10% de padding en haut et en bas pour une meilleure lisibilité
+          const padding = range * 0.1;
+          scale.min = min - padding;
+          scale.max = max + padding;
         },
       },
     },
