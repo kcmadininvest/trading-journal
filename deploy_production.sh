@@ -371,6 +371,7 @@ fi
 [ -f "$FRONTEND_DIR/build/logo192.png" ] && \cp -f "$FRONTEND_DIR/build/logo192.png" "$TEMPLATE_DIR/logo192.png"
 [ -f "$FRONTEND_DIR/build/logo512.png" ] && \cp -f "$FRONTEND_DIR/build/logo512.png" "$TEMPLATE_DIR/logo512.png"
 # Si les fichiers ne sont pas dans build, les copier depuis public
+[ ! -f "$TEMPLATE_DIR/favicon.ico" ] && [ -f "$FRONTEND_DIR/public/favicon.ico" ] && \cp -f "$FRONTEND_DIR/public/favicon.ico" "$TEMPLATE_DIR/favicon.ico"
 [ ! -f "$TEMPLATE_DIR/favicon.svg" ] && [ -f "$FRONTEND_DIR/public/favicon.svg" ] && \cp -f "$FRONTEND_DIR/public/favicon.svg" "$TEMPLATE_DIR/favicon.svg"
 [ ! -f "$TEMPLATE_DIR/logo192.png" ] && [ -f "$FRONTEND_DIR/public/logo192.png" ] && \cp -f "$FRONTEND_DIR/public/logo192.png" "$TEMPLATE_DIR/logo192.png"
 [ ! -f "$TEMPLATE_DIR/logo512.png" ] && [ -f "$FRONTEND_DIR/public/logo512.png" ] && \cp -f "$FRONTEND_DIR/public/logo512.png" "$TEMPLATE_DIR/logo512.png"
