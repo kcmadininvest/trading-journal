@@ -259,70 +259,50 @@ const DailyView: React.FC<DailyViewProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           {/* En-têtes des jours */}
-          <div className="grid grid-cols-7 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 min-w-[560px]">
+          <div className="grid grid-cols-8 bg-gray-100 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 min-w-[640px]">
             {dayNames.map((dayName, index) => (
               <div
                 key={index}
                 className={`px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 ${
-                  index < 6 ? 'border-r border-gray-200 dark:border-gray-600' : ''
-                } ${index === 6 ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
+                  index < 6 ? 'border-r border-gray-200 dark:border-gray-600' : index === 6 ? 'border-r-2 border-gray-400 dark:border-gray-500' : ''
+                }`}
               >
                 {dayName}
               </div>
             ))}
+            <div className="px-1 sm:px-2 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/30">
+              {t('calendar:weeklyPnL')}
+            </div>
           </div>
 
           {/* Grille du calendrier */}
-          <div className="min-w-[560px]">
+          <div className="min-w-[640px]">
             {Array.from({ length: rows }).map((_, rowIndex) => {
             // Utiliser finalCalendarCells qui garantit que les jours hors du mois sont null
             const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
             
-            // Calculer le PnL total et le nombre de trades pour cette semaine (ligne)
+            // Calculer le PnL total pour cette semaine (ligne)
             // Ne compter que les jours qui font partie du mois en cours (day !== null)
-            const weeklyStats = weekCells.reduce((acc: { pnl: number; tradeCount: number }, day) => {
+            const weeklyPnl = weekCells.reduce((acc: number, day) => {
               if (day !== null) {
                 const dayData = dailyDataMap.get(day);
-                return {
-                  pnl: acc.pnl + (dayData?.pnl || 0),
-                  tradeCount: acc.tradeCount + (dayData?.trade_count || 0)
-                };
+                return acc + (dayData?.pnl || 0);
               }
               return acc;
-            }, { pnl: 0, tradeCount: 0 });
-            const weeklyPnl = weeklyStats.pnl;
-            const weeklyTradeCount = weeklyStats.tradeCount;
+            }, 0);
 
             return (
-              <div key={rowIndex} className={`grid grid-cols-7 ${rowIndex > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}>
+              <div key={rowIndex} className={`grid grid-cols-8 ${rowIndex > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}>
                 {weekCells.map((day, colIndex) => {
-                  const isSaturday = colIndex === 6;
-                  
-                  // Si le jour est null (hors mois), afficher une cellule grisée
-                  // Mais si c'est un samedi, afficher quand même le solde hebdomadaire
+                  // Si le jour est null (hors mois), afficher une cellule grisée vide
                   if (day === null) {
-                    if (isSaturday) {
-                      // Pour les samedis hors du mois, afficher le solde hebdomadaire dans une cellule grisée
-                      return (
-                        <div
-                          key={colIndex}
-                          className="h-24 sm:h-32 p-1 sm:p-2 bg-gray-200 dark:bg-gray-700"
-                        >
-                          <div className="flex flex-col h-full justify-end items-center mt-auto">
-                            {weeklyPnl !== 0 && (
-                              <div className={`text-base font-semibold text-center ${getPnlColor(weeklyPnl)}`}>
-                                {formatPnl(weeklyPnl)}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    }
-                    // Pour les autres jours hors du mois, cellule grisée vide
                     return (
                       <div
                         key={colIndex}
-                        className={`h-24 sm:h-32 bg-gray-200 dark:bg-gray-700 ${colIndex < 6 ? 'border-r border-gray-300 dark:border-gray-600' : ''}`}
+                        className={`h-24 sm:h-32 bg-gray-200 dark:bg-gray-700 ${
+                          colIndex < 6 ? 'border-r border-gray-300 dark:border-gray-600' : 
+                          colIndex === 6 ? 'border-r-2 border-gray-400 dark:border-gray-500' : ''
+                        }`}
                       />
                     );
                   }
@@ -337,125 +317,109 @@ const DailyView: React.FC<DailyViewProps> = ({
                   return (
                     <div
                       key={colIndex}
-                      className={`h-24 sm:h-32 p-1 sm:p-2 ${colIndex < 6 ? 'border-r border-gray-200 dark:border-gray-700' : ''} ${
-                        isSaturday 
-                          ? `bg-blue-50 dark:bg-blue-900/30 ${weeklyPnl > 0 ? 'bg-green-50 dark:bg-green-900/20' : weeklyPnl < 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`
-                          : `${getDayBgColor(dayNumber, pnl)} ${isToday ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-inset' : ''}`
-                      }`}
+                      className={`h-24 sm:h-32 p-1 sm:p-2 cursor-pointer ${
+                        colIndex < 6 ? 'border-r border-gray-200 dark:border-gray-700' : 
+                        colIndex === 6 ? 'border-r-2 border-gray-400 dark:border-gray-500' : ''
+                      } ${getDayBgColor(dayNumber, pnl)} ${isToday ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-inset' : ''}`}
                     >
-                      {isSaturday ? (
-                        // Colonne Samedi : afficher le numéro du jour, le badge de trades et le PnL hebdomadaire
-                        <div className="flex flex-col h-full">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className={`text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                              {dayNumber}
-                            </span>
-                            {weeklyTradeCount > 0 && (
+                      {/* Affichage normal pour tous les jours (y compris samedi) */}
+                      <div className="flex flex-col h-full relative">
+                        {/* Pastille de statut de stratégie - centrée dans la cellule */}
+                        {tradeCount > 0 && dayData?.strategy_compliance_status && dayData.strategy_compliance_status !== 'unknown' && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <Tooltip 
+                              content={
+                                dayData.strategy_compliance_status === 'compliant' ? t('calendar:strategyRespected') :
+                                dayData.strategy_compliance_status === 'non_compliant' ? t('calendar:strategyNotRespected') :
+                                dayData.strategy_compliance_status === 'partial' ? t('calendar:strategyPartiallyRespected') :
+                                ''
+                              }
+                              position="top"
+                            >
+                              <div
+                                className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${getStrategyStatusColor(dayData.strategy_compliance_status)} cursor-help pointer-events-auto ${
+                                  dayData.strategy_compliance_status === 'compliant' ? 'animate-pulse' : ''
+                                }`}
+                              />
+                            </Tooltip>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between mb-1 flex-wrap gap-0.5 sm:gap-1 z-10">
+                          <span className={`text-xs sm:text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
+                            {dayNumber}
+                          </span>
+                          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
+                            {/* Actions pour les jours avec trades */}
+                            {tradeCount > 0 && (
+                              <>
+                                <Tooltip content={t('calendar:viewDayTrades')} position="top">
+                                  <button
+                                    onClick={() => handleTradesClick(dayNumber)}
+                                    className="p-0.5 sm:p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors flex-shrink-0"
+                                    aria-label={t('calendar:viewTrades')}
+                                  >
+                                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                  </button>
+                                </Tooltip>
+                                <Tooltip content={t('calendar:manageStrategyCompliance')} position="top">
+                                  <button
+                                    onClick={() => handleStrategyClick(dayNumber)}
+                                    className="p-0.5 sm:p-1 rounded hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 transition-colors flex-shrink-0"
+                                    aria-label={t('calendar:manageStrategy')}
+                                  >
+                                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                  </button>
+                                </Tooltip>
+                              </>
+                            )}
+                            {/* Badge du nombre de trades en dernier */}
+                            {tradeCount > 0 && (
                               <Tooltip 
-                                content={`${weeklyTradeCount} ${weeklyTradeCount > 1 ? t('calendar:trades') : t('calendar:trade')} (${t('calendar:totalWeek')})`} 
+                                content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} 
                                 position="top"
                               >
-                                <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded-full cursor-help">
-                                  {weeklyTradeCount}
+                                <span className="text-[10px] sm:text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1 sm:px-1.5 py-0.5 rounded-full cursor-help flex-shrink-0">
+                                  {tradeCount}
                                 </span>
                               </Tooltip>
                             )}
                           </div>
-                          <div className="flex flex-col h-full justify-end items-center mt-auto">
-                            {weeklyPnl !== 0 && (
-                              <div className={`text-xs sm:text-base font-semibold text-center ${getPnlColor(weeklyPnl)}`}>
-                                {formatPnl(weeklyPnl)}
-                              </div>
-                            )}
-                          </div>
                         </div>
-                      ) : (
-                        // Autres colonnes : affichage normal avec numéro du jour, badge et PnL
-                        <div className="flex flex-col h-full relative">
-                          {/* Pastille de statut de stratégie - centrée dans la cellule */}
-                          {tradeCount > 0 && dayData?.strategy_compliance_status && dayData.strategy_compliance_status !== 'unknown' && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              <Tooltip 
-                                content={
-                                  dayData.strategy_compliance_status === 'compliant' ? t('calendar:strategyRespected') :
-                                  dayData.strategy_compliance_status === 'non_compliant' ? t('calendar:strategyNotRespected') :
-                                  dayData.strategy_compliance_status === 'partial' ? t('calendar:strategyPartiallyRespected') :
-                                  ''
-                                }
-                                position="top"
-                              >
-                                <div
-                                  className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full ${getStrategyStatusColor(dayData.strategy_compliance_status)} cursor-help pointer-events-auto ${
-                                    dayData.strategy_compliance_status === 'compliant' ? 'animate-pulse' : ''
-                                  }`}
-                                />
-                              </Tooltip>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-between mb-1 flex-wrap gap-0.5 sm:gap-1 z-10">
-                            <span className={`text-xs sm:text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
-                              {dayNumber}
-                            </span>
-                            <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
-                              {/* Actions pour les jours avec trades */}
-                              {tradeCount > 0 && (
-                                <>
-                                  <Tooltip content={t('calendar:viewDayTrades')} position="top">
-                                    <button
-                                      onClick={() => handleTradesClick(dayNumber)}
-                                      className="p-0.5 sm:p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors flex-shrink-0"
-                                      aria-label={t('calendar:viewTrades')}
-                                    >
-                                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                      </svg>
-                                    </button>
-                                  </Tooltip>
-                                  <Tooltip content={t('calendar:manageStrategyCompliance')} position="top">
-                                    <button
-                                      onClick={() => handleStrategyClick(dayNumber)}
-                                      className="p-0.5 sm:p-1 rounded hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 transition-colors flex-shrink-0"
-                                      aria-label={t('calendar:manageStrategy')}
-                                    >
-                                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                    </button>
-                                  </Tooltip>
-                                </>
-                              )}
-                              {/* Badge du nombre de trades en dernier */}
-                              {tradeCount > 0 && (
-                                <Tooltip 
-                                  content={`${tradeCount} ${tradeCount > 1 ? t('calendar:trades') : t('calendar:trade')}`} 
-                                  position="top"
-                                >
-                                  <span className="text-[10px] sm:text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1 sm:px-1.5 py-0.5 rounded-full cursor-help flex-shrink-0">
-                                    {tradeCount}
-                                  </span>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </div>
 
-                          {pnl !== 0 && (
-                            <div className={`text-xs sm:text-base font-semibold mt-auto ${getPnlColor(pnl)} z-10 break-words`}>
-                              {formatPnl(pnl)}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        {pnl !== 0 && (
+                          <div className={`text-xs sm:text-base font-semibold mt-auto ${getPnlColor(pnl)} z-10 break-words`}>
+                            {formatPnl(pnl)}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
+                
+                {/* Colonne supplémentaire pour le total hebdomadaire */}
+                <div
+                  className={`h-24 sm:h-32 p-1 sm:p-2 bg-blue-50 dark:bg-blue-900/30 ${weeklyPnl > 0 ? 'bg-green-50 dark:bg-green-900/20' : weeklyPnl < 0 ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
+                >
+                  <div className="flex flex-col h-full justify-center items-center">
+                    {weeklyPnl !== 0 && (
+                      <div className={`text-xs sm:text-base font-semibold text-center ${getPnlColor(weeklyPnl)}`}>
+                        {formatPnl(weeklyPnl)}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })}
 
-            {/* Ligne supplémentaire avec le total mensuel dans la colonne Samedi */}
-            <div className="grid grid-cols-7 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-              <div className="col-span-6 px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 border-r border-gray-200 dark:border-gray-600">
+            {/* Ligne supplémentaire avec le total mensuel */}
+            <div className="grid grid-cols-8 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+              <div className="col-span-7 px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 border-r-2 border-gray-400 dark:border-gray-500">
                 {t('calendar:total')} {monthNames[month - 1]} {year}
               </div>
               <div className={`px-2 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-bold text-center ${getPnlColor(monthlyPnlForSaturday)}`}>
