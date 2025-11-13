@@ -4,6 +4,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrency } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface TransactionHistoryProps {
   tradingAccountId?: number;
@@ -16,6 +17,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const { t } = useI18nTranslation();
   const { preferences } = usePreferences();
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<AccountTransaction[]>([]); // Toutes les transactions pour les compteurs
@@ -122,7 +124,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   if (loading && transactions.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-gray-500 dark:text-gray-400">Chargement...</div>
+        <div className="text-gray-500 dark:text-gray-400">{t('common:loading', { defaultValue: 'Chargement...' })}</div>
       </div>
     );
   }
@@ -140,7 +142,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            Tous
+            {t('transactions:all', { defaultValue: 'Tous' })}
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
               filterType === 'all'
                 ? 'bg-blue-500 text-white'
@@ -157,7 +159,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            Dépôts
+            {t('transactions:deposits', { defaultValue: 'Dépôts' })}
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
               filterType === 'deposit'
                 ? 'bg-green-500 text-white'
@@ -174,7 +176,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
-            Retraits
+            {t('transactions:withdrawals', { defaultValue: 'Retraits' })}
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
               filterType === 'withdrawal'
                 ? 'bg-orange-500 text-white'
@@ -187,7 +189,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
         {currentBalance !== null && (
           <div className="text-sm">
-            <span className="text-gray-600 dark:text-gray-400">Solde actuel: </span>
+            <span className="text-gray-600 dark:text-gray-400">{t('transactions:currentBalance', { defaultValue: 'Solde actuel' })}: </span>
             <span className="font-semibold text-gray-900 dark:text-gray-100">
               {formatCurrency(currentBalance, '$', preferences.number_format, 2)}
             </span>
@@ -204,7 +206,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       {/* Liste des transactions */}
       {transactions.length === 0 ? (
         <div className="text-center p-8 text-gray-500 dark:text-gray-400">
-          Aucune transaction trouvée
+          {t('transactions:noTransactions', { defaultValue: 'Aucune transaction trouvée' })}
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -212,23 +214,23 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Date
+                  {t('transactions:date', { defaultValue: 'Date' })}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Type
+                  {t('transactions:type', { defaultValue: 'Type' })}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Compte
+                  {t('transactions:account', { defaultValue: 'Compte' })}
                 </th>
                 <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Montant
+                  {t('transactions:amount', { defaultValue: 'Montant' })}
                 </th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Description
+                  {t('transactions:description', { defaultValue: 'Description' })}
                 </th>
                 {(onEdit || onDelete) && (
                   <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Actions
+                    {t('transactions:actions', { defaultValue: 'Actions' })}
                   </th>
                 )}
               </tr>
@@ -254,7 +256,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                             : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
                         }`}
                       >
-                        {transaction.transaction_type === 'deposit' ? '📥 Dépôt' : '📤 Retrait'}
+                        {transaction.transaction_type === 'deposit' 
+                          ? `📥 ${t('transactions:deposit', { defaultValue: 'Dépôt' })}` 
+                          : `📤 ${t('transactions:withdrawal', { defaultValue: 'Retrait' })}`}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
@@ -278,7 +282,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                             <button
                               onClick={() => onEdit(transaction)}
                               className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                              title="Modifier"
+                              title={t('transactions:edit', { defaultValue: 'Modifier' })}
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -289,7 +293,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                             <button
                               onClick={() => handleDeleteClick(transaction)}
                               className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              title="Supprimer"
+                              title={t('transactions:delete', { defaultValue: 'Supprimer' })}
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -315,10 +319,10 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           setTransactionToDelete(null);
         }}
         onConfirm={handleDeleteConfirm}
-        title="Supprimer la transaction"
-        message="Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action est irréversible."
+        title={t('transactions:deleteConfirmTitle', { defaultValue: 'Supprimer la transaction' })}
+        message={t('transactions:deleteConfirmMessage', { defaultValue: 'Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action est irréversible.' })}
         isLoading={isDeleting}
-        confirmButtonText="Supprimer"
+        confirmButtonText={t('transactions:delete', { defaultValue: 'Supprimer' })}
       />
     </div>
   );

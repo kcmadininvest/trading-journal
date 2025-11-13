@@ -5,8 +5,10 @@ import { TransactionHistory } from '../components/transactions/TransactionHistor
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { toast } from 'react-hot-toast';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const TransactionsPage: React.FC = () => {
+  const { t } = useI18nTranslation();
   const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
@@ -64,12 +66,12 @@ const TransactionsPage: React.FC = () => {
                 window.location.hash = 'dashboard';
               }}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-              title="Retour au dashboard"
+              title={t('transactions:backToDashboard', { defaultValue: 'Retour au dashboard' })}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              Dashboard
+              {t('transactions:dashboard', { defaultValue: 'Dashboard' })}
             </button>
             <button
               onClick={() => {
@@ -81,7 +83,7 @@ const TransactionsPage: React.FC = () => {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Nouveau dépôt
+              {t('transactions:newDeposit', { defaultValue: 'Nouveau dépôt' })}
             </button>
             <button
               onClick={() => {
@@ -93,7 +95,7 @@ const TransactionsPage: React.FC = () => {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
               </svg>
-              Nouveau retrait
+              {t('transactions:newWithdrawal', { defaultValue: 'Nouveau retrait' })}
             </button>
           </div>
         </div>
@@ -102,7 +104,7 @@ const TransactionsPage: React.FC = () => {
       {/* Historique */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          Historique des transactions
+          {t('transactions:history', { defaultValue: 'Historique des transactions' })}
         </h2>
         <TransactionHistory
           key={refreshKey}

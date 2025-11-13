@@ -5,6 +5,7 @@ import { AccountSelector } from '../accounts/AccountSelector';
 import { DateInput } from '../common/DateInput';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrency } from '../../utils/numberFormat';
+import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface TransactionFormModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   defaultAccountId,
   transaction,
 }) => {
+  const { t } = useI18nTranslation();
   const { preferences } = usePreferences();
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(defaultAccountId || null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
@@ -100,17 +102,17 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     setError('');
 
     if (!selectedAccountId) {
-      setError('Veuillez sélectionner un compte');
+      setError(t('transactions:selectAccountError', { defaultValue: 'Veuillez sélectionner un compte' }));
       return;
     }
 
     if (!amount || parseFloat(amount) <= 0) {
-      setError('Le montant doit être supérieur à 0');
+      setError(t('transactions:amountError', { defaultValue: 'Le montant doit être supérieur à 0' }));
       return;
     }
 
     if (transactionType === 'withdrawal' && currentBalance !== null && parseFloat(amount) > currentBalance) {
-      setError('Le montant du retrait ne peut pas dépasser le solde disponible');
+      setError(t('transactions:withdrawalAmountError', { defaultValue: 'Le montant du retrait ne peut pas dépasser le solde disponible' }));
       return;
     }
 
@@ -142,7 +144,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors de l\'enregistrement');
+      setError(err.message || t('transactions:saveError', { defaultValue: 'Une erreur est survenue lors de l\'enregistrement' }));
     } finally {
       setIsLoading(false);
     }
@@ -161,8 +163,12 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             {transaction 
-              ? transactionType === 'deposit' ? 'Modifier le dépôt' : 'Modifier le retrait'
-              : transactionType === 'deposit' ? 'Nouveau dépôt' : 'Nouveau retrait'
+              ? transactionType === 'deposit' 
+                ? t('transactions:editDeposit', { defaultValue: 'Modifier le dépôt' })
+                : t('transactions:editWithdrawal', { defaultValue: 'Modifier le retrait' })
+              : transactionType === 'deposit' 
+                ? t('transactions:newDeposit', { defaultValue: 'Nouveau dépôt' })
+                : t('transactions:newWithdrawal', { defaultValue: 'Nouveau retrait' })
             }
           </h2>
           <button
@@ -187,7 +193,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           {/* Compte de trading */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Compte de trading *
+              {t('transactions:tradingAccount', { defaultValue: 'Compte de trading' })} *
             </label>
             <AccountSelector
               value={selectedAccountId}
@@ -200,7 +206,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           {selectedAccount && currentBalance !== null && (
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                <span className="font-medium">Solde disponible:</span>{' '}
+                <span className="font-medium">{t('transactions:availableBalance', { defaultValue: 'Solde disponible' })}:</span>{' '}
                 <span className="font-semibold text-blue-600 dark:text-blue-400">
                   {formatCurrency(currentBalance, currencySymbol, preferences.number_format, 2)}
                 </span>
@@ -211,7 +217,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           {/* Montant */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Montant *
+              {t('transactions:amountLabel', { defaultValue: 'Montant' })} *
             </label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400">
@@ -225,7 +231,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
                 onChange={(e) => setAmount(e.target.value)}
                 required
                 className="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                placeholder="0.00"
+                placeholder={t('transactions:amountPlaceholder', { defaultValue: '0.00' })}
               />
             </div>
           </div>
@@ -234,7 +240,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Date *
+                {t('transactions:dateLabel', { defaultValue: 'Date' })} *
               </label>
               <DateInput
                 value={transactionDate}
@@ -244,7 +250,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Heure *
+                {t('transactions:timeLabel', { defaultValue: 'Heure' })} *
               </label>
               <input
                 type="time"
@@ -259,14 +265,14 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description (optionnel)
+              {t('transactions:descriptionLabel', { defaultValue: 'Description (optionnel)' })}
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
-              placeholder="Notes sur cette transaction..."
+              placeholder={t('transactions:descriptionPlaceholder', { defaultValue: 'Notes sur cette transaction...' })}
             />
           </div>
 
@@ -279,7 +285,10 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
             }`}>
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="font-medium">
-                  {transactionType === 'deposit' ? 'Solde après dépôt:' : 'Solde après retrait:'}
+                  {transactionType === 'deposit' 
+                    ? t('transactions:balanceAfterDeposit', { defaultValue: 'Solde après dépôt' })
+                    : t('transactions:balanceAfterWithdrawal', { defaultValue: 'Solde après retrait' })
+                  }:
                 </span>{' '}
                 <span className={`font-semibold ${
                   transactionType === 'deposit'
@@ -300,7 +309,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
               disabled={isLoading}
               className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
             >
-              Annuler
+              {t('transactions:cancel', { defaultValue: 'Annuler' })}
             </button>
             <button
               type="submit"
@@ -311,7 +320,12 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
                   : 'bg-orange-600 hover:bg-orange-700'
               }`}
             >
-              {isLoading ? 'Enregistrement...' : transaction ? 'Modifier' : 'Confirmer'}
+              {isLoading 
+                ? t('transactions:saving', { defaultValue: 'Enregistrement...' })
+                : transaction 
+                  ? t('transactions:edit', { defaultValue: 'Modifier' })
+                  : t('transactions:confirm', { defaultValue: 'Confirmer' })
+              }
             </button>
           </div>
         </form>
