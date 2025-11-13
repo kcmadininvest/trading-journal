@@ -1,4 +1,4 @@
-Bienvenue sur Trading Journal !
+Bienvenue sur KC Trading Journal !
 
 Bonjour {{ user.first_name }},
 
@@ -10,4 +10,4 @@ Important : Ce lien est valide pendant 7 jours. Après cette période, vous devr
 
 Si vous n'avez pas créé de compte sur notre plateforme, vous pouvez ignorer cet email.
 
-© 2024 Trading Journal. Tous droits réservés.
+© 2024 KC Trading Journal. Tous droits réservés.
