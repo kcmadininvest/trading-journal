@@ -189,7 +189,7 @@ const DailyView: React.FC<DailyViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {/* Sélecteur de vue à gauche */}
         {onViewTypeChange && (
           <div className="inline-flex rounded-md shadow-sm" role="group">
@@ -219,7 +219,7 @@ const DailyView: React.FC<DailyViewProps> = ({
         )}
 
         {/* Navigation de période centrée */}
-        <div className="flex items-center justify-center space-x-2 sm:space-x-4">
+        <div className="flex items-center justify-center flex-1 space-x-2 sm:space-x-4">
           <button
             onClick={() => navigateMonth('prev')}
             className="p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-400"
