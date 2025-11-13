@@ -333,10 +333,12 @@ if [ ! -d "$TEMPLATE_DIR" ]; then
     exit 1
 fi
 
-# Sauvegarder l'ancien template
+# Sauvegarder l'ancien template (dans un répertoire temporaire, pas dans templates/)
 if [ -f "$TEMPLATE_FILE" ]; then
+    BACKUP_DIR="$PROJECT_ROOT/.deploy_backups"
+    mkdir -p "$BACKUP_DIR"
     info "💾 Sauvegarde du template existant..."
-    cp "$TEMPLATE_FILE" "${TEMPLATE_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "$TEMPLATE_FILE" "$BACKUP_DIR/index.html.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
 fi
 
 # Copier le nouveau template
@@ -594,4 +596,32 @@ if [ ! -z "$CURRENT_COMMIT" ] && [ ! -z "$PREVIOUS_COMMIT" ] && [ "$PREVIOUS_COM
 else
     echo "✅ Déploiement terminé (code déjà à jour)"
 fi
+
+# 16. 🧹 Nettoyage final : restaurer les fichiers modifiés par le déploiement
+info "Nettoyage final des fichiers modifiés par le déploiement..."
+
+# Restaurer index.html à son état Git (les modifications de hash sont nécessaires pour le serveur,
+# mais on les restaure pour garder un working tree propre)
+if [ -f "$TEMPLATE_FILE" ] && ! git diff --quiet "$TEMPLATE_FILE" 2>/dev/null; then
+    # Il y a des modifications, on les restaure
+    info "🔄 Restauration de $TEMPLATE_FILE à son état Git..."
+    git restore "$TEMPLATE_FILE" 2>/dev/null || warn "Impossible de restaurer $TEMPLATE_FILE"
+fi
+
+# Nettoyage des fichiers de backup créés par le script
+info "🧹 Nettoyage des fichiers de backup..."
+BACKUP_DIR="$PROJECT_ROOT/.deploy_backups"
+if [ -d "$BACKUP_DIR" ]; then
+    find "$BACKUP_DIR" -name "*.backup.*" -type f -mtime +7 -delete 2>/dev/null || true
+    # Garder seulement les 5 derniers backups
+    ls -t "$BACKUP_DIR"/*.backup.* 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
+fi
+# Nettoyage des anciens backups dans templates/ (ancienne méthode)
+find "$TEMPLATE_DIR" -name "*.backup.*" -type f -mtime +7 -delete 2>/dev/null || true
+
+# Note : Les permissions modifiées (chmod) ne sont pas restaurées car elles sont nécessaires
+# pour le fonctionnement du serveur. Elles ne sont pas suivies par Git de toute façon.
+
+info "✅ Nettoyage final terminé"
+
 echo ""

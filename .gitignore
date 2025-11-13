@@ -84,4 +84,7 @@ logs/
 deploy_production.sh
 *.deploy.sh
 
+# Deployment backups
+.deploy_backups/
+
 
