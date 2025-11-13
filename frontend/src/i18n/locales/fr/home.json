@@ -1,5 +1,5 @@
 {
-  "title": "Trading Journal",
+  "title": "KC Trading Journal",
   "subtitle": "La plateforme complète pour suivre, analyser et optimiser vos performances de trading. Prenez le contrôle de votre trading avec des outils professionnels.",
   "hero": {
     "tagline": "Transformez vos données en insights actionnables",
@@ -40,7 +40,7 @@
     }
   },
   "benefits": {
-    "title": "Pourquoi choisir Trading Journal ?",
+    "title": "Pourquoi choisir KC Trading Journal ?",
     "items": {
       "data": {
         "title": "Données Centralisées",
@@ -62,12 +62,12 @@
   },
   "cta": {
     "title": "Prêt à transformer votre trading ?",
-    "description": "Rejoignez des traders qui utilisent déjà Trading Journal pour améliorer leurs performances. Commencez gratuitement dès aujourd'hui.",
+    "description": "Rejoignez des traders qui utilisent déjà KC Trading Journal pour améliorer leurs performances. Commencez gratuitement dès aujourd'hui.",
     "subtitle": "Gratuit • Sans engagement • Configuration en 2 minutes",
     "registerButton": "S'inscrire - Gratuit"
   },
   "footer": {
-    "copyright": "© 2025 Trading Journal. Tous droits réservés.",
+    "copyright": "© 2025 KC Trading Journal. Tous droits réservés.",
     "legalNotice": "Mentions légales"
   },
   "legalNotice": {

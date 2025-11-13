@@ -247,7 +247,7 @@ SIMPLE_JWT = {
 
 # drf-spectacular Settings
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Trading Journal API',
+    'TITLE': 'KC Trading Journal API',
     'DESCRIPTION': 'API pour le journal de trading',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,

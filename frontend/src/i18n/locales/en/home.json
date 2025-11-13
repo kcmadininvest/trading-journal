@@ -1,5 +1,5 @@
 {
-  "title": "Trading Journal",
+  "title": "KC Trading Journal",
   "subtitle": "The complete platform to track, analyze and optimize your trading performance. Take control of your trading with professional tools.",
   "hero": {
     "tagline": "Transform your data into actionable insights",
@@ -40,7 +40,7 @@
     }
   },
   "benefits": {
-    "title": "Why choose Trading Journal?",
+    "title": "Why choose KC Trading Journal?",
     "items": {
       "data": {
         "title": "Centralized Data",
@@ -62,12 +62,12 @@
   },
   "cta": {
     "title": "Ready to transform your trading?",
-    "description": "Join traders who already use Trading Journal to improve their performance. Start free today.",
+    "description": "Join traders who already use KC Trading Journal to improve their performance. Start free today.",
     "subtitle": "Free • No commitment • Setup in 2 minutes",
     "registerButton": "Sign up - Free"
   },
   "footer": {
-    "copyright": "© 2025 Trading Journal. All rights reserved.",
+    "copyright": "© 2025 KC Trading Journal. All rights reserved.",
     "legalNotice": "Legal Notice"
   },
   "legalNotice": {
