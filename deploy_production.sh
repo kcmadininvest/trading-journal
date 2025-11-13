@@ -600,8 +600,12 @@ fi
 # 16. 🧹 Nettoyage final : nettoyage des fichiers temporaires
 info "Nettoyage final des fichiers temporaires..."
 
-# Note : index.html n'est PAS restauré car il doit rester modifié avec les nouveaux hash JS/CSS
-# pour que le serveur fonctionne correctement. Les modifications de hash sont nécessaires.
+# Marquer index.html comme "assume-unchanged" pour ignorer les modifications dans Git
+# (le fichier doit rester modifié avec les nouveaux hash JS/CSS pour le serveur)
+if [ -f "$TEMPLATE_FILE" ]; then
+    info "🔇 Ignorer les modifications de $TEMPLATE_FILE dans Git (assume-unchanged)..."
+    git update-index --assume-unchanged "$TEMPLATE_FILE" 2>/dev/null || warn "Impossible de marquer $TEMPLATE_FILE comme assume-unchanged"
+fi
 
 # Nettoyage des fichiers de backup créés par le script
 info "🧹 Nettoyage des fichiers de backup..."
