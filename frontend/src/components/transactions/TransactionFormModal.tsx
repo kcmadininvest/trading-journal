@@ -157,24 +157,63 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-2 sm:p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isLoading) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {transaction 
-              ? transactionType === 'deposit' 
-                ? t('transactions:editDeposit', { defaultValue: 'Modifier le dépôt' })
-                : t('transactions:editWithdrawal', { defaultValue: 'Modifier le retrait' })
-              : transactionType === 'deposit' 
-                ? t('transactions:newDeposit', { defaultValue: 'Nouveau dépôt' })
-                : t('transactions:newWithdrawal', { defaultValue: 'Nouveau retrait' })
-            }
-          </h2>
+        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              transactionType === 'deposit' 
+                ? 'bg-green-600 dark:bg-green-500' 
+                : 'bg-orange-600 dark:bg-orange-500'
+            }`}>
+              {transactionType === 'deposit' ? (
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
+                {transaction 
+                  ? transactionType === 'deposit' 
+                    ? t('transactions:editDeposit', { defaultValue: 'Modifier le dépôt' })
+                    : t('transactions:editWithdrawal', { defaultValue: 'Modifier le retrait' })
+                  : transactionType === 'deposit' 
+                    ? t('transactions:newDeposit', { defaultValue: 'Nouveau dépôt' })
+                    : t('transactions:newWithdrawal', { defaultValue: 'Nouveau retrait' })
+                }
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
+                {transaction
+                  ? transactionType === 'deposit'
+                    ? t('transactions:editDepositDescription', { defaultValue: 'Modifiez les informations du dépôt' })
+                    : t('transactions:editWithdrawalDescription', { defaultValue: 'Modifiez les informations du retrait' })
+                  : transactionType === 'deposit'
+                    ? t('transactions:newDepositDescription', { defaultValue: 'Ajoutez un nouveau dépôt à votre compte' })
+                    : t('transactions:newWithdrawalDescription', { defaultValue: 'Effectuez un retrait depuis votre compte' })
+                }
+              </p>
+            </div>
+          </div>
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50"
+            className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors disabled:opacity-50 flex-shrink-0"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -182,11 +221,11 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           </button>
         </div>
 
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <p className="text-sm text-red-800 dark:text-red-300">{error}</p>
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs sm:text-sm text-red-700 dark:text-red-300 break-words">
+              {error}
             </div>
           )}
 
@@ -199,6 +238,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
               value={selectedAccountId}
               onChange={setSelectedAccountId}
               allowAllActive={false}
+              hideLabel={true}
             />
           </div>
 
@@ -237,7 +277,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           </div>
 
           {/* Date et heure */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('transactions:dateLabel', { defaultValue: 'Date' })} *
@@ -302,7 +342,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}

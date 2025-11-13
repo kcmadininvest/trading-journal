@@ -133,10 +133,10 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     <div className="space-y-4">
       {/* Filtres et solde */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex gap-2">
+        <div className="flex gap-2 overflow-x-auto">
           <button
             onClick={() => setFilterType('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0 ${
               filterType === 'all'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -153,7 +153,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           </button>
           <button
             onClick={() => setFilterType('deposit')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0 ${
               filterType === 'deposit'
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -170,7 +170,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           </button>
           <button
             onClick={() => setFilterType('withdrawal')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+            className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0 ${
               filterType === 'withdrawal'
                 ? 'bg-orange-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -209,106 +209,189 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           {t('transactions:noTransactions', { defaultValue: 'Aucune transaction trouvée' })}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('transactions:date', { defaultValue: 'Date' })}
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('transactions:type', { defaultValue: 'Type' })}
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('transactions:account', { defaultValue: 'Compte' })}
-                </th>
-                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('transactions:amount', { defaultValue: 'Montant' })}
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('transactions:description', { defaultValue: 'Description' })}
-                </th>
-                {(onEdit || onDelete) && (
-                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {t('transactions:actions', { defaultValue: 'Actions' })}
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map((transaction) => {
-                const currencySymbol = getCurrencySymbol(transaction);
-                const amount = parseFloat(transaction.amount.toString());
+        <>
+          {/* Version mobile : cartes */}
+          <div className="md:hidden space-y-3">
+            {transactions.map((transaction) => {
+              const currencySymbol = getCurrencySymbol(transaction);
+              const amount = parseFloat(transaction.amount.toString());
 
-                return (
-                  <tr
-                    key={transaction.id}
-                    className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                  >
-                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">
-                      {formatDateTime(transaction.transaction_date)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          transaction.transaction_type === 'deposit'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
-                        }`}
-                      >
-                        {transaction.transaction_type === 'deposit' 
-                          ? `📥 ${t('transactions:deposit', { defaultValue: 'Dépôt' })}` 
-                          : `📤 ${t('transactions:withdrawal', { defaultValue: 'Retrait' })}`}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
-                      {transaction.trading_account_name || `Compte #${transaction.trading_account}`}
-                    </td>
-                    <td className={`py-3 px-4 text-sm text-right font-medium ${
-                      transaction.transaction_type === 'deposit'
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-orange-600 dark:text-orange-400'
-                    }`}>
-                      {transaction.transaction_type === 'deposit' ? '+' : '-'}
-                      {formatCurrency(amount, currencySymbol, preferences.number_format, 2)}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                      {transaction.description || '-'}
-                    </td>
+              return (
+                <div
+                  key={transaction.id}
+                  className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            transaction.transaction_type === 'deposit'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                          }`}
+                        >
+                          {transaction.transaction_type === 'deposit' 
+                            ? `📥 ${t('transactions:deposit', { defaultValue: 'Dépôt' })}` 
+                            : `📤 ${t('transactions:withdrawal', { defaultValue: 'Retrait' })}`}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatDateTime(transaction.transaction_date)}
+                        </span>
+                      </div>
+                      <div className={`text-lg font-semibold ${
+                        transaction.transaction_type === 'deposit'
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-orange-600 dark:text-orange-400'
+                      }`}>
+                        {transaction.transaction_type === 'deposit' ? '+' : '-'}
+                        {formatCurrency(amount, currencySymbol, preferences.number_format, 2)}
+                      </div>
+                    </div>
                     {(onEdit || onDelete) && (
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          {onEdit && (
-                            <button
-                              onClick={() => onEdit(transaction)}
-                              className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                              title={t('transactions:edit', { defaultValue: 'Modifier' })}
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                          )}
-                          {onDelete && (
-                            <button
-                              onClick={() => handleDeleteClick(transaction)}
-                              className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                              title={t('transactions:delete', { defaultValue: 'Supprimer' })}
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      </td>
+                      <div className="flex items-center gap-2 ml-2">
+                        {onEdit && (
+                          <button
+                            onClick={() => onEdit(transaction)}
+                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                            title={t('transactions:edit', { defaultValue: 'Modifier' })}
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={() => handleDeleteClick(transaction)}
+                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                            title={t('transactions:delete', { defaultValue: 'Supprimer' })}
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                     )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <span className="font-medium">{t('transactions:account', { defaultValue: 'Compte' })}: </span>
+                    {transaction.trading_account_name || `Compte #${transaction.trading_account}`}
+                  </div>
+                  {transaction.description && (
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <span className="font-medium">{t('transactions:description', { defaultValue: 'Description' })}: </span>
+                      {transaction.description}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Version desktop : tableau */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('transactions:date', { defaultValue: 'Date' })}
+                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('transactions:type', { defaultValue: 'Type' })}
+                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('transactions:account', { defaultValue: 'Compte' })}
+                  </th>
+                  <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('transactions:amount', { defaultValue: 'Montant' })}
+                  </th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('transactions:description', { defaultValue: 'Description' })}
+                  </th>
+                  {(onEdit || onDelete) && (
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('transactions:actions', { defaultValue: 'Actions' })}
+                    </th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((transaction) => {
+                  const currencySymbol = getCurrencySymbol(transaction);
+                  const amount = parseFloat(transaction.amount.toString());
+
+                  return (
+                    <tr
+                      key={transaction.id}
+                      className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">
+                        {formatDateTime(transaction.transaction_date)}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            transaction.transaction_type === 'deposit'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
+                          }`}
+                        >
+                          {transaction.transaction_type === 'deposit' 
+                            ? `📥 ${t('transactions:deposit', { defaultValue: 'Dépôt' })}` 
+                            : `📤 ${t('transactions:withdrawal', { defaultValue: 'Retrait' })}`}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
+                        {transaction.trading_account_name || `Compte #${transaction.trading_account}`}
+                      </td>
+                      <td className={`py-3 px-4 text-sm text-right font-medium ${
+                        transaction.transaction_type === 'deposit'
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-orange-600 dark:text-orange-400'
+                      }`}>
+                        {transaction.transaction_type === 'deposit' ? '+' : '-'}
+                        {formatCurrency(amount, currencySymbol, preferences.number_format, 2)}
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                        {transaction.description || '-'}
+                      </td>
+                      {(onEdit || onDelete) && (
+                        <td className="py-3 px-4">
+                          <div className="flex items-center justify-end gap-2">
+                            {onEdit && (
+                              <button
+                                onClick={() => onEdit(transaction)}
+                                className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                                title={t('transactions:edit', { defaultValue: 'Modifier' })}
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                            )}
+                            {onDelete && (
+                              <button
+                                onClick={() => handleDeleteClick(transaction)}
+                                className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                                title={t('transactions:delete', { defaultValue: 'Supprimer' })}
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Modale de confirmation de suppression */}
