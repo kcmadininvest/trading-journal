@@ -35,7 +35,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
         {/* Solde initial et actuel regroupés */}
         <div className="relative flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
           {onNavigateToTransactions && (
-            <Tooltip content="Voir les transactions" position="bottom" className="absolute top-2 right-2">
+            <Tooltip content={t('dashboard:viewTransactions', { defaultValue: 'Voir les transactions' })} position="bottom" className="absolute top-2 right-2">
               <button
                 onClick={onNavigateToTransactions}
                 className="p-2.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"

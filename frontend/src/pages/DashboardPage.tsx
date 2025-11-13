@@ -1829,6 +1829,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   data={filteredBalanceData}
                   currencySymbol={currencySymbol}
                   formatCurrency={formatCurrency}
+                  initialCapital={selectedAccount?.initial_capital ? parseFloat(String(selectedAccount.initial_capital)) : 0}
                 />
               </div>
             </div>
