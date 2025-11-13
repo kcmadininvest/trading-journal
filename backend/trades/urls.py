@@ -12,6 +12,7 @@ router.register(r'trade-strategies', views.TradeStrategyViewSet, basename='trade
 router.register(r'position-strategies', views.PositionStrategyViewSet, basename='position-strategy')
 router.register(r'currencies', views.CurrencyViewSet, basename='currency')
 router.register(r'goals', views.TradingGoalViewSet, basename='trading-goal')
+router.register(r'account-transactions', views.AccountTransactionViewSet, basename='account-transaction')
 
 urlpatterns = [
     path('', include(router.urls)),

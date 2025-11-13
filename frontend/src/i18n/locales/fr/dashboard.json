@@ -112,6 +112,7 @@
   "consistencyTargetNonCompliant": "Non conforme",
   "consistencyTargetBestDayDate": "Meilleur jour",
   "additionalProfitNeeded": "Profit supplémentaire requis: {amount}",
-  "sequencesPeriodTooltip": "Calculé sur les 12 derniers mois glissants"
+  "sequencesPeriodTooltip": "Calculé sur les 12 derniers mois glissants",
+  "viewTransactions": "Voir les transactions"
 }
 

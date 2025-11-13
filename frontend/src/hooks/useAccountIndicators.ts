@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { TradeListItem } from '../services/trades';
 import { TradingAccount } from '../services/tradingAccounts';
+import { accountTransactionsService, AccountBalance as AccountBalanceData } from '../services/accountTransactions';
 
 export interface DailyBalanceData {
   date: string;
@@ -67,12 +68,58 @@ export function useAccountIndicators({
   filteredBalanceData,
   analyticsData,
 }: UseAccountIndicatorsParams): AccountIndicators {
+  // État pour le solde avec transactions
+  const [balanceWithTransactions, setBalanceWithTransactions] = useState<AccountBalanceData | null>(null);
+
+  // Fonction pour charger le solde
+  const loadBalance = useCallback(async () => {
+    if (!selectedAccount) {
+      setBalanceWithTransactions(null);
+      return;
+    }
+
+    try {
+      const balance = await accountTransactionsService.getBalance(selectedAccount.id);
+      setBalanceWithTransactions(balance);
+    } catch (error) {
+      console.error('Erreur lors du chargement du solde avec transactions:', error);
+      setBalanceWithTransactions(null);
+    }
+  }, [selectedAccount]);
+
+  // Charger le solde avec transactions depuis l'API
+  useEffect(() => {
+    loadBalance();
+  }, [loadBalance]);
+
+  // Écouter les événements de mise à jour des transactions
+  useEffect(() => {
+    const handleTransactionUpdate = () => {
+      loadBalance();
+    };
+
+    window.addEventListener('account-transaction:updated', handleTransactionUpdate);
+
+    return () => {
+      window.removeEventListener('account-transaction:updated', handleTransactionUpdate);
+    };
+  }, [loadBalance]);
+
   // Calculer le solde initial et actuel du compte
   const accountBalance = useMemo(() => {
     if (!selectedAccount) {
       return { initial: 0, current: 0 };
     }
 
+    // Si on a le solde avec transactions depuis l'API, l'utiliser
+    if (balanceWithTransactions) {
+      return {
+        initial: parseFloat(balanceWithTransactions.initial_capital),
+        current: parseFloat(balanceWithTransactions.current_balance),
+      };
+    }
+
+    // Fallback: calculer sans transactions (pour compatibilité)
     const initialCapital = selectedAccount.initial_capital 
       ? parseFloat(String(selectedAccount.initial_capital)) 
       : 0;
@@ -86,7 +133,7 @@ export function useAccountIndicators({
       initial: initialCapital,
       current: currentBalance,
     };
-  }, [selectedAccount, allTrades]);
+  }, [selectedAccount, allTrades, balanceWithTransactions]);
 
   // Calculer le meilleur et le pire jour pour la période filtrée
   // Priorité: filteredBalanceData > analyticsData > calcul depuis filteredTrades

@@ -163,6 +163,97 @@ class TradingAccount(models.Model):
         return self.status == 'active'
 
 
+class AccountTransaction(models.Model):
+    """
+    Modèle pour gérer les transactions de compte (dépôts et retraits).
+    Permet de suivre les mouvements d'argent dans et hors du compte de trading.
+    """
+    
+    TRANSACTION_TYPE_CHOICES = [
+        ('deposit', 'Dépôt'),
+        ('withdrawal', 'Retrait'),
+    ]
+    
+    # Identification
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='account_transactions',
+        verbose_name='Utilisateur'
+    )
+    
+    # Compte de trading associé
+    trading_account = models.ForeignKey(
+        TradingAccount,
+        on_delete=models.CASCADE,
+        related_name='transactions',
+        verbose_name='Compte de trading',
+        help_text='Compte de trading associé à cette transaction'
+    )
+    
+    # Type de transaction
+    transaction_type = models.CharField(
+        max_length=20,
+        choices=TRANSACTION_TYPE_CHOICES,
+        verbose_name='Type de transaction',
+        help_text='Type de transaction (dépôt ou retrait)'
+    )
+    
+    # Montant (toujours positif, le type détermine si c'est un ajout ou retrait)
+    amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        verbose_name='Montant',
+        help_text='Montant de la transaction (toujours positif)'
+    )
+    
+    # Date de la transaction
+    transaction_date = models.DateTimeField(
+        verbose_name='Date de transaction',
+        help_text='Date et heure de la transaction'
+    )
+    
+    # Notes et description
+    description = models.TextField(
+        blank=True,
+        verbose_name='Description',
+        help_text='Description ou notes sur cette transaction'
+    )
+    
+    # Métadonnées système
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Créé le'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Modifié le'
+    )
+    
+    class Meta:
+        ordering = ['-transaction_date', '-created_at']
+        verbose_name = 'Transaction de compte'
+        verbose_name_plural = 'Transactions de compte'
+        indexes = [
+            models.Index(fields=['user', '-transaction_date']),
+            models.Index(fields=['trading_account', '-transaction_date']),
+            models.Index(fields=['transaction_type']),
+        ]
+    
+    def __str__(self):
+        type_display = 'Dépôt' if self.transaction_type == 'deposit' else 'Retrait'
+        return f"{type_display} - {self.amount} {self.trading_account.currency} - {self.transaction_date.strftime('%d/%m/%Y')}"  # type: ignore
+    
+    @property
+    def signed_amount(self):
+        """Retourne le montant avec le signe approprié (positif pour dépôt, négatif pour retrait)."""
+        if self.transaction_type == 'deposit':
+            return self.amount
+        else:  # withdrawal
+            return -self.amount
+
+
 class TopStepTrade(models.Model):
     """
     Modèle pour stocker les trades importés depuis TopStep.

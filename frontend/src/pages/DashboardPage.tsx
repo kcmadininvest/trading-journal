@@ -8,6 +8,7 @@ import { User } from '../services/auth';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
+import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
 import { tradeStrategiesService, TradeStrategy, StrategyComplianceStats } from '../services/tradeStrategies';
 import { StrategyStreakCard } from '../components/strategy/StrategyStreakCard';
 import { StrategyBadges } from '../components/strategy/StrategyBadges';
@@ -231,6 +232,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [complianceStats, setComplianceStats] = useState<StrategyComplianceStats | null>(null);
   const [complianceLoading, setComplianceLoading] = useState(false);
+  const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
 
   // Gérer le redimensionnement de la fenêtre pour le responsive
   useEffect(() => {
@@ -280,6 +282,33 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
     loadAccount();
   }, [accountId, setAccountId]);
+
+  // Charger les transactions du compte
+  useEffect(() => {
+    const loadTransactions = async () => {
+      if (!accountId) {
+        setTransactions([]);
+        return;
+      }
+      try {
+        const data = await accountTransactionsService.list({ trading_account: accountId });
+        setTransactions(data);
+      } catch (err) {
+        console.error('Erreur lors du chargement des transactions', err);
+        setTransactions([]);
+      }
+    };
+    loadTransactions();
+
+    // Écouter les événements de mise à jour des transactions
+    const handleTransactionUpdate = () => {
+      loadTransactions();
+    };
+    window.addEventListener('account-transaction:updated', handleTransactionUpdate);
+    return () => {
+      window.removeEventListener('account-transaction:updated', handleTransactionUpdate);
+    };
+  }, [accountId]);
 
   // Charger les statistiques de compliance
   useEffect(() => {
@@ -520,20 +549,80 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative }
   // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
+  // Inclut maintenant les transactions (dépôts et retraits)
   const accountBalanceData = useMemo(() => {
+    const initialCapital = selectedAccount?.initial_capital 
+      ? parseFloat(String(selectedAccount.initial_capital)) 
+      : 0;
+
+    // Grouper les transactions par date (triées chronologiquement)
+    const transactionsByDate: { [date: string]: number } = {};
+    // Trier les transactions par date pour garantir l'ordre chronologique
+    const sortedTransactions = [...transactions].sort((a, b) => 
+      new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
+    );
+    sortedTransactions.forEach(transaction => {
+      const date = new Date(transaction.transaction_date).toISOString().split('T')[0];
+      const amount = parseFloat(transaction.amount.toString());
+      const signedAmount = transaction.transaction_type === 'deposit' ? amount : -amount;
+      transactionsByDate[date] = (transactionsByDate[date] || 0) + signedAmount;
+    });
+
     // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
     if (dailyAggregates.length > 0) {
       const sortedDates = [...dailyAggregates].sort((a, b) => a.date.localeCompare(b.date));
-      let cumulativeBalance = 0;
       
-      return sortedDates.map(item => {
-        cumulativeBalance += item.pnl;
+      // Créer un ensemble de toutes les dates (trades + transactions)
+      const allDates = new Set<string>();
+      sortedDates.forEach(item => allDates.add(item.date));
+      Object.keys(transactionsByDate).forEach(date => allDates.add(date));
+      const sortedAllDates = Array.from(allDates).sort();
+
+      let cumulativePnl = 0;
+      let cumulativeTransactions = 0;
+      
+      const result = sortedAllDates.map(date => {
+        // Appliquer les transactions AVANT les trades du jour (logique : dépôts/retraits en début de journée)
+        if (transactionsByDate[date]) {
+          cumulativeTransactions += transactionsByDate[date];
+        }
+
+        // Ajouter le PnL du jour si disponible (après les transactions)
+        const dailyAggregate = dailyAggregates.find(d => d.date === date);
+        if (dailyAggregate) {
+          cumulativePnl += dailyAggregate.pnl;
+        }
+
+        const dailyPnl = dailyAggregate?.pnl || 0;
+        const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
+
         return {
-          date: item.date,
-          pnl: item.pnl,
-          cumulative: cumulativeBalance,
+          date: date,
+          pnl: dailyPnl,
+          cumulative: cumulative,
         };
       });
+
+      // Si on a des données et que la première date n'est pas le début, ajouter un point initial
+      if (result.length > 0 && initialCapital > 0) {
+        const firstDate = result[0].date;
+        // Vérifier s'il y a des transactions ou trades avant la première date
+        const hasDataBeforeFirst = sortedTransactions.some(t => {
+          const tDate = new Date(t.transaction_date).toISOString().split('T')[0];
+          return tDate < firstDate;
+        }) || dailyAggregates.some(d => d.date < firstDate);
+        
+        // Si pas de données avant, ajouter un point au capital initial
+        if (!hasDataBeforeFirst) {
+          return [{
+            date: firstDate,
+            pnl: 0,
+            cumulative: initialCapital,
+          }, ...result];
+        }
+      }
+
+      return result;
     }
     
     // Fallback: utiliser les trades individuels si les agrégats ne sont pas disponibles
@@ -547,24 +636,60 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       .sort((a, b) => a.enteredAt.getTime() - b.enteredAt.getTime());
 
     // Grouper par date
-    const dailyData: { [date: string]: number } = {};
+    const dailyPnlData: { [date: string]: number } = {};
     tradesWithDates.forEach(trade => {
-      dailyData[trade.date] = (dailyData[trade.date] || 0) + trade.pnl;
+      dailyPnlData[trade.date] = (dailyPnlData[trade.date] || 0) + trade.pnl;
     });
 
-    const sortedDates = Object.keys(dailyData).sort();
-    let cumulativeBalance = 0;
+    // Créer un ensemble de toutes les dates (trades + transactions)
+    const allDates = new Set<string>();
+    Object.keys(dailyPnlData).forEach(date => allDates.add(date));
+    Object.keys(transactionsByDate).forEach(date => allDates.add(date));
+    const sortedDates = Array.from(allDates).sort();
+
+    let cumulativePnl = 0;
+    let cumulativeTransactions = 0;
     
-    return sortedDates.map(date => {
-      const dailyPnl = dailyData[date];
-      cumulativeBalance += dailyPnl;
+    const result = sortedDates.map(date => {
+      const dailyPnl = dailyPnlData[date] || 0;
+      const dailyTransaction = transactionsByDate[date] || 0;
+      
+      // Appliquer les transactions AVANT les trades du jour (logique : dépôts/retraits en début de journée)
+      if (dailyTransaction !== 0) {
+        cumulativeTransactions += dailyTransaction;
+      }
+      
+      // Ajouter le PnL du jour (après les transactions)
+      cumulativePnl += dailyPnl;
+
       return {
         date: date, // Format YYYY-MM-DD pour les filtres
         pnl: dailyPnl,
-        cumulative: cumulativeBalance,
+        cumulative: initialCapital + cumulativePnl + cumulativeTransactions,
       };
     });
-  }, [dailyAggregates, trades]);
+
+    // Si on a des données et que la première date n'est pas le début, ajouter un point initial
+    if (result.length > 0 && initialCapital > 0) {
+      const firstDate = result[0].date;
+      // Vérifier s'il y a des transactions ou trades avant la première date
+      const hasDataBeforeFirst = sortedTransactions.some(t => {
+        const tDate = new Date(t.transaction_date).toISOString().split('T')[0];
+        return tDate < firstDate;
+      }) || tradesWithDates.some(t => t.date < firstDate);
+      
+      // Si pas de données avant, ajouter un point au capital initial
+      if (!hasDataBeforeFirst) {
+        return [{
+          date: firstDate,
+          pnl: 0,
+          cumulative: initialCapital,
+        }, ...result];
+      }
+    }
+
+    return result;
+  }, [dailyAggregates, trades, transactions, selectedAccount]);
 
   // États pour les filtres de date
   const { defaultStartDate, defaultEndDate } = useMemo(() => {
@@ -1256,7 +1381,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
           <AccountIndicatorsGrid 
             indicators={indicators} 
-            currencySymbol={currencySymbol} 
+            currencySymbol={currencySymbol}
+            onNavigateToTransactions={() => {
+              window.location.hash = 'transactions';
+            }}
           />
         </div>
       )}
@@ -1701,6 +1829,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   data={filteredBalanceData}
                   currencySymbol={currencySymbol}
                   formatCurrency={formatCurrency}
+                  initialCapital={selectedAccount?.initial_capital ? parseFloat(String(selectedAccount.initial_capital)) : 0}
                 />
               </div>
             </div>

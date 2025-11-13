@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import TopStepTrade, TopStepImportLog
+from .models import TopStepTrade, TopStepImportLog, AccountTransaction
 
 
 @admin.register(TopStepTrade)
@@ -196,3 +196,82 @@ class TopStepImportLogAdmin(admin.ModelAdmin):
     
     def has_change_permission(self, request, obj=None):
         return False  # Les logs ne peuvent pas être modifiés
+
+
+@admin.register(AccountTransaction)
+class AccountTransactionAdmin(admin.ModelAdmin):
+    list_display = [
+        'transaction_date',
+        'user',
+        'trading_account',
+        'transaction_type_display',
+        'amount_display',
+        'description_short',
+        'created_at'
+    ]
+    list_filter = [
+        'transaction_type',
+        'transaction_date',
+        'user',
+        'trading_account',
+        'created_at'
+    ]
+    search_fields = [
+        'description',
+        'trading_account__name',
+        'user__username'
+    ]
+    readonly_fields = [
+        'created_at',
+        'updated_at'
+    ]
+    date_hierarchy = 'transaction_date'
+    ordering = ['-transaction_date', '-created_at']
+    
+    fieldsets = (
+        ('Informations', {
+            'fields': ('user', 'trading_account', 'transaction_type')
+        }),
+        ('Détails', {
+            'fields': ('amount', 'transaction_date', 'description')
+        }),
+        ('Métadonnées', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def transaction_type_display(self, obj):
+        if obj.transaction_type == 'deposit':
+            return format_html('<span style="color: green; font-weight: bold;">📥 Dépôt</span>')
+        else:
+            return format_html('<span style="color: red; font-weight: bold;">📤 Retrait</span>')
+    transaction_type_display.short_description = 'Type'
+    transaction_type_display.admin_order_field = 'transaction_type'
+    
+    def amount_display(self, obj):
+        currency = obj.trading_account.currency
+        amount = obj.amount
+        if obj.transaction_type == 'withdrawal':
+            return format_html('<span style="color: red;">-{:.2f} {}</span>', amount, currency)
+        else:
+            return format_html('<span style="color: green;">+{:.2f} {}</span>', amount, currency)
+    amount_display.short_description = 'Montant'
+    amount_display.admin_order_field = 'amount'
+    
+    def description_short(self, obj):
+        if obj.description:
+            return obj.description[:50] + '...' if len(obj.description) > 50 else obj.description
+        return '-'
+    description_short.short_description = 'Description'
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if not request.user.is_superuser:
+            qs = qs.filter(user=request.user)
+        return qs.select_related('trading_account', 'user')
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Si c'est une création
+            obj.user = request.user
+        super().save_model(request, obj, form, change)

@@ -8,6 +8,7 @@ import {
   Title,
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
+  Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -23,7 +24,8 @@ ChartJS.register(
   PointElement,
   Title,
   ChartTooltip,
-  ChartLegend
+  ChartLegend,
+  Filler
 );
 
 interface BalanceDataPoint {
@@ -36,12 +38,14 @@ interface AccountBalanceChartProps {
   data: BalanceDataPoint[];
   currencySymbol?: string;
   formatCurrency?: (value: number, currencySymbol?: string) => string;
+  initialCapital?: number; // Capital initial pour la ligne de référence
 }
 
 function AccountBalanceChart({ 
   data, 
   currencySymbol = '',
-  formatCurrency: formatCurrencyProp 
+  formatCurrency: formatCurrencyProp,
+  initialCapital = 0
 }: AccountBalanceChartProps) {
   const { t } = useI18nTranslation();
   const { theme } = useTheme();
@@ -99,7 +103,7 @@ function AccountBalanceChart({
     );
     const balances = data.map(d => d.cumulative);
 
-    // Créer des labels et balances avec points intermédiaires à 0 pour les transitions
+    // Créer des labels et balances avec points intermédiaires au capital initial pour les transitions
     const processedLabels: string[] = [];
     const processedBalances: number[] = [];
     const processedPnlMapping: number[] = [];
@@ -107,11 +111,11 @@ function AccountBalanceChart({
     balances.forEach((balance, index) => {
       const prevBalance = index > 0 ? balances[index - 1] : balance;
       
-      // Si on traverse la ligne zéro, ajouter un point à 0
-      if ((prevBalance < 0 && balance >= 0) || (prevBalance >= 0 && balance < 0)) {
-        // Ajouter le point à 0 avec le label du point actuel
+      // Si on traverse la ligne du capital initial, ajouter un point au capital initial
+      if ((prevBalance < initialCapital && balance >= initialCapital) || (prevBalance >= initialCapital && balance < initialCapital)) {
+        // Ajouter le point au capital initial avec le label du point actuel
         processedLabels.push(dates[index]);
-        processedBalances.push(0);
+        processedBalances.push(initialCapital);
         processedPnlMapping.push(data[index]?.pnl ?? 0);
       }
       
@@ -125,6 +129,7 @@ function AccountBalanceChart({
       chartData: {
         labels: processedLabels,
         datasets: [
+          // Dataset principal pour la courbe
           {
             label: 'Solde',
             data: processedBalances,
@@ -134,58 +139,63 @@ function AccountBalanceChart({
               borderColor: (ctx: any) => {
                 const v0 = ctx.p0.parsed.y;
                 const v1 = ctx.p1.parsed.y;
-                // Si on traverse la ligne zéro, colorer selon la position
-                // Si les deux points sont du même côté de 0, utiliser le point d'arrivée
-                // Si on va vers 0 (v0 != 0 et v1 == 0), utiliser le point de départ
-                // Si on part de 0 (v0 == 0 et v1 != 0), utiliser le point d'arrivée
+                // Si on traverse la ligne du capital initial, colorer selon la position
+                // Si les deux points sont du même côté du capital initial, utiliser le point d'arrivée
+                // Si on va vers le capital initial (v0 != initialCapital et v1 == initialCapital), utiliser le point de départ
+                // Si on part du capital initial (v0 == initialCapital et v1 != initialCapital), utiliser le point d'arrivée
                 // Utiliser les mêmes couleurs que le graphique "Performance par Jour de la Semaine"
-                if (v0 === 0) {
-                  // On part de 0, utiliser la couleur du point d'arrivée
-                  return v1 >= 0 ? '#3b82f6' : '#ec4899';
-                } else if (v1 === 0) {
-                  // On va vers 0, utiliser la couleur du point de départ
-                  return v0 >= 0 ? '#3b82f6' : '#ec4899';
+                if (v0 === initialCapital) {
+                  // On part du capital initial, utiliser la couleur du point d'arrivée
+                  return v1 >= initialCapital ? '#3b82f6' : '#ec4899';
+                } else if (v1 === initialCapital) {
+                  // On va vers le capital initial, utiliser la couleur du point de départ
+                  return v0 >= initialCapital ? '#3b82f6' : '#ec4899';
                 } else {
-                  // Pas de transition par 0, utiliser la couleur du point d'arrivée
-                  return v1 >= 0 ? '#3b82f6' : '#ec4899';
+                  // Pas de transition par le capital initial, utiliser la couleur du point d'arrivée
+                  return v1 >= initialCapital ? '#3b82f6' : '#ec4899';
                 }
               },
             },
-          fill: false,
-          pointRadius: (context: any) => {
-            // Afficher les points seulement si le volume de données est faible (< 30 points)
-            const dataLength = processedBalances.length;
-            if (dataLength > 30) return 0;
-            // Vérifier que context.parsed existe avant d'accéder à y
-            const value = context.parsed?.y;
-            return value !== null && value !== undefined ? 4 : 0;
-          },
-          pointBackgroundColor: (context: any) => {
-            const value = context.parsed?.y;
-            return value >= 0 ? '#3b82f6' : '#ec4899';
-          },
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 2,
-          pointHoverRadius: 6,
-          pointHoverBackgroundColor: (context: any) => {
-            const value = context.parsed?.y;
-            return value >= 0 ? '#3b82f6' : '#ec4899';
-          },
-          pointHoverBorderColor: '#ffffff',
-          pointHoverBorderWidth: 3,
-          spanGaps: false,
+            fill: false,
+            pointRadius: (context: any) => {
+              // Afficher les points seulement si le volume de données est faible (< 30 points)
+              const dataLength = processedBalances.length;
+              if (dataLength > 30) return 0;
+              // Vérifier que context.parsed existe avant d'accéder à y
+              const value = context.parsed?.y;
+              return value !== null && value !== undefined ? 4 : 0;
+            },
+            pointBackgroundColor: (context: any) => {
+              const value = context.parsed?.y;
+              return value >= initialCapital ? '#3b82f6' : '#ec4899';
+            },
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: (context: any) => {
+              const value = context.parsed?.y;
+              return value >= initialCapital ? '#3b82f6' : '#ec4899';
+            },
+            pointHoverBorderColor: '#ffffff',
+            pointHoverBorderWidth: 3,
+            spanGaps: false,
             _pnlMapping: processedPnlMapping, // Stocker le mapping pour les tooltips
+            order: 0, // Placer devant tout
           },
         ],
       },
       chartLabels: processedLabels,
       pnlMapping: processedPnlMapping,
     };
-  }, [data, preferences.timezone]);
+  }, [data, preferences.timezone, initialCapital]);
 
   // Options du graphique
-  const options = useMemo(() => ({
-    responsive: true,
+  const options = useMemo(() => {
+    // Trouver l'index du dataset principal (Solde)
+    const mainDatasetIndex = chartData.datasets.findIndex((ds: any) => ds.label === 'Solde');
+    
+    return {
+      responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
@@ -212,12 +222,18 @@ function AccountBalanceChart({
         displayColors: false,
         mode: 'index' as const,
         intersect: false,
+        filter: function(tooltipItem: any) {
+          // Afficher uniquement le tooltip pour le dataset principal (Solde)
+          return tooltipItem.datasetIndex === mainDatasetIndex;
+        },
         callbacks: {
           title: function(context: any) {
-            const index = context[0].dataIndex;
+            // Après le filtre, il ne devrait y avoir qu'un seul élément (le dataset principal)
+            const index = context[0]?.dataIndex ?? 0;
             return chartLabels[index] || '';
           },
           label: function(context: any) {
+            // Après le filtre, on ne devrait avoir que le dataset principal
             const value = context.parsed.y || 0;
             const index = context.dataIndex;
             const pnl = pnlMapping[index] ?? 0;
@@ -247,7 +263,7 @@ function AccountBalanceChart({
         },
       },
       y: {
-        beginAtZero: true,
+        beginAtZero: false,
         ticks: {
           color: chartThemeColors.textSecondary,
           font: {
@@ -269,13 +285,24 @@ function AccountBalanceChart({
         title: {
           display: false,
         },
+        // Adapter automatiquement l'échelle aux données avec un padding
+        afterDataLimits: (scale: any) => {
+          const min = scale.min;
+          const max = scale.max;
+          const range = max - min;
+          // Ajouter 10% de padding en haut et en bas pour une meilleure lisibilité
+          const padding = range * 0.1;
+          scale.min = min - padding;
+          scale.max = max + padding;
+        },
       },
     },
-    animation: {
-      duration: 1000,
-      easing: 'easeInOutQuart' as const,
-    },
-  }), [chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t]);
+      animation: {
+        duration: 1000,
+        easing: 'easeInOutQuart' as const,
+      },
+    };
+  }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t]);
 
   if (data.length === 0) {
     return (
