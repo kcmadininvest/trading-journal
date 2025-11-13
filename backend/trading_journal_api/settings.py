@@ -27,7 +27,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-q^3+nfy&7o#md%0pmv&%i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-#ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,app.kcmadininvest.fr,185.217.126.243,localhost:8001,127.0.0.1:8001', cast=lambda v: [s.strip() for s in v.split(',')])
+#ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,app.kctradingjournal.com,185.217.126.243,localhost:8001,127.0.0.1:8001', cast=lambda v: [s.strip() for s in v.split(',')])
 ALLOWED_HOSTS = ['*']  # Temporaire pour les tests
 
 

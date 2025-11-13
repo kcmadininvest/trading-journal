@@ -2,7 +2,7 @@
  * Configuration de l'API
  * Utilise REACT_APP_API_URL si défini, sinon utilise une URL par défaut
  * 
- * Note: REACT_APP_API_URL doit contenir l'URL complète jusqu'à /api (ex: https://app.kcmadininvest.fr/api)
+ * Note: REACT_APP_API_URL doit contenir l'URL complète jusqu'à /api (ex: https://app.kctradingjournal.com/api)
  * Les services ajoutent ensuite les endpoints spécifiques (ex: /accounts/auth/login/)
  */
 export const getApiBaseUrl = (): string => {
