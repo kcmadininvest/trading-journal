@@ -10,7 +10,9 @@ const HomePage: React.FC = () => {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [showLegalNotice, setShowLegalNotice] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   
   // Fonction pour détecter la langue du navigateur
   const detectBrowserLanguage = (): string => {
@@ -74,19 +76,45 @@ const HomePage: React.FC = () => {
     setIsLanguageDropdownOpen(false);
   };
 
-  // Fermer le dropdown quand on clique en dehors
+  // Fermer les dropdowns quand on clique en dehors ou appuie sur Escape
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      
+      // Fermer le dropdown de langue si on clique en dehors
+      if (isLanguageDropdownOpen && languageDropdownRef.current && !languageDropdownRef.current.contains(target)) {
         setIsLanguageDropdownOpen(false);
+      }
+      
+      // Fermer le menu mobile si on clique en dehors
+      if (isMobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(target)) {
+        setIsMobileMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isLanguageDropdownOpen) {
+          setIsLanguageDropdownOpen(false);
+        }
+        if (isMobileMenuOpen) {
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    if (isLanguageDropdownOpen || isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
-  }, []);
+  }, [isLanguageDropdownOpen, isMobileMenuOpen]);
 
   const languageOptions = [
     { value: 'fr', label: 'Français', flag: '🇫🇷' },
@@ -126,59 +154,142 @@ const HomePage: React.FC = () => {
       `}</style>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       {/* Header avec boutons et sélecteur de langue */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-3">
-        {/* Boutons Login et Register */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              setAuthMode('login');
-              setShowAuthModal(true);
-            }}
-            className="px-5 py-2.5 bg-white text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {t('auth:login')}
-          </button>
-          <button
-            onClick={() => {
-              setAuthMode('register');
-              setShowAuthModal(true);
-            }}
-            className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            {t('auth:register')}
-          </button>
-        </div>
-        
-        {/* Sélecteur de langue modernisé */}
-        <div ref={languageDropdownRef}>
-          <div className="relative">
+      <div className="fixed top-4 right-4 z-50">
+        {/* Menu desktop - visible sur écrans moyens et plus grands */}
+        <div className="hidden md:flex items-center gap-3">
+          {/* Boutons Login et Register */}
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 hover:shadow-xl"
+              onClick={() => {
+                setAuthMode('login');
+                setShowAuthModal(true);
+              }}
+              className="px-5 py-2.5 bg-white text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:text-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              <span className="text-xl">
-                {languageOptions.find(opt => opt.value === currentLanguage)?.flag || '🌐'}
-              </span>
-              <span className="hidden sm:inline">
-                {languageOptions.find(opt => opt.value === currentLanguage)?.label || 'Language'}
-              </span>
-              <svg 
-                className={`w-4 h-4 transition-transform duration-200 ${isLanguageDropdownOpen ? 'rotate-180' : ''}`}
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+              {t('auth:login')}
             </button>
-            
-            {isLanguageDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+            <button
+              onClick={() => {
+                setAuthMode('register');
+                setShowAuthModal(true);
+              }}
+              className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              {t('auth:register')}
+            </button>
+          </div>
+          
+          {/* Sélecteur de langue */}
+          <div ref={languageDropdownRef}>
+            <div className="relative">
+              <button
+                onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white rounded-xl shadow-lg border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 hover:shadow-xl"
+              >
+                <span className="text-xl">
+                  {languageOptions.find(opt => opt.value === currentLanguage)?.flag || '🌐'}
+                </span>
+                <span className="text-base">
+                  {languageOptions.find(opt => opt.value === currentLanguage)?.label || 'Language'}
+                </span>
+                <svg 
+                  className={`w-4 h-4 transition-transform duration-200 ${isLanguageDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              {isLanguageDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  {languageOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleLanguageChange(option.value)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-150 ${
+                        currentLanguage === option.value ? 'bg-blue-50 border-l-4 border-blue-600' : ''
+                      }`}
+                    >
+                      <span className="text-xl">{option.flag}</span>
+                      <span className={`font-medium ${currentLanguage === option.value ? 'text-blue-600' : 'text-gray-700'}`}>
+                        {option.label}
+                      </span>
+                      {currentLanguage === option.value && (
+                        <svg className="ml-auto w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Menu mobile - bouton hamburger */}
+        <div className="md:hidden" ref={mobileMenuRef}>
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2.5 bg-white rounded-xl shadow-lg border border-gray-200 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+            aria-label="Menu"
+          >
+            <svg 
+              className={`w-6 h-6 transition-transform duration-200 ${isMobileMenuOpen ? 'rotate-90' : ''}`}
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
+
+          {/* Menu mobile déroulant */}
+          {isMobileMenuOpen && (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* Boutons d'authentification */}
+              <div className="p-2 space-y-2 border-b border-gray-200">
+                <button
+                  onClick={() => {
+                    setAuthMode('login');
+                    setShowAuthModal(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-left bg-white text-gray-700 font-semibold rounded-lg border-2 border-gray-200 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                >
+                  {t('auth:login')}
+                </button>
+                <button
+                  onClick={() => {
+                    setAuthMode('register');
+                    setShowAuthModal(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-3 text-left bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all duration-200"
+                >
+                  {t('auth:register')}
+                </button>
+              </div>
+
+              {/* Sélecteur de langue */}
+              <div className="p-2">
+                <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {t('settings:language', { defaultValue: 'Language' })}
+                </div>
                 {languageOptions.map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => handleLanguageChange(option.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 transition-colors duration-150 ${
+                    onClick={() => {
+                      handleLanguageChange(option.value);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg hover:bg-blue-50 transition-colors duration-150 ${
                       currentLanguage === option.value ? 'bg-blue-50 border-l-4 border-blue-600' : ''
                     }`}
                   >
@@ -194,8 +305,8 @@ const HomePage: React.FC = () => {
                   </button>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
