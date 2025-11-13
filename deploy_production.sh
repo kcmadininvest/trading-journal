@@ -84,6 +84,18 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
         git stash save "Stash avant déploiement production $(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
     fi
     
+    # Nettoyer les anciens stashes de déploiement (garder seulement les 5 derniers)
+    STASH_COUNT=$(git stash list | grep -c "Stash avant déploiement production" || echo "0")
+    if [ "$STASH_COUNT" -gt 5 ]; then
+        info "Nettoyage des anciens stashes de déploiement (garder les 5 derniers)..."
+        # Récupérer les stashes à supprimer (tous sauf les 5 derniers)
+        STASHES_TO_DROP=$(git stash list | grep "Stash avant déploiement production" | tail -n +6 | cut -d: -f1)
+        for stash in $STASHES_TO_DROP; do
+            git stash drop "$stash" 2>/dev/null || true
+        done
+        info "✅ Anciens stashes nettoyés"
+    fi
+    
     # Passer sur main et récupérer les dernières modifications
     info "🔄 Récupération des changements depuis origin/main..."
     git fetch origin main 2>/dev/null || warn "Impossible de récupérer depuis origin/main"
