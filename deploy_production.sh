@@ -248,12 +248,13 @@ fi
 cd "$FRONTEND_DIR"
 
 # Vérifier si package-lock.json a changé depuis le dernier déploiement
+# IMPORTANT: Cette vérification se fait APRÈS le git pull pour comparer avec le fichier à jour
 LOCKFILE_HASH_FILE="$FRONTEND_DIR/.package-lock.hash"
 CURRENT_LOCKFILE_HASH=""
 NEEDS_INSTALL=false
 
 if [ -f "package-lock.json" ]; then
-    # Calculer le hash du package-lock.json actuel
+    # Calculer le hash du package-lock.json actuel (après le pull)
     CURRENT_LOCKFILE_HASH=$(md5sum package-lock.json 2>/dev/null | cut -d' ' -f1 || sha256sum package-lock.json 2>/dev/null | cut -d' ' -f1 || echo "")
     
     if [ ! -z "$CURRENT_LOCKFILE_HASH" ]; then
@@ -261,10 +262,10 @@ if [ -f "package-lock.json" ]; then
         if [ -f "$LOCKFILE_HASH_FILE" ]; then
             PREVIOUS_HASH=$(cat "$LOCKFILE_HASH_FILE" 2>/dev/null || echo "")
             if [ "$CURRENT_LOCKFILE_HASH" != "$PREVIOUS_HASH" ]; then
-                info "📦 package-lock.json a changé, installation des dépendances nécessaire..."
+                info "📦 package-lock.json a changé (hash: ${CURRENT_LOCKFILE_HASH:0:8}...), installation des dépendances nécessaire..."
                 NEEDS_INSTALL=true
             else
-                info "✅ package-lock.json inchangé, pas besoin de réinstaller les dépendances"
+                info "✅ package-lock.json inchangé (hash: ${CURRENT_LOCKFILE_HASH:0:8}...), pas besoin de réinstaller les dépendances"
             fi
         else
             # Pas de hash précédent, installation nécessaire
@@ -286,15 +287,16 @@ if [ "$NEEDS_INSTALL" = true ]; then
     # Utiliser --legacy-peer-deps pour résoudre les conflits de peer dependencies
     npm ci --production=false --legacy-peer-deps || npm install --legacy-peer-deps
     
-    # Sauvegarder le hash pour la prochaine fois
-    if [ ! -z "$CURRENT_LOCKFILE_HASH" ]; then
-        echo "$CURRENT_LOCKFILE_HASH" > "$LOCKFILE_HASH_FILE"
-        info "✅ Hash du package-lock.json sauvegardé"
-    fi
-    
     info "✅ Dépendances npm installées"
 else
     info "⏭️  Installation des dépendances ignorée (environnement identique)"
+fi
+
+# Sauvegarder le hash pour la prochaine fois (même si on n'a pas installé)
+# Cela permet de ne pas réinstaller si le fichier n'a pas changé
+if [ ! -z "$CURRENT_LOCKFILE_HASH" ]; then
+    echo "$CURRENT_LOCKFILE_HASH" > "$LOCKFILE_HASH_FILE"
+    info "✅ Hash du package-lock.json sauvegardé pour la prochaine fois"
 fi
 
 # 6. 🔧 Build du frontend React
