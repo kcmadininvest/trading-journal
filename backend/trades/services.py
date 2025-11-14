@@ -1,11 +1,16 @@
 """
 Services pour le calcul de progression des objectifs de trading.
 """
-from django.db.models import Sum, Count, Max, Min, Q
+from django.db.models import Sum, Count, Max, Min, Q, QuerySet
 from django.utils import timezone
 from django.db import transaction
 from decimal import Decimal
 from datetime import timedelta, date
+from typing import cast, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .models import TradingAccount
+
 from .models import TradingGoal, TopStepTrade, TradeStrategy, TradingAccount, AccountDailyMetrics
 
 
@@ -13,6 +18,15 @@ class GoalProgressCalculator:
     """
     Service pour calculer la progression des objectifs de trading.
     """
+    
+    @staticmethod
+    def _to_decimal(value) -> Decimal:
+        """Convertit une valeur (DecimalField ou autre) en Decimal."""
+        if value is None:
+            return Decimal('0')
+        if isinstance(value, Decimal):
+            return value
+        return Decimal(str(value))
     
     def calculate_progress(self, goal: TradingGoal) -> dict:
         """
@@ -58,14 +72,29 @@ class GoalProgressCalculator:
         """Récupère les trades pertinents pour l'objectif."""
         # Filtrer par compte si spécifié
         if goal.trading_account:
-            trades = goal.trading_account.topstep_trades.filter(
+            # Accéder à topstep_trades via la relation Django (related_name défini dans le modèle)
+            # Le cast indique au type checker que c'est une instance de TradingAccount
+            trading_account = cast('TradingAccount', goal.trading_account)
+            # Utiliser getattr pour accéder à la relation inverse avec une annotation de type
+            # Cela permet au type checker de comprendre que topstep_trades existe
+            from django.db.models import QuerySet
+            topstep_trades = getattr(trading_account, 'topstep_trades')
+            trades: QuerySet[TopStepTrade] = topstep_trades.filter(
                 user=goal.user
             )
         else:
             # Tous les comptes de l'utilisateur
-            trades = TopStepTrade.objects.filter(
+            from django.db.models import QuerySet
+            trades_manager = getattr(TopStepTrade, 'objects')
+            all_trades: QuerySet[TopStepTrade] = trades_manager.filter(
                 user=goal.user
             )
+            # Filtrer par période
+            trades = all_trades.filter(
+                trade_day__gte=goal.start_date,
+                trade_day__lte=goal.end_date
+            )
+            return trades
         
         # Filtrer par période
         trades = trades.filter(
@@ -80,15 +109,17 @@ class GoalProgressCalculator:
         total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
         current_value = total_pnl
         
-        percentage = (current_value / goal.target_value * 100) if goal.target_value != 0 else 0
-        remaining_amount = max(Decimal('0'), goal.target_value - current_value)
+        # Convertir goal.target_value en Decimal pour les opérations
+        target_value_decimal = self._to_decimal(goal.target_value)
+        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
+        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
         
         # Déterminer le statut
-        status = self._determine_status(goal, percentage, current_value, goal.target_value)
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
         return {
             'current_value': current_value,
-            'percentage': float(percentage),
+            'percentage': percentage_float,
             'status': status,
             'remaining_days': goal.remaining_days,
             'remaining_amount': remaining_amount
@@ -103,21 +134,22 @@ class GoalProgressCalculator:
                 'percentage': 0,
                 'status': 'active',
                 'remaining_days': goal.remaining_days,
-                'remaining_amount': goal.target_value
+                'remaining_amount': self._to_decimal(goal.target_value)
             }
         
         winning_trades = trades.filter(net_pnl__gt=0).count()
         win_rate = (winning_trades / total_trades) * 100
         current_value = Decimal(str(win_rate))
         
-        percentage = (current_value / goal.target_value * 100) if goal.target_value != 0 else 0
-        remaining_amount = max(Decimal('0'), goal.target_value - current_value)
+        target_value_decimal = self._to_decimal(goal.target_value)
+        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
+        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
         
-        status = self._determine_status(goal, percentage, current_value, goal.target_value)
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
         return {
             'current_value': current_value,
-            'percentage': float(percentage),
+            'percentage': percentage_float,
             'status': status,
             'remaining_days': goal.remaining_days,
             'remaining_amount': remaining_amount
@@ -127,14 +159,15 @@ class GoalProgressCalculator:
         """Calcule la progression pour un objectif Nombre de Trades."""
         current_value = Decimal(str(trades.count()))
         
-        percentage = (current_value / goal.target_value * 100) if goal.target_value != 0 else 0
-        remaining_amount = max(Decimal('0'), goal.target_value - current_value)
+        target_value_decimal = self._to_decimal(goal.target_value)
+        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
+        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
         
-        status = self._determine_status(goal, percentage, current_value, goal.target_value)
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
         return {
             'current_value': current_value,
-            'percentage': float(percentage),
+            'percentage': percentage_float,
             'status': status,
             'remaining_days': goal.remaining_days,
             'remaining_amount': remaining_amount
@@ -152,14 +185,15 @@ class GoalProgressCalculator:
             profit_factor = abs(total_gains) / abs(total_losses)
             current_value = Decimal(str(profit_factor))
         
-        percentage = (current_value / goal.target_value * 100) if goal.target_value != 0 else 0
-        remaining_amount = max(Decimal('0'), goal.target_value - current_value)
+        target_value_decimal = self._to_decimal(goal.target_value)
+        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
+        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
         
-        status = self._determine_status(goal, percentage, current_value, goal.target_value)
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
         return {
             'current_value': current_value,
-            'percentage': float(percentage),
+            'percentage': percentage_float,
             'status': status,
             'remaining_days': goal.remaining_days,
             'remaining_amount': remaining_amount
@@ -173,7 +207,7 @@ class GoalProgressCalculator:
                 'percentage': 0,
                 'status': 'active',
                 'remaining_days': goal.remaining_days,
-                'remaining_amount': goal.target_value
+                'remaining_amount': self._to_decimal(goal.target_value)
             }
         
         # Calculer le drawdown maximum
@@ -181,13 +215,19 @@ class GoalProgressCalculator:
         trades_ordered = trades.order_by('trade_day', 'entered_at')
         
         # Récupérer le capital initial
-        if goal.trading_account and goal.trading_account.initial_capital:
-            initial_capital = goal.trading_account.initial_capital
+        if goal.trading_account:
+            trading_account = cast('TradingAccount', goal.trading_account)
+            initial_capital = self._to_decimal(getattr(trading_account, 'initial_capital', None))
+            if initial_capital == 0:
+                initial_capital = Decimal('50000')  # Valeur par défaut
         else:
             # Utiliser le premier trade comme référence
             first_trade = trades_ordered.first()
-            if first_trade and first_trade.trading_account.initial_capital:
-                initial_capital = first_trade.trading_account.initial_capital
+            if first_trade and first_trade.trading_account:
+                trading_account = cast('TradingAccount', first_trade.trading_account)
+                initial_capital = self._to_decimal(getattr(trading_account, 'initial_capital', None))
+                if initial_capital == 0:
+                    initial_capital = Decimal('50000')  # Valeur par défaut
             else:
                 initial_capital = Decimal('50000')  # Valeur par défaut
         
@@ -207,7 +247,8 @@ class GoalProgressCalculator:
                 max_drawdown = drawdown
         
         # Convertir en pourcentage si nécessaire
-        if goal.target_value < 100:  # Probablement un pourcentage
+        target_value_decimal = self._to_decimal(goal.target_value)
+        if target_value_decimal < 100:  # Probablement un pourcentage
             max_drawdown_pct = (max_drawdown / peak_capital * 100) if peak_capital > 0 else Decimal('0')
             current_value = max_drawdown_pct
         else:
@@ -215,18 +256,18 @@ class GoalProgressCalculator:
         
         # Pour le drawdown, on veut que la valeur actuelle soit INFÉRIEURE à la cible
         # (moins de drawdown = mieux)
-        if current_value <= goal.target_value:
-            percentage = 100
+        if current_value <= target_value_decimal:
+            percentage_float = 100.0
             status = 'achieved'
         else:
-            percentage = (goal.target_value / current_value * 100) if current_value > 0 else 0
+            percentage_float = float((target_value_decimal / current_value * 100) if current_value > 0 else 0)
             status = 'active' if goal.remaining_days > 0 else 'failed'
         
-        remaining_amount = max(Decimal('0'), current_value - goal.target_value)
+        remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
         
         return {
             'current_value': current_value,
-            'percentage': float(percentage),
+            'percentage': percentage_float,
             'status': status,
             'remaining_days': goal.remaining_days,
             'remaining_amount': remaining_amount
@@ -236,7 +277,9 @@ class GoalProgressCalculator:
         """Calcule la progression pour un objectif Respect de Stratégie."""
         # Récupérer les stratégies associées aux trades
         trade_ids = trades.values_list('id', flat=True)
-        strategies = TradeStrategy.objects.filter(
+        from django.db.models import QuerySet
+        strategies_manager = getattr(TradeStrategy, 'objects')
+        strategies: QuerySet[TradeStrategy] = strategies_manager.filter(
             trade_id__in=trade_ids,
             user=goal.user
         )
@@ -248,21 +291,22 @@ class GoalProgressCalculator:
                 'percentage': 0,
                 'status': 'active',
                 'remaining_days': goal.remaining_days,
-                'remaining_amount': goal.target_value
+                'remaining_amount': self._to_decimal(goal.target_value)
             }
         
         respected_count = strategies.filter(strategy_respected=True).count()
         respect_percentage = (respected_count / total_strategies) * 100
         current_value = Decimal(str(respect_percentage))
         
-        percentage = (current_value / goal.target_value * 100) if goal.target_value != 0 else 0
-        remaining_amount = max(Decimal('0'), goal.target_value - current_value)
+        target_value_decimal = self._to_decimal(goal.target_value)
+        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
+        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
         
-        status = self._determine_status(goal, percentage, current_value, goal.target_value)
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
         return {
             'current_value': current_value,
-            'percentage': float(percentage),
+            'percentage': percentage_float,
             'status': status,
             'remaining_days': goal.remaining_days,
             'remaining_amount': remaining_amount
@@ -278,14 +322,15 @@ class GoalProgressCalculator:
         winning_days = sum(1 for day in daily_pnl if day['daily_total'] and day['daily_total'] > 0)
         current_value = Decimal(str(winning_days))
         
-        percentage = (current_value / goal.target_value * 100) if goal.target_value != 0 else 0
-        remaining_amount = max(Decimal('0'), goal.target_value - current_value)
+        target_value_decimal = self._to_decimal(goal.target_value)
+        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
+        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
         
-        status = self._determine_status(goal, percentage, current_value, goal.target_value)
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
         return {
             'current_value': current_value,
-            'percentage': float(percentage),
+            'percentage': percentage_float,
             'status': status,
             'remaining_days': goal.remaining_days,
             'remaining_amount': remaining_amount
@@ -315,6 +360,15 @@ class AccountMetricsCalculator:
     notamment le Maximum Loss Limit (MLL).
     """
     
+    @staticmethod
+    def _to_decimal(value) -> Decimal:
+        """Convertit une valeur (DecimalField ou autre) en Decimal."""
+        if value is None:
+            return Decimal('0')
+        if isinstance(value, Decimal):
+            return value
+        return Decimal(str(value))
+    
     def calculate_metrics_for_date(self, trading_account: TradingAccount, target_date: date):
         """
         Calcule les métriques pour une date spécifique.
@@ -332,10 +386,12 @@ class AccountMetricsCalculator:
             return None
         
         # Récupérer le capital initial
-        initial_capital = trading_account.initial_capital or Decimal('0')
+        initial_capital = self._to_decimal(trading_account.initial_capital)
         
         # Récupérer tous les trades jusqu'à cette date (inclus)
-        trades = trading_account.topstep_trades.filter(
+        trading_account_cast = cast('TradingAccount', trading_account)
+        topstep_trades = getattr(trading_account_cast, 'topstep_trades')
+        trades: QuerySet[TopStepTrade] = topstep_trades.filter(
             trade_day__lte=target_date
         ).order_by('trade_day', 'entered_at')
         
@@ -348,7 +404,8 @@ class AccountMetricsCalculator:
         account_balance = initial_capital + cumulative_pnl
         
         # Récupérer la dernière métrique avant cette date (si existe)
-        previous_metrics = AccountDailyMetrics.objects.filter(
+        metrics_manager = getattr(AccountDailyMetrics, 'objects')
+        previous_metrics = metrics_manager.filter(
             trading_account=trading_account,
             date__lt=target_date
         ).order_by('-date').first()
@@ -357,7 +414,8 @@ class AccountMetricsCalculator:
         # Le solde maximum commence toujours au capital initial, puis évolue avec les gains
         if previous_metrics:
             # Utiliser le maximum entre le high précédent et le solde actuel
-            account_balance_high = max(previous_metrics.account_balance_high, account_balance)
+            previous_high = self._to_decimal(previous_metrics.account_balance_high)
+            account_balance_high = max(previous_high, account_balance)
             mll_is_locked = previous_metrics.mll_is_locked
         else:
             # Première métrique : le solde maximum commence au capital initial
@@ -379,7 +437,8 @@ class AccountMetricsCalculator:
             account_balance_high_for_mll = account_balance_high
             
             # Calculer le nouveau MLL = Account Balance High - MLL initial
-            maximum_loss_limit = account_balance_high_for_mll - mll_initial
+            mll_initial_decimal = self._to_decimal(mll_initial)
+            maximum_loss_limit = account_balance_high_for_mll - mll_initial_decimal
             
             # Le MLL est verrouillé seulement si le solde maximum atteint est égal au capital initial
             # ET qu'on n'a jamais dépassé le capital initial (c'est-à-dire qu'on est toujours au capital initial)
@@ -391,7 +450,8 @@ class AccountMetricsCalculator:
         
         # Créer ou mettre à jour la métrique
         # Pour account_balance_high, on stocke toujours le vrai solde maximum (pas celui pour le MLL)
-        metrics, created = AccountDailyMetrics.objects.update_or_create(
+        metrics_manager = getattr(AccountDailyMetrics, 'objects')
+        metrics, created = metrics_manager.update_or_create(
             trading_account=trading_account,
             date=target_date,
             defaults={
@@ -415,14 +475,15 @@ class AccountMetricsCalculator:
         Returns:
             int: Nombre de métriques recalculées
         """
-        # Vérifier que c'est un compte TopStep
         # Récupérer toutes les dates de trading à partir de from_date
-        trade_dates = trading_account.topstep_trades.filter(
+        trading_account_cast = cast('TradingAccount', trading_account)
+        topstep_trades = getattr(trading_account_cast, 'topstep_trades')
+        trade_dates = topstep_trades.filter(
             trade_day__gte=from_date
         ).values_list('trade_day', flat=True).distinct().order_by('trade_day')
         
         count = 0
-        with transaction.atomic():
+        with transaction.atomic():  # type: ignore
             for trade_date in trade_dates:
                 self.calculate_metrics_for_date(trading_account, trade_date)
                 count += 1
@@ -439,9 +500,10 @@ class AccountMetricsCalculator:
         Returns:
             int: Nombre de métriques recalculées
         """
-        # Vérifier que c'est un compte TopStep
         # Récupérer la première date de trading
-        first_trade = trading_account.topstep_trades.order_by('trade_day').first()
+        trading_account_cast = cast('TradingAccount', trading_account)
+        topstep_trades = getattr(trading_account_cast, 'topstep_trades')
+        first_trade = topstep_trades.order_by('trade_day').first()
         if not first_trade or not first_trade.trade_day:
             return 0
         

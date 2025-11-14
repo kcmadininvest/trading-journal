@@ -3,7 +3,12 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 from decimal import Decimal
 from datetime import datetime, timedelta
+from typing import Any
 import pytz
+
+# Constantes pour les valeurs par défaut des BooleanField
+_MLL_ENABLED_DEFAULT: Any = True
+_MLL_IS_LOCKED_DEFAULT: Any = False
 
 
 class Currency(models.Model):
@@ -101,7 +106,7 @@ class TradingAccount(models.Model):
     )
     
     mll_enabled = models.BooleanField(
-        default=True,
+        default=_MLL_ENABLED_DEFAULT,
         verbose_name='Activer le MLL',
         help_text='Activer le calcul et l\'affichage du Maximum Loss Limit'
     )
@@ -293,10 +298,12 @@ class AccountTransaction(models.Model):
     @property
     def signed_amount(self):
         """Retourne le montant avec le signe approprié (positif pour dépôt, négatif pour retrait)."""
+        # Convertir en Decimal pour les opérations
+        amount_decimal = Decimal(str(self.amount)) if self.amount is not None else Decimal('0')
         if self.transaction_type == 'deposit':
-            return self.amount
+            return amount_decimal
         else:  # withdrawal
-            return Decimal('-1') * self.amount
+            return -amount_decimal
 
 
 class AccountDailyMetrics(models.Model):
@@ -347,7 +354,7 @@ class AccountDailyMetrics(models.Model):
     
     # Indique si le MLL est fixé au capital initial (ne peut plus évoluer)
     mll_is_locked = models.BooleanField(
-        default=False,
+        default=_MLL_IS_LOCKED_DEFAULT,
         verbose_name='MLL verrouillé',
         help_text='Indique si le MLL est fixé au capital initial'
     )
