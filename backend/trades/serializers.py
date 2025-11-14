@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -22,6 +22,8 @@ class TradingAccountSerializer(serializers.ModelSerializer):
             'broker_account_id',
             'currency',
             'initial_capital',
+            'maximum_loss_limit',
+            'mll_enabled',
             'status',
             'broker_config',
             'description',
@@ -86,6 +88,8 @@ class TradingAccountListSerializer(serializers.ModelSerializer):
             'account_type',
             'currency',
             'initial_capital',
+            'maximum_loss_limit',
+            'mll_enabled',
             'status',
             'is_default',
             'trades_count',
@@ -761,3 +765,26 @@ class AccountTransactionSerializer(serializers.ModelSerializer):
         
         instance = AccountTransaction.objects.create(**validated_data)
         return instance
+
+
+class AccountDailyMetricsSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les métriques quotidiennes d'un compte de trading.
+    """
+    trading_account_name = serializers.CharField(source='trading_account.name', read_only=True)
+    
+    class Meta:
+        model = AccountDailyMetrics
+        fields = [
+            'id',
+            'trading_account',
+            'trading_account_name',
+            'date',
+            'account_balance',
+            'account_balance_high',
+            'maximum_loss_limit',
+            'mll_is_locked',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']

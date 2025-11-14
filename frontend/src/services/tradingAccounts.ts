@@ -9,6 +9,8 @@ export interface TradingAccount {
   broker_account_id?: string;
   currency: string;
   initial_capital?: string | number;
+  maximum_loss_limit?: string | number;
+  mll_enabled?: boolean;
   status: 'active' | 'inactive' | 'archived';
   broker_config?: Record<string, any>;
   description?: string;
@@ -133,6 +135,29 @@ class TradingAccountsService {
     });
     if (!res.ok) throw new Error('Erreur lors de la suppression du compte');
   }
+
+  async getDailyMetrics(id: number, params?: { start_date?: string; end_date?: string }): Promise<AccountDailyMetric[]> {
+    const qs = new URLSearchParams();
+    if (params?.start_date) qs.set('start_date', params.start_date);
+    if (params?.end_date) qs.set('end_date', params.end_date);
+    const url = `${this.BASE_URL}/api/trades/trading-accounts/${id}/daily_metrics/${qs.toString() ? `?${qs.toString()}` : ''}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des métriques');
+    return res.json();
+  }
+}
+
+export interface AccountDailyMetric {
+  id: number;
+  trading_account: number;
+  trading_account_name?: string;
+  date: string;
+  account_balance: string;
+  account_balance_high: string;
+  maximum_loss_limit: string;
+  mll_is_locked: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const tradingAccountsService = new TradingAccountsService();
