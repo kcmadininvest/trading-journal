@@ -46,6 +46,8 @@ const TradingAccountsPage: React.FC = () => {
     currency: 'USD',
     status: 'active',
     description: '',
+    maximum_loss_limit: undefined,
+    mll_enabled: true,
   });
   const [saving, setSaving] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
@@ -68,6 +70,19 @@ const TradingAccountsPage: React.FC = () => {
     const value = typeof account.initial_capital === 'string' 
       ? parseFloat(account.initial_capital) 
       : account.initial_capital;
+    if (isNaN(value)) return '-';
+    const symbol = getCurrencySymbol(account.currency);
+    return `${symbol}${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
+
+  // Helper pour formater le Maximum Loss Limit
+  const formatMaximumLossLimit = (account: TradingAccount): string => {
+    // Afficher le MLL seulement si activé
+    if (account.mll_enabled === false) return '-';
+    if (!account.maximum_loss_limit) return '-';
+    const value = typeof account.maximum_loss_limit === 'string' 
+      ? parseFloat(account.maximum_loss_limit) 
+      : account.maximum_loss_limit;
     if (isNaN(value)) return '-';
     const symbol = getCurrencySymbol(account.currency);
     return `${symbol}${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -115,15 +130,33 @@ const TradingAccountsPage: React.FC = () => {
     try {
       if (editingAccountId) {
         // Mode édition
-        await tradingAccountsService.update(editingAccountId, form);
+        const updated = await tradingAccountsService.update(editingAccountId, form);
+        // Recharger depuis le backend pour refléter l'unicité du compte par défaut
+        await load();
+        
+        // Mettre à jour le formulaire avec les données sauvegardées
+        const mllValue = updated.maximum_loss_limit ? (typeof updated.maximum_loss_limit === 'string' ? parseFloat(updated.maximum_loss_limit) : updated.maximum_loss_limit) : undefined;
+        
+        setForm({
+          name: updated.name,
+          account_type: updated.account_type,
+          currency: updated.currency,
+          initial_capital: updated.initial_capital,
+          maximum_loss_limit: mllValue,
+          mll_enabled: updated.mll_enabled !== undefined ? updated.mll_enabled : true,
+          status: updated.status,
+          description: updated.description || '',
+          broker_account_id: updated.broker_account_id || '',
+          is_default: updated.is_default,
+        });
       } else {
         // Mode création
         await tradingAccountsService.create(form);
+        // Recharger depuis le backend pour refléter l'unicité du compte par défaut
+        await load();
+        setForm({ name: '', account_type: 'topstep', currency: 'USD', status: 'active', description: '', maximum_loss_limit: undefined, mll_enabled: true });
+        setEditingAccountId(null);
       }
-      // Recharger depuis le backend pour refléter l'unicité du compte par défaut
-      await load();
-      setForm({ name: '', account_type: 'topstep', currency: 'USD', status: 'active', description: '' });
-      setEditingAccountId(null);
     } catch {
       // noop
     } finally {
@@ -132,11 +165,15 @@ const TradingAccountsPage: React.FC = () => {
   };
 
   const handleEdit = (acc: TradingAccount) => {
+    const mllValue = acc.maximum_loss_limit ? (typeof acc.maximum_loss_limit === 'string' ? parseFloat(acc.maximum_loss_limit) : acc.maximum_loss_limit) : undefined;
+    
     setForm({
       name: acc.name,
       account_type: acc.account_type,
       currency: acc.currency,
       initial_capital: acc.initial_capital,
+      maximum_loss_limit: mllValue,
+      mll_enabled: acc.mll_enabled !== undefined ? acc.mll_enabled : true,
       status: acc.status,
       description: acc.description || '',
       broker_account_id: acc.broker_account_id || '',
@@ -153,7 +190,7 @@ const TradingAccountsPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    setForm({ name: '', account_type: 'topstep', currency: 'USD', status: 'active', description: '' });
+    setForm({ name: '', account_type: 'topstep', currency: 'USD', status: 'active', description: '', maximum_loss_limit: undefined });
     setEditingAccountId(null);
   };
 
@@ -274,6 +311,10 @@ const TradingAccountsPage: React.FC = () => {
                           <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 break-words">{formatInitialCapital(acc)}</div>
                         </div>
                         <div className="flex flex-col w-full">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })}</div>
+                          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 break-words">{formatMaximumLossLimit(acc)}</div>
+                        </div>
+                        <div className="flex flex-col w-full">
                           <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{t('accounts:columns.trades')}</div>
                           <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">{acc.trades_count ?? 0}</div>
                         </div>
@@ -352,6 +393,7 @@ const TradingAccountsPage: React.FC = () => {
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.type')}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.status')}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.initialCapital')}</th>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.trades')}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
                     </tr>
@@ -364,13 +406,14 @@ const TradingAccountsPage: React.FC = () => {
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 text-right"><div className="h-8 bg-gray-100 dark:bg-gray-700 rounded w-40 ml-auto animate-pulse" /></td>
                         </tr>
                       ))
                     ) : accounts.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
+                        <td colSpan={7} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
                           <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('accounts:noAccounts')}</div>
                         </td>
                       </tr>
@@ -408,6 +451,9 @@ const TradingAccountsPage: React.FC = () => {
                           </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {formatInitialCapital(acc)}
+                          </td>
+                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                            {formatMaximumLossLimit(acc)}
                           </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {acc.trades_count ?? 0}
@@ -598,6 +644,45 @@ const TradingAccountsPage: React.FC = () => {
                   <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.initialCapitalDescription')}</p>
                 </div>
               </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="mll_enabled"
+                  checked={(form as any).mll_enabled !== false}
+                  onChange={(e) => setForm(prev => ({ ...prev, mll_enabled: e.target.checked } as any))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                />
+                <label htmlFor="mll_enabled" className="ml-2 block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('accounts:form.enableMLL', { defaultValue: 'Activer le Maximum Loss Limit (MLL)' })}
+                </label>
+              </div>
+              {(form as any).mll_enabled !== false && (
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                    {t('accounts:form.maximumLossLimit', { defaultValue: 'Maximum Loss Limit (MLL)' })}
+                    <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                    value={(() => {
+                      const mll = (form as any).maximum_loss_limit;
+                      if (mll === null || mll === undefined) return '';
+                      // Convertir en nombre si c'est une string
+                      const numValue = typeof mll === 'string' ? parseFloat(mll) : mll;
+                      return isNaN(numValue) ? '' : numValue;
+                    })()}
+                    onChange={(e) => setForm(prev => ({ ...prev, maximum_loss_limit: e.target.value ? parseFloat(e.target.value) : null } as any))}
+                    placeholder={t('accounts:form.maximumLossLimitPlaceholder', { defaultValue: 'Laissez vide pour calcul automatique' })}
+                  />
+                  <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                    {t('accounts:form.maximumLossLimitDescription', { defaultValue: 'Laissez vide pour calcul automatique selon le capital initial (50K=$2K, 100K=$3K, 150K=$4.5K)' })}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('accounts:form.status')}</label>
