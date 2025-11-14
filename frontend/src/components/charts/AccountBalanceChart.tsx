@@ -105,39 +105,66 @@ function AccountBalanceChart({
     const balances = data.map(d => d.cumulative);
     const mllValues = data.map(d => d.mll);
 
-    // Créer des labels et balances avec points intermédiaires au capital initial pour les transitions
+    // Créer des labels et balances avec points intermédiaires au capital initial pour la coloration
+    // Ces points intermédiaires permettent de colorer correctement les segments qui traversent le capital initial
     const processedLabels: string[] = [];
     const processedBalances: number[] = [];
     const processedMllValues: (number | null)[] = [];
     const processedPnlMapping: number[] = [];
+    const isIntermediatePoint: boolean[] = []; // Marquer les points intermédiaires pour les rendre invisibles
 
     balances.forEach((balance, index) => {
       const prevBalance = index > 0 ? balances[index - 1] : balance;
       const currentMll = mllValues[index];
       
-      // Si on traverse la ligne du capital initial, ajouter un point au capital initial
-      if ((prevBalance < initialCapital && balance >= initialCapital) || (prevBalance >= initialCapital && balance < initialCapital)) {
-        // Ajouter le point au capital initial avec le label du point actuel
+      // Récupérer le dernier point réel ajouté (pas les points intermédiaires)
+      // Chercher en arrière le dernier point non-intermédiaire
+      let lastRealBalance = balance;
+      if (processedBalances.length > 0) {
+        for (let i = processedBalances.length - 1; i >= 0; i--) {
+          if (!isIntermediatePoint[i]) {
+            lastRealBalance = processedBalances[i];
+            break;
+          }
+        }
+      } else {
+        // Si c'est le premier point, utiliser prevBalance (qui sera égal à balance)
+        lastRealBalance = prevBalance;
+      }
+      
+      // Si le segment traverse le capital initial, ajouter un point intermédiaire invisible au capital initial
+      // Cela permet de colorer correctement : rose en dessous, bleu au-dessus
+      // Utiliser lastRealBalance pour détecter correctement la traversée
+      const crossesInitialCapital = 
+        (lastRealBalance < initialCapital && balance > initialCapital) || 
+        (lastRealBalance > initialCapital && balance < initialCapital);
+      
+      if (crossesInitialCapital) {
+        // Ajouter le point intermédiaire au capital initial (invisible)
+        // Utiliser le même label que le point actuel pour qu'il soit au même endroit sur l'axe X
         processedLabels.push(dates[index]);
         processedBalances.push(initialCapital);
-        // Pour le MLL, utiliser la valeur actuelle ou chercher la dernière valeur définie
-        let mllForPoint = currentMll;
-        if (mllForPoint === undefined) {
-          // Chercher la valeur précédente
+        isIntermediatePoint.push(true); // Marquer comme point intermédiaire
+        
+        // Pour le MLL au point intermédiaire, utiliser la valeur actuelle ou la précédente
+        let mllForIntermediate = currentMll;
+        if (mllForIntermediate === undefined) {
           for (let i = index - 1; i >= 0; i--) {
             if (mllValues[i] !== undefined) {
-              mllForPoint = mllValues[i];
+              mllForIntermediate = mllValues[i];
               break;
             }
           }
         }
-        processedMllValues.push(mllForPoint ?? null);
-        processedPnlMapping.push(data[index]?.pnl ?? 0);
+        processedMllValues.push(mllForIntermediate ?? null);
+        processedPnlMapping.push(0); // Pas de PnL pour le point intermédiaire
       }
       
-      // Ajouter le point actuel
+      // Ajouter le point réel de la date
       processedLabels.push(dates[index]);
       processedBalances.push(balance);
+      isIntermediatePoint.push(false); // Point réel, visible
+      
       // Pour le MLL, utiliser la valeur actuelle ou chercher la dernière valeur définie
       let mllForPoint = currentMll;
       if (mllForPoint === undefined) {
@@ -176,25 +203,35 @@ function AccountBalanceChart({
               borderColor: (ctx: any) => {
                 const v0 = ctx.p0.parsed.y;
                 const v1 = ctx.p1.parsed.y;
-                // Si on traverse la ligne du capital initial, colorer selon la position
-                // Si les deux points sont du même côté du capital initial, utiliser le point d'arrivée
-                // Si on va vers le capital initial (v0 != initialCapital et v1 == initialCapital), utiliser le point de départ
-                // Si on part du capital initial (v0 == initialCapital et v1 != initialCapital), utiliser le point d'arrivée
-                // Utiliser les mêmes couleurs que le graphique "Performance par Jour de la Semaine"
-                if (v0 === initialCapital) {
-                  // On part du capital initial, utiliser la couleur du point d'arrivée
+                // Tolérance pour la comparaison avec le capital initial (problèmes de précision)
+                const tolerance = 0.01;
+                const isV0AtInitial = Math.abs(v0 - initialCapital) < tolerance;
+                const isV1AtInitial = Math.abs(v1 - initialCapital) < tolerance;
+                
+                // Colorer le segment selon la position du point d'arrivée
+                // Si le segment traverse le capital initial, colorer selon la partie du segment
+                // Si v0 est au capital initial (point intermédiaire), utiliser la couleur de v1
+                // Sinon, utiliser la couleur du point d'arrivée
+                if (isV0AtInitial) {
+                  // On part du capital initial (point intermédiaire), utiliser la couleur du point d'arrivée
                   return v1 >= initialCapital ? '#3b82f6' : '#ec4899';
-                } else if (v1 === initialCapital) {
-                  // On va vers le capital initial, utiliser la couleur du point de départ
+                } else if (isV1AtInitial) {
+                  // On arrive au capital initial (point intermédiaire), utiliser la couleur du point de départ
                   return v0 >= initialCapital ? '#3b82f6' : '#ec4899';
                 } else {
-                  // Pas de transition par le capital initial, utiliser la couleur du point d'arrivée
+                  // Segment normal, colorer selon le point d'arrivée
                   return v1 >= initialCapital ? '#3b82f6' : '#ec4899';
                 }
               },
             },
             fill: false,
             pointRadius: (context: any) => {
+              // Ne pas afficher les points intermédiaires (invisibles)
+              const index = context.dataIndex;
+              const dataset = context.dataset;
+              const intermediatePoints = dataset._isIntermediatePoint || [];
+              if (intermediatePoints[index]) return 0;
+              
               // Afficher les points seulement si le volume de données est faible (< 30 points)
               const dataLength = processedBalances.length;
               if (dataLength > 30) return 0;
@@ -217,6 +254,7 @@ function AccountBalanceChart({
             pointHoverBorderWidth: 3,
             spanGaps: false,
             _pnlMapping: processedPnlMapping, // Stocker le mapping pour les tooltips
+            _isIntermediatePoint: isIntermediatePoint, // Stocker pour masquer les points intermédiaires
             order: 0, // Placer devant tout
           },
           // Dataset pour le Maximum Loss Limit (MLL) - uniquement si des valeurs MLL sont présentes
@@ -296,15 +334,55 @@ function AccountBalanceChart({
         displayColors: true,
         mode: 'index' as const,
         intersect: false,
+        external: function(context: any) {
+          // Empêcher complètement l'affichage du tooltip pour les points intermédiaires
+          if (!context || !context.tooltip || !context.tooltip.dataPoints || context.tooltip.dataPoints.length === 0) {
+            return;
+          }
+          
+          const firstDataPoint = context.tooltip.dataPoints[0];
+          const index = firstDataPoint.dataIndex;
+          const mainDataset = chartData.datasets[mainDatasetIndex];
+          const intermediatePoints = mainDataset?._isIntermediatePoint || [];
+          
+          // Si c'est un point intermédiaire, empêcher l'affichage du tooltip
+          if (intermediatePoints[index]) {
+            context.tooltip.opacity = 0;
+            context.tooltip.display = false;
+          }
+        },
         filter: function(tooltipItem: any) {
-          // Afficher le tooltip pour le dataset principal (Solde) et le MLL
-          const datasetLabel = tooltipItem.dataset?.label || '';
+          const index = tooltipItem.dataIndex;
+          const dataset = tooltipItem.dataset;
+          const datasetLabel = dataset?.label || '';
+          
+          // Vérifier d'abord si c'est un point intermédiaire (priorité absolue)
+          // Les indices sont alignés entre tous les datasets
+          const mainDataset = chartData.datasets[mainDatasetIndex];
+          const intermediatePoints = mainDataset?._isIntermediatePoint || [];
+          if (intermediatePoints[index]) {
+            return false; // Masquer le tooltip pour TOUS les points intermédiaires (Solde et MLL)
+          }
+          
+          // Afficher le tooltip pour le dataset principal (Solde) et le MLL (seulement si ce n'est pas un point intermédiaire)
           return tooltipItem.datasetIndex === mainDatasetIndex || datasetLabel === 'Maximum Loss Limit (MLL)';
         },
         callbacks: {
           title: function(context: any) {
-            // Après le filtre, il ne devrait y avoir qu'un seul élément (le dataset principal)
+            // Ne pas afficher le titre si tous les éléments sont des points intermédiaires
+            if (!context || context.length === 0) {
+              return '';
+            }
+            
             const index = context[0]?.dataIndex ?? 0;
+            const mainDataset = chartData.datasets[mainDatasetIndex];
+            const intermediatePoints = mainDataset?._isIntermediatePoint || [];
+            
+            // Si c'est un point intermédiaire, ne pas afficher le titre
+            if (intermediatePoints[index]) {
+              return ''; // Pas de titre pour les points intermédiaires
+            }
+            
             return chartLabels[index] || '';
           },
           label: function(context: any) {
