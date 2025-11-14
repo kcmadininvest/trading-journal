@@ -97,22 +97,6 @@ class TopStepCSVImporter:
                         skipped_count=self.skipped_count,
                         errors=self.errors if self.errors else None
                     )
-                    
-                    # Calculer les métriques MLL après l'import (uniquement pour les comptes TopStep)
-                    if self.trading_account and self.trading_account.is_topstep:
-                        from .services import AccountMetricsCalculator
-                        from datetime import date
-                        
-                        calculator = AccountMetricsCalculator()
-                        
-                        # Récupérer toutes les dates de trading affectées par cet import
-                        trade_dates = self.trading_account.topstep_trades.filter(
-                            trade_day__isnull=False
-                        ).values_list('trade_day', flat=True).distinct().order_by('trade_day')
-                        
-                        # Recalculer les métriques pour toutes les dates
-                        for trade_date in trade_dates:
-                            calculator.calculate_metrics_for_date(self.trading_account, trade_date)
             
             return {
                 'success': True,
@@ -229,22 +213,6 @@ class TopStepCSVImporter:
                         skipped_count=self.skipped_count,
                         errors=self.errors if self.errors else None
                     )
-                    
-                    # Calculer les métriques MLL après l'import (uniquement pour les comptes TopStep)
-                    if self.trading_account and self.trading_account.is_topstep:
-                        from .services import AccountMetricsCalculator
-                        from datetime import date
-                        
-                        calculator = AccountMetricsCalculator()
-                        
-                        # Récupérer toutes les dates de trading affectées par cet import
-                        trade_dates = self.trading_account.topstep_trades.filter(
-                            trade_day__isnull=False
-                        ).values_list('trade_day', flat=True).distinct().order_by('trade_day')
-                        
-                        # Recalculer les métriques pour toutes les dates
-                        for trade_date in trade_dates:
-                            calculator.calculate_metrics_for_date(self.trading_account, trade_date)
             
             return {
                 'success': True,

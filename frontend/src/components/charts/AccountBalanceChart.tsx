@@ -32,7 +32,6 @@ interface BalanceDataPoint {
   date: string; // Format YYYY-MM-DD
   pnl: number;
   cumulative: number;
-  mll?: number; // Maximum Loss Limit (optionnel)
 }
 
 interface AccountBalanceChartProps {
@@ -103,62 +102,26 @@ function AccountBalanceChart({
       })
     );
     const balances = data.map(d => d.cumulative);
-    const mllValues = data.map(d => d.mll);
 
     // Créer des labels et balances avec points intermédiaires au capital initial pour les transitions
     const processedLabels: string[] = [];
     const processedBalances: number[] = [];
-    const processedMllValues: (number | null)[] = [];
     const processedPnlMapping: number[] = [];
 
     balances.forEach((balance, index) => {
       const prevBalance = index > 0 ? balances[index - 1] : balance;
-      const currentMll = mllValues[index];
       
       // Si on traverse la ligne du capital initial, ajouter un point au capital initial
       if ((prevBalance < initialCapital && balance >= initialCapital) || (prevBalance >= initialCapital && balance < initialCapital)) {
         // Ajouter le point au capital initial avec le label du point actuel
         processedLabels.push(dates[index]);
         processedBalances.push(initialCapital);
-        // Pour le MLL, utiliser la valeur actuelle ou chercher la dernière valeur définie
-        let mllForPoint = currentMll;
-        if (mllForPoint === undefined) {
-          // Chercher la valeur précédente
-          for (let i = index - 1; i >= 0; i--) {
-            if (mllValues[i] !== undefined) {
-              mllForPoint = mllValues[i];
-              break;
-            }
-          }
-        }
-        processedMllValues.push(mllForPoint ?? null);
         processedPnlMapping.push(data[index]?.pnl ?? 0);
       }
       
       // Ajouter le point actuel
       processedLabels.push(dates[index]);
       processedBalances.push(balance);
-      // Pour le MLL, utiliser la valeur actuelle ou chercher la dernière valeur définie
-      let mllForPoint = currentMll;
-      if (mllForPoint === undefined) {
-        // Chercher la valeur précédente
-        for (let i = index - 1; i >= 0; i--) {
-          if (mllValues[i] !== undefined) {
-            mllForPoint = mllValues[i];
-            break;
-          }
-        }
-        // Si toujours pas trouvé, chercher la valeur suivante
-        if (mllForPoint === undefined) {
-          for (let i = index + 1; i < mllValues.length; i++) {
-            if (mllValues[i] !== undefined) {
-              mllForPoint = mllValues[i];
-              break;
-            }
-          }
-        }
-      }
-      processedMllValues.push(mllForPoint ?? null);
       processedPnlMapping.push(data[index]?.pnl ?? 0);
     });
 
@@ -219,49 +182,12 @@ function AccountBalanceChart({
             _pnlMapping: processedPnlMapping, // Stocker le mapping pour les tooltips
             order: 0, // Placer devant tout
           },
-          // Dataset pour le Maximum Loss Limit (MLL) - uniquement si des valeurs MLL sont présentes
-          ...(processedMllValues.some(mll => mll !== null && mll !== undefined) ? [{
-            label: 'Maximum Loss Limit (MLL)',
-            data: processedMllValues.map((mll, index) => {
-              // Si le MLL n'est pas défini pour ce point, utiliser la dernière valeur définie
-              if (mll !== null && mll !== undefined) return mll;
-              // Chercher la dernière valeur définie avant ce point
-              for (let i = index - 1; i >= 0; i--) {
-                if (processedMllValues[i] !== null && processedMllValues[i] !== undefined) {
-                  return processedMllValues[i];
-                }
-              }
-              return null;
-            }),
-            borderColor: '#ef4444', // Rouge pour le MLL
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderDash: [5, 5], // Ligne en pointillés
-            fill: false,
-            pointRadius: 0,
-            tension: 0.4, // Même courbe arrondie que le solde
-            spanGaps: true, // Continuer la ligne même avec des valeurs null
-            order: 1, // Placer derrière le solde
-            // Utiliser cubicInterpolationMode pour une courbe plus naturelle qui ne "baisse" pas avant de monter
-            cubicInterpolationMode: 'monotone' as const,
-          }] : []),
         ],
       },
       chartLabels: processedLabels,
       pnlMapping: processedPnlMapping,
     };
   }, [data, preferences.timezone, initialCapital]);
-
-  // Créer un mapping des dates vers les valeurs MLL réelles
-  const mllByDate = useMemo(() => {
-    const mapping: { [date: string]: number } = {};
-    data.forEach(d => {
-      if (d.mll !== undefined && d.mll !== null) {
-        mapping[d.date] = d.mll;
-      }
-    });
-    return mapping;
-  }, [data]);
 
   // Options du graphique
   const options = useMemo(() => {
@@ -293,13 +219,12 @@ function AccountBalanceChart({
           size: 13,
           weight: 500,
         },
-        displayColors: true,
+        displayColors: false,
         mode: 'index' as const,
         intersect: false,
         filter: function(tooltipItem: any) {
-          // Afficher le tooltip pour le dataset principal (Solde) et le MLL
-          const datasetLabel = tooltipItem.dataset?.label || '';
-          return tooltipItem.datasetIndex === mainDatasetIndex || datasetLabel === 'Maximum Loss Limit (MLL)';
+          // Afficher uniquement le tooltip pour le dataset principal (Solde)
+          return tooltipItem.datasetIndex === mainDatasetIndex;
         },
         callbacks: {
           title: function(context: any) {
@@ -308,36 +233,14 @@ function AccountBalanceChart({
             return chartLabels[index] || '';
           },
           label: function(context: any) {
-            const index = context.dataIndex;
-            const datasetLabel = context.dataset.label || '';
+            // Après le filtre, on ne devrait avoir que le dataset principal
             const value = context.parsed.y || 0;
-            
-            // Si c'est le dataset MLL
-            if (datasetLabel === 'Maximum Loss Limit (MLL)') {
-              // Utiliser la valeur réelle depuis les données pour cette date
-              const dateLabel = chartLabels[index];
-              // Trouver la date correspondante dans les données originales
-              const correspondingDataPoint = data.find(d => {
-                const dataDate = new Date(d.date).toLocaleDateString('fr-FR', { 
-                  month: 'short', 
-                  day: 'numeric', 
-                  timeZone: preferences.timezone 
-                });
-                return dataDate === dateLabel;
-              });
-              const realValue = correspondingDataPoint?.mll ?? (context.raw !== null && context.raw !== undefined ? context.raw : value);
-              return `${t('dashboard:maximumLossLimit', { defaultValue: 'MLL' })}: ${formatCurrency(realValue, currencySymbol)}`;
-            }
-            
-            // Sinon, c'est le dataset principal (Solde)
-            // Ne pas afficher le MLL ici car il est déjà affiché par le dataset MLL
+            const index = context.dataIndex;
             const pnl = pnlMapping[index] ?? 0;
-            const labels = [
+            return [
               `${t('dashboard:balance')}: ${formatCurrency(value, currencySymbol)}`,
               `${t('dashboard:dayPnLShort')}: ${formatCurrency(pnl, currencySymbol)}`,
             ];
-            
-            return labels;
           },
         },
       },
@@ -399,7 +302,7 @@ function AccountBalanceChart({
         easing: 'easeInOutQuart' as const,
       },
     };
-  }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t, data, preferences.timezone]);
+  }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t]);
 
   if (data.length === 0) {
     return (

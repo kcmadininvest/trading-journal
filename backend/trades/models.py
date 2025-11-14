@@ -91,21 +91,6 @@ class TradingAccount(models.Model):
         help_text='Capital de départ du compte (utilisé pour le calcul du drawdown)'
     )
     
-    maximum_loss_limit = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        verbose_name='Maximum Loss Limit (MLL)',
-        help_text='Limite de perte maximale. Laissez vide pour calcul automatique selon le capital initial (50K=$2K, 100K=$3K, 150K=$4.5K)'
-    )
-    
-    mll_enabled = models.BooleanField(
-        default=True,
-        verbose_name='Activer le MLL',
-        help_text='Activer le calcul et l\'affichage du Maximum Loss Limit'
-    )
-    
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -176,36 +161,6 @@ class TradingAccount(models.Model):
     def is_active(self):
         """Vérifie si le compte est actif"""
         return self.status == 'active'
-    
-    def get_mll_initial(self):
-        """
-        Retourne le MLL initial (saisi manuellement ou calculé selon le capital initial).
-        Retourne None si le MLL est désactivé ou si le capital initial n'est pas défini.
-        """
-        # Si le MLL est désactivé, retourner None
-        if not self.mll_enabled:
-            return None
-        
-        # Si le MLL est déjà saisi, l'utiliser
-        if self.maximum_loss_limit is not None:
-            return self.maximum_loss_limit
-        
-        # Sinon, calculer selon le capital initial
-        if self.initial_capital is None:
-            return None
-        
-        initial_capital = self.initial_capital
-        
-        # Calculer selon les règles TopStep
-        if initial_capital == Decimal('50000.00'):
-            return Decimal('2000.00')
-        elif initial_capital == Decimal('100000.00'):
-            return Decimal('3000.00')
-        elif initial_capital == Decimal('150000.00'):
-            return Decimal('4500.00')
-        
-        # Pour d'autres montants, retourner None (l'utilisateur doit saisir manuellement)
-        return None
 
 
 class AccountTransaction(models.Model):
@@ -296,84 +251,7 @@ class AccountTransaction(models.Model):
         if self.transaction_type == 'deposit':
             return self.amount
         else:  # withdrawal
-            return Decimal('-1') * self.amount
-
-
-class AccountDailyMetrics(models.Model):
-    """
-    Modèle pour stocker les métriques quotidiennes d'un compte de trading.
-    Utilisé pour calculer et stocker le Maximum Loss Limit (MLL) par jour.
-    """
-    
-    # Compte de trading associé
-    trading_account = models.ForeignKey(
-        TradingAccount,
-        on_delete=models.CASCADE,
-        related_name='daily_metrics',
-        verbose_name='Compte de trading',
-        help_text='Compte de trading associé à ces métriques'
-    )
-    
-    # Date du jour de trading
-    date = models.DateField(
-        verbose_name='Date',
-        help_text='Date du jour de trading',
-        db_index=True
-    )
-    
-    # Solde de fin de journée (capital initial + PnL cumulé uniquement, sans transactions)
-    account_balance = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        verbose_name='Solde du compte',
-        help_text='Solde de fin de journée (capital initial + PnL cumulé)'
-    )
-    
-    # Solde maximum atteint jusqu'à cette date
-    account_balance_high = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        verbose_name='Solde maximum',
-        help_text="Solde maximum atteint jusqu'à cette date"
-    )
-    
-    # Maximum Loss Limit calculé pour ce jour
-    maximum_loss_limit = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        verbose_name='Maximum Loss Limit (MLL)',
-        help_text='MLL calculé pour ce jour'
-    )
-    
-    # Indique si le MLL est fixé au capital initial (ne peut plus évoluer)
-    mll_is_locked = models.BooleanField(
-        default=False,
-        verbose_name='MLL verrouillé',
-        help_text='Indique si le MLL est fixé au capital initial'
-    )
-    
-    # Métadonnées système
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='Créé le'
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name='Modifié le'
-    )
-    
-    class Meta:
-        ordering = ['-date']
-        verbose_name = 'Métrique quotidienne de compte'
-        verbose_name_plural = 'Métriques quotidiennes de compte'
-        unique_together = ['trading_account', 'date']
-        indexes = [
-            models.Index(fields=['trading_account', '-date']),
-            models.Index(fields=['date']),
-        ]
-    
-    def __str__(self):
-        return f"{self.trading_account.name} - {self.date} - MLL: {self.maximum_loss_limit}"
+            return -self.amount
 
 
 class TopStepTrade(models.Model):

@@ -6,7 +6,7 @@ import { DateInput } from '../components/common/DateInput';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { User } from '../services/auth';
 import { tradesService, TradeListItem } from '../services/trades';
-import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
+import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
 import { tradeStrategiesService, TradeStrategy, StrategyComplianceStats } from '../services/tradeStrategies';
@@ -233,7 +233,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [complianceStats, setComplianceStats] = useState<StrategyComplianceStats | null>(null);
   const [complianceLoading, setComplianceLoading] = useState(false);
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
-  const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
 
   // Gérer le redimensionnement de la fenêtre pour le responsive
   useEffect(() => {
@@ -548,27 +547,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     loadAllTradesForSequences();
   }, [accountId, accountLoading]);
 
-  // Charger les métriques quotidiennes (MLL)
-  useEffect(() => {
-    const loadDailyMetrics = async () => {
-      if (!accountId || !selectedAccount || selectedAccount.mll_enabled === false) {
-        setDailyMetrics([]);
-        return;
-      }
-      
-      try {
-        const metrics = await tradingAccountsService.getDailyMetrics(accountId);
-        setDailyMetrics(metrics);
-      } catch (err) {
-        console.error('Erreur lors du chargement des métriques quotidiennes', err);
-        setDailyMetrics([]);
-      }
-    };
-
-    loadDailyMetrics();
-  }, [accountId, selectedAccount]);
-
-  // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative, mll }
+  // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative }
   // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
   // Inclut maintenant les transactions (dépôts et retraits)
   const accountBalanceData = useMemo(() => {
@@ -616,22 +595,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
         const dailyPnl = dailyAggregate?.pnl || 0;
         const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
-        
-        // Récupérer le MLL pour cette date depuis les métriques quotidiennes
-        // Normaliser la date pour la comparaison
-        const dailyMetric = dailyMetrics.find(m => {
-          const metricDate = typeof m.date === 'string' 
-            ? m.date.split('T')[0] 
-            : new Date(m.date).toISOString().split('T')[0];
-          return metricDate === date;
-        });
-        const mll = dailyMetric ? parseFloat(dailyMetric.maximum_loss_limit) : undefined;
 
         return {
           date: date,
           pnl: dailyPnl,
           cumulative: cumulative,
-          mll: mll,
         };
       });
 
@@ -646,21 +614,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         
         // Si pas de données avant, ajouter un point au capital initial
         if (!hasDataBeforeFirst) {
-          // Récupérer le MLL pour la première date
-          // Normaliser la date pour la comparaison
-          const firstDateMetric = dailyMetrics.find(m => {
-            const metricDate = typeof m.date === 'string' 
-              ? m.date.split('T')[0] 
-              : new Date(m.date).toISOString().split('T')[0];
-            return metricDate === firstDate;
-          });
-          const firstDateMll = firstDateMetric ? parseFloat(firstDateMetric.maximum_loss_limit) : undefined;
-          
           return [{
             date: firstDate,
             pnl: 0,
             cumulative: initialCapital,
-            mll: firstDateMll,
           }, ...result];
         }
       }
@@ -705,21 +662,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       // Ajouter le PnL du jour (après les transactions)
       cumulativePnl += dailyPnl;
 
-      // Récupérer le MLL pour cette date depuis les métriques quotidiennes
-      // Normaliser la date pour la comparaison (m.date peut être au format ISO complet)
-      const dailyMetric = dailyMetrics.find(m => {
-        const metricDate = typeof m.date === 'string' 
-          ? m.date.split('T')[0] 
-          : new Date(m.date).toISOString().split('T')[0];
-        return metricDate === date;
-      });
-      const mll = dailyMetric ? parseFloat(dailyMetric.maximum_loss_limit) : undefined;
-
       return {
         date: date, // Format YYYY-MM-DD pour les filtres
         pnl: dailyPnl,
         cumulative: initialCapital + cumulativePnl + cumulativeTransactions,
-        mll: mll,
       };
     });
 
@@ -734,21 +680,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       
       // Si pas de données avant, ajouter un point au capital initial
       if (!hasDataBeforeFirst) {
-        // Récupérer le MLL pour la première date
-        const firstDateMetric = dailyMetrics.find(m => m.date === firstDate);
-        const firstDateMll = firstDateMetric ? parseFloat(firstDateMetric.maximum_loss_limit) : undefined;
-        
         return [{
           date: firstDate,
           pnl: 0,
           cumulative: initialCapital,
-          mll: firstDateMll,
         }, ...result];
       }
     }
 
     return result;
-  }, [dailyAggregates, trades, transactions, selectedAccount, dailyMetrics]);
+  }, [dailyAggregates, trades, transactions, selectedAccount]);
 
   // États pour les filtres de date
   const { defaultStartDate, defaultEndDate } = useMemo(() => {
