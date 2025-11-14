@@ -12,7 +12,7 @@ import pytz
 from decimal import Decimal
 from collections import defaultdict
 
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -31,6 +31,7 @@ from .serializers import (
     TradingGoalSerializer,
     TradingGoalProgressSerializer,
     AccountTransactionSerializer,
+    AccountDailyMetricsSerializer,
 )
 from .utils import TopStepCSVImporter
 
@@ -156,6 +157,35 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {'error': f'Erreur lors du calcul des statistiques: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def daily_metrics(self, request, pk=None):
+        """
+        Retourne les métriques quotidiennes (MLL) pour ce compte.
+        """
+        try:
+            account = self.get_object()
+            
+            # Filtrer par période si fournie
+            start_date = request.query_params.get('start_date', None)
+            end_date = request.query_params.get('end_date', None)
+            
+            queryset = AccountDailyMetrics.objects.filter(trading_account=account)  # type: ignore
+            
+            if start_date:
+                queryset = queryset.filter(date__gte=start_date)
+            if end_date:
+                queryset = queryset.filter(date__lte=end_date)
+            
+            queryset = queryset.order_by('date')
+            
+            serializer = AccountDailyMetricsSerializer(queryset, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération des métriques: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
