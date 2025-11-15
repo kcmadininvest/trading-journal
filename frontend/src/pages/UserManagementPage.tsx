@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { User, userService, UserUpdateData } from '../services/userService';
+import { authService } from '../services/auth';
 import { UserTable, UserEditModal, BulkActions } from '../components/users';
 import { PaginationControls, DeleteConfirmModal } from '../components/ui';
 import { usePagination } from '../hooks';
@@ -128,6 +129,16 @@ const UserManagementPage: React.FC = () => {
         prevUsers.map(u => u.id === userId ? { ...u, ...updatedUser } : u)
       );
       
+      // Si l'utilisateur modifié est l'utilisateur connecté, mettre à jour authService et déclencher l'événement
+      const currentUser = authService.getCurrentUser();
+      if (currentUser && currentUser.id === userId) {
+        authService.updateUser(updatedUser);
+        // Déclencher un événement pour mettre à jour l'interface (header, sidebar, etc.)
+        window.dispatchEvent(new CustomEvent('user:profile-updated', { 
+          detail: { user: updatedUser } 
+        }));
+      }
+      
       toast.success(t('users:page.success.userUpdated'));
     } catch (error: any) {
       throw error; // L'erreur sera gérée par le modal
@@ -142,6 +153,16 @@ const UserManagementPage: React.FC = () => {
       setUsers(prevUsers => 
         prevUsers.map(u => u.id === user.id ? { ...u, is_active: updatedUser.is_active } : u)
       );
+      
+      // Si l'utilisateur modifié est l'utilisateur connecté, mettre à jour authService et déclencher l'événement
+      const currentUser = authService.getCurrentUser();
+      if (currentUser && currentUser.id === user.id) {
+        authService.updateUser(updatedUser);
+        // Déclencher un événement pour mettre à jour l'interface (header, sidebar, etc.)
+        window.dispatchEvent(new CustomEvent('user:profile-updated', { 
+          detail: { user: updatedUser } 
+        }));
+      }
       
       toast.success(user.is_active ? t('users:page.success.userDisabled') : t('users:page.success.userEnabled'));
     } catch (error: any) {
