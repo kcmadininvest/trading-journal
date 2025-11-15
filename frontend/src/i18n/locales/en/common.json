@@ -32,6 +32,7 @@
   "tradingAccount": "Trading Account",
   "allActiveAccounts": "All Active Accounts",
   "default": "Default",
+  "optional": "optional",
   "pagination": {
     "noItems": "No items to display",
     "showingAll": "Showing {{count}} item",
