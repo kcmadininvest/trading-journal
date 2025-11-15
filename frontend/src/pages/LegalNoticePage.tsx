@@ -18,7 +18,7 @@ const LegalNoticePage: React.FC = () => {
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4 text-justify">
               {t('legal:section1.content', { 
-                defaultValue: 'Le présent site est édité par KC Trading Journal. Ce service est fourni à titre personnel et éducatif pour la gestion d\'un journal de trading.' 
+                defaultValue: 'Le présent site est édité par K&C Madin Invest. Ce service est fourni à titre personnel et éducatif pour la gestion d\'un journal de trading.' 
               })}
             </p>
           </section>
