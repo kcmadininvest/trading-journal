@@ -33,6 +33,7 @@
   "allActiveAccounts": "All Active Accounts",
   "default": "Default",
   "optional": "optional",
+  "allRightsReserved": "All rights reserved.",
   "pagination": {
     "noItems": "No items to display",
     "showingAll": "Showing {{count}} item",

@@ -541,7 +541,7 @@ const HomePage: React.FC = () => {
             onClick={() => setShowLegalNotice(true)}
             className="absolute right-4 text-sm text-gray-500 hover:text-blue-600 underline transition-colors duration-200"
           >
-            {t('home:footer.legalNotice')}
+            {t('legal:link')}
           </button>
         </div>
       </div>

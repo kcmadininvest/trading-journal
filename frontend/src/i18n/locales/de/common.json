@@ -33,6 +33,7 @@
   "allActiveAccounts": "Alle aktiven Konten",
   "default": "Standard",
   "optional": "optional",
+  "allRightsReserved": "Alle Rechte vorbehalten.",
   "pagination": {
     "noItems": "Keine Elemente zum Anzeigen",
     "showingAll": "{{count}} Element anzeigen",

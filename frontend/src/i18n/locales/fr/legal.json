@@ -1,0 +1,42 @@
+{
+  "title": "Mentions légales",
+  "link": "Mentions légales",
+  "subtitle": "Informations légales et conditions d'utilisation",
+  "section1": {
+    "title": "1. Éditeur du site",
+    "content": "Le présent site est édité par KC Trading Journal. Ce service est fourni à titre personnel et éducatif pour la gestion d'un journal de trading."
+  },
+  "section2": {
+    "title": "2. Avertissement général",
+    "content": "Le trading sur les marchés financiers comporte des risques importants de perte en capital. Les performances passées ne préjugent pas des performances futures. Tout investissement comporte un risque de perte totale ou partielle du capital investi.",
+    "warning": "Ce journal de trading est un outil de suivi personnel et ne constitue en aucun cas une recommandation d'investissement, un conseil en investissement financier, ou une sollicitation d'achat ou de vente d'instruments financiers."
+  },
+  "section3": {
+    "title": "3. Responsabilité",
+    "content": "L'éditeur ne saurait être tenu responsable des décisions de trading prises par les utilisateurs sur la base des informations contenues dans ce journal. Chaque utilisateur est seul responsable de ses décisions d'investissement et de leurs conséquences.",
+    "data": "L'éditeur s'efforce d'assurer l'exactitude des informations fournies, mais ne garantit pas l'absence d'erreurs, d'omissions ou d'interruptions de service. Les données sont fournies \"en l'état\" sans garantie d'aucune sorte."
+  },
+  "section4": {
+    "title": "4. Protection des données",
+    "content": "Les données personnelles et financières saisies dans ce journal sont stockées de manière sécurisée. L'utilisateur est seul responsable de la confidentialité de ses identifiants et de l'accès à son compte.",
+    "backup": "Il est fortement recommandé à l'utilisateur de conserver des sauvegardes de ses données et de ne pas se fier uniquement à ce service pour la conservation de ses informations de trading."
+  },
+  "section5": {
+    "title": "5. Propriété intellectuelle",
+    "content": "L'ensemble du contenu de ce site (textes, images, logos, structure) est la propriété de l'éditeur et est protégé par les lois relatives à la propriété intellectuelle. Toute reproduction non autorisée est interdite."
+  },
+  "section6": {
+    "title": "6. Acceptation des conditions",
+    "content": "L'utilisation de ce service implique l'acceptation pleine et entière des présentes mentions légales. En cas de désaccord, l'utilisateur s'engage à cesser immédiatement l'utilisation du service."
+  },
+  "section7": {
+    "title": "7. Modification des mentions légales",
+    "content": "L'éditeur se réserve le droit de modifier les présentes mentions légales à tout moment. Il est conseillé à l'utilisateur de consulter régulièrement cette page pour prendre connaissance des éventuelles modifications."
+  },
+  "section8": {
+    "title": "8. Droit applicable et juridiction",
+    "content": "Les présentes mentions légales sont régies par le droit applicable. En cas de litige, et à défaut d'accord amiable, le litige sera porté devant les tribunaux compétents."
+  },
+  "lastUpdated": "Dernière mise à jour : Janvier 2025"
+}
+

@@ -15,6 +15,7 @@ import SettingsPage from './pages/SettingsPage';
 import ActivateAccountPage from './pages/ActivateAccountPage';
 import PositionStrategiesPage from './pages/PositionStrategiesPage';
 import GoalsPage from './pages/GoalsPage';
+import LegalNoticePage from './pages/LegalNoticePage';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { useTheme } from './hooks/useTheme';
@@ -115,7 +116,7 @@ function App() {
     // Gérer la navigation par hash
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').trim();
-      const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals'];
+      const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
       const page = currentPageRef.current;
       
       // Si on a un hash valide et qu'il est différent de la page actuelle
@@ -139,7 +140,7 @@ function App() {
     
     // Initialiser la page selon le hash actuel au premier rendu
     const currentHash = window.location.hash.replace('#', '').trim();
-    const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals'];
+    const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
     const page = currentPageRef.current;
     
     if (currentHash && validPages.includes(currentHash)) {
@@ -211,6 +212,11 @@ function App() {
       return <ActivateAccountPage token={token} />;
     }
 
+    // La page des mentions légales est accessible sans authentification
+    if (currentPage === 'legal-notice') {
+      return <LegalNoticePage />;
+    }
+
     if (!currentUser) {
       return <HomePage />;
     }
@@ -238,6 +244,8 @@ function App() {
             return <UserManagementPage />;
           case 'settings':
             return <SettingsPage />;
+          case 'legal-notice':
+            return <LegalNoticePage />;
           case 'dashboard':
           default:
             return <DashboardPage currentUser={currentUser} />;
