@@ -1,0 +1,42 @@
+{
+  "title": "Rechtliche Hinweise",
+  "link": "Rechtliche Hinweise",
+  "subtitle": "Rechtliche Informationen und Nutzungsbedingungen",
+  "section1": {
+    "title": "1. Herausgeber der Website",
+    "content": "Diese Website wird von K&C Madin Invest herausgegeben. Dieser Service wird auf persönlicher und pädagogischer Basis für die Verwaltung eines Trading-Journals bereitgestellt."
+  },
+  "section2": {
+    "title": "2. Allgemeine Warnung",
+    "content": "Der Handel an Finanzmärkten birgt erhebliche Risiken von Kapitalverlusten. Vergangene Leistungen sind kein Indikator für zukünftige Ergebnisse. Jede Investition birgt das Risiko eines totalen oder teilweisen Verlusts des investierten Kapitals.",
+    "warning": "Dieses Trading-Journal ist ein persönliches Tracking-Tool und stellt keine Anlageberatung, Finanzanlageberatung oder Aufforderung zum Kauf oder Verkauf von Finanzinstrumenten dar."
+  },
+  "section3": {
+    "title": "3. Haftung",
+    "content": "Der Herausgeber kann nicht für Handelsentscheidungen verantwortlich gemacht werden, die von Benutzern auf der Grundlage der in diesem Journal enthaltenen Informationen getroffen werden. Jeder Benutzer ist allein für seine Anlageentscheidungen und deren Folgen verantwortlich.",
+    "data": "Der Herausgeber bemüht sich, die Richtigkeit der bereitgestellten Informationen sicherzustellen, garantiert jedoch nicht die Abwesenheit von Fehlern, Auslassungen oder Serviceunterbrechungen. Daten werden \"wie besehen\" ohne jegliche Garantie bereitgestellt."
+  },
+  "section4": {
+    "title": "4. Datenschutz",
+    "content": "Persönliche und finanzielle Daten, die in dieses Journal eingegeben werden, werden sicher gespeichert. Der Benutzer ist allein für die Vertraulichkeit seiner Anmeldedaten und den Zugang zu seinem Konto verantwortlich.",
+    "backup": "Benutzern wird dringend empfohlen, Backups ihrer Daten zu führen und sich nicht ausschließlich auf diesen Service für die Aufbewahrung ihrer Trading-Informationen zu verlassen."
+  },
+  "section5": {
+    "title": "5. Geistiges Eigentum",
+    "content": "Der gesamte Inhalt dieser Website (Texte, Bilder, Logos, Struktur) ist Eigentum des Herausgebers und durch Gesetze zum geistigen Eigentum geschützt. Jede unbefugte Vervielfältigung ist untersagt."
+  },
+  "section6": {
+    "title": "6. Annahme der Bedingungen",
+    "content": "Die Nutzung dieses Services impliziert die vollständige und uneingeschränkte Annahme dieser rechtlichen Hinweise. Im Falle einer Meinungsverschiedenheit verpflichtet sich der Benutzer, die Nutzung des Services sofort einzustellen."
+  },
+  "section7": {
+    "title": "7. Änderung der rechtlichen Hinweise",
+    "content": "Der Herausgeber behält sich das Recht vor, diese rechtlichen Hinweise jederzeit zu ändern. Benutzern wird empfohlen, diese Seite regelmäßig zu konsultieren, um sich über mögliche Änderungen zu informieren."
+  },
+  "section8": {
+    "title": "8. Anwendbares Recht und Gerichtsstand",
+    "content": "Diese rechtlichen Hinweise unterliegen dem anwendbaren Recht. Im Falle eines Streits und ohne gütliche Einigung wird der Streit vor die zuständigen Gerichte gebracht."
+  },
+  "lastUpdated": "Letzte Aktualisierung: Januar 2025"
+}
+

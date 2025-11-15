@@ -1,0 +1,42 @@
+{
+  "title": "Aviso Legal",
+  "link": "Aviso Legal",
+  "subtitle": "Información legal y condiciones de uso",
+  "section1": {
+    "title": "1. Editor del sitio",
+    "content": "Este sitio es editado por K&C Madin Invest. Este servicio se proporciona con fines personales y educativos para la gestión de un diario de trading."
+  },
+  "section2": {
+    "title": "2. Advertencia general",
+    "content": "El trading en los mercados financieros conlleva riesgos significativos de pérdida de capital. El rendimiento pasado no garantiza resultados futuros. Cualquier inversión conlleva un riesgo de pérdida total o parcial del capital invertido.",
+    "warning": "Este diario de trading es una herramienta de seguimiento personal y no constituye en ningún caso una recomendación de inversión, un consejo de inversión financiera, o una solicitud de compra o venta de instrumentos financieros."
+  },
+  "section3": {
+    "title": "3. Responsabilidad",
+    "content": "El editor no puede ser considerado responsable de las decisiones de trading tomadas por los usuarios basándose en la información contenida en este diario. Cada usuario es el único responsable de sus decisiones de inversión y sus consecuencias.",
+    "data": "El editor se esfuerza por garantizar la exactitud de la información proporcionada, pero no garantiza la ausencia de errores, omisiones o interrupciones del servicio. Los datos se proporcionan \"tal cual\" sin garantía de ningún tipo."
+  },
+  "section4": {
+    "title": "4. Protección de datos",
+    "content": "Los datos personales y financieros ingresados en este diario se almacenan de forma segura. El usuario es el único responsable de la confidencialidad de sus credenciales y del acceso a su cuenta.",
+    "backup": "Se recomienda encarecidamente al usuario que conserve copias de seguridad de sus datos y que no confíe únicamente en este servicio para la conservación de su información de trading."
+  },
+  "section5": {
+    "title": "5. Propiedad intelectual",
+    "content": "Todo el contenido de este sitio (textos, imágenes, logotipos, estructura) es propiedad del editor y está protegido por las leyes relativas a la propiedad intelectual. Cualquier reproducción no autorizada está prohibida."
+  },
+  "section6": {
+    "title": "6. Aceptación de las condiciones",
+    "content": "El uso de este servicio implica la aceptación plena y completa de este aviso legal. En caso de desacuerdo, el usuario se compromete a cesar inmediatamente el uso del servicio."
+  },
+  "section7": {
+    "title": "7. Modificación del aviso legal",
+    "content": "El editor se reserva el derecho de modificar este aviso legal en cualquier momento. Se recomienda al usuario que consulte regularmente esta página para conocer las posibles modificaciones."
+  },
+  "section8": {
+    "title": "8. Ley aplicable y jurisdicción",
+    "content": "Este aviso legal se rige por la ley aplicable. En caso de litigio, y a falta de acuerdo amistoso, el litigio será llevado ante los tribunales competentes."
+  },
+  "lastUpdated": "Última actualización: Enero 2025"
+}
+

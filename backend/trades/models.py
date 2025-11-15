@@ -102,13 +102,13 @@ class TradingAccount(models.Model):
         null=True,
         blank=True,
         verbose_name='Maximum Loss Limit (MLL)',
-        help_text='Limite de perte maximale. Laissez vide pour calcul automatique selon le capital initial (50K=$2K, 100K=$3K, 150K=$4.5K)'
+        help_text='Limite de perte maximale (saisie manuelle)'
     )
     
     mll_enabled = models.BooleanField(
         default=_MLL_ENABLED_DEFAULT,
         verbose_name='Activer le MLL',
-        help_text='Activer le calcul et l\'affichage du Maximum Loss Limit'
+        help_text='Activer l\'affichage du Maximum Loss Limit'
     )
     
     status = models.CharField(
@@ -184,33 +184,15 @@ class TradingAccount(models.Model):
     
     def get_mll_initial(self):
         """
-        Retourne le MLL initial (saisi manuellement ou calculé selon le capital initial).
-        Retourne None si le MLL est désactivé ou si le capital initial n'est pas défini.
+        Retourne le MLL initial saisi manuellement.
+        Retourne None si le MLL est désactivé ou si aucune valeur n'a été saisie.
         """
         # Si le MLL est désactivé, retourner None
         if not self.mll_enabled:
             return None
         
-        # Si le MLL est déjà saisi, l'utiliser
-        if self.maximum_loss_limit is not None:
-            return self.maximum_loss_limit
-        
-        # Sinon, calculer selon le capital initial
-        if self.initial_capital is None:
-            return None
-        
-        initial_capital = self.initial_capital
-        
-        # Calculer selon les règles TopStep
-        if initial_capital == Decimal('50000.00'):
-            return Decimal('2000.00')
-        elif initial_capital == Decimal('100000.00'):
-            return Decimal('3000.00')
-        elif initial_capital == Decimal('150000.00'):
-            return Decimal('4500.00')
-        
-        # Pour d'autres montants, retourner None (l'utilisateur doit saisir manuellement)
-        return None
+        # Retourner le MLL saisi manuellement (ou None si non saisi)
+        return self.maximum_loss_limit
 
 
 class AccountTransaction(models.Model):

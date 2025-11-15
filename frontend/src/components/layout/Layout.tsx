@@ -62,7 +62,7 @@ const Layout: React.FC<LayoutProps> = ({
         </main>
 
         {/* Footer */}
-        <Footer />
+        <Footer onNavigate={onNavigate} />
       </div>
     </div>
   );

@@ -9,6 +9,7 @@
     "type": "Type",
     "status": "Statut",
     "initialCapital": "Capital initial",
+    "maximumLossLimit": "Maximum Loss Limit",
     "trades": "Trades",
     "actions": "Actions"
   },
@@ -62,7 +63,13 @@
     "save": "Enregistrer",
     "create": "Créer",
     "saving": "Mise à jour...",
-    "creating": "Création..."
+    "creating": "Création...",
+    "nameRequired": "Le nom est requis",
+    "error": "Erreur lors de la sauvegarde",
+    "enableMLL": "Activer le Maximum Loss Limit (MLL)",
+    "maximumLossLimit": "Maximum Loss Limit (MLL)",
+    "maximumLossLimitPlaceholder": "Saisir le MLL",
+    "maximumLossLimitDescription": "Limite de perte maximale (saisie manuelle)"
   },
   "defaultCurrencyName": "Dollar américain"
 }

@@ -32,6 +32,8 @@
   "tradingAccount": "Cuenta de trading",
   "allActiveAccounts": "Todas las cuentas activas",
   "default": "Por defecto",
+  "optional": "opcional",
+  "allRightsReserved": "Todos los derechos reservados.",
   "pagination": {
     "noItems": "No hay elementos para mostrar",
     "showingAll": "Mostrando {{count}} elemento",

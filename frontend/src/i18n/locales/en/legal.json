@@ -1,0 +1,42 @@
+{
+  "title": "Legal Notice",
+  "link": "Legal Notice",
+  "subtitle": "Legal information and terms of use",
+  "section1": {
+    "title": "1. Site Publisher",
+    "content": "This site is published by K&C Madin Invest. This service is provided on a personal and educational basis for managing a trading journal."
+  },
+  "section2": {
+    "title": "2. General Warning",
+    "content": "Trading on financial markets involves significant risks of capital loss. Past performance does not guarantee future results. Any investment carries a risk of total or partial loss of invested capital.",
+    "warning": "This trading journal is a personal tracking tool and does not constitute investment advice, financial investment advice, or a solicitation to buy or sell financial instruments."
+  },
+  "section3": {
+    "title": "3. Liability",
+    "content": "The publisher cannot be held responsible for trading decisions made by users based on information contained in this journal. Each user is solely responsible for their investment decisions and their consequences.",
+    "data": "The publisher strives to ensure the accuracy of the information provided but does not guarantee the absence of errors, omissions, or service interruptions. Data is provided \"as is\" without any warranty."
+  },
+  "section4": {
+    "title": "4. Data Protection",
+    "content": "Personal and financial data entered in this journal is stored securely. The user is solely responsible for the confidentiality of their credentials and access to their account.",
+    "backup": "Users are strongly advised to keep backups of their data and not rely solely on this service for the preservation of their trading information."
+  },
+  "section5": {
+    "title": "5. Intellectual Property",
+    "content": "All content on this site (texts, images, logos, structure) is the property of the publisher and is protected by intellectual property laws. Any unauthorized reproduction is prohibited."
+  },
+  "section6": {
+    "title": "6. Acceptance of Terms",
+    "content": "Use of this service implies full and complete acceptance of these legal notices. In case of disagreement, the user agrees to immediately cease using the service."
+  },
+  "section7": {
+    "title": "7. Modification of Legal Notices",
+    "content": "The publisher reserves the right to modify these legal notices at any time. Users are advised to regularly consult this page to be aware of any changes."
+  },
+  "section8": {
+    "title": "8. Applicable Law and Jurisdiction",
+    "content": "These legal notices are governed by applicable law. In case of dispute, and in the absence of an amicable agreement, the dispute will be brought before the competent courts."
+  },
+  "lastUpdated": "Last updated: January 2025"
+}
+
