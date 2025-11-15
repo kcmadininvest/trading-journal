@@ -335,17 +335,31 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     // - la checkbox
                     // - le bouton de suppression
                     // - un lien ou un bouton
+                    // - un élément interactif
                     const target = e.target as HTMLElement;
+                    
+                    // Vérifier si on a cliqué directement sur un élément interactif
+                    const clickedButton = target.closest('button');
+                    const clickedCheckbox = target.closest('input[type="checkbox"]');
+                    const clickedLink = target.closest('a');
+                    
+                    // Si on a cliqué sur un bouton, checkbox ou lien, ne pas ouvrir la modale
+                    if (clickedButton || clickedCheckbox || clickedLink) {
+                      return;
+                    }
+                    
+                    // Si l'élément cible est un élément interactif (SVG, PATH, etc.)
                     if (
-                      target.closest('input[type="checkbox"]') ||
-                      target.closest('button') ||
-                      target.closest('a') ||
                       target.tagName === 'BUTTON' ||
                       target.tagName === 'INPUT' ||
-                      target.tagName === 'A'
+                      target.tagName === 'A' ||
+                      (target.tagName === 'SVG' && target.closest('button')) ||
+                      (target.tagName === 'PATH' && target.closest('button'))
                     ) {
                       return;
                     }
+                    
+                    // Sinon, ouvrir la modale
                     if (onRowClick) {
                       onRowClick(trade);
                     }
