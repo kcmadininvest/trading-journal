@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TradingAccount } from '../../services/tradingAccounts';
 import { Currency } from '../../services/currencies';
+import { NumberInput } from '../common/NumberInput';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface TradingAccountModalProps {
@@ -282,14 +283,14 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
                   {t('accounts:form.initialCapital')}
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                <NumberInput
                   value={(form as any).initial_capital || ''}
-                  onChange={(e) => setForm(prev => ({ ...prev, initial_capital: e.target.value ? parseFloat(e.target.value) : null } as any))}
+                  onChange={(value) => setForm(prev => ({ ...prev, initial_capital: value ? parseFloat(value) : null } as any))}
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
                   placeholder={t('accounts:form.initialCapitalPlaceholder')}
+                  min={0}
+                  step="0.01"
+                  digits={2}
                 />
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.initialCapitalDescription')}</p>
               </div>
@@ -313,22 +314,22 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                   {t('accounts:form.maximumLossLimit', { defaultValue: 'Maximum Loss Limit (MLL)' })}
                   <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                <NumberInput
                   value={(() => {
                     const mll = (form as any).maximum_loss_limit;
                     if (mll === null || mll === undefined) return '';
                     const numValue = typeof mll === 'string' ? parseFloat(mll) : mll;
                     return isNaN(numValue) ? '' : numValue;
                   })()}
-                  onChange={(e) => setForm(prev => ({ ...prev, maximum_loss_limit: e.target.value ? parseFloat(e.target.value) : null } as any))}
-                  placeholder={t('accounts:form.maximumLossLimitPlaceholder', { defaultValue: 'Laissez vide pour calcul automatique' })}
+                  onChange={(value) => setForm(prev => ({ ...prev, maximum_loss_limit: value ? parseFloat(value) : null } as any))}
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                  placeholder={t('accounts:form.maximumLossLimitPlaceholder', { defaultValue: 'Saisir le MLL' })}
+                  min={0}
+                  step="0.01"
+                  digits={2}
                 />
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
-                  {t('accounts:form.maximumLossLimitDescription', { defaultValue: 'Laissez vide pour calcul automatique selon le capital initial (50K=$2K, 100K=$3K, 150K=$4.5K)' })}
+                  {t('accounts:form.maximumLossLimitDescription', { defaultValue: 'Limite de perte maximale (saisie manuelle)' })}
                 </p>
               </div>
             )}
