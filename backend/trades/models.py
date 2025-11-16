@@ -1147,7 +1147,14 @@ class PositionStrategy(models.Model):
                     parent_strategy=self.parent_strategy,
                     user=self.user
                 ).update(is_current=False)
-                self.version = self.parent_strategy.versions.count() + 1  # type: ignore
+                # Utiliser le numéro de version maximum + 1 au lieu de count() + 1
+                # Prendre en compte à la fois les versions enfants et la stratégie parente elle-même
+                max_child_version = self.parent_strategy.versions.aggregate(  # type: ignore
+                    max_version=models.Max('version')
+                )['max_version'] or 0
+                parent_version = self.parent_strategy.version or 0
+                max_version = max(max_child_version, parent_version)
+                self.version = max_version + 1
             else:
                 # Première version
                 self.version = 1
@@ -1156,16 +1163,32 @@ class PositionStrategy(models.Model):
     @property
     def is_latest_version(self):
         """Vérifie si c'est la dernière version."""
-        if not self.parent_strategy:
+        try:
+            if not self.parent_strategy:
+                return True
+            latest = self.parent_strategy.versions.order_by('-version').first()  # type: ignore
+            if latest is None:
+                return True
+            return self == latest
+        except Exception as e:
+            # En cas d'erreur (relation cassée, etc.), considérer comme dernière version
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la vérification de is_latest_version pour la stratégie {self.id}: {str(e)}")
             return True
-        latest = self.parent_strategy.versions.order_by('-version').first()  # type: ignore
-        return self == latest
     
     def get_version_history(self):
         """Retourne l'historique des versions."""
-        if self.parent_strategy:
-            return self.parent_strategy.versions.order_by('-version')  # type: ignore
-        return self.versions.order_by('-version')  # type: ignore
+        try:
+            if self.parent_strategy:
+                return self.parent_strategy.versions.order_by('-version')  # type: ignore
+            return self.versions.order_by('-version')  # type: ignore
+        except Exception as e:
+            # En cas d'erreur, retourner un queryset vide
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la récupération de l'historique des versions pour la stratégie {self.id}: {str(e)}")
+            return PositionStrategy.objects.none()  # type: ignore
     
     def create_new_version(self, new_content, version_notes=''):
         """Crée une nouvelle version de la stratégie."""
@@ -1182,8 +1205,13 @@ class PositionStrategy(models.Model):
         parent.is_current = False  # type: ignore
         parent.save()  # type: ignore
         
-        # Calculer le nouveau numéro de version
-        new_version = parent.versions.count() + 1  # type: ignore
+        # Calculer le nouveau numéro de version en utilisant le maximum + 1
+        # Cela garantit qu'on utilise toujours le numéro le plus élevé, même si des versions sont supprimées
+        from django.db.models import Max
+        max_version = parent.versions.aggregate(  # type: ignore
+            max_version=Max('version')
+        )['max_version'] or (parent.version if parent.version else 0)
+        new_version = max_version + 1
         
         new_strategy = PositionStrategy.objects.create(  # type: ignore
             user=self.user,

@@ -7,6 +7,7 @@ from django.db.models.functions import TruncDate, Cast
 from django.db import models
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 from datetime import timedelta, datetime
 import pytz
 from decimal import Decimal
@@ -3142,13 +3143,41 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
         # Pour les autres actions, utiliser le queryset normal avec filtres
         return super().get_object()
     
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve pour gérer les erreurs de sérialisation."""
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la récupération de la stratégie {kwargs.get('pk')}: {str(e)}", exc_info=True)
+            return Response(
+                {
+                    'error': 'Erreur lors de la récupération de la stratégie',
+                    'detail': str(e) if settings.DEBUG else 'Une erreur est survenue. Veuillez contacter le support.'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     @action(detail=True, methods=['get'])
     def versions(self, request, pk=None):
         """Récupère l'historique des versions d'une stratégie."""
-        strategy = self.get_object()
-        versions = strategy.get_version_history()
-        serializer = PositionStrategyVersionSerializer(versions, many=True)
-        return Response(serializer.data)
+        try:
+            strategy = self.get_object()
+            versions = strategy.get_version_history()
+            serializer = PositionStrategyVersionSerializer(versions, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la récupération des versions pour la stratégie {pk}: {str(e)}", exc_info=True)
+            return Response(
+                {
+                    'error': 'Erreur lors de la récupération des versions',
+                    'detail': str(e) if settings.DEBUG else 'Une erreur est survenue. Veuillez contacter le support.'
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
     
     @action(detail=True, methods=['post'])
     def restore_version(self, request, pk=None):
