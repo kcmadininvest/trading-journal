@@ -303,6 +303,10 @@ const PositionStrategiesPage: React.FC = () => {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeSectionIndex, setActiveSectionIndex] = useState<number | null>(null);
   const [activeRuleIndex, setActiveRuleIndex] = useState<{ sectionIndex: number; ruleIndex: number } | null>(null);
+  const [expandedArchivedGroups, setExpandedArchivedGroups] = useState<Set<number>>(new Set());
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const menuButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+  const menuDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Sensors pour le drag & drop
   const sensors = useSensors(
@@ -331,9 +335,15 @@ const PositionStrategiesPage: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (openMenuId !== null) {
-        const menuElement = menuRefs.current[openMenuId];
-        if (menuElement && !menuElement.contains(event.target as Node)) {
+        const buttonElement = menuButtonRefs.current[openMenuId];
+        const dropdownElement = menuDropdownRef.current;
+        const target = event.target as Node;
+        
+        // Vérifier si le clic est en dehors du menu dropdown et du bouton
+        if (buttonElement && !buttonElement.contains(target) &&
+            dropdownElement && !dropdownElement.contains(target)) {
           setOpenMenuId(null);
+          setMenuPosition(null);
         }
       }
       if (statusDropdownOpen && statusDropdownRef.current && !statusDropdownRef.current.contains(event.target as Node)) {
@@ -346,6 +356,27 @@ const PositionStrategiesPage: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [openMenuId, statusDropdownOpen]);
+
+  // Recalculer la position du menu lors du scroll
+  useEffect(() => {
+    if (openMenuId !== null) {
+      const handleScroll = () => {
+        const buttonElement = menuButtonRefs.current[openMenuId];
+        if (buttonElement) {
+          const position = calculateMenuPosition(buttonElement);
+          setMenuPosition(position);
+        }
+      };
+
+      window.addEventListener('scroll', handleScroll, true);
+      window.addEventListener('resize', handleScroll);
+      
+      return () => {
+        window.removeEventListener('scroll', handleScroll, true);
+        window.removeEventListener('resize', handleScroll);
+      };
+    }
+  }, [openMenuId]);
 
   // Charger toutes les stratégies pour les compteurs (sans filtre de statut)
   const loadAllStrategies = React.useCallback(async () => {
@@ -728,6 +759,95 @@ const PositionStrategiesPage: React.FC = () => {
     });
   }, [strategies, filterStatus, searchQuery]);
 
+  // Grouper les stratégies archivées par stratégie parente
+  const groupedArchivedStrategies = useMemo(() => {
+    if (filterStatus !== 'archived') {
+      return null;
+    }
+
+    const groups = new Map<number, {
+      groupId: number;
+      title: string;
+      strategies: PositionStrategy[];
+    }>();
+
+    // D'abord, identifier tous les IDs de groupes possibles
+    // (stratégies qui sont des parents ou qui ont un parent)
+    const groupIds = new Set<number>();
+    filteredStrategies.forEach(strategy => {
+      if (strategy.parent_strategy) {
+        groupIds.add(strategy.parent_strategy);
+      } else {
+        groupIds.add(strategy.id);
+      }
+    });
+
+    // Ensuite, regrouper les stratégies
+    filteredStrategies.forEach(strategy => {
+      // Identifier le groupe : utiliser parent_strategy si existe, sinon l'ID de la stratégie elle-même
+      const groupId = strategy.parent_strategy || strategy.id;
+      
+      if (!groups.has(groupId)) {
+        // Utiliser le titre de la première stratégie du groupe
+        groups.set(groupId, {
+          groupId,
+          title: strategy.title,
+          strategies: []
+        });
+      }
+      
+      groups.get(groupId)!.strategies.push(strategy);
+    });
+
+    // Trier les stratégies dans chaque groupe par version (décroissant)
+    // et mettre à jour le titre avec celui de la version la plus récente
+    groups.forEach(group => {
+      group.strategies.sort((a, b) => b.version - a.version);
+      // Utiliser le titre de la version la plus récente
+      if (group.strategies.length > 0) {
+        group.title = group.strategies[0].title;
+      }
+    });
+
+    return Array.from(groups.values());
+  }, [filteredStrategies, filterStatus]);
+
+  // Toggle l'expansion d'un groupe d'archives
+  const toggleArchivedGroup = (groupId: number) => {
+    setExpandedArchivedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
+
+  // Calculer la position du menu dropdown
+  const calculateMenuPosition = (buttonElement: HTMLButtonElement | null) => {
+    if (!buttonElement) return null;
+    const rect = buttonElement.getBoundingClientRect();
+    return {
+      top: rect.bottom + window.scrollY + 8, // 8px de marge (mt-2)
+      right: window.innerWidth - rect.right + window.scrollX,
+    };
+  };
+
+  // Ouvrir le menu avec calcul de position
+  const handleOpenMenu = (strategyId: number) => {
+    const buttonElement = menuButtonRefs.current[strategyId];
+    if (openMenuId === strategyId) {
+      setOpenMenuId(null);
+      setMenuPosition(null);
+    } else {
+      const position = calculateMenuPosition(buttonElement);
+      setMenuPosition(position);
+      setOpenMenuId(strategyId);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -859,7 +979,167 @@ const PositionStrategiesPage: React.FC = () => {
               {t('positionStrategies:noStrategies', { defaultValue: 'Aucune stratégie trouvée' })}
             </p>
           </div>
+        ) : filterStatus === 'archived' && groupedArchivedStrategies ? (
+          // Affichage groupé pour les archives
+          <div className="space-y-3 sm:space-y-4">
+            {groupedArchivedStrategies.map((group) => {
+              const isExpanded = expandedArchivedGroups.has(group.groupId);
+              return (
+                <div
+                  key={group.groupId}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden"
+                >
+                  {/* En-tête du groupe */}
+                  <button
+                    onClick={() => toggleArchivedGroup(group.groupId)}
+                    className="w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <svg
+                        className={`w-5 h-5 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${
+                          isExpanded ? 'rotate-90' : ''
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {group.title}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                          {group.strategies.length} {group.strategies.length > 1 ? 'versions archivées' : 'version archivée'}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Contenu du groupe (versions) */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                        {group.strategies.map((strategy) => (
+                          <div
+                            key={strategy.id}
+                            className="bg-gray-50 dark:bg-gray-700/50 rounded-lg shadow-sm p-4 sm:p-6 hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-600"
+                          >
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex-1">
+                                <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                                  {strategy.title}
+                                </h4>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(strategy.status)}`}>
+                                    {t('positionStrategies:archived', { defaultValue: 'Archivée' })}
+                                  </span>
+                                  <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                                    v{strategy.version}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {strategy.description && (
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                                {strategy.description}
+                              </p>
+                            )}
+
+                            <div className="text-xs text-gray-500 dark:text-gray-500 mb-4">
+                              {t('positionStrategies:createdAt', { defaultValue: 'Créé le' })} {formatDate(strategy.created_at, preferences.date_format, false, preferences.timezone)}
+                            </div>
+
+                            {/* Menu d'actions */}
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                              <div className="flex items-center gap-2">
+                                <Tooltip content={t('positionStrategies:view', { defaultValue: 'Voir' })} position="top">
+                                  <button
+                                    onClick={() => handleView(strategy)}
+                                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-all duration-200"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                  </button>
+                                </Tooltip>
+                                <Tooltip content={t('positionStrategies:versions', { defaultValue: 'Versions' })} position="top">
+                                  <button
+                                    onClick={() => handleViewVersions(strategy)}
+                                    className="flex items-center gap-1.5 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-all duration-200"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-xs font-medium">{strategy.version_count}</span>
+                                  </button>
+                                </Tooltip>
+                              </div>
+                              
+                              {/* Menu dropdown pour actions supplémentaires */}
+                              <div className="relative" ref={(el) => { menuRefs.current[strategy.id] = el; }}>
+                                <Tooltip content={t('positionStrategies:moreActions', { defaultValue: 'Plus d\'actions' })} position="top">
+                                  <button
+                                    ref={(el) => { menuButtonRefs.current[strategy.id] = el; }}
+                                    onClick={() => handleOpenMenu(strategy.id)}
+                                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-all duration-200"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                    </svg>
+                                  </button>
+                                </Tooltip>
+                                
+                                {openMenuId === strategy.id && menuPosition && (
+                                  <div 
+                                    ref={menuDropdownRef}
+                                    className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-[9999]"
+                                    style={{ top: `${menuPosition.top}px`, right: `${menuPosition.right}px` }}
+                                  >
+                                    <button
+                                      onClick={() => {
+                                        handleToggleArchive(strategy);
+                                        setOpenMenuId(null);
+                                        setMenuPosition(null);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex items-center gap-2 transition-colors"
+                                    >
+                                      <svg className="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                      </svg>
+                                      {t('positionStrategies:unarchive', { defaultValue: 'Désarchiver' })}
+                                    </button>
+                                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                                    <button
+                                      onClick={() => {
+                                        handleDeleteClick(strategy);
+                                        setOpenMenuId(null);
+                                        setMenuPosition(null);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                      {t('positionStrategies:delete', { defaultValue: 'Supprimer' })}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : (
+          // Affichage normal pour les autres statuts
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredStrategies.map((strategy) => (
               <div
@@ -939,7 +1219,8 @@ const PositionStrategiesPage: React.FC = () => {
                   <div className="relative" ref={(el) => { menuRefs.current[strategy.id] = el; }}>
                     <Tooltip content={t('positionStrategies:moreActions', { defaultValue: 'Plus d\'actions' })} position="top">
                       <button
-                        onClick={() => setOpenMenuId(openMenuId === strategy.id ? null : strategy.id)}
+                        ref={(el) => { menuButtonRefs.current[strategy.id] = el; }}
+                        onClick={() => handleOpenMenu(strategy.id)}
                         className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200"
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -948,13 +1229,18 @@ const PositionStrategiesPage: React.FC = () => {
                       </button>
                     </Tooltip>
                     
-                    {openMenuId === strategy.id && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                    {openMenuId === strategy.id && menuPosition && (
+                      <div 
+                        ref={menuDropdownRef}
+                        className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-[9999]"
+                        style={{ top: `${menuPosition.top}px`, right: `${menuPosition.right}px` }}
+                      >
                         {strategy.status === 'draft' && (
                           <button
                             onClick={() => {
                               handleActivate(strategy);
                               setOpenMenuId(null);
+                              setMenuPosition(null);
                             }}
                             className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2 transition-colors"
                           >
@@ -969,6 +1255,7 @@ const PositionStrategiesPage: React.FC = () => {
                             onClick={() => {
                               handleToggleArchive(strategy);
                               setOpenMenuId(null);
+                              setMenuPosition(null);
                             }}
                             className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex items-center gap-2 transition-colors"
                           >
@@ -989,6 +1276,7 @@ const PositionStrategiesPage: React.FC = () => {
                           onClick={() => {
                             handleDeleteClick(strategy);
                             setOpenMenuId(null);
+                            setMenuPosition(null);
                           }}
                           className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
                         >

@@ -457,9 +457,16 @@ class PositionStrategySerializer(serializers.ModelSerializer):
     
     def get_version_count(self, obj):
         """Retourne le nombre total de versions."""
-        if obj.parent_strategy:
-            return obj.parent_strategy.versions.count()
-        return obj.versions.count()
+        try:
+            if obj.parent_strategy:
+                return obj.parent_strategy.versions.count()
+            return obj.versions.count()
+        except Exception as e:
+            # En cas d'erreur (relation cassée, etc.), retourner 1 par défaut
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors du calcul du nombre de versions pour la stratégie {obj.id}: {str(e)}")
+            return 1
     
     def validate_strategy_content(self, value):
         """Valide le contenu de la stratégie."""
