@@ -304,7 +304,7 @@ const PositionStrategiesPage: React.FC = () => {
   const [activeSectionIndex, setActiveSectionIndex] = useState<number | null>(null);
   const [activeRuleIndex, setActiveRuleIndex] = useState<{ sectionIndex: number; ruleIndex: number } | null>(null);
   const [expandedArchivedGroups, setExpandedArchivedGroups] = useState<Set<number>>(new Set());
-  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number; positionAbove?: boolean } | null>(null);
   const menuButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const menuDropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -831,13 +831,41 @@ const PositionStrategiesPage: React.FC = () => {
     });
   };
 
-  // Calculer la position du menu dropdown
+  // Calculer la position du menu dropdown avec ajustement automatique
   const calculateMenuPosition = (buttonElement: HTMLButtonElement | null) => {
     if (!buttonElement) return null;
     const rect = buttonElement.getBoundingClientRect();
+    const menuHeight = 250; // Hauteur approximative du menu (peut contenir 3-4 items)
+    const spacing = 8; // Espacement entre le bouton et le menu
+    const minSpace = 10; // Espace minimum requis
+    
+    // Vérifier s'il y a assez de place en bas
+    const spaceBelow = window.innerHeight - rect.bottom - spacing;
+    const spaceAbove = rect.top - spacing;
+    
+    // Déterminer la meilleure position
+    // Positionner au-dessus si :
+    // 1. Pas assez de place en bas ET assez de place en haut
+    // 2. Ou si on est proche du bas de l'écran (moins de 100px)
+    const nearBottom = spaceBelow < 100;
+    const shouldPositionAbove = (spaceBelow < menuHeight && spaceAbove > menuHeight) || 
+                                 (nearBottom && spaceAbove > spaceBelow);
+    
+    let top: number;
+    if (shouldPositionAbove) {
+      // Positionner au-dessus, mais s'assurer qu'on ne dépasse pas le haut
+      top = Math.max(minSpace, rect.top + window.scrollY - menuHeight - spacing);
+    } else {
+      // Positionner en dessous, mais s'assurer qu'on ne dépasse pas le bas
+      const bottomPosition = rect.bottom + window.scrollY + spacing;
+      const maxTop = window.innerHeight + window.scrollY - menuHeight - minSpace;
+      top = Math.min(bottomPosition, maxTop);
+    }
+    
     return {
-      top: rect.bottom + window.scrollY + 8, // 8px de marge (mt-2)
+      top,
       right: window.innerWidth - rect.right + window.scrollX,
+      positionAbove: shouldPositionAbove,
     };
   };
 
