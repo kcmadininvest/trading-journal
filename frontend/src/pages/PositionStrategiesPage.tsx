@@ -291,6 +291,7 @@ const PositionStrategiesPage: React.FC = () => {
   const [showVersionsModal, setShowVersionsModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [versions, setVersions] = useState<PositionStrategyVersion[]>([]);
+  const [previousVersion, setPreviousVersion] = useState<PositionStrategy | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'archived'>('active');
   const [searchQuery, setSearchQuery] = useState('');
   const [strategyToDelete, setStrategyToDelete] = useState<PositionStrategy | null>(null);
@@ -304,7 +305,7 @@ const PositionStrategiesPage: React.FC = () => {
   const [activeSectionIndex, setActiveSectionIndex] = useState<number | null>(null);
   const [activeRuleIndex, setActiveRuleIndex] = useState<{ sectionIndex: number; ruleIndex: number } | null>(null);
   const [expandedArchivedGroups, setExpandedArchivedGroups] = useState<Set<number>>(new Set());
-  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number; positionAbove?: boolean } | null>(null);
   const menuButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const menuDropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -479,10 +480,46 @@ const PositionStrategiesPage: React.FC = () => {
   };
 
   // Ouvrir le modal de visualisation
-  const handleView = (strategy: PositionStrategy) => {
+  const handleView = async (strategy: PositionStrategy) => {
     setSelectedStrategy(strategy);
     // Réinitialiser les cases cochées à chaque ouverture
     setCheckedRules({});
+    setPreviousVersion(null);
+    
+    // Charger la version précédente pour comparaison (si ce n'est pas la version 1)
+    if (strategy.version > 1) {
+      try {
+        const versionsData = await positionStrategiesService.getVersions(strategy.id);
+        // Trier par version décroissante et trouver la version précédente
+        const sortedVersions = [...versionsData].sort((a, b) => b.version - a.version);
+        const currentIndex = sortedVersions.findIndex(v => v.id === strategy.id);
+        if (currentIndex >= 0 && currentIndex < sortedVersions.length - 1) {
+          const prevVersionData = sortedVersions[currentIndex + 1];
+          // Récupérer la version complète seulement si elle existe dans les versions disponibles
+          // Vérifier d'abord si l'ID existe dans la liste des stratégies accessibles
+          try {
+            const prevVersion = await positionStrategiesService.get(prevVersionData.id);
+            // Vérifier que la version récupérée appartient bien au même utilisateur
+            if (prevVersion && prevVersion.user === strategy.user) {
+              setPreviousVersion(prevVersion);
+            } else {
+              setPreviousVersion(null);
+            }
+          } catch (err: any) {
+            // Si la stratégie n'existe pas ou n'est pas accessible (404, 403, etc.), ignorer silencieusement
+            console.warn('Previous version not accessible:', prevVersionData.id, err.message || err);
+            setPreviousVersion(null);
+          }
+        } else {
+          setPreviousVersion(null);
+        }
+      } catch (err) {
+        // En cas d'erreur lors du chargement des versions, continuer sans comparaison
+        console.warn('Error loading versions for comparison:', err);
+        setPreviousVersion(null);
+      }
+    }
+    
     setShowViewModal(true);
   };
 
@@ -490,7 +527,127 @@ const PositionStrategiesPage: React.FC = () => {
   const handleCloseViewModal = () => {
     setShowViewModal(false);
     setSelectedStrategy(null);
+    setPreviousVersion(null);
     setCheckedRules({});
+  };
+  
+  // Fonction pour comparer deux versions et identifier les changements
+  const getVersionChanges = (current: PositionStrategy, previous: PositionStrategy | null) => {
+    if (!previous) return null;
+    
+    const changes: {
+      sectionsAdded: number[];
+      sectionsRemoved: number[];
+      sectionsModified: number[];
+      rulesAdded: Array<{ sectionIndex: number; ruleIndex: number }>;
+      rulesRemoved: Array<{ sectionIndex: number; ruleIndex: number }>;
+      rulesModified: Array<{ sectionIndex: number; ruleIndex: number }>;
+      versionNotesChanged: boolean;
+      titleChanged: boolean;
+      descriptionChanged: boolean;
+    } = {
+      sectionsAdded: [],
+      sectionsRemoved: [],
+      sectionsModified: [],
+      rulesAdded: [],
+      rulesRemoved: [],
+      rulesModified: [],
+      versionNotesChanged: false,
+      titleChanged: false,
+      descriptionChanged: false,
+    };
+    
+    // Comparer les notes de version
+    const currentNotes = (current.version_notes || '').trim();
+    const previousNotes = (previous.version_notes || '').trim();
+    if (currentNotes !== previousNotes) {
+      changes.versionNotesChanged = true;
+    }
+    
+    // Comparer le titre
+    if (current.title !== previous.title) {
+      changes.titleChanged = true;
+    }
+    
+    // Comparer la description
+    const currentDesc = (current.description || '').trim();
+    const previousDesc = (previous.description || '').trim();
+    if (currentDesc !== previousDesc) {
+      changes.descriptionChanged = true;
+    }
+    
+    const currentSections = current.strategy_content?.sections || [];
+    const previousSections = previous.strategy_content?.sections || [];
+    
+    // Comparer les sections
+    const maxSections = Math.max(currentSections.length, previousSections.length);
+    
+    for (let i = 0; i < maxSections; i++) {
+      const currentSection = currentSections[i];
+      const previousSection = previousSections[i];
+      
+      if (!previousSection && currentSection) {
+        // Section ajoutée
+        changes.sectionsAdded.push(i);
+      } else if (previousSection && !currentSection) {
+        // Section supprimée
+        changes.sectionsRemoved.push(i);
+      } else if (currentSection && previousSection) {
+        // Vérifier si le titre a changé
+        if (currentSection.title !== previousSection.title) {
+          changes.sectionsModified.push(i);
+        }
+        
+        // Comparer les règles de cette section
+        const currentRules = currentSection.rules || [];
+        const previousRules = previousSection.rules || [];
+        const maxRules = Math.max(currentRules.length, previousRules.length);
+        
+        for (let j = 0; j < maxRules; j++) {
+          const currentRule = typeof currentRules[j] === 'string' 
+            ? currentRules[j] 
+            : (currentRules[j] as any)?.text || (currentRules[j] as any)?.id || JSON.stringify(currentRules[j]);
+          const previousRule = typeof previousRules[j] === 'string'
+            ? previousRules[j]
+            : (previousRules[j] as any)?.text || (previousRules[j] as any)?.id || JSON.stringify(previousRules[j]);
+          
+          if (!previousRule && currentRule) {
+            // Règle ajoutée
+            changes.rulesAdded.push({ sectionIndex: i, ruleIndex: j });
+          } else if (previousRule && !currentRule) {
+            // Règle supprimée
+            changes.rulesRemoved.push({ sectionIndex: i, ruleIndex: j });
+          } else if (currentRule && previousRule && currentRule !== previousRule) {
+            // Règle modifiée
+            changes.rulesModified.push({ sectionIndex: i, ruleIndex: j });
+          }
+        }
+      }
+    }
+    
+    return changes;
+  };
+  
+  // Obtenir le type de changement
+  const getChangeType = (
+    type: 'section' | 'rule',
+    sectionIndex: number,
+    changes: ReturnType<typeof getVersionChanges>,
+    ruleIndex?: number
+  ): 'added' | 'removed' | 'modified' | null => {
+    if (!changes) return null;
+    
+    if (type === 'section') {
+      if (changes.sectionsAdded.includes(sectionIndex)) return 'added';
+      if (changes.sectionsRemoved.includes(sectionIndex)) return 'removed';
+      if (changes.sectionsModified.includes(sectionIndex)) return 'modified';
+    } else if (type === 'rule' && ruleIndex !== undefined) {
+      if (changes.rulesAdded.some(r => r.sectionIndex === sectionIndex && r.ruleIndex === ruleIndex)) return 'added';
+      if (changes.rulesRemoved.some(r => r.sectionIndex === sectionIndex && r.ruleIndex === ruleIndex)) return 'removed';
+      if (changes.rulesModified.some(r => r.sectionIndex === sectionIndex && r.ruleIndex === ruleIndex)) return 'modified';
+    }
+    
+    return null;
   };
 
   // Ouvrir le modal d'édition
@@ -604,7 +761,13 @@ const PositionStrategiesPage: React.FC = () => {
     try {
       // Utiliser l'ID de la stratégie directement - get_version_history() gère le parent automatiquement
       const versionsData = await positionStrategiesService.getVersions(strategy.id);
-      setVersions(versionsData);
+      // Trier les versions : version actuelle en premier, puis par numéro de version décroissant
+      const sortedVersions = [...versionsData].sort((a, b) => {
+        if (a.is_current && !b.is_current) return -1;
+        if (!a.is_current && b.is_current) return 1;
+        return b.version - a.version;
+      });
+      setVersions(sortedVersions);
       setSelectedStrategy(strategy);
       setShowVersionsModal(true);
     } catch (err: any) {
@@ -825,13 +988,41 @@ const PositionStrategiesPage: React.FC = () => {
     });
   };
 
-  // Calculer la position du menu dropdown
+  // Calculer la position du menu dropdown avec ajustement automatique
   const calculateMenuPosition = (buttonElement: HTMLButtonElement | null) => {
     if (!buttonElement) return null;
     const rect = buttonElement.getBoundingClientRect();
+    const menuHeight = 250; // Hauteur approximative du menu (peut contenir 3-4 items)
+    const spacing = 8; // Espacement entre le bouton et le menu
+    const minSpace = 10; // Espace minimum requis
+    
+    // Vérifier s'il y a assez de place en bas
+    const spaceBelow = window.innerHeight - rect.bottom - spacing;
+    const spaceAbove = rect.top - spacing;
+    
+    // Déterminer la meilleure position
+    // Positionner au-dessus si :
+    // 1. Pas assez de place en bas ET assez de place en haut
+    // 2. Ou si on est proche du bas de l'écran (moins de 100px)
+    const nearBottom = spaceBelow < 100;
+    const shouldPositionAbove = (spaceBelow < menuHeight && spaceAbove > menuHeight) || 
+                                 (nearBottom && spaceAbove > spaceBelow);
+    
+    let top: number;
+    if (shouldPositionAbove) {
+      // Positionner au-dessus, mais s'assurer qu'on ne dépasse pas le haut
+      top = Math.max(minSpace, rect.top + window.scrollY - menuHeight - spacing);
+    } else {
+      // Positionner en dessous, mais s'assurer qu'on ne dépasse pas le bas
+      const bottomPosition = rect.bottom + window.scrollY + spacing;
+      const maxTop = window.innerHeight + window.scrollY - menuHeight - minSpace;
+      top = Math.min(bottomPosition, maxTop);
+    }
+    
     return {
-      top: rect.bottom + window.scrollY + 8, // 8px de marge (mt-2)
+      top,
       right: window.innerWidth - rect.right + window.scrollX,
+      positionAbove: shouldPositionAbove,
     };
   };
 
@@ -1610,11 +1801,6 @@ const PositionStrategiesPage: React.FC = () => {
                                   {t('positionStrategies:current', { defaultValue: 'Actuelle' })}
                                 </span>
                               )}
-                              {version.is_latest_version && (
-                                <span className="px-2 py-1 text-xs font-medium bg-green-600 text-white rounded">
-                                  {t('positionStrategies:latest', { defaultValue: 'Dernière' })}
-                                </span>
-                              )}
                               <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(version.status)}`}>
                                 {version.status === 'active' ? t('positionStrategies:active', { defaultValue: 'Active' }) :
                                  version.status === 'draft' ? t('positionStrategies:draft', { defaultValue: 'Brouillon' }) :
@@ -1659,7 +1845,7 @@ const PositionStrategiesPage: React.FC = () => {
             }}
           >
             <div
-              className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+              className="bg-white dark:bg-gray-800 w-full max-w-6xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -1671,14 +1857,40 @@ const PositionStrategiesPage: React.FC = () => {
                     </svg>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
-                      {selectedStrategy.title}
-                    </h2>
-                    {selectedStrategy.description && (
-                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">
-                        {selectedStrategy.description}
-                      </p>
-                    )}
+                    {(() => {
+                      // Ne pas afficher les changements si la version est active
+                      const showChanges = selectedStrategy.status !== 'active';
+                      const changes = showChanges ? getVersionChanges(selectedStrategy, previousVersion) : null;
+                      const titleChanged = changes?.titleChanged;
+                      const descriptionChanged = changes?.descriptionChanged;
+                      
+                      return (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <h2 className={`text-lg sm:text-xl font-bold truncate ${titleChanged ? 'text-purple-900 dark:text-purple-100' : 'text-gray-900 dark:text-gray-100'}`}>
+                              {selectedStrategy.title}
+                            </h2>
+                            {titleChanged && (
+                              <span className="px-2 py-0.5 text-xs font-medium bg-purple-200 dark:bg-purple-800 text-purple-800 dark:text-purple-200 rounded flex-shrink-0">
+                                {t('positionStrategies:modified', { defaultValue: 'Modifié' })}
+                              </span>
+                            )}
+                          </div>
+                          {selectedStrategy.description && (
+                            <div className="flex items-start gap-2 mt-1">
+                              <p className={`text-xs sm:text-sm truncate flex-1 ${descriptionChanged ? 'text-indigo-900 dark:text-indigo-100' : 'text-gray-600 dark:text-gray-400'}`}>
+                                {selectedStrategy.description}
+                              </p>
+                              {descriptionChanged && (
+                                <span className="px-2 py-0.5 text-xs font-medium bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 rounded flex-shrink-0">
+                                  {t('positionStrategies:modified', { defaultValue: 'Modifié' })}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
                 <button
@@ -1693,6 +1905,87 @@ const PositionStrategiesPage: React.FC = () => {
 
               {/* Contenu scrollable */}
               <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+                {/* Bandeau de comparaison avec version précédente (uniquement pour les versions archivées) */}
+                {previousVersion && selectedStrategy.status !== 'active' && (() => {
+                  const changes = getVersionChanges(selectedStrategy, previousVersion);
+                  const hasChanges = changes && (
+                    changes.sectionsAdded.length > 0 ||
+                    changes.sectionsRemoved.length > 0 ||
+                    changes.sectionsModified.length > 0 ||
+                    changes.rulesAdded.length > 0 ||
+                    changes.rulesRemoved.length > 0 ||
+                    changes.rulesModified.length > 0 ||
+                    changes.versionNotesChanged ||
+                    changes.titleChanged ||
+                    changes.descriptionChanged
+                  );
+                  
+                  if (hasChanges) {
+                    return (
+                      <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <div className="flex items-start gap-2 sm:gap-3">
+                          <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="flex-1">
+                            <h4 className="text-sm sm:text-base font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                              {t('positionStrategies:changesFromPrevious', { defaultValue: 'Changements par rapport à la version précédente (v' + previousVersion.version + ')' })}
+                            </h4>
+                            <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
+                              {changes!.sectionsAdded.length > 0 && (
+                                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">
+                                  {changes!.sectionsAdded.length} {t('positionStrategies:sectionsAdded', { defaultValue: 'section(s) ajoutée(s)' })}
+                                </span>
+                              )}
+                              {changes!.sectionsRemoved.length > 0 && (
+                                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">
+                                  {changes!.sectionsRemoved.length} {t('positionStrategies:sectionsRemoved', { defaultValue: 'section(s) supprimée(s)' })}
+                                </span>
+                              )}
+                              {changes!.sectionsModified.length > 0 && (
+                                <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded">
+                                  {changes!.sectionsModified.length} {t('positionStrategies:sectionsModified', { defaultValue: 'section(s) modifiée(s)' })}
+                                </span>
+                              )}
+                              {changes!.rulesAdded.length > 0 && (
+                                <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded">
+                                  {changes!.rulesAdded.length} {t('positionStrategies:rulesAdded', { defaultValue: 'règle(s) ajoutée(s)' })}
+                                </span>
+                              )}
+                              {changes!.rulesRemoved.length > 0 && (
+                                <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded">
+                                  {changes!.rulesRemoved.length} {t('positionStrategies:rulesRemoved', { defaultValue: 'règle(s) supprimée(s)' })}
+                                </span>
+                              )}
+                              {changes!.rulesModified.length > 0 && (
+                                <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded">
+                                  {changes!.rulesModified.length} {t('positionStrategies:rulesModified', { defaultValue: 'règle(s) modifiée(s)' })}
+                                </span>
+                              )}
+                              {changes!.versionNotesChanged && (
+                                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded">
+                                  {t('positionStrategies:versionNotesChanged', { defaultValue: 'Notes de version modifiées' })}
+                                </span>
+                              )}
+                              {changes!.titleChanged && (
+                                <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded">
+                                  {t('positionStrategies:titleChanged', { defaultValue: 'Titre modifié' })}
+                                </span>
+                              )}
+                              {changes!.descriptionChanged && (
+                                <span className="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded">
+                                  {t('positionStrategies:descriptionChanged', { defaultValue: 'Description modifiée' })}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+                
                 {/* Informations générales */}
                 <div className="mb-4 sm:mb-6 pb-4 sm:pb-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm">
@@ -1768,18 +2061,69 @@ const PositionStrategiesPage: React.FC = () => {
                         ? Math.round((sectionChecked / sectionRules.length) * 100) 
                         : 0;
                       
+                      // Vérifier les changements pour cette section (uniquement si la version n'est pas active)
+                      const showChanges = selectedStrategy.status !== 'active';
+                      const changes = showChanges ? getVersionChanges(selectedStrategy, previousVersion) : null;
+                      const sectionChangeType = getChangeType('section', sectionIndex, changes);
+                      const sectionBgColor = sectionChangeType === 'added' 
+                        ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800'
+                        : sectionChangeType === 'removed'
+                        ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800'
+                        : sectionChangeType === 'modified'
+                        ? 'bg-yellow-50 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800'
+                        : 'border-gray-200 dark:border-gray-700';
+                      
                       return (
-                        <div key={sectionIndex} className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                            <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
-                              {section.title || t('positionStrategies:sectionWithoutTitle', { defaultValue: 'Section sans titre' })}
-                            </h4>
-                            <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                              {sectionChecked}/{sectionRules.length} ({sectionPercentage}%)
-                            </span>
+                        <div key={sectionIndex} className={`border-2 rounded-lg overflow-hidden ${sectionBgColor} ${sectionChangeType === 'removed' ? 'opacity-60' : ''} shadow-sm`}>
+                          {/* En-tête de section */}
+                          <div className={`px-4 py-3 sm:px-5 sm:py-4 bg-gradient-to-r ${
+                            sectionChangeType === 'added' 
+                              ? 'from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-900/10 border-b-2 border-green-200 dark:border-green-800'
+                              : sectionChangeType === 'removed'
+                              ? 'from-red-100 to-red-50 dark:from-red-900/30 dark:to-red-900/10 border-b-2 border-red-200 dark:border-red-800'
+                              : sectionChangeType === 'modified'
+                              ? 'from-yellow-100 to-yellow-50 dark:from-yellow-900/30 dark:to-yellow-900/10 border-b-2 border-yellow-200 dark:border-yellow-800'
+                              : 'from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800 border-b-2 border-gray-200 dark:border-gray-600'
+                          }`}>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                {sectionChangeType && (
+                                  <span className={`px-2 py-0.5 text-xs font-medium rounded flex-shrink-0 ${
+                                    sectionChangeType === 'added' 
+                                      ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200'
+                                      : sectionChangeType === 'removed'
+                                      ? 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200'
+                                      : 'bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200'
+                                  }`}>
+                                    {sectionChangeType === 'added' 
+                                      ? t('positionStrategies:added', { defaultValue: 'Ajouté' })
+                                      : sectionChangeType === 'removed'
+                                      ? t('positionStrategies:removed', { defaultValue: 'Supprimé' })
+                                      : t('positionStrategies:modified', { defaultValue: 'Modifié' })}
+                                  </span>
+                                )}
+                                <h4 className={`font-semibold text-base sm:text-lg break-words ${sectionChangeType === 'removed' ? 'line-through' : ''} ${
+                                  sectionChangeType === 'added' 
+                                    ? 'text-green-900 dark:text-green-100'
+                                    : sectionChangeType === 'removed'
+                                    ? 'text-red-900 dark:text-red-100'
+                                    : sectionChangeType === 'modified'
+                                    ? 'text-yellow-900 dark:text-yellow-100'
+                                    : 'text-gray-900 dark:text-gray-100'
+                                }`}>
+                                  {section.title || t('positionStrategies:sectionWithoutTitle', { defaultValue: 'Section sans titre' })}
+                                </h4>
+                              </div>
+                              <span className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400 whitespace-nowrap bg-white/50 dark:bg-gray-800/50 px-2 py-1 rounded">
+                                {sectionChecked}/{sectionRules.length} ({sectionPercentage}%)
+                              </span>
+                            </div>
                           </div>
+                          
+                          {/* Contenu des règles */}
                           {sectionRules.length > 0 ? (
-                            <ul className="space-y-2">
+                            <div className="p-3 sm:p-4 bg-white dark:bg-gray-800">
+                              <ul className="space-y-3">
                               {sectionRules.map((rule, ruleIndex) => {
                                 // Gérer les règles qui peuvent être des chaînes ou des objets
                                 let ruleText: string;
@@ -1793,25 +2137,71 @@ const PositionStrategiesPage: React.FC = () => {
                                 const ruleKey = `${sectionIndex}_${ruleIndex}`;
                                 const isChecked = checkedRules[ruleKey] || false;
                                 
+                                // Vérifier les changements pour cette règle (uniquement si la version n'est pas active)
+                                const showChanges = selectedStrategy.status !== 'active';
+                                const changes = showChanges ? getVersionChanges(selectedStrategy, previousVersion) : null;
+                                const ruleChangeType = getChangeType('rule', sectionIndex, changes, ruleIndex);
+                                const ruleBgColor = ruleChangeType === 'added' 
+                                  ? 'bg-green-50 dark:bg-green-900/10'
+                                  : ruleChangeType === 'removed'
+                                  ? 'bg-red-50 dark:bg-red-900/10'
+                                  : ruleChangeType === 'modified'
+                                  ? 'bg-yellow-50 dark:bg-yellow-900/10'
+                                  : '';
+                                
                                 return ruleText && (
-                                  <li key={ruleIndex} className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base text-gray-700 dark:text-gray-300">
+                                  <li key={ruleIndex} className={`flex items-start gap-3 text-sm sm:text-base p-3 rounded-lg border ${ruleBgColor} ${ruleChangeType === 'removed' ? 'opacity-60' : ''} ${
+                                    ruleChangeType === 'added' 
+                                      ? 'border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10'
+                                      : ruleChangeType === 'removed'
+                                      ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10'
+                                      : ruleChangeType === 'modified'
+                                      ? 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10'
+                                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
+                                  }`}>
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
                                       onChange={() => toggleRule(sectionIndex, ruleIndex)}
-                                      className="mt-1 w-4 h-4 sm:w-5 sm:h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 cursor-pointer flex-shrink-0"
+                                      className="mt-0.5 w-5 h-5 sm:w-5 sm:h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 cursor-pointer flex-shrink-0"
                                     />
-                                    <span className={`flex-1 break-words ${isChecked ? 'line-through text-gray-500 dark:text-gray-500' : ''}`}>
-                                      {ruleText}
-                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start gap-2">
+                                        {ruleChangeType && (
+                                          <span className={`px-2 py-0.5 text-xs font-medium rounded flex-shrink-0 mt-0.5 ${
+                                            ruleChangeType === 'added' 
+                                              ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200'
+                                              : ruleChangeType === 'removed'
+                                              ? 'bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200'
+                                              : 'bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200'
+                                          }`}>
+                                            {ruleChangeType === 'added' ? '+' : ruleChangeType === 'removed' ? '-' : '~'}
+                                          </span>
+                                        )}
+                                        <span className={`flex-1 break-words leading-relaxed ${isChecked ? 'line-through text-gray-500 dark:text-gray-500' : ''} ${
+                                          ruleChangeType === 'added' 
+                                            ? 'text-green-900 dark:text-green-100 font-medium'
+                                            : ruleChangeType === 'removed'
+                                            ? 'text-red-900 dark:text-red-100 line-through'
+                                            : ruleChangeType === 'modified'
+                                            ? 'text-yellow-900 dark:text-yellow-100 font-medium'
+                                            : 'text-gray-700 dark:text-gray-300'
+                                        }`}>
+                                          {ruleText}
+                                        </span>
+                                      </div>
+                                    </div>
                                   </li>
                                 );
                               })}
-                            </ul>
+                              </ul>
+                            </div>
                           ) : (
-                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic">
-                              {t('positionStrategies:noRules', { defaultValue: 'Aucune règle définie' })}
-                            </p>
+                            <div className="p-3 sm:p-4 bg-white dark:bg-gray-800">
+                              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 italic text-center py-2">
+                                {t('positionStrategies:noRules', { defaultValue: 'Aucune règle définie' })}
+                              </p>
+                            </div>
                           )}
                         </div>
                       );
@@ -1824,16 +2214,30 @@ const PositionStrategiesPage: React.FC = () => {
                 </div>
 
                 {/* Notes de version si présentes */}
-                {selectedStrategy.version_notes && (
-                  <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100 mb-2">
-                      {t('positionStrategies:versionNotes', { defaultValue: 'Notes de version' })}
-                    </h4>
-                    <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                      {selectedStrategy.version_notes}
-                    </p>
-                  </div>
-                )}
+                {selectedStrategy.version_notes && (() => {
+                  // Ne pas afficher les changements si la version est active
+                  const showChanges = selectedStrategy.status !== 'active';
+                  const changes = showChanges ? getVersionChanges(selectedStrategy, previousVersion) : null;
+                  const notesChanged = changes?.versionNotesChanged;
+                  
+                  return (
+                    <div className={`mt-4 sm:mt-6 pt-4 sm:pt-6 border-t ${notesChanged ? 'border-blue-300 dark:border-blue-700' : 'border-gray-200 dark:border-gray-700'}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h4 className="font-semibold text-sm sm:text-base text-gray-900 dark:text-gray-100">
+                          {t('positionStrategies:versionNotes', { defaultValue: 'Notes de version' })}
+                        </h4>
+                        {notesChanged && (
+                          <span className="px-2 py-0.5 text-xs font-medium bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded">
+                            {t('positionStrategies:modified', { defaultValue: 'Modifié' })}
+                          </span>
+                        )}
+                      </div>
+                      <p className={`text-xs sm:text-sm whitespace-pre-wrap break-words ${notesChanged ? 'text-blue-900 dark:text-blue-100 bg-blue-50 dark:bg-blue-900/10 p-3 rounded' : 'text-gray-700 dark:text-gray-300'}`}>
+                        {selectedStrategy.version_notes}
+                      </p>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Footer */}
