@@ -7,6 +7,7 @@ from django.db.models.functions import TruncDate, Cast
 from django.db import models
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.http import Http404
 from django.conf import settings
 from datetime import timedelta, datetime
 import pytz
@@ -3134,11 +3135,11 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
     
     def get_object(self):
         """
-        Override get_object pour les actions de modification (update, destroy) 
+        Override get_object pour les actions de modification (update, destroy, retrieve) 
         afin d'inclure les stratégies archivées.
         """
-        # Pour les actions de modification, utiliser un queryset de base sans filtre d'archivage
-        if self.action in ['update', 'partial_update', 'destroy', 'versions', 'restore_version']:
+        # Pour les actions de modification et de récupération, utiliser un queryset de base sans filtre d'archivage
+        if self.action in ['update', 'partial_update', 'destroy', 'versions', 'restore_version', 'retrieve']:
             queryset = PositionStrategy.objects.filter(user=self.request.user)  # type: ignore
             lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
             filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
@@ -3152,6 +3153,12 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
         """Override retrieve pour gérer les erreurs de sérialisation."""
         try:
             return super().retrieve(request, *args, **kwargs)
+        except Http404:
+            # Si l'objet n'existe pas, retourner un 404 approprié
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Stratégie {kwargs.get('pk')} non trouvée pour l'utilisateur {request.user.id}")
+            raise
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
