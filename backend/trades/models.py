@@ -1143,16 +1143,18 @@ class PositionStrategy(models.Model):
         if not self.pk:  # Nouvelle stratégie
             # Marquer toutes les autres versions comme non actuelles
             if self.parent_strategy:
+                # Marquer toutes les versions du groupe (parent + enfants) comme non actuelles
+                parent = self.parent_strategy
                 PositionStrategy.objects.filter(  # type: ignore
-                    parent_strategy=self.parent_strategy,
+                    models.Q(id=parent.id) | models.Q(parent_strategy=parent),
                     user=self.user
                 ).update(is_current=False)
                 # Utiliser le numéro de version maximum + 1 au lieu de count() + 1
                 # Prendre en compte à la fois les versions enfants et la stratégie parente elle-même
-                max_child_version = self.parent_strategy.versions.aggregate(  # type: ignore
+                max_child_version = parent.versions.aggregate(  # type: ignore
                     max_version=models.Max('version')
                 )['max_version'] or 0
-                parent_version = self.parent_strategy.version or 0
+                parent_version = parent.version or 0
                 max_version = max(max_child_version, parent_version)
                 self.version = max_version + 1
             else:
@@ -1162,13 +1164,22 @@ class PositionStrategy(models.Model):
     
     @property
     def is_latest_version(self):
-        """Vérifie si c'est la dernière version."""
+        """Vérifie si c'est la version avec le numéro le plus élevé (la plus récente créée)."""
         try:
-            if not self.parent_strategy:
-                return True
-            latest = self.parent_strategy.versions.order_by('-version').first()  # type: ignore
+            # Identifier le parent (soit self si c'est le parent, soit parent_strategy)
+            parent = self.parent_strategy or self
+            
+            # Récupérer toutes les versions du groupe (parent + enfants)
+            all_versions = PositionStrategy.objects.filter(  # type: ignore
+                models.Q(id=parent.id) | models.Q(parent_strategy=parent),
+                user=self.user
+            )
+            
+            # Trouver la version avec le numéro le plus élevé
+            latest = all_versions.order_by('-version').first()
             if latest is None:
                 return True
+            
             return self == latest
         except Exception as e:
             # En cas d'erreur (relation cassée, etc.), considérer comme dernière version
@@ -1178,11 +1189,17 @@ class PositionStrategy(models.Model):
             return True
     
     def get_version_history(self):
-        """Retourne l'historique des versions."""
+        """Retourne l'historique des versions (parent + toutes les versions enfants)."""
         try:
-            if self.parent_strategy:
-                return self.parent_strategy.versions.order_by('-version')  # type: ignore
-            return self.versions.order_by('-version')  # type: ignore
+            # Identifier le parent (soit self si c'est le parent, soit parent_strategy)
+            parent = self.parent_strategy or self
+            
+            # Retourner toutes les versions du groupe : le parent + tous ses enfants
+            # Utiliser Q pour inclure le parent (id=parent.id) et tous ses enfants (parent_strategy=parent)
+            return PositionStrategy.objects.filter(  # type: ignore
+                models.Q(id=parent.id) | models.Q(parent_strategy=parent),
+                user=self.user
+            ).order_by('-version')
         except Exception as e:
             # En cas d'erreur, retourner un queryset vide
             import logging
@@ -1195,15 +1212,16 @@ class PositionStrategy(models.Model):
         # Marquer toutes les autres versions comme non actuelles
         parent = self.parent_strategy or self
         
-        # Marquer toutes les versions de ce parent comme non actuelles
+        # Marquer toutes les versions de ce parent (y compris le parent lui-même) comme non actuelles
+        # Utiliser Q pour inclure le parent et tous ses enfants
         PositionStrategy.objects.filter(  # type: ignore
-            parent_strategy=parent,
+            models.Q(id=parent.id) | models.Q(parent_strategy=parent),
             user=self.user
         ).update(is_current=False)
         
-        # Marquer aussi la stratégie parente comme non actuelle
-        parent.is_current = False  # type: ignore
-        parent.save()  # type: ignore
+        # IMPORTANT: Rafraîchir l'objet self depuis la base de données pour avoir la valeur is_current=False
+        # car update() ne met pas à jour l'objet en mémoire
+        self.refresh_from_db()
         
         # Calculer le nouveau numéro de version en utilisant le maximum + 1
         # Cela garantit qu'on utilise toujours le numéro le plus élevé, même si des versions sont supprimées
@@ -1226,9 +1244,10 @@ class PositionStrategy(models.Model):
         )
         
         # Archiver l'ancienne version si elle était active
+        # is_current est déjà False grâce au refresh_from_db() ci-dessus
         if self.status == 'active':
             self.status = 'archived'
-            self.save()
+            self.save(update_fields=['status'])
         
         return new_strategy
 

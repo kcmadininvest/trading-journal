@@ -3083,11 +3083,16 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
                 new_content=serializer.validated_data.get('strategy_content', current_strategy.strategy_content),
                 version_notes=serializer.validated_data.get('version_notes', '')
             )
-            # Mettre à jour les autres champs
+            # Mettre à jour les autres champs (sauf is_current qui doit rester True)
+            update_fields = []
             for field, value in serializer.validated_data.items():
-                if field not in ['strategy_content', 'version_notes']:
+                if field not in ['strategy_content', 'version_notes', 'is_current']:
                     setattr(new_strategy, field, value)
-            new_strategy.save()
+                    update_fields.append(field)
+            
+            # Sauvegarder uniquement les champs modifiés, en préservant is_current=True
+            if update_fields:
+                new_strategy.save(update_fields=update_fields)
             
             # Retourner la nouvelle stratégie au lieu de l'ancienne
             serializer.instance = new_strategy
@@ -3189,19 +3194,45 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             return Response({'error': 'version_id requis'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            target_version = strategy.get_version_history().get(id=version_id)
-            if target_version.user != request.user:
-                return Response({'error': 'Accès non autorisé'}, status=status.HTTP_403_FORBIDDEN)
-            
-            # Créer une nouvelle version basée sur la version cible
-            new_strategy = strategy.create_new_version(
-                new_content=target_version.strategy_content,
-                version_notes=f"Restauration de la version {target_version.version}"
+            # Récupérer toutes les versions du groupe (parent + enfants)
+            parent = strategy.parent_strategy or strategy
+            all_versions = PositionStrategy.objects.filter(  # type: ignore
+                models.Q(id=parent.id) | models.Q(parent_strategy=parent),
+                user=request.user
             )
             
-            serializer = self.get_serializer(new_strategy)
+            target_version = all_versions.get(id=version_id)
+            
+            # Trouver l'ancienne version actuelle (s'il y en a une)
+            old_current = all_versions.filter(is_current=True).first()
+            
+            # S'assurer qu'une seule version est marquée comme actuelle
+            # D'abord, mettre toutes les versions à is_current=False
+            all_versions.update(is_current=False)
+            
+            # Archiver l'ancienne version actuelle si elle existe et était active
+            if old_current and old_current.id != target_version.id and old_current.status == 'active':
+                old_current.refresh_from_db()
+                old_current.status = 'archived'
+                old_current.save(update_fields=['status'])
+            
+            # Rafraîchir l'objet target_version depuis la base de données
+            target_version.refresh_from_db()
+            
+            # Marquer la version cible comme actuelle et restaurer son statut si elle était archivée
+            target_version.is_current = True
+            update_fields = ['is_current']
+            
+            # Si la version était archivée, la remettre en active
+            if target_version.status == 'archived':
+                target_version.status = 'active'
+                update_fields.append('status')
+            
+            target_version.save(update_fields=update_fields)
+            
+            serializer = self.get_serializer(target_version)
             return Response(serializer.data)
-        except PositionStrategy.DoesNotExist:
+        except PositionStrategy.DoesNotExist:  # type: ignore
             return Response({'error': 'Version non trouvée'}, status=status.HTTP_404_NOT_FOUND)
     
     @action(detail=True, methods=['get'])

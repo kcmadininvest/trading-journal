@@ -604,7 +604,13 @@ const PositionStrategiesPage: React.FC = () => {
     try {
       // Utiliser l'ID de la stratégie directement - get_version_history() gère le parent automatiquement
       const versionsData = await positionStrategiesService.getVersions(strategy.id);
-      setVersions(versionsData);
+      // Trier les versions : version actuelle en premier, puis par numéro de version décroissant
+      const sortedVersions = [...versionsData].sort((a, b) => {
+        if (a.is_current && !b.is_current) return -1;
+        if (!a.is_current && b.is_current) return 1;
+        return b.version - a.version;
+      });
+      setVersions(sortedVersions);
       setSelectedStrategy(strategy);
       setShowVersionsModal(true);
     } catch (err: any) {
@@ -1608,11 +1614,6 @@ const PositionStrategiesPage: React.FC = () => {
                               {version.is_current && (
                                 <span className="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded">
                                   {t('positionStrategies:current', { defaultValue: 'Actuelle' })}
-                                </span>
-                              )}
-                              {version.is_latest_version && (
-                                <span className="px-2 py-1 text-xs font-medium bg-green-600 text-white rounded">
-                                  {t('positionStrategies:latest', { defaultValue: 'Dernière' })}
                                 </span>
                               )}
                               <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(version.status)}`}>
