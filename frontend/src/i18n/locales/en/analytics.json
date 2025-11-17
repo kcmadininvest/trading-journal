@@ -41,17 +41,19 @@
       "yAxis": "Total PnL"
     },
     "heatmap": {
-      "title": "Performance Heatmap (Day × Hour)",
+      "title": "Performance by Day of Week and Hour",
       "losses": "Losses",
       "neutral": "Neutral",
-      "gains": "Gains"
+      "gains": "Gains",
+      "tooltip": "This heatmap shows your performance (PnL) by day of the week and by hour. Each cell represents the total PnL for a day/hour combination. Blue colors indicate gains, pink colors indicate losses. The more intense the color, the higher the value. Only hours with data are displayed, with one hour of context before and after."
     },
     "pnlDistribution": {
       "title": "PnL Distribution",
       "label": "Percentage of trades",
       "yAxis": "Percentage of trades",
       "range": "P&L: from {{start}} to {{end}}",
-      "onTotal": "of {{total}} total"
+      "onTotal": "of {{total}} total",
+      "tooltip": "This chart shows the distribution of your PnL (profits and losses) by grouping trades into value intervals. Each bar represents a PnL interval and its height indicates the percentage of trades that fall within that interval. This helps identify the most frequent PnL ranges in your trading."
     }
   },
   "common": {

@@ -41,17 +41,19 @@
       "yAxis": "PnL total"
     },
     "heatmap": {
-      "title": "Heatmap de Performance (Jour × Heure)",
+      "title": "Performance par Jour de la Semaine et par Heure",
       "losses": "Pertes",
       "neutral": "Neutre",
-      "gains": "Gains"
+      "gains": "Gains",
+      "tooltip": "Cette heatmap montre votre performance (PnL) par jour de la semaine et par heure. Chaque cellule représente le PnL total pour une combinaison jour/heure. Les couleurs bleues indiquent des gains, les couleurs roses indiquent des pertes. Plus la couleur est intense, plus la valeur est importante. Seules les heures avec des données sont affichées, avec une heure de contexte avant et après."
     },
     "pnlDistribution": {
       "title": "Distribution des PnL",
       "label": "Pourcentage de trades",
       "yAxis": "Pourcentage de trades",
       "range": "P&L: de {{start}} à {{end}}",
-      "onTotal": "sur {{total}} total"
+      "onTotal": "sur {{total}} total",
+      "tooltip": "Ce graphique montre la distribution de vos PnL (profits et pertes) en regroupant les trades par intervalles de valeurs. Chaque barre représente un intervalle de PnL et sa hauteur indique le pourcentage de trades qui se trouvent dans cet intervalle. Cela permet d'identifier les plages de PnL les plus fréquentes dans votre trading."
     }
   },
   "common": {

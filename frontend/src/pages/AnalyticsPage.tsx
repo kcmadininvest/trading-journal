@@ -546,14 +546,39 @@ const AnalyticsPage: React.FC = () => {
     // Calculer les min/max pour la normalisation des couleurs (optimisé)
     let maxPnl = 0;
     let minPnl = 0;
+    const hoursWithData = new Set<number>();
+    
     for (let day = 0; day < 7; day++) {
       for (let hour = 0; hour < 24; hour++) {
         const value = heatmap[day][hour];
+        if (value !== 0) {
+          hoursWithData.add(hour);
+        }
         if (value > maxPnl) maxPnl = value;
         if (value < minPnl) minPnl = value;
       }
     }
     const maxAbs = Math.max(Math.abs(maxPnl), Math.abs(minPnl));
+
+    // Trier les heures avec des données
+    const sortedHoursWithData = Array.from(hoursWithData).sort((a, b) => a - b);
+
+    // Ajouter une heure avant et une heure après chaque heure avec des données
+    const hoursToDisplay = new Set<number>();
+    sortedHoursWithData.forEach(hour => {
+      hoursToDisplay.add(hour);
+      // Ajouter l'heure avant (si >= 0)
+      if (hour > 0) {
+        hoursToDisplay.add(hour - 1);
+      }
+      // Ajouter l'heure après (si <= 23)
+      if (hour < 23) {
+        hoursToDisplay.add(hour + 1);
+      }
+    });
+
+    // Trier les heures à afficher
+    const finalHoursWithData = Array.from(hoursToDisplay).sort((a, b) => a - b);
 
     return {
       data: heatmap,
@@ -561,6 +586,7 @@ const AnalyticsPage: React.FC = () => {
       maxAbs,
       minPnl,
       maxPnl,
+      hoursWithData: finalHoursWithData.length > 0 ? finalHoursWithData : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], // Fallback si aucune donnée
     };
   }, [trades, t]);
 
@@ -1389,21 +1415,33 @@ const AnalyticsPage: React.FC = () => {
 
           {/* Heatmap Jour × Heure */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+            <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full mr-3"></div>
-              {t('analytics:charts.heatmap.title')}
-            </h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                {t('analytics:charts.heatmap.title')}
+              </h3>
+              <TooltipComponent
+                content={t('analytics:charts.heatmap.tooltip')}
+                position="top"
+              >
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                  <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </TooltipComponent>
+            </div>
             <div className="overflow-x-auto -mx-2 px-2">
               <div className="inline-block min-w-full">
                 <div className="mb-3">
                   {/* En-tête des heures */}
                   <div className="flex ml-14">
-                    {Array.from({ length: 24 }, (_, i) => (
+                    {heatmapData.hoursWithData.map((hour) => (
                       <div
-                        key={i}
+                        key={hour}
                         className="flex-1 text-xs text-gray-600 dark:text-gray-400 text-center font-semibold min-w-[22px]"
                       >
-                        {i.toString().padStart(2, '0')}
+                        {hour.toString().padStart(2, '0')}
                       </div>
                     ))}
                   </div>
@@ -1416,7 +1454,7 @@ const AnalyticsPage: React.FC = () => {
                         {day}
                       </div>
                       <div className="flex flex-1">
-                        {Array.from({ length: 24 }, (_, hour) => {
+                        {heatmapData.hoursWithData.map((hour) => {
                           const value = heatmapData.data[dayIndex][hour];
                           const color = getHeatmapColor(value, heatmapData.maxAbs);
                           return (
@@ -1442,7 +1480,8 @@ const AnalyticsPage: React.FC = () => {
                                 }
                                 
                                 // Dernières colonnes : aligner à droite
-                                const isLastColumns = hour >= 20;
+                                const hourIndex = heatmapData.hoursWithData.indexOf(hour);
+                                const isLastColumns = hourIndex >= heatmapData.hoursWithData.length - 3;
                                 if (isLastColumns) {
                                   x = rect.right - tooltipWidth;
                                   // Si déborde à gauche, centrer
@@ -1509,10 +1548,22 @@ const AnalyticsPage: React.FC = () => {
 
           {/* Distribution des PnL */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+            <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
-              {t('analytics:charts.pnlDistribution.title')}
-            </h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                {t('analytics:charts.pnlDistribution.title')}
+              </h3>
+              <TooltipComponent
+                content={t('analytics:charts.pnlDistribution.tooltip')}
+                position="top"
+              >
+                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                  <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </TooltipComponent>
+            </div>
             <div style={{ height: '320px', position: 'relative' }}>
               <ChartBar
                 data={{
