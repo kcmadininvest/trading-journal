@@ -14,7 +14,7 @@ import pytz
 from decimal import Decimal
 from collections import defaultdict
 
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -23,6 +23,7 @@ from .serializers import (
     TradingMetricsSerializer,
     CSVUploadSerializer,
     TradeStrategySerializer,
+    DayStrategyComplianceSerializer,
     PositionStrategySerializer,
     PositionStrategyCreateSerializer,
     PositionStrategyUpdateSerializer,
@@ -1497,6 +1498,37 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             trade__in=month_trades
         ).select_related('trade')
         
+        # Récupérer les compliances pour les jours sans trades de ce mois
+        month_compliances = DayStrategyCompliance.objects.filter(  # type: ignore
+            user=request.user,
+            date__gte=start_date.date(),
+            date__lt=end_date.date()
+        ).select_related('trading_account')
+        
+        # Filtrer par compte de trading si spécifié
+        trading_account_id = request.query_params.get('trading_account')
+        if trading_account_id:
+            try:
+                trading_account_id = int(trading_account_id)
+                month_compliances = month_compliances.filter(
+                    trading_account_id=trading_account_id
+                )
+            except (ValueError, TypeError):
+                # Ignorer si l'ID n'est pas valide
+                pass
+        
+        # Créer une map des compliances par jour (pour jours sans trades)
+        compliances_by_day = {}
+        for compliance in month_compliances:
+            day = compliance.date.day
+            # Convertir strategy_respected en statut de compliance
+            if compliance.strategy_respected is True:
+                compliances_by_day[day] = 'compliant'
+            elif compliance.strategy_respected is False:
+                compliances_by_day[day] = 'non_compliant'
+            else:
+                compliances_by_day[day] = 'unknown'
+        
         # Créer une map des stratégies par jour
         strategies_by_day = defaultdict(lambda: {'total': 0, 'respected': 0, 'non_respected': 0, 'unknown': 0})
         for strategy in month_strategies:
@@ -1530,9 +1562,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         def get_strategy_compliance_status(day):
             total_trades = daily_data.get(day, {}).get('trade_count', 0)
             
-            # Si aucun trade pour ce jour, pas de statut
+            # Si aucun trade pour ce jour, vérifier s'il y a une compliance pour jour sans trade
             if total_trades == 0:
-                return None
+                return compliances_by_day.get(day, None)
             
             # Si ce jour n'a pas de stratégies renseignées
             if day not in strategies_by_day:
@@ -1579,11 +1611,13 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     'strategy_compliance_status': compliance_status
                 })
             else:
+                # Jour sans trade - vérifier s'il y a une compliance
+                compliance_status = compliances_by_day.get(day, None)
                 daily_result.append({
                     'date': str(day),
                     'pnl': 0.0,
                     'trade_count': 0,
-                    'strategy_compliance_status': None
+                    'strategy_compliance_status': compliance_status
                 })
         
         # Agréger par semaine (vraies semaines du calendrier - dimanche à samedi)
@@ -3016,6 +3050,69 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         })
 
 
+class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les données de stratégie pour les jours sans trades.
+    """
+    serializer_class = DayStrategyComplianceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Retourne uniquement les compliances de l'utilisateur connecté."""
+        if not self.request.user.is_authenticated:
+            return DayStrategyCompliance.objects.none()  # type: ignore
+        queryset = DayStrategyCompliance.objects.filter(user=self.request.user).select_related('trading_account')  # type: ignore
+        
+        # Filtres optionnels
+        date = self.request.query_params.get('date', None)
+        strategy_respected = self.request.query_params.get('strategy_respected', None)
+        trading_account_id = self.request.query_params.get('trading_account', None)
+        
+        if date:
+            queryset = queryset.filter(date=date)
+        if strategy_respected is not None:
+            queryset = queryset.filter(strategy_respected=strategy_respected.lower() == 'true')  # type: ignore
+        if trading_account_id:
+            queryset = queryset.filter(trading_account_id=trading_account_id)
+        
+        return queryset.order_by('-date', '-created_at')
+    
+    def perform_create(self, serializer):
+        """Associe automatiquement l'utilisateur connecté à la compliance."""
+        serializer.save(user=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def by_date(self, request):
+        """Récupère la compliance pour une date spécifique."""
+        date = request.query_params.get('date')
+        if not date:
+            return Response({'error': 'Paramètre date requis'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
+            compliance = DayStrategyCompliance.objects.filter(  # type: ignore
+                user=self.request.user,  # ✅ Filtre par utilisateur
+                date=date
+            ).first()
+            
+            # Filtrer par compte de trading si spécifié
+            trading_account_id = request.query_params.get('trading_account')
+            if trading_account_id and compliance:
+                compliance = DayStrategyCompliance.objects.filter(  # type: ignore
+                    user=self.request.user,
+                    date=date,
+                    trading_account_id=trading_account_id
+                ).first()
+            
+            if compliance:
+                serializer = self.get_serializer(compliance)
+                return Response(serializer.data)
+            else:
+                return Response({'error': 'Aucune compliance trouvée pour cette date'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class PositionStrategyViewSet(viewsets.ModelViewSet):
     """
     ViewSet pour gérer les stratégies de position avec versioning.
@@ -3453,6 +3550,7 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
         active_goals = goals.filter(status='active').count()
         achieved_goals = goals.filter(status='achieved').count()
         failed_goals = goals.filter(status='failed').count()
+        cancelled_goals = goals.filter(status='cancelled').count()
         
         # Objectifs par type
         goals_by_type = {}
@@ -3469,6 +3567,7 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
             'active_goals': active_goals,
             'achieved_goals': achieved_goals,
             'failed_goals': failed_goals,
+            'cancelled_goals': cancelled_goals,
             'goals_by_type': goals_by_type,
             'goals_by_period': goals_by_period,
         })

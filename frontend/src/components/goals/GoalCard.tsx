@@ -77,9 +77,9 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, currencySymbol = '', o
   const formatValue = (value: string | number, goalType: string) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     
-    if (goalType === 'pnl_total' || goalType === 'max_drawdown') {
+    if (goalType === 'pnl_total') {
       return formatCurrency(numValue, currencySymbol, preferences.number_format, 2);
-    } else if (goalType === 'win_rate' || goalType === 'strategy_respect') {
+    } else if (goalType === 'win_rate' || goalType === 'strategy_respect' || goalType === 'max_drawdown') {
       return `${formatNumber(numValue, 1, preferences.number_format)}%`;
     } else if (goalType === 'profit_factor') {
       return formatNumber(numValue, 2, preferences.number_format);

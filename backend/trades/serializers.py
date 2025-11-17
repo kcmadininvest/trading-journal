@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -414,6 +414,51 @@ class TradeStrategySerializer(serializers.ModelSerializer):
     def validate_dominant_emotions(self, value):
         """Valide que les émotions sélectionnées sont valides."""
         valid_emotions = [choice[0] for choice in TradeStrategy.EMOTION_CHOICES]
+        for emotion in value:
+            if emotion not in valid_emotions:
+                raise serializers.ValidationError(f"Émotion invalide: {emotion}")
+        return value
+    
+    def validate_session_rating(self, value):
+        """Valide que la note est entre 1 et 5."""
+        if value is not None and (value < 1 or value > 5):
+            raise serializers.ValidationError("La note doit être entre 1 et 5")
+        return value
+
+
+class DayStrategyComplianceSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les données de stratégie pour les jours sans trades.
+    """
+    emotions_display = serializers.CharField(read_only=True)
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    trading_account_name = serializers.CharField(source='trading_account.name', read_only=True, allow_null=True)
+    
+    class Meta:
+        model = DayStrategyCompliance
+        fields = [
+            'id',
+            'user',
+            'user_username',
+            'date',
+            'trading_account',
+            'trading_account_name',
+            'strategy_respected',
+            'dominant_emotions',
+            'session_rating',
+            'emotion_details',
+            'possible_improvements',
+            'screenshot_url',
+            'video_url',
+            'emotions_display',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def validate_dominant_emotions(self, value):
+        """Valide que les émotions sélectionnées sont valides."""
+        valid_emotions = [choice[0] for choice in DayStrategyCompliance.EMOTION_CHOICES]
         for emotion in value:
             if emotion not in valid_emotions:
                 raise serializers.ValidationError(f"Émotion invalide: {emotion}")

@@ -21,7 +21,9 @@
       "title": "PnL vs Anzahl der Trades Korrelation",
       "label": "Korrelation",
       "xAxis": "Anzahl der Trades",
-      "yAxis": "Gesamt-PnL"
+      "yAxis": "Gesamt-PnL",
+      "regressionLine": "Regressionslinie",
+      "rSquaredTooltip": "Der Bestimmtheitskoeffizient (R²) misst die Stärke der Korrelation zwischen der Anzahl der Trades und dem PnL. R² nahe 1 deutet auf eine starke Korrelation hin, R² nahe 0 auf eine schwache Korrelation. Die Regressionslinie zeigt den allgemeinen Trend."
     },
     "drawdown": {
       "title": "Täglicher Drawdown",
@@ -39,17 +41,19 @@
       "yAxis": "Gesamt-PnL"
     },
     "heatmap": {
-      "title": "Leistungs-Heatmap (Tag × Stunde)",
+      "title": "Leistung nach Wochentag und Stunde",
       "losses": "Verluste",
       "neutral": "Neutral",
-      "gains": "Gewinne"
+      "gains": "Gewinne",
+      "tooltip": "Diese Heatmap zeigt Ihre Leistung (PnL) nach Wochentag und Stunde. Jede Zelle stellt den Gesamt-PnL für eine Tag/Stunde-Kombination dar. Blaue Farben zeigen Gewinne, rosa Farben zeigen Verluste. Je intensiver die Farbe, desto höher der Wert. Es werden nur Stunden mit Daten angezeigt, mit einer Stunde Kontext davor und danach."
     },
     "pnlDistribution": {
       "title": "PnL-Verteilung",
       "label": "Prozentsatz der Trades",
       "yAxis": "Prozentsatz der Trades",
       "range": "P&L: von {{start}} bis {{end}}",
-      "onTotal": "von {{total}} gesamt"
+      "onTotal": "von {{total}} gesamt",
+      "tooltip": "Dieses Diagramm zeigt die Verteilung Ihrer PnL (Gewinne und Verluste), indem Trades in Werteintervalle gruppiert werden. Jeder Balken stellt ein PnL-Intervall dar und seine Höhe zeigt den Prozentsatz der Trades, die in diesem Intervall liegen. Dies hilft, die häufigsten PnL-Bereiche in Ihrem Trading zu identifizieren."
     }
   },
   "common": {

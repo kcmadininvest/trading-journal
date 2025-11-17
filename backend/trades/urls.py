@@ -9,6 +9,7 @@ router.register(r'trading-accounts', views.TradingAccountViewSet, basename='trad
 router.register(r'topstep', views.TopStepTradeViewSet, basename='topstep-trade')
 router.register(r'import-logs', views.TopStepImportLogViewSet, basename='import-log')
 router.register(r'trade-strategies', views.TradeStrategyViewSet, basename='trade-strategy')
+router.register(r'day-strategy-compliances', views.DayStrategyComplianceViewSet, basename='day-strategy-compliance')
 router.register(r'position-strategies', views.PositionStrategyViewSet, basename='position-strategy')
 router.register(r'currencies', views.CurrencyViewSet, basename='currency')
 router.register(r'goals', views.TradingGoalViewSet, basename='trading-goal')
