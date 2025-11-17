@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { tradesService, TradeListItem } from '../../services/trades';
 import { tradeStrategiesService, TradeStrategy, BulkStrategyData } from '../../services/tradeStrategies';
+import { dayStrategyComplianceService, DayStrategyCompliance } from '../../services/dayStrategyCompliance';
 import { Tooltip } from '../ui';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
@@ -45,6 +46,8 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
   const [trades, setTrades] = useState<TradeWithStrategy[]>([]);
+  const [isDayWithoutTrades, setIsDayWithoutTrades] = useState(false);
+  const [dayCompliance, setDayCompliance] = useState<DayStrategyCompliance | null>(null);
   
   // Obtenir les émotions traduites
   const TRADING_EMOTIONS = useMemo(() => {
@@ -56,11 +59,10 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [openRatingDropdowns, setOpenRatingDropdowns] = useState<Map<number, boolean>>(new Map());
-  const ratingRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const isInitialLoad = useRef(true);
   const serverDataRef = useRef<TradeWithStrategy[]>([]); // Garder une référence aux données du serveur
+  const serverDayComplianceRef = useRef<DayStrategyCompliance | null>(null); // Garder une référence à la compliance du serveur
 
   // Clé pour le localStorage basée sur la date et le compte de trading
   const draftKey = useMemo(() => {
@@ -69,26 +71,6 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     return `strategy-compliance-draft-${date}${accountKey}`;
   }, [date, tradingAccount]);
 
-  // Fermer les dropdowns quand on clique en dehors
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      ratingRefs.current.forEach((ref, tradeId) => {
-        if (ref && !ref.contains(target)) {
-          setOpenRatingDropdowns(prev => {
-            const newMap = new Map(prev);
-            newMap.set(tradeId, false);
-            return newMap;
-          });
-        }
-      });
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -100,6 +82,98 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         trading_account: tradingAccount ?? undefined,
         page_size: 100,
       });
+
+      // Si aucun trade, c'est un jour sans trade - charger la compliance si elle existe
+      if (tradesResponse.results.length === 0) {
+        setIsDayWithoutTrades(true);
+        try {
+          const compliance = await dayStrategyComplianceService.byDate(date, tradingAccount ?? undefined);
+          let finalCompliance = compliance;
+          
+          // Restaurer les données depuis localStorage si disponibles
+          if (draftKey) {
+            try {
+              const draft = localStorage.getItem(draftKey);
+              if (draft) {
+                const draftData = JSON.parse(draft);
+                if (draftData.isDayWithoutTrades && draftData.dayCompliance) {
+                  // Fusionner les données du serveur avec le brouillon
+                  finalCompliance = {
+                    ...(compliance || {
+                      id: 0,
+                      user: 0,
+                      user_username: '',
+                      date: date,
+                      trading_account: tradingAccount ?? null,
+                      trading_account_name: null,
+                      strategy_respected: null,
+                      dominant_emotions: [],
+                      session_rating: null,
+                      emotion_details: '',
+                      possible_improvements: '',
+                      screenshot_url: '',
+                      video_url: '',
+                      emotions_display: '',
+                      created_at: '',
+                      updated_at: '',
+                    }),
+                    ...draftData.dayCompliance,
+                  } as DayStrategyCompliance;
+                  
+                  // Vérifier s'il y a des changements
+                  if (compliance) {
+                    const hasChanges =
+                      finalCompliance.strategy_respected !== compliance.strategy_respected ||
+                      JSON.stringify(finalCompliance.dominant_emotions || []) !== JSON.stringify(compliance.dominant_emotions || []) ||
+                      (finalCompliance.screenshot_url || '') !== (compliance.screenshot_url || '') ||
+                      (finalCompliance.video_url || '') !== (compliance.video_url || '') ||
+                      (finalCompliance.emotion_details || '') !== (compliance.emotion_details || '') ||
+                      (finalCompliance.possible_improvements || '') !== (compliance.possible_improvements || '') ||
+                      finalCompliance.session_rating !== compliance.session_rating;
+                    setHasUnsavedChanges(hasChanges);
+                  } else {
+                    // Nouvelle compliance avec données
+                    const hasData = !!(
+                      finalCompliance.strategy_respected !== null ||
+                      (finalCompliance.dominant_emotions || []).length > 0 ||
+                      finalCompliance.session_rating !== null ||
+                      finalCompliance.emotion_details ||
+                      finalCompliance.possible_improvements ||
+                      finalCompliance.screenshot_url ||
+                      finalCompliance.video_url
+                    );
+                    setHasUnsavedChanges(hasData);
+                  }
+                  
+                  setTimeout(() => {
+                    isInitialLoad.current = false;
+                  }, 100);
+                }
+              }
+            } catch (e) {
+              console.warn('Erreur lors de la restauration du brouillon:', e);
+            }
+          }
+          
+          if (finalCompliance) {
+            setDayCompliance(finalCompliance);
+            serverDayComplianceRef.current = compliance || null;
+          } else {
+            setDayCompliance(null);
+            serverDayComplianceRef.current = null;
+          }
+        } catch (e) {
+          // Pas de compliance existante, ce n'est pas grave
+          setDayCompliance(null);
+          serverDayComplianceRef.current = null;
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Si des trades existent, c'est le mode normal
+      setIsDayWithoutTrades(false);
+      setDayCompliance(null);
 
       // Charger les stratégies existantes
       let strategies: TradeStrategy[] = [];
@@ -227,7 +301,74 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   // Sauvegarder automatiquement dans localStorage à chaque modification
   useEffect(() => {
     // Ne pas sauvegarder lors du chargement initial
-    if (isInitialLoad.current || !draftKey || trades.length === 0) {
+    if (isInitialLoad.current || !draftKey) {
+      return;
+    }
+
+    // Mode jour sans trade
+    if (isDayWithoutTrades) {
+      if (!dayCompliance) {
+        return;
+      }
+
+      // Comparer avec les données du serveur
+      const serverCompliance = serverDayComplianceRef.current;
+      let hasRealChanges = false;
+
+      if (serverCompliance) {
+        const complianceStrategyRespected = dayCompliance.strategy_respected ?? null;
+        const serverStrategyRespected = serverCompliance.strategy_respected ?? null;
+        const complianceSessionRating = dayCompliance.session_rating ?? null;
+        const serverSessionRating = serverCompliance.session_rating ?? null;
+
+        hasRealChanges =
+          complianceStrategyRespected !== serverStrategyRespected ||
+          JSON.stringify(dayCompliance.dominant_emotions || []) !== JSON.stringify(serverCompliance.dominant_emotions || []) ||
+          (dayCompliance.screenshot_url || '') !== (serverCompliance.screenshot_url || '') ||
+          (dayCompliance.video_url || '') !== (serverCompliance.video_url || '') ||
+          (dayCompliance.emotion_details || '') !== (serverCompliance.emotion_details || '') ||
+          (dayCompliance.possible_improvements || '') !== (serverCompliance.possible_improvements || '') ||
+          complianceSessionRating !== serverSessionRating;
+      } else {
+        // Si on n'a pas encore de données serveur, vérifier s'il y a des données
+        hasRealChanges = !!(
+          dayCompliance.strategy_respected !== null ||
+          (dayCompliance.dominant_emotions || []).length > 0 ||
+          dayCompliance.session_rating !== null ||
+          dayCompliance.emotion_details ||
+          dayCompliance.possible_improvements ||
+          dayCompliance.screenshot_url ||
+          dayCompliance.video_url
+        );
+      }
+
+      try {
+        if (hasRealChanges) {
+          localStorage.setItem(draftKey, JSON.stringify({
+            isDayWithoutTrades: true,
+            dayCompliance: {
+              strategy_respected: dayCompliance.strategy_respected,
+              dominant_emotions: dayCompliance.dominant_emotions,
+              session_rating: dayCompliance.session_rating,
+              emotion_details: dayCompliance.emotion_details,
+              possible_improvements: dayCompliance.possible_improvements,
+              screenshot_url: dayCompliance.screenshot_url,
+              video_url: dayCompliance.video_url,
+            }
+          }));
+          setHasUnsavedChanges(true);
+        } else {
+          localStorage.removeItem(draftKey);
+          setHasUnsavedChanges(false);
+        }
+      } catch (e) {
+        console.warn('Erreur lors de la sauvegarde du brouillon:', e);
+      }
+      return;
+    }
+
+    // Mode normal avec trades
+    if (trades.length === 0) {
       return;
     }
 
@@ -299,16 +440,19 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       // Erreur lors de l'écriture dans localStorage (quota dépassé, etc.)
       console.warn('Erreur lors de la sauvegarde du brouillon:', e);
     }
-  }, [trades, draftKey]);
+  }, [trades, dayCompliance, isDayWithoutTrades, draftKey]);
 
   useEffect(() => {
     if (open && date) {
       isInitialLoad.current = true;
+      setIsDayWithoutTrades(false);
+      setDayCompliance(null);
       loadData();
     } else {
       setTrades([]);
+      setIsDayWithoutTrades(false);
+      setDayCompliance(null);
       setError(null);
-      setOpenRatingDropdowns(new Map());
       // Ne pas réinitialiser hasUnsavedChanges ici car les données restent dans localStorage
       // Le message réapparaîtra à la réouverture si un brouillon existe
       isInitialLoad.current = true;
@@ -329,16 +473,77 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     );
   };
 
-  const toggleEmotion = (tradeId: number, emotion: string) => {
-    const trade = trades.find((t) => t.id === tradeId);
-    if (!trade) return;
+  const updateDayCompliance = (field: 'strategy_respected' | 'dominant_emotions' | 'screenshot_url' | 'video_url' | 'emotion_details' | 'possible_improvements' | 'session_rating', value: any) => {
+    setDayCompliance((prev) => {
+      if (!prev) {
+        // Créer un nouvel objet si aucun n'existe
+        return {
+          id: 0,
+          user: 0,
+          user_username: '',
+          date: date,
+          trading_account: tradingAccount ?? null,
+          trading_account_name: null,
+          strategy_respected: null,
+          dominant_emotions: [],
+          session_rating: null,
+          emotion_details: '',
+          possible_improvements: '',
+          screenshot_url: '',
+          video_url: '',
+          emotions_display: '',
+          created_at: '',
+          updated_at: '',
+          [field]: value,
+        } as DayStrategyCompliance;
+      }
+      return {
+        ...prev,
+        [field]: value,
+      };
+    });
+  };
 
-    const currentEmotions = trade.dominantEmotions || [];
-    const newEmotions = currentEmotions.includes(emotion)
-      ? currentEmotions.filter((e) => e !== emotion)
-      : [...currentEmotions, emotion];
+  const toggleEmotion = (tradeId: number | null, emotion: string) => {
+    if (isDayWithoutTrades) {
+      // Mode jour sans trade
+      const currentCompliance = dayCompliance || {
+        id: 0,
+        user: 0,
+        user_username: '',
+        date: date,
+        trading_account: tradingAccount ?? null,
+        trading_account_name: null,
+        strategy_respected: null,
+        dominant_emotions: [],
+        session_rating: null,
+        emotion_details: '',
+        possible_improvements: '',
+        screenshot_url: '',
+        video_url: '',
+        emotions_display: '',
+        created_at: '',
+        updated_at: '',
+      } as DayStrategyCompliance;
+      
+      const currentEmotions = currentCompliance.dominant_emotions || [];
+      const newEmotions = currentEmotions.includes(emotion)
+        ? currentEmotions.filter((e) => e !== emotion)
+        : [...currentEmotions, emotion];
+      
+      updateDayCompliance('dominant_emotions', newEmotions);
+    } else {
+      // Mode normal avec trades
+      const trade = trades.find((t) => t.id === tradeId);
+      if (!trade) return;
 
-    updateTradeStrategy(tradeId, 'dominantEmotions', newEmotions);
+      const currentEmotions = trade.dominantEmotions || [];
+      const newEmotions = currentEmotions.includes(emotion)
+        ? currentEmotions.filter((e) => e !== emotion)
+        : [...currentEmotions, emotion];
+
+      updateTradeStrategy(tradeId!, 'dominantEmotions', newEmotions);
+    }
   };
 
   const duplicateFirstTradeToAll = () => {
@@ -388,21 +593,75 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     setError(null);
 
     try {
-      const strategiesToSave: BulkStrategyData[] = trades.map((trade) => ({
-        trade_id: trade.topstep_id,
-        strategy_respected: trade.strategyRespected,
-        gain_if_strategy_respected: trade.gainIfStrategyRespected,
-        dominant_emotions: trade.dominantEmotions,
-        screenshot_url: trade.screenshotUrl || undefined,
-        video_url: trade.videoUrl || undefined,
-        tp1_reached: trade.tp1Reached,
-        tp2_plus_reached: trade.tp2PlusReached,
-        emotion_details: trade.emotionDetails || undefined,
-        possible_improvements: trade.possibleImprovements || undefined,
-        session_rating: trade.sessionRating !== null ? trade.sessionRating : undefined,
-      }));
+      // Mode jour sans trade
+      if (isDayWithoutTrades) {
+        if (!dayCompliance) {
+          // Pas de compliance à sauvegarder
+          onClose(true);
+          return;
+        }
+        
+        // Vérifier s'il y a des données à sauvegarder
+        const hasData = 
+          dayCompliance.strategy_respected !== null ||
+          dayCompliance.dominant_emotions.length > 0 ||
+          dayCompliance.session_rating !== null ||
+          dayCompliance.emotion_details ||
+          dayCompliance.possible_improvements ||
+          dayCompliance.screenshot_url ||
+          dayCompliance.video_url;
+        
+        if (!hasData) {
+          // Pas de données à sauvegarder
+          onClose(true);
+          return;
+        }
+        
+        if (dayCompliance.id) {
+          // Mettre à jour la compliance existante
+          await dayStrategyComplianceService.update(dayCompliance.id, {
+            date: date,
+            trading_account: tradingAccount ?? null,
+            strategy_respected: dayCompliance.strategy_respected,
+            dominant_emotions: dayCompliance.dominant_emotions,
+            session_rating: dayCompliance.session_rating,
+            emotion_details: dayCompliance.emotion_details || '',
+            possible_improvements: dayCompliance.possible_improvements || '',
+            screenshot_url: dayCompliance.screenshot_url || '',
+            video_url: dayCompliance.video_url || '',
+          });
+        } else {
+          // Créer une nouvelle compliance
+          await dayStrategyComplianceService.create({
+            date: date,
+            trading_account: tradingAccount ?? null,
+            strategy_respected: dayCompliance.strategy_respected,
+            dominant_emotions: dayCompliance.dominant_emotions,
+            session_rating: dayCompliance.session_rating,
+            emotion_details: dayCompliance.emotion_details || '',
+            possible_improvements: dayCompliance.possible_improvements || '',
+            screenshot_url: dayCompliance.screenshot_url || '',
+            video_url: dayCompliance.video_url || '',
+          });
+        }
+      } else {
+        // Mode normal avec trades
+        const strategiesToSave: BulkStrategyData[] = trades.map((trade) => ({
+          trade_id: trade.topstep_id,
+          strategy_respected: trade.strategyRespected,
+          gain_if_strategy_respected: trade.gainIfStrategyRespected,
+          dominant_emotions: trade.dominantEmotions,
+          screenshot_url: trade.screenshotUrl || undefined,
+          video_url: trade.videoUrl || undefined,
+          tp1_reached: trade.tp1Reached,
+          tp2_plus_reached: trade.tp2PlusReached,
+          emotion_details: trade.emotionDetails || undefined,
+          possible_improvements: trade.possibleImprovements || undefined,
+          session_rating: trade.sessionRating !== null ? trade.sessionRating : undefined,
+        }));
 
-      await tradeStrategiesService.bulkCreateOrUpdate(strategiesToSave);
+        await tradeStrategiesService.bulkCreateOrUpdate(strategiesToSave);
+      }
       
       // Nettoyer le localStorage après sauvegarde réussie (AVANT de recharger)
       if (draftKey) {
@@ -501,6 +760,205 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               <div className="flex-1">
                 <p className="font-medium text-rose-900 dark:text-rose-300">{t('trades:strategyCompliance.error')}</p>
                 <p className="text-sm text-rose-700 dark:text-rose-400 mt-1">{error}</p>
+              </div>
+            </div>
+          ) : isDayWithoutTrades ? (
+            // Formulaire pour jour sans trade
+            <div className="space-y-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 mb-4">
+                <p className="text-sm text-blue-900 dark:text-blue-300">
+                  {t('trades:strategyCompliance.noTradesForDateWithCompliance')}
+                </p>
+              </div>
+
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-3 sm:p-4 bg-white dark:bg-gray-800 hover:shadow-md transition-shadow">
+                {/* Respect de la stratégie */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:strategyCompliance.strategyRespected')}
+                  </label>
+                  <div className="flex gap-2 sm:gap-3 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={() => updateDayCompliance('strategy_respected', dayCompliance?.strategy_respected === true ? null : true)}
+                      className={`px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-1.5 sm:gap-2 text-sm ${
+                        dayCompliance?.strategy_respected === true
+                          ? 'bg-green-600 dark:bg-green-500 text-white border-green-600 dark:border-green-500'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                      }`}
+                    >
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {t('trades:yes')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateDayCompliance('strategy_respected', dayCompliance?.strategy_respected === false ? null : false)}
+                      className={`px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center gap-1.5 sm:gap-2 text-sm ${
+                        dayCompliance?.strategy_respected === false
+                          ? 'bg-red-600 dark:bg-red-500 text-white border-red-600 dark:border-red-500'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-red-50 dark:hover:bg-red-900/20'
+                      }`}
+                    >
+                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      {t('trades:no')}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Émotions dominantes */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:strategyCompliance.dominantEmotions')}
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {TRADING_EMOTIONS.map((emotion) => {
+                      const isSelected = (dayCompliance?.dominant_emotions || []).includes(emotion.value);
+                      return (
+                        <button
+                          key={emotion.value}
+                          type="button"
+                          onClick={() => toggleEmotion(null, emotion.value)}
+                          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm border transition-colors ${
+                            isSelected
+                              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700 font-medium'
+                              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          {emotion.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(dayCompliance?.dominant_emotions || []).length > 0 && (
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      {(dayCompliance?.dominant_emotions || []).length === 1 
+                        ? t('trades:strategyCompliance.emotionsSelected', { count: (dayCompliance?.dominant_emotions || []).length })
+                        : t('trades:strategyCompliance.emotionsSelectedPlural', { count: (dayCompliance?.dominant_emotions || []).length })}
+                    </p>
+                  )}
+                </div>
+
+                {/* Note de session */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:strategyCompliance.sessionRating')}
+                  </label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        key={rating}
+                        type="button"
+                        onClick={() => updateDayCompliance('session_rating', dayCompliance?.session_rating === rating ? null : rating)}
+                        className={`w-10 h-10 rounded-lg border-2 transition-colors flex items-center justify-center text-sm font-medium ${
+                          dayCompliance?.session_rating === rating
+                            ? 'bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500'
+                            : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                        }`}
+                      >
+                        {rating}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Screenshot */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:strategyCompliance.screenshotUrl')}
+                  </label>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <input
+                      type="url"
+                      value={dayCompliance?.screenshot_url || ''}
+                      onChange={(e) => updateDayCompliance('screenshot_url', e.target.value)}
+                      placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
+                      className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    {dayCompliance?.screenshot_url && (
+                      <button
+                        type="button"
+                        onClick={() => window.open(dayCompliance.screenshot_url, '_blank', 'noopener,noreferrer')}
+                        className="px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0"
+                        title={t('trades:strategyCompliance.openScreenshot')}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span className="hidden sm:inline">{t('trades:strategyCompliance.viewImage')}</span>
+                        <span className="sm:hidden">{t('trades:strategyCompliance.viewImage', { defaultValue: 'Voir' })}</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('trades:strategyCompliance.screenshotDescription')}
+                  </p>
+                </div>
+
+                {/* Vidéo */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:strategyCompliance.videoUrl')}
+                  </label>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <input
+                      type="url"
+                      value={dayCompliance?.video_url || ''}
+                      onChange={(e) => updateDayCompliance('video_url', e.target.value)}
+                      placeholder={t('trades:strategyCompliance.videoPlaceholder')}
+                      className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    {dayCompliance?.video_url && (
+                      <button
+                        type="button"
+                        onClick={() => window.open(dayCompliance.video_url, '_blank', 'noopener,noreferrer')}
+                        className="px-3 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0"
+                        title={t('trades:strategyCompliance.openVideo')}
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="hidden sm:inline">{t('trades:strategyCompliance.viewVideo')}</span>
+                        <span className="sm:hidden">{t('trades:strategyCompliance.viewVideo', { defaultValue: 'Voir' })}</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('trades:strategyCompliance.videoDescription')}
+                  </p>
+                </div>
+
+                {/* Détails des émotions */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:strategyCompliance.emotionDetails')}
+                  </label>
+                  <textarea
+                    value={dayCompliance?.emotion_details || ''}
+                    onChange={(e) => updateDayCompliance('emotion_details', e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent resize-none"
+                    placeholder={t('trades:strategyCompliance.emotionDetailsPlaceholder')}
+                  />
+                </div>
+
+                {/* Améliorations possibles */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('trades:strategyCompliance.possibleImprovements')}
+                  </label>
+                  <textarea
+                    value={dayCompliance?.possible_improvements || ''}
+                    onChange={(e) => updateDayCompliance('possible_improvements', e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400 focus:border-transparent resize-none"
+                    placeholder={t('trades:strategyCompliance.possibleImprovementsPlaceholder')}
+                  />
+                </div>
               </div>
             </div>
           ) : trades.length === 0 ? (
@@ -738,104 +1196,27 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                     )}
                   </div>
 
-                  {/* Note subjective */}
+                  {/* Note de session */}
                   <div className="mt-3 sm:mt-4">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('trades:strategyCompliance.subjectiveRating')}
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('trades:strategyCompliance.sessionRating')}
                     </label>
-                    <div 
-                      ref={(el) => {
-                        if (el) {
-                          ratingRefs.current.set(trade.id, el);
-                        } else {
-                          ratingRefs.current.delete(trade.id);
-                        }
-                      }}
-                      className="relative w-full sm:w-56"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenRatingDropdowns(prev => {
-                            const newMap = new Map(prev);
-                            newMap.set(trade.id, !prev.get(trade.id));
-                            return newMap;
-                          });
-                        }}
-                        className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <span className="inline-flex items-center gap-2 text-gray-900 dark:text-gray-100">
-                          {trade.sessionRating === null 
-                            ? t('trades:strategyCompliance.selectRating')
-                            : `${trade.sessionRating} - ${
-                                trade.sessionRating === 1 ? t('trades:strategyCompliance.ratingVeryBad') :
-                                trade.sessionRating === 2 ? t('trades:strategyCompliance.ratingBad') :
-                                trade.sessionRating === 3 ? t('trades:strategyCompliance.ratingAverage') :
-                                trade.sessionRating === 4 ? t('trades:strategyCompliance.ratingGood') :
-                                t('trades:strategyCompliance.ratingExcellent')
-                              }`
-                          }
-                        </span>
-                        <svg 
-                          className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${openRatingDropdowns.get(trade.id) ? 'rotate-180' : ''}`} 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          fill="none" 
-                          viewBox="0 0 24 24" 
-                          stroke="currentColor"
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <button
+                          key={rating}
+                          type="button"
+                          onClick={() => updateTradeStrategy(trade.id, 'sessionRating', trade.sessionRating === rating ? null : rating)}
+                          className={`w-10 h-10 rounded-lg border-2 transition-colors flex items-center justify-center text-sm font-medium ${
+                            trade.sessionRating === rating
+                              ? 'bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500'
+                              : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                          }`}
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      {openRatingDropdowns.get(trade.id) && (
-                        <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
-                          <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">
-                            <li>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  updateTradeStrategy(trade.id, 'sessionRating', null);
-                                  setOpenRatingDropdowns(prev => {
-                                    const newMap = new Map(prev);
-                                    newMap.set(trade.id, false);
-                                    return newMap;
-                                  });
-                                }}
-                                className={`w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${trade.sessionRating === null ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
-                              >
-                                <span className="text-gray-900 dark:text-gray-100">{t('trades:strategyCompliance.selectRating')}</span>
-                              </button>
-                            </li>
-                            {[
-                              { value: 1, label: t('trades:strategyCompliance.ratingVeryBad') },
-                              { value: 2, label: t('trades:strategyCompliance.ratingBad') },
-                              { value: 3, label: t('trades:strategyCompliance.ratingAverage') },
-                              { value: 4, label: t('trades:strategyCompliance.ratingGood') },
-                              { value: 5, label: t('trades:strategyCompliance.ratingExcellent') },
-                            ].map(opt => (
-                              <li key={opt.value}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    updateTradeStrategy(trade.id, 'sessionRating', opt.value);
-                                    setOpenRatingDropdowns(prev => {
-                                      const newMap = new Map(prev);
-                                      newMap.set(trade.id, false);
-                                      return newMap;
-                                    });
-                                  }}
-                                  className={`w-full text-left px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${trade.sessionRating === opt.value ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
-                                >
-                                  <span className="text-gray-900 dark:text-gray-100">{opt.value} - {opt.label}</span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
+                          {rating}
+                        </button>
+                      ))}
                     </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {t('trades:strategyCompliance.ratingTooltip')}
-                    </p>
                   </div>
 
                   {/* Screenshot */}

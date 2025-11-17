@@ -1495,3 +1495,150 @@ class TradingGoal(models.Model):
             fields_to_update.append('last_danger_alert_sent')
         
         self.save(update_fields=fields_to_update)
+
+
+class DayStrategyCompliance(models.Model):
+    """
+    Modèle pour stocker les données de stratégie pour les jours sans trades.
+    Permet d'indiquer si la stratégie a été respectée même quand aucun trade n'a été effectué.
+    """
+    
+    EMOTION_CHOICES = [
+        ('confiance', 'Confiance'),
+        ('peur', 'Peur'),
+        ('avarice', 'Avarice'),
+        ('frustration', 'Frustration'),
+        ('impatience', 'Impatience'),
+        ('patience', 'Patience'),
+        ('euphorie', 'Euphorie'),
+        ('anxiete', 'Anxiété'),
+        ('colere', 'Colère'),
+        ('satisfaction', 'Satisfaction'),
+        ('deception', 'Déception'),
+        ('calme', 'Calme'),
+        ('stress', 'Stress'),
+        ('determination', 'Détermination'),
+        ('doute', 'Doute'),
+        ('excitation', 'Excitation'),
+        ('lassitude', 'Lassitude'),
+        ('fatigue', 'Fatigue'),
+    ]
+    
+    SESSION_RATING_CHOICES = [
+        (1, '1 - Très mauvaise'),
+        (2, '2 - Mauvaise'),
+        (3, '3 - Moyenne'),
+        (4, '4 - Bonne'),
+        (5, '5 - Excellente'),
+    ]
+    
+    # Identification
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='day_strategy_compliances',
+        verbose_name='Utilisateur'
+    )
+    
+    # Date du jour (sans trade)
+    date = models.DateField(
+        verbose_name='Date',
+        help_text='Date du jour sans trade',
+        db_index=True
+    )
+    
+    # Compte de trading (optionnel, pour filtrer par compte)
+    trading_account = models.ForeignKey(
+        'TradingAccount',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='day_strategy_compliances',
+        verbose_name='Compte de trading',
+        help_text='Compte de trading associé (optionnel)'
+    )
+    
+    # Respect de la stratégie
+    strategy_respected = models.BooleanField(
+        null=True,
+        blank=True,
+        verbose_name='Stratégie respectée',
+        help_text='Avez-vous respecté votre stratégie en n\'effectuant pas de trade ?'
+    )
+    
+    # Émotions dominantes (choix multiple)
+    dominant_emotions = models.JSONField(
+        default=list,
+        verbose_name='Émotions dominantes',
+        help_text='Liste des émotions ressenties pendant cette journée'
+    )
+    
+    # Note de la session
+    session_rating = models.IntegerField(
+        choices=SESSION_RATING_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name='Note de la session',
+        help_text='Note de 1 à 5 pour cette journée'
+    )
+    
+    # Détails des émotions
+    emotion_details = models.TextField(
+        blank=True,
+        verbose_name='Détails des émotions',
+        help_text='Description détaillée des émotions ressenties'
+    )
+    
+    # Améliorations possibles
+    possible_improvements = models.TextField(
+        blank=True,
+        verbose_name='Améliorations possibles',
+        help_text='Points d\'amélioration identifiés'
+    )
+    
+    # Screenshot
+    screenshot_url = models.URLField(
+        blank=True,
+        verbose_name='URL Screenshot',
+        help_text='Lien vers l\'image TradingView ou autre'
+    )
+    
+    # Vidéo
+    video_url = models.URLField(
+        blank=True,
+        verbose_name='URL Vidéo',
+        help_text='Lien vers une vidéo YouTube ou autre'
+    )
+    
+    # Métadonnées
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Créé le'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Modifié le'
+    )
+    
+    class Meta:
+        ordering = ['-date', '-created_at']
+        verbose_name = 'Compliance de Stratégie (Jour sans trade)'
+        verbose_name_plural = 'Compliances de Stratégie (Jours sans trades)'
+        unique_together = ['user', 'date', 'trading_account']
+        indexes = [
+            models.Index(fields=['user', 'date']),
+            models.Index(fields=['user', '-date']),
+            models.Index(fields=['trading_account', 'date']),
+        ]
+    
+    def __str__(self):
+        account_name = self.trading_account.name if self.trading_account else "Tous les comptes"
+        return f"Compliance {self.date} - {account_name}"
+    
+    @property
+    def emotions_display(self):
+        """Retourne les émotions au format lisible."""
+        if not self.dominant_emotions:
+            return "Aucune"
+        emotion_labels = dict(self.EMOTION_CHOICES)
+        return ", ".join([emotion_labels.get(emotion, emotion) for emotion in self.dominant_emotions])  # type: ignore

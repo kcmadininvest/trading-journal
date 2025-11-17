@@ -1,10 +1,11 @@
 """
-Signals pour mettre à jour automatiquement les objectifs de trading.
+Signals pour mettre à jour automatiquement les objectifs de trading
+et migrer les compliances de jours sans trades vers des stratégies de trades.
 """
 from django.db.models.signals import post_save, post_delete
 from django.db import models
 from django.dispatch import receiver
-from .models import TopStepTrade, TradingGoal
+from .models import TopStepTrade, TradingGoal, DayStrategyCompliance, TradeStrategy
 
 
 @receiver(post_save, sender=TopStepTrade)
@@ -39,6 +40,62 @@ def update_goals_on_trade_save(sender, instance, **kwargs):
         # Vérifier si le trade est dans la période de l'objectif
         if goal.start_date <= trade_date <= goal.end_date:  # type: ignore
             goal.update_progress()
+
+
+@receiver(post_save, sender=TopStepTrade)
+def migrate_day_compliance_to_trade_strategy(sender, instance, created, **kwargs):
+    """
+    Migre automatiquement un DayStrategyCompliance vers un TradeStrategy
+    quand un trade est créé pour une date qui avait déjà une compliance.
+    """
+    # Ne traiter que les créations (pas les mises à jour)
+    if not created:
+        return
+    
+    # Déterminer la date du trade
+    trade_date = instance.trade_day
+    if trade_date is None and instance.entered_at:
+        trade_date = instance.entered_at.date()
+    
+    if trade_date is None:
+        return
+    
+    # Chercher s'il existe une compliance pour cette date et cet utilisateur
+    # Filtrer aussi par compte de trading si la compliance en a un
+    compliance = DayStrategyCompliance.objects.filter(  # type: ignore
+        user=instance.user,
+        date=trade_date
+    ).first()
+    
+    # Si une compliance existe et qu'elle correspond au compte de trading (ou n'a pas de compte)
+    if compliance:
+        # Vérifier que la compliance correspond au compte de trading du trade
+        # (ou que la compliance n'a pas de compte spécifique)
+        if compliance.trading_account is None or compliance.trading_account == instance.trading_account:
+            # Vérifier qu'il n'existe pas déjà une TradeStrategy pour ce trade
+            existing_strategy = TradeStrategy.objects.filter(  # type: ignore
+                user=instance.user,
+                trade=instance
+            ).first()
+            
+            if not existing_strategy:
+                # Créer un TradeStrategy en copiant les données de la compliance
+                TradeStrategy.objects.create(  # type: ignore
+                    user=instance.user,
+                    trade=instance,
+                    strategy_respected=compliance.strategy_respected,
+                    dominant_emotions=compliance.dominant_emotions,
+                    session_rating=compliance.session_rating,
+                    emotion_details=compliance.emotion_details,
+                    possible_improvements=compliance.possible_improvements,
+                    screenshot_url=compliance.screenshot_url,
+                    video_url=compliance.video_url,
+                    # Note: gain_if_strategy_respected, tp1_reached, tp2_plus_reached
+                    # ne sont pas copiés car ils sont spécifiques aux trades
+                )
+            
+            # Supprimer la compliance car elle a été migrée
+            compliance.delete()
 
 
 @receiver(post_delete, sender=TopStepTrade)

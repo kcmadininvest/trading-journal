@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import TopStepTrade, TopStepImportLog, AccountTransaction
+from .models import TopStepTrade, TopStepImportLog, AccountTransaction, DayStrategyCompliance
 
 
 @admin.register(TopStepTrade)
@@ -264,6 +264,96 @@ class AccountTransactionAdmin(admin.ModelAdmin):
             return obj.description[:50] + '...' if len(obj.description) > 50 else obj.description
         return '-'
     description_short.short_description = 'Description'
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if not request.user.is_superuser:
+            qs = qs.filter(user=request.user)
+        return qs.select_related('trading_account', 'user')
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Si c'est une création
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(DayStrategyCompliance)
+class DayStrategyComplianceAdmin(admin.ModelAdmin):
+    list_display = [
+        'date',
+        'user',
+        'trading_account',
+        'strategy_respected_display',
+        'session_rating',
+        'emotions_display_short',
+        'created_at'
+    ]
+    list_filter = [
+        'strategy_respected',
+        'session_rating',
+        'date',
+        'user',
+        'trading_account',
+        'created_at'
+    ]
+    search_fields = [
+        'emotion_details',
+        'possible_improvements',
+        'user__username',
+        'trading_account__name'
+    ]
+    readonly_fields = [
+        'created_at',
+        'updated_at'
+    ]
+    date_hierarchy = 'date'
+    ordering = ['-date', '-created_at']
+    
+    fieldsets = (
+        ('Identification', {
+            'fields': ('user', 'date', 'trading_account')
+        }),
+        ('Respect de la stratégie', {
+            'fields': ('strategy_respected',)
+        }),
+        ('Émotions et évaluation', {
+            'fields': (
+                'dominant_emotions',
+                'emotion_details',
+                'session_rating'
+            )
+        }),
+        ('Analyse', {
+            'fields': ('possible_improvements',)
+        }),
+        ('Médias', {
+            'fields': ('screenshot_url', 'video_url'),
+            'classes': ('collapse',)
+        }),
+        ('Métadonnées', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def strategy_respected_display(self, obj):
+        if obj.strategy_respected is True:
+            return format_html('<span style="color: green; font-weight: bold;">✓ Respecté</span>')
+        elif obj.strategy_respected is False:
+            return format_html('<span style="color: red; font-weight: bold;">✗ Non respecté</span>')
+        else:
+            return format_html('<span style="color: gray;">? Inconnu</span>')
+    strategy_respected_display.short_description = 'Stratégie'
+    strategy_respected_display.admin_order_field = 'strategy_respected'
+    
+    def emotions_display_short(self, obj):
+        if obj.dominant_emotions:
+            emotions = ", ".join(obj.dominant_emotions[:2])  # type: ignore
+            if len(obj.dominant_emotions) > 2:  # type: ignore
+                emotions += "..."
+            return emotions
+        return '-'
+    emotions_display_short.short_description = 'Émotions'
     
     def get_queryset(self, request):
         qs = super().get_queryset(request)

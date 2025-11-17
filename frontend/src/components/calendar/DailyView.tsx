@@ -326,7 +326,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                       {/* Affichage normal pour tous les jours (y compris samedi) */}
                       <div className="flex flex-col h-full relative">
                         {/* Pastille de statut de stratégie - centrée dans la cellule */}
-                        {tradeCount > 0 && dayData?.strategy_compliance_status && dayData.strategy_compliance_status !== 'unknown' && (
+                        {dayData?.strategy_compliance_status && dayData.strategy_compliance_status !== 'unknown' && (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <Tooltip 
                               content={
@@ -377,6 +377,20 @@ const DailyView: React.FC<DailyViewProps> = ({
                                   </button>
                                 </Tooltip>
                               </>
+                            )}
+                            {/* Action pour les jours sans trades - permettre de cliquer pour gérer la compliance */}
+                            {tradeCount === 0 && (
+                              <Tooltip content={t('calendar:manageStrategyCompliance', { defaultValue: 'Gérer le respect de la stratégie' })} position="top">
+                                <button
+                                  onClick={() => handleStrategyClick(dayNumber)}
+                                  className="p-0.5 sm:p-1 rounded hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 transition-colors flex-shrink-0"
+                                  aria-label={t('calendar:manageStrategy')}
+                                >
+                                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </button>
+                              </Tooltip>
                             )}
                             {/* Badge du nombre de trades en dernier */}
                             {tradeCount > 0 && (
@@ -538,21 +552,37 @@ const DailyView: React.FC<DailyViewProps> = ({
                                       </span>
                                     </Tooltip>
 
-                                    {/* Actions */}
-                                    <div className="flex items-center gap-1">
-                                      <Tooltip content={t('calendar:viewDayTrades')} position="top">
-                                        <button
-                                          onClick={() => handleTradesClick(dayNumber)}
-                                          className="p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors"
-                                          aria-label={t('calendar:viewTrades')}
-                                        >
-                                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                          </svg>
-                                        </button>
-                                      </Tooltip>
-                                      <Tooltip content={t('calendar:manageStrategyCompliance')} position="top">
+                                    {/* Actions pour les jours avec trades */}
+                                    {tradeCount > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <Tooltip content={t('calendar:viewDayTrades')} position="top">
+                                          <button
+                                            onClick={() => handleTradesClick(dayNumber)}
+                                            className="p-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-colors"
+                                            aria-label={t('calendar:viewTrades')}
+                                          >
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                          </button>
+                                        </Tooltip>
+                                        <Tooltip content={t('calendar:manageStrategyCompliance')} position="top">
+                                          <button
+                                            onClick={() => handleStrategyClick(dayNumber)}
+                                            className="p-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 transition-colors"
+                                            aria-label={t('calendar:manageStrategy')}
+                                          >
+                                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                          </button>
+                                        </Tooltip>
+                                      </div>
+                                    )}
+                                    {/* Action pour les jours sans trades */}
+                                    {tradeCount === 0 && (
+                                      <Tooltip content={t('calendar:manageStrategyCompliance', { defaultValue: 'Gérer le respect de la stratégie' })} position="top">
                                         <button
                                           onClick={() => handleStrategyClick(dayNumber)}
                                           className="p-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 transition-colors"
@@ -563,7 +593,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                                           </svg>
                                         </button>
                                       </Tooltip>
-                                    </div>
+                                    )}
                                   </>
                                 )}
                               </div>
