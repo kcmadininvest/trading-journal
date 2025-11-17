@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
       return t('navigation:header.goalsDescription');
     }
     if (currentPage === 'transactions') {
-      return 'Gérez les dépôts et retraits de vos comptes de trading';
+      return t('navigation:header.transactionsDescription');
     }
     return `${t('navigation:header.managementPrefix')} ${pageTitle.toLowerCase()}`;
   }, [currentPage, pageTitle, t]);
@@ -97,75 +97,6 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
 
         {/* User info and actions */}
         <div className="flex items-center space-x-1 sm:space-x-4 flex-shrink-0">
-          {/* Language selector */}
-          <div className="relative" ref={languageDropdownRef}>
-            <Tooltip content={t('settings:language', { defaultValue: 'Language' })} position="left">
-              <button
-                onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-                className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                aria-label={t('settings:language', { defaultValue: 'Language' })}
-              >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
-              </button>
-            </Tooltip>
-            
-            {isLanguageDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
-                {languageOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleLanguageChange(option.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-150 ${
-                      currentLanguage === option.value 
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600 dark:border-blue-500' 
-                        : ''
-                    }`}
-                  >
-                    <span className="text-xl">{option.flag}</span>
-                    <span className={`font-medium flex-1 ${
-                      currentLanguage === option.value 
-                        ? 'text-blue-600 dark:text-blue-400' 
-                        : 'text-gray-700 dark:text-gray-300'
-                    }`}>
-                      {option.label}
-                    </span>
-                    {currentLanguage === option.value && (
-                      <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Theme toggle */}
-          <Tooltip content={theme === 'dark' ? t('settings:themeLight') : t('settings:themeDark')} position="left">
-            <button
-              onClick={(e) => {
-                setTheme(theme === 'dark' ? 'light' : 'dark');
-                e.currentTarget.blur();
-              }}
-              className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus-visible:ring-2"
-              aria-label={theme === 'dark' ? t('settings:themeLight') : t('settings:themeDark')}
-            >
-              {theme === 'dark' ? (
-                // Sun icon for light mode
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                // Moon icon for dark mode
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
-            </button>
-          </Tooltip>
-
           {/* User info - hidden on mobile, shown on sm and up */}
           <div className="text-right hidden md:block">
             <div className="flex items-center justify-end space-x-2">
@@ -184,17 +115,89 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
             </div>
           </div>
 
-          {/* Logout button */}
-          <Tooltip content={t('navigation:header.logout')} position="left">
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            </button>
-          </Tooltip>
+          {/* Icons group */}
+          <div className="flex items-center space-x-0.5 sm:space-x-1">
+            {/* Language selector */}
+            <div className="relative" ref={languageDropdownRef}>
+              <Tooltip content={t('settings:language', { defaultValue: 'Language' })} position="left">
+                <button
+                  onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
+                  className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                  aria-label={t('settings:language', { defaultValue: 'Language' })}
+                >
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                  </svg>
+                </button>
+              </Tooltip>
+              
+              {isLanguageDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
+                  {languageOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleLanguageChange(option.value)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-150 ${
+                        currentLanguage === option.value 
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-600 dark:border-blue-500' 
+                          : ''
+                      }`}
+                    >
+                      <span className="text-xl">{option.flag}</span>
+                      <span className={`font-medium flex-1 ${
+                        currentLanguage === option.value 
+                          ? 'text-blue-600 dark:text-blue-400' 
+                          : 'text-gray-700 dark:text-gray-300'
+                      }`}>
+                        {option.label}
+                      </span>
+                      {currentLanguage === option.value && (
+                        <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Theme toggle */}
+            <Tooltip content={theme === 'dark' ? t('settings:themeLight') : t('settings:themeDark')} position="left">
+              <button
+                onClick={(e) => {
+                  setTheme(theme === 'dark' ? 'light' : 'dark');
+                  e.currentTarget.blur();
+                }}
+                className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus-visible:ring-2"
+                aria-label={theme === 'dark' ? t('settings:themeLight') : t('settings:themeDark')}
+              >
+                {theme === 'dark' ? (
+                  // Sun icon for light mode
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                ) : (
+                  // Moon icon for dark mode
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                )}
+              </button>
+            </Tooltip>
+            
+            {/* Logout button */}
+            <Tooltip content={t('navigation:header.logout')} position="left">
+              <button
+                onClick={handleLogout}
+                className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </Tooltip>
+          </div>
         </div>
       </div>
     </header>
