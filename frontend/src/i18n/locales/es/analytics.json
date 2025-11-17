@@ -21,7 +21,9 @@
       "title": "Correlación PnL vs Número de Operaciones",
       "label": "Correlación",
       "xAxis": "Número de operaciones",
-      "yAxis": "PnL Total"
+      "yAxis": "PnL Total",
+      "regressionLine": "Línea de regresión",
+      "rSquaredTooltip": "El coeficiente de determinación (R²) mide la fuerza de la correlación entre el número de operaciones y el PnL. R² cercano a 1 indica una correlación fuerte, R² cercano a 0 indica una correlación débil. La línea de regresión muestra la tendencia general."
     },
     "drawdown": {
       "title": "Drawdown Diario",

@@ -21,7 +21,9 @@
       "title": "Corrélation PnL vs Nombre de Trades",
       "label": "Corrélation",
       "xAxis": "Nombre de trades",
-      "yAxis": "PnL total"
+      "yAxis": "PnL total",
+      "regressionLine": "Ligne de régression",
+      "rSquaredTooltip": "Le coefficient de détermination (R²) mesure la force de la corrélation entre le nombre de trades et le PnL. R² proche de 1 indique une forte corrélation, R² proche de 0 indique une faible corrélation. La ligne de régression montre la tendance générale."
     },
     "drawdown": {
       "title": "Drawdown par jour",

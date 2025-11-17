@@ -242,29 +242,32 @@ const AnalyticsPage: React.FC = () => {
     filteredTrades: trades,
   });
 
-  // Performance par heure (nuage de points)
+  // Performance par tranche de 30 minutes (nuage de points)
   const hourlyPerformanceScatter = useMemo(() => {
-    const scatterData: { hour: number; pnl: number }[] = [];
-    const hoursWithData = new Set<number>();
+    const scatterData: { timeSlot: number; pnl: number }[] = [];
+    const timeSlotsWithData = new Set<number>();
     
     trades.forEach(trade => {
       if (trade.entered_at && trade.net_pnl) {
         const date = new Date(trade.entered_at);
         const hour = date.getHours();
+        const minutes = date.getMinutes();
+        // Calculer la tranche de 30 minutes : 0.0, 0.5, 1.0, 1.5, etc.
+        const timeSlot = hour + (minutes >= 30 ? 0.5 : 0);
         const pnl = parseFloat(trade.net_pnl);
         
         scatterData.push({
-          hour,
+          timeSlot,
           pnl,
         });
-        hoursWithData.add(hour);
+        timeSlotsWithData.add(timeSlot);
       }
     });
 
-    // Retourner les données et les heures avec des trades (pour l'axe X)
+    // Retourner les données et les tranches de 30 minutes avec des trades (pour l'axe X)
     return {
       data: scatterData,
-      hoursWithData: Array.from(hoursWithData).sort((a, b) => a - b),
+      timeSlotsWithData: Array.from(timeSlotsWithData).sort((a, b) => a - b),
     };
   }, [trades]);
 
@@ -337,7 +340,53 @@ const AnalyticsPage: React.FC = () => {
       }
     }
 
-    return { dataPoints, xTicks, minTrades, maxTrades };
+    // Calculer la régression linéaire et le coefficient de corrélation
+    let regressionLine: { x: number; y: number }[] = [];
+    let correlationCoefficient = 0;
+    let rSquared = 0;
+
+    if (dataPoints.length > 1) {
+      // Calculer les moyennes
+      const meanX = dataPoints.reduce((sum, d) => sum + d.trades, 0) / dataPoints.length;
+      const meanY = dataPoints.reduce((sum, d) => sum + d.pnl, 0) / dataPoints.length;
+
+      // Calculer la pente (b) et l'ordonnée à l'origine (a) de la droite de régression
+      let numerator = 0;
+      let denominator = 0;
+      let sumSquaredX = 0;
+      let sumSquaredY = 0;
+
+      dataPoints.forEach(d => {
+        const diffX = d.trades - meanX;
+        const diffY = d.pnl - meanY;
+        numerator += diffX * diffY;
+        denominator += diffX * diffX;
+        sumSquaredX += diffX * diffX;
+        sumSquaredY += diffY * diffY;
+      });
+
+      if (denominator !== 0) {
+        const slope = numerator / denominator;
+        const intercept = meanY - slope * meanX;
+
+        // Créer les points de la ligne de régression
+        const xMin = minTrades;
+        const xMax = maxTrades;
+        regressionLine = [
+          { x: xMin, y: slope * xMin + intercept },
+          { x: xMax, y: slope * xMax + intercept },
+        ];
+
+        // Calculer le coefficient de corrélation (r)
+        const sumSquaredDiff = Math.sqrt(sumSquaredX * sumSquaredY);
+        if (sumSquaredDiff !== 0) {
+          correlationCoefficient = numerator / sumSquaredDiff;
+          rSquared = correlationCoefficient * correlationCoefficient;
+        }
+      }
+    }
+
+    return { dataPoints, xTicks, minTrades, maxTrades, regressionLine, correlationCoefficient, rSquared };
   }, [trades]);
 
   // Drawdown par jour
@@ -682,7 +731,7 @@ const AnalyticsPage: React.FC = () => {
                     {
                       label: t('analytics:charts.hourlyPerformanceScatter.label'),
                       data: hourlyPerformanceScatter.data.map(d => ({
-                        x: d.hour,
+                        x: d.timeSlot,
                         y: d.pnl,
                       })),
                       backgroundColor: hourlyPerformanceScatter.data.map(d => 
@@ -724,8 +773,10 @@ const AnalyticsPage: React.FC = () => {
                         title: (items) => {
                           const item = items[0];
                           const raw = item.raw as { x: number; y: number };
-                          const hour = raw.x;
-                          return `${hour.toString().padStart(2, '0')}:00`;
+                          const timeSlot = raw.x;
+                          const hour = Math.floor(timeSlot);
+                          const minutes = (timeSlot % 1) === 0.5 ? 30 : 0;
+                          return `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
                         },
                         label: (context) => {
                           const raw = context.raw as { x: number; y: number };
@@ -737,28 +788,58 @@ const AnalyticsPage: React.FC = () => {
                   },
                   scales: {
                     x: {
-                      type: 'linear',
+                      type: 'linear' as const,
                       position: 'bottom',
-                      // Ajuster min/max pour n'afficher que les heures avec des données
-                      min: hourlyPerformanceScatter.hoursWithData.length > 0 
-                        ? Math.min(...hourlyPerformanceScatter.hoursWithData) - 0.5 
-                        : -0.5,
-                      max: hourlyPerformanceScatter.hoursWithData.length > 0 
-                        ? Math.max(...hourlyPerformanceScatter.hoursWithData) + 0.5 
-                        : 23.5,
+                      // Ajuster min/max pour n'afficher que les tranches de 30 minutes avec des données
+                      min: hourlyPerformanceScatter.timeSlotsWithData.length > 0 
+                        ? Math.min(...hourlyPerformanceScatter.timeSlotsWithData) - 0.25 
+                        : -0.25,
+                      max: hourlyPerformanceScatter.timeSlotsWithData.length > 0 
+                        ? Math.max(...hourlyPerformanceScatter.timeSlotsWithData) + 0.25 
+                        : 23.75,
                       ticks: {
-                        // Générer des ticks uniquement pour les heures avec des données
-                        stepSize: 1,
+                        // Générer des ticks toutes les 30 minutes (stepSize: 0.5)
+                        stepSize: 0.5,
                         color: chartColors.textSecondary,
                         font: {
                           size: 11,
                         },
-                        callback: function(value) {
+                        callback: function(value, index, ticks) {
                           const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-                          const hour = Math.round(numValue);
-                          // Afficher seulement si l'heure fait partie des heures avec des données
-                          if (hourlyPerformanceScatter.hoursWithData.includes(hour)) {
-                            return t('analytics:common.hour', { hour: hour.toString().padStart(2, '0') });
+                          
+                          // Arrondir à la tranche de 30 minutes la plus proche
+                          const roundedValue = Math.round(numValue * 2) / 2;
+                          const remainder = Math.abs(roundedValue % 1);
+                          
+                          // Vérifier si c'est une tranche de 30 minutes valide (0.0 ou 0.5)
+                          const isHalfHour = Math.abs(remainder - 0.5) < 0.001;
+                          const isFullHour = remainder < 0.001;
+                          
+                          if (!isHalfHour && !isFullHour) {
+                            return '';
+                          }
+                          
+                          // Éviter les doublons en vérifiant les ticks précédents
+                          if (ticks && index > 0) {
+                            const prevTick = ticks[index - 1];
+                            const prevValue = typeof prevTick.value === 'number' ? prevTick.value : parseFloat(String(prevTick.value));
+                            const prevRounded = Math.round(prevValue * 2) / 2;
+                            if (Math.abs(prevRounded - roundedValue) < 0.001) {
+                              return '';
+                            }
+                          }
+                          
+                          // Afficher toutes les tranches de 30 minutes dans la plage des données
+                          if (hourlyPerformanceScatter.timeSlotsWithData.length > 0) {
+                            const minSlot = Math.min(...hourlyPerformanceScatter.timeSlotsWithData);
+                            const maxSlot = Math.max(...hourlyPerformanceScatter.timeSlotsWithData);
+                            
+                            // Afficher si c'est dans la plage des données
+                            if (roundedValue >= minSlot && roundedValue <= maxSlot) {
+                              const hour = Math.floor(roundedValue);
+                              const minutes = isHalfHour ? 30 : 0;
+                              return `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                            }
                           }
                           return '';
                         },
@@ -819,10 +900,29 @@ const AnalyticsPage: React.FC = () => {
 
           {/* Corrélation PnL vs Nombre de Trades */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
+            <div className="flex items-center gap-2 mb-2">
               <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full mr-3"></div>
-              {t('analytics:charts.correlation.title')}
-            </h3>
+              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                {t('analytics:charts.correlation.title')}
+              </h3>
+              {correlationData.dataPoints.length > 1 && (
+                <>
+                  <span className="ml-3 text-sm font-normal text-gray-600 dark:text-gray-400">
+                    (R² = {correlationData.rSquared.toFixed(3)})
+                  </span>
+                  <TooltipComponent
+                    content={t('analytics:charts.correlation.rSquaredTooltip')}
+                    position="top"
+                  >
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                  </TooltipComponent>
+                </>
+              )}
+            </div>
             <div style={{ height: '320px', position: 'relative' }}>
               <ChartScatter
                 data={{
@@ -839,7 +939,20 @@ const AnalyticsPage: React.FC = () => {
                       pointRadius: 5,
                       pointHoverRadius: 7,
                       pointBorderWidth: 0,
+                      hidden: false,
                     },
+                    ...(correlationData.regressionLine.length > 0 ? [{
+                      label: t('analytics:charts.correlation.regressionLine'),
+                      data: correlationData.regressionLine,
+                      borderColor: theme === 'dark' ? '#10b981' : '#059669',
+                      backgroundColor: 'transparent',
+                      borderWidth: 2,
+                      borderDash: [5, 5],
+                      pointRadius: 0,
+                      pointHoverRadius: 0,
+                      showLine: true,
+                      fill: false,
+                    }] : []),
                   ],
                 }}
                 options={{
@@ -850,7 +963,20 @@ const AnalyticsPage: React.FC = () => {
                       display: false,
                     },
                     legend: {
-                      display: false,
+                      display: correlationData.regressionLine.length > 0,
+                      position: 'top' as const,
+                      labels: {
+                        color: chartColors.text,
+                        font: {
+                          size: 12,
+                        },
+                        usePointStyle: true,
+                        padding: 12,
+                        filter: (legendItem) => {
+                          // Afficher uniquement la ligne de régression dans la légende
+                          return legendItem.text === t('analytics:charts.correlation.regressionLine');
+                        },
+                      },
                     },
                     tooltip: {
                       backgroundColor: chartColors.tooltipBg,
@@ -887,17 +1013,29 @@ const AnalyticsPage: React.FC = () => {
                     x: {
                       type: 'linear',
                       position: 'bottom',
-                      min: correlationData.minTrades - 0.5,
-                      max: correlationData.maxTrades + 0.5,
+                      min: correlationData.minTrades - 0.25,
+                      max: correlationData.maxTrades + 0.25,
                       ticks: {
-                        stepSize: 1,
+                        stepSize: 0.5,
                         color: chartColors.textSecondary,
                         font: {
                           size: 12,
                         },
                         callback: function(value) {
                           const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-                          return Math.round(numValue).toString();
+                          // Arrondir à la demi-unité la plus proche
+                          const roundedValue = Math.round(numValue * 2) / 2;
+                          const remainder = Math.abs(roundedValue % 1);
+                          
+                          // Afficher uniquement les valeurs à 0.0 ou 0.5
+                          if (remainder < 0.001 || Math.abs(remainder - 0.5) < 0.001) {
+                            if (roundedValue % 1 === 0) {
+                              return Math.round(roundedValue).toString();
+                            } else {
+                              return roundedValue.toFixed(1);
+                            }
+                          }
+                          return '';
                         },
                       },
                       grid: {
