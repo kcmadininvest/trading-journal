@@ -16,6 +16,7 @@
   "header": {
     "dashboardDescription": "Vue d'ensemble de vos activités de trading",
     "goalsDescription": "Définissez et suivez vos objectifs de trading",
+    "transactionsDescription": "Gérez les dépôts et retraits de vos comptes de trading",
     "managementPrefix": "Gestion des",
     "logout": "Se déconnecter",
     "appName": "KC Trading Journal"
