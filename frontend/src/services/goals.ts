@@ -36,6 +36,7 @@ export interface GoalStatistics {
   active_goals: number;
   achieved_goals: number;
   failed_goals: number;
+  cancelled_goals: number;
   goals_by_type: Record<string, number>;
   goals_by_period: Record<string, number>;
 }

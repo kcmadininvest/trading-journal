@@ -3453,6 +3453,7 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
         active_goals = goals.filter(status='active').count()
         achieved_goals = goals.filter(status='achieved').count()
         failed_goals = goals.filter(status='failed').count()
+        cancelled_goals = goals.filter(status='cancelled').count()
         
         # Objectifs par type
         goals_by_type = {}
@@ -3469,6 +3470,7 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
             'active_goals': active_goals,
             'achieved_goals': achieved_goals,
             'failed_goals': failed_goals,
+            'cancelled_goals': cancelled_goals,
             'goals_by_type': goals_by_type,
             'goals_by_period': goals_by_period,
         })

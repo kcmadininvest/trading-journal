@@ -29,9 +29,11 @@ const GoalsPage: React.FC = () => {
   const previousGoalsStatusRef = React.useRef<Map<number, string>>(new Map());
   const notifiedGoalsRef = React.useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
   
-  const loadGoals = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadGoals = React.useCallback(async (showLoading = true) => {
+    if (showLoading) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       const filters: GoalsFilters = {};
       if (filterStatus !== 'all') {
@@ -108,12 +110,45 @@ const GoalsPage: React.FC = () => {
       });
       previousGoalsStatusRef.current = newStatusMap;
       
-      setGoals(newGoals);
+      // Ne mettre à jour que si les données ont vraiment changé pour éviter les re-renders inutiles
+      setGoals(prevGoals => {
+        if (prevGoals.length !== newGoals.length) {
+          return newGoals;
+        }
+        
+        // Créer un map pour comparer efficacement
+        const prevGoalsMap = new Map(prevGoals.map(g => [g.id, g]));
+        const newGoalsMap = new Map(newGoals.map(g => [g.id, g]));
+        
+        // Vérifier si un objectif a été supprimé
+        const hasDeleted = prevGoals.some(prevGoal => !newGoalsMap.has(prevGoal.id));
+        if (hasDeleted) {
+          return newGoals;
+        }
+        
+        // Vérifier si un objectif a changé ou a été ajouté
+        const hasChanged = newGoals.some(newGoal => {
+          const prevGoal = prevGoalsMap.get(newGoal.id);
+          if (!prevGoal) return true; // Nouvel objectif
+          
+          // Comparer les propriétés importantes
+          return prevGoal.status !== newGoal.status || 
+                 prevGoal.progress_percentage !== newGoal.progress_percentage ||
+                 prevGoal.current_value !== newGoal.current_value ||
+                 prevGoal.remaining_days !== newGoal.remaining_days;
+        });
+        
+        return hasChanged ? newGoals : prevGoals;
+      });
     } catch (err: any) {
-      setError(err.message || t('goals:errorLoading'));
-      setGoals([]);
+      if (showLoading) {
+        setError(err.message || t('goals:errorLoading'));
+        setGoals([]);
+      }
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   }, [filterStatus, t]);
   
@@ -122,28 +157,45 @@ const GoalsPage: React.FC = () => {
   }, [loadGoals]);
 
   // Polling périodique pour détecter les changements de statut (toutes les 30 secondes)
+  // Utiliser showLoading=false pour éviter le clignotement visuel
   useEffect(() => {
     if (isModalOpen) return; // Ne pas poller si la modale est ouverte
     
     const interval = setInterval(() => {
-      loadGoals();
+      loadGoals(false); // Ne pas afficher le loader lors du polling
     }, 30000); // 30 secondes
 
     return () => clearInterval(interval);
   }, [loadGoals, isModalOpen]);
 
   // Charger les statistiques séparément pour avoir les compteurs corrects
+  // Utiliser un debounce pour éviter les rechargements trop fréquents
   useEffect(() => {
     const loadStatistics = async () => {
       try {
         const stats = await goalsService.getStatistics();
-        setStatistics(stats);
+        // Ne mettre à jour que si les statistiques ont vraiment changé
+        setStatistics(prevStats => {
+          if (!prevStats) return stats;
+          // Comparer les valeurs importantes
+          if (prevStats.total_goals !== stats.total_goals ||
+              prevStats.active_goals !== stats.active_goals ||
+              prevStats.achieved_goals !== stats.achieved_goals ||
+              prevStats.failed_goals !== stats.failed_goals ||
+              prevStats.cancelled_goals !== stats.cancelled_goals) {
+            return stats;
+          }
+          return prevStats; // Pas de changement, garder l'ancien
+        });
       } catch (err) {
         // Ignorer les erreurs de statistiques, ce n'est pas critique
         console.error('Failed to load goal statistics:', err);
       }
     };
-    loadStatistics();
+    
+    // Debounce pour éviter les appels trop fréquents
+    const timeoutId = setTimeout(loadStatistics, 300);
+    return () => clearTimeout(timeoutId);
   }, [goals]); // Recharger quand les objectifs changent
   
   useEffect(() => {
@@ -218,6 +270,14 @@ const GoalsPage: React.FC = () => {
         duration: 3000,
       });
       
+      // Recharger les statistiques pour mettre à jour les compteurs
+      try {
+        const stats = await goalsService.getStatistics();
+        setStatistics(stats);
+      } catch (err) {
+        console.error('Failed to reload statistics:', err);
+      }
+      
       // Si le filtre est sur "active", changer pour "all" pour voir l'objectif annulé
       // Puis recharger les données avec le nouveau filtre
       if (filterStatus === 'active') {
@@ -243,6 +303,14 @@ const GoalsPage: React.FC = () => {
       toast.success(t('goals:reactivateSuccess', { defaultValue: 'Objectif réactivé avec succès' }), {
         duration: 3000,
       });
+      
+      // Recharger les statistiques pour mettre à jour les compteurs
+      try {
+        const stats = await goalsService.getStatistics();
+        setStatistics(stats);
+      } catch (err) {
+        console.error('Failed to reload statistics:', err);
+      }
       
       // Mettre à jour directement l'objectif dans la liste locale
       setGoals(prevGoals => 
@@ -293,6 +361,7 @@ const GoalsPage: React.FC = () => {
   const activeCount = statistics?.active_goals ?? activeGoals.length;
   const achievedCount = statistics?.achieved_goals ?? achievedGoals.length;
   const failedCount = statistics?.failed_goals ?? failedGoals.length;
+  const cancelledCount = statistics?.cancelled_goals ?? cancelledGoals.length;
   const totalCount = statistics?.total_goals ?? goals.length; // Utiliser les statistiques pour le total
   
   
@@ -385,7 +454,7 @@ const GoalsPage: React.FC = () => {
                     ? 'bg-gray-500 text-white'
                     : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
                 }`}>
-                  {cancelledGoals.length}
+                  {cancelledCount}
                 </span>
               </button>
             </div>
