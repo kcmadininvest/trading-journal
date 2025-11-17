@@ -246,20 +246,33 @@ class GoalProgressCalculator:
             if drawdown > max_drawdown:
                 max_drawdown = drawdown
         
-        # Convertir en pourcentage si nécessaire
+        # Pour le drawdown maximum, la valeur cible est TOUJOURS en pourcentage
+        # Calculer le drawdown en pourcentage
         target_value_decimal = self._to_decimal(goal.target_value)
-        if target_value_decimal < 100:  # Probablement un pourcentage
-            max_drawdown_pct = (max_drawdown / peak_capital * 100) if peak_capital > 0 else Decimal('0')
-            current_value = max_drawdown_pct
-        else:
-            current_value = max_drawdown
+        max_drawdown_pct = (max_drawdown / peak_capital * 100) if peak_capital > 0 else Decimal('0')
+        current_value = max_drawdown_pct
         
-        # Pour le drawdown, on veut que la valeur actuelle soit INFÉRIEURE à la cible
+        # Pour le drawdown, on veut que la valeur actuelle soit STRICTEMENT INFÉRIEURE à la cible
         # (moins de drawdown = mieux)
-        if current_value <= target_value_decimal:
-            percentage_float = 100.0
-            status = 'achieved'
+        # Si on atteint ou dépasse le drawdown maximum, c'est un échec immédiat
+        # Si on reste en dessous ET que la période se termine, c'est une réussite
+        if current_value >= target_value_decimal:
+            # On a atteint ou dépassé la limite, c'est un échec immédiat
+            percentage_float = 0.0
+            status = 'failed'
+        elif current_value < target_value_decimal:
+            # On est en dessous de la limite
+            if goal.remaining_days <= 0:
+                # La période est terminée et on n'a pas dépassé la limite, c'est une réussite
+                percentage_float = 100.0
+                status = 'achieved'
+            else:
+                # La période n'est pas encore terminée, on continue à surveiller
+                # Calculer le pourcentage de progression (inverse : plus on est loin de la limite, mieux c'est)
+                percentage_float = float((target_value_decimal / current_value * 100) if current_value > 0 else 100)
+                status = 'active'
         else:
+            # Cas par défaut (ne devrait pas arriver)
             percentage_float = float((target_value_decimal / current_value * 100) if current_value > 0 else 0)
             status = 'active' if goal.remaining_days > 0 else 'failed'
         
