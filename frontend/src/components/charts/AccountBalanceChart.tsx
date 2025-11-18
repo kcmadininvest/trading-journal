@@ -290,17 +290,6 @@ function AccountBalanceChart({
     };
   }, [data, preferences.timezone, initialCapital]);
 
-  // Créer un mapping des dates vers les valeurs MLL réelles
-  const mllByDate = useMemo(() => {
-    const mapping: { [date: string]: number } = {};
-    data.forEach(d => {
-      if (d.mll !== undefined && d.mll !== null) {
-        mapping[d.date] = d.mll;
-      }
-    });
-    return mapping;
-  }, [data]);
-
   // Options du graphique
   const options = useMemo(() => {
     // Trouver l'index du dataset principal (Solde)
@@ -468,7 +457,7 @@ function AccountBalanceChart({
         easing: 'easeInOutQuart' as const,
       },
     };
-  }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t, data, preferences.timezone]);
+  }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t]);
 
   if (data.length === 0) {
     return (
