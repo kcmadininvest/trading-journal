@@ -392,19 +392,10 @@ function AccountBalanceChart({
             
             // Si c'est le dataset MLL
             if (datasetLabel === 'Maximum Loss Limit (MLL)') {
-              // Utiliser la valeur réelle depuis les données pour cette date
-              const dateLabel = chartLabels[index];
-              // Trouver la date correspondante dans les données originales
-              const correspondingDataPoint = data.find(d => {
-                const dataDate = new Date(d.date).toLocaleDateString('fr-FR', { 
-                  month: 'short', 
-                  day: 'numeric', 
-                  timeZone: preferences.timezone 
-                });
-                return dataDate === dateLabel;
-              });
-              const realValue = correspondingDataPoint?.mll ?? (context.raw !== null && context.raw !== undefined ? context.raw : value);
-              return `${t('dashboard:maximumLossLimit', { defaultValue: 'MLL' })}: ${formatCurrency(realValue, currencySymbol)}`;
+              // Utiliser directement la valeur du dataset (qui est déjà calculée dynamiquement)
+              // context.raw contient la valeur réelle du point de données
+              const mllValue = context.raw !== null && context.raw !== undefined ? context.raw : value;
+              return `${t('dashboard:maximumLossLimit', { defaultValue: 'MLL' })}: ${formatCurrency(mllValue, currencySymbol)}`;
             }
             
             // Sinon, c'est le dataset principal (Solde)

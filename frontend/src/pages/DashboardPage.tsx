@@ -575,6 +575,43 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const initialCapital = selectedAccount?.initial_capital 
       ? parseFloat(String(selectedAccount.initial_capital)) 
       : 0;
+    
+    // Récupérer le MLL initial si activé
+    const mllInitial = selectedAccount?.mll_enabled !== false && selectedAccount?.maximum_loss_limit
+      ? parseFloat(String(selectedAccount.maximum_loss_limit))
+      : undefined;
+    
+    // Fonction pour calculer le MLL en fonction du solde
+    const calculateMll = (balance: number, date: string): number | undefined => {
+      if (mllInitial === undefined) return undefined;
+      
+      // Récupérer le MLL depuis les métriques quotidiennes pour cette date
+      const dailyMetric = dailyMetrics.find(m => {
+        const metricDate = typeof m.date === 'string' 
+          ? m.date.split('T')[0] 
+          : new Date(m.date).toISOString().split('T')[0];
+        return metricDate === date;
+      });
+      
+      // Si le solde dépasse le capital initial, le MLL doit évoluer
+      // MLL = solde maximum atteint - MLL initial
+      // Pour simplifier, on utilise le solde actuel si disponible dans la métrique
+      if (dailyMetric) {
+        const accountBalanceHigh = parseFloat(dailyMetric.account_balance_high);
+        // Si le solde maximum dépasse le capital initial, le MLL évolue
+        if (accountBalanceHigh > initialCapital) {
+          // Le MLL évolue avec le solde maximum : MLL = solde maximum - MLL initial
+          return accountBalanceHigh - mllInitial;
+        }
+      } else if (balance > initialCapital) {
+        // Si pas de métrique mais que le solde actuel dépasse le capital initial
+        // Utiliser le solde actuel pour calculer le MLL
+        return balance - mllInitial;
+      }
+      
+      // Sinon, le MLL est fixe : MLL = capital initial - MLL initial
+      return initialCapital - mllInitial;
+    };
 
     // Grouper les transactions par date (triées chronologiquement)
     const transactionsByDate: { [date: string]: number } = {};
@@ -617,15 +654,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         const dailyPnl = dailyAggregate?.pnl || 0;
         const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
         
-        // Récupérer le MLL pour cette date depuis les métriques quotidiennes
-        // Normaliser la date pour la comparaison
-        const dailyMetric = dailyMetrics.find(m => {
-          const metricDate = typeof m.date === 'string' 
-            ? m.date.split('T')[0] 
-            : new Date(m.date).toISOString().split('T')[0];
-          return metricDate === date;
-        });
-        const mll = dailyMetric ? parseFloat(dailyMetric.maximum_loss_limit) : undefined;
+        // Calculer le MLL dynamiquement en fonction du solde
+        const mll = calculateMll(cumulative, date);
 
         return {
           date: date,
@@ -646,21 +676,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         
         // Si pas de données avant, ajouter un point au capital initial
         if (!hasDataBeforeFirst) {
-          // Récupérer le MLL pour la première date
-          // Normaliser la date pour la comparaison
-          const firstDateMetric = dailyMetrics.find(m => {
-            const metricDate = typeof m.date === 'string' 
-              ? m.date.split('T')[0] 
-              : new Date(m.date).toISOString().split('T')[0];
-            return metricDate === firstDate;
-          });
-          const firstDateMll = firstDateMetric ? parseFloat(firstDateMetric.maximum_loss_limit) : undefined;
+          // Pour le point initial, le MLL est toujours fixe : capital initial - MLL initial
+          const initialMll = mllInitial !== undefined ? initialCapital - mllInitial : undefined;
           
           return [{
             date: firstDate,
             pnl: 0,
             cumulative: initialCapital,
-            mll: firstDateMll,
+            mll: initialMll,
           }, ...result];
         }
       }
@@ -705,20 +728,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       // Ajouter le PnL du jour (après les transactions)
       cumulativePnl += dailyPnl;
 
-      // Récupérer le MLL pour cette date depuis les métriques quotidiennes
-      // Normaliser la date pour la comparaison (m.date peut être au format ISO complet)
-      const dailyMetric = dailyMetrics.find(m => {
-        const metricDate = typeof m.date === 'string' 
-          ? m.date.split('T')[0] 
-          : new Date(m.date).toISOString().split('T')[0];
-        return metricDate === date;
-      });
-      const mll = dailyMetric ? parseFloat(dailyMetric.maximum_loss_limit) : undefined;
+      const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
+      
+      // Calculer le MLL dynamiquement en fonction du solde
+      const mll = calculateMll(cumulative, date);
 
       return {
         date: date, // Format YYYY-MM-DD pour les filtres
         pnl: dailyPnl,
-        cumulative: initialCapital + cumulativePnl + cumulativeTransactions,
+        cumulative: cumulative,
         mll: mll,
       };
     });
@@ -734,15 +752,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       
       // Si pas de données avant, ajouter un point au capital initial
       if (!hasDataBeforeFirst) {
-        // Récupérer le MLL pour la première date
-        const firstDateMetric = dailyMetrics.find(m => m.date === firstDate);
-        const firstDateMll = firstDateMetric ? parseFloat(firstDateMetric.maximum_loss_limit) : undefined;
+        // Pour le point initial, le MLL est toujours fixe : capital initial - MLL initial
+        const initialMll = mllInitial !== undefined ? initialCapital - mllInitial : undefined;
         
         return [{
           date: firstDate,
           pnl: 0,
           cumulative: initialCapital,
-          mll: firstDateMll,
+          mll: initialMll,
         }, ...result];
       }
     }
