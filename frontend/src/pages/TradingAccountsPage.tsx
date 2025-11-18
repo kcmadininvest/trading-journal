@@ -95,6 +95,9 @@ const TradingAccountsPage: React.FC = () => {
       }
       // Recharger depuis le backend pour refléter l'unicité du compte par défaut
       await load();
+      // Fermer la modale après la sauvegarde
+      setShowAccountModal(false);
+      setEditingAccount(null);
     } catch (error) {
       throw error;
     }

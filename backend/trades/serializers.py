@@ -86,6 +86,7 @@ class TradingAccountListSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'account_type',
+            'broker_account_id',
             'currency',
             'initial_capital',
             'maximum_loss_limit',

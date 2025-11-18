@@ -28,6 +28,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
     description: '',
     maximum_loss_limit: undefined,
     mll_enabled: true,
+    broker_account_id: '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -80,6 +81,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
         description: '',
         maximum_loss_limit: undefined,
         mll_enabled: true,
+        broker_account_id: '',
       });
     }
     setError('');
@@ -109,8 +111,13 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
     setError('');
 
     try {
-      await onSave(account?.id || null, form);
-      onClose();
+      // S'assurer que broker_account_id est inclus même s'il est vide
+      const formData: Partial<TradingAccount> = {
+        ...form,
+        broker_account_id: (form as any).broker_account_id || '',
+      };
+      await onSave(account?.id || null, formData);
+      // La modale sera fermée par handleSaveAccount
     } catch (err: any) {
       setError(err.message || t('accounts:form.error', { defaultValue: 'Erreur lors de la sauvegarde' }));
     } finally {
