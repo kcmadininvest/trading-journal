@@ -429,14 +429,11 @@ class AccountMetricsCalculator:
             # Utiliser le maximum entre le high précédent et le solde actuel
             previous_high = self._to_decimal(previous_metrics.account_balance_high)
             account_balance_high = max(previous_high, account_balance)
-            # Récupérer l'état de verrouillage précédent
-            previous_locked = previous_metrics.mll_is_locked
         else:
             # Première métrique : le solde maximum commence au capital initial
             # Il évolue ensuite avec le solde réel si celui-ci est supérieur
             # Pour le calcul du MLL, on commence toujours au capital initial
             account_balance_high = max(initial_capital, account_balance)
-            previous_locked = False
         
         # S'assurer que le solde maximum est toujours >= capital initial
         account_balance_high = max(account_balance_high, initial_capital)
@@ -444,31 +441,25 @@ class AccountMetricsCalculator:
         # Calculer le MLL
         mll_initial_decimal = self._to_decimal(mll_initial)
         
-        # Si le solde maximum dépasse le capital initial, le MLL doit évoluer (déverrouiller si nécessaire)
-        if account_balance_high > initial_capital:
-            # Le solde maximum dépasse le capital initial, donc le MLL doit évoluer
-            mll_is_locked = False
-            account_balance_high_for_mll = account_balance_high
-            
-            # Calculer le nouveau MLL = Account Balance High - MLL initial
-            maximum_loss_limit = account_balance_high_for_mll - mll_initial_decimal
-        elif previous_locked:
-            # Le MLL était déjà verrouillé et le solde maximum n'a pas dépassé le capital initial
-            # MLL reste fixé à initial_capital - mll_initial
-            mll_is_locked = True
-            maximum_loss_limit = initial_capital - mll_initial_decimal
-        else:
-            # Le solde maximum est égal au capital initial et le MLL n'était pas encore verrouillé
-            # Vérifier si on doit le verrouiller maintenant
-            if account_balance <= initial_capital:
-                # On n'a jamais dépassé le capital initial, donc on verrouille à initial_capital - mll_initial
-                mll_is_locked = True
-                maximum_loss_limit = initial_capital - mll_initial_decimal
-            else:
-                # Le solde actuel dépasse le capital initial, donc le MLL doit évoluer
+        # Le MLL commence toujours à initial_capital - mll_initial et reste fixe
+        # jusqu'à ce que le solde dépasse le capital initial de manière persistante
+        if previous_metrics:
+            # Il y a des métriques précédentes
+            # Vérifier si le solde maximum dépasse le capital initial
+            if account_balance_high > initial_capital:
+                # Le solde maximum dépasse le capital initial, le MLL doit évoluer
                 mll_is_locked = False
                 account_balance_high_for_mll = account_balance_high
                 maximum_loss_limit = account_balance_high_for_mll - mll_initial_decimal
+            else:
+                # Le solde maximum n'a pas dépassé le capital initial, MLL reste verrouillé
+                mll_is_locked = True
+                maximum_loss_limit = initial_capital - mll_initial_decimal
+        else:
+            # Première métrique : le MLL commence toujours fixé à initial_capital - mll_initial
+            # même si le solde du premier jour dépasse le capital initial
+            mll_is_locked = True
+            maximum_loss_limit = initial_capital - mll_initial_decimal
         
         # Créer ou mettre à jour la métrique
         # Pour account_balance_high, on stocke toujours le vrai solde maximum (pas celui pour le MLL)
