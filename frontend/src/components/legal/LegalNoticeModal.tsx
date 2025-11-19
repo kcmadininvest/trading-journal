@@ -169,14 +169,6 @@ const LegalNoticeModal: React.FC<LegalNoticeModalProps> = ({ isOpen, onClose }) 
                 })}
               </p>
             </section>
-
-            <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                {t('legal:lastUpdated', { 
-                  defaultValue: 'Dernière mise à jour : Janvier 2025' 
-                })}
-              </p>
-            </div>
           </div>
         </div>
 
