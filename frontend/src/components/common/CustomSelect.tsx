@@ -112,7 +112,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           type="button"
           disabled={disabled}
           onClick={() => setOpen(v => !v)}
-          className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="text-gray-900 dark:text-gray-100">
             {currentOption?.label || placeholder || ''}

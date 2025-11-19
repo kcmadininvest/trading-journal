@@ -694,7 +694,7 @@ const AnalyticsPage: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-end gap-4">
           {/* Compte de trading */}
-          <div className="flex-shrink-0 lg:w-80">
+          <div className="flex-shrink-0 max-w-sm">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('analytics:tradingAccount')}
             </label>

@@ -885,9 +885,9 @@ const StrategiesPage: React.FC = () => {
       <div className="mb-4 sm:mb-6">
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-3 sm:gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
             {/* Compte de trading */}
-            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
+            <div className="flex-shrink-0 max-w-sm">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:tradingAccount')}
               </label>
@@ -895,7 +895,7 @@ const StrategiesPage: React.FC = () => {
             </div>
             
             {/* Sélecteur de période moderne */}
-            <div className="flex-1 lg:flex-shrink-0 lg:w-80 min-w-0">
+            <div className="flex-shrink-0 lg:w-80">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:period', { defaultValue: 'Période' })}
               </label>

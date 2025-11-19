@@ -32,6 +32,8 @@
   "tradingAccount": "Trading Account",
   "allActiveAccounts": "All Active Accounts",
   "default": "Default",
+  "hideAccountNamePart": "Hide part of the name",
+  "showAccountNamePart": "Show full name",
   "optional": "optional",
   "allRightsReserved": "All rights reserved.",
   "pagination": {

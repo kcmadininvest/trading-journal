@@ -32,6 +32,8 @@
   "tradingAccount": "Handelskonto",
   "allActiveAccounts": "Alle aktiven Konten",
   "default": "Standard",
+  "hideAccountNamePart": "Teil des Namens ausblenden",
+  "showAccountNamePart": "Vollständigen Namen anzeigen",
   "optional": "optional",
   "allRightsReserved": "Alle Rechte vorbehalten.",
   "pagination": {
