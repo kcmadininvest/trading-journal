@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatDate, getMonthNames, getDayNames } from '../../utils/dateFormat';
 
@@ -26,13 +27,19 @@ export const DateInput: React.FC<DateInputProps> = ({
   max,
 }) => {
   const { preferences } = usePreferences();
+  const { t } = useTranslation();
   const [displayValue, setDisplayValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const monthPickerRef = useRef<HTMLDivElement>(null);
+  const yearPickerRef = useRef<HTMLDivElement>(null);
+  const yearListRef = useRef<HTMLDivElement>(null);
 
   // Convertir ISO (YYYY-MM-DD) vers format préféré pour l'affichage
   const formatForDisplay = useCallback((isoDate: string): string => {
@@ -136,11 +143,43 @@ export const DateInput: React.FC<DateInputProps> = ({
       const target = e.target as Node;
       if (showCalendar && containerRef.current && !containerRef.current.contains(target)) {
         setShowCalendar(false);
+        setShowMonthPicker(false);
+        setShowYearPicker(false);
       }
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [showCalendar]);
+
+  // Fermer les pickers de mois/année quand on clique en dehors
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (showMonthPicker && monthPickerRef.current && !monthPickerRef.current.contains(target)) {
+        setShowMonthPicker(false);
+      }
+      if (showYearPicker && yearPickerRef.current && !yearPickerRef.current.contains(target)) {
+        setShowYearPicker(false);
+      }
+    };
+    if (showMonthPicker || showYearPicker) {
+      document.addEventListener('mousedown', onDocClick);
+      return () => document.removeEventListener('mousedown', onDocClick);
+    }
+  }, [showMonthPicker, showYearPicker]);
+
+  // Scroll automatique vers le haut (5 dernières années visibles) quand le picker d'année s'ouvre
+  useEffect(() => {
+    if (showYearPicker && yearListRef.current) {
+      // Attendre un peu pour que le DOM soit rendu
+      setTimeout(() => {
+        if (yearListRef.current) {
+          // Scroll vers le haut pour voir les 5 dernières années
+          yearListRef.current.scrollTop = 0;
+        }
+      }, 10);
+    }
+  }, [showYearPicker]);
 
   const handleFocus = () => {
     setIsFocused(true);
@@ -249,6 +288,38 @@ export const DateInput: React.FC<DateInputProps> = ({
     }
   };
 
+  const handleMonthSelect = (month: number) => {
+    setCalendarMonth(month);
+    setShowMonthPicker(false);
+  };
+
+  const handleYearSelect = (year: number) => {
+    setCalendarYear(year);
+    setShowYearPicker(false);
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCalendarMonth(today.getMonth());
+    setCalendarYear(today.getFullYear());
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    if ((!min || todayStr >= min) && (!max || todayStr <= max)) {
+      onChange(todayStr);
+      setDisplayValue(formatForDisplay(todayStr));
+    }
+  };
+
+  // Générer la liste des années (20 ans en arrière jusqu'à l'année actuelle)
+  const yearList = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const years: number[] = [];
+    // De 20 ans en arrière jusqu'à l'année actuelle (pas d'années futures)
+    for (let i = currentYear; i >= currentYear - 20; i--) {
+      years.push(i);
+    }
+    return years;
+  }, []);
+
   const selectedDate = value ? new Date(value) : null;
   const isDateSelected = (day: number) => {
     if (!selectedDate) return false;
@@ -309,22 +380,102 @@ export const DateInput: React.FC<DateInputProps> = ({
               type="button"
               onClick={() => navigateMonth('prev')}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Mois précédent"
             >
               <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {monthNames[calendarMonth]} {calendarYear}
+            
+            {/* Sélecteurs de mois et année */}
+            <div className="flex items-center gap-2">
+              <div className="relative" ref={monthPickerRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMonthPicker(!showMonthPicker);
+                    setShowYearPicker(false);
+                  }}
+                  className="px-2 py-1 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[100px]"
+                >
+                  {monthNames[calendarMonth]}
+                </button>
+                {showMonthPicker && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-2 z-50 max-h-48 overflow-y-auto min-w-[120px]">
+                    <div className="grid grid-cols-3 gap-1">
+                      {monthNames.map((month, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => handleMonthSelect(index)}
+                          className={`px-2 py-1 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            calendarMonth === index
+                              ? 'bg-blue-600 text-white font-semibold'
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {month.substring(0, 3)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="relative" ref={yearPickerRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowYearPicker(!showYearPicker);
+                    setShowMonthPicker(false);
+                  }}
+                  className="px-2 py-1 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[70px]"
+                >
+                  {calendarYear}
+                </button>
+                {showYearPicker && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl p-2 z-[70] min-w-[100px]">
+                    <div ref={yearListRef} className="flex flex-col max-h-80 overflow-y-auto">
+                      {yearList.map((year) => (
+                        <button
+                          key={year}
+                          type="button"
+                          onClick={() => handleYearSelect(year)}
+                          className={`w-full px-4 py-2.5 text-base rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-left ${
+                            calendarYear === year
+                              ? 'bg-blue-600 text-white font-semibold'
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {year}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+            
             <button
               type="button"
               onClick={() => navigateMonth('next')}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              title="Mois suivant"
             >
               <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
+            </button>
+          </div>
+          
+          {/* Bouton "Aujourd'hui" */}
+          <div className="mb-2 flex justify-center">
+            <button
+              type="button"
+              onClick={goToToday}
+              className="px-3 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {t('calendar:today', { defaultValue: 'Aujourd\'hui' })}
             </button>
           </div>
 
