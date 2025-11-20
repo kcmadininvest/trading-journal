@@ -49,6 +49,10 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
   const [open, setOpen] = useState(false);
   const [hideNamePart, setHideNamePart] = useState<boolean>(getHideAccountNamePart());
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const [dropdownWidth, setDropdownWidth] = useState<number | undefined>(undefined);
+  const [minWidth, setMinWidth] = useState<number | undefined>(undefined);
+  const [buttonMinWidth, setButtonMinWidth] = useState<number | undefined>(undefined);
   const selectedId = selectedAccountId ?? null;
 
   const isMountedRef = useRef(false);
@@ -114,6 +118,120 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
     return options.find(o => o.value === currentValue) || options[0];
   }, [options, currentValue]);
 
+  // Calculer la largeur minimale nécessaire pour tous les contenus possibles
+  useEffect(() => {
+    if (buttonRef.current && options.length > 0) {
+      const calculateMinWidth = () => {
+        if (!buttonRef.current) return;
+        
+        // Créer un élément temporaire pour mesurer le texte
+        const tempElement = document.createElement('span');
+        tempElement.style.visibility = 'hidden';
+        tempElement.style.position = 'absolute';
+        tempElement.style.whiteSpace = 'nowrap';
+        const buttonStyle = window.getComputedStyle(buttonRef.current);
+        tempElement.style.fontSize = buttonStyle.fontSize;
+        tempElement.style.fontFamily = buttonStyle.fontFamily;
+        tempElement.style.fontWeight = buttonStyle.fontWeight;
+        document.body.appendChild(tempElement);
+        
+        // Calculer la largeur pour chaque option
+        let maxContentWidth = 0;
+        options.forEach(opt => {
+          const label = opt.displayLabel || opt.label;
+          tempElement.textContent = label;
+          const contentWidth = tempElement.offsetWidth;
+          // Ajouter de l'espace pour le badge "default" si présent
+          const hasBadge = opt.isDefault;
+          const badgeWidth = hasBadge ? 80 : 0; // Estimation de la largeur du badge
+          const totalWidth = contentWidth + badgeWidth;
+          if (totalWidth > maxContentWidth) {
+            maxContentWidth = totalWidth;
+          }
+        });
+        
+        document.body.removeChild(tempElement);
+        
+        // Ajouter le padding du bouton (px-3 = 12px de chaque côté) + icône flèche (16px) + gap (8px)
+        const buttonPadding = 24; // 12px * 2
+        const iconWidth = 16;
+        const gap = 8;
+        const minButtonWidth = maxContentWidth + buttonPadding + iconWidth + gap;
+        
+        setButtonMinWidth(minButtonWidth);
+      };
+      
+      // Calculer une fois que le composant est monté
+      const timer = setTimeout(calculateMinWidth, 0);
+      
+      // Recalculer si les options changent
+      window.addEventListener('resize', calculateMinWidth);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', calculateMinWidth);
+      };
+    }
+  }, [options]);
+
+  // Calculer la largeur minimale (bouton) et la largeur nécessaire pour le contenu
+  useEffect(() => {
+    if (open && buttonRef.current) {
+      const updateWidth = () => {
+        if (buttonRef.current) {
+          const buttonWidth = buttonRef.current.offsetWidth;
+          setMinWidth(buttonWidth);
+          
+          // Calculer la largeur nécessaire pour le contenu le plus long
+          const tempElement = document.createElement('span');
+          tempElement.style.visibility = 'hidden';
+          tempElement.style.position = 'absolute';
+          tempElement.style.whiteSpace = 'nowrap';
+          tempElement.style.fontSize = window.getComputedStyle(buttonRef.current).fontSize;
+          tempElement.style.fontFamily = window.getComputedStyle(buttonRef.current).fontFamily;
+          tempElement.style.padding = '0 12px'; // px-3
+          document.body.appendChild(tempElement);
+          
+          let maxContentWidth = buttonWidth;
+          options.forEach(opt => {
+            const label = opt.displayLabel || opt.label;
+            tempElement.textContent = label;
+            const contentWidth = tempElement.offsetWidth;
+            // Ajouter de l'espace pour le badge "default" si présent
+            const hasBadge = opt.isDefault;
+            const badgeWidth = hasBadge ? 80 : 0; // Estimation de la largeur du badge
+            if (contentWidth + badgeWidth > maxContentWidth) {
+              maxContentWidth = contentWidth + badgeWidth;
+            }
+          });
+          
+          document.body.removeChild(tempElement);
+          
+          // Utiliser le maximum entre la largeur minimale (bouton) et la largeur du contenu
+          const finalWidth = Math.max(buttonWidth, maxContentWidth);
+          setDropdownWidth(finalWidth);
+        }
+      };
+      
+      // Attendre que le DOM soit prêt et que le bouton soit rendu
+      const timer = setTimeout(() => {
+        updateWidth();
+      }, 10);
+      
+      // Mettre à jour la largeur lors du resize
+      window.addEventListener('resize', updateWidth);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', updateWidth);
+      };
+    } else {
+      // Réinitialiser les largeurs quand le dropdown est fermé
+      setDropdownWidth(undefined);
+      setMinWidth(undefined);
+    }
+  }, [open, options]);
+
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       const t = e.target as Node;
@@ -130,10 +248,12 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
       )}
       <div ref={dropdownRef} className="relative flex items-center gap-2">
         <button
+          ref={buttonRef}
           type="button"
           disabled={loading}
           onClick={() => setOpen(v => !v)}
           className="flex-1 inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+          style={{ minWidth: buttonMinWidth ? `${buttonMinWidth}px` : undefined }}
         >
           <span className="inline-flex items-center gap-2">
             <span className="text-gray-900 dark:text-gray-100">{currentOption?.displayLabel || currentOption?.label || t('common:allActiveAccounts')}</span>
@@ -167,7 +287,13 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
           )}
         </button>
         {open && (
-          <div className="absolute z-50 mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg max-h-72 overflow-auto">
+          <div 
+            className="absolute z-50 mt-1 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg max-h-72 overflow-auto"
+            style={{ 
+              width: dropdownWidth ? `${dropdownWidth}px` : '100%',
+              minWidth: buttonMinWidth ? `${buttonMinWidth}px` : (minWidth ? `${minWidth}px` : undefined)
+            }}
+          >
             <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">
               {options.map(opt => (
                 <li key={opt.value ?? 'all'}>
@@ -179,7 +305,7 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${opt.value === currentValue ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
                   >
-                    <span className="text-gray-900 dark:text-gray-100">{opt.displayLabel || opt.label}</span>
+                    <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{opt.displayLabel || opt.label}</span>
                     {opt.isDefault && (
                       <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs">{t('common:default')}</span>
                     )}
