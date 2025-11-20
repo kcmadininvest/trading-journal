@@ -4,9 +4,18 @@
   "accountCount": "{{count}} cuenta",
   "accountCountPlural": "{{count}} cuentas",
   "noAccounts": "No hay cuentas. Crea tu primera cuenta a la derecha.",
+  "noAccountsFiltered": "Ninguna cuenta coincide con los filtros seleccionados.",
+  "filters": {
+    "search": "Buscar",
+    "searchPlaceholder": "Nombre, ID del corredor...",
+    "type": "Tipo de cuenta",
+    "status": "Estado",
+    "reset": "Restablecer"
+  },
   "columns": {
     "account": "Cuenta",
     "type": "Tipo",
+    "brokerId": "ID del Corredor",
     "status": "Estado",
     "initialCapital": "Capital Inicial",
     "maximumLossLimit": "Límite Máximo de Pérdida",
@@ -15,8 +24,7 @@
   },
   "status": {
     "active": "Activa",
-    "inactive": "Inactiva",
-    "archived": "Archivada"
+    "inactive": "Inactiva"
   },
   "accountTypes": {
     "topstep": "TopStep",

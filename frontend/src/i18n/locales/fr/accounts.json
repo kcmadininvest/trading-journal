@@ -4,9 +4,18 @@
   "accountCount": "{{count}} compte",
   "accountCountPlural": "{{count}} comptes",
   "noAccounts": "Aucun compte. Créez votre premier compte à droite.",
+  "noAccountsFiltered": "Aucun compte ne correspond aux filtres sélectionnés.",
+  "filters": {
+    "search": "Rechercher",
+    "searchPlaceholder": "Nom, ID broker...",
+    "type": "Type de compte",
+    "status": "Statut",
+    "reset": "Réinitialiser"
+  },
   "columns": {
     "account": "Compte",
     "type": "Type",
+    "brokerId": "ID Broker",
     "status": "Statut",
     "initialCapital": "Capital initial",
     "maximumLossLimit": "Maximum Loss Limit",
@@ -15,8 +24,7 @@
   },
   "status": {
     "active": "Actif",
-    "inactive": "Inactif",
-    "archived": "Archivé"
+    "inactive": "Inactif"
   },
   "accountTypes": {
     "topstep": "TopStep",

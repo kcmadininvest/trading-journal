@@ -13,8 +13,7 @@
   },
   "status": {
     "active": "Actif",
-    "inactive": "Inactif",
-    "archived": "Archivé"
+    "inactive": "Inactif"
   },
   "accountTypes": {
     "topstep": "TopStep",

@@ -4,24 +4,57 @@ import { currenciesService, Currency } from '../services/currencies';
 import PaginationControls from '../components/ui/PaginationControls';
 import { DeleteConfirmModal, Tooltip } from '../components/ui';
 import TradingAccountModal from '../components/accounts/TradingAccountModal';
+import { AccountsFilters } from '../components/accounts/AccountsFilters';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const TradingAccountsPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
+  const [allAccounts, setAllAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [filters, setFilters] = useState({
+    account_type: '' as '' | 'topstep' | 'ibkr' | 'ninjatrader' | 'tradovate' | 'other',
+    status: '' as '' | 'active' | 'inactive',
+    search: '',
+  });
 
-  // Pagination des comptes
+  // Filtrer les comptes
+  const filteredAccounts = useMemo(() => {
+    let filtered = [...allAccounts];
+    
+    // Filtre par type de compte
+    if (filters.account_type) {
+      filtered = filtered.filter(acc => acc.account_type === filters.account_type);
+    }
+    
+    // Filtre par statut
+    if (filters.status) {
+      filtered = filtered.filter(acc => acc.status === filters.status);
+    }
+    
+    // Filtre par recherche (nom ou broker_account_id)
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(acc => 
+        acc.name.toLowerCase().includes(searchLower) ||
+        (acc.broker_account_id && acc.broker_account_id.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    return filtered;
+  }, [allAccounts, filters]);
+
+  // Pagination des comptes filtrés
   const paginatedAccounts = useMemo(() => {
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return accounts.slice(startIndex, endIndex);
-  }, [accounts, page, pageSize]);
+    return filteredAccounts.slice(startIndex, endIndex);
+  }, [filteredAccounts, page, pageSize]);
 
-  const totalPages = Math.max(1, Math.ceil(accounts.length / pageSize));
+  const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / pageSize));
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
@@ -63,9 +96,9 @@ const TradingAccountsPage: React.FC = () => {
     try {
       const list = await tradingAccountsService.list({ include_inactive: true, include_archived: true });
       const arr = Array.isArray(list) ? list : (list as any)?.results ?? [];
-      setAccounts(arr);
+      setAllAccounts(arr);
     } catch {
-      setAccounts([]);
+      setAllAccounts([]);
     } finally {
       setLoading(false);
     }
@@ -124,7 +157,7 @@ const TradingAccountsPage: React.FC = () => {
     const nextStatus = acc.status === 'active' ? 'inactive' : 'active';
     try {
       const updated = await tradingAccountsService.update(acc.id, { status: nextStatus });
-      setAccounts(prev => prev.map(a => (a.id === acc.id ? updated : a)));
+      setAllAccounts(prev => prev.map(a => (a.id === acc.id ? updated : a)));
     } catch {}
   };
 
@@ -139,7 +172,7 @@ const TradingAccountsPage: React.FC = () => {
     setDeleteLoading(true);
     try {
       await tradingAccountsService.remove(accountToDelete.id);
-      setAccounts(prev => {
+      setAllAccounts(prev => {
         const filtered = prev.filter(a => a.id !== accountToDelete.id);
         // Si on supprime le dernier élément de la page et qu'on n'est pas sur la première page, reculer d'une page
         if (filtered.length > 0 && page > 1 && (page - 1) * pageSize >= filtered.length) {
@@ -156,16 +189,37 @@ const TradingAccountsPage: React.FC = () => {
     }
   };
 
+  const handleFilterChange = (next: Partial<typeof filters>) => {
+    setFilters(prev => ({ ...prev, ...next }));
+    setPage(1); // Réinitialiser à la première page lors d'un changement de filtre
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      account_type: '',
+      status: '',
+      search: '',
+    });
+    setPage(1);
+  };
+
   return (
     <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+      {/* Filtres */}
+      <AccountsFilters
+        values={filters}
+        onChange={handleFilterChange}
+        onReset={handleResetFilters}
+      />
+
       {/* Table */}
       <div className="max-w-full">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
             <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                {accounts.length === 1 
-                  ? t('accounts:accountCount', { count: accounts.length })
-                  : t('accounts:accountCountPlural', { count: accounts.length })}
+                {filteredAccounts.length === 1 
+                  ? t('accounts:accountCount', { count: filteredAccounts.length })
+                  : t('accounts:accountCountPlural', { count: filteredAccounts.length })}
               </div>
               <button
                 onClick={handleCreateNew}
@@ -191,9 +245,11 @@ const TradingAccountsPage: React.FC = () => {
                       </div>
                     </div>
                   ))
-                ) : accounts.length === 0 ? (
+                ) : filteredAccounts.length === 0 ? (
                   <div className="p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    {t('accounts:noAccounts')}
+                    {allAccounts.length === 0 
+                      ? t('accounts:noAccounts')
+                      : t('accounts:noAccountsFiltered', { defaultValue: 'Aucun compte ne correspond aux filtres' })}
                   </div>
                 ) : (
                   paginatedAccounts.map(acc => (
@@ -224,13 +280,17 @@ const TradingAccountsPage: React.FC = () => {
                           </span>
                         </div>
                         <div className="flex flex-col w-full">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{t('accounts:columns.brokerId', { defaultValue: 'ID Broker' })}</div>
+                          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 break-words">{acc.broker_account_id || '-'}</div>
+                        </div>
+                        <div className="flex flex-col w-full">
                           <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{t('accounts:columns.status')}</div>
                           <span className={`inline-flex items-center justify-center rounded-md px-2.5 py-1 text-xs w-full ${acc.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-semibold' : acc.status === 'inactive' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 font-semibold' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 font-semibold'}`}>
                             {acc.status === 'active' 
                               ? t('accounts:status.active') 
                               : acc.status === 'inactive' 
                               ? t('accounts:status.inactive') 
-                              : t('accounts:status.archived')}
+                              : acc.status}
                           </span>
                         </div>
                         <div className="flex flex-col w-full">
@@ -283,15 +343,15 @@ const TradingAccountsPage: React.FC = () => {
                   ))
                 )}
               </div>
-              {accounts.length > 0 && (
+              {filteredAccounts.length > 0 && (
                 <div className="px-3 pb-3">
                   <PaginationControls
                     currentPage={page}
                     totalPages={totalPages}
-                    totalItems={accounts.length}
+                    totalItems={filteredAccounts.length}
                     itemsPerPage={pageSize}
                     startIndex={(page - 1) * pageSize + 1}
-                    endIndex={Math.min(page * pageSize, accounts.length)}
+                    endIndex={Math.min(page * pageSize, filteredAccounts.length)}
                     onPageChange={(p) => {
                       setPage(p);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -314,6 +374,7 @@ const TradingAccountsPage: React.FC = () => {
                     <tr>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.account')}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.type')}</th>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.brokerId', { defaultValue: 'ID Broker' })}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.status')}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.initialCapital')}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })}</th>
@@ -327,6 +388,7 @@ const TradingAccountsPage: React.FC = () => {
                         <tr key={`skeleton-${i}`}>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/3 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
@@ -334,10 +396,14 @@ const TradingAccountsPage: React.FC = () => {
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 text-right"><div className="h-8 bg-gray-100 dark:bg-gray-700 rounded w-40 ml-auto animate-pulse" /></td>
                         </tr>
                       ))
-                    ) : accounts.length === 0 ? (
+                    ) : filteredAccounts.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
-                          <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('accounts:noAccounts')}</div>
+                        <td colSpan={8} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
+                          <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+                            {allAccounts.length === 0 
+                              ? t('accounts:noAccounts')
+                              : t('accounts:noAccountsFiltered', { defaultValue: 'Aucun compte ne correspond aux filtres' })}
+                          </div>
                         </td>
                       </tr>
                     ) : (
@@ -363,13 +429,16 @@ const TradingAccountsPage: React.FC = () => {
                               {t(`accounts:accountTypes.${acc.account_type}`)}
                             </span>
                           </td>
+                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                            {acc.broker_account_id || '-'}
+                          </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center rounded-md px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs ${acc.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : acc.status === 'inactive' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'}`}>
                               {acc.status === 'active' 
                                 ? t('accounts:status.active') 
                                 : acc.status === 'inactive' 
                                 ? t('accounts:status.inactive') 
-                                : t('accounts:status.archived')}
+                                : acc.status}
                             </span>
                           </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
@@ -421,15 +490,15 @@ const TradingAccountsPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              {accounts.length > 0 && (
+              {filteredAccounts.length > 0 && (
                 <div className="px-2 sm:px-4 md:px-6">
                   <PaginationControls
                     currentPage={page}
                     totalPages={totalPages}
-                    totalItems={accounts.length}
+                    totalItems={filteredAccounts.length}
                     itemsPerPage={pageSize}
                     startIndex={(page - 1) * pageSize + 1}
-                    endIndex={Math.min(page * pageSize, accounts.length)}
+                    endIndex={Math.min(page * pageSize, filteredAccounts.length)}
                     onPageChange={(p) => {
                       setPage(p);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
