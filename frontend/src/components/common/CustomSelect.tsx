@@ -27,25 +27,54 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, minWidth: 0 });
 
   const currentOption = options.find(opt => opt.value === value) || options[0];
 
-  // Calculer la position du dropdown
+  // Calculer la position et la largeur du dropdown
   useEffect(() => {
     if (open && buttonRef.current) {
       const updatePosition = () => {
-        if (buttonRef.current) {
+        if (buttonRef.current && dropdownMenuRef.current) {
           const rect = buttonRef.current.getBoundingClientRect();
+          const minWidth = rect.width;
+          
+          // Calculer la largeur nécessaire pour le contenu le plus long
+          // Créer un élément temporaire pour mesurer le texte
+          const tempElement = document.createElement('span');
+          tempElement.style.visibility = 'hidden';
+          tempElement.style.position = 'absolute';
+          tempElement.style.whiteSpace = 'nowrap';
+          tempElement.style.fontSize = window.getComputedStyle(buttonRef.current).fontSize;
+          tempElement.style.fontFamily = window.getComputedStyle(buttonRef.current).fontFamily;
+          tempElement.style.padding = '0 12px'; // px-3
+          document.body.appendChild(tempElement);
+          
+          let maxContentWidth = minWidth;
+          options.forEach(opt => {
+            tempElement.textContent = opt.label;
+            const contentWidth = tempElement.offsetWidth;
+            if (contentWidth > maxContentWidth) {
+              maxContentWidth = contentWidth;
+            }
+          });
+          
+          document.body.removeChild(tempElement);
+          
+          // Utiliser le maximum entre la largeur minimale (bouton) et la largeur du contenu
+          const finalWidth = Math.max(minWidth, maxContentWidth);
+          
           setDropdownPosition({
             top: rect.bottom + window.scrollY + 4,
             left: rect.left + window.scrollX,
-            width: rect.width,
+            width: finalWidth,
+            minWidth: minWidth,
           });
         }
       };
       
-      updatePosition();
+      // Attendre un tick pour que le DOM soit prêt
+      setTimeout(updatePosition, 0);
       
       // Mettre à jour la position lors du scroll ou du resize
       window.addEventListener('scroll', updatePosition, true);
@@ -56,7 +85,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         window.removeEventListener('resize', updatePosition);
       };
     }
-  }, [open]);
+  }, [open, options]);
 
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
@@ -81,6 +110,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         top: `${dropdownPosition.top}px`,
         left: `${dropdownPosition.left}px`,
         width: `${dropdownPosition.width}px`,
+        minWidth: `${dropdownPosition.minWidth}px`,
       }}
     >
       <ul className="py-1 text-sm sm:text-base text-gray-700 dark:text-gray-300">
@@ -96,7 +126,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                 opt.value === value ? 'bg-gray-50 dark:bg-gray-700' : ''
               }`}
             >
-              <span className="text-gray-900 dark:text-gray-100">{opt.label}</span>
+              <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{opt.label}</span>
             </button>
           </li>
         ))}
