@@ -517,7 +517,17 @@ fi
 
 # 10. 👤 Correction des permissions
 info "Correction des permissions..."
+
+# Créer le répertoire de logs Django AVANT de corriger les permissions
+# pour qu'il soit inclus dans le chown -R
+LOGS_DIR="$BACKEND_DIR/logs"
+if [ ! -d "$LOGS_DIR" ]; then
+    info "Création du répertoire de logs Django: $LOGS_DIR"
+    mkdir -p "$LOGS_DIR" 2>/dev/null || warn "Impossible de créer le répertoire de logs"
+fi
+
 # Utiliser chown avec apache: (sans spécifier le groupe apache explicitement)
+# Cela appliquera les permissions à tout le projet, y compris le répertoire de logs
 chown -R apache: "$PROJECT_ROOT" 2>/dev/null || warn "Impossible de changer les permissions (peut nécessiter sudo)"
 # S'assurer que les répertoires sont accessibles
 chmod -R 755 "$PROJECT_ROOT" 2>/dev/null || true
@@ -535,20 +545,6 @@ fi
 if [ -f "$ENV_BACKEND" ]; then
     chmod 644 "$ENV_BACKEND" 2>/dev/null || true
     info "✅ Permissions backend/.env (644)"
-fi
-
-# Créer le répertoire de logs Django avec les bonnes permissions
-LOGS_DIR="$BACKEND_DIR/logs"
-if [ ! -d "$LOGS_DIR" ]; then
-    info "Création du répertoire de logs Django: $LOGS_DIR"
-    mkdir -p "$LOGS_DIR" 2>/dev/null || warn "Impossible de créer le répertoire de logs"
-fi
-
-# Configurer les permissions du répertoire de logs pour apache
-if [ -d "$LOGS_DIR" ]; then
-    chown apache:apache "$LOGS_DIR" 2>/dev/null || warn "Impossible de changer le propriétaire du répertoire de logs (peut nécessiter sudo)"
-    chmod 755 "$LOGS_DIR" 2>/dev/null || warn "Impossible de changer les permissions du répertoire de logs"
-    info "✅ Répertoire de logs Django configuré: $LOGS_DIR"
 fi
 
 info "✅ Permissions mises à jour"
