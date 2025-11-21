@@ -1,0 +1,57 @@
+# Configuration de déploiement - Trading Journal
+# 
+# ⚠️  IMPORTANT: Ce fichier est un EXEMPLE
+# 
+# UTILISATION:
+# 1. Copiez ce fichier vers deploy.config (sans .example)
+# 2. Remplissez les valeurs avec vos informations de production
+# 3. Le fichier deploy.config est dans .gitignore et ne sera pas versionné
+#
+# SECURITÉ:
+# - Ne commitez JAMAIS le fichier deploy.config dans Git
+# - Utilisez des permissions restrictives: chmod 600 deploy.config
+# - Stockez les secrets dans un gestionnaire de secrets en production
+
+# ============================================================================
+# CONFIGURATION DU SERVEUR
+# ============================================================================
+
+# Adresse IP du serveur (optionnel, pour documentation uniquement)
+# SERVER_IP=192.168.1.100
+
+# Chemin racine du projet sur le serveur
+PROJECT_ROOT=/var/www/html/trading_journal
+
+# Chemin de la configuration Apache
+APACHE_CONFIG=/etc/httpd/conf.d/trading-journal.conf
+
+# ============================================================================
+# CONFIGURATION GIT
+# ============================================================================
+
+# URL du dépôt Git (optionnel, peut être détecté automatiquement)
+# GIT_REPO_URL=https://github.com/your-username/your-repo.git
+
+# ============================================================================
+# CONFIGURATION DES URLS
+# ============================================================================
+
+# URL de l'API en production
+API_URL=https://your-domain.com/api
+
+# URL de l'application frontend en production
+FRONTEND_URL=https://your-domain.com
+
+# URL de l'admin Django en production
+ADMIN_URL=https://your-domain.com/admin
+
+# ============================================================================
+# CONFIGURATION DU FRONTEND
+# ============================================================================
+
+# URL de l'API pour le fichier .env.production
+REACT_APP_API_URL=https://your-domain.com/api
+
+# Environnement React
+REACT_APP_ENVIRONMENT=production
+

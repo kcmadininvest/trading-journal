@@ -83,6 +83,7 @@ logs/
 # Deployment scripts (specific to production server)
 deploy_production.sh
 *.deploy.sh
+deploy.config
 
 # Deployment backups
 .deploy_backups/

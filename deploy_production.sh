@@ -2,8 +2,10 @@
 
 # 🚀 Script de déploiement en production Trading Journal
 # Ce script déploie les changements de la branche dev vers la production
-# Serveur: 185.217.126.243
-# Répertoire: /var/www/html/trading_journal/
+# 
+# CONFIGURATION:
+# Les valeurs sensibles sont externalisées dans le fichier deploy.config
+# Créez ce fichier à partir de deploy.config.example
 
 set -e  # Arrêter en cas d'erreur
 
@@ -11,12 +13,61 @@ echo "🚀 Début du déploiement en production Trading Journal..."
 echo "📅 Date: $(date)"
 echo ""
 
-# Variables
-PROJECT_ROOT="/var/www/html/trading_journal"
+# ============================================================================
+# CHARGEMENT DE LA CONFIGURATION
+# ============================================================================
+
+# Déterminer le répertoire du script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="$SCRIPT_DIR/deploy.config"
+
+# Fonction pour charger la configuration
+load_config() {
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "⚠️  Fichier de configuration $CONFIG_FILE non trouvé"
+        echo "📝 Créez-le à partir de deploy.config.example"
+        echo ""
+        # Utiliser les valeurs par défaut si le fichier n'existe pas
+        PROJECT_ROOT="${PROJECT_ROOT:-/var/www/html/trading_journal}"
+        APACHE_CONFIG="${APACHE_CONFIG:-/etc/httpd/conf.d/trading-journal.conf}"
+        GIT_REPO_URL="${GIT_REPO_URL:-}"
+        API_URL="${API_URL:-https://app.kctradingjournal.com/api}"
+        FRONTEND_URL="${FRONTEND_URL:-https://app.kctradingjournal.com}"
+        ADMIN_URL="${ADMIN_URL:-https://app.kctradingjournal.com/admin}"
+        REACT_APP_API_URL="${REACT_APP_API_URL:-https://app.kctradingjournal.com/api}"
+        REACT_APP_ENVIRONMENT="${REACT_APP_ENVIRONMENT:-production}"
+    else
+        # Charger les variables depuis le fichier de configuration
+        # Ignorer les lignes de commentaires et les lignes vides
+        while IFS='=' read -r key value || [ -n "$key" ]; do
+            # Ignorer les lignes vides et les commentaires
+            [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+            # Supprimer les espaces autour de la clé et de la valeur
+            key=$(echo "$key" | xargs)
+            value=$(echo "$value" | xargs)
+            # Exporter la variable si elle n'est pas vide
+            if [ ! -z "$key" ] && [ ! -z "$value" ]; then
+                export "$key=$value"
+            fi
+        done < "$CONFIG_FILE"
+    fi
+}
+
+# Charger la configuration
+load_config
+
+# Variables dérivées (basées sur la configuration chargée)
+PROJECT_ROOT="${PROJECT_ROOT:-/var/www/html/trading_journal}"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 BACKEND_DIR="$PROJECT_ROOT/backend"
-APACHE_CONFIG="/etc/httpd/conf.d/trading-journal.conf"
+APACHE_CONFIG="${APACHE_CONFIG:-/etc/httpd/conf.d/trading-journal.conf}"
 ENV_PRODUCTION="$FRONTEND_DIR/.env.production"
+GIT_REPO_URL="${GIT_REPO_URL:-}"
+API_URL="${API_URL:-https://app.kctradingjournal.com/api}"
+FRONTEND_URL="${FRONTEND_URL:-https://app.kctradingjournal.com}"
+ADMIN_URL="${ADMIN_URL:-https://app.kctradingjournal.com/admin}"
+REACT_APP_API_URL="${REACT_APP_API_URL:-https://app.kctradingjournal.com/api}"
+REACT_APP_ENVIRONMENT="${REACT_APP_ENVIRONMENT:-production}"
 
 # Variables pour les fichiers hashés (définies plus tard)
 JS_FILE=""
@@ -65,7 +116,7 @@ FILES_CHANGED=""
 CHANGED_COUNT=0
 
 # Vérifier si on est dans un dépôt Git (vérifier .git ou git rev-parse)
-GIT_REPO_URL="https://github.com/kcmadininvest/trading-journal.git"
+# GIT_REPO_URL est maintenant chargé depuis la configuration
 
 if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
     CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
@@ -216,21 +267,21 @@ info "Configuration du fichier .env.production..."
 if [ ! -f "$ENV_PRODUCTION" ]; then
     warn "Le fichier .env.production n'existe pas, création..."
     cat > "$ENV_PRODUCTION" << EOF
-REACT_APP_API_URL=https://app.kctradingjournal.com/api
-REACT_APP_ENVIRONMENT=production
+REACT_APP_API_URL=${REACT_APP_API_URL}
+REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}
 EOF
     info "✅ Fichier .env.production créé"
 else
     # Vérifier et mettre à jour le contenu si nécessaire
-    if ! grep -q "REACT_APP_API_URL=https://app.kctradingjournal.com/api" "$ENV_PRODUCTION"; then
+    if ! grep -q "REACT_APP_API_URL=${REACT_APP_API_URL}" "$ENV_PRODUCTION"; then
         warn "Mise à jour de REACT_APP_API_URL dans .env.production..."
         # Sauvegarder l'ancien fichier
         cp "$ENV_PRODUCTION" "$ENV_PRODUCTION.backup.$(date +%Y%m%d_%H%M%S)"
         
         # Créer le nouveau fichier avec les bonnes valeurs
         cat > "$ENV_PRODUCTION" << EOF
-REACT_APP_API_URL=https://app.kctradingjournal.com/api
-REACT_APP_ENVIRONMENT=production
+REACT_APP_API_URL=${REACT_APP_API_URL}
+REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}
 EOF
         info "✅ .env.production mis à jour"
     else
@@ -639,9 +690,9 @@ Template: $([ -f "$BACKEND_DIR/trading_journal_api/templates/index.html" ] && ec
 EOF
 
 # Afficher le résumé
-echo "🌐 Application accessible à : https://app.kctradingjournal.com"
-echo "📚 API accessible à : https://app.kctradingjournal.com/api/"
-echo "🔧 Admin Django : https://app.kctradingjournal.com/admin/"
+echo "🌐 Application accessible à : ${FRONTEND_URL}"
+echo "📚 API accessible à : ${API_URL}/"
+echo "🔧 Admin Django : ${ADMIN_URL}/"
 echo ""
 
 # Afficher les informations Git si disponibles

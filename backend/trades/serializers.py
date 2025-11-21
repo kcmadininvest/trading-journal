@@ -356,15 +356,32 @@ class TradingMetricsSerializer(serializers.Serializer):
 
 class CSVUploadSerializer(serializers.Serializer):
     """
-    Serializer pour l'upload de fichiers CSV.
+    Serializer pour l'upload de fichiers CSV avec validation stricte.
     """
     file = serializers.FileField()
     
     def validate_file(self, value):
-        if not value.name.endswith('.csv'):
-            raise serializers.ValidationError("Le fichier doit être au format CSV")
-        if value.size > 10 * 1024 * 1024:  # 10MB max
-            raise serializers.ValidationError("Le fichier ne doit pas dépasser 10MB")
+        """
+        Valide le fichier uploadé avec des vérifications strictes :
+        - Extension de fichier
+        - Taille maximale
+        - Type MIME réel
+        - Magic bytes
+        - Contenu du fichier
+        - Protection contre les path traversal
+        """
+        from .file_validators import csv_file_validator
+        
+        # Utiliser le validateur strict
+        try:
+            csv_file_validator.validate(value)
+        except Exception as e:
+            # Convertir les ValidationError Django en ValidationError DRF
+            if hasattr(e, 'message'):
+                raise serializers.ValidationError(str(e.message))
+            else:
+                raise serializers.ValidationError(str(e))
+        
         return value
 
 
