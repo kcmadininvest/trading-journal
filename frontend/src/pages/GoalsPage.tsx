@@ -32,8 +32,11 @@ const GoalsPage: React.FC = () => {
   const previousGoalsStatusRef = React.useRef<Map<number, string>>(new Map());
   const notifiedGoalsRef = React.useRef<Set<number>>(new Set());
   const isInitialLoadRef = React.useRef(true);
+  const hasLoadedRef = React.useRef(false);
+  const lastFiltersKeyRef = React.useRef<string>('');
   
-  const loadGoals = React.useCallback(async (showLoading = true) => {
+  const loadGoals = React.useCallback(async (showLoading = true, filtersToUse?: GoalsFilters) => {
+    const currentFilters = filtersToUse || filters;
     if (showLoading) {
       setLoading(true);
       setError(null);
@@ -41,7 +44,7 @@ const GoalsPage: React.FC = () => {
     try {
       // Charger les goals et les statistiques en parallèle lors du chargement initial
       const [data, stats] = await Promise.all([
-        goalsService.list(filters),
+        goalsService.list(currentFilters),
         isInitialLoadRef.current ? goalsService.getStatistics().catch(() => null) : Promise.resolve(null)
       ]);
       
@@ -168,9 +171,22 @@ const GoalsPage: React.FC = () => {
     }
   }, [filters, t]);
   
+  // Utiliser filters directement au lieu de loadGoals pour éviter les re-renders inutiles
   useEffect(() => {
-    loadGoals();
-  }, [loadGoals]);
+    const filtersKey = JSON.stringify(filters);
+    
+    // Éviter les appels multiples au montage (React StrictMode exécute les effets deux fois)
+    // Ne charger qu'une seule fois au montage, puis seulement quand filters change vraiment
+    if (!hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      lastFiltersKeyRef.current = filtersKey;
+      loadGoals(true, filters);
+    } else if (filtersKey !== lastFiltersKeyRef.current) {
+      lastFiltersKeyRef.current = filtersKey;
+      loadGoals(true, filters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
   // Polling périodique pour détecter les changements de statut (toutes les 30 secondes)
   // Utiliser showLoading=false pour éviter le clignotement visuel
