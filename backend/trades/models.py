@@ -687,7 +687,10 @@ class TopStepTrade(models.Model):
                 reward = self.entry_price - self.exit_price  # type: ignore
             
             if risk > 0:
-                self.actual_risk_reward_ratio = reward / risk  # type: ignore
+                # Utiliser la valeur absolue du reward pour éviter les R:R négatifs
+                # qui faussent les statistiques. Le R:R représente toujours le ratio
+                # entre le montant gagné/perdu et le risque, donc il doit être positif.
+                self.actual_risk_reward_ratio = abs(reward) / risk  # type: ignore
             else:
                 self.actual_risk_reward_ratio = None  # type: ignore
         else:
@@ -1145,8 +1148,9 @@ class PositionStrategy(models.Model):
             if self.parent_strategy:
                 # Marquer toutes les versions du groupe (parent + enfants) comme non actuelles
                 parent = self.parent_strategy
+                parent_id = self.parent_strategy_id  # type: ignore
                 PositionStrategy.objects.filter(  # type: ignore
-                    models.Q(id=parent.id) | models.Q(parent_strategy=parent),
+                    models.Q(id=parent_id) | models.Q(parent_strategy=parent),
                     user=self.user
                 ).update(is_current=False)
                 # Utiliser le numéro de version maximum + 1 au lieu de count() + 1
@@ -1154,7 +1158,7 @@ class PositionStrategy(models.Model):
                 max_child_version = parent.versions.aggregate(  # type: ignore
                     max_version=models.Max('version')
                 )['max_version'] or 0
-                parent_version = parent.version or 0
+                parent_version = parent.version or 0  # type: ignore
                 max_version = max(max_child_version, parent_version)
                 self.version = max_version + 1
             else:
@@ -1168,10 +1172,11 @@ class PositionStrategy(models.Model):
         try:
             # Identifier le parent (soit self si c'est le parent, soit parent_strategy)
             parent = self.parent_strategy or self
+            parent_id = self.parent_strategy_id if self.parent_strategy_id else self.pk  # type: ignore
             
             # Récupérer toutes les versions du groupe (parent + enfants)
             all_versions = PositionStrategy.objects.filter(  # type: ignore
-                models.Q(id=parent.id) | models.Q(parent_strategy=parent),
+                models.Q(id=parent_id) | models.Q(parent_strategy=parent),
                 user=self.user
             )
             
@@ -1185,7 +1190,7 @@ class PositionStrategy(models.Model):
             # En cas d'erreur (relation cassée, etc.), considérer comme dernière version
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Erreur lors de la vérification de is_latest_version pour la stratégie {self.id}: {str(e)}")
+            logger.error(f"Erreur lors de la vérification de is_latest_version pour la stratégie {self.pk}: {str(e)}")
             return True
     
     def get_version_history(self):
@@ -1193,29 +1198,31 @@ class PositionStrategy(models.Model):
         try:
             # Identifier le parent (soit self si c'est le parent, soit parent_strategy)
             parent = self.parent_strategy or self
+            parent_id = self.parent_strategy_id if self.parent_strategy_id else self.pk  # type: ignore
             
             # Retourner toutes les versions du groupe : le parent + tous ses enfants
-            # Utiliser Q pour inclure le parent (id=parent.id) et tous ses enfants (parent_strategy=parent)
+            # Utiliser Q pour inclure le parent (id=parent_id) et tous ses enfants (parent_strategy=parent)
             return PositionStrategy.objects.filter(  # type: ignore
-                models.Q(id=parent.id) | models.Q(parent_strategy=parent),
+                models.Q(id=parent_id) | models.Q(parent_strategy=parent),
                 user=self.user
             ).order_by('-version')
         except Exception as e:
             # En cas d'erreur, retourner un queryset vide
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Erreur lors de la récupération de l'historique des versions pour la stratégie {self.id}: {str(e)}")
+            logger.error(f"Erreur lors de la récupération de l'historique des versions pour la stratégie {self.pk}: {str(e)}")
             return PositionStrategy.objects.none()  # type: ignore
     
     def create_new_version(self, new_content, version_notes=''):
         """Crée une nouvelle version de la stratégie."""
         # Marquer toutes les autres versions comme non actuelles
         parent = self.parent_strategy or self
+        parent_id = self.parent_strategy_id if self.parent_strategy_id else self.pk  # type: ignore
         
         # Marquer toutes les versions de ce parent (y compris le parent lui-même) comme non actuelles
         # Utiliser Q pour inclure le parent et tous ses enfants
         PositionStrategy.objects.filter(  # type: ignore
-            models.Q(id=parent.id) | models.Q(parent_strategy=parent),
+            models.Q(id=parent_id) | models.Q(parent_strategy=parent),
             user=self.user
         ).update(is_current=False)
         
@@ -1226,9 +1233,10 @@ class PositionStrategy(models.Model):
         # Calculer le nouveau numéro de version en utilisant le maximum + 1
         # Cela garantit qu'on utilise toujours le numéro le plus élevé, même si des versions sont supprimées
         from django.db.models import Max
+        parent_version = getattr(parent, 'version', None) or 0  # type: ignore
         max_version = parent.versions.aggregate(  # type: ignore
             max_version=Max('version')
-        )['max_version'] or (parent.version if parent.version else 0)
+        )['max_version'] or parent_version
         new_version = max_version + 1
         
         new_strategy = PositionStrategy.objects.create(  # type: ignore

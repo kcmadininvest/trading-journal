@@ -131,11 +131,13 @@ const GoalsPage: React.FC = () => {
           const prevGoal = prevGoalsMap.get(newGoal.id);
           if (!prevGoal) return true; // Nouvel objectif
           
-          // Comparer les propriétés importantes
+          // Comparer les propriétés importantes, y compris les dates
           return prevGoal.status !== newGoal.status || 
                  prevGoal.progress_percentage !== newGoal.progress_percentage ||
                  prevGoal.current_value !== newGoal.current_value ||
-                 prevGoal.remaining_days !== newGoal.remaining_days;
+                 prevGoal.remaining_days !== newGoal.remaining_days ||
+                 prevGoal.start_date !== newGoal.start_date ||
+                 prevGoal.end_date !== newGoal.end_date;
         });
         
         return hasChanged ? newGoals : prevGoals;
