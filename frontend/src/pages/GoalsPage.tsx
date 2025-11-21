@@ -3,8 +3,11 @@ import { toast } from 'react-hot-toast';
 import { goalsService, TradingGoal, GoalsFilters, GoalStatistics } from '../services/goals';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
-import { GoalCard } from '../components/goals/GoalCard';
-import { GoalModal } from '../components/goals/GoalModal';
+import { GoalCardEnhanced } from '../components/goals/GoalCardEnhanced';
+import { GoalWizard } from '../components/goals/GoalWizard';
+import { GoalFilters } from '../components/goals/GoalFilters';
+import { EmptyState } from '../components/ui/EmptyState';
+import { SkeletonGrid } from '../components/ui/SkeletonLoader';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -15,11 +18,11 @@ const GoalsPage: React.FC = () => {
   const { selectedAccountId } = useTradingAccount();
   
   const [goals, setGoals] = useState<TradingGoal[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Initialiser à true pour éviter le saut initial
   const [error, setError] = useState<string | null>(null);
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'achieved' | 'failed' | 'cancelled'>('active');
+  const [filters, setFilters] = useState<GoalsFilters>({ status: 'active' });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<TradingGoal | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -27,7 +30,8 @@ const GoalsPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [statistics, setStatistics] = useState<GoalStatistics | null>(null);
   const previousGoalsStatusRef = React.useRef<Map<number, string>>(new Map());
-  const notifiedGoalsRef = React.useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
+  const notifiedGoalsRef = React.useRef<Set<number>>(new Set());
+  const isInitialLoadRef = React.useRef(true);
   
   const loadGoals = React.useCallback(async (showLoading = true) => {
     if (showLoading) {
@@ -35,11 +39,17 @@ const GoalsPage: React.FC = () => {
       setError(null);
     }
     try {
-      const filters: GoalsFilters = {};
-      if (filterStatus !== 'all') {
-        filters.status = filterStatus;
+      // Charger les goals et les statistiques en parallèle lors du chargement initial
+      const [data, stats] = await Promise.all([
+        goalsService.list(filters),
+        isInitialLoadRef.current ? goalsService.getStatistics().catch(() => null) : Promise.resolve(null)
+      ]);
+      
+      // Mettre à jour les statistiques si chargées
+      if (stats) {
+        setStatistics(stats);
       }
-      const data = await goalsService.list(filters);
+      
       // S'assurer que data est toujours un tableau
       const newGoals = Array.isArray(data) ? data : [];
       
@@ -150,9 +160,13 @@ const GoalsPage: React.FC = () => {
     } finally {
       if (showLoading) {
         setLoading(false);
+        // Marquer que le chargement initial est terminé
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
+        }
       }
     }
-  }, [filterStatus, t]);
+  }, [filters, t]);
   
   useEffect(() => {
     loadGoals();
@@ -173,6 +187,11 @@ const GoalsPage: React.FC = () => {
   // Charger les statistiques séparément pour avoir les compteurs corrects
   // Utiliser un debounce pour éviter les rechargements trop fréquents
   useEffect(() => {
+    // Ne pas charger les statistiques lors du chargement initial pour éviter les sauts
+    if (isInitialLoadRef.current && loading) {
+      return;
+    }
+    
     const loadStatistics = async () => {
       try {
         const stats = await goalsService.getStatistics();
@@ -191,14 +210,13 @@ const GoalsPage: React.FC = () => {
         });
       } catch (err) {
         // Ignorer les erreurs de statistiques, ce n'est pas critique
-        console.error('Failed to load goal statistics:', err);
       }
     };
     
-    // Debounce pour éviter les appels trop fréquents
-    const timeoutId = setTimeout(loadStatistics, 300);
+    // Debounce pour éviter les appels trop fréquents, mais seulement après le chargement initial
+    const timeoutId = setTimeout(loadStatistics, isInitialLoadRef.current ? 0 : 300);
     return () => clearTimeout(timeoutId);
-  }, [goals]); // Recharger quand les objectifs changent
+  }, [goals, loading]); // Recharger quand les objectifs changent
   
   useEffect(() => {
     const loadAccounts = async () => {
@@ -277,20 +295,13 @@ const GoalsPage: React.FC = () => {
         const stats = await goalsService.getStatistics();
         setStatistics(stats);
       } catch (err) {
-        console.error('Failed to reload statistics:', err);
+        // Ignorer les erreurs de statistiques
       }
       
-      // Si le filtre est sur "active", changer pour "all" pour voir l'objectif annulé
-      // Puis recharger les données avec le nouveau filtre
-      if (filterStatus === 'active') {
-        setFilterStatus('all');
-        // Le useEffect se chargera de recharger les données
-      } else {
-        // Sinon, mettre à jour directement l'objectif dans la liste locale
-        setGoals(prevGoals => 
-          prevGoals.map(g => g.id === goal.id ? { ...g, ...updatedGoal, status: 'cancelled' as const } : g)
-        );
-      }
+      // Mettre à jour directement l'objectif dans la liste locale
+      setGoals(prevGoals => 
+        prevGoals.map(g => g.id === goal.id ? { ...g, ...updatedGoal, status: 'cancelled' as const } : g)
+      );
     } catch (err: any) {
       toast.error(err.message || t('goals:cancelError', { defaultValue: 'Erreur lors de l\'annulation' }), {
         duration: 4000,
@@ -311,19 +322,13 @@ const GoalsPage: React.FC = () => {
         const stats = await goalsService.getStatistics();
         setStatistics(stats);
       } catch (err) {
-        console.error('Failed to reload statistics:', err);
+        // Ignorer les erreurs de statistiques
       }
       
       // Mettre à jour directement l'objectif dans la liste locale
       setGoals(prevGoals => 
         prevGoals.map(g => g.id === goal.id ? { ...g, ...updatedGoal, status: 'active' as const } : g)
       );
-      
-      // Si le filtre est sur "cancelled", changer pour "active" pour voir l'objectif réactivé
-      if (filterStatus === 'cancelled') {
-        setFilterStatus('active');
-        // Le useEffect se chargera de recharger les données
-      }
     } catch (err: any) {
       toast.error(err.message || t('goals:reactivateError', { defaultValue: 'Erreur lors de la réactivation' }), {
         duration: 4000,
@@ -359,119 +364,42 @@ const GoalsPage: React.FC = () => {
   const failedGoals = useMemo(() => goals.filter(g => g.status === 'failed'), [goals]);
   const cancelledGoals = useMemo(() => goals.filter(g => g.status === 'cancelled'), [goals]);
   
-  // Compteurs pour les boutons de filtre (utiliser les statistiques si disponibles)
-  const activeCount = statistics?.active_goals ?? activeGoals.length;
-  const achievedCount = statistics?.achieved_goals ?? achievedGoals.length;
-  const failedCount = statistics?.failed_goals ?? failedGoals.length;
-  const cancelledCount = statistics?.cancelled_goals ?? cancelledGoals.length;
-  const totalCount = statistics?.total_goals ?? goals.length; // Utiliser les statistiques pour le total
-  
-  
+  // Compteurs pour les filtres
+  const goalCounts = useMemo(() => ({
+    all: statistics?.total_goals ?? goals.length,
+    active: statistics?.active_goals ?? activeGoals.length,
+    achieved: statistics?.achieved_goals ?? achievedGoals.length,
+    failed: statistics?.failed_goals ?? failedGoals.length,
+    cancelled: statistics?.cancelled_goals ?? cancelledGoals.length,
+  }), [statistics, goals, activeGoals, achievedGoals, failedGoals, cancelledGoals]);
+
+  // Filtrer les objectifs selon les filtres actifs
+  const filteredGoals = useMemo(() => {
+    let filtered = goals;
+
+    // Le filtrage par statut est déjà fait par l'API, mais on peut ajouter d'autres filtres côté client si nécessaire
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(goal => {
+        const goalTypeLabel = t(`goals:goalTypes.${goal.goal_type}`, { defaultValue: goal.goal_type });
+        const notes = goal.notes?.toLowerCase() || '';
+        return goalTypeLabel.toLowerCase().includes(searchLower) || notes.includes(searchLower);
+      });
+    }
+
+    return filtered;
+  }, [goals, filters, t]);
+
   return (
     <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 bg-gray-50 dark:bg-gray-900">
-      {/* Filtres avec boutons */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
-        <div className="flex flex-col gap-3 sm:gap-4">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <div className="flex flex-wrap gap-2 flex-1 min-w-0">
-              <button
-                onClick={() => setFilterStatus('all')}
-                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
-                  filterStatus === 'all'
-                    ? 'bg-gray-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t('goals:allStatuses')}
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  filterStatus === 'all'
-                    ? 'bg-gray-500 text-white'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {totalCount}
-                </span>
-              </button>
-              <button
-                onClick={() => setFilterStatus('active')}
-                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
-                  filterStatus === 'active'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t('goals:status.active')}
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  filterStatus === 'active'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {activeCount}
-                </span>
-              </button>
-              <button
-                onClick={() => setFilterStatus('achieved')}
-                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
-                  filterStatus === 'achieved'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t('goals:status.achieved')}
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  filterStatus === 'achieved'
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {achievedCount}
-                </span>
-              </button>
-              <button
-                onClick={() => setFilterStatus('failed')}
-                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
-                  filterStatus === 'failed'
-                    ? 'bg-red-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t('goals:status.failed')}
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  filterStatus === 'failed'
-                    ? 'bg-red-500 text-white'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {failedCount}
-                </span>
-              </button>
-              <button
-                onClick={() => setFilterStatus('cancelled')}
-                className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
-                  filterStatus === 'cancelled'
-                    ? 'bg-gray-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                }`}
-              >
-                {t('goals:status.cancelled')}
-                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  filterStatus === 'cancelled'
-                    ? 'bg-gray-500 text-white'
-                    : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                }`}>
-                  {cancelledCount}
-                </span>
-              </button>
-            </div>
-            <button
-              onClick={handleCreateGoal}
-              className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-2"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              {t('goals:createGoal')}
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Filtres avancés */}
+      <GoalFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        tradingAccounts={accounts}
+        goalCounts={goalCounts}
+        onCreateClick={handleCreateGoal}
+      />
       
       {error && (
         <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -480,111 +408,46 @@ const GoalsPage: React.FC = () => {
       )}
       
       {loading ? (
-        <div className="flex items-center justify-center py-8 sm:py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-3 sm:mb-4"></div>
-            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('goals:loading')}</p>
-          </div>
-        </div>
-      ) : goals.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sm:p-12 text-center">
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-3 sm:mb-4">{t('goals:noGoals')}</p>
-          <button
-            onClick={handleCreateGoal}
-            className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            {t('goals:createFirstGoal')}
-          </button>
+        <SkeletonGrid count={6} columns={3} />
+      ) : filteredGoals.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <EmptyState
+            icon={
+              <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+            title={t('goals:noGoals', { defaultValue: 'Aucun objectif' })}
+            description={t('goals:noGoalsDescription', { defaultValue: 'Commencez par créer votre premier objectif de trading.' })}
+            action={
+              <button
+                onClick={handleCreateGoal}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {t('goals:createFirstGoal', { defaultValue: 'Créer mon premier objectif' })}
+              </button>
+            }
+          />
         </div>
       ) : (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Objectifs actifs */}
-          {activeGoals.length > 0 && (filterStatus === 'all' || filterStatus === 'active') && (
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
-                {t('goals:activeGoals')} ({activeGoals.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {activeGoals.map(goal => (
-                  <GoalCard
-                    key={goal.id}
-                    goal={goal}
-                    currencySymbol={getCurrencySymbol(goal)}
-                    onClick={() => handleGoalClick(goal)}
-                    onCancel={handleCancelGoal}
-                    onDelete={handleDeleteClick}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Objectifs atteints */}
-          {achievedGoals.length > 0 && (filterStatus === 'all' || filterStatus === 'achieved') && (
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
-                {t('goals:achievedGoals')} ({achievedGoals.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {achievedGoals.map(goal => (
-                  <GoalCard
-                    key={goal.id}
-                    goal={goal}
-                    currencySymbol={getCurrencySymbol(goal)}
-                    onClick={() => handleGoalClick(goal)}
-                    onDelete={handleDeleteClick}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Objectifs échoués */}
-          {failedGoals.length > 0 && (filterStatus === 'all' || filterStatus === 'failed') && (
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
-                {t('goals:failedGoals')} ({failedGoals.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {failedGoals.map(goal => (
-                  <GoalCard
-                    key={goal.id}
-                    goal={goal}
-                    currencySymbol={getCurrencySymbol(goal)}
-                    onClick={() => handleGoalClick(goal)}
-                    onDelete={handleDeleteClick}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Objectifs annulés */}
-          {cancelledGoals.length > 0 && (filterStatus === 'all' || filterStatus === 'cancelled') && (
-            <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
-                {t('goals:cancelledGoals', { defaultValue: 'Objectifs annulés' })} ({cancelledGoals.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {cancelledGoals.map(goal => (
-                  <GoalCard
-                    key={goal.id}
-                    goal={goal}
-                    currencySymbol={getCurrencySymbol(goal)}
-                    onClick={() => handleGoalClick(goal)}
-                    onReactivate={handleReactivateGoal}
-                    onDelete={handleDeleteClick}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredGoals.map(goal => (
+            <GoalCardEnhanced
+              key={goal.id}
+              goal={goal}
+              currencySymbol={getCurrencySymbol(goal)}
+              onClick={() => handleGoalClick(goal)}
+              onCancel={handleCancelGoal}
+              onReactivate={handleReactivateGoal}
+              onDelete={handleDeleteClick}
+            />
+          ))}
         </div>
       )}
       
       <FloatingActionButton onClick={handleCreateGoal} title={t('goals:createGoal')} />
       
-      <GoalModal
+      <GoalWizard
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onSave={handleGoalSaved}

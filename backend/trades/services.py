@@ -28,6 +28,29 @@ class GoalProgressCalculator:
             return value
         return Decimal(str(value))
     
+    def _get_target_value(self, goal: TradingGoal) -> Decimal:
+        """Récupère la valeur cible (threshold_target ou target_value pour rétrocompatibilité)."""
+        if goal.threshold_target is not None:
+            return self._to_decimal(goal.threshold_target)
+        elif goal.target_value is not None:
+            return self._to_decimal(goal.target_value)
+        return Decimal('0')
+    
+    def _calculate_percentage(self, goal: TradingGoal, current_value: Decimal, target_value: Decimal) -> float:
+        """Calcule le pourcentage de progression selon la direction."""
+        if target_value == 0:
+            return 0.0
+        
+        if goal.direction == 'minimum':
+            # Pour minimum : progression = current / target
+            return float(min(100, (current_value / target_value) * 100))
+        else:
+            # Pour maximum : progression = (target - current) / target * 100
+            # Si current > target, progression négative (mais on retourne 0)
+            if current_value >= target_value:
+                return 0.0
+            return float(min(100, ((target_value - current_value) / target_value) * 100))
+    
     def calculate_progress(self, goal: TradingGoal) -> dict:
         """
         Calcule la progression d'un objectif.
@@ -109,10 +132,13 @@ class GoalProgressCalculator:
         total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
         current_value = total_pnl
         
-        # Convertir goal.target_value en Decimal pour les opérations
-        target_value_decimal = self._to_decimal(goal.target_value)
-        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
-        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        target_value_decimal = self._get_target_value(goal)
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+        
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
         
         # Déterminer le statut
         status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
@@ -128,22 +154,27 @@ class GoalProgressCalculator:
     def _calculate_winrate_goal(self, goal: TradingGoal, trades) -> dict:
         """Calcule la progression pour un objectif Win Rate."""
         total_trades = trades.count()
+        target_value_decimal = self._get_target_value(goal)
+        
         if total_trades == 0:
             return {
                 'current_value': Decimal('0'),
                 'percentage': 0,
                 'status': 'active',
                 'remaining_days': goal.remaining_days,
-                'remaining_amount': self._to_decimal(goal.target_value)
+                'remaining_amount': target_value_decimal
             }
         
         winning_trades = trades.filter(net_pnl__gt=0).count()
         win_rate = (winning_trades / total_trades) * 100
         current_value = Decimal(str(win_rate))
         
-        target_value_decimal = self._to_decimal(goal.target_value)
-        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
-        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+        
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
         
         status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
@@ -159,9 +190,13 @@ class GoalProgressCalculator:
         """Calcule la progression pour un objectif Nombre de Trades."""
         current_value = Decimal(str(trades.count()))
         
-        target_value_decimal = self._to_decimal(goal.target_value)
-        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
-        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        target_value_decimal = self._get_target_value(goal)
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+        
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
         
         status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
@@ -185,9 +220,13 @@ class GoalProgressCalculator:
             profit_factor = abs(total_gains) / abs(total_losses)
             current_value = Decimal(str(profit_factor))
         
-        target_value_decimal = self._to_decimal(goal.target_value)
-        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
-        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        target_value_decimal = self._get_target_value(goal)
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+        
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
         
         status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
@@ -201,13 +240,15 @@ class GoalProgressCalculator:
     
     def _calculate_drawdown_goal(self, goal: TradingGoal, trades) -> dict:
         """Calcule la progression pour un objectif Drawdown Maximum."""
+        target_value_decimal = self._get_target_value(goal)
+        
         if not trades.exists():
             return {
                 'current_value': Decimal('0'),
                 'percentage': 0,
                 'status': 'active',
                 'remaining_days': goal.remaining_days,
-                'remaining_amount': self._to_decimal(goal.target_value)
+                'remaining_amount': target_value_decimal
             }
         
         # Calculer le drawdown maximum
@@ -248,12 +289,11 @@ class GoalProgressCalculator:
         
         # Pour le drawdown maximum, la valeur cible est TOUJOURS en pourcentage
         # Calculer le drawdown en pourcentage
-        target_value_decimal = self._to_decimal(goal.target_value)
         max_drawdown_pct = (max_drawdown / peak_capital * 100) if peak_capital > 0 else Decimal('0')
         current_value = max_drawdown_pct
         
         # Pour le drawdown, on veut que la valeur actuelle soit STRICTEMENT INFÉRIEURE à la cible
-        # (moins de drawdown = mieux)
+        # (moins de drawdown = mieux) - c'est toujours un objectif "maximum" (ne pas dépasser)
         # Si on atteint ou dépasse le drawdown maximum, c'est un échec immédiat
         # Si on reste en dessous ET que la période se termine, c'est une réussite
         if current_value >= target_value_decimal:
@@ -268,12 +308,14 @@ class GoalProgressCalculator:
                 status = 'achieved'
             else:
                 # La période n'est pas encore terminée, on continue à surveiller
-                # Calculer le pourcentage de progression (inverse : plus on est loin de la limite, mieux c'est)
-                percentage_float = float((target_value_decimal / current_value * 100) if current_value > 0 else 100)
+                # Calculer le pourcentage de progression : montrer combien de la marge de sécurité a été utilisée
+                # Pour drawdown : current_value / target_value * 100 (ex: 2% / 5% = 40% de la marge utilisée)
+                # Utiliser la méthode standard pour les objectifs "maximum" (ne pas dépasser)
+                percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
                 status = 'active'
         else:
             # Cas par défaut (ne devrait pas arriver)
-            percentage_float = float((target_value_decimal / current_value * 100) if current_value > 0 else 0)
+            percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
             status = 'active' if goal.remaining_days > 0 else 'failed'
         
         remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
@@ -297,23 +339,28 @@ class GoalProgressCalculator:
             user=goal.user
         )
         
+        target_value_decimal = self._get_target_value(goal)
         total_strategies = strategies.count()
+        
         if total_strategies == 0:
             return {
                 'current_value': Decimal('0'),
                 'percentage': 0,
                 'status': 'active',
                 'remaining_days': goal.remaining_days,
-                'remaining_amount': self._to_decimal(goal.target_value)
+                'remaining_amount': target_value_decimal
             }
         
         respected_count = strategies.filter(strategy_respected=True).count()
         respect_percentage = (respected_count / total_strategies) * 100
         current_value = Decimal(str(respect_percentage))
         
-        target_value_decimal = self._to_decimal(goal.target_value)
-        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
-        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+        
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
         
         status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
@@ -335,9 +382,13 @@ class GoalProgressCalculator:
         winning_days = sum(1 for day in daily_pnl if day['daily_total'] and day['daily_total'] > 0)
         current_value = Decimal(str(winning_days))
         
-        target_value_decimal = self._to_decimal(goal.target_value)
-        percentage_float = float((current_value / target_value_decimal * 100) if target_value_decimal != 0 else 0)
-        remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        target_value_decimal = self._get_target_value(goal)
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+        
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
         
         status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         
@@ -355,7 +406,20 @@ class GoalProgressCalculator:
         if goal.status == 'cancelled':
             return 'cancelled'
         
-        # Si objectif atteint
+        # Vérifier selon la direction
+        if goal.direction == 'minimum':
+            # Objectif à atteindre
+            if current_value >= target_value:
+                return 'achieved'
+        else:
+            # Objectif à ne pas dépasser
+            if current_value > target_value:
+                return 'failed'
+            # Si on est en dessous et la période est terminée, c'est une réussite
+            if goal.remaining_days <= 0 and current_value <= target_value:
+                return 'achieved'
+        
+        # Si objectif atteint (pourcentage >= 100)
         if percentage >= 100:
             return 'achieved'
         

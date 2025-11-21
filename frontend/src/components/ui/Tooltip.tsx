@@ -54,20 +54,20 @@ const Tooltip: React.FC<TooltipProps> = ({
 
     switch (position) {
       case 'top':
-        top = triggerRect.top - tooltipRect.height - 8;
+        top = triggerRect.top - tooltipRect.height - 4;
         left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
         break;
       case 'bottom':
-        top = triggerRect.bottom + 8;
+        top = triggerRect.bottom + 2;
         left = triggerRect.left + (triggerRect.width - tooltipRect.width) / 2;
         break;
       case 'left':
         top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
-        left = triggerRect.left - tooltipRect.width - 8;
+        left = triggerRect.left - tooltipRect.width - 4;
         break;
       case 'right':
         top = triggerRect.top + (triggerRect.height - tooltipRect.height) / 2;
-        left = triggerRect.right + 8;
+        left = triggerRect.right + 4;
         break;
     }
 
@@ -81,6 +81,7 @@ const Tooltip: React.FC<TooltipProps> = ({
       top = viewportHeight - tooltipRect.height - 8;
     }
 
+    // Appliquer l'offset (pour bottom, offset négatif rapproche le tooltip)
     setTooltipPosition({ 
       top: top + (offset.y || 0), 
       left: left + (offset.x || 0) 
@@ -89,12 +90,17 @@ const Tooltip: React.FC<TooltipProps> = ({
 
   useEffect(() => {
     if (isVisible) {
-      // Utiliser requestAnimationFrame pour éviter les problèmes de timing
+      // Utiliser requestAnimationFrame avec un délai pour s'assurer que le tooltip est rendu
       const updatePositionFrame = () => {
-        updatePosition();
+        // Double requestAnimationFrame pour s'assurer que le DOM est mis à jour
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            updatePosition();
+          });
+        });
       };
       
-      requestAnimationFrame(updatePositionFrame);
+      updatePositionFrame();
       
       const handleResize = () => updatePosition();
       const handleScroll = () => updatePosition();
@@ -134,11 +140,17 @@ const Tooltip: React.FC<TooltipProps> = ({
     }
   };
 
+  // Détecter si className contient "block" ou "w-full" pour utiliser block au lieu de inline-block
+  // Utiliser une regex pour matcher les classes complètes et éviter les conflits avec "inline-block"
+  const hasBlockClass = /\bblock\b/.test(className) && !/\binline-block\b/.test(className);
+  const hasWFullClass = /\bw-full\b/.test(className);
+  const displayClass = hasBlockClass || hasWFullClass ? 'block' : 'inline-block';
+  
   return (
     <>
       <div
         ref={triggerRef}
-        className={`inline-block ${className}`}
+        className={`${displayClass} ${className}`}
         onMouseEnter={showTooltip}
         onMouseLeave={hideTooltip}
         onFocus={showTooltip}

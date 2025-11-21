@@ -9,7 +9,6 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const TradingAccountsPage: React.FC = () => {
   const { t } = useI18nTranslation();
-  const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [allAccounts, setAllAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);

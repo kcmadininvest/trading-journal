@@ -5,8 +5,11 @@ export interface TradingGoal {
   user: number;
   user_username?: string;
   goal_type: 'pnl_total' | 'win_rate' | 'trades_count' | 'profit_factor' | 'max_drawdown' | 'strategy_respect' | 'winning_days';
+  direction?: 'minimum' | 'maximum';
   period_type: 'monthly' | 'quarterly' | 'yearly' | 'custom';
-  target_value: string | number;
+  threshold_target?: string | number;
+  threshold_warning?: string | number | null;
+  target_value?: string | number; // Déprécié, gardé pour rétrocompatibilité
   current_value: string | number;
   start_date: string;
   end_date: string;
@@ -18,6 +21,7 @@ export interface TradingGoal {
   progress_percentage?: number;
   remaining_days?: number;
   is_overdue?: boolean;
+  zone_status?: 'success' | 'progress' | 'danger' | 'failed' | 'cancelled';
   created_at?: string;
   updated_at?: string;
   last_achieved_alert_sent?: string;
@@ -45,6 +49,9 @@ export interface GoalsFilters {
   status?: string;
   period_type?: string;
   trading_account?: number;
+  goal_type?: string;
+  direction?: string;
+  search?: string;
 }
 
 class GoalsService {
@@ -110,6 +117,9 @@ class GoalsService {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.period_type) params.append('period_type', filters.period_type);
     if (filters?.trading_account) params.append('trading_account', filters.trading_account.toString());
+    if (filters?.goal_type) params.append('goal_type', filters.goal_type);
+    if (filters?.direction) params.append('direction', filters.direction);
+    if (filters?.search) params.append('search', filters.search);
     // Désactiver la pagination pour récupérer tous les objectifs
     params.append('page_size', '10000');
 

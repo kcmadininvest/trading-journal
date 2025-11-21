@@ -682,6 +682,7 @@ class TradingGoalSerializer(serializers.ModelSerializer):
     progress_percentage = serializers.FloatField(read_only=True)
     remaining_days = serializers.IntegerField(read_only=True)
     is_overdue = serializers.BooleanField(read_only=True)
+    zone_status = serializers.CharField(read_only=True)
     
     class Meta:
         model = TradingGoal
@@ -690,8 +691,11 @@ class TradingGoalSerializer(serializers.ModelSerializer):
             'user',
             'user_username',
             'goal_type',
+            'direction',
             'period_type',
-            'target_value',
+            'threshold_target',
+            'threshold_warning',
+            'target_value',  # Gardé pour rétrocompatibilité
             'current_value',
             'start_date',
             'end_date',
@@ -703,6 +707,7 @@ class TradingGoalSerializer(serializers.ModelSerializer):
             'progress_percentage',
             'remaining_days',
             'is_overdue',
+            'zone_status',
             'created_at',
             'updated_at',
             'last_achieved_alert_sent',
@@ -718,11 +723,45 @@ class TradingGoalSerializer(serializers.ModelSerializer):
                     'end_date': 'La date de fin doit être après la date de début.'
                 })
         
-        # Vérifier que target_value est positif
-        if 'target_value' in data and data['target_value'] <= 0:
+        # Utiliser threshold_target si fourni, sinon target_value pour rétrocompatibilité
+        # Utiliser des vérifications explicites avec None pour éviter que 0 soit traité comme falsy
+        threshold_target = data.get('threshold_target')
+        if threshold_target is None:
+            threshold_target = self.instance.threshold_target if self.instance else None
+        
+        target_value = data.get('target_value')
+        if target_value is None:
+            target_value = self.instance.target_value if self.instance else None
+        
+        # Si threshold_target n'est pas fourni mais target_value l'est, copier target_value vers threshold_target
+        if threshold_target is None and target_value is not None:
+            data['threshold_target'] = target_value
+            threshold_target = target_value
+        
+        # Vérifier qu'au moins une valeur cible est fournie
+        final_target = threshold_target if threshold_target is not None else target_value
+        if final_target is None or final_target <= 0:
             raise serializers.ValidationError({
-                'target_value': 'La valeur cible doit être positive.'
+                'threshold_target': 'Le seuil cible doit être positif.'
             })
+        
+        # Vérifier la cohérence des seuils selon la direction
+        direction = data.get('direction', self.instance.direction if self.instance else 'minimum')
+        threshold_warning = data.get('threshold_warning')
+        
+        if threshold_warning is not None:
+            if direction == 'minimum':
+                # Pour minimum : warning < target
+                if threshold_warning >= final_target:
+                    raise serializers.ValidationError({
+                        'threshold_warning': 'Le seuil d\'alerte doit être inférieur au seuil cible pour un objectif à atteindre.'
+                    })
+            else:
+                # Pour maximum : warning > target
+                if threshold_warning <= final_target:
+                    raise serializers.ValidationError({
+                        'threshold_warning': 'Le seuil d\'alerte doit être supérieur au seuil cible pour un objectif à ne pas dépasser.'
+                    })
         
         # Vérifier que priority est entre 1 et 5
         if 'priority' in data:

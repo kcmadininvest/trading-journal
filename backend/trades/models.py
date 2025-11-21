@@ -1292,6 +1292,11 @@ class TradingGoal(models.Model):
         ('cancelled', 'Annulé'),
     ]
     
+    DIRECTION_CHOICES = [
+        ('minimum', 'Atteindre ou dépasser'),
+        ('maximum', 'Ne pas dépasser'),
+    ]
+    
     # Identification
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -1308,6 +1313,15 @@ class TradingGoal(models.Model):
         help_text='Type de métrique à suivre'
     )
     
+    # Direction de l'objectif
+    direction = models.CharField(
+        max_length=10,
+        choices=DIRECTION_CHOICES,
+        default='minimum',
+        verbose_name='Direction',
+        help_text='Atteindre ou ne pas dépasser la valeur cible'
+    )
+    
     # Période
     period_type = models.CharField(
         max_length=20,
@@ -1316,12 +1330,31 @@ class TradingGoal(models.Model):
         help_text='Période de l\'objectif'
     )
     
-    # Valeurs
+    # Valeurs - Nouveau système avec seuils
+    threshold_target = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        verbose_name='Seuil cible',
+        help_text='Valeur cible à atteindre ou ne pas dépasser'
+    )
+    
+    threshold_warning = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        verbose_name='Seuil d\'alerte',
+        help_text='Seuil d\'alerte (optionnel) pour identifier les objectifs en danger'
+    )
+    
+    # Ancien champ target_value pour rétrocompatibilité (déprécié)
     target_value = models.DecimalField(
         max_digits=18,
         decimal_places=9,
-        verbose_name='Valeur cible',
-        help_text='Valeur à atteindre'
+        null=True,
+        blank=True,
+        verbose_name='Valeur cible (déprécié)',
+        help_text='Valeur à atteindre (utiliser threshold_target à la place)'
     )
     
     current_value = models.DecimalField(
@@ -1419,11 +1452,72 @@ class TradingGoal(models.Model):
     @property
     def progress_percentage(self):
         """Calcule le pourcentage de progression."""
-        target_val = float(self.target_value) if self.target_value is not None else 0  # type: ignore
+        # Utiliser threshold_target si disponible, sinon target_value pour rétrocompatibilité
+        target_val = float(self.threshold_target) if self.threshold_target is not None else (float(self.target_value) if self.target_value is not None else 0)  # type: ignore
         current_val = float(self.current_value) if self.current_value is not None else 0  # type: ignore
+        
         if target_val == 0:
             return 0
-        return min(100, (current_val / target_val) * 100)
+        
+        # Calcul selon la direction
+        if self.direction == 'minimum':
+            # Pour minimum : progression = current / target
+            return min(100, (current_val / target_val) * 100)
+        else:
+            # Pour maximum : progression = (target - current) / target * 100
+            # Si current > target, progression négative (mais on retourne 0)
+            if current_val >= target_val:
+                return 0
+            return min(100, ((target_val - current_val) / target_val) * 100)
+    
+    @property
+    def zone_status(self):
+        """Détermine la zone actuelle (success, progress, danger, failed)."""
+        if self.status == 'cancelled':
+            return 'cancelled'
+        if self.status == 'achieved':
+            return 'success'
+        if self.status == 'failed':
+            return 'failed'
+        
+        current_val = float(self.current_value) if self.current_value is not None else 0  # type: ignore
+        target_val = float(self.threshold_target) if self.threshold_target is not None else (float(self.target_value) if self.target_value is not None else 0)  # type: ignore
+        warning_val = float(self.threshold_warning) if self.threshold_warning is not None else None  # type: ignore
+        
+        if self.direction == 'minimum':
+            # Objectif à atteindre
+            if current_val >= target_val:
+                return 'success'
+            elif warning_val is not None and current_val >= warning_val:
+                return 'progress'
+            elif warning_val is not None and current_val < warning_val:
+                return 'danger'
+            else:
+                # Pas de seuil d'alerte, calculer basé sur la progression
+                progress = self.progress_percentage
+                if progress >= 75:
+                    return 'progress'
+                elif progress >= 50:
+                    return 'progress'
+                else:
+                    return 'danger'
+        else:
+            # Objectif à ne pas dépasser
+            if current_val > target_val:
+                return 'failed'
+            elif warning_val is not None and current_val > warning_val:
+                return 'danger'
+            elif warning_val is not None and current_val <= warning_val:
+                return 'progress'
+            else:
+                # Pas de seuil d'alerte, calculer basé sur la progression
+                progress = self.progress_percentage
+                if progress >= 75:
+                    return 'progress'
+                elif progress >= 50:
+                    return 'progress'
+                else:
+                    return 'danger'
     
     @property
     def remaining_days(self):
