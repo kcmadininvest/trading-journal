@@ -376,6 +376,7 @@ if [ ! -z "$CURRENT_REQUIREMENTS_HASH" ]; then
 fi
 
 # 6. 🔧 Build du frontend React
+cd "$FRONTEND_DIR"
 info "Compilation du frontend React en mode production..."
 echo "Utilisation du fichier .env.production: $ENV_PRODUCTION"
 
