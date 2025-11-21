@@ -25,10 +25,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default=None)
 if not SECRET_KEY:
     if DEBUG:
-        # En développement uniquement, utiliser une clé par défaut
-        SECRET_KEY = 'django-insecure-dev-only-change-in-production-q^3+nfy&7o#md%0pmv&%ii2k+#!m#siz$(eq6(yqwkd8ji&s=l'
+        # En développement uniquement, générer une clé aléatoire
+        import secrets
+        import warnings
+        SECRET_KEY = secrets.token_urlsafe(50)
+        warnings.warn(
+            "SECRET_KEY générée automatiquement en développement. "
+            "Définir SECRET_KEY dans .env pour la production.",
+            UserWarning
+        )
     else:
-        raise ValueError("SECRET_KEY doit être défini dans les variables d'environnement pour la production")
+        raise ValueError(
+            "SECRET_KEY doit être défini dans les variables d'environnement pour la production. "
+            "Générez une clé avec: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
+        )
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -134,6 +144,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Password Hashing - Utiliser Argon2 (plus sécurisé que PBKDF2)
+# Note: argon2-cffi est dans requirements.txt
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',  # Plus sécurisé
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+    'django.contrib.auth.hashers.ScryptPasswordHasher',
+]
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -191,12 +211,12 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
     
-    # Content Security Policy (CSP)
-    # Note: Ajuster selon les besoins de l'application
+    # Content Security Policy (CSP) - Production
+    # En production, retirer unsafe-inline et unsafe-eval pour une meilleure sécurité
     SECURE_CONTENT_SECURITY_POLICY = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "  # 'unsafe-eval' nécessaire pour React en dev
-        "style-src 'self' 'unsafe-inline'; "
+        "script-src 'self'; "  # Retirer 'unsafe-inline' et 'unsafe-eval' en production
+        "style-src 'self' 'unsafe-inline'; "  # Nécessaire pour certains frameworks CSS
         "img-src 'self' data: https:; "
         "font-src 'self' data:; "
         "connect-src 'self'; "
@@ -205,6 +225,17 @@ if not DEBUG:
     
     # Referrer Policy
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+else:
+    # En développement, permettre unsafe-inline pour React DevTools
+    SECURE_CONTENT_SECURITY_POLICY = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none';"
+    )
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config(
@@ -388,7 +419,7 @@ LOGGING = {
             'style': '{',
         },
         'security': {
-            'format': '[SECURITY] {asctime} {levelname} {module} {message}',
+            'format': '[SECURITY] {asctime} {levelname} {module} {pathname}:{lineno} {message}',
             'style': '{',
         },
     },
@@ -398,13 +429,17 @@ LOGGING = {
             'formatter': 'verbose',
         },
         'file': {
-            'class': 'logging.FileHandler',
-            'filename': '/tmp/django.log',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/httpd/trading_journal_django.log' if not DEBUG else '/tmp/django.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10MB
+            'backupCount': 5,
             'formatter': 'verbose',
         },
         'security_file': {
-            'class': 'logging.FileHandler',
-            'filename': '/tmp/django_security.log',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': '/var/log/httpd/trading_journal_django_security.log' if not DEBUG else '/tmp/django_security.log',
+            'maxBytes': 10 * 1024 * 1024,  # 10MB
+            'backupCount': 10,  # Conserver plus de backups pour la sécurité
             'formatter': 'security',
         },
     },
@@ -424,6 +459,11 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
+        'django.security': {
+            'handlers': ['security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
     },
     'root': {
         'handlers': ['console', 'file'],
@@ -431,19 +471,28 @@ LOGGING = {
     },
 }
 
-# Configuration pour les URLs relatives en développement
+# Configuration pour les URLs relatives et proxy inverses
 if DEBUG:
     USE_X_FORWARDED_HOST = True
     SECURE_PROXY_SSL_HEADER = None
+else:
+    # En production, configurer pour les proxies inverses (Apache/Nginx)
+    USE_X_FORWARDED_HOST = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+
+# S'assurer que les mots de passe email ne sont pas loggés
+if EMAIL_HOST_PASSWORD:
+    import logging
+    logging.getLogger('django.core.mail').setLevel(logging.WARNING)
 
 # Frontend URL pour les liens d'activation
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
