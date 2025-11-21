@@ -22,13 +22,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-q^3+nfy&7o#md%0pmv&%ii2k+#!m#siz$(eq6(yqwkd8ji&s=l')
+SECRET_KEY = config('SECRET_KEY', default=None)
+if not SECRET_KEY:
+    if DEBUG:
+        # En développement uniquement, utiliser une clé par défaut
+        SECRET_KEY = 'django-insecure-dev-only-change-in-production-q^3+nfy&7o#md%0pmv&%ii2k+#!m#siz$(eq6(yqwkd8ji&s=l'
+    else:
+        raise ValueError("SECRET_KEY doit être défini dans les variables d'environnement pour la production")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-#ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,app.kctradingjournal.com,185.217.126.243,localhost:8001,127.0.0.1:8001', cast=lambda v: [s.strip() for s in v.split(',')])
-ALLOWED_HOSTS = ['*']  # Temporaire pour les tests
+# Configuration sécurisée des hôtes autorisés
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost,127.0.0.1' if DEBUG else '',
+    cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
+)
+if not ALLOWED_HOSTS and not DEBUG:
+    raise ValueError("ALLOWED_HOSTS doit être défini dans les variables d'environnement pour la production")
 
 
 # Application definition
@@ -178,15 +190,34 @@ if not DEBUG:
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
+    
+    # Content Security Policy (CSP)
+    # Note: Ajuster selon les besoins de l'application
+    SECURE_CONTENT_SECURITY_POLICY = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "  # 'unsafe-eval' nécessaire pour React en dev
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' data:; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none';"
+    )
+    
+    # Referrer Policy
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://127.0.0.1:3000',
-    cast=lambda v: [s.strip() for s in v.split(',')]
+    default='http://localhost:3000,http://127.0.0.1:3000' if DEBUG else '',
+    cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
 )
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # Permettre toutes les origines en développement
+# SÉCURITÉ : Ne jamais permettre toutes les origines, même en développement
+# Utiliser CORS_ALLOWED_ORIGINS pour spécifier les origines autorisées
+CORS_ALLOW_ALL_ORIGINS = False
+if not CORS_ALLOWED_ORIGINS and not DEBUG:
+    raise ValueError("CORS_ALLOWED_ORIGINS doit être défini dans les variables d'environnement pour la production")
 CORS_ALLOWED_HEADERS = [
     'accept',
     'accept-encoding',
@@ -209,6 +240,19 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'trades.pagination.CustomPageNumberPagination',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # Rate Limiting - Protection contre les attaques par force brute
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',  # Utilisateurs non authentifiés
+        'user': '1000/hour',  # Utilisateurs authentifiés
+        'login': '5/minute',  # Endpoint de login (personnalisé)
+        'register': '3/hour',  # Endpoint d'inscription (personnalisé)
+        'activate': '10/hour',  # Endpoint d'activation (personnalisé)
+        'password_reset': '3/hour',  # Réinitialisation de mot de passe (personnalisé)
+    },
 }
 
 # JWT Settings - Configuration sécurisée avec déconnexion automatique et blacklist
@@ -294,15 +338,41 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
 # Cache Settings
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': config('REDIS_URL', default='redis://localhost:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+# En développement, utiliser un cache local si Redis n'est pas disponible
+if DEBUG:
+    try:
+        import redis
+        redis_client = redis.Redis.from_url(config('REDIS_URL', default='redis://localhost:6379/1'))
+        redis_client.ping()
+        # Redis est disponible, utiliser Redis
+        CACHES = {
+            'default': {
+                'BACKEND': 'django_redis.cache.RedisCache',
+                'LOCATION': config('REDIS_URL', default='redis://localhost:6379/1'),
+                'OPTIONS': {
+                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                }
+            }
+        }
+    except (redis.ConnectionError, ImportError, Exception):
+        # Redis non disponible, utiliser un cache local en mémoire
+        CACHES = {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+                'LOCATION': 'unique-snowflake',
+            }
+        }
+else:
+    # En production, utiliser Redis (doit être disponible)
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': config('REDIS_URL', default='redis://localhost:6379/1'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
         }
     }
-}
 
 # Logging Configuration
 LOGGING = {
@@ -317,6 +387,10 @@ LOGGING = {
             'format': '{levelname} {message}',
             'style': '{',
         },
+        'security': {
+            'format': '[SECURITY] {asctime} {levelname} {module} {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
@@ -328,6 +402,11 @@ LOGGING = {
             'filename': '/tmp/django.log',
             'formatter': 'verbose',
         },
+        'security_file': {
+            'class': 'logging.FileHandler',
+            'filename': '/tmp/django_security.log',
+            'formatter': 'security',
+        },
     },
     'loggers': {
         'trades': {
@@ -338,6 +417,11 @@ LOGGING = {
         'django': {
             'handlers': ['console', 'file'],
             'level': 'INFO',
+            'propagate': False,
+        },
+        'security': {
+            'handlers': ['console', 'security_file'],
+            'level': 'WARNING',
             'propagate': False,
         },
     },

@@ -2,6 +2,7 @@ from rest_framework import status, generics, permissions
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
@@ -13,9 +14,11 @@ from django.shortcuts import get_object_or_404
 from django.conf import settings
 from rolepermissions.decorators import has_permission_decorator
 from rolepermissions.checkers import has_permission
+import logging
 
 from .models import User, UserPreferences, LoginHistory, EmailActivationToken
 from .utils import send_activation_email, create_activation_token
+from .throttling import LoginThrottle, RegisterThrottle, ActivationThrottle, PasswordResetThrottle
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -60,8 +63,10 @@ def safe_first(model, user, order_by):
 class CustomTokenObtainPairView(TokenObtainPairView):
     """
     Vue personnalisée pour l'obtention des tokens JWT avec gestion de session
+    Protection contre les attaques par force brute avec rate limiting
     """
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_classes = [LoginThrottle]
     
     def post(self, request, *args, **kwargs):
         """Enregistrer l'historique de connexion"""
@@ -105,22 +110,36 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 logger = logging.getLogger(__name__)
                 logger.warning(f"Erreur lors de l'enregistrement de l'historique de connexion: {str(e)}")
         else:
-            # Enregistrer les tentatives de connexion échouées
+            # Enregistrer les tentatives de connexion échouées avec logging détaillé
             try:
                 email = request.data.get('email')
+                ip_address = self._get_client_ip(request)
+                user_agent = request.META.get('HTTP_USER_AGENT', '')
+                
+                # Logger la tentative échouée
+                logger = logging.getLogger('security')
+                logger.warning(
+                    f"Tentative de connexion échouée - Email: {email}, IP: {ip_address}, "
+                    f"User-Agent: {user_agent}, Status: {response.status_code}"
+                )
+                
                 if email:
                     try:
                         user = User.objects.get(email=email)
                         LoginHistory.objects.create(
                             user=user,
-                            ip_address=self._get_client_ip(request),
-                            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                            ip_address=ip_address,
+                            user_agent=user_agent,
                             success=False
                         )
                     except User.DoesNotExist:
-                        pass
-            except Exception:
-                pass
+                        # Logger les tentatives avec des emails inexistants (possible reconnaissance)
+                        logger.warning(
+                            f"Tentative de connexion avec email inexistant - Email: {email}, IP: {ip_address}"
+                        )
+            except Exception as e:
+                logger = logging.getLogger('security')
+                logger.error(f"Erreur lors de l'enregistrement de la tentative de connexion échouée: {str(e)}")
         
         return response
     
@@ -138,8 +157,10 @@ class UserRegistrationView(APIView):
     """
     Vue pour l'inscription des utilisateurs
     Le compte est désactivé par défaut et nécessite une activation par email
+    Protection contre le spam d'inscriptions avec rate limiting
     """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [RegisterThrottle]
     
     def post(self, request):
         try:
@@ -197,23 +218,24 @@ class UserRegistrationView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
         except Exception as e:
-            # Logger l'erreur pour le debugging
+            # Logger l'erreur détaillée côté serveur pour le debugging
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors de l'inscription: {str(e)}", exc_info=True)
             
-            # Retourner une réponse d'erreur JSON
+            # Retourner une réponse d'erreur JSON générique (ne jamais exposer les détails)
             return Response({
-                'error': 'Une erreur est survenue lors de la création du compte.',
-                'detail': str(e) if settings.DEBUG else None
+                'error': 'Une erreur est survenue lors de la création du compte. Veuillez réessayer plus tard ou contacter le support.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class AccountActivationView(APIView):
     """
     Vue pour activer un compte utilisateur via le token d'activation
+    Protection contre les tentatives d'activation abusives avec rate limiting
     """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ActivationThrottle]
     
     def post(self, request, token=None):
         """
@@ -335,8 +357,10 @@ class AccountActivationView(APIView):
 class ResendActivationEmailView(APIView):
     """
     Vue pour renvoyer un email d'activation
+    Protection contre les abus avec rate limiting
     """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ActivationThrottle]
     
     def post(self, request):
         """
@@ -458,8 +482,14 @@ class UserProfileView(APIView):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
+            # Logger l'erreur détaillée côté serveur
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la suppression du compte: {str(e)}", exc_info=True)
+            
+            # Retourner une erreur générique (ne jamais exposer les détails)
             return Response({
-                'error': f'Erreur lors de la suppression du compte: {str(e)}'
+                'error': 'Une erreur est survenue lors de la suppression du compte. Veuillez réessayer plus tard ou contacter le support.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -676,8 +706,14 @@ class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
             }, status=status.HTTP_200_OK)
             
         except Exception as e:
+            # Logger l'erreur détaillée côté serveur
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la suppression: {str(e)}", exc_info=True)
+            
+            # Retourner une erreur générique (ne jamais exposer les détails)
             return Response(
-                {'error': f'Erreur lors de la suppression: {str(e)}'}, 
+                {'error': 'Une erreur est survenue lors de la suppression. Veuillez réessayer plus tard ou contacter le support.'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -790,9 +826,15 @@ class AdminBulkDeleteUsersView(APIView):
                 })
                 
             except Exception as e:
+                # Logger l'erreur détaillée côté serveur
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Erreur lors de la suppression de l'utilisateur {user_id}: {str(e)}", exc_info=True)
+                
+                # Ajouter une erreur générique (ne jamais exposer les détails)
                 errors.append({
                     'user_id': user_id,
-                    'error': f'Erreur lors de la suppression: {str(e)}'
+                    'error': 'Une erreur est survenue lors de la suppression de cet utilisateur.'
                 })
         
         return Response({
@@ -1019,8 +1061,14 @@ class SystemStatsView(APIView):
             })
             
         except Exception as e:
+            # Logger l'erreur détaillée côté serveur
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la récupération des statistiques: {str(e)}", exc_info=True)
+            
+            # Retourner une erreur générique (ne jamais exposer les détails)
             return Response({
-                'error': f'Erreur lors de la récupération des statistiques: {str(e)}'
+                'error': 'Une erreur est survenue lors de la récupération des statistiques. Veuillez réessayer plus tard.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1050,8 +1098,14 @@ def create_system_backup(request):
         })
         
     except Exception as e:
+        # Logger l'erreur détaillée côté serveur
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erreur lors de la création de la sauvegarde: {str(e)}", exc_info=True)
+        
+        # Retourner une erreur générique (ne jamais exposer les détails)
         return Response({
-            'error': f'Erreur lors de la création de la sauvegarde: {str(e)}'
+            'error': 'Une erreur est survenue lors de la création de la sauvegarde. Veuillez réessayer plus tard.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1080,8 +1134,14 @@ def clean_system_logs(request):
         })
         
     except Exception as e:
+        # Logger l'erreur détaillée côté serveur
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erreur lors du nettoyage des logs: {str(e)}", exc_info=True)
+        
+        # Retourner une erreur générique (ne jamais exposer les détails)
         return Response({
-            'error': f'Erreur lors du nettoyage des logs: {str(e)}'
+            'error': 'Une erreur est survenue lors du nettoyage des logs. Veuillez réessayer plus tard.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1110,8 +1170,14 @@ def check_system_integrity(request):
         })
         
     except Exception as e:
+        # Logger l'erreur détaillée côté serveur
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erreur lors de la vérification d'intégrité: {str(e)}", exc_info=True)
+        
+        # Retourner une erreur générique (ne jamais exposer les détails)
         return Response({
-            'error': f'Erreur lors de la vérification d\'intégrité: {str(e)}'
+            'error': 'Une erreur est survenue lors de la vérification d\'intégrité. Veuillez réessayer plus tard.'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1207,8 +1273,14 @@ class ActiveSessionsView(APIView):
             return Response(serializer.data)
             
         except Exception as e:
+            # Logger l'erreur détaillée côté serveur
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la récupération des sessions: {str(e)}", exc_info=True)
+            
+            # Retourner une erreur générique (ne jamais exposer les détails)
             return Response({
-                'error': f'Erreur lors de la récupération des sessions: {str(e)}'
+                'error': 'Une erreur est survenue lors de la récupération des sessions. Veuillez réessayer plus tard.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     def post(self, request):
@@ -1249,8 +1321,14 @@ class ActiveSessionsView(APIView):
                 })
                 
         except Exception as e:
+            # Logger l'erreur détaillée côté serveur
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la déconnexion: {str(e)}", exc_info=True)
+            
+            # Retourner une erreur générique (ne jamais exposer les détails)
             return Response({
-                'error': f'Erreur lors de la déconnexion: {str(e)}'
+                'error': 'Une erreur est survenue lors de la déconnexion. Veuillez réessayer plus tard.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1268,8 +1346,14 @@ class LoginHistoryView(APIView):
             serializer = LoginHistorySerializer(history, many=True)
             return Response(serializer.data)
         except Exception as e:
+            # Logger l'erreur détaillée côté serveur
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de la récupération de l'historique: {str(e)}", exc_info=True)
+            
+            # Retourner une erreur générique (ne jamais exposer les détails)
             return Response({
-                'error': f'Erreur lors de la récupération de l\'historique: {str(e)}'
+                'error': 'Une erreur est survenue lors de la récupération de l\'historique. Veuillez réessayer plus tard.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -1332,7 +1416,12 @@ class DataExportView(APIView):
                         'updated_at': account.updated_at.isoformat() if account.updated_at else None,
                     })
             except Exception as e:
-                export_data['trading_accounts_error'] = str(e)
+                # Logger l'erreur détaillée côté serveur
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Erreur lors de l'export des comptes de trading: {str(e)}", exc_info=True)
+                # Ne pas exposer les détails dans l'export
+                export_data['trading_accounts_error'] = 'Erreur lors de l\'export des comptes de trading'
             
             # Trades
             try:
@@ -1360,7 +1449,12 @@ class DataExportView(APIView):
                         'updated_at': trade.updated_at.isoformat() if trade.updated_at else None,
                     })
             except Exception as e:
-                export_data['trades_error'] = str(e)
+                # Logger l'erreur détaillée côté serveur
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Erreur lors de l'export des trades: {str(e)}", exc_info=True)
+                # Ne pas exposer les détails dans l'export
+                export_data['trades_error'] = 'Erreur lors de l\'export des trades'
             
             # Stratégies
             try:
@@ -1385,7 +1479,12 @@ class DataExportView(APIView):
                         'updated_at': strategy.updated_at.isoformat() if strategy.updated_at else None,
                     })
             except Exception as e:
-                export_data['strategies_error'] = str(e)
+                # Logger l'erreur détaillée côté serveur
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Erreur lors de l'export des stratégies: {str(e)}", exc_info=True)
+                # Ne pas exposer les détails dans l'export
+                export_data['strategies_error'] = 'Erreur lors de l\'export des stratégies'
             
             # Historique des connexions
             try:
@@ -1398,7 +1497,12 @@ class DataExportView(APIView):
                         'success': entry.success,
                     })
             except Exception as e:
-                export_data['login_history_error'] = str(e)
+                # Logger l'erreur détaillée côté serveur
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Erreur lors de l'export de l'historique de connexion: {str(e)}", exc_info=True)
+                # Ne pas exposer les détails dans l'export
+                export_data['login_history_error'] = 'Erreur lors de l\'export de l\'historique de connexion'
             
             # Retourner la réponse JSON
             response = JsonResponse(export_data, json_dumps_params={'indent': 2, 'ensure_ascii': False})
@@ -1407,6 +1511,12 @@ class DataExportView(APIView):
             return response
             
         except Exception as e:
+            # Logger l'erreur détaillée côté serveur
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur lors de l'export des données: {str(e)}", exc_info=True)
+            
+            # Retourner une erreur générique (ne jamais exposer les détails)
             return Response({
-                'error': f'Erreur lors de l\'export des données: {str(e)}'
+                'error': 'Une erreur est survenue lors de l\'export des données. Veuillez réessayer plus tard.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
