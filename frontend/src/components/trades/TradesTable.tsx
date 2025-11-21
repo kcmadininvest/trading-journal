@@ -52,8 +52,9 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
     if (isNaN(plannedNum) || isNaN(actualNum)) {
       return false;
     }
-    // Tolérance de 0.01 pour les arrondis
-    return Math.abs(plannedNum - actualNum) < 0.01;
+    // Comparaison stricte : les R:R doivent être exactement égaux (arrondis à 4 décimales)
+    // pour indiquer que le TP a été atteint exactement
+    return Math.abs(plannedNum - actualNum) < 0.0001;
   };
 
   return (

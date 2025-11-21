@@ -573,7 +573,7 @@ function StatisticsPage() {
                   >
                     <MetricItem
                       label={t('statistics:riskReward.averagePlannedRR', { defaultValue: 'R:R moyen prévu' })}
-                      value={statisticsData.avg_planned_rr > 0 ? `1:${formatNumber(statisticsData.avg_planned_rr, 2)}` : '—'}
+                      value={statisticsData.avg_planned_rr > 0 ? `1:${formatNumber(statisticsData.avg_planned_rr, 3)}` : '—'}
                       tooltip={t('statistics:riskReward.averagePlannedRRTooltip', { defaultValue: 'Ratio Risk/Reward moyen prévu à l\'entrée des trades' })}
                       variant={statisticsData.avg_planned_rr >= 2.0 ? 'success' : statisticsData.avg_planned_rr >= 1.5 ? 'warning' : 'default'}
                     />
@@ -595,7 +595,7 @@ function StatisticsPage() {
                   >
                     <MetricItem
                       label={t('statistics:riskReward.averageActualRR', { defaultValue: 'R:R moyen réel' })}
-                      value={statisticsData.avg_actual_rr > 0 ? `1:${formatNumber(statisticsData.avg_actual_rr, 2)}` : '—'}
+                      value={statisticsData.avg_actual_rr > 0 ? `1:${formatNumber(statisticsData.avg_actual_rr, 3)}` : '—'}
                       tooltip={t('statistics:riskReward.averageActualRRTooltip', { defaultValue: 'Ratio Risk/Reward moyen réel obtenu à la sortie des trades' })}
                       variant={statisticsData.avg_actual_rr >= 2.0 ? 'success' : statisticsData.avg_actual_rr >= 1.5 ? 'warning' : 'default'}
                     />

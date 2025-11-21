@@ -1070,8 +1070,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'trade_efficiency': round(trade_efficiency, 2),
             'current_winning_streak_days': current_winning_streak_days,
             # Statistiques Risk/Reward Ratio
-            'avg_planned_rr': round(avg_planned_rr, 2),
-            'avg_actual_rr': round(avg_actual_rr, 2),
+            'avg_planned_rr': round(avg_planned_rr, 4),  # 4 décimales pour préserver la précision
+            'avg_actual_rr': round(avg_actual_rr, 4),  # 4 décimales pour préserver la précision
             'trades_with_planned_rr': trades_with_planned_rr.count(),
             'trades_with_actual_rr': trades_with_actual_rr.count(),
             'trades_with_both_rr': trades_with_both_rr.count(),

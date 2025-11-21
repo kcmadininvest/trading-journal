@@ -274,6 +274,10 @@ const TradingAccountsPage: React.FC = () => {
                       
                       <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4 w-full">
                         <div className="flex flex-col w-full">
+                          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">ID</div>
+                          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 break-words font-mono">{acc.id}</div>
+                        </div>
+                        <div className="flex flex-col w-full">
                           <div className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">{t('accounts:columns.type')}</div>
                           <span className="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 text-xs capitalize w-full justify-center">
                             {t(`accounts:accountTypes.${acc.account_type}`)}
@@ -372,6 +376,7 @@ const TradingAccountsPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700/50">
                     <tr>
+                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.account')}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.type')}</th>
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.brokerId', { defaultValue: 'ID Broker' })}</th>
@@ -386,6 +391,7 @@ const TradingAccountsPage: React.FC = () => {
                     {loading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <tr key={`skeleton-${i}`}>
+                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/3 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
@@ -398,7 +404,7 @@ const TradingAccountsPage: React.FC = () => {
                       ))
                     ) : filteredAccounts.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
+                        <td colSpan={9} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
                           <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                             {allAccounts.length === 0 
                               ? t('accounts:noAccounts')
@@ -413,6 +419,9 @@ const TradingAccountsPage: React.FC = () => {
                           onClick={() => handleEdit(acc)}
                           className="hover:bg-gray-50/60 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
                         >
+                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-mono">
+                            {acc.id}
+                          </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4">
                             <div className="flex items-center gap-2 min-w-0">
                               <span className="font-medium text-xs sm:text-sm text-gray-900 dark:text-gray-100 truncate">{acc.name}</span>

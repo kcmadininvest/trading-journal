@@ -665,7 +665,9 @@ class TopStepTrade(models.Model):
                 reward = self.entry_price - self.planned_take_profit  # type: ignore
             
             if risk > 0:
-                self.planned_risk_reward_ratio = reward / risk  # type: ignore
+                # Utiliser la valeur absolue du reward pour être cohérent avec le R:R réel
+                # et éviter les R:R prévus négatifs qui peuvent survenir avec des TP mal configurés
+                self.planned_risk_reward_ratio = abs(reward) / risk  # type: ignore
             else:
                 self.planned_risk_reward_ratio = None  # type: ignore
         elif not (self.planned_stop_loss and self.planned_take_profit):
