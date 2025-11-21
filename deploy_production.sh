@@ -299,6 +299,82 @@ if [ ! -z "$CURRENT_LOCKFILE_HASH" ]; then
     info "✅ Hash du package-lock.json sauvegardé pour la prochaine fois"
 fi
 
+# 5.5. 🔧 Vérification et installation des dépendances Python (si nécessaire)
+cd "$BACKEND_DIR"
+
+# Activer l'environnement virtuel si il existe
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+    info "✅ Environnement virtuel activé"
+elif [ -f "../venv/bin/activate" ]; then
+    source ../venv/bin/activate
+    info "✅ Environnement virtuel activé (depuis le répertoire parent)"
+else
+    warn "⚠️  Aucun environnement virtuel trouvé, utilisation de pip3 système"
+fi
+
+# Vérifier si requirements.txt a changé depuis le dernier déploiement
+REQUIREMENTS_FILE="$BACKEND_DIR/requirements.txt"
+REQUIREMENTS_HASH_FILE="$BACKEND_DIR/.requirements.hash"
+CURRENT_REQUIREMENTS_HASH=""
+NEEDS_PIP_INSTALL=false
+
+if [ -f "$REQUIREMENTS_FILE" ]; then
+    # Calculer le hash du requirements.txt actuel
+    CURRENT_REQUIREMENTS_HASH=$(md5sum "$REQUIREMENTS_FILE" 2>/dev/null | cut -d' ' -f1 || sha256sum "$REQUIREMENTS_FILE" 2>/dev/null | cut -d' ' -f1 || echo "")
+    
+    if [ ! -z "$CURRENT_REQUIREMENTS_HASH" ]; then
+        # Vérifier si le hash a changé
+        if [ -f "$REQUIREMENTS_HASH_FILE" ]; then
+            PREVIOUS_REQUIREMENTS_HASH=$(cat "$REQUIREMENTS_HASH_FILE" 2>/dev/null || echo "")
+            if [ "$CURRENT_REQUIREMENTS_HASH" != "$PREVIOUS_REQUIREMENTS_HASH" ]; then
+                info "📦 requirements.txt a changé (hash: ${CURRENT_REQUIREMENTS_HASH:0:8}...), installation des paquets nécessaire..."
+                NEEDS_PIP_INSTALL=true
+            else
+                info "✅ requirements.txt inchangé (hash: ${CURRENT_REQUIREMENTS_HASH:0:8}...), pas besoin de réinstaller les paquets"
+            fi
+        else
+            # Pas de hash précédent, installation nécessaire
+            info "📦 Première installation ou hash manquant, installation des paquets Python..."
+            NEEDS_PIP_INSTALL=true
+        fi
+    else
+        warn "Impossible de calculer le hash de requirements.txt, installation par précaution..."
+        NEEDS_PIP_INSTALL=true
+    fi
+else
+    warn "requirements.txt introuvable, vérification des paquets..."
+    # Vérifier si pip peut lister les paquets installés
+    if ! pip list > /dev/null 2>&1; then
+        error "Impossible d'accéder à pip, vérification manuelle requise"
+        exit 1
+    fi
+fi
+
+# Installer les paquets seulement si nécessaire
+if [ "$NEEDS_PIP_INSTALL" = true ]; then
+    info "Installation des paquets Python depuis requirements.txt..."
+    
+    # Mettre à jour pip d'abord
+    pip install --upgrade pip --quiet 2>/dev/null || warn "Impossible de mettre à jour pip"
+    
+    # Installer les requirements
+    pip install -r "$REQUIREMENTS_FILE" || {
+        error "Échec de l'installation des paquets Python"
+        exit 1
+    }
+    
+    info "✅ Paquets Python installés"
+else
+    info "⏭️  Installation des paquets Python ignorée (requirements.txt inchangé)"
+fi
+
+# Sauvegarder le hash pour la prochaine fois (même si on n'a pas installé)
+if [ ! -z "$CURRENT_REQUIREMENTS_HASH" ]; then
+    echo "$CURRENT_REQUIREMENTS_HASH" > "$REQUIREMENTS_HASH_FILE"
+    info "✅ Hash du requirements.txt sauvegardé pour la prochaine fois"
+fi
+
 # 6. 🔧 Build du frontend React
 info "Compilation du frontend React en mode production..."
 echo "Utilisation du fichier .env.production: $ENV_PRODUCTION"
