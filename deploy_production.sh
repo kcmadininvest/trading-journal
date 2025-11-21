@@ -537,6 +537,20 @@ if [ -f "$ENV_BACKEND" ]; then
     info "✅ Permissions backend/.env (644)"
 fi
 
+# Créer le répertoire de logs Django avec les bonnes permissions
+LOGS_DIR="$BACKEND_DIR/logs"
+if [ ! -d "$LOGS_DIR" ]; then
+    info "Création du répertoire de logs Django: $LOGS_DIR"
+    mkdir -p "$LOGS_DIR" 2>/dev/null || warn "Impossible de créer le répertoire de logs"
+fi
+
+# Configurer les permissions du répertoire de logs pour apache
+if [ -d "$LOGS_DIR" ]; then
+    chown apache:apache "$LOGS_DIR" 2>/dev/null || warn "Impossible de changer le propriétaire du répertoire de logs (peut nécessiter sudo)"
+    chmod 755 "$LOGS_DIR" 2>/dev/null || warn "Impossible de changer les permissions du répertoire de logs"
+    info "✅ Répertoire de logs Django configuré: $LOGS_DIR"
+fi
+
 info "✅ Permissions mises à jour"
 
 # 11. 🧹 Nettoyage des migrations Django (si nécessaire)

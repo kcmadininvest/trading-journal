@@ -406,6 +406,10 @@ else:
     }
 
 # Logging Configuration
+# Créer le répertoire de logs s'il n'existe pas
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -430,14 +434,14 @@ LOGGING = {
         },
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/httpd/trading_journal_django.log' if not DEBUG else '/tmp/django.log',
+            'filename': str(LOGS_DIR / 'django.log') if not DEBUG else '/tmp/django.log',
             'maxBytes': 10 * 1024 * 1024,  # 10MB
             'backupCount': 5,
             'formatter': 'verbose',
         },
         'security_file': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': '/var/log/httpd/trading_journal_django_security.log' if not DEBUG else '/tmp/django_security.log',
+            'filename': str(LOGS_DIR / 'django_security.log') if not DEBUG else '/tmp/django_security.log',
             'maxBytes': 10 * 1024 * 1024,  # 10MB
             'backupCount': 10,  # Conserver plus de backups pour la sécurité
             'formatter': 'security',
