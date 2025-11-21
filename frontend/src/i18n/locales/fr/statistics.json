@@ -77,7 +77,7 @@
     "sortinoRatio": "Sortino Ratio",
     "sortinoRatioTooltip": "Rendement ajusté à la volatilité négative uniquement. Similaire au Sharpe mais ne pénalise que les pertes. > 1.0 = bon",
     "calmarRatio": "Calmar Ratio",
-    "calmarRatioTooltip": "Rendement annuel / Maximum Drawdown. > 1.0 = bon rendement par rapport au risque",
+    "calmarRatioTooltip": "Rendement annuel / Maximum Drawdown. > 1.0 = bon rendement par rapport au risque. Nécessite au moins 30 jours de trading pour être calculé",
     "riskAdjustedPerformance": "Performance Ajustée au Risque",
     "tradeEfficiency": "Efficacité des Trades",
     "tradeEfficiencyTooltip": "Pourcentage de trades où le Take Profit a été atteint. Plus élevé = meilleure exécution"

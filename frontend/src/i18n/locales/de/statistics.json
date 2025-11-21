@@ -77,7 +77,7 @@
     "sortinoRatio": "Sortino-Verhältnis",
     "sortinoRatioTooltip": "Rendite angepasst nur an negative Volatilität. Ähnlich wie Sharpe, bestraft aber nur Verluste. > 1.0 = gut",
     "calmarRatio": "Calmar-Verhältnis",
-    "calmarRatioTooltip": "Jahresrendite / Maximaler Drawdown. > 1.0 = gute Rendite relativ zum Risiko",
+    "calmarRatioTooltip": "Jahresrendite / Maximaler Drawdown. > 1.0 = gute Rendite relativ zum Risiko. Erfordert mindestens 30 Handelstage zur Berechnung",
     "riskAdjustedPerformance": "Risikoadjustierte Leistung",
     "tradeEfficiency": "Trade-Effizienz",
     "tradeEfficiencyTooltip": "Prozentsatz der Trades, bei denen der Take Profit erreicht wurde. Höher = bessere Ausführung"

@@ -930,13 +930,20 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 mean_pnl = statistics.mean([float(v) for v in pnl_values])
                 # Calculer l'écart-type des pertes uniquement
                 negative_pnls = [float(v) for v in pnl_values if v < 0]
-                if len(negative_pnls) > 1:
-                    downside_deviation = statistics.stdev(negative_pnls)
+                if len(negative_pnls) > 0:
+                    if len(negative_pnls) > 1:
+                        # Avec plusieurs pertes, utiliser l'écart-type
+                        downside_deviation = statistics.stdev(negative_pnls)
+                    else:
+                        # Avec une seule perte, utiliser la valeur absolue comme approximation
+                        downside_deviation = abs(negative_pnls[0])
+                    
                     if downside_deviation > 0:
                         sortino_ratio = mean_pnl / downside_deviation
         
         # 16. Calmar Ratio (rendement annuel en % / maximum drawdown en %)
         # Pour le Calmar Ratio, on utilise le drawdown en pourcentage du capital initial
+        # Le Calmar ratio nécessite au moins 30 jours de trading pour être significatif
         calmar_ratio = 0.0
         if max_drawdown > 0 and trades.exists() and initial_capital and initial_capital > 0:
             # Calculer le rendement annuel en pourcentage basé sur le capital initial
@@ -945,7 +952,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             last_trade = trades_ordered.last()
             if first_trade and last_trade and first_trade.entered_at < last_trade.entered_at:
                 days_diff = (last_trade.entered_at - first_trade.entered_at).days
-                if days_diff > 0:
+                # Exiger au moins 30 jours de trading pour un Calmar ratio significatif
+                # Sinon, l'extrapolation sur une année entière donne des résultats absurdes
+                if days_diff >= 30:
                     total_pnl_decimal = float(aggregates['total_pnl'] or Decimal('0'))
                     initial_capital_float = float(initial_capital)
                     
