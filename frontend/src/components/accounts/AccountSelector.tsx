@@ -28,13 +28,19 @@ const setHideAccountNamePart = (hide: boolean): void => {
   }
 };
 
-const truncateAccountName = (name: string, hide: boolean): string => {
-  if (!hide) return name;
-  // Garder les 6 premiers caractères et masquer le reste
-  if (name.length > 6) {
-    return name.substring(0, 6);
+// Fonction pour diviser le texte : 4 premiers caractères visibles, le reste flouté
+const renderAccountName = (name: string, hide: boolean): React.ReactNode => {
+  if (!hide || name.length <= 4) {
+    return name;
   }
-  return name;
+  const visiblePart = name.substring(0, 4);
+  const hiddenPart = name.substring(4);
+  return (
+    <>
+      <span>{visiblePart}</span>
+      <span className="blur-sm">{hiddenPart}</span>
+    </>
+  );
 };
 
 export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChange, allowAllActive = true, hideLabel = false }) => {
@@ -121,14 +127,13 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
     const base = accounts.map(a => ({ 
       value: a.id, 
       label: a.name,
-      displayLabel: truncateAccountName(a.name, hideNamePart),
       isDefault: !!a.is_default 
     }));
     if (allowAllActive) {
-      return [{ value: 0, label: t('common:allActiveAccounts'), displayLabel: t('common:allActiveAccounts'), isDefault: false } as any, ...base];
+      return [{ value: 0, label: t('common:allActiveAccounts'), isDefault: false } as any, ...base];
     }
     return base;
-  }, [accounts, hideNamePart, allowAllActive, t]);
+  }, [accounts, allowAllActive, t]);
 
   const currentValue = useMemo(() => {
     if (selectedId === null || selectedId === undefined) return 0;
@@ -154,11 +159,11 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
         tempElement.style.fontWeight = buttonStyle.fontWeight;
         document.body.appendChild(tempElement);
         
-        // Calculer la largeur pour chaque option
-        let maxContentWidth = 0;
-        options.forEach(opt => {
-          const label = (opt as any).displayLabel || opt.label;
-          tempElement.textContent = label;
+          // Calculer la largeur pour chaque option
+          let maxContentWidth = 0;
+          options.forEach(opt => {
+            const label = opt.label;
+            tempElement.textContent = label;
           const contentWidth = tempElement.offsetWidth;
           // Ajouter de l'espace pour le badge "default" si présent
           const hasBadge = (opt as any).isDefault;
@@ -213,7 +218,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
           
           let maxContentWidth = buttonWidth;
           options.forEach(opt => {
-            const label = (opt as any).displayLabel || opt.label;
+            const label = opt.label;
             tempElement.textContent = label;
             const contentWidth = tempElement.offsetWidth;
             // Ajouter de l'espace pour le badge "default" si présent
@@ -275,7 +280,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
           style={{ minWidth: buttonMinWidth ? `${buttonMinWidth}px` : undefined }}
         >
           <span className="inline-flex items-center gap-2 min-w-0 flex-1">
-            <span className="text-gray-900 dark:text-gray-100 truncate">{(currentOption as any)?.displayLabel || currentOption?.label || t('common:allActiveAccounts')}</span>
+            <span className="text-gray-900 dark:text-gray-100 truncate transition-all duration-200">
+              {renderAccountName(currentOption?.label || t('common:allActiveAccounts'), hideNamePart)}
+            </span>
             {currentOption && (currentOption as any).isDefault && (
               <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0">{t('common:default')}</span>
             )}
@@ -322,7 +329,9 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${opt.value === currentValue ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
                   >
-                    <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap flex-1 text-left">{(opt as any).displayLabel || opt.label}</span>
+                    <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap flex-1 text-left transition-all duration-200">
+                      {renderAccountName(opt.label, hideNamePart)}
+                    </span>
                     {(opt as any).isDefault && <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0 ml-2">{t('common:default')}</span>}
                   </button>
                 </li>
