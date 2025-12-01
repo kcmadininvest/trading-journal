@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatDate, getMonthNames, getDayNames } from '../../utils/dateFormat';
@@ -37,9 +38,12 @@ export const DateInput: React.FC<DateInputProps> = ({
   const [showYearPicker, setShowYearPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
   const monthPickerRef = useRef<HTMLDivElement>(null);
   const yearPickerRef = useRef<HTMLDivElement>(null);
   const yearListRef = useRef<HTMLDivElement>(null);
+  const [calendarPosition, setCalendarPosition] = useState<'bottom' | 'top'>('bottom');
+  const [calendarStyle, setCalendarStyle] = useState<{ top?: string; bottom?: string; left?: string; width?: string }>({});
 
   // Convertir ISO (YYYY-MM-DD) vers format préféré pour l'affichage
   const formatForDisplay = useCallback((isoDate: string): string => {
@@ -220,6 +224,64 @@ export const DateInput: React.FC<DateInputProps> = ({
     }
   };
 
+  // Calculer la position du calendrier pour éviter qu'il soit coupé
+  useEffect(() => {
+    if (showCalendar && containerRef.current) {
+      // Attendre que le DOM soit rendu
+      const calculatePosition = () => {
+        if (!containerRef.current) return;
+        
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const calendarHeight = 350; // Hauteur approximative du calendrier
+        const spaceBelow = window.innerHeight - containerRect.bottom;
+        const spaceAbove = containerRect.top;
+        const calendarWidth = Math.max(280, containerRect.width);
+        
+        // Calculer la position
+        let top: string | undefined;
+        let bottom: string | undefined;
+        let position: 'bottom' | 'top' = 'bottom';
+        
+        if (spaceBelow < calendarHeight + 10 && spaceAbove > calendarHeight + 10) {
+          // Positionner au-dessus
+          position = 'top';
+          bottom = `${window.innerHeight - containerRect.top + 4}px`;
+        } else {
+          // Positionner en dessous
+          position = 'bottom';
+          top = `${containerRect.bottom + 4}px`;
+        }
+        
+        setCalendarPosition(position);
+        setCalendarStyle({
+          top: position === 'bottom' ? top : undefined,
+          bottom: position === 'top' ? bottom : undefined,
+          left: `${containerRect.left}px`,
+          width: `${calendarWidth}px`,
+        });
+      };
+      
+      // Calculer immédiatement
+      calculatePosition();
+      
+      // Recalculer après un court délai et lors du scroll/resize
+      const timeoutId = setTimeout(calculatePosition, 10);
+      const handleResize = () => calculatePosition();
+      const handleScroll = () => calculatePosition();
+      
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleScroll, true);
+      
+      return () => {
+        clearTimeout(timeoutId);
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    } else {
+      setCalendarStyle({});
+    }
+  }, [showCalendar, calendarMonth, calendarYear, showMonthPicker, showYearPicker]);
+
   const handleCalendarToggle = () => {
     setShowCalendar(!showCalendar);
     if (!showCalendar && value) {
@@ -372,8 +434,12 @@ export const DateInput: React.FC<DateInputProps> = ({
         </button>
       </div>
       
-      {showCalendar && (
-        <div className="absolute z-[60] mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-3 min-w-[280px]">
+      {showCalendar && typeof document !== 'undefined' && createPortal(
+        <div 
+          ref={calendarRef}
+          className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-3"
+          style={calendarStyle}
+        >
           {/* En-tête du calendrier */}
           <div className="flex items-center justify-between mb-3">
             <button
@@ -516,7 +582,8 @@ export const DateInput: React.FC<DateInputProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
