@@ -42,7 +42,6 @@ export const DateInput: React.FC<DateInputProps> = ({
   const monthPickerRef = useRef<HTMLDivElement>(null);
   const yearPickerRef = useRef<HTMLDivElement>(null);
   const yearListRef = useRef<HTMLDivElement>(null);
-  const [calendarPosition, setCalendarPosition] = useState<'bottom' | 'top'>('bottom');
   const [calendarStyle, setCalendarStyle] = useState<{ top?: string; bottom?: string; left?: string; width?: string }>({});
 
   // Convertir ISO (YYYY-MM-DD) vers format préféré pour l'affichage
@@ -252,7 +251,6 @@ export const DateInput: React.FC<DateInputProps> = ({
           top = `${containerRect.bottom + 4}px`;
         }
         
-        setCalendarPosition(position);
         setCalendarStyle({
           top: position === 'bottom' ? top : undefined,
           bottom: position === 'top' ? bottom : undefined,
