@@ -21,6 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DEBUG', default=False, cast=bool)
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY', default=None)
 if not SECRET_KEY:
@@ -39,9 +42,6 @@ if not SECRET_KEY:
             "SECRET_KEY doit être défini dans les variables d'environnement pour la production. "
             "Générez une clé avec: python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'"
         )
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
 
 # Configuration sécurisée des hôtes autorisés
 ALLOWED_HOSTS = config(
@@ -373,18 +373,22 @@ CELERY_TIMEZONE = TIME_ZONE
 if DEBUG:
     try:
         import redis
-        redis_client = redis.Redis.from_url(config('REDIS_URL', default='redis://localhost:6379/1'))
-        redis_client.ping()
-        # Redis est disponible, utiliser Redis
-        CACHES = {
-            'default': {
-                'BACKEND': 'django_redis.cache.RedisCache',
-                'LOCATION': config('REDIS_URL', default='redis://localhost:6379/1'),
-                'OPTIONS': {
-                    'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        redis_url = config('REDIS_URL', default='redis://localhost:6379/1')
+        if isinstance(redis_url, str):
+            redis_client = redis.Redis.from_url(redis_url)
+            redis_client.ping()
+            # Redis est disponible, utiliser Redis
+            CACHES = {
+                'default': {
+                    'BACKEND': 'django_redis.cache.RedisCache',
+                    'LOCATION': redis_url,
+                    'OPTIONS': {
+                        'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                    }
                 }
             }
-        }
+        else:
+            raise ValueError("REDIS_URL must be a string")
     except (redis.ConnectionError, ImportError, Exception):
         # Redis non disponible, utiliser un cache local en mémoire
         CACHES = {
@@ -434,14 +438,14 @@ LOGGING = {
         },
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': str(LOGS_DIR / 'django.log') if not DEBUG else '/tmp/django.log',
+            'filename': str(LOGS_DIR / 'django.log'),
             'maxBytes': 10 * 1024 * 1024,  # 10MB
             'backupCount': 5,
             'formatter': 'verbose',
         },
         'security_file': {
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': str(LOGS_DIR / 'django_security.log') if not DEBUG else '/tmp/django_security.log',
+            'filename': str(LOGS_DIR / 'django_security.log'),
             'maxBytes': 10 * 1024 * 1024,  # 10MB
             'backupCount': 10,  # Conserver plus de backups pour la sécurité
             'formatter': 'security',
