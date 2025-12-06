@@ -19,16 +19,133 @@ import {
   Tooltip as ChartTooltip,
   Legend as ChartLegend,
   Filler,
+  RadialLinearScale,
+  ArcElement,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Bar as ChartBar, Line as ChartLine, Scatter as ChartScatter } from 'react-chartjs-2';
+import { Bar as ChartBar, Line as ChartLine, Scatter as ChartScatter, Radar as ChartRadar, Doughnut as ChartDoughnut } from 'react-chartjs-2';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
+import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
+import { useStatistics } from '../hooks/useStatistics';
+import { RadarChart } from '../components/analytics/RadarChart';
+import { EquityCurveChart } from '../components/analytics/EquityCurveChart';
+import { DrawdownChart } from '../components/analytics/DrawdownChart';
+import { MonthlyPerformanceChart } from '../components/analytics/MonthlyPerformanceChart';
+import { TradingVolumeChart } from '../components/analytics/TradingVolumeChart';
+import { TradesDistributionChart } from '../components/analytics/TradesDistributionChart';
+
+// Fonction pour créer le plugin de zones alternées avec le thème
+const createRadarAlternatingZonesPlugin = (isDark: boolean) => ({
+  id: 'radarAlternatingZones',
+  beforeDraw: (chart: any) => {
+    const ctx = chart.ctx;
+    const scale = chart.scales.r;
+    
+    if (!scale) return;
+    
+    // Utiliser les coordonnées du centre du scale radial (plus fiable en responsive)
+    const centerX = scale.xCenter;
+    const centerY = scale.yCenter;
+    const maxRadius = scale.getDistanceFromCenterForValue(scale.max);
+    
+    // Dessiner des zones alternées (cercles concentriques)
+    const stepSize = scale.options.ticks?.stepSize || 20;
+    const steps = Math.floor((scale.max - scale.min) / stepSize);
+    
+    for (let i = 0; i <= steps; i++) {
+      const value = i * stepSize;
+      const radius = scale.getDistanceFromCenterForValue(value);
+      const nextRadius = i < steps ? scale.getDistanceFromCenterForValue(value + stepSize) : maxRadius;
+      
+      // Alterner les couleurs
+      if (i % 2 === 0) {
+        ctx.fillStyle = isDark ? 'rgba(55, 65, 81, 0.15)' : 'rgba(229, 231, 235, 0.3)'; // Gris
+      } else {
+        ctx.fillStyle = isDark ? 'rgba(31, 41, 55, 0.1)' : 'rgba(255, 255, 255, 0.5)'; // Blanc/Gris très clair
+      }
+      
+      // Dessiner un arc (zone entre deux cercles)
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, nextRadius, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true); // Sens inverse pour créer un trou
+      ctx.fill();
+    }
+  }
+});
+
+// Fonction pour créer le plugin de dégradé pour le graphique radar
+const createRadarGradientPlugin = (isDark: boolean) => ({
+  id: 'radarGradient',
+  beforeDatasetsDraw: (chart: any) => {
+    const ctx = chart.ctx;
+    const scale = chart.scales.r;
+    const dataset = chart.data.datasets[0];
+    
+    if (!scale || !dataset || !dataset.data) return;
+    
+    // Utiliser les coordonnées du centre du scale radial (plus fiable en responsive)
+    const centerX = scale.xCenter;
+    const centerY = scale.yCenter;
+    
+    // Trouver le rayon maximum utilisé par les données
+    let maxDataRadius = 0;
+    dataset.data.forEach((value: number) => {
+      const radius = scale.getDistanceFromCenterForValue(value);
+      if (radius > maxDataRadius) {
+        maxDataRadius = radius;
+      }
+    });
+    
+    // Créer un dégradé radial
+    const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxDataRadius);
+    
+    // Dégradé violet/bleu selon le thème
+    if (isDark) {
+      // Mode sombre : dégradé du violet clair au bleu foncé
+      gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)'); // Violet clair au centre
+      gradient.addColorStop(0.5, 'rgba(99, 102, 241, 0.3)'); // Indigo au milieu
+      gradient.addColorStop(1, 'rgba(59, 130, 246, 0.2)'); // Bleu à l'extérieur
+    } else {
+      // Mode clair : dégradé du violet clair au bleu clair
+      gradient.addColorStop(0, 'rgba(167, 139, 250, 0.35)'); // Violet clair au centre
+      gradient.addColorStop(0.5, 'rgba(129, 140, 248, 0.25)'); // Indigo clair au milieu
+      gradient.addColorStop(1, 'rgba(96, 165, 250, 0.15)'); // Bleu clair à l'extérieur
+    }
+    
+    // Dessiner le dégradé en suivant la forme du graphique radar
+    ctx.save();
+    ctx.beginPath();
+    
+    // Dessiner le polygone du graphique radar
+    const dataPoints = dataset.data;
+    const pointLabels = chart.scales.r.pointLabels;
+    const angleStep = (Math.PI * 2) / dataPoints.length;
+    
+    dataPoints.forEach((value: number, index: number) => {
+      const angle = -Math.PI / 2 + (index * angleStep); // Commencer en haut
+      const radius = scale.getDistanceFromCenterForValue(value);
+      const x = centerX + Math.cos(angle) * radius;
+      const y = centerY + Math.sin(angle) * radius;
+      
+      if (index === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+    
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    ctx.restore();
+  }
+});
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -41,6 +158,8 @@ ChartJS.register(
   ChartTooltip,
   ChartLegend,
   Filler,
+  RadialLinearScale,
+  ArcElement,
   ChartDataLabels
 );
 
@@ -59,6 +178,11 @@ const AnalyticsPage: React.FC = () => {
   const formatNumber = useCallback((value: number, digits: number = 2): string => {
     return formatNumberUtil(value, digits, preferences.number_format);
   }, [preferences.number_format]);
+
+  // Wrapper pour formatDate avec préférences (mémorisé pour éviter les re-rendus)
+  const formatDateMemo = useCallback((date: string): string => {
+    return formatDate(date, preferences.date_format, false, preferences.timezone);
+  }, [preferences.date_format, preferences.timezone]);
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => ({
@@ -241,6 +365,15 @@ const AnalyticsPage: React.FC = () => {
     allTrades,
     filteredTrades: trades,
   });
+
+  // Récupérer les statistiques pour le graphique radar
+  const { data: statisticsData } = useStatistics(
+    accountLoading ? undefined : accountId,
+    selectedPeriod ? null : selectedYear,
+    selectedPeriod ? null : selectedMonth,
+    selectedPeriod?.start || null,
+    selectedPeriod?.end || null
+  );
 
   // Performance par tranche de 30 minutes (nuage de points)
   const hourlyPerformanceScatter = useMemo(() => {
@@ -590,6 +723,85 @@ const AnalyticsPage: React.FC = () => {
     };
   }, [trades, t]);
 
+  // Distribution des gains vs pertes (histogrammes séparés)
+  const gainsVsLossesDistribution = useMemo(() => {
+    if (trades.length === 0) return null;
+
+    // Séparer les gains et les pertes
+    const gains: number[] = [];
+    const losses: number[] = [];
+    
+    trades.forEach(trade => {
+      if (trade.net_pnl !== null && trade.net_pnl !== undefined) {
+        const pnl = parseFloat(trade.net_pnl);
+        if (pnl > 0) {
+          gains.push(pnl);
+        } else if (pnl < 0) {
+          losses.push(Math.abs(pnl)); // Valeur absolue pour les pertes
+        }
+      }
+    });
+
+    if (gains.length === 0 && losses.length === 0) return null;
+
+    // Calculer les bins pour les gains
+    const calculateBins = (values: number[], isGains: boolean) => {
+      if (values.length === 0) return [];
+      
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = max - min;
+      const bins = Math.min(10, Math.max(5, Math.ceil(Math.sqrt(values.length))));
+      const binWidth = range / bins;
+
+      const histogram: { [bin: number]: number } = {};
+      for (let i = 0; i < bins; i++) {
+        histogram[i] = 0;
+      }
+
+      values.forEach(value => {
+        let binIndex = Math.floor((value - min) / binWidth);
+        if (binIndex === bins) binIndex = bins - 1;
+        histogram[binIndex] = (histogram[binIndex] || 0) + 1;
+      });
+
+      return Array.from({ length: bins }, (_, i) => {
+        const start = min + i * binWidth;
+        const end = min + (i + 1) * binWidth;
+        const midpoint = start + binWidth / 2;
+        const count = histogram[i] || 0;
+        
+        return {
+          range: `${formatNumber(start, 0)} - ${formatNumber(end, 0)}`,
+          rangeLabel: `${formatNumber(start, 0)}-${formatNumber(end, 0)}`,
+          count,
+          midpoint,
+          start,
+          end,
+          binWidth,
+        };
+      }).filter(bin => bin.count > 0);
+    };
+
+    const gainsBins = calculateBins(gains, true);
+    const lossesBins = calculateBins(losses, false);
+
+    // Trouver le max pour normaliser les hauteurs
+    const maxCount = Math.max(
+      ...gainsBins.map(b => b.count),
+      ...lossesBins.map(b => b.count),
+      1
+    );
+
+    return {
+      gains: gainsBins,
+      losses: lossesBins,
+      maxCount,
+      totalGains: gains.length,
+      totalLosses: losses.length,
+    };
+  }, [trades, formatNumber]);
+
   // Distribution des PnL (histogramme)
   const pnlDistribution = useMemo(() => {
     const pnls: number[] = [];
@@ -641,6 +853,260 @@ const AnalyticsPage: React.FC = () => {
       };
     }).filter(bin => bin.count > 0); // Filtrer pour ne garder que les bins avec des données
   }, [trades, formatNumber]);
+
+  // Données pour le graphique Equity Curve (Courbe de capital)
+  const equityCurveData = useMemo(() => {
+    if (!trades.length) return null;
+    
+    // Si aucun compte sélectionné (tous les comptes), calculer le capital initial à partir des trades
+    // Sinon utiliser le capital initial du compte sélectionné
+    let initialCapital = 0;
+    if (selectedAccount) {
+      initialCapital = selectedAccount.initial_capital 
+        ? parseFloat(String(selectedAccount.initial_capital)) 
+        : 0;
+    } else {
+      // Pour "tous les comptes", on peut soit utiliser 0, soit calculer la somme des capitaux initiaux
+      // Pour simplifier, on utilise 0 comme point de départ et on affiche juste le PnL cumulé
+      initialCapital = 0;
+    }
+
+    // Grouper les trades par date
+    const dailyData: { [date: string]: number } = {};
+    
+    trades.forEach(trade => {
+      if (!trade.trade_day || trade.net_pnl === null || trade.net_pnl === undefined) {
+        return;
+      }
+      
+      const date = String(trade.trade_day).trim();
+      if (!date) return;
+      
+      const pnl = parseFloat(String(trade.net_pnl));
+      if (isNaN(pnl)) return;
+      
+      dailyData[date] = (dailyData[date] || 0) + pnl;
+    });
+
+    const sortedDates = Object.keys(dailyData).sort();
+    
+    if (sortedDates.length === 0) return null;
+
+    let cumulativePnl = 0;
+    const equityData = sortedDates.map(date => {
+      cumulativePnl += dailyData[date];
+      const equity = initialCapital + cumulativePnl;
+      return {
+        date,
+        equity,
+        pnl: dailyData[date],
+      };
+    });
+
+    return {
+      labels: equityData.map(d => {
+        const date = new Date(d.date);
+        return formatDateMemo(date.toISOString());
+      }),
+      datasets: [
+        {
+          label: t('analytics:equityCurve.equity', { defaultValue: 'Capital' }),
+          data: equityData.map(d => d.equity),
+          borderColor: isDark ? '#10b981' : '#059669', // Vert pour la croissance
+          backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(5, 150, 105, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+        },
+        {
+          label: t('analytics:equityCurve.initialCapital', { defaultValue: 'Capital Initial' }),
+          data: equityData.map(() => initialCapital),
+          borderColor: isDark ? 'rgba(156, 163, 175, 0.5)' : 'rgba(107, 114, 128, 0.5)',
+          borderWidth: 1,
+          borderDash: [5, 5],
+          fill: false,
+          pointRadius: 0,
+        },
+      ],
+      rawData: equityData,
+      initialCapital,
+    } as any;
+  }, [trades, selectedAccount, isDark, t, formatDateMemo]);
+
+  // Performance mensuelle/annuelle (calendrier)
+  const monthlyPerformanceData = useMemo(() => {
+    if (!trades.length) return null;
+
+    const monthlyData: { [key: string]: { pnl: number; count: number } } = {};
+    
+    trades.forEach(trade => {
+      if (trade.trade_day && trade.net_pnl !== null && trade.net_pnl !== undefined) {
+        const date = new Date(trade.trade_day);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const pnl = parseFloat(String(trade.net_pnl));
+        
+        if (!monthlyData[monthKey]) {
+          monthlyData[monthKey] = { pnl: 0, count: 0 };
+        }
+        monthlyData[monthKey].pnl += pnl;
+        monthlyData[monthKey].count += 1;
+      }
+    });
+
+    const sortedMonths = Object.keys(monthlyData).sort();
+    if (sortedMonths.length === 0) return null;
+
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+    
+    return {
+      labels: sortedMonths.map(key => {
+        const [year, month] = key.split('-');
+        return `${monthNames[parseInt(month) - 1]} ${year}`;
+      }),
+      pnlData: sortedMonths.map(key => monthlyData[key].pnl),
+      countData: sortedMonths.map(key => monthlyData[key].count),
+      rawData: sortedMonths.map(key => ({ month: key, ...monthlyData[key] })),
+    };
+  }, [trades]);
+
+  // Volume de trading dans le temps
+  const tradingVolumeData = useMemo(() => {
+    if (!trades.length) return null;
+
+    const dailyData: { [date: string]: number } = {};
+    
+    trades.forEach(trade => {
+      if (trade.trade_day) {
+        const date = String(trade.trade_day).trim();
+        dailyData[date] = (dailyData[date] || 0) + 1;
+      }
+    });
+
+    const sortedDates = Object.keys(dailyData).sort();
+    if (sortedDates.length === 0) return null;
+
+    return {
+      labels: sortedDates.map(date => {
+        const d = new Date(date);
+        return formatDateMemo(d.toISOString());
+      }),
+      data: sortedDates.map(date => dailyData[date]),
+      rawData: sortedDates.map(date => ({ date, count: dailyData[date] })),
+    };
+  }, [trades, formatDate]);
+
+  // Répartition des trades par résultat
+  const tradesDistributionData = useMemo(() => {
+    if (!trades.length) return null;
+
+    let winners = 0;
+    let losers = 0;
+    let neutral = 0;
+
+    trades.forEach(trade => {
+      if (trade.net_pnl !== null && trade.net_pnl !== undefined) {
+        const pnl = parseFloat(String(trade.net_pnl));
+        if (pnl > 0) {
+          winners++;
+        } else if (pnl < 0) {
+          losers++;
+        } else {
+          neutral++;
+        }
+      } else {
+        neutral++;
+      }
+    });
+
+    const total = winners + losers + neutral;
+    if (total === 0) return null;
+
+    return {
+      labels: [
+        t('analytics:charts.tradesDistribution.winners', { defaultValue: 'Gagnants' }),
+        t('analytics:charts.tradesDistribution.losers', { defaultValue: 'Perdants' }),
+        t('analytics:charts.tradesDistribution.neutral', { defaultValue: 'Neutres' }),
+      ],
+      data: [winners, losers, neutral],
+      percentages: [
+        ((winners / total) * 100).toFixed(1),
+        ((losers / total) * 100).toFixed(1),
+        ((neutral / total) * 100).toFixed(1),
+      ],
+      total,
+    };
+  }, [trades, t]);
+
+  // Graphique radar avec les métriques de performance
+  const radarChartData = useMemo(() => {
+    if (!statisticsData) return null;
+
+    // Fonction de normalisation pour chaque métrique (0-100)
+    const normalize = (value: number, min: number, max: number, inverse: boolean = false): number => {
+      if (max === min) return 50; // Valeur par défaut si pas de variation
+      const normalized = ((value - min) / (max - min)) * 100;
+      return inverse ? 100 - normalized : normalized;
+    };
+
+    // Définir les plages de normalisation pour chaque métrique
+    const metrics = {
+      // Profit Factor: 0-5 (1.0 = seuil de rentabilité, 2.0+ = excellent)
+      profitFactor: Math.min(100, Math.max(0, normalize(statisticsData.profit_factor, 0, 3, false))),
+      
+      // Win Rate: 0-100% (50% = seuil, 60%+ = bon)
+      winRate: statisticsData.win_rate || 0,
+      
+      // Recovery Factor (recovery_ratio): 0-10 (1.0 = seuil, 2.0+ = bon)
+      recoveryFactor: Math.min(100, Math.max(0, normalize(statisticsData.recovery_ratio || 0, 0, 5, false))),
+      
+      // Win/Loss Ratio: 0-5 (1.0 = seuil, 2.0+ = excellent)
+      winLossRatio: Math.min(100, Math.max(0, normalize(statisticsData.win_loss_ratio || 0, 0, 3, false))),
+      
+      // Expectancy: normalisé selon la valeur (positif = bon)
+      expectancy: Math.min(100, Math.max(0, normalize(statisticsData.expectancy || 0, -100, 500, false))),
+      
+      // Max Drawdown (inversé: plus bas = mieux, donc on inverse)
+      // 0% = parfait (100), 50% = mauvais (0)
+      maxDrawdown: Math.min(100, Math.max(0, normalize(statisticsData.max_drawdown_pct || 0, 0, 50, true))),
+    };
+
+    return {
+      labels: [
+        t('analytics:radar.profitFactor', { defaultValue: 'Profit Factor' }),
+        t('analytics:radar.winRate', { defaultValue: 'Win Rate' }),
+        t('analytics:radar.recoveryFactor', { defaultValue: 'Recovery Factor' }),
+        t('analytics:radar.winLossRatio', { defaultValue: 'Win/Loss Ratio' }),
+        t('analytics:radar.expectancy', { defaultValue: 'Expectancy' }),
+        t('analytics:radar.maxDrawdown', { defaultValue: 'Max Drawdown' }),
+      ],
+      datasets: [
+        {
+          label: t('analytics:radar.performance', { defaultValue: 'Performance' }),
+          data: [
+            metrics.profitFactor,
+            metrics.winRate,
+            metrics.recoveryFactor,
+            metrics.winLossRatio,
+            metrics.expectancy,
+            metrics.maxDrawdown,
+          ],
+          backgroundColor: 'transparent', // Le dégradé sera dessiné par le plugin
+          borderColor: isDark ? '#60a5fa' : '#1e40af', // Bleu plus foncé en mode clair pour meilleure visibilité
+          borderWidth: 2, // Épaisseur uniforme
+          pointBackgroundColor: isDark ? '#60a5fa' : '#1e40af', // Points plus foncés en mode clair
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2, // Bordure plus épaisse pour les points
+          pointHoverBackgroundColor: isDark ? '#93c5fd' : '#1e3a8a',
+          pointHoverBorderColor: '#ffffff',
+          pointHoverBorderWidth: 3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ],
+    };
+  }, [statisticsData, isDark, t]);
 
   // Fonction pour obtenir la couleur de la heatmap (améliorée avec support dark mode)
   const getHeatmapColor = (value: number, maxAbs: number): string => {
@@ -728,6 +1194,46 @@ const AnalyticsPage: React.FC = () => {
           />
         </div>
       )}
+
+      {/* Graphiques de performance : Radar, Equity Curve et Drawdown */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <RadarChart
+          data={radarChartData}
+          statisticsData={statisticsData}
+          currencySymbol={currencySymbol}
+          createRadarAlternatingZonesPlugin={createRadarAlternatingZonesPlugin}
+          createRadarGradientPlugin={createRadarGradientPlugin}
+          chartColors={chartColors}
+        />
+        <EquityCurveChart
+          data={equityCurveData}
+          currencySymbol={currencySymbol}
+          chartColors={chartColors}
+        />
+        <DrawdownChart
+          data={drawdownData}
+          currencySymbol={currencySymbol}
+          chartColors={chartColors}
+          tradesCount={trades.length}
+        />
+      </div>
+
+      {/* Grille de graphiques - 3 par ligne */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <MonthlyPerformanceChart
+          data={monthlyPerformanceData}
+          currencySymbol={currencySymbol}
+          chartColors={chartColors}
+        />
+        <TradingVolumeChart
+          data={tradingVolumeData}
+          chartColors={chartColors}
+        />
+        <TradesDistributionChart
+          data={tradesDistributionData}
+          chartColors={chartColors}
+        />
+      </div>
 
       {error && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -1116,157 +1622,6 @@ const AnalyticsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Drawdown par jour */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-1 h-6 bg-gradient-to-b from-red-500 to-red-600 rounded-full mr-3"></div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('analytics:charts.drawdown.title')}</h3>
-              <TooltipComponent
-                content={t('analytics:charts.drawdown.tooltip')}
-                position="top"
-              >
-                <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
-                  <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </TooltipComponent>
-            </div>
-            <div style={{ height: '320px', position: 'relative' }}>
-              {drawdownData.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                  <div className="text-center">
-                    <p className="text-sm">{t('analytics:charts.drawdown.noData', { defaultValue: 'Aucune donnée de drawdown disponible pour cette période' })}</p>
-                    {trades.length === 0 && (
-                      <p className="text-xs mt-2 text-gray-400 dark:text-gray-500">
-                        {t('analytics:noTrades', { defaultValue: 'Aucun trade trouvé' })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <ChartLine
-                  data={{
-                    labels: drawdownData.map(d => d.date),
-                    datasets: [
-                      {
-                        label: t('analytics:charts.drawdown.label'),
-                        data: drawdownData.map(d => d.drawdown),
-                        borderColor: '#ec4899',
-                        backgroundColor: 'rgba(236, 72, 153, 0.1)',
-                        borderWidth: 3,
-                        pointRadius: (context: any) => {
-                          // Afficher les points seulement si le volume de données est faible (< 30 points)
-                          const dataLength = drawdownData.length;
-                          if (dataLength > 30) return 0;
-                          // Vérifier que context.parsed existe avant d'accéder à y
-                          const value = context.parsed?.y;
-                          return value !== null && value !== undefined ? 4 : 0;
-                        },
-                        pointBackgroundColor: '#ec4899',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointHoverRadius: 7,
-                        fill: true,
-                        tension: 0, // Ligne droite, pas de courbe
-                      },
-                    ],
-                  }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    datalabels: {
-                      display: false,
-                    },
-                    legend: {
-                      display: false,
-                    },
-                    tooltip: {
-                      backgroundColor: chartColors.tooltipBg,
-                      titleColor: chartColors.tooltipTitle,
-                      bodyColor: chartColors.tooltipBody,
-                      borderColor: chartColors.tooltipBorder,
-                      borderWidth: 1,
-                      padding: 16,
-                      titleFont: {
-                        size: 14,
-                        weight: 600,
-                      },
-                      bodyFont: {
-                        size: 13,
-                        weight: 500,
-                      },
-                      displayColors: false,
-                      callbacks: {
-                        title: (items) => {
-                          const index = items[0].dataIndex;
-                          return drawdownData[index].date;
-                        },
-                        label: (context) => {
-                          const index = context.dataIndex;
-                          const data = drawdownData[index];
-                          return [
-                            `${t('analytics:charts.drawdown.amount')}: ${formatCurrency(data.drawdownAmount, currencySymbol)} (${formatNumber(data.drawdownPercent, 2)}%)`,
-                            `${t('analytics:charts.drawdown.cumulativePnl')}: ${formatCurrency(data.cumulativePnl, currencySymbol)}`,
-                          ];
-                        },
-                      },
-                    },
-                  },
-                  scales: {
-                    x: {
-                      ticks: {
-                        maxRotation: 45,
-                        minRotation: 45,
-                        color: chartColors.textSecondary,
-                        font: {
-                          size: 11,
-                        },
-                      },
-                      grid: {
-                        display: false,
-                      },
-                      border: {
-                        color: chartColors.border,
-                      },
-                    },
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        color: chartColors.textSecondary,
-                        font: {
-                          size: 12,
-                        },
-                        callback: function(value) {
-                          const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-                          return formatCurrency(numValue, currencySymbol);
-                        },
-                      },
-                      grid: {
-                        color: chartColors.grid,
-                        lineWidth: 1,
-                      },
-                      border: {
-                        color: chartColors.border,
-                        display: false,
-                      },
-                      title: {
-                        display: true,
-                        text: t('analytics:charts.drawdown.yAxis'),
-                        color: chartColors.text,
-                        font: {
-                          size: 13,
-                          weight: 600,
-                        },
-                      },
-                    },
-                  },
-                }}
-                />
-              )}
-            </div>
-          </div>
 
           {/* Performance par heure (barres) */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
@@ -1545,6 +1900,281 @@ const AnalyticsPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Distribution des gains vs pertes */}
+          {gainsVsLossesDistribution && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                  {t('analytics:charts.gainsVsLosses.title', { defaultValue: 'Distribution des Gains vs Pertes' })}
+                </h3>
+                <TooltipComponent
+                  content={t('analytics:charts.gainsVsLosses.tooltip', { defaultValue: 'Ce graphique compare la distribution de vos gains et de vos pertes séparément. L\'histogramme de gauche montre la répartition des trades gagnants par plages de valeurs, et celui de droite montre la répartition des trades perdants. Cela permet d\'identifier les patterns et de comparer la distribution des gains et des pertes pour optimiser votre stratégie.' })}
+                  position="top"
+                >
+                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
+                    <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </TooltipComponent>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Histogramme des gains */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
+                    {t('analytics:charts.gainsVsLosses.gains', { defaultValue: 'Gains' })} ({gainsVsLossesDistribution.totalGains} {t('analytics:common.trades', { defaultValue: 'trades' })})
+                  </h4>
+                  <div style={{ height: '280px', position: 'relative' }}>
+                    <ChartBar
+                      data={{
+                        labels: gainsVsLossesDistribution.gains.map(b => b.rangeLabel),
+                        datasets: [
+                          {
+                            label: t('analytics:charts.gainsVsLosses.gains', { defaultValue: 'Gains' }),
+                            data: gainsVsLossesDistribution.gains.map(b => b.count),
+                            backgroundColor: isDark 
+                              ? 'rgba(59, 130, 246, 0.8)' 
+                              : 'rgba(59, 130, 246, 0.7)',
+                            borderColor: isDark ? '#60a5fa' : '#3b82f6',
+                            borderWidth: 1,
+                          },
+                        ],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y' as const,
+                        plugins: {
+                          datalabels: {
+                            display: true,
+                            anchor: 'end' as const,
+                            align: 'end' as const,
+                            color: function(context: any) {
+                              return isDark ? '#e5e7eb' : '#1f2937';
+                            },
+                            font: {
+                              weight: 600,
+                              size: windowWidth < 640 ? 9 : 11,
+                            },
+                            formatter: function(value: number) {
+                              return value > 0 ? value.toString() : '';
+                            },
+                          },
+                          legend: {
+                            display: false,
+                          },
+                          tooltip: {
+                            backgroundColor: chartColors.tooltipBg,
+                            titleColor: chartColors.tooltipTitle,
+                            bodyColor: chartColors.tooltipBody,
+                            borderColor: chartColors.tooltipBorder,
+                            borderWidth: 1,
+                            padding: 12,
+                            titleFont: {
+                              size: 13,
+                              weight: 600,
+                            },
+                            bodyFont: {
+                              size: 12,
+                              weight: 500,
+                            },
+                            callbacks: {
+                              title: (items) => {
+                                const index = items[0].dataIndex;
+                                const bin = gainsVsLossesDistribution.gains[index];
+                                return `${t('analytics:charts.gainsVsLosses.range', { defaultValue: 'Plage' })}: ${bin.range}`;
+                              },
+                              label: (context) => {
+                                const value = context.parsed.x || 0;
+                                const percentage = gainsVsLossesDistribution.totalGains > 0 
+                                  ? ((value / gainsVsLossesDistribution.totalGains) * 100).toFixed(1)
+                                  : '0.0';
+                                return [
+                                  `${t('analytics:charts.gainsVsLosses.count', { defaultValue: 'Nombre' })}: ${value}`,
+                                  `${t('analytics:charts.gainsVsLosses.percentage', { defaultValue: 'Pourcentage' })}: ${percentage}%`,
+                                ];
+                              },
+                            },
+                          },
+                        },
+                        scales: {
+                          x: {
+                            beginAtZero: true,
+                            ticks: {
+                              stepSize: 1,
+                              color: chartColors.textSecondary,
+                              font: {
+                                size: 11,
+                              },
+                            },
+                            grid: {
+                              color: chartColors.grid,
+                              lineWidth: 1,
+                            },
+                            border: {
+                              color: chartColors.border,
+                            },
+                            title: {
+                              display: true,
+                              text: t('analytics:charts.gainsVsLosses.count', { defaultValue: 'Nombre de trades' }),
+                              color: chartColors.text,
+                              font: {
+                                size: 12,
+                                weight: 600,
+                              },
+                            },
+                          },
+                          y: {
+                            ticks: {
+                              color: chartColors.textSecondary,
+                              font: {
+                                size: 10,
+                              },
+                              maxRotation: 0,
+                            },
+                            grid: {
+                              display: false,
+                            },
+                            border: {
+                              color: chartColors.border,
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Histogramme des pertes */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
+                    {t('analytics:charts.gainsVsLosses.losses', { defaultValue: 'Pertes' })} ({gainsVsLossesDistribution.totalLosses} {t('analytics:common.trades', { defaultValue: 'trades' })})
+                  </h4>
+                  <div style={{ height: '280px', position: 'relative' }}>
+                    <ChartBar
+                      data={{
+                        labels: gainsVsLossesDistribution.losses.map(b => b.rangeLabel),
+                        datasets: [
+                          {
+                            label: t('analytics:charts.gainsVsLosses.losses', { defaultValue: 'Pertes' }),
+                            data: gainsVsLossesDistribution.losses.map(b => b.count),
+                            backgroundColor: isDark 
+                              ? 'rgba(236, 72, 153, 0.8)' 
+                              : 'rgba(236, 72, 153, 0.7)',
+                            borderColor: isDark ? '#f472b6' : '#ec4899',
+                            borderWidth: 1,
+                          },
+                        ],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y' as const,
+                        plugins: {
+                          datalabels: {
+                            display: true,
+                            anchor: 'end' as const,
+                            align: 'end' as const,
+                            color: function(context: any) {
+                              return isDark ? '#e5e7eb' : '#1f2937';
+                            },
+                            font: {
+                              weight: 600,
+                              size: windowWidth < 640 ? 9 : 11,
+                            },
+                            formatter: function(value: number) {
+                              return value > 0 ? value.toString() : '';
+                            },
+                          },
+                          legend: {
+                            display: false,
+                          },
+                          tooltip: {
+                            backgroundColor: chartColors.tooltipBg,
+                            titleColor: chartColors.tooltipTitle,
+                            bodyColor: chartColors.tooltipBody,
+                            borderColor: chartColors.tooltipBorder,
+                            borderWidth: 1,
+                            padding: 12,
+                            titleFont: {
+                              size: 13,
+                              weight: 600,
+                            },
+                            bodyFont: {
+                              size: 12,
+                              weight: 500,
+                            },
+                            callbacks: {
+                              title: (items) => {
+                                const index = items[0].dataIndex;
+                                const bin = gainsVsLossesDistribution.losses[index];
+                                return `${t('analytics:charts.gainsVsLosses.range', { defaultValue: 'Plage' })}: ${bin.range}`;
+                              },
+                              label: (context) => {
+                                const value = context.parsed.x || 0;
+                                const percentage = gainsVsLossesDistribution.totalLosses > 0 
+                                  ? ((value / gainsVsLossesDistribution.totalLosses) * 100).toFixed(1)
+                                  : '0.0';
+                                return [
+                                  `${t('analytics:charts.gainsVsLosses.count', { defaultValue: 'Nombre' })}: ${value}`,
+                                  `${t('analytics:charts.gainsVsLosses.percentage', { defaultValue: 'Pourcentage' })}: ${percentage}%`,
+                                ];
+                              },
+                            },
+                          },
+                        },
+                        scales: {
+                          x: {
+                            beginAtZero: true,
+                            ticks: {
+                              stepSize: 1,
+                              color: chartColors.textSecondary,
+                              font: {
+                                size: 11,
+                              },
+                            },
+                            grid: {
+                              color: chartColors.grid,
+                              lineWidth: 1,
+                            },
+                            border: {
+                              color: chartColors.border,
+                            },
+                            title: {
+                              display: true,
+                              text: t('analytics:charts.gainsVsLosses.count', { defaultValue: 'Nombre de trades' }),
+                              color: chartColors.text,
+                              font: {
+                                size: 12,
+                                weight: 600,
+                              },
+                            },
+                          },
+                          y: {
+                            ticks: {
+                              color: chartColors.textSecondary,
+                              font: {
+                                size: 10,
+                              },
+                              maxRotation: 0,
+                            },
+                            grid: {
+                              display: false,
+                            },
+                            border: {
+                              color: chartColors.border,
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Distribution des PnL */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">

@@ -54,7 +54,57 @@
       "range": "P&L: de {{start}} à {{end}}",
       "onTotal": "sur {{total}} total",
       "tooltip": "Ce graphique montre la distribution de vos PnL (profits et pertes) en regroupant les trades par intervalles de valeurs. Chaque barre représente un intervalle de PnL et sa hauteur indique le pourcentage de trades qui se trouvent dans cet intervalle. Cela permet d'identifier les plages de PnL les plus fréquentes dans votre trading."
+    },
+    "gainsVsLosses": {
+      "title": "Distribution des Gains vs Pertes",
+      "gains": "Gains",
+      "losses": "Pertes",
+      "range": "Plage",
+      "count": "Nombre",
+      "percentage": "Pourcentage",
+      "tooltip": "Ce graphique compare la distribution de vos gains et de vos pertes séparément. L'histogramme de gauche montre la répartition des trades gagnants par plages de valeurs, et celui de droite montre la répartition des trades perdants. Cela permet d'identifier les patterns et de comparer la distribution des gains et des pertes pour optimiser votre stratégie."
+    },
+    "monthlyPerformance": {
+      "title": "Performance Mensuelle/Annuelle",
+      "pnl": "PnL",
+      "trades": "Trades",
+      "yAxis": "PnL",
+      "tooltip": "Ce graphique montre votre performance (PnL) par mois. Chaque barre représente le PnL total pour un mois donné. Cela permet d'identifier les mois les plus rentables et les tendances saisonnières."
+    },
+    "tradingVolume": {
+      "title": "Volume de Trading dans le Temps",
+      "label": "Nombre de trades",
+      "yAxis": "Nombre de trades",
+      "tooltip": "Ce graphique montre le nombre de trades par jour dans le temps. Cela permet d'identifier les périodes d'activité intense et les périodes calmes."
+    },
+    "tradesDistribution": {
+      "title": "Répartition des Trades par Résultat",
+      "winners": "Gagnants",
+      "losers": "Perdants",
+      "neutral": "Neutres",
+      "percentage": "Pourcentage",
+      "tooltip": "Ce graphique montre la répartition de vos trades entre gagnants, perdants et neutres. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants."
     }
+  },
+  "radar": {
+    "title": "Métriques de Performance",
+    "performance": "Performance",
+    "profitFactor": "Profit Factor",
+    "winRate": "Taux de Réussite",
+    "recoveryFactor": "Facteur de Récupération",
+    "winLossRatio": "Ratio Gain/Perte",
+    "expectancy": "Espérance",
+    "maxDrawdown": "Drawdown Max",
+    "tooltip": "Ce graphique en araignée (radar) affiche vos métriques de performance clés normalisées sur une échelle de 0 à 100%. Chaque axe représente une métrique : Profit Factor, Taux de Réussite, Facteur de Récupération, Ratio Gain/Perte, Espérance et Drawdown Max. Plus la zone est grande, meilleure est votre performance globale."
+  },
+  "equityCurve": {
+    "title": "Courbe de Capital",
+    "equity": "Capital",
+    "initialCapital": "Capital Initial",
+    "dailyPnl": "PnL journalier",
+    "cumulativePnl": "PnL cumulé",
+    "yAxis": "Capital",
+    "tooltip": "Ce graphique montre l'évolution de votre capital dans le temps. La courbe verte représente votre capital actuel (capital initial + PnL cumulé). La ligne pointillée grise indique votre capital initial pour référence. Cela permet de visualiser la croissance ou la décroissance de votre capital au fil du temps."
   },
   "common": {
     "trade": "trade",

@@ -18,14 +18,14 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="relative bg-transparent w-full">
       <div className="w-full px-4 sm:px-6 py-4">
-        <div className="flex items-center relative w-full">
-          <span className="text-sm text-gray-500 dark:text-gray-400 absolute left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-0 relative w-full">
+          <span className="text-sm text-gray-500 dark:text-gray-400 text-center whitespace-nowrap order-2 sm:order-1">
             © 2025 KC Trading Journal. {t('common:allRightsReserved', { defaultValue: 'Tous droits réservés.' })}
           </span>
           <a
             href="#legal-notice"
             onClick={handleLegalClick}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline transition-colors ml-auto mr-6"
+            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline transition-colors order-1 sm:order-2 sm:absolute sm:right-6"
           >
             {t('legal:link', { defaultValue: 'Mentions légales' })}
           </a>

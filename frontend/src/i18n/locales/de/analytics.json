@@ -54,7 +54,57 @@
       "range": "P&L: von {{start}} bis {{end}}",
       "onTotal": "von {{total}} gesamt",
       "tooltip": "Dieses Diagramm zeigt die Verteilung Ihrer PnL (Gewinne und Verluste), indem Trades in Werteintervalle gruppiert werden. Jeder Balken stellt ein PnL-Intervall dar und seine Höhe zeigt den Prozentsatz der Trades, die in diesem Intervall liegen. Dies hilft, die häufigsten PnL-Bereiche in Ihrem Trading zu identifizieren."
+    },
+    "gainsVsLosses": {
+      "title": "Verteilung von Gewinnen vs Verlusten",
+      "gains": "Gewinne",
+      "losses": "Verluste",
+      "range": "Bereich",
+      "count": "Anzahl",
+      "percentage": "Prozentsatz",
+      "tooltip": "Dieses Diagramm vergleicht die Verteilung Ihrer Gewinne und Verluste getrennt. Das linke Histogramm zeigt die Verteilung der gewinnbringenden Trades nach Wertebereichen, und das rechte zeigt die Verteilung der verlustbringenden Trades. Dies hilft, Muster zu identifizieren und die Verteilung von Gewinnen und Verlusten zu vergleichen, um Ihre Strategie zu optimieren."
+    },
+    "monthlyPerformance": {
+      "title": "Monatliche/Jährliche Leistung",
+      "pnl": "PnL",
+      "trades": "Trades",
+      "yAxis": "PnL",
+      "tooltip": "Dieses Diagramm zeigt Ihre Leistung (PnL) pro Monat. Jeder Balken stellt das gesamte PnL für einen bestimmten Monat dar. Dies hilft, die profitabelsten Monate und saisonale Trends zu identifizieren."
+    },
+    "tradingVolume": {
+      "title": "Handelsvolumen im Zeitverlauf",
+      "label": "Anzahl der Trades",
+      "yAxis": "Anzahl der Trades",
+      "tooltip": "Dieses Diagramm zeigt die Anzahl der Trades pro Tag im Zeitverlauf. Dies hilft, Perioden intensiver Aktivität und ruhige Perioden zu identifizieren."
+    },
+    "tradesDistribution": {
+      "title": "Verteilung der Trades nach Ergebnis",
+      "winners": "Gewinner",
+      "losers": "Verlierer",
+      "neutral": "Neutral",
+      "percentage": "Prozentsatz",
+      "tooltip": "Dieses Diagramm zeigt die Verteilung Ihrer Trades zwischen Gewinnern, Verlierern und Neutralen. Dies ermöglicht es, schnell das Verhältnis von gewinnbringenden vs verlustbringenden Trades zu visualisieren."
     }
+  },
+  "radar": {
+    "title": "Leistungsmetriken",
+    "performance": "Leistung",
+    "profitFactor": "Profit-Faktor",
+    "winRate": "Gewinnquote",
+    "recoveryFactor": "Erholungsfaktor",
+    "winLossRatio": "Gewinn/Verlust-Verhältnis",
+    "expectancy": "Erwartungswert",
+    "maxDrawdown": "Maximaler Drawdown",
+    "tooltip": "Dieses Radar-Diagramm zeigt Ihre wichtigsten Leistungsmetriken normalisiert auf einer Skala von 0 bis 100%. Jede Achse stellt eine Metrik dar: Profit-Faktor, Gewinnquote, Erholungsfaktor, Gewinn/Verlust-Verhältnis, Erwartungswert und Maximaler Drawdown. Je größer die Fläche, desto besser ist Ihre Gesamtleistung."
+  },
+  "equityCurve": {
+    "title": "Kapitalkurve",
+    "equity": "Kapital",
+    "initialCapital": "Anfangskapital",
+    "dailyPnl": "Tägliches PnL",
+    "cumulativePnl": "Kumuliertes PnL",
+    "yAxis": "Kapital",
+    "tooltip": "Dieses Diagramm zeigt die Entwicklung Ihres Kapitals im Laufe der Zeit. Die grüne Kurve stellt Ihr aktuelles Kapital dar (Anfangskapital + kumuliertes PnL). Die graue gestrichelte Linie zeigt Ihr Anfangskapital als Referenz. Dies ermöglicht es Ihnen, das Wachstum oder den Rückgang Ihres Kapitals im Laufe der Zeit zu visualisieren."
   },
   "common": {
     "trade": "Trade",

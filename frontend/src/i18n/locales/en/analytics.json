@@ -54,7 +54,57 @@
       "range": "P&L: from {{start}} to {{end}}",
       "onTotal": "of {{total}} total",
       "tooltip": "This chart shows the distribution of your PnL (profits and losses) by grouping trades into value intervals. Each bar represents a PnL interval and its height indicates the percentage of trades that fall within that interval. This helps identify the most frequent PnL ranges in your trading."
+    },
+    "gainsVsLosses": {
+      "title": "Gains vs Losses Distribution",
+      "gains": "Gains",
+      "losses": "Losses",
+      "range": "Range",
+      "count": "Count",
+      "percentage": "Percentage",
+      "tooltip": "This chart compares the distribution of your gains and losses separately. The left histogram shows the distribution of winning trades by value ranges, and the right one shows the distribution of losing trades. This helps identify patterns and compare the distribution of gains and losses to optimize your strategy."
+    },
+    "monthlyPerformance": {
+      "title": "Monthly/Annual Performance",
+      "pnl": "PnL",
+      "trades": "Trades",
+      "yAxis": "PnL",
+      "tooltip": "This chart shows your performance (PnL) by month. Each bar represents the total PnL for a given month. This helps identify the most profitable months and seasonal trends."
+    },
+    "tradingVolume": {
+      "title": "Trading Volume Over Time",
+      "label": "Number of trades",
+      "yAxis": "Number of trades",
+      "tooltip": "This chart shows the number of trades per day over time. This helps identify periods of intense activity and quiet periods."
+    },
+    "tradesDistribution": {
+      "title": "Trades Distribution by Result",
+      "winners": "Winners",
+      "losers": "Losers",
+      "neutral": "Neutral",
+      "percentage": "Percentage",
+      "tooltip": "This chart shows the distribution of your trades between winners, losers and neutral. This allows you to quickly visualize the ratio of winning vs losing trades."
     }
+  },
+  "radar": {
+    "title": "Performance Metrics",
+    "performance": "Performance",
+    "profitFactor": "Profit Factor",
+    "winRate": "Win Rate",
+    "recoveryFactor": "Recovery Factor",
+    "winLossRatio": "Win/Loss Ratio",
+    "expectancy": "Expectancy",
+    "maxDrawdown": "Max Drawdown",
+    "tooltip": "This radar chart displays your key performance metrics normalized on a scale of 0 to 100%. Each axis represents a metric: Profit Factor, Win Rate, Recovery Factor, Win/Loss Ratio, Expectancy, and Max Drawdown. The larger the area, the better your overall performance."
+  },
+  "equityCurve": {
+    "title": "Equity Curve",
+    "equity": "Equity",
+    "initialCapital": "Initial Capital",
+    "dailyPnl": "Daily PnL",
+    "cumulativePnl": "Cumulative PnL",
+    "yAxis": "Equity",
+    "tooltip": "This chart shows the evolution of your capital over time. The green curve represents your current capital (initial capital + cumulative PnL). The gray dashed line indicates your initial capital for reference. This allows you to visualize the growth or decline of your capital over time."
   },
   "common": {
     "trade": "trade",

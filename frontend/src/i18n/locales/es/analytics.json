@@ -54,7 +54,57 @@
       "range": "P&L: de {{start}} a {{end}}",
       "onTotal": "de {{total}} total",
       "tooltip": "Este gráfico muestra la distribución de tus PnL (ganancias y pérdidas) agrupando las operaciones en intervalos de valores. Cada barra representa un intervalo de PnL y su altura indica el porcentaje de operaciones que se encuentran en ese intervalo. Esto ayuda a identificar los rangos de PnL más frecuentes en tu trading."
+    },
+    "gainsVsLosses": {
+      "title": "Distribución de Ganancias vs Pérdidas",
+      "gains": "Ganancias",
+      "losses": "Pérdidas",
+      "range": "Rango",
+      "count": "Cantidad",
+      "percentage": "Porcentaje",
+      "tooltip": "Este gráfico compara la distribución de tus ganancias y pérdidas por separado. El histograma de la izquierda muestra la distribución de las operaciones ganadoras por rangos de valores, y el de la derecha muestra la distribución de las operaciones perdedoras. Esto ayuda a identificar patrones y comparar la distribución de ganancias y pérdidas para optimizar tu estrategia."
+    },
+    "monthlyPerformance": {
+      "title": "Rendimiento Mensual/Anual",
+      "pnl": "PnL",
+      "trades": "Operaciones",
+      "yAxis": "PnL",
+      "tooltip": "Este gráfico muestra tu rendimiento (PnL) por mes. Cada barra representa el PnL total para un mes dado. Esto ayuda a identificar los meses más rentables y las tendencias estacionales."
+    },
+    "tradingVolume": {
+      "title": "Volumen de Trading en el Tiempo",
+      "label": "Número de operaciones",
+      "yAxis": "Número de operaciones",
+      "tooltip": "Este gráfico muestra el número de operaciones por día en el tiempo. Esto ayuda a identificar períodos de actividad intensa y períodos tranquilos."
+    },
+    "tradesDistribution": {
+      "title": "Distribución de Operaciones por Resultado",
+      "winners": "Ganadoras",
+      "losers": "Perdedoras",
+      "neutral": "Neutras",
+      "percentage": "Porcentaje",
+      "tooltip": "Este gráfico muestra la distribución de tus operaciones entre ganadoras, perdedoras y neutras. Esto permite visualizar rápidamente la proporción de operaciones ganadoras vs perdedoras."
     }
+  },
+  "radar": {
+    "title": "Métricas de Rendimiento",
+    "performance": "Rendimiento",
+    "profitFactor": "Factor de Beneficio",
+    "winRate": "Tasa de Éxito",
+    "recoveryFactor": "Factor de Recuperación",
+    "winLossRatio": "Ratio Ganancia/Pérdida",
+    "expectancy": "Expectativa",
+    "maxDrawdown": "Drawdown Máximo",
+    "tooltip": "Este gráfico de radar muestra tus métricas de rendimiento clave normalizadas en una escala de 0 a 100%. Cada eje representa una métrica: Factor de Beneficio, Tasa de Éxito, Factor de Recuperación, Ratio Ganancia/Pérdida, Expectativa y Drawdown Máximo. Cuanto mayor sea el área, mejor será tu rendimiento general."
+  },
+  "equityCurve": {
+    "title": "Curva de Capital",
+    "equity": "Capital",
+    "initialCapital": "Capital Inicial",
+    "dailyPnl": "PnL diario",
+    "cumulativePnl": "PnL acumulado",
+    "yAxis": "Capital",
+    "tooltip": "Este gráfico muestra la evolución de tu capital a lo largo del tiempo. La curva verde representa tu capital actual (capital inicial + PnL acumulado). La línea punteada gris indica tu capital inicial como referencia. Esto te permite visualizar el crecimiento o la disminución de tu capital a lo largo del tiempo."
   },
   "common": {
     "trade": "operación",
