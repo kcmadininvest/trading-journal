@@ -23,7 +23,7 @@ import {
   ArcElement,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Bar as ChartBar, Line as ChartLine, Scatter as ChartScatter, Radar as ChartRadar, Doughnut as ChartDoughnut } from 'react-chartjs-2';
+import { Bar as ChartBar, Scatter as ChartScatter } from 'react-chartjs-2';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
@@ -124,7 +124,6 @@ const createRadarGradientPlugin = (isDark: boolean) => ({
     
     // Dessiner le polygone du graphique radar
     const dataPoints = dataset.data;
-    const pointLabels = chart.scales.r.pointLabels;
     const angleStep = (Math.PI * 2) / dataPoints.length;
     
     dataPoints.forEach((value: number, index: number) => {
@@ -995,7 +994,7 @@ const AnalyticsPage: React.FC = () => {
       data: sortedDates.map(date => dailyData[date]),
       rawData: sortedDates.map(date => ({ date, count: dailyData[date] })),
     };
-  }, [trades, formatDate]);
+  }, [trades, formatDateMemo]);
 
   // Répartition des trades par résultat
   const tradesDistributionData = useMemo(() => {

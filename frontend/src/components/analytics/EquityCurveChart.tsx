@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { Line as ChartLine } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
 
@@ -17,8 +16,6 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
   chartColors,
 }) => {
   const { t } = useTranslation();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
 
   // Mémoriser les options pour éviter les re-rendus
   const chartOptions = useMemo(() => ({
