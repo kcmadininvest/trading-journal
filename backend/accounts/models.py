@@ -152,6 +152,11 @@ class UserPreferences(models.Model):
         default='medium',
         verbose_name=_('Taille de police')
     )
+    sidebar_collapsed = models.BooleanField(
+        default=False,
+        verbose_name=_('Sidebar repliée'),
+        help_text=_('État de la sidebar (repliée ou dépliée)')
+    )
     
     # Notifications
     email_goal_alerts = models.BooleanField(

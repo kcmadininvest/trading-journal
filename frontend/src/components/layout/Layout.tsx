@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../services/auth';
+import userService from '../../services/userService';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import Footer from './Footer';
@@ -22,13 +23,57 @@ const Layout: React.FC<LayoutProps> = ({
   children,
 }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    // Charger depuis localStorage en premier (pour un chargement immédiat)
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
   });
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
 
+  // Charger les préférences utilisateur au montage
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isSidebarCollapsed));
-  }, [isSidebarCollapsed]);
+    const loadPreferences = async () => {
+      try {
+        const preferences = await userService.getPreferences();
+        if (preferences.sidebar_collapsed !== undefined) {
+          setIsSidebarCollapsed(preferences.sidebar_collapsed);
+          // Synchroniser avec localStorage
+          localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(preferences.sidebar_collapsed));
+        }
+      } catch (error) {
+        // Si les préférences n'existent pas encore, utiliser localStorage
+        console.error('Erreur lors du chargement des préférences:', error);
+      } finally {
+        setIsLoadingPreferences(false);
+      }
+    };
+    loadPreferences();
+
+    // Écouter les changements de préférences
+    const handlePreferencesUpdate = () => {
+      loadPreferences();
+    };
+    window.addEventListener('preferences:updated', handlePreferencesUpdate);
+    return () => {
+      window.removeEventListener('preferences:updated', handlePreferencesUpdate);
+    };
+  }, []);
+
+  // Sauvegarder dans localStorage immédiatement pour un feedback instantané
+  useEffect(() => {
+    if (!isLoadingPreferences) {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isSidebarCollapsed));
+      
+      // Sauvegarder dans les préférences utilisateur en arrière-plan
+      const saveToServer = async () => {
+        try {
+          await userService.updatePreferences({ sidebar_collapsed: isSidebarCollapsed });
+        } catch (error) {
+          console.error('Erreur lors de la sauvegarde de l\'état de la sidebar:', error);
+        }
+      };
+      saveToServer();
+    }
+  }, [isSidebarCollapsed, isLoadingPreferences]);
 
   const handleToggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);

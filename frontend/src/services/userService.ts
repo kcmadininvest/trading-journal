@@ -46,6 +46,7 @@ export interface UserPreferences {
   number_format: 'point' | 'comma';
   theme: 'light' | 'dark';
   font_size: 'small' | 'medium' | 'large';
+  sidebar_collapsed?: boolean;
   email_goal_alerts?: boolean;
   created_at?: string;
   updated_at?: string;
