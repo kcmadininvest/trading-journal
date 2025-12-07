@@ -102,8 +102,7 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
                   minRotation: 0,
                 },
                 grid: {
-                  color: chartColors.grid,
-                  lineWidth: 1,
+                  display: false,
                 },
                 border: {
                   color: chartColors.border,

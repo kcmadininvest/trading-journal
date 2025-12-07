@@ -83,8 +83,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
     scales: {
       x: {
         grid: {
-          color: chartColors.grid,
-          lineWidth: 1,
+          display: false,
         },
         ticks: {
           color: chartColors.textSecondary,
