@@ -84,6 +84,13 @@
       "neutral": "Neutral",
       "percentage": "Percentage",
       "tooltip": "This chart shows the distribution of your trades between winners, losers and neutral. This allows you to quickly visualize the ratio of winning vs losing trades."
+    },
+    "riskReward": {
+      "title": "Risk/Reward Ratio Over Time",
+      "label": "Average R:R ratio",
+      "referenceLine": "Reference (R:R = 1)",
+      "trades": "Trades",
+      "tooltip": "This chart shows the evolution of the average risk/reward ratio (R:R) over time. A ratio greater than 1 indicates that average gains are greater than average losses. This helps evaluate the effectiveness of your risk management over time."
     }
   },
   "radar": {

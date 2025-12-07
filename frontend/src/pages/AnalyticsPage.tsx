@@ -996,6 +996,47 @@ const AnalyticsPage: React.FC = () => {
     };
   }, [trades, formatDateMemo]);
 
+  // Ratio Risque/Récompense dans le temps
+  const riskRewardData = useMemo(() => {
+    if (!trades.length) return null;
+
+    const dailyData: { [date: string]: { rrs: number[]; count: number } } = {};
+    
+    trades.forEach(trade => {
+      if (trade.trade_day && trade.actual_risk_reward_ratio) {
+        const date = String(trade.trade_day).trim();
+        const rr = parseFloat(trade.actual_risk_reward_ratio);
+        if (!isNaN(rr) && rr > 0) {
+          if (!dailyData[date]) {
+            dailyData[date] = { rrs: [], count: 0 };
+          }
+          dailyData[date].rrs.push(rr);
+          dailyData[date].count += 1;
+        }
+      }
+    });
+
+    const sortedDates = Object.keys(dailyData).sort();
+    if (sortedDates.length === 0) return null;
+
+    return {
+      labels: sortedDates.map(date => {
+        const d = new Date(date);
+        return formatDateMemo(d.toISOString());
+      }),
+      data: sortedDates.map(date => {
+        const dayData = dailyData[date];
+        const avgRR = dayData.rrs.reduce((sum, rr) => sum + rr, 0) / dayData.rrs.length;
+        return avgRR;
+      }),
+      rawData: sortedDates.map(date => {
+        const dayData = dailyData[date];
+        const avgRR = dayData.rrs.reduce((sum, rr) => sum + rr, 0) / dayData.rrs.length;
+        return { date, avgRR, count: dayData.count };
+      }),
+    };
+  }, [trades, formatDateMemo]);
+
   // Répartition des trades par résultat
   const tradesDistributionData = useMemo(() => {
     if (!trades.length) return null;
@@ -1206,6 +1247,7 @@ const AnalyticsPage: React.FC = () => {
         />
         <EquityCurveChart
           data={equityCurveData}
+          riskRewardData={riskRewardData}
           currencySymbol={currencySymbol}
           chartColors={chartColors}
         />

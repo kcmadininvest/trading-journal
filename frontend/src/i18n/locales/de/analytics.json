@@ -84,6 +84,13 @@
       "neutral": "Neutral",
       "percentage": "Prozentsatz",
       "tooltip": "Dieses Diagramm zeigt die Verteilung Ihrer Trades zwischen Gewinnern, Verlierern und Neutralen. Dies ermöglicht es, schnell das Verhältnis von gewinnbringenden vs verlustbringenden Trades zu visualisieren."
+    },
+    "riskReward": {
+      "title": "Risiko/Ertrags-Verhältnis im Zeitverlauf",
+      "label": "Durchschnittliches R:R-Verhältnis",
+      "referenceLine": "Referenz (R:R = 1)",
+      "trades": "Trades",
+      "tooltip": "Dieses Diagramm zeigt die Entwicklung des durchschnittlichen Risiko/Ertrags-Verhältnisses (R:R) im Zeitverlauf. Ein Verhältnis größer als 1 zeigt, dass die durchschnittlichen Gewinne größer sind als die durchschnittlichen Verluste. Dies hilft, die Wirksamkeit Ihres Risikomanagements im Laufe der Zeit zu bewerten."
     }
   },
   "radar": {

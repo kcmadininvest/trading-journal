@@ -84,6 +84,13 @@
       "neutral": "Neutras",
       "percentage": "Porcentaje",
       "tooltip": "Este gráfico muestra la distribución de tus operaciones entre ganadoras, perdedoras y neutras. Esto permite visualizar rápidamente la proporción de operaciones ganadoras vs perdedoras."
+    },
+    "riskReward": {
+      "title": "Ratio Riesgo/Recompensa en el Tiempo",
+      "label": "Ratio R:R promedio",
+      "referenceLine": "Referencia (R:R = 1)",
+      "trades": "Operaciones",
+      "tooltip": "Este gráfico muestra la evolución del ratio riesgo/recompensa (R:R) promedio en el tiempo. Un ratio superior a 1 indica que las ganancias promedio son superiores a las pérdidas promedio. Esto permite evaluar la eficacia de tu gestión del riesgo a lo largo del tiempo."
     }
   },
   "radar": {

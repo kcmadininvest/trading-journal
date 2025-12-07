@@ -1,21 +1,37 @@
 import React, { useMemo } from 'react';
 import { Line as ChartLine } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
-import { formatCurrency } from '../../utils/numberFormat';
+import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 
 interface EquityCurveChartProps {
   data: any;
+  riskRewardData: any;
   currencySymbol: string;
   chartColors: any;
 }
 
 export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
   data,
+  riskRewardData,
   currencySymbol,
   chartColors,
 }) => {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  // Préparer un map des données R:R par date pour le tooltip
+  const rrByDate = useMemo(() => {
+    if (!riskRewardData) return {};
+    
+    const map: { [date: string]: number } = {};
+    riskRewardData.rawData.forEach((item: any) => {
+      map[item.date] = item.avgRR;
+    });
+    return map;
+  }, [riskRewardData]);
 
   // Mémoriser les options pour éviter les re-rendus
   const chartOptions = useMemo(() => ({
@@ -71,11 +87,21 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
             const initialCapital = data.initialCapital || 0;
             const cumulativePnl = (value || 0) - initialCapital;
             
-            return [
+            // Ajouter le R:R dans le tooltip si disponible
+            const rrValue = rrByDate[rawData.date];
+            const tooltipLines = [
               `${datasetLabel}: ${formatCurrency(value || 0, currencySymbol)}`,
               `${t('analytics:equityCurve.dailyPnl', { defaultValue: 'PnL journalier' })}: ${formatCurrency(rawData.pnl || 0, currencySymbol)}`,
               `${t('analytics:equityCurve.cumulativePnl', { defaultValue: 'PnL cumulé' })}: ${formatCurrency(cumulativePnl, currencySymbol)}`,
             ];
+            
+            if (rrValue !== undefined && rrValue !== null) {
+              tooltipLines.push(
+                `${t('analytics:charts.riskReward.label', { defaultValue: 'Ratio R:R moyen' })}: ${formatNumber(rrValue, 2)}`
+              );
+            }
+            
+            return tooltipLines;
           },
         },
       },
@@ -120,7 +146,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
         },
       },
     },
-  }), [chartColors, currencySymbol, t, data?.rawData, data?.initialCapital]);
+  }), [chartColors, currencySymbol, t, data?.rawData, data?.initialCapital, rrByDate]);
 
   if (!data) {
     return (
@@ -143,7 +169,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
           {t('analytics:equityCurve.title', { defaultValue: 'Courbe de Capital' })}
         </h3>
         <TooltipComponent
-          content={t('analytics:equityCurve.tooltip', { defaultValue: 'Ce graphique montre l\'évolution de votre capital dans le temps. La courbe verte représente votre capital actuel (capital initial + PnL cumulé). La ligne pointillée grise indique votre capital initial pour référence. Cela permet de visualiser la croissance ou la décroissance de votre capital au fil du temps.' })}
+          content={t('analytics:equityCurve.tooltip', { defaultValue: 'Ce graphique montre l\'évolution de votre capital dans le temps. La courbe verte représente votre capital actuel (capital initial + PnL cumulé). La ligne pointillée grise indique votre capital initial pour référence. Le ratio risque/récompense (R:R) moyen est disponible dans le tooltip au survol de chaque point. Cela permet de visualiser la croissance ou la décroissance de votre capital au fil du temps ainsi que l\'efficacité de votre gestion du risque.' })}
           position="top"
         >
           <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
@@ -155,7 +181,33 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
       </div>
       <div style={{ height: '320px', position: 'relative' }}>
         <ChartLine
-          data={data}
+          data={{
+            labels: data.labels,
+            datasets: [
+              {
+                label: t('analytics:equityCurve.equity', { defaultValue: 'Capital' }),
+                data: data.datasets[0].data,
+                borderColor: isDark ? '#10b981' : '#059669',
+                backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(5, 150, 105, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 4,
+                yAxisID: 'y',
+              },
+              {
+                label: t('analytics:equityCurve.initialCapital', { defaultValue: 'Capital Initial' }),
+                data: data.datasets[1].data,
+                borderColor: isDark ? 'rgba(156, 163, 175, 0.5)' : 'rgba(107, 114, 128, 0.5)',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                fill: false,
+                pointRadius: 0,
+                yAxisID: 'y',
+              },
+            ],
+          }}
           options={chartOptions}
         />
       </div>

@@ -84,6 +84,13 @@
       "neutral": "Neutres",
       "percentage": "Pourcentage",
       "tooltip": "Ce graphique montre la répartition de vos trades entre gagnants, perdants et neutres. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants."
+    },
+    "riskReward": {
+      "title": "Ratio Risque/Récompense dans le Temps",
+      "label": "Ratio R:R moyen",
+      "referenceLine": "Référence (R:R = 1)",
+      "trades": "Trades",
+      "tooltip": "Ce graphique montre l'évolution du ratio risque/récompense (R:R) moyen dans le temps. Un ratio supérieur à 1 indique que les gains moyens sont supérieurs aux pertes moyennes. Cela permet d'évaluer l'efficacité de votre gestion du risque au fil du temps."
     }
   },
   "radar": {
