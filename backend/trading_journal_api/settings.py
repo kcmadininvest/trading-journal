@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
+from typing import Any, Dict
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -414,6 +415,64 @@ else:
 LOGS_DIR = BASE_DIR / 'logs'
 LOGS_DIR.mkdir(exist_ok=True)
 
+# Vérifier si les fichiers de log sont accessibles en écriture
+def can_write_log_file(filepath):
+    """Vérifie si on peut écrire dans un fichier de log."""
+    try:
+        # Essayer d'ouvrir le fichier en mode append pour vérifier les permissions
+        with open(filepath, 'a'):
+            pass
+        return True
+    except (PermissionError, OSError):
+        return False
+
+# Déterminer quels handlers de fichiers peuvent être utilisés
+django_log_path = LOGS_DIR / 'django.log'
+security_log_path = LOGS_DIR / 'django_security.log'
+
+can_write_django_log = can_write_log_file(django_log_path)
+can_write_security_log = can_write_log_file(security_log_path)
+
+# Construire les handlers disponibles
+handlers: Dict[str, Any] = {
+    'console': {
+        'class': 'logging.StreamHandler',
+        'formatter': 'verbose',
+    },
+}
+
+if can_write_django_log:
+    handlers['file'] = {
+        'class': 'logging.handlers.RotatingFileHandler',
+        'filename': str(django_log_path),
+        'maxBytes': 10 * 1024 * 1024,  # 10MB
+        'backupCount': 5,
+        'formatter': 'verbose',
+    }
+
+if can_write_security_log:
+    handlers['security_file'] = {
+        'class': 'logging.handlers.RotatingFileHandler',
+        'filename': str(security_log_path),
+        'maxBytes': 10 * 1024 * 1024,  # 10MB
+        'backupCount': 10,  # Conserver plus de backups pour la sécurité
+        'formatter': 'security',
+    }
+
+# Déterminer les handlers pour chaque logger
+trades_handlers = ['console']
+django_handlers = ['console']
+security_handlers = ['console']
+root_handlers = ['console']
+
+if can_write_django_log:
+    trades_handlers.append('file')
+    django_handlers.append('file')
+    root_handlers.append('file')
+
+if can_write_security_log:
+    security_handlers.append('security_file')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -431,50 +490,31 @@ LOGGING = {
             'style': '{',
         },
     },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': str(LOGS_DIR / 'django.log'),
-            'maxBytes': 10 * 1024 * 1024,  # 10MB
-            'backupCount': 5,
-            'formatter': 'verbose',
-        },
-        'security_file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'filename': str(LOGS_DIR / 'django_security.log'),
-            'maxBytes': 10 * 1024 * 1024,  # 10MB
-            'backupCount': 10,  # Conserver plus de backups pour la sécurité
-            'formatter': 'security',
-        },
-    },
+    'handlers': handlers,
     'loggers': {
         'trades': {
-            'handlers': ['console', 'file'],
+            'handlers': trades_handlers,
             'level': 'INFO',
             'propagate': False,
         },
         'django': {
-            'handlers': ['console', 'file'],
+            'handlers': django_handlers,
             'level': 'INFO',
             'propagate': False,
         },
         'security': {
-            'handlers': ['console', 'security_file'],
+            'handlers': security_handlers,
             'level': 'WARNING',
             'propagate': False,
         },
         'django.security': {
-            'handlers': ['security_file'],
+            'handlers': ['security_file'] if can_write_security_log else ['console'],
             'level': 'WARNING',
             'propagate': False,
         },
     },
     'root': {
-        'handlers': ['console', 'file'],
+        'handlers': root_handlers,
         'level': 'INFO',
     },
 }

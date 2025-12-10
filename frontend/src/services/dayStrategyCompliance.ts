@@ -121,6 +121,7 @@ class DayStrategyComplianceService {
       method: 'GET',
     });
 
+    // Gérer les cas où il n'y a pas de compliance (404 ou 200 avec null)
     if (response.status === 404) {
       return null;
     }
@@ -129,7 +130,9 @@ class DayStrategyComplianceService {
       throw new Error(`Erreur lors de la récupération de la compliance: ${response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    // Si la réponse est null ou vide, retourner null
+    return data || null;
   }
 
   /**

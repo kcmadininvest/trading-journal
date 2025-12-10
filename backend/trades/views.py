@@ -3099,25 +3099,25 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
         
         try:
             # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
-            compliance = DayStrategyCompliance.objects.filter(  # type: ignore
+            queryset = DayStrategyCompliance.objects.filter(  # type: ignore
                 user=self.request.user,  # ✅ Filtre par utilisateur
                 date=date
-            ).first()
+            )
             
             # Filtrer par compte de trading si spécifié
             trading_account_id = request.query_params.get('trading_account')
-            if trading_account_id and compliance:
-                compliance = DayStrategyCompliance.objects.filter(  # type: ignore
-                    user=self.request.user,
-                    date=date,
-                    trading_account_id=trading_account_id
-                ).first()
+            if trading_account_id:
+                queryset = queryset.filter(trading_account_id=trading_account_id)
+            
+            compliance = queryset.first()
             
             if compliance:
                 serializer = self.get_serializer(compliance)
                 return Response(serializer.data)
             else:
-                return Response({'error': 'Aucune compliance trouvée pour cette date'}, status=status.HTTP_404_NOT_FOUND)
+                # Retourner null au lieu d'un 404 pour éviter les erreurs dans la console
+                # quand il n'y a pas encore de compliance (cas normal)
+                return Response(None, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
