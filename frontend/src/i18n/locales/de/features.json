@@ -1,0 +1,23 @@
+{
+  "title": "Funktionen",
+  "subtitle": "Alle Funktionen, die Sie benötigen, um Ihre Handelsleistung zu verfolgen und zu verbessern.",
+  "additional": {
+    "title": "Zusätzliche Funktionen",
+    "import": {
+      "title": "CSV-Import",
+      "content": "Importieren Sie Ihre Trades einfach aus einer CSV-Datei. Kompatibel mit den meisten Handelsplattformen."
+    },
+    "export": {
+      "title": "CSV-Export",
+      "content": "Exportieren Sie Ihre gefilterten Daten für externe Analysen oder Sicherungen."
+    },
+    "filters": {
+      "title": "Erweiterte Filter",
+      "content": "Filtern Sie Ihre Trades nach Konto, Datum, Instrument, Strategie und vielem mehr."
+    },
+    "customization": {
+      "title": "Anpassung",
+      "content": "Passen Sie Ihre Benutzeroberfläche an: Datumsformat, Zahlenformat, Sprache, Zeitzone, Thema und Schriftgröße."
+    }
+  }
+}

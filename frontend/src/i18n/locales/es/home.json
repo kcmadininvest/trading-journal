@@ -7,6 +7,7 @@
     "freeBadge": "100% Gratis • Sin Costos Ocultos"
   },
   "features": {
+    "viewAll": "Ver todas las funcionalidades",
     "tradeTracking": {
       "title": "Seguimiento Completo de Operaciones",
       "description": "Registra todas tus operaciones con precisión. Importación CSV, gestión multi-cuentas, seguimiento en tiempo real de tu rendimiento."
@@ -63,9 +64,38 @@
   },
   "about": {
     "title": "Acerca de",
-    "intro": "Soy apasionado de la informática y los mercados financieros. Esta plataforma nació de mi convicción de que seguir tu progreso en trading no debería ser un lujo de pago.",
-    "philosophy": "No deberías tener que pagar para seguir tu progreso cuando aún no estás ganando dinero con el trading y todavía te estás formando.",
-    "conclusion": "Por eso K&C Trading Journal es 100% gratuito, sin costos ocultos. Una herramienta profesional accesible para todos los traders, ya sean principiantes o experimentados."
+    "summary": "K&C Trading Journal es una plataforma 100% gratuita creada para ayudar a todos los traders a seguir y mejorar su rendimiento. Una herramienta profesional accesible para todos, sin costos ocultos.",
+    "learnMore": "Saber más"
+  },
+  "faq": {
+    "title": "Preguntas Frecuentes",
+    "subtitle": "Encuentra rápidamente las respuestas a tus preguntas",
+    "items": [
+      {
+        "question": "¿K&C Trading Journal es realmente gratuito?",
+        "answer": "Sí, K&C Trading Journal es 100% gratuito, sin costos ocultos. Creemos que seguir tu progreso en trading no debería ser un lujo de pago, especialmente cuando aún estás aprendiendo. Todas las funcionalidades están disponibles gratuitamente."
+      },
+      {
+        "question": "¿Cómo puedo importar mis operaciones?",
+        "answer": "Puedes importar tus operaciones mediante un archivo CSV. El formato compatible funciona con la mayoría de las plataformas de trading. Ve a la sección Operaciones y usa el botón 'Importar CSV' para cargar tus datos."
+      },
+      {
+        "question": "¿Puedo gestionar múltiples cuentas de trading?",
+        "answer": "¡Absolutamente! K&C Trading Journal admite la gestión de múltiples cuentas de trading (TopStep, IBKR, NinjaTrader, etc.). Puedes analizar cada cuenta por separado o ver una vista agregada de todas tus cuentas."
+      },
+      {
+        "question": "¿Están seguros mis datos?",
+        "answer": "Sí, la seguridad de tus datos es nuestra prioridad. Todas las comunicaciones están cifradas mediante HTTPS, y tus datos de trading se almacenan de forma segura en nuestros servidores. Puedes eliminar tu cuenta y todos tus datos en cualquier momento."
+      },
+      {
+        "question": "¿Qué estadísticas están disponibles?",
+        "answer": "K&C Trading Journal proporciona estadísticas detalladas que incluyen el factor de beneficio, la tasa de aciertos, el drawdown, los ratios de recuperación y mucho más. También puedes visualizar tu rendimiento mediante gráficos interactivos y mapas de calor."
+      },
+      {
+        "question": "¿Puedo usar la aplicación en móvil?",
+        "answer": "Sí, la aplicación es responsive y funciona en todos los dispositivos (ordenador, tableta, smartphone). Puedes acceder a tu diario de trading desde cualquier lugar con conexión a internet."
+      }
+    ]
   },
   "cta": {
     "title": "¿Listo para transformar tu trading?",

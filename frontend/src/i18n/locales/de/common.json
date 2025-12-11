@@ -58,5 +58,6 @@
   "deleteConfirm": "Sind Sie sicher?",
   "deleteItemConfirm": "Sind Sie sicher, dass Sie {{item}} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "deleteConfirmGeneric": "Diese Aktion kann nicht rückgängig gemacht werden.",
-  "deleting": "Löschen..."
+  "deleting": "Löschen...",
+  "backToHome": "Zurück zur Startseite"
 }

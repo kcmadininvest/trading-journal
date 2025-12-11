@@ -4,6 +4,7 @@ import AuthModal from '../components/auth';
 import ContactModal from '../components/contact/ContactModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { changeLanguage } from '../i18n/config';
+import { SEOHead, SchemaMarkup } from '../components/SEO';
 
 const HomePage: React.FC = () => {
   const { t, i18n: i18nInstance } = useI18nTranslation();
@@ -16,65 +17,88 @@ const HomePage: React.FC = () => {
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   
-  // Fonction pour détecter la langue du navigateur
-  const detectBrowserLanguage = (): string => {
-    const browserLang = navigator.language || (navigator as any).userLanguage;
-    if (browserLang) {
-      const lang = browserLang.split('-')[0].toLowerCase();
-      // Les langues complètement traduites sont : français, anglais, espagnol, et allemand
-      if (lang === 'fr') return 'fr';
-      if (lang === 'es') return 'es';
-      if (lang === 'de') return 'de';
-      return 'en';
-    }
-    return 'en';
+  // URLs selon la langue pour les pages publiques
+  const getFeaturesUrl = (lang: string): string => {
+    const urlMap: Record<string, string> = {
+      fr: '/fonctionnalites',
+      en: '/features',
+      es: '/funcionalidades',
+      de: '/funktionen',
+    };
+    return urlMap[lang] || urlMap.fr;
   };
-
-  // Initialiser la langue : vérifier localStorage, sinon détecter depuis le navigateur
-  const initializeLanguage = (): string => {
-    const savedLang = localStorage.getItem('i18nextLng');
-    // Si une langue est sauvegardée et valide, l'utiliser
-    if (savedLang && ['fr', 'en', 'es', 'de'].includes(savedLang)) {
-      return savedLang;
-    }
-    // Si pas de langue sauvegardée ou langue invalide, détecter depuis le navigateur
-    const detectedLang = detectBrowserLanguage();
-    // Sauvegarder la langue détectée pour les prochaines visites
-    localStorage.setItem('i18nextLng', detectedLang);
-    return detectedLang;
+  
+  const getAboutUrl = (lang: string): string => {
+    const urlMap: Record<string, string> = {
+      fr: '/a-propos',
+      en: '/about',
+      es: '/acerca-de',
+      de: '/uber-uns',
+    };
+    return urlMap[lang] || urlMap.fr;
   };
-
+  
+  // Utiliser i18n.language comme source de vérité unique
+  // i18next gère déjà localStorage automatiquement via LanguageDetector
   const [currentLanguage, setCurrentLanguage] = useState<string>(() => {
-    return initializeLanguage();
+    return i18nInstance.language?.split('-')[0] || 'fr';
   });
 
-  // Initialiser et forcer la langue au montage du composant
+  // Synchroniser currentLanguage avec i18n.language (source de vérité unique)
+  // i18next gère déjà localStorage automatiquement via LanguageDetector
   useEffect(() => {
-    const lang = initializeLanguage();
-    // Forcer le changement de langue dans i18n
-    changeLanguage(lang);
-    setCurrentLanguage(lang);
+    console.log('🏠 HomePage - Montage du composant');
+    console.log('🏠 HomePage - Langue i18n actuelle:', i18nInstance.language);
     
-    // Synchroniser avec i18n au cas où la langue change ailleurs
-    const checkLanguage = () => {
-      if (i18nInstance.language !== lang) {
-        changeLanguage(lang);
+    // PRIORITÉ 1: Vérifier le paramètre URL ?lang= (passé depuis les autres pages)
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlLang = urlParams.get('lang');
+    
+    const handleLanguageChanged = (lng: string) => {
+      const langCode = lng.split('-')[0];
+      console.log('🏠 HomePage - Événement languageChanged:', langCode);
+      if (['fr', 'en', 'es', 'de'].includes(langCode)) {
+        setCurrentLanguage(langCode);
       }
     };
     
-    // Vérifier immédiatement et après un court délai pour s'assurer que i18n est bien initialisé
-    checkLanguage();
-    const timeoutId = setTimeout(checkLanguage, 100);
+    // Écouter les changements de langue
+    i18nInstance.on('languageChanged', handleLanguageChanged);
     
-    return () => clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Ne s'exécute qu'une fois au montage
+    let targetLang: string | null = null;
+    
+    // Si un paramètre lang est présent dans l'URL, l'utiliser en priorité
+    if (urlLang && ['fr', 'en', 'es', 'de'].includes(urlLang)) {
+      console.log('🏠 HomePage - Langue détectée depuis URL param:', urlLang);
+      targetLang = urlLang;
+      // Changer la langue et sauvegarder (changeLanguage sauvegarde automatiquement)
+      changeLanguage(urlLang);
+      // Nettoyer le paramètre URL pour une URL propre
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    } else {
+      // Sinon, utiliser la langue actuelle de i18n (détectée automatiquement)
+      // i18next a déjà fait la détection avec l'ordre: customNavigatorLanguages → localStorage → navigator
+      // customNavigatorLanguages utilise navigator.languages en premier (comme YouTube)
+      const currentLang = i18nInstance.language?.split('-')[0] || 'fr';
+      console.log('🏠 HomePage - Utilisation de la langue i18n détectée:', currentLang);
+      console.log('🏠 HomePage - navigator.languages:', navigator.languages);
+      targetLang = currentLang;
+    }
+    
+    if (targetLang) {
+      setCurrentLanguage(targetLang);
+    }
+    
+    return () => {
+      i18nInstance.off('languageChanged', handleLanguageChanged);
+    };
+  }, [i18nInstance]);
 
   const handleLanguageChange = (lang: string) => {
+    // changeLanguage() sauvegarde automatiquement dans localStorage via LanguageDetector
     changeLanguage(lang);
     setCurrentLanguage(lang);
-    // Sauvegarder dans localStorage
-    localStorage.setItem('i18nextLng', lang);
     setIsLanguageDropdownOpen(false);
   };
 
@@ -131,8 +155,106 @@ const HomePage: React.FC = () => {
     window.location.reload();
   };
 
+  const baseUrl = process.env.REACT_APP_BASE_URL || window.location.origin;
+  const currentUrl = `${baseUrl}${window.location.pathname}`;
+  
+  // Données SEO selon la langue
+  const seoData = {
+    fr: {
+      title: 'Journal de Trading Gratuit | K&C Trading Journal',
+      description: 'Journal de trading professionnel gratuit - Suivez, analysez et optimisez vos performances de trading avec des outils avancés. Import CSV, multi-comptes, statistiques détaillées. 100% gratuit, sans frais cachés.',
+      keywords: 'journal de trading, trading journal, suivi de trades, analyse trading, performance trading, logiciel trading, application trading',
+    },
+    en: {
+      title: 'Free Trading Journal | K&C Trading Journal',
+      description: 'Free professional trading journal - Track, analyze and optimize your trading performance with advanced tools. CSV import, multi-account, detailed statistics. 100% free, no hidden fees.',
+      keywords: 'trading journal, journal de trading, trade tracking, trading analysis, trading performance, trading software, trading application',
+    },
+    es: {
+      title: 'Diario de Trading Gratuito | K&C Trading Journal',
+      description: 'Diario de trading profesional gratuito - Rastrea, analiza y optimiza tu rendimiento de trading con herramientas avanzadas. Importación CSV, multi-cuenta, estadísticas detalladas. 100% gratuito, sin costos ocultos.',
+      keywords: 'diario de trading, trading journal, seguimiento de trades, análisis de trading, rendimiento de trading, software de trading',
+    },
+    de: {
+      title: 'Kostenloses Trading-Journal | K&C Trading Journal',
+      description: 'Kostenloses professionelles Trading-Journal - Verfolgen, analysieren und optimieren Sie Ihre Trading-Leistung mit erweiterten Tools. CSV-Import, Multi-Konto, detaillierte Statistiken. 100% kostenlos, keine versteckten Gebühren.',
+      keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung, Trading-Software',
+    },
+  };
+
+  // Synchroniser currentLanguage avec i18n à chaque fois que i18n change
+  useEffect(() => {
+    const i18nLang = i18nInstance.language?.split('-')[0] || 'fr';
+    if (i18nLang !== currentLanguage && ['fr', 'en', 'es', 'de'].includes(i18nLang)) {
+      setCurrentLanguage(i18nLang);
+    }
+  }, [i18nInstance.language, currentLanguage]);
+  
+  const currentSeo = seoData[currentLanguage as keyof typeof seoData] || seoData.fr;
+
   return (
     <>
+      {/* SEO Components */}
+      <SEOHead
+        title={currentSeo.title}
+        description={currentSeo.description}
+        keywords={currentSeo.keywords}
+        url={currentUrl}
+        type="website"
+      />
+      
+      {/* Schema.org Markup */}
+      <SchemaMarkup
+        type="Organization"
+        data={{
+          name: 'K&C Trading Journal',
+          url: baseUrl,
+          logo: `${baseUrl}/logo.png`,
+          description: 'Application de journal de trading professionnel',
+          sameAs: [
+            // Ajouter les liens réseaux sociaux quand disponibles
+          ],
+        }}
+      />
+      
+      <SchemaMarkup
+        type="SoftwareApplication"
+        data={{
+          name: 'K&C Trading Journal',
+          applicationCategory: 'FinanceApplication',
+          operatingSystem: 'Web',
+          offers: {
+            '@type': 'Offer',
+            price: '0',
+            priceCurrency: 'EUR',
+          },
+          featureList: [
+            'Suivi de trades',
+            'Analyse de performance',
+            'Import CSV',
+            'Multi-comptes',
+            'Statistiques détaillées',
+            'Visualisations avancées',
+          ],
+        }}
+      />
+      
+      <SchemaMarkup
+        type="WebSite"
+        data={{
+          name: 'K&C Trading Journal',
+          url: baseUrl,
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: {
+              '@type': 'EntryPoint',
+              urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+            },
+            'query-input': 'required name=search_term_string',
+          },
+        }}
+      />
+      
       {/* Styles pour la scrollbar personnalisée */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
@@ -333,6 +455,17 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Main Features Grid */}
+        <div className="mb-8 text-center">
+          <a
+            href={getFeaturesUrl(currentLanguage)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl mb-8"
+          >
+            {t('home:features.viewAll', { defaultValue: 'Voir toutes les fonctionnalités' })}
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
           <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100">
             <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-md">
@@ -537,7 +670,7 @@ const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* About Section */}
+        {/* About Section - Résumé */}
         <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-10 md:p-12 shadow-xl mb-12 border border-gray-200">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
@@ -548,19 +681,87 @@ const HomePage: React.FC = () => {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
               {t('home:about.title')}
             </h2>
-            <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
-              <p className="max-w-3xl mx-auto">
-                {t('home:about.intro')}
-              </p>
-              <p className="max-w-3xl mx-auto font-medium text-gray-800">
-                {t('home:about.philosophy')}
-              </p>
-              <p className="max-w-3xl mx-auto">
-                {t('home:about.conclusion')}
-              </p>
+            <p className="text-lg text-gray-700 leading-relaxed max-w-3xl mx-auto mb-6">
+              {t('home:about.summary', {
+                defaultValue: 'K&C Trading Journal est une plateforme 100% gratuite créée pour aider tous les traders à suivre et améliorer leurs performances. Un outil professionnel accessible à tous, sans frais cachés.',
+              })}
+            </p>
+            <div className="mt-8">
+              <a
+                href={getAboutUrl(currentLanguage)}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                {t('home:about.learnMore', { defaultValue: 'En savoir plus' })}
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </a>
             </div>
           </div>
         </div>
+
+        {/* FAQ Section */}
+        <div className="bg-white rounded-2xl p-8 md:p-12 shadow-xl mb-12 border border-gray-200">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              {t('home:faq.title')}
+            </h2>
+            <p className="text-lg text-gray-600">
+              {t('home:faq.subtitle')}
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto space-y-4">
+            {(() => {
+              const faqItems = t('home:faq.items', { returnObjects: true });
+              const itemsArray = Array.isArray(faqItems) ? faqItems : [];
+              return itemsArray.map((item: any, index: number) => (
+                <details
+                  key={index}
+                  className="group bg-gray-50 rounded-xl p-6 hover:bg-gray-100 transition-colors duration-200 border border-gray-200"
+                >
+                  <summary className="flex items-center justify-between cursor-pointer list-none">
+                    <h3 className="text-lg font-semibold text-gray-900 pr-4">
+                      {item.question}
+                    </h3>
+                    <svg
+                      className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform duration-200 flex-shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <p className="mt-4 text-gray-700 leading-relaxed pl-0">
+                    {item.answer}
+                  </p>
+                </details>
+              ));
+            })()}
+          </div>
+        </div>
+
+        {/* FAQ Schema.org */}
+        {(() => {
+          const faqItems = t('home:faq.items', { returnObjects: true });
+          const itemsArray = Array.isArray(faqItems) ? faqItems : [];
+          return (
+            <SchemaMarkup
+              type="FAQPage"
+              data={{
+                mainEntity: itemsArray.map((item: any) => ({
+                  '@type': 'Question',
+                  name: item.question,
+                  acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: item.answer,
+                  },
+                })),
+              }}
+            />
+          );
+        })()}
 
         {/* Contact Section */}
         <div className="text-center mb-12">

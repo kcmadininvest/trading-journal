@@ -1,0 +1,37 @@
+{
+  "title": "À Propos",
+  "story": {
+    "title": "Notre Histoire",
+    "content1": "K&C Trading Journal est né d'une passion pour l'informatique et les marchés financiers. En tant que trader, j'ai rapidement réalisé l'importance de suivre et d'analyser ses performances pour progresser.",
+    "content2": "Cependant, la plupart des solutions disponibles étaient soit trop chères, soit limitées dans leurs fonctionnalités. J'ai donc décidé de créer une plateforme complète, professionnelle et surtout 100% gratuite."
+  },
+  "mission": {
+    "title": "Notre Mission",
+    "content1": "Notre mission est simple : fournir à tous les traders, qu'ils soient débutants ou expérimentés, un outil professionnel pour suivre, analyser et optimiser leurs performances de trading.",
+    "content2": "Nous croyons fermement que suivre ses progrès ne devrait pas être un luxe payant, surtout quand on apprend encore et qu'on ne gagne pas encore d'argent du trading.",
+    "content3": "C'est pourquoi K&C Trading Journal est et restera 100% gratuit, sans frais cachés, sans limitations, sans publicité."
+  },
+  "values": {
+    "title": "Nos Valeurs",
+    "free": {
+      "title": "Gratuité",
+      "content": "Un outil professionnel accessible à tous, sans frais."
+    },
+    "transparency": {
+      "title": "Transparence",
+      "content": "Aucun frais caché, aucune limitation surprise."
+    },
+    "quality": {
+      "title": "Qualité",
+      "content": "Des fonctionnalités professionnelles et une interface moderne."
+    },
+    "privacy": {
+      "title": "Confidentialité",
+      "content": "Vos données sont sécurisées et vous appartiennent. Vous pouvez les supprimer à tout moment."
+    }
+  },
+  "future": {
+    "title": "L'Avenir",
+    "content": "Nous continuons d'améliorer K&C Trading Journal en ajoutant de nouvelles fonctionnalités basées sur les retours de notre communauté. Notre objectif est de rester la meilleure solution gratuite de journal de trading disponible."
+  }
+}

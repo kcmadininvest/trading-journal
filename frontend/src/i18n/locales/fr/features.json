@@ -1,0 +1,23 @@
+{
+  "title": "Fonctionnalités",
+  "subtitle": "Toutes les fonctionnalités dont vous avez besoin pour suivre et améliorer vos performances de trading.",
+  "additional": {
+    "title": "Fonctionnalités Additionnelles",
+    "import": {
+      "title": "Import CSV",
+      "content": "Importez facilement vos trades depuis un fichier CSV. Compatible avec la plupart des plateformes de trading."
+    },
+    "export": {
+      "title": "Export CSV",
+      "content": "Exportez vos données filtrées pour une analyse externe ou une sauvegarde."
+    },
+    "filters": {
+      "title": "Filtres Avancés",
+      "content": "Filtrez vos trades par compte, date, instrument, stratégie et bien plus encore."
+    },
+    "customization": {
+      "title": "Personnalisation",
+      "content": "Personnalisez votre interface : format de date, format de nombre, langue, fuseau horaire, thème et taille de police."
+    }
+  }
+}

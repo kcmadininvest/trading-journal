@@ -1,7 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-
 // Import des traductions
 import frCommon from './locales/fr/common.json';
 import enCommon from './locales/en/common.json';
@@ -153,6 +152,67 @@ import enLegal from './locales/en/legal.json';
 import esLegal from './locales/es/legal.json';
 import deLegal from './locales/de/legal.json';
 
+import frAbout from './locales/fr/about.json';
+import enAbout from './locales/en/about.json';
+import esAbout from './locales/es/about.json';
+import deAbout from './locales/de/about.json';
+
+import frFeatures from './locales/fr/features.json';
+import enFeatures from './locales/en/features.json';
+import esFeatures from './locales/es/features.json';
+import deFeatures from './locales/de/features.json';
+
+// Custom detector qui utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
+const customNavigatorLanguagesDetector = {
+  name: 'customNavigatorLanguages',
+  
+  lookup(): string | undefined {
+    if (typeof navigator === 'undefined') {
+      console.log('🌐 Custom detector - navigator non disponible');
+      return undefined;
+    }
+    
+    // navigator.languages contient toutes les langues préférées dans l'ordre
+    // Par exemple: ['en-US', 'fr-FR', 'en', 'fr']
+    const languages = navigator.languages || [navigator.language || (navigator as any).userLanguage];
+    console.log('🌐 Custom detector - navigator.languages:', languages);
+    
+    // Parcourir les langues dans l'ordre de préférence
+    for (const browserLang of languages) {
+      if (!browserLang) continue;
+      
+      const lang = browserLang.split('-')[0].toLowerCase();
+      console.log('🌐 Custom detector - Test langue:', browserLang, '→', lang);
+      
+      // Prendre la première langue supportée dans l'ordre de préférence
+      if (lang === 'en') {
+        console.log('✅ Custom detector - Langue détectée: anglais (en)');
+        return 'en';
+      }
+      if (lang === 'fr') {
+        console.log('✅ Custom detector - Langue détectée: français (fr)');
+        return 'fr';
+      }
+      if (lang === 'es') {
+        console.log('✅ Custom detector - Langue détectée: espagnol (es)');
+        return 'es';
+      }
+      if (lang === 'de') {
+        console.log('✅ Custom detector - Langue détectée: allemand (de)');
+        return 'de';
+      }
+    }
+    
+    console.log('⚠️ Custom detector - Aucune langue supportée trouvée');
+    return undefined;
+  },
+  
+  cacheUserLanguage(lng: string): void {
+    // Ne pas sauvegarder automatiquement - seulement via changeLanguage()
+    console.log('🌐 Custom detector - cacheUserLanguage appelé avec:', lng, '(ignoré - pas de sauvegarde automatique)');
+  },
+};
+
 const resources = {
   fr: {
     common: frCommon,
@@ -173,6 +233,8 @@ const resources = {
     goals: frGoals,
     transactions: frTransactions,
     legal: frLegal,
+    about: frAbout,
+    features: frFeatures,
   },
   en: {
     common: enCommon,
@@ -193,6 +255,8 @@ const resources = {
     goals: enGoals,
     transactions: enTransactions,
     legal: enLegal,
+    about: enAbout,
+    features: enFeatures,
   },
   es: {
     common: esCommon,
@@ -213,6 +277,8 @@ const resources = {
     goals: esGoals,
     transactions: esTransactions,
     legal: esLegal,
+    about: esAbout,
+    features: esFeatures,
   },
   de: {
     common: deCommon,
@@ -233,6 +299,8 @@ const resources = {
     goals: deGoals,
     transactions: deTransactions,
     legal: deLegal,
+    about: deAbout,
+    features: deFeatures,
   },
   it: {
     common: itCommon,
@@ -307,79 +375,92 @@ const resources = {
 };
 
 // Fonction pour obtenir la langue par défaut depuis le navigateur
-// Utilise navigator.language (standard) ou navigator.userLanguage (IE legacy)
+// Utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 // Format retourné : 'fr-FR', 'en-US', 'es-ES', etc.
 // On extrait le code langue principal (ex: 'fr' de 'fr-FR')
-// Les langues complètement traduites sont : 'fr', 'en', et 'es'
+// Les langues complètement traduites sont : 'fr', 'en', 'es', et 'de'
 // Les autres langues utiliseront 'en' par défaut
 const getDefaultLanguage = (): string => {
   if (typeof navigator !== 'undefined') {
-    // navigator.language est la propriété standard qui retourne la langue préférée du navigateur
-    // Format BCP 47 : 'fr-FR', 'en-US', 'en-GB', 'es-ES', etc.
-    // navigator.userLanguage est un fallback pour les anciennes versions d'Internet Explorer
-    const browserLang = navigator.language || (navigator as any).userLanguage;
-    if (browserLang) {
-      // Extraire le code langue principal (ex: 'fr' de 'fr-FR')
-      const lang = browserLang.split('-')[0].toLowerCase();
+    // navigator.languages contient toutes les langues préférées dans l'ordre
+    // Par exemple: ['en-US', 'fr-FR', 'en', 'fr']
+    // navigator.language est la première langue (fallback si navigator.languages n'existe pas)
+    const languages = navigator.languages || [navigator.language || (navigator as any).userLanguage];
+    
+    // Parcourir les langues dans l'ordre de préférence
+    for (const browserLang of languages) {
+      if (!browserLang) continue;
       
-      // Les langues complètement traduites sont : français, anglais, espagnol, et allemand
-      if (lang === 'fr') {
-        return 'fr';
-      }
-      if (lang === 'es') {
-        return 'es';
-      }
-      if (lang === 'de') {
-        return 'de';
-      }
-      // Pour 'en' et toutes les autres langues, utiliser 'en'
-      return 'en';
+      const lang = browserLang.split('-')[0].toLowerCase();
+      // Prendre la première langue supportée dans l'ordre de préférence
+      if (lang === 'en') return 'en';
+      if (lang === 'fr') return 'fr';
+      if (lang === 'es') return 'es';
+      if (lang === 'de') return 'de';
     }
   }
   // Par défaut, retourner 'en'
   return 'en';
 };
 
+// Créer une instance de LanguageDetector et ajouter le custom detector
+const languageDetector = new LanguageDetector();
+languageDetector.addDetector(customNavigatorLanguagesDetector);
+
+// Obtenir la langue initiale : TOUJOURS utiliser la détection du navigateur (comme YouTube)
+// localStorage ne sera PAS utilisé pour l'initialisation - seulement pour les choix explicites
+// Cela garantit que la langue du navigateur a toujours la priorité
+const getInitialLanguage = (): string => {
+  // Toujours utiliser la détection du navigateur (comme YouTube)
+  const detectedLang = getDefaultLanguage();
+  console.log('🌐 i18n init - Langue détectée depuis navigator (priorité absolue):', detectedLang);
+  return detectedLang;
+};
+
 i18n
-  .use(LanguageDetector)
+  .use(languageDetector)
   .use(initReactI18next)
   .init({
     resources,
+    lng: getInitialLanguage(), // Utiliser la langue détectée depuis navigator (priorité absolue)
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
     },
     
     detection: {
-      // Détecter la langue du navigateur, mais seulement si pas de langue sauvegardée
-      // L'ordre est important : on vérifie d'abord localStorage (préférence utilisateur)
-      // puis le navigateur si aucune préférence n'est sauvegardée
-      order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
+      // Ordre de détection : 
+      // 1. customNavigatorLanguages (navigator.languages avec ordre de préférence) - PRIORITÉ ABSOLUE comme YouTube
+      // 2. navigator (fallback standard)
+      // Note: localStorage n'est PAS dans l'ordre - la détection du navigateur a toujours la priorité
+      // localStorage sera utilisé seulement quand l'utilisateur fait un choix explicite via changeLanguage()
+      order: ['customNavigatorLanguages', 'navigator'],
+      // IMPORTANT: Ne pas sauvegarder automatiquement la langue détectée du navigateur
+      // Seulement sauvegarder quand l'utilisateur fait un choix explicite via changeLanguage()
+      caches: [], // Ne pas sauvegarder automatiquement - seulement via changeLanguage()
       lookupLocalStorage: 'i18nextLng',
-      // Fonction pour convertir la langue détectée par le navigateur
-      // Les langues complètement traduites sont : 'fr', 'en', 'es', et 'de'
-      convertDetectedLanguage: (lng: string): string => {
-        if (!lng) return 'en';
-        const lang = lng.split('-')[0].toLowerCase();
-        // Les langues complètement traduites sont : français, anglais, espagnol, et allemand
-        if (lang === 'fr') return 'fr';
-        if (lang === 'es') return 'es';
-        if (lang === 'de') return 'de';
-        return 'en';
-      },
     },
+  })
+  .then(() => {
+    // Après l'initialisation, vérifier si localStorage contient un choix explicite utilisateur
+    // et l'appliquer si nécessaire (mais seulement si l'utilisateur a vraiment fait un choix)
+    // Pour l'instant, on laisse la détection du navigateur avoir la priorité
+    console.log('🌐 i18n init - Langue finale:', i18n.language);
   });
 
 // La détection de langue est gérée par i18next avec le fallbackLng qui utilise getDefaultLanguage()
 // getDefaultLanguage() retourne 'fr' si le navigateur est en français, sinon 'en'
 
 // Fonction pour changer la langue depuis les préférences utilisateur
+// Cette fonction sauvegarde automatiquement dans localStorage (choix explicite utilisateur)
 export const changeLanguage = (lang: string) => {
+  // Sauvegarder manuellement dans localStorage car caches: [] empêche la sauvegarde automatique
+  // Mais on veut sauvegarder quand l'utilisateur fait un choix explicite
+  localStorage.setItem('i18nextLng', lang);
   return i18n.changeLanguage(lang);
 };
 

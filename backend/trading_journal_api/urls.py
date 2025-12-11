@@ -2,6 +2,7 @@
 URL configuration for trading_journal_api project.
 """
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
@@ -10,7 +11,13 @@ from django.http import JsonResponse, FileResponse, HttpResponse
 from django.views.decorators.cache import cache_control
 from pathlib import Path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from .sitemap import StaticViewSitemap
 import os
+
+# Sitemaps
+sitemaps = {
+    'static': StaticViewSitemap,
+}
 
 # Vue pour servir les fichiers statiques depuis templates (favicon, manifest, logos)
 def serve_template_file(request, filename):
@@ -52,6 +59,9 @@ urlpatterns = [
     # API Documentation
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    
+    # Sitemap
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
     
     # Fichiers statiques depuis templates (favicon, manifest, logos)
     path('favicon.ico', serve_template_file, {'filename': 'favicon.ico'}, name='favicon_ico'),

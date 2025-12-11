@@ -58,5 +58,6 @@
   "deleteConfirm": "Êtes-vous sûr ?",
   "deleteItemConfirm": "Êtes-vous sûr de vouloir supprimer {{item}} ? Cette action est irréversible.",
   "deleteConfirmGeneric": "Cette action est irréversible.",
-  "deleting": "Suppression en cours..."
+  "deleting": "Suppression en cours...",
+  "backToHome": "Retour à l'accueil"
 }

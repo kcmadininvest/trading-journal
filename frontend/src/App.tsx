@@ -16,6 +16,8 @@ import ActivateAccountPage from './pages/ActivateAccountPage';
 import PositionStrategiesPage from './pages/PositionStrategiesPage';
 import GoalsPage from './pages/GoalsPage';
 import LegalNoticePage from './pages/LegalNoticePage';
+import AboutPage from './pages/AboutPage';
+import FeaturesPage from './pages/FeaturesPage';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { useTheme } from './hooks/useTheme';
@@ -206,10 +208,25 @@ function App() {
   const renderPage = () => {
     // Vérifier si on est sur la page d'activation
     const pathname = window.location.pathname;
+    console.log('🧭 App - Navigation vers:', pathname);
+    
     const activateMatch = pathname.match(/^\/activate-account\/([^/]+)\/?$/);
     if (activateMatch) {
       const token = activateMatch[1];
       return <ActivateAccountPage token={token} />;
+    }
+
+    // Pages publiques accessibles via pathname (SEO) - Support multilingue
+    const aboutPaths = ['/a-propos', '/about', '/acerca-de', '/uber-uns'];
+    const featuresPaths = ['/fonctionnalites', '/features', '/funcionalidades', '/funktionen'];
+    
+    if (aboutPaths.includes(pathname)) {
+      console.log('🧭 App - Affichage de AboutPage');
+      return <AboutPage />;
+    }
+    if (featuresPaths.includes(pathname)) {
+      console.log('🧭 App - Affichage de FeaturesPage');
+      return <FeaturesPage />;
     }
 
     // La page des mentions légales est accessible sans authentification

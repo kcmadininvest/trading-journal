@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getApiBaseUrl } from '../../utils/apiConfig';
 import { toast } from 'react-hot-toast';
 
@@ -12,7 +11,6 @@ const ContactModal: React.FC<ContactModalProps> = ({
   isOpen, 
   onClose
 }) => {
-  const { t } = useI18nTranslation();
   const [formData, setFormData] = useState({
     email: '',
     subject: '',

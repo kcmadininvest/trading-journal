@@ -58,5 +58,6 @@
   "deleteConfirm": "Are you sure?",
   "deleteItemConfirm": "Are you sure you want to delete {{item}}? This action cannot be undone.",
   "deleteConfirmGeneric": "This action cannot be undone.",
-  "deleting": "Deleting..."
+  "deleting": "Deleting...",
+  "backToHome": "Back to home"
 }

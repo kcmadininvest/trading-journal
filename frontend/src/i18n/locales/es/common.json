@@ -58,5 +58,6 @@
   "deleteConfirm": "¿Estás seguro?",
   "deleteItemConfirm": "¿Estás seguro de que deseas eliminar {{item}}? Esta acción no se puede deshacer.",
   "deleteConfirmGeneric": "Esta acción no se puede deshacer.",
-  "deleting": "Eliminando..."
+  "deleting": "Eliminando...",
+  "backToHome": "Volver al inicio"
 }

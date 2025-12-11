@@ -6,6 +6,7 @@ import { useState, useEffect, useContext, createContext } from 'react';
 import userService, { UserPreferences } from '../services/userService';
 import { changeLanguage } from '../i18n/config';
 import { authService } from '../services/auth';
+import i18n from '../i18n/config';
 
 interface PreferencesContextType {
   preferences: UserPreferences;
@@ -52,9 +53,17 @@ const getInitialFontSize = (): 'small' | 'medium' | 'large' => {
 };
 
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Initialiser la langue avec celle détectée par i18n (depuis navigator)
+  // Au lieu de forcer 'fr' par défaut
+  const getInitialLanguage = (): 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh' => {
+    // Utiliser la langue actuelle de i18n (détectée depuis navigator)
+    const currentLang = i18n.language?.split('-')[0] || 'en';
+    const supportedLangs: Array<'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh'> = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
+    return (supportedLangs.includes(currentLang as any) ? currentLang : 'en') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
+  };
 
   const [preferences, setPreferences] = useState<UserPreferences>({
-    language: 'fr',
+    language: getInitialLanguage(), // Utiliser la langue détectée au lieu de 'fr'
     timezone: 'Europe/Paris',
     date_format: 'EU',
     number_format: 'comma',
@@ -94,8 +103,9 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         } catch (e) {
           // Ignorer les erreurs de localStorage
         }
-        // Changer la langue i18n quand les préférences sont chargées
-        if (prefs.language) {
+        // Changer la langue i18n quand les préférences sont chargées depuis le serveur
+        // (seulement si l'utilisateur est authentifié et a sauvegardé une préférence)
+        if (prefs.language && authService.isAuthenticated()) {
           changeLanguage(prefs.language);
         }
       }
@@ -131,9 +141,13 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await refreshPreferences();
       } else {
         // Si l'utilisateur vient de se déconnecter, réinitialiser les préférences par défaut
+        // Utiliser la langue détectée depuis navigator au lieu de forcer 'fr'
         const defaultFontSize = getInitialFontSize();
+        const detectedLang = i18n.language?.split('-')[0] || 'en';
+        const supportedLangs: Array<'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh'> = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
+        const defaultLang = (supportedLangs.includes(detectedLang as any) ? detectedLang : 'en') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
         setPreferences({
-          language: 'fr',
+          language: defaultLang, // Utiliser la langue détectée au lieu de 'fr'
           timezone: 'Europe/Paris',
           date_format: 'EU',
           number_format: 'comma',
@@ -159,8 +173,11 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   // Écouter les changements de langue dans les préférences
+  // Mais seulement si l'utilisateur est authentifié (pour respecter la détection du navigateur si non authentifié)
   useEffect(() => {
-    if (preferences.language) {
+    if (preferences.language && authService.isAuthenticated()) {
+      // Seulement changer la langue si l'utilisateur est authentifié
+      // Sinon, laisser i18n utiliser la langue détectée depuis navigator
       changeLanguage(preferences.language);
     }
   }, [preferences.language]);
@@ -191,9 +208,13 @@ export const usePreferences = (): PreferencesContextType => {
   if (!context) {
     // Retourner des valeurs par défaut si le contexte n'est pas disponible
       const defaultFontSize = getInitialFontSize();
+      // Utiliser la langue détectée depuis i18n au lieu de 'fr'
+      const detectedLang = i18n.language?.split('-')[0] || 'en';
+      const supportedLangs: Array<'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh'> = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
+      const defaultLang = (supportedLangs.includes(detectedLang as any) ? detectedLang : 'en') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
       return {
         preferences: {
-          language: 'fr',
+          language: defaultLang, // Utiliser la langue détectée au lieu de 'fr'
           timezone: 'Europe/Paris',
           date_format: 'EU',
           number_format: 'comma',

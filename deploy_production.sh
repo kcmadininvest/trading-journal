@@ -535,6 +535,15 @@ if [ -f "$FRONTEND_DIR/build/robots.txt" ]; then
     cp "$FRONTEND_DIR/build/robots.txt" "$STATICFILES_DIR/" 2>/dev/null || true
 fi
 
+# Copier le fichier de vérification Google Search Console (s'il existe)
+if [ -f "$FRONTEND_DIR/build/google"*.html ]; then
+    GOOGLE_VERIFICATION_FILE=$(ls "$FRONTEND_DIR/build/google"*.html 2>/dev/null | head -1)
+    if [ ! -z "$GOOGLE_VERIFICATION_FILE" ]; then
+        cp "$GOOGLE_VERIFICATION_FILE" "$STATICFILES_DIR/" 2>/dev/null || true
+        info "✅ Fichier de vérification Google Search Console copié: $(basename "$GOOGLE_VERIFICATION_FILE")"
+    fi
+fi
+
 info "✅ Fichiers statiques synchronisés"
 
 # 8. 🔐 Vérification de la configuration WSGI

@@ -7,6 +7,7 @@
     "freeBadge": "100% Kostenlos • Keine Versteckten Gebühren"
   },
   "features": {
+    "viewAll": "Alle Funktionen anzeigen",
     "tradeTracking": {
       "title": "Vollständige Trade-Verfolgung",
       "description": "Erfassen Sie alle Ihre Trades präzise. CSV-Import, Multi-Konten-Verwaltung, Echtzeit-Tracking Ihrer Leistung."
@@ -63,9 +64,38 @@
   },
   "about": {
     "title": "Über uns",
-    "intro": "Ich bin leidenschaftlich an Informatik und Finanzmärkten interessiert. Diese Plattform entstand aus meiner Überzeugung, dass die Verfolgung Ihrer Handelsfortschritte kein bezahlter Luxus sein sollte.",
-    "philosophy": "Sie sollten nicht dafür bezahlen müssen, Ihre Fortschritte zu verfolgen, wenn Sie noch kein Geld mit dem Trading verdienen und sich noch in der Ausbildung befinden.",
-    "conclusion": "Deshalb ist K&C Trading Journal 100% kostenlos, ohne versteckte Gebühren. Ein professionelles Tool, das allen Tradern zugänglich ist, ob Anfänger oder erfahren."
+    "summary": "K&C Trading Journal ist eine 100% kostenlose Plattform, die geschaffen wurde, um allen Tradern zu helfen, ihre Leistung zu verfolgen und zu verbessern. Ein professionelles Tool, das für alle zugänglich ist, ohne versteckte Gebühren.",
+    "learnMore": "Mehr erfahren"
+  },
+  "faq": {
+    "title": "Häufig gestellte Fragen",
+    "subtitle": "Finden Sie schnell Antworten auf Ihre Fragen",
+    "items": [
+      {
+        "question": "Ist K&C Trading Journal wirklich kostenlos?",
+        "answer": "Ja, K&C Trading Journal ist 100% kostenlos, ohne versteckte Gebühren. Wir glauben, dass die Verfolgung Ihrer Handelsfortschritte kein bezahlter Luxus sein sollte, besonders wenn Sie noch lernen. Alle Funktionen sind kostenlos verfügbar."
+      },
+      {
+        "question": "Wie kann ich meine Trades importieren?",
+        "answer": "Sie können Ihre Trades über eine CSV-Datei importieren. Das unterstützte Format ist mit den meisten Handelsplattformen kompatibel. Gehen Sie zum Bereich Trades und verwenden Sie die Schaltfläche 'CSV importieren', um Ihre Daten hochzuladen."
+      },
+      {
+        "question": "Kann ich mehrere Handelskonten verwalten?",
+        "answer": "Absolut! K&C Trading Journal unterstützt die Verwaltung mehrerer Handelskonten (TopStep, IBKR, NinjaTrader, etc.). Sie können jedes Konto separat analysieren oder eine aggregierte Ansicht aller Ihrer Konten sehen."
+      },
+      {
+        "question": "Sind meine Daten sicher?",
+        "answer": "Ja, die Sicherheit Ihrer Daten hat für uns Priorität. Alle Kommunikationen sind über HTTPS verschlüsselt, und Ihre Handelsdaten werden sicher auf unseren Servern gespeichert. Sie können Ihr Konto und alle Ihre Daten jederzeit löschen."
+      },
+      {
+        "question": "Welche Statistiken sind verfügbar?",
+        "answer": "K&C Trading Journal bietet detaillierte Statistiken, einschließlich Profit-Faktor, Win-Rate, Drawdown, Erholungsraten und vieles mehr. Sie können Ihre Leistung auch über interaktive Charts und Heatmaps visualisieren."
+      },
+      {
+        "question": "Kann ich die Anwendung auf dem Handy verwenden?",
+        "answer": "Ja, die Anwendung ist responsive und funktioniert auf allen Geräten (Computer, Tablet, Smartphone). Sie können von überall mit Internetverbindung auf Ihr Trading-Journal zugreifen."
+      }
+    ]
   },
   "cta": {
     "title": "Bereit, Ihr Trading zu transformieren?",

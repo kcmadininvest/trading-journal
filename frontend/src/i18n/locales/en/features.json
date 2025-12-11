@@ -1,0 +1,23 @@
+{
+  "title": "Features",
+  "subtitle": "All the features you need to track and improve your trading performance.",
+  "additional": {
+    "title": "Additional Features",
+    "import": {
+      "title": "CSV Import",
+      "content": "Easily import your trades from a CSV file. Compatible with most trading platforms."
+    },
+    "export": {
+      "title": "CSV Export",
+      "content": "Export your filtered data for external analysis or backup."
+    },
+    "filters": {
+      "title": "Advanced Filters",
+      "content": "Filter your trades by account, date, instrument, strategy and much more."
+    },
+    "customization": {
+      "title": "Customization",
+      "content": "Customize your interface: date format, number format, language, timezone, theme and font size."
+    }
+  }
+}
