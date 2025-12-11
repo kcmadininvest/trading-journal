@@ -42,4 +42,7 @@ urlpatterns = [
     path('admin/system/backup/', views.create_system_backup, name='create_system_backup'),
     path('admin/system/clean-logs/', views.clean_system_logs, name='clean_system_logs'),
     path('admin/system/check-integrity/', views.check_system_integrity, name='check_system_integrity'),
+    
+    # Contact
+    path('contact/', views.ContactView.as_view(), name='contact'),
 ]

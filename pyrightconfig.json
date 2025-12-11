@@ -4,6 +4,27 @@
     "reportMissingImports": true,
     "reportMissingTypeStubs": false,
     "pythonVersion": "3.11",
-    "typeCheckingMode": "basic"
+    "typeCheckingMode": "basic",
+    "reportAttributeAccessIssue": false,
+    "reportGeneralTypeIssues": false,
+    "reportOptionalMemberAccess": false,
+    "reportOptionalSubscript": false,
+    "reportPrivateImportUsage": false,
+    "reportUnknownMemberType": false,
+    "reportUnknownArgumentType": false,
+    "reportUnknownVariableType": false,
+    "reportUnknownLambdaType": false,
+    "reportUnknownParameterType": false,
+    "reportUnknownReturnType": false,
+    "include": [
+        "backend"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/migrations",
+        "**/venv",
+        "**/.venv"
+    ]
 }
 

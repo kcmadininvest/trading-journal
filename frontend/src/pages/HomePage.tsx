@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 // import { authService, User } from '../services/auth';
 import AuthModal from '../components/auth';
+import ContactModal from '../components/contact/ContactModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { changeLanguage } from '../i18n/config';
 
@@ -11,6 +12,7 @@ const HomePage: React.FC = () => {
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const [showLegalNotice, setShowLegalNotice] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   
@@ -501,31 +503,6 @@ const HomePage: React.FC = () => {
           </div>
         </div>
 
-        {/* About Section */}
-        <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-10 md:p-12 shadow-xl mb-12 border border-gray-200">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
-              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-              {t('home:about.title')}
-            </h2>
-            <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
-              <p className="max-w-3xl mx-auto">
-                {t('home:about.intro')}
-              </p>
-              <p className="max-w-3xl mx-auto font-medium text-gray-800">
-                {t('home:about.philosophy')}
-              </p>
-              <p className="max-w-3xl mx-auto">
-                {t('home:about.conclusion')}
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* CTA Section */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-10 md:p-12 shadow-2xl text-center text-white mb-12">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -560,6 +537,44 @@ const HomePage: React.FC = () => {
           </div>
         </div>
 
+        {/* About Section */}
+        <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-10 md:p-12 shadow-xl mb-12 border border-gray-200">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              {t('home:about.title')}
+            </h2>
+            <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
+              <p className="max-w-3xl mx-auto">
+                {t('home:about.intro')}
+              </p>
+              <p className="max-w-3xl mx-auto font-medium text-gray-800">
+                {t('home:about.philosophy')}
+              </p>
+              <p className="max-w-3xl mx-auto">
+                {t('home:about.conclusion')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Section */}
+        <div className="text-center mb-12">
+          <button
+            onClick={() => setShowContactModal(true)}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Nous contacter
+          </button>
+        </div>
+
         {/* Footer */}
         <div className="relative flex justify-center items-center mt-12 text-gray-500 px-4">
           <p className="text-sm text-center">{t('home:footer.copyright')}</p>
@@ -578,6 +593,12 @@ const HomePage: React.FC = () => {
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
         initialMode={authMode}
+      />
+
+      {/* Modal de contact */}
+      <ContactModal
+        isOpen={showContactModal}
+        onClose={() => setShowContactModal(false)}
       />
 
       {/* Modal Mentions légales */}

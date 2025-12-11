@@ -14,7 +14,12 @@ from django.shortcuts import get_object_or_404
 from django.conf import settings
 from rolepermissions.decorators import has_permission_decorator
 from rolepermissions.checkers import has_permission
+from django.core.mail import send_mail
+from typing import cast
 import logging
+
+logger = logging.getLogger(__name__)
+security_logger = logging.getLogger('security')
 
 from .models import User, UserPreferences, LoginHistory, EmailActivationToken
 from .utils import send_activation_email, create_activation_token
@@ -82,12 +87,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 
                 if not user_id:
                     # Essayer de récupérer par email
-                    email = request.data.get('email')
+                    email = getattr(request, 'data', {}).get('email') if hasattr(request, 'data') else None
                     if email:
                         try:
                             user = User.objects.get(email=email)
                             user_id = user.id
-                        except User.DoesNotExist:
+                        except Exception:  # User.DoesNotExist ou autre exception
                             pass
                 
                 if user_id:
@@ -99,7 +104,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                             user_agent=request.META.get('HTTP_USER_AGENT', ''),
                             success=True
                         )
-                    except (User.DoesNotExist, Exception) as e:
+                    except Exception as e:  # User.DoesNotExist ou autre exception
                         # Logger l'erreur pour debug mais ne pas faire échouer la connexion
                         import logging
                         logger = logging.getLogger(__name__)
@@ -112,13 +117,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         else:
             # Enregistrer les tentatives de connexion échouées avec logging détaillé
             try:
-                email = request.data.get('email')
+                email = getattr(request, 'data', {}).get('email') if hasattr(request, 'data') else None
                 ip_address = self._get_client_ip(request)
                 user_agent = request.META.get('HTTP_USER_AGENT', '')
                 
                 # Logger la tentative échouée
-                logger = logging.getLogger('security')
-                logger.warning(
+                security_logger.warning(
                     f"Tentative de connexion échouée - Email: {email}, IP: {ip_address}, "
                     f"User-Agent: {user_agent}, Status: {response.status_code}"
                 )
@@ -132,14 +136,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                             user_agent=user_agent,
                             success=False
                         )
-                    except User.DoesNotExist:
+                    except Exception:  # User.DoesNotExist ou autre exception
                         # Logger les tentatives avec des emails inexistants (possible reconnaissance)
-                        logger.warning(
+                        security_logger.warning(
                             f"Tentative de connexion avec email inexistant - Email: {email}, IP: {ip_address}"
                         )
             except Exception as e:
-                logger = logging.getLogger('security')
-                logger.error(f"Erreur lors de l'enregistrement de la tentative de connexion échouée: {str(e)}")
+                security_logger.error(f"Erreur lors de l'enregistrement de la tentative de connexion échouée: {str(e)}")
         
         return response
     
@@ -166,7 +169,7 @@ class UserRegistrationView(APIView):
         try:
             serializer = UserRegistrationSerializer(data=request.data)
             if serializer.is_valid():
-                user = serializer.save()
+                user = cast(User, serializer.save())
                 
                 # Détecter la langue depuis les headers ou les données de la requête
                 language = None
@@ -183,7 +186,7 @@ class UserRegistrationView(APIView):
                     activation_token = create_activation_token(user)
                     
                     # Envoyer l'email d'activation avec la langue détectée
-                    email_sent = send_activation_email(user, activation_token, language=language)
+                    email_sent = send_activation_email(user, activation_token, language=language or 'fr')
                     
                     if not email_sent:
                         # Si l'email n'a pas pu être envoyé, on retourne quand même un succès
@@ -298,14 +301,15 @@ class AccountActivationView(APIView):
                 'user': UserProfileSerializer(user).data
             }, status=status.HTTP_200_OK)
             
-        except EmailActivationToken.DoesNotExist:
-            return Response(
-                {'error': 'Token d\'activation invalide'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
+        except Exception as e:  # EmailActivationToken.DoesNotExist ou autre exception
             import logging
             logger = logging.getLogger(__name__)
+            # Si c'est DoesNotExist, retourner 404, sinon 500
+            if 'DoesNotExist' in str(type(e).__name__):
+                return Response(
+                    {'error': 'Token d\'activation invalide'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
             logger.error(f"Erreur lors de l'activation du compte: {str(e)}")
             return Response(
                 {'error': 'Une erreur est survenue lors de l\'activation du compte'},
@@ -347,7 +351,7 @@ class AccountActivationView(APIView):
                 'message': 'Token valide'
             }, status=status.HTTP_200_OK)
             
-        except EmailActivationToken.DoesNotExist:
+        except Exception:  # EmailActivationToken.DoesNotExist
             return Response(
                 {'valid': False, 'error': 'Token d\'activation invalide'},
                 status=status.HTTP_200_OK
@@ -405,12 +409,13 @@ class ResendActivationEmailView(APIView):
                 'message': 'Un nouvel email d\'activation a été envoyé à votre adresse email.'
             }, status=status.HTTP_200_OK)
             
-        except User.DoesNotExist:
+        except Exception as e:  # User.DoesNotExist ou autre exception
             # Ne pas révéler si l'email existe ou non pour des raisons de sécurité
-            return Response({
-                'message': 'Si ce compte existe et n\'est pas activé, un email d\'activation a été envoyé.'
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
+            # Si c'est User.DoesNotExist, on retourne le même message pour la sécurité
+            if 'DoesNotExist' in str(type(e).__name__):
+                return Response({
+                    'message': 'Si ce compte existe et n\'est pas activé, un email d\'activation a été envoyé.'
+                }, status=status.HTTP_200_OK)
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors du renvoi de l'email d'activation: {str(e)}")
@@ -466,13 +471,13 @@ class UserProfileView(APIView):
             from trades.models import TopStepTrade, TopStepImportLog, TradeStrategy
             
             # Supprimer les stratégies de trades (doit être fait avant les trades)
-            TradeStrategy.objects.filter(user=user).delete()  # type: ignore
+            TradeStrategy.objects.filter(user=user).delete()
             
             # Supprimer tous les trades associés à l'utilisateur
-            TopStepTrade.objects.filter(user=user).delete()  # type: ignore
+            TopStepTrade.objects.filter(user=user).delete()
             
             # Supprimer les logs d'import
-            TopStepImportLog.objects.filter(user=user).delete()  # type: ignore
+            TopStepImportLog.objects.filter(user=user).delete()
             
             # Supprimer l'utilisateur (cela devrait supprimer en cascade le reste)
             user.delete()
@@ -549,7 +554,7 @@ class LogoutView(APIView):
                             except Exception:
                                 pass
                         
-                        outstanding_token, created = OutstandingToken.objects.get_or_create(  # type: ignore
+                        outstanding_token, created = OutstandingToken.objects.get_or_create(
                             jti=jti,
                             defaults={
                                 'user': user,
@@ -560,7 +565,7 @@ class LogoutView(APIView):
                         )
                         
                         # Créer une entrée BlacklistedToken
-                        BlacklistedToken.objects.get_or_create(token=outstanding_token)  # type: ignore
+                        BlacklistedToken.objects.get_or_create(token=outstanding_token)
                         
                 except Exception as e:
                     print(f"Erreur lors de la blacklist du token d'accès: {e}")
@@ -1224,6 +1229,7 @@ class ActiveSessionsView(APIView):
             # Pour cela, on va utiliser une approche différente : comparer les tokens par leur date de création récente
             
             # Récupérer tous les refresh tokens non expirés et non blacklistés de l'utilisateur
+            from datetime import datetime
             now = datetime.now()
             outstanding_tokens = OutstandingToken.objects.filter(
                 user=request.user,
@@ -1295,7 +1301,7 @@ class ActiveSessionsView(APIView):
                     token = OutstandingToken.objects.get(jti=jti, user=request.user)
                     BlacklistedToken.objects.get_or_create(token=token)
                     return Response({'message': 'Session déconnectée avec succès'})
-                except OutstandingToken.DoesNotExist:
+                except Exception:  # OutstandingToken.DoesNotExist
                     return Response(
                         {'error': 'Session non trouvée'}, 
                         status=status.HTTP_404_NOT_FOUND
@@ -1303,6 +1309,7 @@ class ActiveSessionsView(APIView):
             else:
                 # Déconnecter toutes les sessions (y compris la session actuelle)
                 # Blacklister tous les refresh tokens non expirés de l'utilisateur
+                from datetime import datetime
                 now = datetime.now()
                 outstanding_tokens = OutstandingToken.objects.filter(
                     user=request.user,
@@ -1396,7 +1403,7 @@ class DataExportView(APIView):
             try:
                 preferences = UserPreferences.objects.get(user=user)
                 export_data['preferences'] = UserPreferencesSerializer(preferences).data
-            except UserPreferences.DoesNotExist:
+            except Exception:  # UserPreferences.DoesNotExist
                 pass
             
             # Comptes de trading
@@ -1519,4 +1526,90 @@ class DataExportView(APIView):
             # Retourner une erreur générique (ne jamais exposer les détails)
             return Response({
                 'error': 'Une erreur est survenue lors de l\'export des données. Veuillez réessayer plus tard.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ContactView(APIView):
+    """
+    Vue pour envoyer un email de contact depuis la page d'accueil
+    """
+    permission_classes = [permissions.AllowAny]  # Accessible sans authentification
+    
+    def post(self, request):
+        """
+        Envoie un email de contact
+        """
+        email = request.data.get('email', '').strip()
+        subject = request.data.get('subject', '').strip()
+        message = request.data.get('message', '').strip()
+        
+        # Validation
+        if not email:
+            return Response(
+                {'error': 'L\'adresse email est requise.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not subject:
+            return Response(
+                {'error': 'Le motif est requis.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not message:
+            return Response(
+                {'error': 'Le message est requis.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validation basique de l'email
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
+        try:
+            validate_email(email)
+        except ValidationError:
+            return Response(
+                {'error': 'L\'adresse email n\'est pas valide.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Récupérer l'email de destination depuis les settings
+            # Par défaut, utiliser DEFAULT_FROM_EMAIL ou une variable d'environnement
+            contact_email = getattr(settings, 'CONTACT_EMAIL', settings.DEFAULT_FROM_EMAIL)
+            
+            # Construire le message
+            email_subject = f'[Contact] {subject}'
+            email_body = f"""
+Nouveau message de contact depuis le site K&C Trading Journal
+
+Email du demandeur: {email}
+Motif: {subject}
+
+Message:
+{message}
+
+---
+Cet email a été envoyé depuis le formulaire de contact du site.
+"""
+            
+            # Envoyer l'email
+            send_mail(
+                subject=email_subject,
+                message=email_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[contact_email],
+                fail_silently=False,
+            )
+            
+            logger.info(f"Email de contact envoyé depuis {email} vers {contact_email}")
+            
+            return Response({
+                'message': 'Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'envoi de l'email de contact: {str(e)}", exc_info=True)
+            return Response({
+                'error': 'Une erreur est survenue lors de l\'envoi de votre message. Veuillez réessayer plus tard.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
