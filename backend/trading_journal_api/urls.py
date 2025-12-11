@@ -25,6 +25,7 @@ def serve_template_file(request, filename):
     content_type_map = {
         '.svg': 'image/svg+xml',
         '.json': 'application/json',
+        '.webmanifest': 'application/manifest+json',
         '.png': 'image/png',
         '.ico': 'image/x-icon',
         '.jpg': 'image/jpeg',
@@ -53,11 +54,14 @@ urlpatterns = [
     path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     
     # Fichiers statiques depuis templates (favicon, manifest, logos)
-    path('favicon.svg', serve_template_file, {'filename': 'favicon.svg'}, name='favicon_svg'),
     path('favicon.ico', serve_template_file, {'filename': 'favicon.ico'}, name='favicon_ico'),
+    path('favicon-16x16.png', serve_template_file, {'filename': 'favicon-16x16.png'}, name='favicon_16'),
+    path('favicon-32x32.png', serve_template_file, {'filename': 'favicon-32x32.png'}, name='favicon_32'),
+    path('apple-touch-icon.png', serve_template_file, {'filename': 'apple-touch-icon.png'}, name='apple_touch_icon'),
+    path('android-chrome-192x192.png', serve_template_file, {'filename': 'android-chrome-192x192.png'}, name='android_chrome_192'),
+    path('android-chrome-512x512.png', serve_template_file, {'filename': 'android-chrome-512x512.png'}, name='android_chrome_512'),
     path('manifest.json', serve_template_file, {'filename': 'manifest.json'}, name='manifest'),
-    path('logo192.png', serve_template_file, {'filename': 'logo192.png'}, name='logo192'),
-    path('logo512.png', serve_template_file, {'filename': 'logo512.png'}, name='logo512'),
+    path('site.webmanifest', serve_template_file, {'filename': 'site.webmanifest'}, name='site_webmanifest'),
     
     # App URLs
     path('api/accounts/', include('accounts.urls')),

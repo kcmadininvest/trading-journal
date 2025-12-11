@@ -49,18 +49,18 @@ def send_activation_email(user: User, activation_token: EmailActivationToken, la
         
         # Sélectionner le template selon la langue
         template_path = 'emails/activation_email.html'  # Par défaut (français)
-        subject = 'Activez votre compte KC Trading Journal'  # Par défaut (français)
+        subject = 'Activez votre compte K&C Trading Journal'  # Par défaut (français)
         
         if language == 'es':
             template_path = 'emails/es/activation_email.html'
-            subject = 'Activa tu cuenta KC Trading Journal'
+            subject = 'Activa tu cuenta K&C Trading Journal'
         elif language == 'de':
             template_path = 'emails/de/activation_email.html'
-            subject = 'Aktivieren Sie Ihr KC Trading Journal Konto'
+            subject = 'Aktivieren Sie Ihr K&C Trading Journal Konto'
         elif language == 'en':
             # Si on ajoute l'anglais plus tard, on peut créer emails/en/activation_email.html
             template_path = 'emails/activation_email.html'
-            subject = 'Activate your KC Trading Journal account'
+            subject = 'Activate your K&C Trading Journal account'
         
         # Rendre les templates HTML et texte
         html_content = render_to_string(template_path, context)

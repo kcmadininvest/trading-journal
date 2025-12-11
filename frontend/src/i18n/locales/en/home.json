@@ -1,9 +1,10 @@
 {
-  "title": "KC Trading Journal",
+  "title": "K&C Trading Journal",
   "subtitle": "The complete platform to track, analyze and optimize your trading performance. Take control of your trading with professional tools.",
   "hero": {
     "tagline": "Transform your data into actionable insights",
-    "description": "Track every trade, analyze your patterns, identify your strengths and weaknesses to become a more performant and disciplined trader."
+    "description": "Track every trade, analyze your patterns, identify your strengths and weaknesses to become a more performant and disciplined trader.",
+    "freeBadge": "100% Free • No Hidden Fees"
   },
   "features": {
     "tradeTracking": {
@@ -40,7 +41,7 @@
     }
   },
   "benefits": {
-    "title": "Why choose KC Trading Journal?",
+    "title": "Why choose K&C Trading Journal?",
     "items": {
       "data": {
         "title": "Centralized Data",
@@ -60,14 +61,20 @@
       }
     }
   },
+  "about": {
+    "title": "About",
+    "intro": "I am passionate about computer science and financial markets. This platform was born from my conviction that tracking your trading progress should not be a paid luxury.",
+    "philosophy": "You shouldn't have to pay to track your progress when you're not yet making money from trading and you're still learning.",
+    "conclusion": "That's why K&C Trading Journal is 100% free, with no hidden fees. A professional tool accessible to all traders, whether beginners or experienced."
+  },
   "cta": {
     "title": "Ready to transform your trading?",
-    "description": "Join traders who already use KC Trading Journal to improve their performance. Start free today.",
+    "description": "Join traders who already use K&C Trading Journal to improve their performance. Start free today.",
     "subtitle": "Free • No commitment • Setup in 2 minutes",
     "registerButton": "Sign up - Free"
   },
   "footer": {
-    "copyright": "© 2025 KC Trading Journal. All rights reserved.",
+    "copyright": "© 2025 K&C Trading Journal. All rights reserved.",
     "legalNotice": "Legal Notice"
   },
   "legalNotice": {

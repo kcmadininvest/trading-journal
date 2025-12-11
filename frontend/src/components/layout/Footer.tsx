@@ -20,7 +20,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       <div className="w-full px-4 sm:px-6 py-4">
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-0 relative w-full">
           <span className="text-sm text-gray-500 dark:text-gray-400 text-center whitespace-nowrap order-2 sm:order-1">
-            © 2025 KC Trading Journal. {t('common:allRightsReserved', { defaultValue: 'Tous droits réservés.' })}
+            © 2025 K&C Trading Journal. {t('common:allRightsReserved', { defaultValue: 'Tous droits réservés.' })}
           </span>
           <a
             href="#legal-notice"

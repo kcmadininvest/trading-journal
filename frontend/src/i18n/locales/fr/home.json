@@ -1,9 +1,10 @@
 {
-  "title": "KC Trading Journal",
+  "title": "K&C Trading Journal",
   "subtitle": "La plateforme complète pour suivre, analyser et optimiser vos performances de trading. Prenez le contrôle de votre trading avec des outils professionnels.",
   "hero": {
     "tagline": "Transformez vos données en insights actionnables",
-    "description": "Suivez chaque trade, analysez vos patterns, identifiez vos forces et faiblesses pour devenir un trader plus performant et discipliné."
+    "description": "Suivez chaque trade, analysez vos patterns, identifiez vos forces et faiblesses pour devenir un trader plus performant et discipliné.",
+    "freeBadge": "100% Gratuit • Aucun frais caché"
   },
   "features": {
     "tradeTracking": {
@@ -40,7 +41,7 @@
     }
   },
   "benefits": {
-    "title": "Pourquoi choisir KC Trading Journal ?",
+    "title": "Pourquoi choisir K&C Trading Journal ?",
     "items": {
       "data": {
         "title": "Données Centralisées",
@@ -60,14 +61,20 @@
       }
     }
   },
+  "about": {
+    "title": "À propos",
+    "intro": "Je suis passionné d'informatique et des marchés financiers. Cette plateforme est née de ma conviction que suivre ses progrès en trading ne devrait pas être un luxe payant.",
+    "philosophy": "On ne devrait pas avoir à payer pour suivre ses progrès alors même qu'on ne gagne pas encore d'argent du trading et qu'on est en train de se former.",
+    "conclusion": "C'est pourquoi K&C Trading Journal est 100% gratuit, sans frais cachés. Un outil professionnel accessible à tous les traders, qu'ils soient débutants ou expérimentés."
+  },
   "cta": {
     "title": "Prêt à transformer votre trading ?",
-    "description": "Rejoignez des traders qui utilisent déjà KC Trading Journal pour améliorer leurs performances. Commencez gratuitement dès aujourd'hui.",
+    "description": "Rejoignez des traders qui utilisent déjà K&C Trading Journal pour améliorer leurs performances. Commencez gratuitement dès aujourd'hui.",
     "subtitle": "Gratuit • Sans engagement • Configuration en 2 minutes",
     "registerButton": "S'inscrire - Gratuit"
   },
   "footer": {
-    "copyright": "© 2025 KC Trading Journal. Tous droits réservés.",
+    "copyright": "© 2025 K&C Trading Journal. Tous droits réservés.",
     "legalNotice": "Mentions légales"
   },
   "legalNotice": {

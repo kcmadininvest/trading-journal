@@ -1,19 +1,14 @@
 {
-  "short_name": "KC Trading Journal",
-  "name": "KC Trading Journal",
+  "short_name": "K&C Trading Journal",
+  "name": "K&C Trading Journal",
   "icons": [
     {
-      "src": "favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
-    },
-    {
-      "src": "logo192.png",
+      "src": "android-chrome-192x192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "android-chrome-512x512.png",
       "type": "image/png",
       "sizes": "512x512"
     }

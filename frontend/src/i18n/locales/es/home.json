@@ -1,9 +1,10 @@
 {
-  "title": "KC Trading Journal",
+  "title": "K&C Trading Journal",
   "subtitle": "La plataforma completa para seguir, analizar y optimizar tu rendimiento en trading. Toma el control de tu trading con herramientas profesionales.",
   "hero": {
     "tagline": "Transforma tus datos en insights accionables",
-    "description": "Sigue cada operación, analiza tus patrones, identifica tus fortalezas y debilidades para convertirte en un trader más eficiente y disciplinado."
+    "description": "Sigue cada operación, analiza tus patrones, identifica tus fortalezas y debilidades para convertirte en un trader más eficiente y disciplinado.",
+    "freeBadge": "100% Gratis • Sin Costos Ocultos"
   },
   "features": {
     "tradeTracking": {
@@ -40,7 +41,7 @@
     }
   },
   "benefits": {
-    "title": "¿Por qué elegir KC Trading Journal?",
+    "title": "¿Por qué elegir K&C Trading Journal?",
     "items": {
       "data": {
         "title": "Datos Centralizados",
@@ -60,14 +61,20 @@
       }
     }
   },
+  "about": {
+    "title": "Acerca de",
+    "intro": "Soy apasionado de la informática y los mercados financieros. Esta plataforma nació de mi convicción de que seguir tu progreso en trading no debería ser un lujo de pago.",
+    "philosophy": "No deberías tener que pagar para seguir tu progreso cuando aún no estás ganando dinero con el trading y todavía te estás formando.",
+    "conclusion": "Por eso K&C Trading Journal es 100% gratuito, sin costos ocultos. Una herramienta profesional accesible para todos los traders, ya sean principiantes o experimentados."
+  },
   "cta": {
     "title": "¿Listo para transformar tu trading?",
-    "description": "Únete a traders que ya utilizan KC Trading Journal para mejorar su rendimiento. Comienza gratis hoy mismo.",
+    "description": "Únete a traders que ya utilizan K&C Trading Journal para mejorar su rendimiento. Comienza gratis hoy mismo.",
     "subtitle": "Gratis • Sin compromiso • Configuración en 2 minutos",
     "registerButton": "Registrarse - Gratis"
   },
   "footer": {
-    "copyright": "© 2025 KC Trading Journal. Todos los derechos reservados.",
+    "copyright": "© 2025 K&C Trading Journal. Todos los derechos reservados.",
     "legalNotice": "Aviso legal"
   },
   "legalNotice": {

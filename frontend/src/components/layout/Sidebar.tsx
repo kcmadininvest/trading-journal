@@ -221,7 +221,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap">KC Trading Journal</h1>
+                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap">K&C Trading Journal</h1>
               </>
             )}
           </div>

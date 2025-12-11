@@ -313,20 +313,21 @@ const HomePage: React.FC = () => {
       <div className="max-w-7xl w-full">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-600 rounded-2xl mb-8 shadow-xl transform hover:scale-105 transition-transform duration-300">
-            <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          </div>
           <h1 className="text-6xl md:text-7xl font-bold mb-8 pb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight" style={{ lineHeight: '1.1' }}>
             {t('home:title')}
           </h1>
           <p className="text-2xl text-gray-700 max-w-3xl mx-auto mb-4 font-medium">
             {t('home:subtitle')}
           </p>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
             {t('home:hero.tagline')}
           </p>
+          <div className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full shadow-lg mb-4">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span className="text-white font-semibold text-lg">{t('home:hero.freeBadge')}</span>
+          </div>
         </div>
 
         {/* Main Features Grid */}
@@ -496,6 +497,31 @@ const HomePage: React.FC = () => {
                   <p className="text-gray-600">{t('home:benefits.items.discipline.description')}</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* About Section */}
+        <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-10 md:p-12 shadow-xl mb-12 border border-gray-200">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-6 shadow-lg">
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              {t('home:about.title')}
+            </h2>
+            <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
+              <p className="max-w-3xl mx-auto">
+                {t('home:about.intro')}
+              </p>
+              <p className="max-w-3xl mx-auto font-medium text-gray-800">
+                {t('home:about.philosophy')}
+              </p>
+              <p className="max-w-3xl mx-auto">
+                {t('home:about.conclusion')}
+              </p>
             </div>
           </div>
         </div>

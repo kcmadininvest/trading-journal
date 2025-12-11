@@ -1,9 +1,10 @@
 {
-  "title": "KC Trading Journal",
+  "title": "K&C Trading Journal",
   "subtitle": "Die vollständige Plattform zum Verfolgen, Analysieren und Optimieren Ihrer Handelsleistung. Übernehmen Sie die Kontrolle über Ihr Trading mit professionellen Tools.",
   "hero": {
     "tagline": "Verwandeln Sie Ihre Daten in umsetzbare Erkenntnisse",
-    "description": "Verfolgen Sie jeden Trade, analysieren Sie Ihre Muster, identifizieren Sie Ihre Stärken und Schwächen, um ein leistungsfähigerer und disziplinierterer Trader zu werden."
+    "description": "Verfolgen Sie jeden Trade, analysieren Sie Ihre Muster, identifizieren Sie Ihre Stärken und Schwächen, um ein leistungsfähigerer und disziplinierterer Trader zu werden.",
+    "freeBadge": "100% Kostenlos • Keine Versteckten Gebühren"
   },
   "features": {
     "tradeTracking": {
@@ -40,7 +41,7 @@
     }
   },
   "benefits": {
-    "title": "Warum KC Trading Journal wählen?",
+    "title": "Warum K&C Trading Journal wählen?",
     "items": {
       "data": {
         "title": "Zentralisierte Daten",
@@ -60,14 +61,20 @@
       }
     }
   },
+  "about": {
+    "title": "Über uns",
+    "intro": "Ich bin leidenschaftlich an Informatik und Finanzmärkten interessiert. Diese Plattform entstand aus meiner Überzeugung, dass die Verfolgung Ihrer Handelsfortschritte kein bezahlter Luxus sein sollte.",
+    "philosophy": "Sie sollten nicht dafür bezahlen müssen, Ihre Fortschritte zu verfolgen, wenn Sie noch kein Geld mit dem Trading verdienen und sich noch in der Ausbildung befinden.",
+    "conclusion": "Deshalb ist K&C Trading Journal 100% kostenlos, ohne versteckte Gebühren. Ein professionelles Tool, das allen Tradern zugänglich ist, ob Anfänger oder erfahren."
+  },
   "cta": {
     "title": "Bereit, Ihr Trading zu transformieren?",
-    "description": "Schließen Sie sich Tradern an, die bereits KC Trading Journal verwenden, um ihre Leistung zu verbessern. Starten Sie noch heute kostenlos.",
+    "description": "Schließen Sie sich Tradern an, die bereits K&C Trading Journal verwenden, um ihre Leistung zu verbessern. Starten Sie noch heute kostenlos.",
     "subtitle": "Kostenlos • Keine Verpflichtung • Einrichtung in 2 Minuten",
     "registerButton": "Registrieren - Kostenlos"
   },
   "footer": {
-    "copyright": "© 2025 KC Trading Journal. Alle Rechte vorbehalten.",
+    "copyright": "© 2025 K&C Trading Journal. Alle Rechte vorbehalten.",
     "legalNotice": "Impressum"
   },
   "legalNotice": {
