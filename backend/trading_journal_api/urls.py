@@ -13,11 +13,42 @@ from pathlib import Path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from .sitemap import StaticViewSitemap
 import os
+from xml.etree.ElementTree import Element, SubElement, tostring
+from django.utils.encoding import smart_str
 
 # Sitemaps
 sitemaps = {
     'static': StaticViewSitemap,
 }
+
+# Vue personnalisée pour générer le sitemap XML
+def generate_sitemap(request):
+    """Génère le sitemap XML manuellement"""
+    urlset = Element('urlset')
+    urlset.set('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9')
+    
+    sitemap_instance = StaticViewSitemap()
+    domain = sitemap_instance.get_domain()
+    protocol = getattr(sitemap_instance, 'protocol', 'https')
+    base_url = f'{protocol}://{domain}'
+    
+    for item in sitemap_instance.items():
+        url_elem = SubElement(urlset, 'url')
+        loc = SubElement(url_elem, 'loc')
+        loc.text = f'{base_url}{item["url"]}'
+        
+        changefreq = SubElement(url_elem, 'changefreq')
+        changefreq.text = getattr(sitemap_instance, 'changefreq', 'weekly')
+        
+        priority = SubElement(url_elem, 'priority')
+        priority.text = str(item.get('priority', 0.5))
+    
+    xml_content = tostring(urlset, encoding='utf-8', method='xml')
+    xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    
+    response = HttpResponse(xml_declaration.encode('utf-8') + xml_content, content_type='application/xml')
+    response['Content-Type'] = 'application/xml; charset=utf-8'
+    return response
 
 # Vue pour servir les fichiers statiques depuis templates (favicon, manifest, logos)
 def serve_template_file(request, filename):
@@ -60,8 +91,8 @@ urlpatterns = [
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     
-    # Sitemap
-    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
+    # Sitemap (vue personnalisée pour éviter les problèmes de template)
+    path('sitemap.xml', generate_sitemap, name='sitemap'),
     
     # Fichiers statiques depuis templates (favicon, manifest, logos)
     path('favicon.ico', serve_template_file, {'filename': 'favicon.ico'}, name='favicon_ico'),
