@@ -14,17 +14,17 @@ RewriteCond %{REQUEST_URI} !^/static/
 RewriteCond %{REQUEST_URI} !^/media/
 RewriteRule ^(.*)$ http://localhost:3000/$1 [P,L]
 
-# Proxy vers l'API Django
+# Proxy vers l'API Django via Daphne ASGI (port 8001)
 RewriteCond %{REQUEST_URI} ^/api/
-RewriteRule ^api/(.*)$ http://localhost:8000/api/$1 [P,L]
+RewriteRule ^api/(.*)$ http://localhost:8001/api/$1 [P,L]
 
 # Proxy pour les fichiers statiques Django
 RewriteCond %{REQUEST_URI} ^/static/
-RewriteRule ^static/(.*)$ http://localhost:8000/static/$1 [P,L]
+RewriteRule ^static/(.*)$ http://localhost:8001/static/$1 [P,L]
 
 # Proxy pour les fichiers média Django
 RewriteCond %{REQUEST_URI} ^/media/
-RewriteRule ^media/(.*)$ http://localhost:8000/media/$1 [P,L]
+RewriteRule ^media/(.*)$ http://localhost:8001/media/$1 [P,L]
 
 # Headers de sécurité
 <IfModule mod_headers.c>

@@ -1,0 +1,24 @@
+[Unit]
+Description=Trading Journal Daphne ASGI Server
+After=network.target redis.service postgresql.service
+Requires=redis.service
+
+[Service]
+Type=simple
+User=apache
+Group=apache
+WorkingDirectory=/var/www/html/trading_journal/backend
+Environment="PATH=/var/www/html/trading_journal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="VIRTUAL_ENV=/var/www/html/trading_journal/backend/venv"
+Environment="DJANGO_ENV=production"
+Environment="DJANGO_SETTINGS_MODULE=trading_journal_api.settings"
+ExecStart=/var/www/html/trading_journal/backend/start-daphne.sh
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/trading-journal/daphne.log
+StandardError=append:/var/log/trading-journal/daphne_error.log
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+

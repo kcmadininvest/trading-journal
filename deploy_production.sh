@@ -638,6 +638,115 @@ else
     warn "Veuillez exécuter manuellement: sudo systemctl restart httpd"
 fi
 
+# 13.5. 🔧 Installation et configuration du service systemd Daphne
+info "Vérification du service systemd Daphne..."
+
+# Vérifier si le service existe déjà
+if [ -f "/etc/systemd/system/trading-journal-daphne.service" ]; then
+    info "✅ Service systemd Daphne existe déjà, aucune modification nécessaire"
+    info "ℹ️  Le service existant sera conservé tel quel"
+    
+    # Vérifier seulement le statut du service existant
+    if sudo systemctl is-active --quiet trading-journal-daphne.service 2>/dev/null; then
+        info "✅ Service Daphne est actif"
+    else
+        warn "⚠️  Service Daphne n'est pas actif, vérifiez les logs:"
+        warn "   sudo journalctl -u trading-journal-daphne.service -n 50"
+        warn "   sudo tail -f /var/log/trading-journal/daphne_error.log"
+    fi
+else
+    # Le service n'existe pas, on peut le créer
+    info "Service systemd Daphne non trouvé, installation..."
+    
+    # Vérifier si le fichier de service existe dans le dépôt
+    SERVICE_FILE="$PROJECT_ROOT/systemd/trading-journal-daphne.service"
+    if [ -f "$SERVICE_FILE" ]; then
+        info "Copie du fichier de service systemd..."
+        if sudo cp "$SERVICE_FILE" /etc/systemd/system/ 2>/dev/null; then
+            info "✅ Fichier de service copié"
+        else
+            warn "Impossible de copier le fichier de service (peut nécessiter sudo)"
+            warn "Veuillez exécuter manuellement: sudo cp $SERVICE_FILE /etc/systemd/system/"
+        fi
+    else
+        warn "Fichier de service non trouvé: $SERVICE_FILE"
+        warn "Le service systemd ne sera pas configuré automatiquement"
+    fi
+    
+    # Vérifier et configurer le script de démarrage Daphne
+    DAPHNE_SCRIPT="$BACKEND_DIR/start-daphne.sh"
+    if [ -f "$DAPHNE_SCRIPT" ]; then
+        info "Configuration du script de démarrage Daphne..."
+        if sudo chmod +x "$DAPHNE_SCRIPT" 2>/dev/null; then
+            info "✅ Script de démarrage rendu exécutable"
+        else
+            warn "Impossible de rendre le script exécutable (peut nécessiter sudo)"
+        fi
+        
+        if sudo chown apache:apache "$DAPHNE_SCRIPT" 2>/dev/null; then
+            info "✅ Propriétaire du script configuré (apache:apache)"
+        else
+            warn "Impossible de changer le propriétaire du script (peut nécessiter sudo)"
+        fi
+    else
+        warn "Script de démarrage Daphne non trouvé: $DAPHNE_SCRIPT"
+        warn "Le service systemd ne pourra pas démarrer sans ce script"
+    fi
+    
+    # Créer le répertoire de logs si nécessaire
+    LOG_DIR="/var/log/trading-journal"
+    if [ ! -d "$LOG_DIR" ]; then
+        info "Création du répertoire de logs: $LOG_DIR"
+        if sudo mkdir -p "$LOG_DIR" 2>/dev/null; then
+            info "✅ Répertoire de logs créé"
+        else
+            warn "Impossible de créer le répertoire de logs (peut nécessiter sudo)"
+        fi
+    fi
+    
+    # Configurer les permissions du répertoire de logs
+    if [ -d "$LOG_DIR" ]; then
+        if sudo chown apache:apache "$LOG_DIR" 2>/dev/null; then
+            info "✅ Propriétaire du répertoire de logs configuré (apache:apache)"
+        else
+            warn "Impossible de changer le propriétaire du répertoire de logs (peut nécessiter sudo)"
+        fi
+    fi
+    
+    # Recharger systemd et activer/démarrer le service
+    if [ -f "/etc/systemd/system/trading-journal-daphne.service" ]; then
+        info "Configuration du service systemd..."
+        
+        if sudo systemctl daemon-reload 2>/dev/null; then
+            info "✅ Configuration systemd rechargée"
+        else
+            warn "Impossible de recharger systemd (peut nécessiter sudo)"
+        fi
+        
+        if sudo systemctl enable trading-journal-daphne.service 2>/dev/null; then
+            info "✅ Service systemd activé"
+        else
+            warn "Impossible d'activer le service (peut nécessiter sudo)"
+        fi
+        
+        if sudo systemctl start trading-journal-daphne.service 2>/dev/null; then
+            info "✅ Service Daphne démarré"
+        else
+            warn "Impossible de démarrer le service (peut nécessiter sudo)"
+            warn "Veuillez exécuter manuellement: sudo systemctl start trading-journal-daphne.service"
+        fi
+        
+        # Vérifier le statut du service
+        if sudo systemctl is-active --quiet trading-journal-daphne.service 2>/dev/null; then
+            info "✅ Service Daphne est actif"
+        else
+            warn "⚠️  Service Daphne n'est pas actif, vérifiez les logs:"
+            warn "   sudo journalctl -u trading-journal-daphne.service -n 50"
+            warn "   sudo tail -f /var/log/trading-journal/daphne_error.log"
+        fi
+    fi
+fi
+
 # 14. 🔍 Vérification finale
 info "Vérification finale..."
 
@@ -647,6 +756,13 @@ if systemctl is-active --quiet httpd 2>/dev/null || systemctl is-active --quiet 
 else
     error "Apache n'est pas actif"
     exit 1
+fi
+
+# Vérifier le service Daphne
+if sudo systemctl is-active --quiet trading-journal-daphne.service 2>/dev/null; then
+    info "✅ Service Daphne est actif"
+else
+    warn "⚠️  Service Daphne n'est pas actif (vérifiez les logs si nécessaire)"
 fi
 
 # Vérifier le build
@@ -694,6 +810,7 @@ Commit court: ${CURRENT_COMMIT_SHORT:-"N/A"}
 
 ## Vérifications
 Apache: $(systemctl is-active httpd 2>/dev/null || systemctl is-active apache2 2>/dev/null || echo "inactif")
+Daphne: $(sudo systemctl is-active trading-journal-daphne.service 2>/dev/null || echo "inactif")
 Build: $([ -f "$FRONTEND_DIR/build/index.html" ] && echo "OK" || echo "ERREUR")
 Template: $([ -f "$BACKEND_DIR/trading_journal_api/templates/index.html" ] && echo "OK" || echo "ERREUR")
 EOF

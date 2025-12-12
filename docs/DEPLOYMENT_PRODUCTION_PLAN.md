@@ -6,6 +6,7 @@ Basé sur l'analyse du projet, voici un plan complet pour déployer l'applicatio
 
 Votre projet **Trading Journal** est une application web complète avec :
 - **Backend** : Django 4.2 + Django REST Framework + JWT Authentication
+- **Serveur ASGI** : Daphne 4.0+ (support WebSockets et connexions asynchrones)
 - **Frontend** : React 19 + TypeScript + Tailwind CSS
 - **Base de données** : PostgreSQL (votre conteneur postgres17)
 - **Cache** : Redis
@@ -155,7 +156,7 @@ python3.11 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
-pip install gunicorn  # Serveur WSGI pour la production
+# Daphne (ASGI server) est inclus dans requirements.txt
 ```
 
 #### 4.2 Configuration Django
@@ -170,23 +171,25 @@ python manage.py createsuperuser
 python manage.py collectstatic --noinput
 ```
 
-#### 4.3 Configuration Gunicorn
+#### 4.3 Configuration Daphne (ASGI Server)
 ```bash
-# Créer le fichier de configuration Gunicorn
-cat > gunicorn.conf.py << 'EOF'
-bind = "127.0.0.1:8000"
-workers = 3
-worker_class = "sync"
-worker_connections = 1000
-timeout = 30
-keepalive = 2
-max_requests = 1000
-max_requests_jitter = 100
-preload_app = True
-user = "apache"
-group = "apache"
+# Créer le script de démarrage Daphne
+cat > start-daphne.sh << 'EOF'
+#!/bin/bash
+# Script de démarrage Daphne pour Trading Journal
+# Utilisé par le service systemd trading-journal-daphne
+
+cd /var/www/html/trading_journal/backend
+source venv/bin/activate
+export DJANGO_ENV=production
+exec daphne -b 127.0.0.1 -p 8001 trading_journal_api.asgi:application
 EOF
+
+# Rendre le script exécutable
+chmod +x start-daphne.sh
 ```
+
+**Note** : Daphne est un serveur ASGI qui supporte les WebSockets et les connexions asynchrones, idéal pour les applications Django modernes avec des fonctionnalités en temps réel.
 
 ### Phase 5 : Déploiement du Frontend
 
@@ -246,18 +249,18 @@ sudo tee /etc/httpd/conf.d/trading-journal.conf << 'EOF'
         Require all granted
     </Directory>
     
-    # Proxy vers l'API Django (port 8000)
+    # Proxy vers l'API Django (port 8001 - Daphne ASGI)
     ProxyPreserveHost On
-    ProxyPass /api/ http://127.0.0.1:8000/api/
-    ProxyPassReverse /api/ http://127.0.0.1:8000/api/
+    ProxyPass /api/ http://127.0.0.1:8001/api/
+    ProxyPassReverse /api/ http://127.0.0.1:8001/api/
     
     # Proxy pour les fichiers statiques Django
-    ProxyPass /static/ http://127.0.0.1:8000/static/
-    ProxyPassReverse /static/ http://127.0.0.1:8000/static/
+    ProxyPass /static/ http://127.0.0.1:8001/static/
+    ProxyPassReverse /static/ http://127.0.0.1:8001/static/
     
     # Proxy pour les fichiers média Django
-    ProxyPass /media/ http://127.0.0.1:8000/media/
-    ProxyPassReverse /media/ http://127.0.0.1:8000/media/
+    ProxyPass /media/ http://127.0.0.1:8001/media/
+    ProxyPassReverse /media/ http://127.0.0.1:8001/media/
     
     # Configuration des timeouts
     ProxyTimeout 300
@@ -306,27 +309,40 @@ sudo certbot --apache -d app.kcmadininvest.fr -d www.app.kcmadininvest.fr
 
 ### Phase 8 : Services Systemd
 
-#### 8.1 Service Django/Gunicorn
+#### 8.1 Service Daphne (ASGI Server)
 ```bash
-sudo tee /etc/systemd/system/trading-journal.service << 'EOF'
+# Créer le répertoire de logs si nécessaire
+sudo mkdir -p /var/log/trading-journal
+
+# Créer le service systemd pour Daphne
+sudo tee /etc/systemd/system/trading-journal-daphne.service << 'EOF'
 [Unit]
-Description=Trading Journal Django Application
-After=network.target postgresql.service
+Description=Trading Journal Daphne ASGI Server
+After=network.target redis.service postgresql.service
+Requires=redis.service
 
 [Service]
-Type=notify
+Type=simple
 User=apache
 Group=apache
 WorkingDirectory=/var/www/html/trading_journal/backend
-Environment=PATH=/var/www/html/trading_journal/backend/venv/bin
-ExecStart=/var/www/html/trading_journal/backend/venv/bin/gunicorn --config gunicorn.conf.py trading_journal_api.wsgi:application
-ExecReload=/bin/kill -s HUP $MAINPID
+Environment="PATH=/var/www/html/trading_journal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="VIRTUAL_ENV=/var/www/html/trading_journal/backend/venv"
+Environment="DJANGO_ENV=production"
+Environment="DJANGO_SETTINGS_MODULE=trading_journal_api.settings"
+ExecStart=/var/www/html/trading_journal/backend/start-daphne.sh
 Restart=always
-RestartSec=3
+RestartSec=10
+StandardOutput=append:/var/log/trading-journal/daphne.log
+StandardError=append:/var/log/trading-journal/daphne_error.log
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# Alternative : Copier depuis le dépôt
+sudo cp /var/www/html/trading_journal/systemd/trading-journal-daphne.service /etc/systemd/system/
 ```
 
 #### 8.2 Service Redis (si pas déjà installé)
@@ -340,16 +356,22 @@ sudo systemctl start redis
 
 #### 9.1 Démarrage des services
 ```bash
-# Activer et démarrer le service Django
-sudo systemctl enable trading-journal.service
-sudo systemctl start trading-journal.service
+# Recharger la configuration systemd
+sudo systemctl daemon-reload
+
+# Activer et démarrer le service Daphne
+sudo systemctl enable trading-journal-daphne.service
+sudo systemctl start trading-journal-daphne.service
 
 # Redémarrer Apache
 sudo systemctl restart httpd
 
 # Vérifier le statut
-sudo systemctl status trading-journal.service
+sudo systemctl status trading-journal-daphne.service
 sudo systemctl status httpd
+
+# Vérifier les logs
+sudo tail -f /var/log/trading-journal/daphne.log
 ```
 
 #### 9.2 Tests de fonctionnement
@@ -437,8 +459,8 @@ npm install
 npm run build
 sudo cp -r build/* /var/www/html/
 
-# Redémarrer le service
-sudo systemctl start trading-journal.service
+# Redémarrer le service Daphne
+sudo systemctl restart trading-journal-daphne.service
 
 echo "✅ Mise à jour terminée!"
 ```
@@ -466,8 +488,12 @@ echo "✅ Sauvegarde créée: $BACKUP_DIR"
 
 ### Configuration des logs
 ```bash
-# Logs Django
-sudo journalctl -u trading-journal.service -f
+# Logs Daphne (via systemd)
+sudo journalctl -u trading-journal-daphne.service -f
+
+# Logs Daphne (fichiers directs)
+sudo tail -f /var/log/trading-journal/daphne.log
+sudo tail -f /var/log/trading-journal/daphne_error.log
 
 # Logs Apache
 sudo tail -f /var/log/httpd/trading-journal_error.log
@@ -481,7 +507,7 @@ sudo tail -f /var/log/httpd/trading-journal_access.log
 - [ ] Apache httpd configuré avec les modules nécessaires
 - [ ] Base de données PostgreSQL créée
 - [ ] Variables d'environnement configurées
-- [ ] Backend Django déployé avec Gunicorn
+- [ ] Backend Django déployé avec Daphne (ASGI)
 - [ ] Frontend React buildé et déployé
 - [ ] Configuration Apache créée
 - [ ] SSL/TLS configuré avec Let's Encrypt
@@ -492,7 +518,7 @@ sudo tail -f /var/log/httpd/trading-journal_access.log
 
 ## 🎯 Avantages de cette Configuration
 
-1. **Performance** : Gunicorn + Apache pour une performance optimale
+1. **Performance** : Daphne (ASGI) + Apache pour une performance optimale avec support WebSockets
 2. **Sécurité** : SSL/TLS, headers de sécurité, JWT avec blacklist
 3. **Scalabilité** : Architecture modulaire et services séparés
 4. **Maintenance** : Scripts automatisés et monitoring

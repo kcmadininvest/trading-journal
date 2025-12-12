@@ -124,18 +124,18 @@ Contenu du fichier :
         Require all granted
     </Directory>
     
-    # Proxy vers Django (port 8000)
+    # Proxy vers Django via Daphne ASGI (port 8001)
     ProxyPreserveHost On
-    ProxyPass /api/ http://localhost:8000/api/
-    ProxyPassReverse /api/ http://localhost:8000/api/
+    ProxyPass /api/ http://localhost:8001/api/
+    ProxyPassReverse /api/ http://localhost:8001/api/
     
     # Proxy pour les fichiers statiques Django
-    ProxyPass /static/ http://localhost:8000/static/
-    ProxyPassReverse /static/ http://localhost:8000/static/
+    ProxyPass /static/ http://localhost:8001/static/
+    ProxyPassReverse /static/ http://localhost:8001/static/
     
     # Proxy pour les fichiers média Django
-    ProxyPass /media/ http://localhost:8000/media/
-    ProxyPassReverse /media/ http://localhost:8000/media/
+    ProxyPass /media/ http://localhost:8001/media/
+    ProxyPassReverse /media/ http://localhost:8001/media/
     
     # Logs
     ErrorLog ${APACHE_LOG_DIR}/trading-journal_error.log
@@ -172,40 +172,55 @@ RewriteRule . /index.html [L]
 </IfModule>
 ```
 
-### 7. Service Systemd pour Django
+### 7. Service Systemd pour Daphne (ASGI Server)
 
 ```bash
+# Créer le répertoire de logs
+sudo mkdir -p /var/log/trading-journal
+
 # Créer le service systemd
-sudo nano /etc/systemd/system/trading-journal.service
+sudo nano /etc/systemd/system/trading-journal-daphne.service
 ```
 
 Contenu :
 
 ```ini
 [Unit]
-Description=Trading Journal Django Application
-After=network.target
+Description=Trading Journal Daphne ASGI Server
+After=network.target redis.service postgresql.service
+Requires=redis.service
 
 [Service]
 Type=simple
-User=www-data
-Group=www-data
-WorkingDirectory=/home/user/trading_journal/backend
-Environment=PATH=/home/user/trading_journal/backend/venv/bin
-ExecStart=/home/user/trading_journal/backend/venv/bin/python manage.py runserver 0.0.0.0:8000
+User=apache
+Group=apache
+WorkingDirectory=/var/www/html/trading_journal/backend
+Environment="PATH=/var/www/html/trading_journal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="VIRTUAL_ENV=/var/www/html/trading_journal/backend/venv"
+Environment="DJANGO_ENV=production"
+Environment="DJANGO_SETTINGS_MODULE=trading_journal_api.settings"
+ExecStart=/var/www/html/trading_journal/backend/start-daphne.sh
 Restart=always
-RestartSec=3
+RestartSec=10
+StandardOutput=append:/var/log/trading-journal/daphne.log
+StandardError=append:/var/log/trading-journal/daphne_error.log
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
 ```
 
+**Note** : Assurez-vous que le script `start-daphne.sh` existe et est exécutable dans `/var/www/html/trading_journal/backend/`.
+
 ### 8. Démarrage des Services
 
 ```bash
-# Activer et démarrer le service Django
-sudo systemctl enable trading-journal.service
-sudo systemctl start trading-journal.service
+# Recharger la configuration systemd
+sudo systemctl daemon-reload
+
+# Activer et démarrer le service Daphne
+sudo systemctl enable trading-journal-daphne.service
+sudo systemctl start trading-journal-daphne.service
 
 # Activer le site Apache
 sudo a2ensite trading-journal.conf
@@ -213,7 +228,10 @@ sudo a2dissite 000-default.conf
 sudo systemctl restart apache2
 
 # Vérifier le statut
-sudo systemctl status trading-journal.service
+sudo systemctl status trading-journal-daphne.service
+
+# Vérifier les logs
+sudo tail -f /var/log/trading-journal/daphne.log
 ```
 
 ### 9. Configuration SSL avec Let's Encrypt
@@ -231,14 +249,16 @@ sudo certbot --apache -d your-domain.com -d www.your-domain.com
 ### Redémarrage des Services
 
 ```bash
-# Redémarrer Django
-sudo systemctl restart trading-journal.service
+# Redémarrer Daphne
+sudo systemctl restart trading-journal-daphne.service
 
 # Redémarrer Apache
 sudo systemctl restart apache2
 
 # Voir les logs
-sudo journalctl -u trading-journal.service -f
+sudo journalctl -u trading-journal-daphne.service -f
+# Ou directement depuis les fichiers de logs
+sudo tail -f /var/log/trading-journal/daphne.log
 ```
 
 ### Mise à Jour de l'Application
