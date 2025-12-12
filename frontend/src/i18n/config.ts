@@ -413,7 +413,6 @@ languageDetector.addDetector(customNavigatorLanguagesDetector);
 const getInitialLanguage = (): string => {
   // Toujours utiliser la détection du navigateur (comme YouTube)
   const detectedLang = getDefaultLanguage();
-  console.log('🌐 i18n init - Langue détectée depuis navigator (priorité absolue):', detectedLang);
   return detectedLang;
 };
 
@@ -449,7 +448,6 @@ i18n
     // Après l'initialisation, vérifier si localStorage contient un choix explicite utilisateur
     // et l'appliquer si nécessaire (mais seulement si l'utilisateur a vraiment fait un choix)
     // Pour l'instant, on laisse la détection du navigateur avoir la priorité
-    console.log('🌐 i18n init - Langue finale:', i18n.language);
   });
 
 // La détection de langue est gérée par i18next avec le fallbackLng qui utilise getDefaultLanguage()

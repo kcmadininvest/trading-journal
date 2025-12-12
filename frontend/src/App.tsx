@@ -208,7 +208,6 @@ function App() {
   const renderPage = () => {
     // Vérifier si on est sur la page d'activation
     const pathname = window.location.pathname;
-    console.log('🧭 App - Navigation vers:', pathname);
     
     const activateMatch = pathname.match(/^\/activate-account\/([^/]+)\/?$/);
     if (activateMatch) {

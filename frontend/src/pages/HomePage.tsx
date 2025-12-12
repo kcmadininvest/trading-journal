@@ -47,9 +47,6 @@ const HomePage: React.FC = () => {
   // Synchroniser currentLanguage avec i18n.language (source de vérité unique)
   // i18next gère déjà localStorage automatiquement via LanguageDetector
   useEffect(() => {
-    console.log('🏠 HomePage - Montage du composant');
-    console.log('🏠 HomePage - Langue i18n actuelle:', i18nInstance.language);
-    
     // PRIORITÉ 1: Vérifier le paramètre URL ?lang= (passé depuis les autres pages)
     const urlParams = new URLSearchParams(window.location.search);
     const urlLang = urlParams.get('lang');
@@ -81,8 +78,6 @@ const HomePage: React.FC = () => {
       // i18next a déjà fait la détection avec l'ordre: customNavigatorLanguages → localStorage → navigator
       // customNavigatorLanguages utilise navigator.languages en premier (comme YouTube)
       const currentLang = i18nInstance.language?.split('-')[0] || 'fr';
-      console.log('🏠 HomePage - Utilisation de la langue i18n détectée:', currentLang);
-      console.log('🏠 HomePage - navigator.languages:', navigator.languages);
       targetLang = currentLang;
     }
     
