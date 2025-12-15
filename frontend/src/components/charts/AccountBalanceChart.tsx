@@ -453,8 +453,7 @@ function AccountBalanceChart({
       },
     },
       animation: {
-        duration: 1000,
-        easing: 'easeInOutQuart' as const,
+        duration: 0, // Désactiver l'animation pour éviter le tremblement après chargement
       },
     };
   }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t]);

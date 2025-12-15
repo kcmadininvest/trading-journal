@@ -37,6 +37,9 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 0, // Désactiver l'animation pour éviter le tremblement après chargement
+    },
     plugins: {
       datalabels: {
         display: false,
@@ -190,10 +193,11 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
                 borderColor: isDark ? '#10b981' : '#059669',
                 backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(5, 150, 105, 0.1)',
                 borderWidth: 2,
-                fill: true,
+                fill: true, // Remplir jusqu'au bas du graphique (adapté car beginAtZero: false)
                 tension: 0.4,
                 pointRadius: 0,
                 pointHoverRadius: 4,
+                spanGaps: true, // Remplir les trous dans les données
                 yAxisID: 'y',
               },
               {

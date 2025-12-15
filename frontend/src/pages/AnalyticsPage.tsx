@@ -970,10 +970,11 @@ const AnalyticsPage: React.FC = () => {
     };
   }, [trades]);
 
-  // Volume de trading dans le temps
+  // Volume de trading dans le temps avec agrégation intelligente
   const tradingVolumeData = useMemo(() => {
     if (!trades.length) return null;
 
+    // Collecter les données par jour
     const dailyData: { [date: string]: number } = {};
     
     trades.forEach(trade => {
@@ -986,13 +987,142 @@ const AnalyticsPage: React.FC = () => {
     const sortedDates = Object.keys(dailyData).sort();
     if (sortedDates.length === 0) return null;
 
-    return {
-      labels: sortedDates.map(date => {
+    const firstDate = new Date(sortedDates[0]);
+    const lastDate = new Date(sortedDates[sortedDates.length - 1]);
+    const daysDiff = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    // Décider de l'agrégation selon la période
+    // - < 90 jours : par jour
+    // - 90-365 jours : par semaine
+    // - > 365 jours : par mois
+    let aggregation: 'day' | 'week' | 'month' = 'day';
+    let groupKey: (date: Date) => string;
+    let formatLabel: (date: Date) => string;
+    
+    if (daysDiff > 365) {
+      aggregation = 'month';
+      groupKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      formatLabel = (date: Date) => {
+        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+        return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+      };
+    } else if (daysDiff > 90) {
+      aggregation = 'week';
+      groupKey = (date: Date) => {
+        // Obtenir le lundi de la semaine
         const d = new Date(date);
-        return formatDateMemo(d.toISOString());
-      }),
-      data: sortedDates.map(date => dailyData[date]),
-      rawData: sortedDates.map(date => ({ date, count: dailyData[date] })),
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajuster pour lundi = 1
+        const monday = new Date(d);
+        monday.setDate(diff);
+        // Utiliser l'année et le numéro de semaine simple
+        const year = monday.getFullYear();
+        const startOfYear = new Date(year, 0, 1);
+        const weekNum = Math.floor(((monday.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24) + startOfYear.getDay() + 1) / 7);
+        return `${year}-W${String(weekNum).padStart(2, '0')}`;
+      };
+      formatLabel = (date: Date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d);
+        monday.setDate(diff);
+        return formatDateMemo(monday.toISOString());
+      };
+    } else {
+      aggregation = 'day';
+      groupKey = (date: Date) => date.toISOString().split('T')[0];
+      formatLabel = (date: Date) => formatDateMemo(date.toISOString());
+    }
+
+    // Agréger les données
+    const aggregatedData: { [key: string]: number } = {};
+    
+    Object.keys(dailyData).forEach(dateStr => {
+      const date = new Date(dateStr);
+      const key = groupKey(date);
+      aggregatedData[key] = (aggregatedData[key] || 0) + dailyData[dateStr];
+    });
+
+    // Créer toutes les périodes entre la première et la dernière
+    const allPeriods: string[] = [];
+    const currentDate = new Date(firstDate);
+    
+    while (currentDate <= lastDate) {
+      const key = groupKey(new Date(currentDate));
+      if (!allPeriods.includes(key)) {
+        allPeriods.push(key);
+      }
+      
+      if (aggregation === 'day') {
+        currentDate.setDate(currentDate.getDate() + 1);
+      } else if (aggregation === 'week') {
+        currentDate.setDate(currentDate.getDate() + 7);
+      } else {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+    }
+
+    // Trier les périodes
+    allPeriods.sort();
+    
+    // Créer les données finales
+    const labels = allPeriods.map(key => {
+      // Extraire la date de la clé pour le formatage
+      let date: Date;
+      if (aggregation === 'month') {
+        const [year, month] = key.split('-');
+        date = new Date(parseInt(year), parseInt(month) - 1, 1);
+      } else if (aggregation === 'week') {
+        const [year, weekStr] = key.split('-W');
+        const weekNum = parseInt(weekStr);
+        date = new Date(parseInt(year), 0, 1);
+        // Calculer le lundi de la semaine
+        const startOfYear = new Date(parseInt(year), 0, 1);
+        const daysToAdd = (weekNum - 1) * 7 - startOfYear.getDay() + 1;
+        date.setDate(daysToAdd);
+      } else {
+        date = new Date(key);
+      }
+      return formatLabel(date);
+    });
+
+    const data = allPeriods.map(key => aggregatedData[key] || 0);
+    
+    // Calculer la moyenne mobile (7 périodes)
+    const movingAverage = data.map((_, index) => {
+      const window = 7;
+      const start = Math.max(0, index - Math.floor(window / 2));
+      const end = Math.min(data.length, start + window);
+      const slice = data.slice(start, end);
+      return slice.length > 0 ? slice.reduce((a, b) => a + b, 0) / slice.length : 0;
+    });
+
+    // Calculer les statistiques
+    const values = data.filter(v => v > 0);
+    const stats = {
+      total: data.reduce((a, b) => a + b, 0),
+      average: values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0,
+      median: values.length > 0 ? (() => {
+        const sorted = [...values].sort((a, b) => a - b);
+        const mid = Math.floor(sorted.length / 2);
+        return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
+      })() : 0,
+      max: Math.max(...data, 0),
+      min: Math.min(...data.filter(v => v > 0), 0) || 0,
+    };
+
+    return {
+      labels,
+      data,
+      movingAverage,
+      stats,
+      aggregation,
+      rawData: allPeriods.map((key, index) => ({ 
+        period: key, 
+        count: data[index],
+        label: labels[index]
+      })),
     };
   }, [trades, formatDateMemo]);
 
