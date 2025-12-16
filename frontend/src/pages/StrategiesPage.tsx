@@ -271,27 +271,61 @@ const StrategiesPage: React.FC = () => {
     const hasData = statistics.statistics.period_data.some((d: any) => d.total > 0);
     if (!hasData) return null;
     
+    // Enrichir les données avec les informations nécessaires pour les tooltips
+    const enrichedData = statistics.statistics.period_data.map((d: any) => {
+      const totalTrades = d.total || 0;
+      const respectPercentage = d.respect_percentage || 0;
+      const notRespectPercentage = d.not_respect_percentage || 0;
+      
+      // Calculer le total_with_strategy (trades + jours sans trades avec compliance)
+      // En utilisant une itération pour trouver la valeur qui correspond aux pourcentages
+      let totalWithStrategy = totalTrades;
+      for (let testTotal = totalTrades; testTotal <= totalTrades + 10; testTotal++) {
+        const testRespected = Math.round((respectPercentage / 100) * testTotal);
+        const testNotRespected = Math.round((notRespectPercentage / 100) * testTotal);
+        const testRespectPct = testTotal > 0 ? (testRespected / testTotal) * 100 : 0;
+        const testNotRespectPct = testTotal > 0 ? (testNotRespected / testTotal) * 100 : 0;
+        if (Math.abs(testRespectPct - respectPercentage) < 0.5 && Math.abs(testNotRespectPct - notRespectPercentage) < 0.5) {
+          totalWithStrategy = testTotal;
+          break;
+        }
+      }
+      
+      const daysWithoutTrades = Math.max(0, totalWithStrategy - totalTrades);
+      const respectedCount = Math.round((respectPercentage / 100) * totalWithStrategy);
+      const notRespectedCount = Math.round((notRespectPercentage / 100) * totalWithStrategy);
+      
+      return {
+        ...d,
+        totalWithStrategy,
+        daysWithoutTrades,
+        respectedCount,
+        notRespectedCount,
+      };
+    });
+    
     return {
-    labels: statistics.statistics.period_data.map((d: any) => d.period),
-    datasets: [
-      {
-        label: t('strategies:respected'),
-        data: statistics.statistics.period_data.map((d: any) => d.respect_percentage || 0),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: '#3b82f6',
-        borderWidth: 0,
-        borderRadius: 0,
-      },
-      {
-        label: t('strategies:notRespected'),
-        data: statistics.statistics.period_data.map((d: any) => d.not_respect_percentage || 0),
-        backgroundColor: 'rgba(236, 72, 153, 0.8)',
-        borderColor: '#ec4899',
-        borderWidth: 0,
-        borderRadius: 0,
-      },
-    ],
-  };
+      labels: enrichedData.map((d: any) => d.period),
+      datasets: [
+        {
+          label: t('strategies:respected'),
+          data: enrichedData.map((d: any) => d.respect_percentage || 0),
+          backgroundColor: 'rgba(59, 130, 246, 0.8)',
+          borderColor: '#3b82f6',
+          borderWidth: 0,
+          borderRadius: 0,
+        },
+        {
+          label: t('strategies:notRespected'),
+          data: enrichedData.map((d: any) => d.not_respect_percentage || 0),
+          backgroundColor: 'rgba(236, 72, 153, 0.8)',
+          borderColor: '#ec4899',
+          borderWidth: 0,
+          borderRadius: 0,
+        },
+      ],
+      enrichedData, // Stocker les données enrichies pour les tooltips
+    };
   }, [statistics?.statistics?.period_data, t]);
 
   const respectChartOptions = useMemo(() => ({
@@ -352,9 +386,45 @@ const StrategiesPage: React.FC = () => {
           label: function(context: any) {
             const label = context.dataset.label || '';
             const value = context.parsed.y || 0;
-            const total = statistics?.statistics?.period_data?.[context.dataIndex]?.total || 0;
-            const count = Math.round((value / 100) * total);
-            return `${label}: ${formatNumber(value, 2)}% (${count} ${t('strategies:trades')} ${t('strategies:on')} ${total})`;
+            const enrichedData = (respectChartData as any)?.enrichedData;
+            const periodData = enrichedData?.[context.dataIndex];
+            
+            if (!periodData) {
+              // Fallback si les données enrichies ne sont pas disponibles
+              const fallbackData = statistics?.statistics?.period_data?.[context.dataIndex];
+              const totalTrades = fallbackData?.total || 0;
+              const count = Math.round((value / 100) * totalTrades);
+              return `${label}: ${formatNumber(value, 2)}% (${count} ${t('strategies:trades')} ${t('strategies:on', { defaultValue: 'sur' })} ${totalTrades})`;
+            }
+            
+            const isRespected = label === t('strategies:respected');
+            const count = isRespected ? periodData.respectedCount : periodData.notRespectedCount;
+            const totalTrades = periodData.total || 0;
+            const daysWithoutTrades = periodData.daysWithoutTrades || 0;
+            
+            // Estimer la répartition entre trades et jours sans trades
+            // Si count <= totalTrades, tous sont des trades
+            // Sinon, on suppose que les jours sans trades sont proportionnels
+            let elementTrades = 0;
+            let elementDays = 0;
+            
+            if (count <= totalTrades) {
+              // Tous les éléments respectés/non respectés sont des trades
+              elementTrades = count;
+              elementDays = 0;
+            } else {
+              // Il y a des jours sans trades dans le count
+              // Approximation : on suppose que les jours sans trades sont d'abord comptés
+              elementDays = Math.min(count - totalTrades, daysWithoutTrades);
+              elementTrades = count - elementDays;
+            }
+            
+            // Afficher le tooltip avec les informations détaillées
+            if (elementDays > 0) {
+              return `${label}: ${formatNumber(value, 2)}% (${elementTrades} ${t('strategies:trades')} + ${elementDays} ${elementDays === 1 ? 'jour sans trade' : 'jours sans trades'})`;
+            } else {
+              return `${label}: ${formatNumber(value, 2)}% (${elementTrades} ${t('strategies:trades')} ${t('strategies:on', { defaultValue: 'sur' })} ${totalTrades})`;
+            }
           },
         },
       },
@@ -982,7 +1052,7 @@ const StrategiesPage: React.FC = () => {
             {respectChartData && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:strategyRespectPercentage')}</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">{t('strategies:strategyRespectPercentage')}</h3>
                   <Tooltip
                     content={t('strategies:strategyRespectPercentageTooltip')}
                     position="top"
@@ -1004,7 +1074,7 @@ const StrategiesPage: React.FC = () => {
             {successRateData && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:successRateByStrategyRespect')}</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">{t('strategies:successRateByStrategyRespect')}</h3>
                   <Tooltip
                     content={t('strategies:successRateByStrategyRespectTooltip')}
                     position="top"
@@ -1026,7 +1096,7 @@ const StrategiesPage: React.FC = () => {
             {winningSessionsData && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:winningSessionsDistribution')}</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">{t('strategies:winningSessionsDistribution')}</h3>
                   <Tooltip
                     content={t('strategies:winningSessionsDistributionTooltip')}
                     position="top"
@@ -1048,7 +1118,7 @@ const StrategiesPage: React.FC = () => {
             {emotionsData && emotionsData.labels.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
                 <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words flex-1 min-w-0">{t('strategies:dominantEmotionsDistribution')}</h3>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">{t('strategies:dominantEmotionsDistribution')}</h3>
                   <Tooltip
                     content={t('strategies:dominantEmotionsDistributionTooltip')}
                     position="top"

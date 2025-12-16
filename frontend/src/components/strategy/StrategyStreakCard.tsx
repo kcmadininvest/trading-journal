@@ -17,6 +17,7 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
   const { t } = useTranslation();
   const { preferences } = usePreferences();
 
+
   const progressToNextBadge = nextBadge?.progress || 0;
   // Utiliser currentStreak pour calculer les jours restants vers le prochain badge
   const daysToNextBadge = nextBadge ? Math.max(0, nextBadge.days - currentStreak) : 0;

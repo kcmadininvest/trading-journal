@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
@@ -312,26 +312,42 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   }, [accountId]);
 
   // Charger les statistiques de compliance
-  useEffect(() => {
+  const loadComplianceStats = useCallback(async () => {
     if (accountLoading) {
       return;
     }
 
-    const loadComplianceStats = async () => {
-      setComplianceLoading(true);
-      try {
-        const stats = await tradeStrategiesService.strategyComplianceStats(accountId ?? undefined);
-        setComplianceStats(stats);
-      } catch (err) {
-        console.error('Erreur lors du chargement des statistiques de compliance', err);
-        setComplianceStats(null);
-      } finally {
-        setComplianceLoading(false);
+    setComplianceLoading(true);
+    try {
+      const stats = await tradeStrategiesService.strategyComplianceStats(accountId ?? undefined);
+      setComplianceStats(stats);
+    } catch (err) {
+      console.error('Erreur lors du chargement des statistiques de compliance', err);
+      setComplianceStats(null);
+    } finally {
+      setComplianceLoading(false);
+    }
+  }, [accountId, accountLoading]);
+
+  useEffect(() => {
+    loadComplianceStats();
+  }, [loadComplianceStats]);
+
+  // Écouter les événements de mise à jour de compliance pour recharger les stats
+  useEffect(() => {
+    const handleComplianceUpdate = (event: CustomEvent) => {
+      // Recharger les stats si l'événement concerne le compte actuel ou tous les comptes
+      const eventAccount = event.detail?.tradingAccount;
+      if (!eventAccount || eventAccount === accountId) {
+        loadComplianceStats();
       }
     };
 
-    loadComplianceStats();
-  }, [accountId, accountLoading]);
+    window.addEventListener('strategy-compliance-updated', handleComplianceUpdate as EventListener);
+    return () => {
+      window.removeEventListener('strategy-compliance-updated', handleComplianceUpdate as EventListener);
+    };
+  }, [accountId, loadComplianceStats]);
 
   // Obtenir le symbole de devise
   const currencySymbol = useMemo(() => {
@@ -1484,6 +1500,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {/* Streak Card */}
           <div className="mb-6">
             <StrategyStreakCard
+              key={`streak-${complianceStats.current_streak}-${complianceStats.current_streak_start}`}
               currentStreak={complianceStats.current_streak}
               streakStartDate={complianceStats.current_streak_start}
               nextBadge={complianceStats.next_badge}
@@ -1736,19 +1753,36 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               <Tooltip content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}>
                 <div className="h-full">
                   <ModernStatCard
-                    label={additionalStats.currentConsecutiveDaysRespected > 0 
-                      ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`
-                      : additionalStats.currentConsecutiveDaysNotRespected > 0
-                      ? `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceNotRespect')}`
-                      : t('dashboard:currentSeries')
-                    }
-                    value={additionalStats.currentConsecutiveDaysRespected > 0 
-                      ? `${additionalStats.currentConsecutiveDaysRespected} ${t('dashboard:days')}`
-                      : additionalStats.currentConsecutiveDaysNotRespected > 0
-                      ? `${additionalStats.currentConsecutiveDaysNotRespected} ${t('dashboard:days')}`
-                      : `0 ${t('dashboard:days')}`
-                    }
-                    variant={additionalStats.currentConsecutiveDaysRespected > 0 ? 'success' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'danger' : 'default'}
+                    label={(() => {
+                      // Utiliser complianceStats.current_streak si disponible (inclut les jours sans trades)
+                      // Sinon utiliser additionalStats (seulement les jours avec trades)
+                      const streakDays = complianceStats?.current_streak ?? 0;
+                      const notRespectedDays = additionalStats.currentConsecutiveDaysNotRespected;
+                      
+                      if (streakDays > 0) {
+                        return `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`;
+                      } else if (notRespectedDays > 0) {
+                        return `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceNotRespect')}`;
+                      }
+                      return t('dashboard:currentSeries');
+                    })()}
+                    value={(() => {
+                      // Utiliser complianceStats.current_streak si disponible (inclut les jours sans trades)
+                      // Sinon utiliser additionalStats (seulement les jours avec trades)
+                      const streakDays = complianceStats?.current_streak ?? 0;
+                      const notRespectedDays = additionalStats.currentConsecutiveDaysNotRespected;
+                      
+                      if (streakDays > 0) {
+                        return `${streakDays} ${t('dashboard:days')}`;
+                      } else if (notRespectedDays > 0) {
+                        return `${notRespectedDays} ${t('dashboard:days')}`;
+                      }
+                      return `0 ${t('dashboard:days')}`;
+                    })()}
+                    variant={(() => {
+                      const streakDays = complianceStats?.current_streak ?? 0;
+                      return streakDays > 0 ? 'success' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'danger' : 'default';
+                    })()}
                     size="small"
                     icon={
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -1757,16 +1791,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     }
                     subMetrics={[
                       {
-                        label: additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:currentRespectDays') : t('dashboard:currentNotRespectDays'),
-                        value: `${additionalStats.currentConsecutiveDaysRespected > 0 ? additionalStats.currentConsecutiveDaysRespected : additionalStats.currentConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`
+                        label: (() => {
+                          const streakDays = complianceStats?.current_streak ?? 0;
+                          return streakDays > 0 ? t('dashboard:currentRespectDays') : t('dashboard:currentNotRespectDays');
+                        })(),
+                        value: (() => {
+                          const streakDays = complianceStats?.current_streak ?? 0;
+                          return `${streakDays > 0 ? streakDays : additionalStats.currentConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`;
+                        })()
                       },
                       {
                         label: additionalStats.currentConsecutiveTradesRespected > 0 ? t('dashboard:currentRespectTrades') : t('dashboard:currentNotRespectTrades'),
                         value: `${additionalStats.currentConsecutiveTradesRespected > 0 ? additionalStats.currentConsecutiveTradesRespected : additionalStats.currentConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
                       }
                     ]}
-                    trend={additionalStats.currentConsecutiveDaysRespected > 0 ? 'up' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
-                    trendValue={additionalStats.currentConsecutiveDaysRespected > 0 ? t('dashboard:sequenceRespect') : additionalStats.currentConsecutiveDaysNotRespected > 0 ? t('dashboard:sequenceNotRespect') : undefined}
+                    trend={(() => {
+                      const streakDays = complianceStats?.current_streak ?? 0;
+                      return streakDays > 0 ? 'up' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'down' : undefined;
+                    })()}
+                    trendValue={(() => {
+                      const streakDays = complianceStats?.current_streak ?? 0;
+                      return streakDays > 0 ? t('dashboard:sequenceRespect') : additionalStats.currentConsecutiveDaysNotRespected > 0 ? t('dashboard:sequenceNotRespect') : undefined;
+                    })()}
                   />
                 </div>
               </Tooltip>
@@ -1775,15 +1821,31 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 <div className="h-full">
                   <ModernStatCard
                     label={t('dashboard:sequenceRespect')}
-                    value={`${additionalStats.maxConsecutiveDaysRespected || 0} ${t('dashboard:days')}`}
-                    variant={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'success' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'info' : 'default'}
+                    value={(() => {
+                      // Utiliser complianceStats.best_streak si disponible (inclut les jours sans trades)
+                      // Sinon utiliser additionalStats.maxConsecutiveDaysRespected (seulement les jours avec trades)
+                      const bestStreak = complianceStats?.best_streak ?? 0;
+                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
+                      return `${Math.max(bestStreak, maxDaysRespected)} ${t('dashboard:days')}`;
+                    })()}
+                    variant={(() => {
+                      const bestStreak = complianceStats?.best_streak ?? 0;
+                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
+                      const value = Math.max(bestStreak, maxDaysRespected);
+                      return value >= 21 ? 'success' : value > 0 ? 'info' : 'default';
+                    })()}
                     size="small"
                     icon={
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     }
-                    progressValue={additionalStats.maxConsecutiveDaysRespected || 0}
+                    progressValue={(() => {
+                      // Utiliser complianceStats.best_streak si disponible (inclut les jours sans trades)
+                      const bestStreak = complianceStats?.best_streak ?? 0;
+                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
+                      return Math.max(bestStreak, maxDaysRespected);
+                    })()}
                     progressMax={21}
                     progressLabel={t('dashboard:objective')}
                     subMetrics={[
@@ -1796,8 +1858,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         value: ''
                       }
                     ]}
-                    trend={additionalStats.maxConsecutiveDaysRespected >= 21 ? 'up' : additionalStats.maxConsecutiveDaysRespected > 0 ? 'up' : undefined}
-                    trendValue={additionalStats.maxConsecutiveDaysRespected >= 21 ? t('dashboard:objectiveAchieved') : additionalStats.maxConsecutiveDaysRespected > 0 ? `${21 - (additionalStats.maxConsecutiveDaysRespected || 0)} ${t('dashboard:daysRemaining')}` : undefined}
+                    trend={(() => {
+                      const bestStreak = complianceStats?.best_streak ?? 0;
+                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
+                      const value = Math.max(bestStreak, maxDaysRespected);
+                      return value >= 21 ? 'up' : value > 0 ? 'up' : undefined;
+                    })()}
+                    trendValue={(() => {
+                      const bestStreak = complianceStats?.best_streak ?? 0;
+                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
+                      const value = Math.max(bestStreak, maxDaysRespected);
+                      return value >= 21 ? t('dashboard:objectiveAchieved') : value > 0 ? `${21 - value} ${t('dashboard:daysRemaining')}` : undefined;
+                    })()}
                   />
                 </div>
               </Tooltip>

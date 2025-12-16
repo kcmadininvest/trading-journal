@@ -3,6 +3,7 @@ import { tradesService, TradeListItem } from '../../services/trades';
 import { tradeStrategiesService, TradeStrategy, BulkStrategyData } from '../../services/tradeStrategies';
 import { dayStrategyComplianceService, DayStrategyCompliance } from '../../services/dayStrategyCompliance';
 import { Tooltip } from '../ui';
+import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
@@ -60,6 +61,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const isInitialLoad = useRef(true);
   const serverDataRef = useRef<TradeWithStrategy[]>([]); // Garder une référence aux données du serveur
   const serverDayComplianceRef = useRef<DayStrategyCompliance | null>(null); // Garder une référence à la compliance du serveur
@@ -588,6 +590,52 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     );
   };
 
+  const handleDeleteClick = () => {
+    if (!isDayWithoutTrades || !dayCompliance?.id) {
+      return;
+    }
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!isDayWithoutTrades || !dayCompliance?.id) {
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      await dayStrategyComplianceService.delete(dayCompliance.id);
+      
+      // Nettoyer le localStorage
+      if (draftKey) {
+        try {
+          localStorage.removeItem(draftKey);
+        } catch (e) {
+          // Ignorer les erreurs de nettoyage
+        }
+      }
+      
+      setHasUnsavedChanges(false);
+      isInitialLoad.current = true;
+      setDeleteModalOpen(false);
+      await loadData();
+      
+      // Déclencher un événement personnalisé pour notifier les autres composants du changement
+      window.dispatchEvent(new CustomEvent('strategy-compliance-updated', {
+        detail: { date, tradingAccount }
+      }));
+      
+      onClose(true);
+    } catch (e: any) {
+      setError(e?.message || t('trades:strategyCompliance.deleteError', { defaultValue: 'Erreur lors de la suppression' }));
+      setDeleteModalOpen(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
@@ -677,6 +725,12 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       // Recharger les données après la sauvegarde pour avoir les données à jour
       // Le localStorage est déjà nettoyé, donc loadData() ne restaurera pas de brouillon
       await loadData();
+      
+      // Déclencher un événement personnalisé pour notifier les autres composants du changement
+      window.dispatchEvent(new CustomEvent('strategy-compliance-updated', {
+        detail: { date, tradingAccount }
+      }));
+      
       onClose(true);
     } catch (e: any) {
       setError(e?.message || t('trades:strategyCompliance.error'));
@@ -1339,6 +1393,19 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
             >
               {t('trades:strategyCompliance.cancel')}
             </button>
+            {/* Bouton de suppression - uniquement pour les jours sans trades avec compliance existante */}
+            {isDayWithoutTrades && dayCompliance?.id && (
+              <button
+                onClick={handleDeleteClick}
+                disabled={isSaving || isLoading}
+                className="px-3 sm:px-4 py-2 rounded-lg bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium transition-colors flex items-center justify-center gap-2 flex-1 sm:flex-initial"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                {t('trades:strategyCompliance.delete', { defaultValue: 'Supprimer' })}
+              </button>
+            )}
             <button
               onClick={handleSave}
               disabled={isSaving || isLoading}
@@ -1364,6 +1431,17 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
           </div>
         </div>
       </div>
+
+      {/* Modale de confirmation de suppression */}
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title={t('trades:strategyCompliance.deleteConfirmTitle', { defaultValue: 'Supprimer le respect de la stratégie' })}
+        message={t('trades:strategyCompliance.deleteConfirmMessage', { defaultValue: 'Êtes-vous sûr de vouloir supprimer le respect de la stratégie pour ce jour ? Cette action est irréversible.' })}
+        isLoading={isSaving}
+        confirmButtonText={t('trades:strategyCompliance.delete', { defaultValue: 'Supprimer' })}
+      />
     </div>
   );
 };

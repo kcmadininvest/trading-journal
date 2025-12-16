@@ -60,7 +60,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div 
-        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header avec gradient rouge */}
