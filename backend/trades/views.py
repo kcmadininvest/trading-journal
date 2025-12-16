@@ -3080,8 +3080,13 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 is_respected = data['with_strategy'] == data['total'] and data['not_respected'] == 0
             elif data['has_day_compliance']:
                 # Jour sans trades mais avec compliance : vérifier que la compliance indique le respect
+                # Pour un jour sans trades avec compliance, on a déjà compté la compliance dans 'respected' ou 'not_respected'
+                # Donc on peut simplement vérifier que respected > 0 et not_respected == 0
+                is_respected = data['respected'] > 0 and data['not_respected'] == 0
+                # Double vérification avec l'objet compliance pour plus de sécurité
                 compliance = day_compliances_dict.get(date_str)
-                is_respected = compliance and compliance.strategy_respected is True
+                if compliance:
+                    is_respected = is_respected and compliance.strategy_respected is True
             
             if is_respected:
                 # Les jours avec activité sont considérés comme consécutifs même s'il y a des jours sans activité entre eux
