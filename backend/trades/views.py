@@ -1834,11 +1834,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             if saturday_date and isinstance(saturday_date, str):
                 saturday_date_str: str = saturday_date  # Type narrowing pour le type checker
                 if datetime.strptime(saturday_date_str, '%Y-%m-%d').year == year:
-                weekly_result.append({
+                    weekly_result.append({
                         'saturday_date': saturday_date_str,
-                    'pnl': weekly_data[week_key]['pnl'],
-                    'trade_count': weekly_data[week_key]['trade_count']
-                })
+                        'pnl': weekly_data[week_key]['pnl'],
+                        'trade_count': weekly_data[week_key]['trade_count']
+                    })
         
         # Calculer le total annuel
         yearly_total = sum(float(trade.net_pnl) for trade in year_trades)
