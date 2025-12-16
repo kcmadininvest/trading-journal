@@ -114,6 +114,7 @@ CURRENT_COMMIT_MSG=""
 COMMITS_PULLED=""
 FILES_CHANGED=""
 CHANGED_COUNT=0
+DEPLOY_TAG=""
 
 # Vérifier si on est dans un dépôt Git (vérifier .git ou git rev-parse)
 # GIT_REPO_URL est maintenant chargé depuis la configuration
@@ -171,47 +172,62 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
         info "✅ Anciens stashes nettoyés"
     fi
     
-    # Passer sur main et récupérer les dernières modifications (avec tags)
-    info "🔄 Récupération des changements depuis origin/main..."
-    git fetch origin main --tags 2>/dev/null || warn "Impossible de récupérer depuis origin/main"
+    # Récupérer les tags distants et déterminer le tag à déployer
+    info "🔄 Récupération des tags distants..."
+    git fetch origin --tags 2>/dev/null || warn "Impossible de récupérer les tags distants"
+    git fetch origin main 2>/dev/null || warn "Impossible de récupérer depuis origin/main"
     
-    # Vérifier s'il y a des nouveaux commits
-    LOCAL_COMMIT=$(git rev-parse main 2>/dev/null || echo "")
-    REMOTE_COMMIT=$(git rev-parse origin/main 2>/dev/null || echo "")
+    # Détecter le dernier tag (par version)
+    DEPLOY_TAG=$(git tag --sort=-version:refname 2>/dev/null | head -1 || echo "")
     
-    if [ ! -z "$LOCAL_COMMIT" ] && [ ! -z "$REMOTE_COMMIT" ] && [ "$LOCAL_COMMIT" != "$REMOTE_COMMIT" ]; then
-        info "📥 Nouveaux commits détectés sur origin/main"
-        # Lister les commits qui seront récupérés
-        COMMITS_PULLED=$(git log --oneline $LOCAL_COMMIT..$REMOTE_COMMIT 2>/dev/null || echo "")
-        if [ ! -z "$COMMITS_PULLED" ]; then
-            info "📋 Commits à récupérer:"
-            echo "$COMMITS_PULLED" | head -5 | while IFS= read -r commit_line; do
-                info "   - $commit_line"
-            done
-            REMAINING=$(echo "$COMMITS_PULLED" | wc -l)
-            if [ "$REMAINING" -gt 5 ]; then
-                info "   ... et $(($REMAINING - 5)) autres commits"
-            fi
-            
-            # Afficher le dernier tag disponible (par version, pas seulement celui du commit)
-            LATEST_TAG=$(git tag --sort=-version:refname 2>/dev/null | head -1 || git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --abbrev=0 $REMOTE_COMMIT 2>/dev/null || echo "")
-            if [ ! -z "$LATEST_TAG" ]; then
-                info "🏷️  Version: $LATEST_TAG"
-            fi
-        fi
+    if [ -z "$DEPLOY_TAG" ]; then
+        warn "⚠️  Aucun tag trouvé, utilisation du dernier commit de main"
+        git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
+        git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
     else
-        info "✅ Déjà à jour avec origin/main"
-        # Afficher le dernier tag disponible (par version)
-        CURRENT_TAG=$(git tag --sort=-version:refname 2>/dev/null | head -1 || git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --exact-match HEAD 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "")
-        if [ ! -z "$CURRENT_TAG" ]; then
-            info "🏷️  Version actuelle: $CURRENT_TAG"
+        info "🏷️  Tag détecté: $DEPLOY_TAG"
+        
+        # Vérifier si le tag existe localement ou à distance
+        TAG_COMMIT=$(git rev-parse "$DEPLOY_TAG" 2>/dev/null || echo "")
+        if [ -z "$TAG_COMMIT" ]; then
+            # Le tag n'existe pas localement, essayer de le récupérer depuis origin
+            TAG_COMMIT=$(git rev-parse "origin/$DEPLOY_TAG" 2>/dev/null || git ls-remote --tags origin "$DEPLOY_TAG" 2>/dev/null | cut -f1 || echo "")
+        fi
+        
+        if [ -z "$TAG_COMMIT" ]; then
+            warn "⚠️  Impossible de trouver le commit du tag $DEPLOY_TAG, utilisation du dernier commit de main"
+            DEPLOY_TAG=""  # Réinitialiser car le tag n'a pas pu être utilisé
+            git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
+            git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
+        else
+            # Vérifier le commit actuel pour voir s'il y a des changements
+            CURRENT_HEAD=$(git rev-parse HEAD 2>/dev/null || echo "")
+            if [ ! -z "$CURRENT_HEAD" ] && [ "$CURRENT_HEAD" = "$TAG_COMMIT" ]; then
+                info "✅ Déjà sur le commit du tag $DEPLOY_TAG"
+            else
+                info "🔄 Checkout du tag $DEPLOY_TAG (commit: $(echo $TAG_COMMIT | cut -c1-7))"
+                git checkout "$DEPLOY_TAG" 2>/dev/null || {
+                    warn "Impossible de checkout le tag $DEPLOY_TAG, tentative avec origin/$DEPLOY_TAG..."
+                    git fetch origin tag "$DEPLOY_TAG" 2>/dev/null || true
+                    git checkout "$DEPLOY_TAG" 2>/dev/null || {
+                        warn "Échec du checkout du tag, utilisation de main"
+                        DEPLOY_TAG=""  # Réinitialiser car le tag n'a pas pu être utilisé
+                        git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
+                        git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
+                    }
+                }
+                # Vérifier que le checkout a bien abouti au bon commit
+                if [ ! -z "$DEPLOY_TAG" ] && [ "$(git rev-parse HEAD 2>/dev/null)" != "$TAG_COMMIT" ]; then
+                    warn "⚠️  Le checkout n'a pas abouti au bon commit, utilisation de main"
+                    DEPLOY_TAG=""  # Réinitialiser car le tag n'a pas pu être utilisé
+                    git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
+                    git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
+                fi
+            fi
         fi
     fi
     
-    git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
-    git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
-    
-    # Si le template était modifié avant le pull, le restaurer depuis le stash
+    # Si le template était modifié avant le checkout, le restaurer depuis le stash
     # (il sera mis à jour plus tard dans le script avec les nouveaux hash)
     if [ "$TEMPLATE_WAS_MODIFIED" = true ] && [ -f "$TEMPLATE_FILE" ]; then
         # Le template sera mis à jour plus tard, donc on ne fait rien ici
@@ -219,12 +235,19 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
         git update-index --assume-unchanged "$TEMPLATE_FILE" 2>/dev/null || true
     fi
     
-    # Capturer le commit APRÈS le pull
+    # Capturer le commit APRÈS le checkout
     CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
     if [ ! -z "$CURRENT_COMMIT" ]; then
         CURRENT_COMMIT_SHORT=$(echo "$CURRENT_COMMIT" | cut -c1-7)
         CURRENT_COMMIT_MSG=$(git log -1 --format='%s' $CURRENT_COMMIT 2>/dev/null || echo 'unknown')
-        info "📌 Commit déployé: $CURRENT_COMMIT_SHORT ($CURRENT_COMMIT_MSG)"
+        
+        # Vérifier si on est sur un tag
+        CURRENT_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+        if [ ! -z "$CURRENT_TAG" ]; then
+            info "📌 Commit déployé: $CURRENT_COMMIT_SHORT ($CURRENT_COMMIT_MSG) [Tag: $CURRENT_TAG]"
+        else
+            info "📌 Commit déployé: $CURRENT_COMMIT_SHORT ($CURRENT_COMMIT_MSG)"
+        fi
         
         # Vérifier si des changements ont été récupérés
         if [ ! -z "$PREVIOUS_COMMIT" ] && [ "$PREVIOUS_COMMIT" != "$CURRENT_COMMIT" ]; then
@@ -252,7 +275,12 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
         fi
     fi
     
-    info "✅ Code à jour depuis la branche main (production)"
+    # Afficher le tag déployé si disponible
+    if [ ! -z "$DEPLOY_TAG" ]; then
+        info "✅ Code déployé depuis le tag $DEPLOY_TAG"
+    else
+        info "✅ Code à jour depuis la branche main (production)"
+    fi
 else
     warn "Pas de dépôt Git détecté"
     warn "Continuation avec le code local..."
@@ -895,13 +923,21 @@ info "📄 Détails du déploiement enregistrés dans: $DEPLOYMENT_INFO"
 echo ""
 
 if [ ! -z "$CURRENT_COMMIT" ] && [ ! -z "$PREVIOUS_COMMIT" ] && [ "$PREVIOUS_COMMIT" != "$CURRENT_COMMIT" ]; then
-    echo "🎉 Nouvelle release de la branche main déployée avec succès !"
-    CURRENT_TAG=$(git tag --sort=-version:refname 2>/dev/null | head -1 || git describe --tags --abbrev=0 origin/main 2>/dev/null || git describe --tags --exact-match HEAD 2>/dev/null || git describe --tags --abbrev=0 2>/dev/null || echo "")
-    if [ ! -z "$CURRENT_TAG" ]; then
-        echo "🏷️  Version déployée: $CURRENT_TAG"
+    echo "🎉 Nouvelle release déployée avec succès !"
+    if [ ! -z "$DEPLOY_TAG" ]; then
+        echo "🏷️  Version déployée: $DEPLOY_TAG"
+    else
+        # Fallback: essayer de détecter le tag si DEPLOY_TAG n'est pas défini
+        CURRENT_TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || git tag --sort=-version:refname 2>/dev/null | head -1 || echo "")
+        if [ ! -z "$CURRENT_TAG" ]; then
+            echo "🏷️  Version déployée: $CURRENT_TAG"
+        fi
     fi
 else
     echo "✅ Déploiement terminé (code déjà à jour)"
+    if [ ! -z "$DEPLOY_TAG" ]; then
+        echo "🏷️  Version déployée: $DEPLOY_TAG"
+    fi
 fi
 
 # 16. 🧹 Nettoyage final : nettoyage des fichiers temporaires
