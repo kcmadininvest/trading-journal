@@ -134,6 +134,18 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
     git fetch origin --tags --quiet 2>/dev/null || warn "Impossible de récupérer les tags distants"
     
     # Sauvegarder les modifications locales si elles existent (en excluant les fichiers générés)
+    # Note: Le template index.html est marqué assume-unchanged et sera mis à jour plus tard dans le script
+    TEMPLATE_FILE="$BACKEND_DIR/trading_journal_api/templates/index.html"
+    TEMPLATE_WAS_MODIFIED=false
+    # S'assurer que le template est marqué comme assume-unchanged avant de vérifier les modifications
+    if [ -f "$TEMPLATE_FILE" ]; then
+        git update-index --assume-unchanged "$TEMPLATE_FILE" 2>/dev/null || true
+        # Vérifier si le template était modifié (même s'il est assume-unchanged)
+        if ! git diff-index --quiet HEAD -- "$TEMPLATE_FILE" 2>/dev/null; then
+            TEMPLATE_WAS_MODIFIED=true
+        fi
+    fi
+    
     if ! git diff-index --quiet HEAD -- 2>/dev/null; then
         # Vérifier s'il y a des modifications autres que les fichiers générés
         MODIFIED_FILES=$(git diff-index --name-only HEAD -- 2>/dev/null | grep -v "frontend/src/version.ts" || true)
@@ -198,6 +210,14 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
     
     git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
     git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
+    
+    # Si le template était modifié avant le pull, le restaurer depuis le stash
+    # (il sera mis à jour plus tard dans le script avec les nouveaux hash)
+    if [ "$TEMPLATE_WAS_MODIFIED" = true ] && [ -f "$TEMPLATE_FILE" ]; then
+        # Le template sera mis à jour plus tard, donc on ne fait rien ici
+        # mais on s'assure qu'il n'est pas restauré depuis Git
+        git update-index --assume-unchanged "$TEMPLATE_FILE" 2>/dev/null || true
+    fi
     
     # Capturer le commit APRÈS le pull
     CURRENT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
@@ -511,19 +531,7 @@ mkdir -p "$STATICFILES_DIR/static/js"
 mkdir -p "$STATICFILES_DIR/static/css"
 mkdir -p "$STATICFILES_DIR/static/media" 2>/dev/null || true
 
-# Copier les fichiers statiques vers les bons répertoires Django
-info "📋 Copie des fichiers statiques..."
-if [ -d "$FRONTEND_DIR/build/static/js" ]; then
-    cp "$FRONTEND_DIR/build/static/js/"* "$STATICFILES_DIR/static/js/" 2>/dev/null || true
-    info "✅ Fichiers JS copiés"
-fi
-
-if [ -d "$FRONTEND_DIR/build/static/css" ]; then
-    cp "$FRONTEND_DIR/build/static/css/"* "$STATICFILES_DIR/static/css/" 2>/dev/null || true
-    info "✅ Fichiers CSS copiés"
-fi
-
-# Copier les autres fichiers statiques (images, fonts, etc.)
+# Copier les autres fichiers statiques (images, fonts, etc.) avant collectstatic
 if [ -d "$FRONTEND_DIR/build/static/media" ]; then
     mkdir -p "$STATICFILES_DIR/static/media"
     cp -r "$FRONTEND_DIR/build/static/media/"* "$STATICFILES_DIR/static/media/" 2>/dev/null || true
@@ -544,7 +552,7 @@ if [ -f "$FRONTEND_DIR/build/google"*.html ]; then
     fi
 fi
 
-info "✅ Fichiers statiques synchronisés"
+info "✅ Fichiers statiques préparés (JS/CSS seront copiés après collectstatic)"
 
 # 8. 🔐 Vérification de la configuration WSGI
 info "Vérification de la configuration WSGI..."
@@ -628,6 +636,38 @@ info "✅ Migrations Django appliquées"
 info "Collecte des fichiers statiques Django..."
 python manage.py collectstatic --noinput
 info "✅ Fichiers statiques Django collectés"
+
+# 12b. 📋 Copier les fichiers JS/CSS du build React APRÈS collectstatic
+info "📋 Copie des fichiers JS/CSS du build React..."
+if [ -d "$FRONTEND_DIR/build/static/js" ]; then
+    # Nettoyer les anciens fichiers JS avant de copier les nouveaux
+    rm -f "$STATICFILES_DIR/static/js/main."*.js 2>/dev/null || true
+    # Copier explicitement le fichier JS détecté
+    if [ ! -z "$JS_FILE" ] && [ -f "$FRONTEND_DIR/build/static/js/$JS_FILE" ]; then
+        cp -f "$FRONTEND_DIR/build/static/js/$JS_FILE" "$STATICFILES_DIR/static/js/$JS_FILE" 2>/dev/null || true
+        info "✅ Fichier JS copié: $JS_FILE"
+    else
+        # Fallback: copier tous les fichiers JS
+        cp -f "$FRONTEND_DIR/build/static/js/"* "$STATICFILES_DIR/static/js/" 2>/dev/null || true
+        info "✅ Fichiers JS copiés"
+    fi
+fi
+
+if [ -d "$FRONTEND_DIR/build/static/css" ]; then
+    # Nettoyer les anciens fichiers CSS avant de copier les nouveaux
+    rm -f "$STATICFILES_DIR/static/css/main."*.css 2>/dev/null || true
+    # Copier explicitement le fichier CSS détecté
+    if [ ! -z "$CSS_FILE" ] && [ -f "$FRONTEND_DIR/build/static/css/$CSS_FILE" ]; then
+        cp -f "$FRONTEND_DIR/build/static/css/$CSS_FILE" "$STATICFILES_DIR/static/css/$CSS_FILE" 2>/dev/null || true
+        info "✅ Fichier CSS copié: $CSS_FILE"
+    else
+        # Fallback: copier tous les fichiers CSS
+        cp -f "$FRONTEND_DIR/build/static/css/"* "$STATICFILES_DIR/static/css/" 2>/dev/null || true
+        info "✅ Fichiers CSS copiés"
+    fi
+fi
+
+info "✅ Fichiers statiques synchronisés"
 
 # 13. 🔄 Redémarrage d'Apache
 info "Redémarrage d'Apache..."
