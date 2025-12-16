@@ -1834,11 +1834,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             if saturday_date and isinstance(saturday_date, str):
                 saturday_date_str: str = saturday_date  # Type narrowing pour le type checker
                 if datetime.strptime(saturday_date_str, '%Y-%m-%d').year == year:
-                    weekly_result.append({
+                weekly_result.append({
                         'saturday_date': saturday_date_str,
-                        'pnl': weekly_data[week_key]['pnl'],
-                        'trade_count': weekly_data[week_key]['trade_count']
-                    })
+                    'pnl': weekly_data[week_key]['pnl'],
+                    'trade_count': weekly_data[week_key]['trade_count']
+                })
         
         # Calculer le total annuel
         yearly_total = sum(float(trade.net_pnl) for trade in year_trades)
@@ -2045,20 +2045,20 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             
             # S'assurer que day_pnl est un nombre (float ou int)
             if isinstance(day_pnl, (int, float)):
-                if day_pnl > 0:
-                    # Jour gagnant (P/L positif)
-                    current_consecutive_wins_days += 1
-                    current_consecutive_losses_days = 0
-                    max_consecutive_wins_per_day = max(max_consecutive_wins_per_day, current_consecutive_wins_days)
-                elif day_pnl < 0:
-                    # Jour perdant (P/L négatif)
-                    current_consecutive_losses_days += 1
-                    current_consecutive_wins_days = 0
-                    max_consecutive_losses_per_day = max(max_consecutive_losses_per_day, current_consecutive_losses_days)
-                else:
-                    # Jour break-even (P/L = 0) - interrompt les séquences
-                    current_consecutive_wins_days = 0
-                    current_consecutive_losses_days = 0
+            if day_pnl > 0:
+                # Jour gagnant (P/L positif)
+                current_consecutive_wins_days += 1
+                current_consecutive_losses_days = 0
+                max_consecutive_wins_per_day = max(max_consecutive_wins_per_day, current_consecutive_wins_days)
+            elif day_pnl < 0:
+                # Jour perdant (P/L négatif)
+                current_consecutive_losses_days += 1
+                current_consecutive_wins_days = 0
+                max_consecutive_losses_per_day = max(max_consecutive_losses_per_day, current_consecutive_losses_days)
+            else:
+                # Jour break-even (P/L = 0) - interrompt les séquences
+                current_consecutive_wins_days = 0
+                current_consecutive_losses_days = 0
 
         # Calculer les séquences consécutives globales (tous les trades)
         trades_sorted = sorted(trades, key=lambda t: t.entered_at)
@@ -2111,12 +2111,12 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             day_pnl = day_data['pnl']
             # S'assurer que day_pnl est un nombre avant de comparer
             if isinstance(day_pnl, (int, float)):
-                if day_pnl > best_day_pnl:
-                    best_day_pnl = day_pnl
-                    best_day = day_key.isoformat()
-                if day_pnl < worst_day_pnl:
-                    worst_day_pnl = day_pnl
-                    worst_day = day_key.isoformat()
+            if day_pnl > best_day_pnl:
+                best_day_pnl = day_pnl
+                best_day = day_key.isoformat()
+            if day_pnl < worst_day_pnl:
+                worst_day_pnl = day_pnl
+                worst_day = day_key.isoformat()
         
         # Monthly Performance
         monthly_performance = {}
@@ -3087,7 +3087,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 # Les jours avec activité sont considérés comme consécutifs même s'il y a des jours sans activité entre eux
                 # On vérifie seulement que c'est un jour respecté avec activité
                 # current_streak_start doit être la date la plus ancienne du streak (on la met à jour à chaque fois)
-                current_streak_start = date_str
+                    current_streak_start = date_str
                 current_streak += 1
             else:
                 # Le streak actuel est cassé (jour avec activité mais non respecté), on s'arrête

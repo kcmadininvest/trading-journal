@@ -295,7 +295,7 @@ const StrategiesPage: React.FC = () => {
       const respectedCount = Math.round((respectPercentage / 100) * totalWithStrategy);
       const notRespectedCount = Math.round((notRespectPercentage / 100) * totalWithStrategy);
       
-      return {
+    return {
         ...d,
         totalWithStrategy,
         daysWithoutTrades,
@@ -306,26 +306,26 @@ const StrategiesPage: React.FC = () => {
     
     return {
       labels: enrichedData.map((d: any) => d.period),
-      datasets: [
-        {
-          label: t('strategies:respected'),
+    datasets: [
+      {
+        label: t('strategies:respected'),
           data: enrichedData.map((d: any) => d.respect_percentage || 0),
-          backgroundColor: 'rgba(59, 130, 246, 0.8)',
-          borderColor: '#3b82f6',
-          borderWidth: 0,
-          borderRadius: 0,
-        },
-        {
-          label: t('strategies:notRespected'),
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        borderColor: '#3b82f6',
+        borderWidth: 0,
+        borderRadius: 0,
+      },
+      {
+        label: t('strategies:notRespected'),
           data: enrichedData.map((d: any) => d.not_respect_percentage || 0),
-          backgroundColor: 'rgba(236, 72, 153, 0.8)',
-          borderColor: '#ec4899',
-          borderWidth: 0,
-          borderRadius: 0,
-        },
-      ],
+        backgroundColor: 'rgba(236, 72, 153, 0.8)',
+        borderColor: '#ec4899',
+        borderWidth: 0,
+        borderRadius: 0,
+      },
+    ],
       enrichedData, // Stocker les données enrichies pour les tooltips
-    };
+  };
   }, [statistics?.statistics?.period_data, t]);
 
   const respectChartOptions = useMemo(() => ({

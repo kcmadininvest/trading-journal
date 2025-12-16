@@ -317,16 +317,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       return;
     }
 
-    setComplianceLoading(true);
-    try {
-      const stats = await tradeStrategiesService.strategyComplianceStats(accountId ?? undefined);
-      setComplianceStats(stats);
-    } catch (err) {
-      console.error('Erreur lors du chargement des statistiques de compliance', err);
-      setComplianceStats(null);
-    } finally {
-      setComplianceLoading(false);
-    }
+      setComplianceLoading(true);
+      try {
+        const stats = await tradeStrategiesService.strategyComplianceStats(accountId ?? undefined);
+        setComplianceStats(stats);
+      } catch (err) {
+        console.error('Erreur lors du chargement des statistiques de compliance', err);
+        setComplianceStats(null);
+      } finally {
+        setComplianceLoading(false);
+      }
   }, [accountId, accountLoading]);
 
   useEffect(() => {

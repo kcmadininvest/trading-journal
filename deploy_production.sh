@@ -206,22 +206,52 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
                 info "✅ Déjà sur le commit du tag $DEPLOY_TAG"
             else
                 info "🔄 Checkout du tag $DEPLOY_TAG (commit: $(echo $TAG_COMMIT | cut -c1-7))"
-                git checkout "$DEPLOY_TAG" 2>/dev/null || {
-                    warn "Impossible de checkout le tag $DEPLOY_TAG, tentative avec origin/$DEPLOY_TAG..."
+                # Essayer le checkout (les avertissements sur detached HEAD sont normaux et peuvent être ignorés)
+                if git checkout "$DEPLOY_TAG" > /dev/null 2>&1; then
+                    # Vérifier que le checkout a bien abouti au bon commit
+                    CURRENT_HEAD_AFTER=$(git rev-parse HEAD 2>/dev/null || echo "")
+                    if [ ! -z "$CURRENT_HEAD_AFTER" ] && [ "$CURRENT_HEAD_AFTER" = "$TAG_COMMIT" ]; then
+                        info "✅ Checkout du tag $DEPLOY_TAG réussi (commit: $(echo $CURRENT_HEAD_AFTER | cut -c1-7))"
+                    else
+                        warn "⚠️  Le checkout n'a pas abouti au bon commit (attendu: $(echo $TAG_COMMIT | cut -c1-7), obtenu: $(echo $CURRENT_HEAD_AFTER | cut -c1-7))"
+                        warn "Tentative avec fetch du tag depuis origin..."
+                        git fetch origin tag "$DEPLOY_TAG" 2>/dev/null || true
+                        if git checkout "$DEPLOY_TAG" > /dev/null 2>&1; then
+                            CURRENT_HEAD_AFTER=$(git rev-parse HEAD 2>/dev/null || echo "")
+                            if [ ! -z "$CURRENT_HEAD_AFTER" ] && [ "$CURRENT_HEAD_AFTER" = "$TAG_COMMIT" ]; then
+                                info "✅ Checkout du tag $DEPLOY_TAG réussi après fetch"
+                            else
+                                warn "Échec du checkout du tag, utilisation de main"
+                                DEPLOY_TAG=""  # Réinitialiser car le tag n'a pas pu être utilisé
+                                git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
+                                git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
+                            fi
+                        else
+                            warn "Échec du checkout du tag, utilisation de main"
+                            DEPLOY_TAG=""  # Réinitialiser car le tag n'a pas pu être utilisé
+                            git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
+                            git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
+                        fi
+                    fi
+                else
+                    warn "Impossible de checkout le tag $DEPLOY_TAG, tentative avec fetch depuis origin..."
                     git fetch origin tag "$DEPLOY_TAG" 2>/dev/null || true
-                    git checkout "$DEPLOY_TAG" 2>/dev/null || {
+                    if git checkout "$DEPLOY_TAG" > /dev/null 2>&1; then
+                        CURRENT_HEAD_AFTER=$(git rev-parse HEAD 2>/dev/null || echo "")
+                        if [ ! -z "$CURRENT_HEAD_AFTER" ] && [ "$CURRENT_HEAD_AFTER" = "$TAG_COMMIT" ]; then
+                            info "✅ Checkout du tag $DEPLOY_TAG réussi après fetch"
+                        else
+                            warn "Échec du checkout du tag, utilisation de main"
+                            DEPLOY_TAG=""  # Réinitialiser car le tag n'a pas pu être utilisé
+                            git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
+                            git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
+                        fi
+                    else
                         warn "Échec du checkout du tag, utilisation de main"
                         DEPLOY_TAG=""  # Réinitialiser car le tag n'a pas pu être utilisé
                         git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
                         git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
-                    }
-                }
-                # Vérifier que le checkout a bien abouti au bon commit
-                if [ ! -z "$DEPLOY_TAG" ] && [ "$(git rev-parse HEAD 2>/dev/null)" != "$TAG_COMMIT" ]; then
-                    warn "⚠️  Le checkout n'a pas abouti au bon commit, utilisation de main"
-                    DEPLOY_TAG=""  # Réinitialiser car le tag n'a pas pu être utilisé
-                    git checkout main 2>/dev/null || warn "Impossible de basculer sur la branche main"
-                    git pull origin main 2>/dev/null || warn "Impossible de pull depuis origin/main"
+                    fi
                 fi
             fi
         fi
