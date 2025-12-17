@@ -1394,7 +1394,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               {t('trades:strategyCompliance.cancel')}
             </button>
             {/* Bouton de suppression - uniquement pour les jours sans trades avec compliance existante */}
-            {isDayWithoutTrades && dayCompliance?.id && (
+            {isDayWithoutTrades && dayCompliance?.id ? (
               <button
                 onClick={handleDeleteClick}
                 disabled={isSaving || isLoading}
@@ -1405,7 +1405,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                 </svg>
                 {t('trades:strategyCompliance.delete', { defaultValue: 'Supprimer' })}
               </button>
-            )}
+            ) : null}
             <button
               onClick={handleSave}
               disabled={isSaving || isLoading}

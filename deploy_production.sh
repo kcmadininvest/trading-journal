@@ -727,6 +727,31 @@ fi
 
 info "✅ Fichiers statiques synchronisés"
 
+# 12c. 🔄 Redémarrage du service Daphne (après migrations et collectstatic)
+info "Redémarrage du service trading-journal-daphne..."
+if [ -f "/etc/systemd/system/trading-journal-daphne.service" ]; then
+    if sudo systemctl restart trading-journal-daphne.service 2>/dev/null; then
+        info "✅ Service trading-journal-daphne redémarré"
+        
+        # Attendre un peu pour que le service démarre complètement
+        sleep 2
+        
+        # Vérifier que le service est bien actif après redémarrage
+        if sudo systemctl is-active --quiet trading-journal-daphne.service 2>/dev/null; then
+            info "✅ Service trading-journal-daphne est actif"
+        else
+            warn "⚠️  Service trading-journal-daphne n'est pas actif après redémarrage, vérifiez les logs:"
+            warn "   sudo journalctl -u trading-journal-daphne.service -n 50"
+            warn "   sudo tail -f /var/log/trading-journal/daphne_error.log"
+        fi
+    else
+        warn "Impossible de redémarrer le service trading-journal-daphne (peut nécessiter sudo)"
+        warn "Veuillez exécuter manuellement: sudo systemctl restart trading-journal-daphne.service"
+    fi
+else
+    warn "Service trading-journal-daphne non trouvé, redémarrage ignoré"
+fi
+
 # 13. 🔄 Redémarrage d'Apache
 info "Redémarrage d'Apache..."
 if systemctl restart httpd 2>/dev/null || systemctl restart apache2 2>/dev/null; then

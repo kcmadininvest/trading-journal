@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField
+from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField, Q
 from django.db.models.functions import TruncDate, Cast
 from django.db import models
 from django.utils import timezone
@@ -2593,12 +2593,23 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             account_period_strategies_queryset = account_period_strategies_queryset.filter(trade__trading_account_id=trading_account_id)
         
         # Récupérer les compliances pour les jours sans trades
+        # IMPORTANT: Exclure les compliances pour les jours qui ont des trades (pour éviter le double comptage)
         # Pour toutes périodes
         all_time_day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
             user=self.request.user
         ).exclude(strategy_respected__isnull=True)
         if trading_account_id:
             all_time_day_compliances_queryset = all_time_day_compliances_queryset.filter(trading_account_id=trading_account_id)
+        
+        # Exclure les compliances pour les jours qui ont des trades
+        # Récupérer toutes les dates avec des trades pour cet utilisateur/compte
+        trades_dates = set(account_trades_queryset.values_list('trade_day', flat=True))
+        trades_dates = {d for d in trades_dates if d is not None}  # Filtrer les None
+        if trades_dates:
+            # trade_day est déjà un objet date, pas besoin de conversion
+            # Construire le Q object directement avec toutes les dates
+            date_filters = Q(date__in=list(trades_dates))
+            all_time_day_compliances_queryset = all_time_day_compliances_queryset.exclude(date_filters)
         
         # Pour la période sélectionnée
         period_day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
@@ -2609,6 +2620,15 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         if trading_account_id:
             period_day_compliances_queryset = period_day_compliances_queryset.filter(trading_account_id=trading_account_id)
         
+        # Exclure les compliances pour les jours qui ont des trades dans la période
+        period_trades_dates = set(account_period_trades_queryset.values_list('trade_day', flat=True))
+        period_trades_dates = {d for d in period_trades_dates if d is not None}  # Filtrer les None
+        if period_trades_dates:
+            # trade_day est déjà un objet date, pas besoin de conversion
+            # Construire le Q object directement avec toutes les dates
+            period_date_filters = Q(date__in=list(period_trades_dates))
+            period_day_compliances_queryset = period_day_compliances_queryset.exclude(period_date_filters)
+        
         # Calculs
         total_strategies = queryset.count()  # Trades avec stratégie pour la période (pour les graphiques)
         total_period_trades = period_trades_queryset.count()  # Tous les trades pour la période (tous comptes)
@@ -2618,44 +2638,111 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         total_all_time_strategies = all_time_strategies_queryset.count()  # Trades avec stratégie
         
         # Ajouter les compliances pour all_time (toutes périodes, tous comptes)
-        # Note: all_time_day_compliances_queryset est défini plus bas, on le définit ici pour all_time
+        # IMPORTANT: Exclure les compliances pour les jours qui ont des trades
         all_time_all_day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
             user=self.request.user
         ).exclude(strategy_respected__isnull=True)
+        
+        # Exclure les compliances pour les jours qui ont des trades (tous comptes)
+        all_time_trades_dates = set(all_time_trades_queryset.values_list('trade_day', flat=True))
+        all_time_trades_dates = {d for d in all_time_trades_dates if d is not None}  # Filtrer les None
+        if all_time_trades_dates:
+            # trade_day est déjà un objet date, pas besoin de conversion
+            # Construire le Q object directement avec toutes les dates
+            all_time_date_filters = Q(date__in=list(all_time_trades_dates))
+            all_time_all_day_compliances_queryset = all_time_all_day_compliances_queryset.exclude(all_time_date_filters)
+        
         all_time_all_day_compliances_count = all_time_all_day_compliances_queryset.count()
         total_all_time_strategies += all_time_all_day_compliances_count  # Inclure les compliances dans le total
         
         # 1. Respect de la stratégie en % pour le compte (toutes périodes, pas seulement la période sélectionnée)
-        # Calculer par rapport au nombre total de trades du compte (pas seulement ceux avec stratégie)
+        # IMPORTANT: Compter les JOURS respectés, pas les trades/compliances respectés
+        # Un jour est respecté si tous les trades du jour sont respectés (ou si la compliance indique respecté)
         account_strategies_with_respect = account_strategies_queryset.exclude(strategy_respected__isnull=True)
+        total_account_strategies = account_strategies_with_respect.count()  # Trades avec stratégie (respectée ou non)
+        
+        # Calculer le nombre de jours uniques avec évaluation (trades avec stratégie OU compliances)
+        # Jours avec trades ayant stratégie
+        account_strategies_dates = set(account_strategies_with_respect.values_list('trade__trade_day', flat=True))
+        account_strategies_dates = {d for d in account_strategies_dates if d is not None}
+        # Jours avec compliances (sans trades)
+        account_compliances_dates = set(all_time_day_compliances_queryset.values_list('date', flat=True))
+        # Union des deux ensembles pour obtenir le total de jours uniques
+        account_total_days = len(account_strategies_dates | account_compliances_dates)
+        account_total_trades_in_days = total_account_strategies  # Nombre de trades avec stratégie
+        
+        # Compter les jours respectés (jours où TOUS les trades sont respectés)
+        account_days_respected = 0
+        account_days_not_respected = 0
+        for trade_date in account_strategies_dates:
+            # Récupérer tous les trades avec stratégie pour ce jour
+            day_strategies = account_strategies_with_respect.filter(trade__trade_day=trade_date)
+            # Récupérer tous les trades du jour (pour vérifier que tous ont une stratégie)
+            day_all_trades = account_trades_queryset.filter(trade_day=trade_date)
+            # Un jour est respecté si tous les trades du jour ont une stratégie ET tous sont respectés
+            if day_all_trades.count() == day_strategies.count():  # Tous les trades ont une stratégie
+                if day_strategies.filter(strategy_respected=False).count() == 0:  # Aucun non respecté
+                    account_days_respected += 1
+                else:
+                    account_days_not_respected += 1
+            # Si certains trades n'ont pas de stratégie, on ne compte pas ce jour comme respecté ou non respecté
+        
+        # Ajouter les compliances pour les jours sans trades
+        account_days_respected += all_time_day_compliances_queryset.filter(strategy_respected=True).count()
+        account_days_not_respected += all_time_day_compliances_queryset.filter(strategy_respected=False).count()
+        
+        # Pourcentages par rapport au total de jours
+        account_respect_percentage = (account_days_respected / account_total_days * 100) if account_total_days > 0 else 0
+        account_not_respect_percentage = (account_days_not_respected / account_total_days * 100) if account_total_days > 0 else 0
+        
+        # Pour compatibilité avec l'ancien code, garder aussi le compte des trades/compliances respectés
         account_respected_count = account_strategies_with_respect.filter(strategy_respected=True).count()
         account_not_respected_count = account_strategies_with_respect.filter(strategy_respected=False).count()
-        
-        # Ajouter les compliances pour les jours sans trades (toutes périodes)
         all_time_day_respected = all_time_day_compliances_queryset.filter(strategy_respected=True).count()
         all_time_day_not_respected = all_time_day_compliances_queryset.filter(strategy_respected=False).count()
         account_respected_count += all_time_day_respected
         account_not_respected_count += all_time_day_not_respected
-        # Pourcentages par rapport au total (trades + compliances)
-        total_account_with_strategy = total_account_trades + all_time_day_compliances_queryset.count()
-        account_respect_percentage = (account_respected_count / total_account_with_strategy * 100) if total_account_with_strategy > 0 else 0
-        account_not_respect_percentage = (account_not_respected_count / total_account_with_strategy * 100) if total_account_with_strategy > 0 else 0
+        total_account_with_strategy = total_account_strategies + all_time_day_compliances_queryset.count()
         
-        # Respect du compte pour la période sélectionnée - calculer par rapport à TOUS les trades du compte pour la période
+        # Respect du compte pour la période sélectionnée - compter les JOURS respectés
         account_period_with_respect = account_period_strategies_queryset.exclude(strategy_respected__isnull=True)
+        total_account_period_strategies = account_period_with_respect.count()  # Trades avec stratégie pour la période
+        
+        # Calculer le nombre de jours uniques avec évaluation pour la période du compte
+        account_period_strategies_dates = set(account_period_with_respect.values_list('trade__trade_day', flat=True))
+        account_period_strategies_dates = {d for d in account_period_strategies_dates if d is not None}
+        account_period_compliances_dates = set(period_day_compliances_queryset.values_list('date', flat=True))
+        account_period_total_days = len(account_period_strategies_dates | account_period_compliances_dates)
+        account_period_total_trades_in_days = total_account_period_strategies
+        
+        # Compter les jours respectés pour la période du compte
+        account_period_days_respected = 0
+        account_period_days_not_respected = 0
+        for trade_date in account_period_strategies_dates:
+            day_strategies = account_period_with_respect.filter(trade__trade_day=trade_date)
+            day_all_trades = account_period_trades_queryset.filter(trade_day=trade_date)
+            if day_all_trades.count() == day_strategies.count():  # Tous les trades ont une stratégie
+                if day_strategies.filter(strategy_respected=False).count() == 0:  # Aucun non respecté
+                    account_period_days_respected += 1
+                else:
+                    account_period_days_not_respected += 1
+        
+        # Ajouter les compliances pour les jours sans trades
+        account_period_days_respected += period_day_compliances_queryset.filter(strategy_respected=True).count()
+        account_period_days_not_respected += period_day_compliances_queryset.filter(strategy_respected=False).count()
+        
+        # Pourcentages par rapport au total de jours
+        account_period_respect_percentage = (account_period_days_respected / account_period_total_days * 100) if account_period_total_days > 0 else 0
+        account_period_not_respect_percentage = (account_period_days_not_respected / account_period_total_days * 100) if account_period_total_days > 0 else 0
+        
+        # Pour compatibilité
         account_period_respected = account_period_with_respect.filter(strategy_respected=True).count()
         account_period_not_respected = account_period_with_respect.filter(strategy_respected=False).count()
-        
-        # Ajouter les compliances pour les jours sans trades (période sélectionnée)
         period_day_respected = period_day_compliances_queryset.filter(strategy_respected=True).count()
         period_day_not_respected = period_day_compliances_queryset.filter(strategy_respected=False).count()
         account_period_respected += period_day_respected
         account_period_not_respected += period_day_not_respected
-        
-        # Pourcentage par rapport au total (trades + compliances) du compte pour la période
-        total_account_period_with_strategy = total_account_period_trades + period_day_compliances_queryset.count()
-        account_period_respect_percentage = (account_period_respected / total_account_period_with_strategy * 100) if total_account_period_with_strategy > 0 else 0
-        account_period_not_respect_percentage = (account_period_not_respected / total_account_period_with_strategy * 100) if total_account_period_with_strategy > 0 else 0
+        total_account_period_with_strategy = total_account_period_strategies + period_day_compliances_queryset.count()
         
         # Pour la période (utilisé pour les graphiques uniquement)
         strategies_with_respect = queryset.exclude(strategy_respected__isnull=True)
@@ -2663,46 +2750,104 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         not_respected_count = strategies_with_respect.filter(strategy_respected=False).count()
         
         # Ajouter les compliances pour les jours sans trades (période sélectionnée, tous comptes)
+        # IMPORTANT: Exclure les compliances pour les jours qui ont des trades
         all_period_day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
             user=self.request.user,
             date__gte=start_date.date(),
             date__lt=end_date.date()
         ).exclude(strategy_respected__isnull=True)
+        
+        # Exclure les compliances pour les jours qui ont des trades dans la période (tous comptes)
+        period_all_trades_dates = set(period_trades_queryset.values_list('trade_day', flat=True))
+        period_all_trades_dates = {d for d in period_all_trades_dates if d is not None}  # Filtrer les None
+        if period_all_trades_dates:
+            # trade_day est déjà un objet date, pas besoin de conversion
+            # Construire le Q object directement avec toutes les dates
+            period_all_date_filters = Q(date__in=list(period_all_trades_dates))
+            all_period_day_compliances_queryset = all_period_day_compliances_queryset.exclude(period_all_date_filters)
+        
         all_period_day_respected = all_period_day_compliances_queryset.filter(strategy_respected=True).count()
         all_period_day_not_respected = all_period_day_compliances_queryset.filter(strategy_respected=False).count()
         respected_count += all_period_day_respected
         not_respected_count += all_period_day_not_respected
         
-        # Respect total toutes périodes - calculer par rapport à TOUS les trades
+        # Respect total toutes périodes - compter les JOURS respectés
         all_time_with_respect = all_time_strategies_queryset.exclude(strategy_respected__isnull=True)
+        total_all_time_strategies_count = all_time_with_respect.count()  # Trades avec stratégie (toutes périodes, tous comptes)
+        
+        # Calculer le nombre de jours uniques avec évaluation (toutes périodes, tous comptes)
+        all_time_strategies_dates = set(all_time_with_respect.values_list('trade__trade_day', flat=True))
+        all_time_strategies_dates = {d for d in all_time_strategies_dates if d is not None}
+        all_time_compliances_dates = set(all_time_all_day_compliances_queryset.values_list('date', flat=True))
+        all_time_total_days = len(all_time_strategies_dates | all_time_compliances_dates)
+        all_time_total_trades_in_days = total_all_time_strategies_count
+        
+        # Compter les jours respectés (toutes périodes, tous comptes)
+        all_time_days_respected = 0
+        all_time_days_not_respected = 0
+        for trade_date in all_time_strategies_dates:
+            day_strategies = all_time_with_respect.filter(trade__trade_day=trade_date)
+            day_all_trades = all_time_trades_queryset.filter(trade_day=trade_date)
+            if day_all_trades.count() == day_strategies.count():  # Tous les trades ont une stratégie
+                if day_strategies.filter(strategy_respected=False).count() == 0:  # Aucun non respecté
+                    all_time_days_respected += 1
+                else:
+                    all_time_days_not_respected += 1
+        
+        # Ajouter les compliances pour les jours sans trades
+        all_time_days_respected += all_time_all_day_compliances_queryset.filter(strategy_respected=True).count()
+        all_time_days_not_respected += all_time_all_day_compliances_queryset.filter(strategy_respected=False).count()
+        
+        # Pourcentages par rapport au total de jours
+        all_time_respect_percentage = (all_time_days_respected / all_time_total_days * 100) if all_time_total_days > 0 else 0
+        all_time_not_respect_percentage = (all_time_days_not_respected / all_time_total_days * 100) if all_time_total_days > 0 else 0
+        
+        # Pour compatibilité
         all_time_respected = all_time_with_respect.filter(strategy_respected=True).count()
         all_time_not_respected = all_time_with_respect.filter(strategy_respected=False).count()
-        
-        # Ajouter les compliances pour les jours sans trades (toutes périodes, tous comptes)
-        # Note: all_time_all_day_compliances_queryset est déjà défini plus haut
         all_time_all_day_respected = all_time_all_day_compliances_queryset.filter(strategy_respected=True).count()
         all_time_all_day_not_respected = all_time_all_day_compliances_queryset.filter(strategy_respected=False).count()
         all_time_respected += all_time_all_day_respected
         all_time_not_respected += all_time_all_day_not_respected
+        total_all_time_with_strategy = total_all_time_strategies_count + all_time_all_day_compliances_queryset.count()
         
-        # Pourcentage par rapport au total (trades + compliances)
-        total_all_time_with_strategy = total_all_time_trades + all_time_all_day_compliances_queryset.count()
-        all_time_respect_percentage = (all_time_respected / total_all_time_with_strategy * 100) if total_all_time_with_strategy > 0 else 0
-        all_time_not_respect_percentage = (all_time_not_respected / total_all_time_with_strategy * 100) if total_all_time_with_strategy > 0 else 0
-        
-        # Respect total pour la période sélectionnée (tous comptes) - calculer par rapport à TOUS les trades de la période
+        # Respect total pour la période sélectionnée (tous comptes) - compter les JOURS respectés
         period_with_respect = period_strategies_queryset.exclude(strategy_respected__isnull=True)
+        total_period_strategies_count = period_with_respect.count()  # Trades avec stratégie pour la période (tous comptes)
+        
+        # Calculer le nombre de jours uniques avec évaluation pour la période (tous comptes)
+        period_strategies_dates = set(period_with_respect.values_list('trade__trade_day', flat=True))
+        period_strategies_dates = {d for d in period_strategies_dates if d is not None}
+        period_compliances_dates = set(all_period_day_compliances_queryset.values_list('date', flat=True))
+        period_total_days = len(period_strategies_dates | period_compliances_dates)
+        period_total_trades_in_days = total_period_strategies_count
+        
+        # Compter les jours respectés pour la période (tous comptes)
+        period_days_respected = 0
+        period_days_not_respected = 0
+        for trade_date in period_strategies_dates:
+            day_strategies = period_with_respect.filter(trade__trade_day=trade_date)
+            day_all_trades = period_trades_queryset.filter(trade_day=trade_date)
+            if day_all_trades.count() == day_strategies.count():  # Tous les trades ont une stratégie
+                if day_strategies.filter(strategy_respected=False).count() == 0:  # Aucun non respecté
+                    period_days_respected += 1
+                else:
+                    period_days_not_respected += 1
+        
+        # Ajouter les compliances pour les jours sans trades
+        period_days_respected += all_period_day_compliances_queryset.filter(strategy_respected=True).count()
+        period_days_not_respected += all_period_day_compliances_queryset.filter(strategy_respected=False).count()
+        
+        # Pourcentages par rapport au total de jours
+        period_respect_percentage = (period_days_respected / period_total_days * 100) if period_total_days > 0 else 0
+        period_not_respect_percentage = (period_days_not_respected / period_total_days * 100) if period_total_days > 0 else 0
+        
+        # Pour compatibilité
         period_respected = period_with_respect.filter(strategy_respected=True).count()
         period_not_respected = period_with_respect.filter(strategy_respected=False).count()
-        
-        # Ajouter les compliances pour les jours sans trades (période sélectionnée, tous comptes)
         period_respected += all_period_day_respected
         period_not_respected += all_period_day_not_respected
-        
-        # Pourcentage par rapport au total (trades + compliances) de la période
-        total_period_with_strategy = total_period_trades + all_period_day_compliances_queryset.count()
-        period_respect_percentage = (period_respected / total_period_with_strategy * 100) if total_period_with_strategy > 0 else 0
-        period_not_respect_percentage = (period_not_respected / total_period_with_strategy * 100) if total_period_with_strategy > 0 else 0
+        total_period_with_strategy = total_period_strategies_count + all_period_day_compliances_queryset.count()
         
         # 2. Taux de réussite selon respect de la stratégie
         # Taux de réussite si stratégie respectée (trades gagnants quand strategy_respected = True)
@@ -2759,20 +2904,22 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 day_respected = day_with_respect.filter(strategy_respected=True).count()
                 day_not_respected = day_with_respect.filter(strategy_respected=False).count()
                 
-                # Ajouter les compliances pour les jours sans trades
+                # Ajouter les compliances pour les jours sans trades (seulement si pas de trades ce jour)
                 day_date_obj = timezone.datetime.strptime(day_str, '%Y-%m-%d').date()
-                day_compliance_query = period_day_compliances_queryset.filter(date=day_date_obj)
-                if trading_account_id:
-                    day_compliance_query = day_compliance_query.filter(trading_account_id=trading_account_id)
-                day_compliance = day_compliance_query.first()
-                if day_compliance and day_compliance.strategy_respected is not None:
-                    if day_compliance.strategy_respected:
-                        day_respected += 1
-                    else:
-                        day_not_respected += 1
+                day_compliance = None
+                if day_total_trades == 0:  # Seulement si pas de trades ce jour
+                    day_compliance_query = period_day_compliances_queryset.filter(date=day_date_obj)
+                    if trading_account_id:
+                        day_compliance_query = day_compliance_query.filter(trading_account_id=trading_account_id)
+                    day_compliance = day_compliance_query.first()
+                    if day_compliance and day_compliance.strategy_respected is not None:
+                        if day_compliance.strategy_respected:
+                            day_respected += 1
+                        else:
+                            day_not_respected += 1
                 
-                # Pourcentages par rapport au total (trades + compliances)
-                day_total_with_strategy = day_total_trades + (1 if day_compliance and day_compliance.strategy_respected is not None else 0)
+                # Pourcentages par rapport au total (trades + compliances, mais seulement si pas de conflit)
+                day_total_with_strategy = day_total_trades + (1 if day_total_trades == 0 and day_compliance and day_compliance.strategy_respected is not None else 0)
                 day_respect_percentage = (day_respected / day_total_with_strategy * 100) if day_total_with_strategy > 0 else 0
                 day_not_respect_percentage = (day_not_respected / day_total_with_strategy * 100) if day_total_with_strategy > 0 else 0
                 period_data.append({
@@ -2780,7 +2927,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                     'date': day_str,
                     'respect_percentage': round(day_respect_percentage, 2),
                     'not_respect_percentage': round(day_not_respect_percentage, 2),
-                    'total': day_total_trades  # Tous les trades
+                    'total': day_total_trades,  # Tous les trades (pour compatibilité)
+                    'total_with_strategy': day_total_with_strategy,  # Trades + compliances (pour calculs corrects)
+                    'respected_count': day_respected,
+                    'not_respected_count': day_not_respected
                 })
                 current_date += timedelta(days=1)
         else:
@@ -2813,19 +2963,29 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                     month_respected = month_with_respect.filter(strategy_respected=True).count()
                     month_not_respected = month_with_respect.filter(strategy_respected=False).count()
                     
-                    # Ajouter les compliances pour les jours sans trades du mois
+                    # Ajouter les compliances pour les jours sans trades du mois (exclure les jours avec trades)
                     month_day_compliances = period_day_compliances_queryset.filter(
                         date__gte=month_start.date(),
                         date__lt=month_end.date()
                     )
                     if trading_account_id:
                         month_day_compliances = month_day_compliances.filter(trading_account_id=trading_account_id)
+                    
+                    # Exclure les compliances pour les jours qui ont des trades dans ce mois
+                    month_trades_dates = set(month_trades_queryset.values_list('trade_day', flat=True))
+                    month_trades_dates = {d for d in month_trades_dates if d is not None}  # Filtrer les None
+                    if month_trades_dates:
+                        # trade_day est déjà un objet date, pas besoin de conversion
+                        # Construire le Q object directement avec toutes les dates
+                        month_date_filters = Q(date__in=list(month_trades_dates))
+                        month_day_compliances = month_day_compliances.exclude(month_date_filters)
+                    
                     month_day_respected = month_day_compliances.filter(strategy_respected=True).count()
                     month_day_not_respected = month_day_compliances.filter(strategy_respected=False).count()
                     month_respected += month_day_respected
                     month_not_respected += month_day_not_respected
                     
-                    # Pourcentages par rapport au total (trades + compliances)
+                    # Pourcentages par rapport au total (trades + compliances, sans double comptage)
                     month_total_with_strategy = month_total_trades + month_day_compliances.count()
                     month_respect_percentage = (month_respected / month_total_with_strategy * 100) if month_total_with_strategy > 0 else 0
                     month_not_respect_percentage = (month_not_respected / month_total_with_strategy * 100) if month_total_with_strategy > 0 else 0
@@ -2834,7 +2994,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                         'date': month_start.strftime('%Y-%m'),
                         'respect_percentage': round(month_respect_percentage, 2),
                         'not_respect_percentage': round(month_not_respect_percentage, 2),
-                        'total': month_total_trades  # Tous les trades
+                        'total': month_total_trades,  # Tous les trades (pour compatibilité)
+                        'total_with_strategy': month_total_with_strategy,  # Trades + compliances (pour calculs corrects)
+                        'respected_count': month_respected,
+                        'not_respected_count': month_not_respected
                     })
         
         return Response({
@@ -2845,19 +3008,23 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 'end_date': end_date.strftime('%Y-%m-%d'),
             },
             'statistics': {
-                'total_trades': total_account_trades,  # Tous les trades du compte (toutes périodes)
+                'total_trades': total_account_with_strategy,  # Tous les trades du compte + compliances (toutes périodes) - pour compatibilité
+                'total_days': account_total_days,  # Nombre de jours uniques avec évaluation
+                'total_trades_in_days': account_total_trades_in_days,  # Nombre de trades avec stratégie
                 'total_strategies': total_strategies,  # Trades avec stratégie pour la période (pour compatibilité)
-                'respect_percentage': round(account_respect_percentage, 2),  # Taux de respect du compte (toutes périodes)
+                'respect_percentage': round(account_respect_percentage, 2),  # Taux de respect du compte (toutes périodes) - basé sur les jours
                 'not_respect_percentage': round(account_not_respect_percentage, 2),
-                'respected_count': account_respected_count,  # Trades respectés du compte (toutes périodes)
-                'not_respected_count': account_not_respected_count,
+                'respected_count': account_days_respected,  # Jours respectés (pas trades/compliances)
+                'not_respected_count': account_days_not_respected,  # Jours non respectés
                 # Statistiques pour la période sélectionnée du compte
                 'period': {
-                    'total_trades': total_account_period_trades,  # Tous les trades du compte pour la période
+                    'total_trades': total_account_period_with_strategy,  # Tous les trades du compte + compliances pour la période - pour compatibilité
+                    'total_days': account_period_total_days,  # Nombre de jours uniques avec évaluation pour la période
+                    'total_trades_in_days': account_period_total_trades_in_days,  # Nombre de trades avec stratégie pour la période
                     'respect_percentage': round(account_period_respect_percentage, 2),
                     'not_respect_percentage': round(account_period_not_respect_percentage, 2),
-                    'respected_count': account_period_respected,
-                    'not_respected_count': account_period_not_respected,
+                    'respected_count': account_period_days_respected,  # Jours respectés pour la période
+                    'not_respected_count': account_period_days_not_respected,  # Jours non respectés
                 },
                 'success_rate_if_respected': round(success_rate_if_respected, 2),
                 'success_rate_if_not_respected': round(success_rate_if_not_respected, 2),
@@ -2871,19 +3038,23 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 'period_data': period_data,
             },
             'all_time': {
-                'total_trades': total_all_time_trades,  # Tous les trades
+                'total_trades': total_all_time_with_strategy,  # Tous les trades + compliances (toutes périodes, tous comptes) - pour compatibilité
+                'total_days': all_time_total_days,  # Nombre de jours uniques avec évaluation (toutes périodes, tous comptes)
+                'total_trades_in_days': all_time_total_trades_in_days,  # Nombre de trades avec stratégie (toutes périodes, tous comptes)
                 'total_strategies': total_all_time_strategies,  # Trades avec stratégie (pour compatibilité)
                 'respect_percentage': round(all_time_respect_percentage, 2),
                 'not_respect_percentage': round(all_time_not_respect_percentage, 2),
-                'respected_count': all_time_respected,
-                'not_respected_count': all_time_not_respected,
+                'respected_count': all_time_days_respected,  # Jours respectés (toutes périodes, tous comptes)
+                'not_respected_count': all_time_days_not_respected,  # Jours non respectés
             },
             'period': {
-                'total_trades': total_period_trades,  # Tous les trades pour la période (tous comptes)
+                'total_trades': total_period_with_strategy,  # Tous les trades + compliances pour la période (tous comptes) - pour compatibilité
+                'total_days': period_total_days,  # Nombre de jours uniques avec évaluation pour la période (tous comptes)
+                'total_trades_in_days': period_total_trades_in_days,  # Nombre de trades avec stratégie pour la période (tous comptes)
                 'respect_percentage': round(period_respect_percentage, 2),
                 'not_respect_percentage': round(period_not_respect_percentage, 2),
-                'respected_count': period_respected,
-                'not_respected_count': period_not_respected,
+                'respected_count': period_days_respected,  # Jours respectés pour la période (tous comptes)
+                'not_respected_count': period_days_not_respected,  # Jours non respectés
             }
         })
     

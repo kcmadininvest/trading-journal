@@ -274,26 +274,14 @@ const StrategiesPage: React.FC = () => {
     // Enrichir les données avec les informations nécessaires pour les tooltips
     const enrichedData = statistics.statistics.period_data.map((d: any) => {
       const totalTrades = d.total || 0;
+      const totalWithStrategy = d.total_with_strategy || totalTrades; // Utiliser la valeur du backend si disponible
       const respectPercentage = d.respect_percentage || 0;
       const notRespectPercentage = d.not_respect_percentage || 0;
       
-      // Calculer le total_with_strategy (trades + jours sans trades avec compliance)
-      // En utilisant une itération pour trouver la valeur qui correspond aux pourcentages
-      let totalWithStrategy = totalTrades;
-      for (let testTotal = totalTrades; testTotal <= totalTrades + 10; testTotal++) {
-        const testRespected = Math.round((respectPercentage / 100) * testTotal);
-        const testNotRespected = Math.round((notRespectPercentage / 100) * testTotal);
-        const testRespectPct = testTotal > 0 ? (testRespected / testTotal) * 100 : 0;
-        const testNotRespectPct = testTotal > 0 ? (testNotRespected / testTotal) * 100 : 0;
-        if (Math.abs(testRespectPct - respectPercentage) < 0.5 && Math.abs(testNotRespectPct - notRespectPercentage) < 0.5) {
-          totalWithStrategy = testTotal;
-          break;
-        }
-      }
-      
+      // Utiliser les valeurs du backend si disponibles, sinon calculer
+      const respectedCount = d.respected_count !== undefined ? d.respected_count : Math.round((respectPercentage / 100) * totalWithStrategy);
+      const notRespectedCount = d.not_respected_count !== undefined ? d.not_respected_count : Math.round((notRespectPercentage / 100) * totalWithStrategy);
       const daysWithoutTrades = Math.max(0, totalWithStrategy - totalTrades);
-      const respectedCount = Math.round((respectPercentage / 100) * totalWithStrategy);
-      const notRespectedCount = Math.round((notRespectPercentage / 100) * totalWithStrategy);
       
     return {
         ...d,
@@ -400,11 +388,12 @@ const StrategiesPage: React.FC = () => {
             const isRespected = label === t('strategies:respected');
             const count = isRespected ? periodData.respectedCount : periodData.notRespectedCount;
             const totalTrades = periodData.total || 0;
+            const totalWithStrategy = periodData.totalWithStrategy || totalTrades;
             const daysWithoutTrades = periodData.daysWithoutTrades || 0;
             
-            // Estimer la répartition entre trades et jours sans trades
+            // Calculer la répartition entre trades et jours sans trades
             // Si count <= totalTrades, tous sont des trades
-            // Sinon, on suppose que les jours sans trades sont proportionnels
+            // Sinon, il y a des jours sans trades dans le count
             let elementTrades = 0;
             let elementDays = 0;
             
@@ -414,16 +403,16 @@ const StrategiesPage: React.FC = () => {
               elementDays = 0;
             } else {
               // Il y a des jours sans trades dans le count
-              // Approximation : on suppose que les jours sans trades sont d'abord comptés
               elementDays = Math.min(count - totalTrades, daysWithoutTrades);
               elementTrades = count - elementDays;
             }
             
             // Afficher le tooltip avec les informations détaillées
+            // Utiliser totalWithStrategy pour le dénominateur car c'est ce qui est utilisé pour le calcul du pourcentage
             if (elementDays > 0) {
-              return `${label}: ${formatNumber(value, 2)}% (${elementTrades} ${t('strategies:trades')} + ${elementDays} ${elementDays === 1 ? 'jour sans trade' : 'jours sans trades'})`;
+              return `${label}: ${formatNumber(value, 2)}% (${elementTrades} ${t('strategies:trades')} + ${elementDays} ${elementDays === 1 ? 'jour sans trade' : 'jours sans trades'} ${t('strategies:on', { defaultValue: 'sur' })} ${totalWithStrategy})`;
             } else {
-              return `${label}: ${formatNumber(value, 2)}% (${elementTrades} ${t('strategies:trades')} ${t('strategies:on', { defaultValue: 'sur' })} ${totalTrades})`;
+              return `${label}: ${formatNumber(value, 2)}% (${elementTrades} ${t('strategies:trades')} ${t('strategies:on', { defaultValue: 'sur' })} ${totalWithStrategy})`;
             }
           },
         },
@@ -475,7 +464,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.period_data, t, chartColors, formatNumber]);
+  }), [statistics?.statistics?.period_data, respectChartData, t, chartColors, formatNumber]);
 
   // Graphique 2: Taux de réussite selon respect de la stratégie
   const successRateData = useMemo(() => {
@@ -947,6 +936,7 @@ const StrategiesPage: React.FC = () => {
   };
   
   const accountRespectColor = getRespectRateColor(accountRespect);
+  const accountPeriodRespectColor = getRespectRateColor(accountPeriodRespect);
   const allTimeRespectColor = getRespectRateColor(allTimeRespect);
   const periodRespectColor = getRespectRateColor(periodRespect);
 
@@ -1009,12 +999,18 @@ const StrategiesPage: React.FC = () => {
               percentage={allTimeRespect}
               tradesCount={statistics?.all_time?.respected_count || 0}
               totalTrades={statistics?.all_time?.total_trades || 0}
+              totalDays={statistics?.all_time?.total_days}
+              totalTradesInDays={statistics?.all_time?.total_trades_in_days}
               tradesLabel={t('trades:trades')}
+              daysLabel={t('strategies:days', { defaultValue: 'jours' })}
+              ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
               outOfLabel={t('strategies:outOf')}
               gradientColors={allTimeRespectColor}
               secondaryPercentage={periodRespect}
               secondaryTradesCount={statistics?.period?.respected_count || 0}
               secondaryTotalTrades={statistics?.period?.total_trades || 0}
+              secondaryTotalDays={statistics?.period?.total_days}
+              secondaryTotalTradesInDays={statistics?.period?.total_trades_in_days}
               secondarySubtitle={`(${t('strategies:forSelectedPeriod')})`}
               secondaryGradientColors={periodRespectColor}
             />
@@ -1026,14 +1022,20 @@ const StrategiesPage: React.FC = () => {
               percentage={accountRespect}
               tradesCount={statistics?.statistics?.respected_count || 0}
               totalTrades={statistics?.statistics?.total_trades || 0}
+              totalDays={statistics?.statistics?.total_days}
+              totalTradesInDays={statistics?.statistics?.total_trades_in_days}
               tradesLabel={t('trades:trades')}
+              daysLabel={t('strategies:days', { defaultValue: 'jours' })}
+              ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
               outOfLabel={t('strategies:outOf')}
               gradientColors={accountRespectColor}
               secondaryPercentage={accountPeriodRespect}
               secondaryTradesCount={statistics?.statistics?.period?.respected_count || 0}
               secondaryTotalTrades={statistics?.statistics?.period?.total_trades || 0}
+              secondaryTotalDays={statistics?.statistics?.period?.total_days}
+              secondaryTotalTradesInDays={statistics?.statistics?.period?.total_trades_in_days}
               secondarySubtitle={`(${t('strategies:forSelectedPeriod')})`}
-              secondaryGradientColors={accountRespectColor}
+              secondaryGradientColors={accountPeriodRespectColor}
             />
           </div>
         )}

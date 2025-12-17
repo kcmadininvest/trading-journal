@@ -14,14 +14,21 @@ interface RespectRateCardProps {
   subtitle?: string;
   percentage: number;
   tradesCount: number;
-  totalTrades: number;
+  totalTrades: number; // Pour compatibilité, mais on utilise totalDays si disponible
   tradesLabel: string;
   outOfLabel: string;
   gradientColors: RespectRateColor;
+  // Nouvelles props pour afficher en jours
+  totalDays?: number;
+  totalTradesInDays?: number;
+  daysLabel?: string;
+  ofWhichLabel?: string; // "dont" / "of which" / "de los cuales" / "von denen"
   // Props optionnelles pour un deuxième taux (affiché en dessous)
   secondaryPercentage?: number;
   secondaryTradesCount?: number;
   secondaryTotalTrades?: number;
+  secondaryTotalDays?: number;
+  secondaryTotalTradesInDays?: number;
   secondarySubtitle?: string;
   secondaryGradientColors?: RespectRateColor;
 }
@@ -35,9 +42,15 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
   tradesLabel,
   outOfLabel,
   gradientColors,
+  totalDays,
+  totalTradesInDays,
+  daysLabel = 'jours',
+  ofWhichLabel = 'dont',
   secondaryPercentage,
   secondaryTradesCount,
   secondaryTotalTrades,
+  secondaryTotalDays,
+  secondaryTotalTradesInDays,
   secondarySubtitle,
   secondaryGradientColors,
 }) => {
@@ -49,6 +62,16 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
   };
 
   const hasSecondary = secondaryPercentage !== undefined && secondaryPercentage !== null;
+  
+  // Formater le texte d'affichage : "X sur Y jours dont N trades" ou "X sur Y trades" (fallback)
+  const formatDisplayText = (count: number, total: number, totalDaysValue?: number, totalTradesInDaysValue?: number) => {
+    if (totalDaysValue !== undefined && totalTradesInDaysValue !== undefined) {
+      // Nouveau format : "X sur Y jours dont N trades"
+      return `${count} ${outOfLabel} ${totalDaysValue} ${daysLabel}${totalTradesInDaysValue > 0 ? ` ${ofWhichLabel} ${totalTradesInDaysValue} ${tradesLabel}` : ''}`;
+    }
+    // Ancien format (fallback) : "X sur Y trades"
+    return `${count} ${outOfLabel} ${total} ${tradesLabel}`;
+  };
 
   return (
     <div
@@ -67,13 +90,13 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
             </h2>
           </div>
 
-          {/* Pourcentage et compteur de trades à droite */}
+          {/* Pourcentage et compteur à droite */}
           <div className="flex items-center gap-2 whitespace-nowrap flex-shrink-0">
             <p className="text-2xl font-bold">
               {formatNumber(percentage, 2)}%
             </p>
             <p className="text-xs opacity-90 italic">
-              ({tradesCount} {outOfLabel} {totalTrades} {tradesLabel})
+              ({formatDisplayText(tradesCount, totalTrades, totalDays, totalTradesInDays)})
             </p>
           </div>
         </div>
@@ -94,7 +117,7 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
                 {formatNumber(secondaryPercentage, 2)}%
               </p>
               <p className="text-xs opacity-90 italic">
-                ({secondaryTradesCount || 0} {outOfLabel} {secondaryTotalTrades || 0} {tradesLabel})
+                ({formatDisplayText(secondaryTradesCount || 0, secondaryTotalTrades || 0, secondaryTotalDays, secondaryTotalTradesInDays)})
               </p>
             </div>
           </div>
