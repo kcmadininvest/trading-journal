@@ -96,7 +96,7 @@
     "averageWinLossRatio": "Gewinn/Verlust-Verhältnis",
     "averageWinLossRatioTooltip": "Verhältnis zwischen durchschnittlichem Gewinn und durchschnittlichem Verlust. > 1.0 = durchschnittliche Gewinne sind größer als durchschnittliche Verluste (profitable Strategie)",
     "breakEvenTrades": "Break-even Trades",
-    "breakEvenTradesTooltip": "Anzahl der Trades mit P/L von 0 (weder Gewinn noch Verlust)"
+    "breakEvenTradesTooltip": "Anzahl der Break-even-Trades: Trades mit P/L = 0 oder gewinnbringende Trades (P/L > 0) ohne erreichtes Take Profit (TP1 und TP2+ nicht erreicht)"
   },
   "advancedAnalysis": {
     "title": "Erweiterte Analyse",

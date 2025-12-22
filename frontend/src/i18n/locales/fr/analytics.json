@@ -81,9 +81,9 @@
       "title": "Répartition des Trades par Résultat",
       "winners": "Gagnants",
       "losers": "Perdants",
-      "neutral": "Neutres",
+      "neutral": "Break-even",
       "percentage": "Pourcentage",
-      "tooltip": "Ce graphique montre la répartition de vos trades entre gagnants, perdants et neutres. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants."
+      "tooltip": "Ce graphique montre la répartition de vos trades entre gagnants, perdants et break-even. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants."
     },
     "riskReward": {
       "title": "Ratio Risque/Récompense dans le Temps",

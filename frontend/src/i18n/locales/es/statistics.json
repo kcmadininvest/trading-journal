@@ -96,7 +96,7 @@
     "averageWinLossRatio": "Ratio Ganancia/Pérdida",
     "averageWinLossRatioTooltip": "Ratio entre la ganancia promedio y la pérdida promedio. > 1.0 = las ganancias promedio son superiores a las pérdidas promedio (estrategia rentable)",
     "breakEvenTrades": "Operaciones Break-even",
-    "breakEvenTradesTooltip": "Número de operaciones con P/L de 0 (ni ganancia ni pérdida)"
+    "breakEvenTradesTooltip": "Número de operaciones break-even: operaciones con P/L = 0 u operaciones ganadoras (P/L > 0) sin Take Profit alcanzado (TP1 y TP2+ no alcanzados)"
   },
   "advancedAnalysis": {
     "title": "Análisis Avanzado",

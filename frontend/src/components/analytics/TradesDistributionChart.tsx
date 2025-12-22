@@ -31,7 +31,7 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
           {t('analytics:charts.tradesDistribution.title', { defaultValue: 'Répartition des Trades par Résultat' })}
         </h3>
         <TooltipComponent
-          content={t('analytics:charts.tradesDistribution.tooltip', { defaultValue: 'Ce graphique montre la répartition de vos trades entre gagnants, perdants et neutres. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants.' })}
+          content={t('analytics:charts.tradesDistribution.tooltip', { defaultValue: 'Ce graphique montre la répartition de vos trades entre gagnants, perdants et break-even. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants.' })}
           position="top"
         >
           <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
@@ -59,7 +59,7 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
                     isDark ? '#f472b6' : '#ec4899',
                     isDark ? '#9ca3af' : '#6b7280',
                   ],
-                  borderWidth: 2,
+                  borderWidth: 0,
                 },
               ],
             }}

@@ -1168,27 +1168,26 @@ const AnalyticsPage: React.FC = () => {
   }, [trades, formatDateMemo]);
 
   // Répartition des trades par résultat
+  // Utiliser les statistiques pour avoir la même logique que la carte "Trades Break-even"
   const tradesDistributionData = useMemo(() => {
-    if (!trades.length) return null;
+    if (!trades.length || !statisticsData) return null;
 
-    let winners = 0;
-    let losers = 0;
-    let neutral = 0;
+    // break_even_trades = trades avec P/L = 0 OU trades gagnants sans TP atteint
+    // Pour éviter le double comptage, on doit exclure les trades gagnants sans TP des gagnants
+    // Compter les trades avec P/L = 0 (break-even classique)
+    const tradesWithZeroPnl = trades.filter(trade => {
+      if (trade.net_pnl === null || trade.net_pnl === undefined) return false;
+      const pnl = parseFloat(String(trade.net_pnl));
+      return Math.abs(pnl) < 0.001; // Tolérance pour les valeurs très proches de 0
+    }).length;
 
-    trades.forEach(trade => {
-      if (trade.net_pnl !== null && trade.net_pnl !== undefined) {
-        const pnl = parseFloat(String(trade.net_pnl));
-        if (pnl > 0) {
-          winners++;
-        } else if (pnl < 0) {
-          losers++;
-        } else {
-          neutral++;
-        }
-      } else {
-        neutral++;
-      }
-    });
+    // Trades gagnants sans TP = break_even_trades - trades avec P/L = 0
+    const winningTradesWithoutTp = Math.max(0, (statisticsData.break_even_trades || 0) - tradesWithZeroPnl);
+
+    // Gagnants = winning_trades - trades gagnants sans TP (pour éviter le double comptage)
+    const winners = Math.max(0, (statisticsData.winning_trades || 0) - winningTradesWithoutTp);
+    const losers = statisticsData.losing_trades || 0;
+    const neutral = statisticsData.break_even_trades || 0; // Inclut déjà les trades avec P/L = 0 + trades gagnants sans TP
 
     const total = winners + losers + neutral;
     if (total === 0) return null;
@@ -1197,7 +1196,7 @@ const AnalyticsPage: React.FC = () => {
       labels: [
         t('analytics:charts.tradesDistribution.winners', { defaultValue: 'Gagnants' }),
         t('analytics:charts.tradesDistribution.losers', { defaultValue: 'Perdants' }),
-        t('analytics:charts.tradesDistribution.neutral', { defaultValue: 'Neutres' }),
+        t('analytics:charts.tradesDistribution.neutral', { defaultValue: 'Break-even' }),
       ],
       data: [winners, losers, neutral],
       percentages: [
@@ -1207,7 +1206,7 @@ const AnalyticsPage: React.FC = () => {
       ],
       total,
     };
-  }, [trades, t]);
+  }, [trades, statisticsData, t]);
 
   // Graphique radar avec les métriques de performance
   const radarChartData = useMemo(() => {

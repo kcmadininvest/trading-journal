@@ -96,7 +96,7 @@
     "averageWinLossRatio": "Ratio Gain/Perte",
     "averageWinLossRatioTooltip": "Ratio entre le gain moyen et la perte moyenne. > 1.0 = les gains moyens sont supérieurs aux pertes moyennes (stratégie profitable)",
     "breakEvenTrades": "Trades Break-even",
-    "breakEvenTradesTooltip": "Nombre de trades avec un P/L de 0 (ni gain ni perte)"
+    "breakEvenTradesTooltip": "Nombre de trades break-even : trades avec P/L = 0 ou trades gagnants (P/L > 0) sans Take Profit atteint (TP1 et TP2+ non atteints)"
   },
   "advancedAnalysis": {
     "title": "Analyses Avancées",

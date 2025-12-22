@@ -96,7 +96,7 @@
     "averageWinLossRatio": "Win/Loss Ratio",
     "averageWinLossRatioTooltip": "Ratio between average win and average loss. > 1.0 = average wins are greater than average losses (profitable strategy)",
     "breakEvenTrades": "Break-even Trades",
-    "breakEvenTradesTooltip": "Number of trades with P/L of 0 (neither gain nor loss)"
+    "breakEvenTradesTooltip": "Number of break-even trades: trades with P/L = 0 or winning trades (P/L > 0) without Take Profit reached (TP1 and TP2+ not reached)"
   },
   "advancedAnalysis": {
     "title": "Advanced Analysis",
