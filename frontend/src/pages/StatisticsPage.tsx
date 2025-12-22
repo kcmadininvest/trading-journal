@@ -402,7 +402,7 @@ function StatisticsPage() {
               >
                 <MetricItem
                   label={t('statistics:overview.totalTrades')}
-                  value={indicators.totalTrades}
+                  value={statisticsData.total_trades || 0}
                   variant="default"
                 />
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
