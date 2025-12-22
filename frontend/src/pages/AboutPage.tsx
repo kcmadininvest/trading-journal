@@ -192,7 +192,7 @@ const AboutPage: React.FC = () => {
                 </p>
                 <p>
                   {t('about:mission.content3', {
-                    defaultValue: 'C\'est pourquoi K&C Trading Journal est et restera 100% gratuit, sans frais cachés, sans limitations, sans publicité.',
+                    defaultValue: 'C\'est pourquoi K&C Trading Journal est et restera 100% gratuit, sans frais cachés, sans limitations.',
                   })}
                 </p>
               </section>

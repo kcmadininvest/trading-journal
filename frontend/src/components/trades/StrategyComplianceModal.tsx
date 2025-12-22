@@ -1129,7 +1129,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                           <div className="flex gap-2 sm:gap-3 flex-wrap">
                             <button
                               type="button"
-                              onClick={() => updateTradeStrategy(trade.id, 'tp1Reached', !trade.tp1Reached)}
+                              onClick={() => {
+                                const newTp1Reached = !trade.tp1Reached;
+                                updateTradeStrategy(trade.id, 'tp1Reached', newTp1Reached);
+                                // Si TP1 est sélectionné, désélectionner Break-even (TP2+ peut rester)
+                              }}
                               className={`w-20 sm:w-24 px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm ${
                                 trade.tp1Reached
                                   ? 'bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500'
@@ -1145,7 +1149,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                             </button>
                             <button
                               type="button"
-                              onClick={() => updateTradeStrategy(trade.id, 'tp2PlusReached', !trade.tp2PlusReached)}
+                              onClick={() => {
+                                const newTp2PlusReached = !trade.tp2PlusReached;
+                                updateTradeStrategy(trade.id, 'tp2PlusReached', newTp2PlusReached);
+                                // Si TP2+ est sélectionné, désélectionner Break-even (TP1 peut rester)
+                              }}
                               className={`w-20 sm:w-24 px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm ${
                                 trade.tp2PlusReached
                                   ? 'bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500'
@@ -1158,6 +1166,31 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                                 </svg>
                               )}
                               {t('trades:strategyCompliance.tp2Plus')}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Break-even signifie aucun TP atteint
+                                const isBreakEven = !trade.tp1Reached && !trade.tp2PlusReached;
+                                if (!isBreakEven) {
+                                  // Activer Break-even : désélectionner tous les TP
+                                  updateTradeStrategy(trade.id, 'tp1Reached', false);
+                                  updateTradeStrategy(trade.id, 'tp2PlusReached', false);
+                                }
+                                // Si Break-even est déjà actif, ne rien faire (ou on pourrait le désactiver en activant TP1 par défaut)
+                              }}
+                              className={`min-w-28 sm:min-w-32 px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
+                                !trade.tp1Reached && !trade.tp2PlusReached
+                                  ? 'bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500'
+                                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                              }`}
+                            >
+                              {!trade.tp1Reached && !trade.tp2PlusReached && (
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                              {t('trades:strategyCompliance.breakEven')}
                             </button>
                           </div>
                         </div>

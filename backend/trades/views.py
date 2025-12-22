@@ -911,7 +911,27 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             expectancy = (win_rate_decimal * avg_win) - (loss_rate * avg_loss)
         
         # 13. Break-even Trades
-        break_even_trades = trades.filter(net_pnl=0).count()
+        # Break-even = trades avec P/L = 0 OU trades gagnants sans TP atteint
+        from django.db.models import Q, Exists, OuterRef
+        
+        # Trades avec P/L = 0 (break-even classique)
+        trades_with_zero_pnl = trades.filter(net_pnl=0)
+        
+        # Trades gagnants (P/L > 0) sans TP atteint (tp1_reached = False et tp2_plus_reached = False)
+        winning_trades_without_tp = trades.filter(
+            net_pnl__gt=0
+        ).filter(
+            Exists(
+                TradeStrategy.objects.filter(
+                    trade=OuterRef('pk')
+                ).filter(
+                    Q(tp1_reached=False) & Q(tp2_plus_reached=False)
+                )
+            )
+        )
+        
+        # Compter les deux types de break-even
+        break_even_trades = trades_with_zero_pnl.count() + winning_trades_without_tp.count()
         
         # 14. Sharpe Ratio (rendement ajusté à la volatilité)
         sharpe_ratio = 0.0

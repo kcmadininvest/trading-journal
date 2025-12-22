@@ -69,6 +69,7 @@
     "takeProfitReached": "Take Profit alcanzado",
     "tp1": "TP1",
     "tp2Plus": "TP2+",
+    "breakEven": "Break-even",
     "gainIfStrategyRespected": "¿Ganancia si estrategia respetada?",
     "gainIfStrategyRespectedTooltip": "Si hubieras respetado la estrategia, ¿esta operación habría sido rentable?",
     "dominantEmotions": "Emociones dominantes (selección múltiple)",
