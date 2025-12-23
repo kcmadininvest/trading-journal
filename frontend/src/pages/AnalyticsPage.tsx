@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
@@ -2536,7 +2535,6 @@ const AnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      <FloatingActionButton onClick={() => setShowImport(true)} title={t('analytics:importTrades')} />
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
       
       {/* Tooltip portal pour la heatmap - rendu à la racine */}

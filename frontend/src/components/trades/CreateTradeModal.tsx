@@ -452,7 +452,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       }}
     >
       <div
-        className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+        className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

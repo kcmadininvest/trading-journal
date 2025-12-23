@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
@@ -1145,7 +1144,6 @@ const StrategiesPage: React.FC = () => {
         )}
       </div>
 
-      <FloatingActionButton onClick={() => setShowImport(true)} title={t('strategies:importTrades')} />
       <ImportTradesModal open={showImport} onClose={(done) => {
         setShowImport(false);
         if (done) {

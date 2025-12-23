@@ -8,7 +8,6 @@ import { GoalWizard } from '../components/goals/GoalWizard';
 import { GoalFilters } from '../components/goals/GoalFilters';
 import { EmptyState } from '../components/ui/EmptyState';
 import { SkeletonGrid } from '../components/ui/SkeletonLoader';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
@@ -460,8 +459,6 @@ const GoalsPage: React.FC = () => {
           ))}
         </div>
       )}
-      
-      <FloatingActionButton onClick={handleCreateGoal} title={t('goals:createGoal')} />
       
       <GoalWizard
         isOpen={isModalOpen}

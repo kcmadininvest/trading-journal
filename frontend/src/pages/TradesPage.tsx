@@ -7,7 +7,6 @@ import { TradeModal } from '../components/trades/TradeModal';
 import { CreateTradeModal } from '../components/trades/CreateTradeModal';
  
 import PaginationControls from '../components/ui/PaginationControls';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { DeleteConfirmModal } from '../components/ui';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -425,6 +424,16 @@ const TradesPage: React.FC = () => {
               </svg>
               {t('trades:export', { defaultValue: 'Exporter' })}
             </button>
+            <button
+              onClick={() => setShowImport(true)}
+              disabled={isLoading}
+              className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              {t('trades:import', { defaultValue: 'Importer' })}
+            </button>
           </div>
         </div>
 
@@ -533,7 +542,6 @@ const TradesPage: React.FC = () => {
         confirmButtonText={t('trades:deleteSelected', { defaultValue: 'Delete Selected' })}
       />
 
-      <FloatingActionButton onClick={() => setShowImport(true)} title={t('trades:import')} />
       <ImportTradesModal open={showImport} onClose={(done) => {
         setShowImport(false);
         if (done) {

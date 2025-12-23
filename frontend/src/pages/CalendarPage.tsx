@@ -3,7 +3,6 @@ import MonthlyView from '../components/calendar/MonthlyView';
 import DailyView from '../components/calendar/DailyView';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import {
   calendarService,
@@ -195,7 +194,6 @@ const CalendarPage: React.FC = () => {
           />
         ) : null}
       </div>
-      <FloatingActionButton onClick={() => setShowImport(true)} title={t('calendar:importTrades')} />
       <ImportTradesModal 
         open={showImport} 
         onClose={(done) => {

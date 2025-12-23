@@ -11,7 +11,6 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
 import { MetricGroup } from '../components/statistics/MetricGroup';
@@ -968,7 +967,6 @@ function StatisticsPage() {
 
       </div>
 
-      <FloatingActionButton onClick={() => setShowImport(true)} title={t('statistics:importTrades', { defaultValue: 'Importer des trades' })} />
       <ImportTradesModal 
         open={showImport} 
         onClose={(done) => {

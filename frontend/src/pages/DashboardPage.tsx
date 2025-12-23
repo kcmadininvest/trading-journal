@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { FloatingActionButton } from '../components/ui/FloatingActionButton';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
@@ -2313,7 +2312,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         </div>
       )}
 
-      <FloatingActionButton onClick={() => setShowImport(true)} title={t('dashboard:importTrades')} />
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
     </div>
   );
