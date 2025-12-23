@@ -15,7 +15,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   title,
   description,
   keywords,
-  image = '/og-image.png',
+  image = '/logo.png',
   url = window.location.href,
   type = 'website',
   noindex = false,
