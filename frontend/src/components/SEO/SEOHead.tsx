@@ -83,7 +83,34 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     updateMetaTag('og:image', `${baseUrl}${image}`, true);
     updateMetaTag('og:url', url, true);
     updateMetaTag('og:type', type, true);
-    updateMetaTag('og:locale', currentLang === 'fr' ? 'fr_FR' : currentLang === 'en' ? 'en_US' : currentLang === 'es' ? 'es_ES' : 'de_DE', true);
+    // Logo pour les résultats de recherche (certains réseaux sociaux et moteurs de recherche)
+    updateMetaTag('og:logo', `${baseUrl}/logo.png`, true);
+    
+    // Locale mapping
+    const localeMap: Record<string, string> = {
+      fr: 'fr_FR',
+      en: 'en_US',
+      es: 'es_ES',
+      de: 'de_DE',
+    };
+    const currentLocale = localeMap[currentLang] || 'fr_FR';
+    updateMetaTag('og:locale', currentLocale, true);
+    
+    // Gérer og:locale:alternate pour toutes les langues supportées
+    // Supprimer toutes les anciennes balises og:locale:alternate
+    const existingAlternates = document.querySelectorAll('meta[property="og:locale:alternate"]');
+    existingAlternates.forEach((meta) => meta.remove());
+    
+    // Ajouter les nouvelles balises og:locale:alternate pour toutes les langues sauf la langue actuelle
+    const supportedLocales = ['fr_FR', 'en_US', 'es_ES', 'de_DE'];
+    supportedLocales.forEach((locale) => {
+      if (locale !== currentLocale) {
+        const alternateMeta = document.createElement('meta');
+        alternateMeta.setAttribute('property', 'og:locale:alternate');
+        alternateMeta.setAttribute('content', locale);
+        document.head.appendChild(alternateMeta);
+      }
+    });
 
     // Twitter Card
     updateMetaTag('twitter:card', 'summary_large_image');
@@ -100,9 +127,14 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     
     // URLs selon la page et la langue
     const getUrlForLanguage = (lang: string): string => {
-      // Page d'accueil - toutes les langues pointent vers la même URL (le contenu change selon la langue détectée)
+      // Page d'accueil - utiliser des paramètres de requête pour différencier les langues
+      // Cela permet à Google de comprendre qu'il y a différentes versions linguistiques
+      // Note: Idéalement, on utiliserait des chemins différents (/fr, /en, etc.) mais cela nécessiterait
+      // une refonte du routing. Pour l'instant, on utilise ?lang= pour la page d'accueil
       if (currentPath === '/' || currentPath === '' || currentPath === '/#') {
-        return baseUrl;
+        // Pour la page d'accueil, on ajoute le paramètre lang pour différencier les versions
+        // Google peut ainsi indexer les différentes versions linguistiques
+        return `${baseUrl}?lang=${lang}`;
       }
       
       // Page À Propos
@@ -129,14 +161,20 @@ const SEOHead: React.FC<SEOHeadProps> = ({
         return `${baseUrl}${featuresUrls[lang] || featuresUrls.fr}`;
       }
       
-      // Par défaut, retourner l'URL de base
-      return baseUrl;
+      // Par défaut, retourner l'URL de base avec le paramètre lang
+      return `${baseUrl}?lang=${lang}`;
     };
+    
+    // Supprimer les anciennes balises hreflang avant d'ajouter les nouvelles
+    const existingHreflangs = document.querySelectorAll('link[rel="alternate"][hreflang]');
+    existingHreflangs.forEach((link) => link.remove());
     
     languages.forEach((lang) => {
       const langUrl = getUrlForLanguage(lang);
       updateLinkTag('alternate', langUrl, lang);
     });
+    
+    // x-default pointe vers la langue par défaut (français) ou la version sans paramètre
     updateLinkTag('alternate', baseUrl, 'x-default');
 
     // Mettre à jour la langue HTML

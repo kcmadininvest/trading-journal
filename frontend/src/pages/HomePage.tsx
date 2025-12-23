@@ -198,57 +198,133 @@ const HomePage: React.FC = () => {
         type="website"
       />
       
-      {/* Schema.org Markup */}
-      <SchemaMarkup
-        type="Organization"
-        data={{
-          name: 'K&C Trading Journal',
-          url: baseUrl,
-          logo: `${baseUrl}/logo.png`,
-          description: 'Application de journal de trading professionnel',
-          sameAs: [
-            // Ajouter les liens réseaux sociaux quand disponibles
-          ],
-        }}
-      />
-      
-      <SchemaMarkup
-        type="SoftwareApplication"
-        data={{
-          name: 'K&C Trading Journal',
-          applicationCategory: 'FinanceApplication',
-          operatingSystem: 'Web',
-          offers: {
-            '@type': 'Offer',
-            price: '0',
-            priceCurrency: 'EUR',
-          },
-          featureList: [
-            'Suivi de trades',
-            'Analyse de performance',
-            'Import CSV',
-            'Multi-comptes',
-            'Statistiques détaillées',
-            'Visualisations avancées',
-          ],
-        }}
-      />
-      
-      <SchemaMarkup
-        type="WebSite"
-        data={{
-          name: 'K&C Trading Journal',
-          url: baseUrl,
-          potentialAction: {
-            '@type': 'SearchAction',
-            target: {
-              '@type': 'EntryPoint',
-              urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+      {/* Schema.org Markup - Traduit selon la langue */}
+      {(() => {
+        const schemaData = {
+          fr: {
+            organization: {
+              name: 'K&C Trading Journal',
+              description: 'Application de journal de trading professionnel',
+              featureList: [
+                'Suivi de trades',
+                'Analyse de performance',
+                'Import CSV',
+                'Multi-comptes',
+                'Statistiques détaillées',
+                'Visualisations avancées',
+              ],
             },
-            'query-input': 'required name=search_term_string',
-          },
-        }}
-      />
+            en: {
+              organization: {
+                name: 'K&C Trading Journal',
+                description: 'Professional trading journal application',
+                featureList: [
+                  'Trade tracking',
+                  'Performance analysis',
+                  'CSV import',
+                  'Multi-account',
+                  'Detailed statistics',
+                  'Advanced visualizations',
+                ],
+              },
+            },
+            es: {
+              organization: {
+                name: 'K&C Trading Journal',
+                description: 'Aplicación de diario de trading profesional',
+                featureList: [
+                  'Seguimiento de trades',
+                  'Análisis de rendimiento',
+                  'Importación CSV',
+                  'Multi-cuenta',
+                  'Estadísticas detalladas',
+                  'Visualizaciones avanzadas',
+                ],
+              },
+            },
+            de: {
+              organization: {
+                name: 'K&C Trading Journal',
+                description: 'Professionelle Trading-Journal-Anwendung',
+                featureList: [
+                  'Trade-Tracking',
+                  'Leistungsanalyse',
+                  'CSV-Import',
+                  'Multi-Konto',
+                  'Detaillierte Statistiken',
+                  'Erweiterte Visualisierungen',
+                ],
+              },
+            },
+          };
+        
+        const currentSchema = schemaData[currentLanguage as keyof typeof schemaData] || schemaData.fr;
+        
+        return (
+          <>
+            <SchemaMarkup
+              type="Organization"
+              data={{
+                name: currentSchema.organization.name,
+                url: baseUrl,
+                logo: {
+                  '@type': 'ImageObject',
+                  url: `${baseUrl}/logo.png`,
+                  width: 512,
+                  height: 512,
+                },
+                image: {
+                  '@type': 'ImageObject',
+                  url: `${baseUrl}/logo.png`,
+                  width: 512,
+                  height: 512,
+                },
+                description: currentSchema.organization.description,
+                sameAs: [
+                  // Ajouter les liens réseaux sociaux quand disponibles
+                ],
+              }}
+            />
+            
+            <SchemaMarkup
+              type="SoftwareApplication"
+              data={{
+                name: currentSchema.organization.name,
+                applicationCategory: 'FinanceApplication',
+                operatingSystem: 'Web',
+                image: {
+                  '@type': 'ImageObject',
+                  url: `${baseUrl}/logo.png`,
+                  width: 512,
+                  height: 512,
+                },
+                offers: {
+                  '@type': 'Offer',
+                  price: '0',
+                  priceCurrency: 'EUR',
+                },
+                featureList: currentSchema.organization.featureList,
+              }}
+            />
+            
+            <SchemaMarkup
+              type="WebSite"
+              data={{
+                name: currentSchema.organization.name,
+                url: baseUrl,
+                potentialAction: {
+                  '@type': 'SearchAction',
+                  target: {
+                    '@type': 'EntryPoint',
+                    urlTemplate: `${baseUrl}/search?q={search_term_string}`,
+                  },
+                  'query-input': 'required name=search_term_string',
+                },
+              }}
+            />
+          </>
+        );
+      })()}
       
       {/* Styles pour la scrollbar personnalisée */}
       <style>{`
