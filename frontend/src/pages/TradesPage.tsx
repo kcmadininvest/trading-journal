@@ -148,7 +148,8 @@ const TradesPage: React.FC = () => {
     
     // Passer explicitement page et pageSize pour garantir les bonnes valeurs au premier chargement
     load(page, pageSize);
-  }, [load, hasInitialized, accountLoading, page, pageSize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasInitialized, accountLoading, page, pageSize, filtersKey]);
 
   useEffect(() => {
     // Attendre la fin de l'initialisation et que le compte soit chargé avant de charger les stats
@@ -480,7 +481,10 @@ const TradesPage: React.FC = () => {
           itemsPerPage={pageSize}
           startIndex={(page - 1) * pageSize + 1}
           endIndex={Math.min(page * pageSize, total)}
-          onPageChange={(p) => setPage(p)}
+          onPageChange={(p) => {
+            setPage(p);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
           onPageSizeChange={(size) => {
             setPageSize(size);
             setPage(1);

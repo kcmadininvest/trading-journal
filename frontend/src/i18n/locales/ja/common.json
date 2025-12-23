@@ -45,5 +45,14 @@
     "nextPage": "Page suivante",
     "lastPage": "Dernière page",
     "pageNumber": "Page {{number}}"
-  }
+  },
+  "deleteConfirm": "本当によろしいですか？",
+  "deleteItemConfirm": "{{item}}を削除してもよろしいですか？この操作は元に戻せません。",
+  "deleteConfirmGeneric": "この操作は元に戻せません。",
+  "deleting": "削除中...",
+  "backToHome": "ホームに戻る",
+  "hours": "時間",
+  "minutes": "分",
+  "currentTime": "現在の時刻",
+  "done": "完了"
 }

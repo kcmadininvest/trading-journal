@@ -59,5 +59,9 @@
   "deleteItemConfirm": "Êtes-vous sûr de vouloir supprimer {{item}} ? Cette action est irréversible.",
   "deleteConfirmGeneric": "Cette action est irréversible.",
   "deleting": "Suppression en cours...",
-  "backToHome": "Retour à l'accueil"
+  "backToHome": "Retour à l'accueil",
+  "hours": "Heures",
+  "minutes": "Minutes",
+  "currentTime": "Heure actuelle",
+  "done": "Terminé"
 }

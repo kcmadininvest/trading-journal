@@ -59,5 +59,9 @@
   "deleteItemConfirm": "¿Estás seguro de que deseas eliminar {{item}}? Esta acción no se puede deshacer.",
   "deleteConfirmGeneric": "Esta acción no se puede deshacer.",
   "deleting": "Eliminando...",
-  "backToHome": "Volver al inicio"
+  "backToHome": "Volver al inicio",
+  "hours": "Horas",
+  "minutes": "Minutos",
+  "currentTime": "Hora actual",
+  "done": "Hecho"
 }

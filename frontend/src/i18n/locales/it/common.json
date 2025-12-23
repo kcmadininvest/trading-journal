@@ -45,5 +45,14 @@
     "nextPage": "Page suivante",
     "lastPage": "Dernière page",
     "pageNumber": "Page {{number}}"
-  }
+  },
+  "deleteConfirm": "Sei sicuro?",
+  "deleteItemConfirm": "Sei sicuro di voler eliminare {{item}}? Questa azione non può essere annullata.",
+  "deleteConfirmGeneric": "Questa azione non può essere annullata.",
+  "deleting": "Eliminazione...",
+  "backToHome": "Torna alla home",
+  "hours": "Ore",
+  "minutes": "Minuti",
+  "currentTime": "Ora attuale",
+  "done": "Fatto"
 }

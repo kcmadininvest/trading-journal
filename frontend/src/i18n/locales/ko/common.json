@@ -45,5 +45,14 @@
     "nextPage": "Page suivante",
     "lastPage": "Dernière page",
     "pageNumber": "Page {{number}}"
-  }
+  },
+  "deleteConfirm": "정말로 하시겠습니까?",
+  "deleteItemConfirm": "{{item}}을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+  "deleteConfirmGeneric": "이 작업은 취소할 수 없습니다.",
+  "deleting": "삭제 중...",
+  "backToHome": "홈으로 돌아가기",
+  "hours": "시간",
+  "minutes": "분",
+  "currentTime": "현재 시간",
+  "done": "완료"
 }

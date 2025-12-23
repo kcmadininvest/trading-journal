@@ -42,11 +42,17 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [editingHours, setEditingHours] = useState<string | null>(null);
+  const [editingMinutes, setEditingMinutes] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const monthPickerRef = useRef<HTMLDivElement>(null);
   const yearPickerRef = useRef<HTMLDivElement>(null);
   const yearListRef = useRef<HTMLDivElement>(null);
+  const timePickerRef = useRef<HTMLDivElement>(null);
+  const hoursInputRef = useRef<HTMLInputElement>(null);
+  const minutesInputRef = useRef<HTMLInputElement>(null);
 
   // Convertir ISO (YYYY-MM-DDTHH:mm) vers format préféré pour l'affichage
   const formatForDisplay = useCallback((isoDateTime: string): string => {
@@ -164,13 +170,14 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
         setShowCalendar(false);
         setShowMonthPicker(false);
         setShowYearPicker(false);
+        setShowTimePicker(false);
       }
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [showCalendar]);
 
-  // Fermer les pickers de mois/année quand on clique en dehors
+  // Fermer les pickers de mois/année/heure quand on clique en dehors
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as Node;
@@ -180,12 +187,15 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
       if (showYearPicker && yearPickerRef.current && !yearPickerRef.current.contains(target)) {
         setShowYearPicker(false);
       }
+      if (showTimePicker && timePickerRef.current && !timePickerRef.current.contains(target)) {
+        setShowTimePicker(false);
+      }
     };
-    if (showMonthPicker || showYearPicker) {
+    if (showMonthPicker || showYearPicker || showTimePicker) {
       document.addEventListener('mousedown', onDocClick);
       return () => document.removeEventListener('mousedown', onDocClick);
     }
-  }, [showMonthPicker, showYearPicker]);
+  }, [showMonthPicker, showYearPicker, showTimePicker]);
 
   // Scroll automatique vers le haut (5 dernières années visibles) quand le picker d'année s'ouvre
   useEffect(() => {
@@ -232,8 +242,78 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
     }, 200);
   };
 
+  // Fonction pour formater automatiquement la saisie avec les séparateurs
+  const formatInputWithSeparators = (input: string): string => {
+    // Extraire uniquement les chiffres
+    const digitsOnly = input.replace(/\D/g, '');
+    
+    if (digitsOnly.length === 0) return '';
+    
+    let formatted = '';
+    let digitIndex = 0;
+    
+    // Format de date selon les préférences
+    if (preferences.date_format === 'US') {
+      // Format US: MM/DD/YYYY HH:mm
+      // MM (2 chiffres)
+      if (digitIndex < digitsOnly.length) {
+        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
+        digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
+        if (digitIndex < digitsOnly.length && digitsOnly.length > 2) formatted += '/';
+      }
+      // DD (2 chiffres)
+      if (digitIndex < digitsOnly.length) {
+        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
+        digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
+        if (digitIndex < digitsOnly.length && digitsOnly.length > 4) formatted += '/';
+      }
+      // YYYY (4 chiffres)
+      if (digitIndex < digitsOnly.length) {
+        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 4, digitsOnly.length));
+        digitIndex = Math.min(digitIndex + 4, digitsOnly.length);
+        if (digitIndex < digitsOnly.length && digitsOnly.length > 8) formatted += ' ';
+      }
+    } else {
+      // Format EU: DD/MM/YYYY HH:mm
+      // DD (2 chiffres)
+      if (digitIndex < digitsOnly.length) {
+        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
+        digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
+        if (digitIndex < digitsOnly.length && digitsOnly.length > 2) formatted += '/';
+      }
+      // MM (2 chiffres)
+      if (digitIndex < digitsOnly.length) {
+        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
+        digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
+        if (digitIndex < digitsOnly.length && digitsOnly.length > 4) formatted += '/';
+      }
+      // YYYY (4 chiffres)
+      if (digitIndex < digitsOnly.length) {
+        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 4, digitsOnly.length));
+        digitIndex = Math.min(digitIndex + 4, digitsOnly.length);
+        if (digitIndex < digitsOnly.length && digitsOnly.length > 8) formatted += ' ';
+      }
+    }
+    
+    // HH (2 chiffres)
+    if (digitIndex < digitsOnly.length) {
+      formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
+      digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
+      if (digitIndex < digitsOnly.length && digitsOnly.length > 10) formatted += ':';
+    }
+    
+    // mm (2 chiffres)
+    if (digitIndex < digitsOnly.length) {
+      formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
+    }
+    
+    return formatted;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDisplayValue(e.target.value);
+    const inputValue = e.target.value;
+    const formatted = formatInputWithSeparators(inputValue);
+    setDisplayValue(formatted);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -278,7 +358,77 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
     
     onChange(isoDateTime);
     setDisplayValue(formatForDisplay(isoDateTime));
-    setShowCalendar(false);
+    // Ne pas fermer le calendrier pour permettre la sélection de l'heure
+  };
+
+  // Obtenir l'heure actuelle depuis la valeur
+  const getCurrentTime = () => {
+    if (value) {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        return { hours: date.getHours(), minutes: date.getMinutes() };
+      }
+    }
+    const now = new Date();
+    return { hours: now.getHours(), minutes: now.getMinutes() };
+  };
+
+  // Mettre à jour l'heure
+  const updateTime = (hours: number, minutes: number) => {
+    // S'assurer que les valeurs sont dans les limites
+    hours = Math.max(0, Math.min(23, hours));
+    minutes = Math.max(0, Math.min(59, minutes));
+
+    // Obtenir la date actuelle ou utiliser la date du calendrier
+    let year: number;
+    let month: number;
+    let day: number;
+
+    if (value) {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        year = date.getFullYear();
+        month = date.getMonth();
+        day = date.getDate();
+      } else {
+        // Si la valeur n'est pas valide, utiliser la date du calendrier ou aujourd'hui
+        const now = new Date();
+        year = calendarYear;
+        month = calendarMonth;
+        day = now.getDate();
+      }
+    } else {
+      // Si aucune valeur, utiliser la date du calendrier ou aujourd'hui
+      const now = new Date();
+      if (calendarYear === now.getFullYear() && calendarMonth === now.getMonth()) {
+        year = calendarYear;
+        month = calendarMonth;
+        day = now.getDate();
+      } else {
+        year = calendarYear;
+        month = calendarMonth;
+        day = 1; // Premier jour du mois affiché
+      }
+    }
+
+    const isoDateTime = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    
+    // Valider les limites min/max si définies
+    if (min && isoDateTime < min) return;
+    if (max && isoDateTime > max) return;
+    
+    onChange(isoDateTime);
+    setDisplayValue(formatForDisplay(isoDateTime));
+  };
+
+  // Incrémenter/décrémenter l'heure
+  const adjustTime = (type: 'hours' | 'minutes', delta: number) => {
+    const { hours, minutes } = getCurrentTime();
+    if (type === 'hours') {
+      updateTime(hours + delta, minutes);
+    } else {
+      updateTime(hours, minutes + delta);
+    }
   };
 
   // Générer les jours du calendrier
@@ -535,7 +685,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
           </div>
 
           {/* Grille du calendrier */}
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-1 mb-4">
             {calendarDays.map((day, index) => {
               if (day === null) {
                 return <div key={index} className="aspect-square" />;
@@ -563,6 +713,185 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
                 </button>
               );
             })}
+          </div>
+
+          {/* Séparateur */}
+          <div className="border-t border-gray-200 dark:border-gray-700 my-4"></div>
+
+          {/* Sélecteur d'heure moderne */}
+          <div className="relative" ref={timePickerRef}>
+            <div className="flex items-center justify-center gap-4">
+              {/* Heures */}
+              <div className="flex flex-col items-center">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  {t('common:hours', { defaultValue: 'Heures' })}
+                </label>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => adjustTime('hours', 1)}
+                    className="w-10 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    title="Augmenter les heures"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  {editingHours !== null ? (
+                    <input
+                      ref={hoursInputRef}
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={editingHours}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 23)) {
+                          setEditingHours(val);
+                        }
+                      }}
+                      onBlur={() => {
+                        const val = parseInt(editingHours);
+                        if (!isNaN(val) && val >= 0 && val <= 23) {
+                          const { minutes } = getCurrentTime();
+                          updateTime(val, minutes);
+                        }
+                        setEditingHours(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        } else if (e.key === 'Escape') {
+                          setEditingHours(null);
+                        }
+                      }}
+                      className="w-16 h-12 text-center text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingHours(String(getCurrentTime().hours));
+                        setTimeout(() => hoursInputRef.current?.select(), 0);
+                      }}
+                      className="w-16 h-12 flex items-center justify-center text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:border-blue-500 dark:hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {String(getCurrentTime().hours).padStart(2, '0')}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => adjustTime('hours', -1)}
+                    className="w-10 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    title="Diminuer les heures"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Séparateur deux-points */}
+              <div className="text-2xl font-bold text-gray-400 dark:text-gray-500 mt-6">:</div>
+
+              {/* Minutes */}
+              <div className="flex flex-col items-center">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  {t('common:minutes', { defaultValue: 'Minutes' })}
+                </label>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => adjustTime('minutes', 1)}
+                    className="w-10 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    title="Augmenter les minutes"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  </button>
+                  {editingMinutes !== null ? (
+                    <input
+                      ref={minutesInputRef}
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={editingMinutes}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || (parseInt(val) >= 0 && parseInt(val) <= 59)) {
+                          setEditingMinutes(val);
+                        }
+                      }}
+                      onBlur={() => {
+                        const val = parseInt(editingMinutes);
+                        if (!isNaN(val) && val >= 0 && val <= 59) {
+                          const { hours } = getCurrentTime();
+                          updateTime(hours, val);
+                        }
+                        setEditingMinutes(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        } else if (e.key === 'Escape') {
+                          setEditingMinutes(null);
+                        }
+                      }}
+                      className="w-16 h-12 text-center text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border-2 border-blue-500 dark:border-blue-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingMinutes(String(getCurrentTime().minutes));
+                        setTimeout(() => minutesInputRef.current?.select(), 0);
+                      }}
+                      className="w-16 h-12 flex items-center justify-center text-lg font-semibold text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:border-blue-500 dark:hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {String(getCurrentTime().minutes).padStart(2, '0')}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => adjustTime('minutes', -1)}
+                    className="w-10 h-8 flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    title="Diminuer les minutes"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Boutons d'action rapide pour l'heure */}
+            <div className="mt-4 flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const now = new Date();
+                  updateTime(now.getHours(), now.getMinutes());
+                }}
+                className="px-3 py-1.5 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              >
+                {t('common:currentTime', { defaultValue: 'Heure actuelle' })}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCalendar(false);
+                  setShowTimePicker(false);
+                }}
+                className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              >
+                {t('common:done', { defaultValue: 'Terminé' })}
+              </button>
+            </div>
           </div>
         </div>
       )}

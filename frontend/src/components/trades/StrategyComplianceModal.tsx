@@ -1181,8 +1181,8 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                               }}
                               className={`min-w-28 sm:min-w-32 px-3 sm:px-4 py-2 rounded-lg border-2 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
                                 !trade.tp1Reached && !trade.tp2PlusReached
-                                  ? 'bg-purple-600 dark:bg-purple-500 text-white border-purple-600 dark:border-purple-500'
-                                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-purple-50 dark:hover:bg-purple-900/20'
+                                  ? 'bg-gray-500 dark:bg-gray-400 text-white border-gray-500 dark:border-gray-400'
+                                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
                               }`}
                             >
                               {!trade.tp1Reached && !trade.tp2PlusReached && (

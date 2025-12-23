@@ -59,5 +59,9 @@
   "deleteItemConfirm": "Sind Sie sicher, dass Sie {{item}} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "deleteConfirmGeneric": "Diese Aktion kann nicht rückgängig gemacht werden.",
   "deleting": "Löschen...",
-  "backToHome": "Zurück zur Startseite"
+  "backToHome": "Zurück zur Startseite",
+  "hours": "Stunden",
+  "minutes": "Minuten",
+  "currentTime": "Aktuelle Zeit",
+  "done": "Fertig"
 }

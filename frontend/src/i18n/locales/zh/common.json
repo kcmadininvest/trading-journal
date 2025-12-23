@@ -45,5 +45,14 @@
     "nextPage": "Page suivante",
     "lastPage": "Dernière page",
     "pageNumber": "Page {{number}}"
-  }
+  },
+  "deleteConfirm": "您确定吗？",
+  "deleteItemConfirm": "您确定要删除{{item}}吗？此操作无法撤销。",
+  "deleteConfirmGeneric": "此操作无法撤销。",
+  "deleting": "删除中...",
+  "backToHome": "返回首页",
+  "hours": "小时",
+  "minutes": "分钟",
+  "currentTime": "当前时间",
+  "done": "完成"
 }
