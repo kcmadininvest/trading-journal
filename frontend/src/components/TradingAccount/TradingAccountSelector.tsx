@@ -29,17 +29,21 @@ const setHideAccountNamePart = (hide: boolean): void => {
 };
 
 // Fonction pour diviser le texte : 4 premiers caractères visibles, le reste flouté
-const renderAccountName = (name: string, hide: boolean): React.ReactNode => {
+// Retourne un span avec truncate/whitespace-nowrap appliqué directement pour éviter les problèmes avec les spans imbriqués
+// Les spans enfants utilisent display: inline pour préserver le comportement truncate/whitespace-nowrap du parent
+const renderAccountName = (name: string, hide: boolean, className: string = ''): React.ReactNode => {
   if (!hide || name.length <= 4) {
-    return name;
+    return <span className={className}>{name}</span>;
   }
   const visiblePart = name.substring(0, 4);
   const hiddenPart = name.substring(4);
+  // Retourner un seul span parent avec les classes CSS (truncate/whitespace-nowrap)
+  // Le span enfant avec blur-sm est inline pour ne pas casser le truncate du parent
   return (
-    <>
-      <span>{visiblePart}</span>
-      <span className="blur-sm">{hiddenPart}</span>
-    </>
+    <span className={className}>
+      <span className="inline">{visiblePart}</span>
+      <span className="inline blur-sm">{hiddenPart}</span>
+    </span>
   );
 };
 
@@ -261,11 +265,9 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
           style={{ minWidth: buttonMinWidth ? `${buttonMinWidth}px` : undefined }}
         >
           <span className="inline-flex items-center gap-2 min-w-0 flex-1">
-            <span className="text-gray-900 dark:text-gray-100 truncate transition-all duration-200">
-              {currentOption?.account 
-                ? renderAccountName(currentOption.label, hideNamePart)
-                : (currentOption?.label || t('common:allActiveAccounts'))}
-            </span>
+            {currentOption?.account 
+              ? renderAccountName(currentOption.label, hideNamePart, "text-gray-900 dark:text-gray-100 truncate transition-all duration-200")
+              : <span className="text-gray-900 dark:text-gray-100 truncate transition-all duration-200">{currentOption?.label || t('common:allActiveAccounts')}</span>}
             {currentOption && currentOption.isDefault && (
               <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0">{t('common:default')}</span>
             )}
@@ -314,11 +316,9 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${opt.value === currentValue ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
                   >
-                    <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap flex-1 text-left transition-all duration-200">
-                      {opt.account 
-                        ? renderAccountName(opt.label, hideNamePart)
-                        : opt.label}
-                    </span>
+                    {opt.account 
+                      ? renderAccountName(opt.label, hideNamePart, "text-gray-900 dark:text-gray-100 whitespace-nowrap flex-1 text-left transition-all duration-200")
+                      : <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap flex-1 text-left transition-all duration-200">{opt.label}</span>}
                     {opt.isDefault && (
                       <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0 ml-2">{t('common:default')}</span>
                     )}

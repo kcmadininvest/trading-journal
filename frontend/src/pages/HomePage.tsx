@@ -214,7 +214,8 @@ const HomePage: React.FC = () => {
                 'Visualisations avancées',
               ],
             },
-            en: {
+          },
+          en: {
               organization: {
                 name: 'K&C Trading Journal',
                 description: 'Professional trading journal application',

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useStatistics, useAnalytics, useTradesUpdateInvalidation } from '../hooks/useStatistics';
 import { useTradingAccounts } from '../hooks/useStatistics';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
-import { formatDate } from '../utils/dateFormat';
 import { TradingAccountSelector } from '../components/TradingAccount/TradingAccountSelector';
 import { TradingAccount } from '../services/tradingAccounts';
 import { StatisticsPageSkeleton } from '../components/ui/StatisticsPageSkeleton';
