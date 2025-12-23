@@ -15,7 +15,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   title,
   description,
   keywords,
-  image = '/logo.png',
+  image = '/og-image.png',
   url = window.location.href,
   type = 'website',
   noindex = false,
@@ -116,7 +116,9 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     updateMetaTag('twitter:card', 'summary_large_image');
     updateMetaTag('twitter:title', title || 'K&C Trading Journal');
     updateMetaTag('twitter:description', description || '');
-    updateMetaTag('twitter:image', `${baseUrl}${image}`);
+    // Utiliser twitter-card.png pour Twitter, sinon fallback sur og-image
+    const twitterImage = `${baseUrl}/twitter-card.png`;
+    updateMetaTag('twitter:image', twitterImage);
 
     // Canonical URL
     updateLinkTag('canonical', url);
