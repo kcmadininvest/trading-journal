@@ -96,7 +96,10 @@
     "averageWinLossRatio": "利益/損失比率",
     "averageWinLossRatioTooltip": "平均利益と平均損失の比率。> 1.0 = 平均利益が平均損失を上回る（利益戦略）",
     "breakEvenTrades": "ブレークイーブントレード",
-    "breakEvenTradesTooltip": "ブレークイーブントレード数：P/L = 0のトレード、またはテイクプロフィット未達成（TP1およびTP2+未達成）の勝ちトレード（P/L > 0）"
+    "breakEvenTradesTooltip": "ブレークイーブントレード数：P/L = 0のトレード、またはテイクプロフィット未達成（TP1およびTP2+未達成）の勝ちトレード（P/L > 0）",
+    "averageTradeCost": "平均トレードコスト",
+    "averageCostPerTrade": "トレードあたりの平均コスト",
+    "averageTradeCostTooltip": "トレードあたりの平均コスト（手数料 + コミッション）。総手数料を総トレード数で割って計算"
   },
   "advancedAnalysis": {
     "title": "高度な分析",
@@ -129,8 +132,6 @@
     "daysWithProfit": "利益のある日",
     "daysWithLoss": "損失のある日",
     "daysBreakEven": "ブレークイーブン日",
-    "bestDay": "最高日",
-    "worstDay": "最悪日",
     "monthlyPerformance": "月次パフォーマンス",
     "month": "月",
     "pnl": "P/L"

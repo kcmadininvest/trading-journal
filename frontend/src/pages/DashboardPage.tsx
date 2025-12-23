@@ -1211,10 +1211,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const gaugeObjectives = useMemo(() => {
     if (!tradingMetrics || !gaugeMaxValues) return null;
     
+    // Objectif pour avgLosing : réduire la perte moyenne de 20%
+    // Plus intuitif : on veut une perte moyenne plus faible (en valeur absolue)
+    const currentAvgLoss = Math.abs(tradingMetrics.avgLosingTrade);
+    const reductionPercentage = 0.20; // 20% de réduction
+    const avgLosingObjective = currentAvgLoss > 0 
+      ? currentAvgLoss * (1 - reductionPercentage)
+      : gaugeMaxValues.avgLosing * 0.7; // Fallback si pas de perte
+    
     return {
       winRate: Math.max(60, Math.ceil(tradingMetrics.winRate / 10) * 10),
       avgWinning: gaugeMaxValues.avgWinning * 0.9,
-      avgLosing: gaugeMaxValues.avgLosing * 0.7,
+      avgLosing: avgLosingObjective,
     };
   }, [tradingMetrics, gaugeMaxValues]);
 

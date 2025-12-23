@@ -96,7 +96,10 @@
     "averageWinLossRatio": "盈亏比",
     "averageWinLossRatioTooltip": "平均收益与平均损失的比率。> 1.0 = 平均收益大于平均损失（盈利策略）",
     "breakEvenTrades": "盈亏平衡交易",
-    "breakEvenTradesTooltip": "盈亏平衡交易数量：P/L = 0的交易，或未达到止盈（TP1和TP2+未达到）的盈利交易（P/L > 0）"
+    "breakEvenTradesTooltip": "盈亏平衡交易数量：P/L = 0的交易，或未达到止盈（TP1和TP2+未达到）的盈利交易（P/L > 0）",
+    "averageTradeCost": "平均交易成本",
+    "averageCostPerTrade": "每笔交易平均成本",
+    "averageTradeCostTooltip": "每笔交易的平均成本（手续费 + 佣金）。通过总手续费除以总交易数计算"
   },
   "advancedAnalysis": {
     "title": "高级分析",
@@ -129,8 +132,6 @@
     "daysWithProfit": "盈利日",
     "daysWithLoss": "亏损日",
     "daysBreakEven": "盈亏平衡日",
-    "bestDay": "最佳日",
-    "worstDay": "最差日",
     "monthlyPerformance": "月度表现",
     "month": "月",
     "pnl": "P/L"

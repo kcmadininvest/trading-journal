@@ -193,6 +193,9 @@ const UserTable: React.FC<UserTableProps> = ({
                 />
               </th>
               <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                {t('users:id')}
+              </th>
+              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 {t('users:user')}
               </th>
               <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -218,7 +221,7 @@ const UserTable: React.FC<UserTableProps> = ({
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
+                <td colSpan={9} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
                   <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('users:page.noUsers')}</div>
                 </td>
               </tr>
@@ -232,6 +235,9 @@ const UserTable: React.FC<UserTableProps> = ({
                       onChange={(e) => onSelectUser(user.id, e.target.checked)}
                       className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400"
                     />
+                  </td>
+                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono">
+                    {user.id}
                   </td>
                   <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4">
                     <div className="flex items-center min-w-0">

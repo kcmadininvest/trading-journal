@@ -96,7 +96,10 @@
     "averageWinLossRatio": "Win/Loss Ratio",
     "averageWinLossRatioTooltip": "Ratio between average win and average loss. > 1.0 = average wins are greater than average losses (profitable strategy)",
     "breakEvenTrades": "Break-even Trades",
-    "breakEvenTradesTooltip": "Number of break-even trades: trades with P/L = 0 or winning trades (P/L > 0) without Take Profit reached (TP1 and TP2+ not reached)"
+    "breakEvenTradesTooltip": "Number of break-even trades: trades with P/L = 0 or winning trades (P/L > 0) without Take Profit reached (TP1 and TP2+ not reached)",
+    "averageTradeCost": "Average Trade Cost",
+    "averageCostPerTrade": "Average cost per trade",
+    "averageTradeCostTooltip": "Average cost (fees + commissions) per trade. Calculated by dividing total fees by total number of trades"
   },
   "advancedAnalysis": {
     "title": "Advanced Analysis",
@@ -129,8 +132,6 @@
     "daysWithProfit": "Days with Profit",
     "daysWithLoss": "Days with Loss",
     "daysBreakEven": "Break-even Days",
-    "bestDay": "Best Day",
-    "worstDay": "Worst Day",
     "monthlyPerformance": "Monthly Performance",
     "month": "Month",
     "pnl": "P/L"

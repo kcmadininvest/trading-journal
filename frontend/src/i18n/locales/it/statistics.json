@@ -96,7 +96,10 @@
     "averageWinLossRatio": "Rapporto Guadagno/Perdita",
     "averageWinLossRatioTooltip": "Rapporto tra il guadagno medio e la perdita media. > 1.0 = i guadagni medi sono superiori alle perdite medie (strategia redditizia)",
     "breakEvenTrades": "Operazioni Break-even",
-    "breakEvenTradesTooltip": "Numero di operazioni break-even: operazioni con P/L = 0 o operazioni vincenti (P/L > 0) senza Take Profit raggiunto (TP1 e TP2+ non raggiunti)"
+    "breakEvenTradesTooltip": "Numero di operazioni break-even: operazioni con P/L = 0 o operazioni vincenti (P/L > 0) senza Take Profit raggiunto (TP1 e TP2+ non raggiunti)",
+    "averageTradeCost": "Costo Medio di un'Operazione",
+    "averageCostPerTrade": "Costo medio per operazione",
+    "averageTradeCostTooltip": "Costo medio (commissioni + fees) per operazione. Calcolato dividendo le commissioni totali per il numero totale di operazioni"
   },
   "advancedAnalysis": {
     "title": "Analisi Avanzate",
@@ -129,8 +132,6 @@
     "daysWithProfit": "Giorni con Profitto",
     "daysWithLoss": "Giorni con Perdita",
     "daysBreakEven": "Giorni Break-even",
-    "bestDay": "Migliore Giorno",
-    "worstDay": "Peggiore Giorno",
     "monthlyPerformance": "Performance Mensile",
     "month": "Mese",
     "pnl": "P/L"

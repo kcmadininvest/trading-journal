@@ -28,13 +28,19 @@ const setHideAccountNamePart = (hide: boolean): void => {
   }
 };
 
-const truncateAccountName = (name: string, hide: boolean): string => {
-  if (!hide) return name;
-  // Garder les 6 premiers caractères et masquer le reste
-  if (name.length > 6) {
-    return name.substring(0, 6);
+// Fonction pour diviser le texte : 4 premiers caractères visibles, le reste flouté
+const renderAccountName = (name: string, hide: boolean): React.ReactNode => {
+  if (!hide || name.length <= 4) {
+    return name;
   }
-  return name;
+  const visiblePart = name.substring(0, 4);
+  const hiddenPart = name.substring(4);
+  return (
+    <>
+      <span>{visiblePart}</span>
+      <span className="blur-sm">{hiddenPart}</span>
+    </>
+  );
 };
 
 export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({ 
@@ -102,12 +108,11 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
     const base = accounts.map(a => ({ 
       value: a.id, 
       label: a.name,
-      displayLabel: truncateAccountName(a.name, hideNamePart),
       isDefault: !!a.is_default,
       account: a 
     }));
-    return [{ value: null, label: t('common:allActiveAccounts'), displayLabel: t('common:allActiveAccounts'), isDefault: false, account: null }, ...base];
-  }, [accounts, hideNamePart, t]);
+    return [{ value: null, label: t('common:allActiveAccounts'), isDefault: false, account: null }, ...base];
+  }, [accounts, t]);
 
   const currentValue = useMemo(() => {
     if (selectedId === null || selectedId === undefined) return null;
@@ -138,7 +143,7 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
         // Calculer la largeur pour chaque option
         let maxContentWidth = 0;
         options.forEach(opt => {
-          const label = opt.displayLabel || opt.label;
+          const label = opt.label;
           tempElement.textContent = label;
           const contentWidth = tempElement.offsetWidth;
           // Ajouter de l'espace pour le badge "default" si présent
@@ -194,7 +199,7 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
           
           let maxContentWidth = buttonWidth;
           options.forEach(opt => {
-            const label = opt.displayLabel || opt.label;
+            const label = opt.label;
             tempElement.textContent = label;
             const contentWidth = tempElement.offsetWidth;
             // Ajouter de l'espace pour le badge "default" si présent
@@ -255,13 +260,17 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
           className="flex-1 inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           style={{ minWidth: buttonMinWidth ? `${buttonMinWidth}px` : undefined }}
         >
-          <span className="inline-flex items-center gap-2">
-            <span className="text-gray-900 dark:text-gray-100">{currentOption?.displayLabel || currentOption?.label || t('common:allActiveAccounts')}</span>
+          <span className="inline-flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-gray-900 dark:text-gray-100 truncate transition-all duration-200">
+              {currentOption?.account 
+                ? renderAccountName(currentOption.label, hideNamePart)
+                : (currentOption?.label || t('common:allActiveAccounts'))}
+            </span>
             {currentOption && currentOption.isDefault && (
-              <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs">{t('common:default')}</span>
+              <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0">{t('common:default')}</span>
             )}
           </span>
-          <svg className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform ${open ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
@@ -305,9 +314,13 @@ export const TradingAccountSelector: React.FC<TradingAccountSelectorProps> = ({
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${opt.value === currentValue ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
                   >
-                    <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{opt.displayLabel || opt.label}</span>
+                    <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap flex-1 text-left transition-all duration-200">
+                      {opt.account 
+                        ? renderAccountName(opt.label, hideNamePart)
+                        : opt.label}
+                    </span>
                     {opt.isDefault && (
-                      <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs">{t('common:default')}</span>
+                      <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0 ml-2">{t('common:default')}</span>
                     )}
                   </button>
                 </li>

@@ -1,5 +1,6 @@
 {
   "user": "Benutzer",
+  "id": "ID",
   "role": "Rolle",
   "accountStatus": "Kontostatus",
   "emailStatus": "E-Mail-Status",
