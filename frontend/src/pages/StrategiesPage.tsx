@@ -1143,6 +1143,31 @@ const StrategiesPage: React.FC = () => {
       gradient.addColorStop(1, 'rgba(98, 155, 248, 0.05)');
     }
 
+    // Calculer la moyenne cumulative pour chaque point (moyenne depuis le début jusqu'à ce point)
+    const cumulativeAverageData = aggregatedArray.map((_, index) => {
+      // Prendre tous les points depuis le début jusqu'à l'index actuel
+      const pointsUpToNow = aggregatedArray.slice(0, index + 1);
+      
+      // Calculer la moyenne pondérée par le nombre de stratégies
+      const totalStrategies = pointsUpToNow.reduce((sum, d) => sum + (d.total_strategies || 0), 0);
+      const totalRespected = pointsUpToNow.reduce((sum, d) => sum + (d.respected || 0), 0);
+      
+      if (totalStrategies > 0) {
+        return (totalRespected / totalStrategies) * 100;
+      } else {
+        // Fallback si pas de stratégies : moyenne simple
+        const sum = pointsUpToNow.reduce((sum, d) => sum + (d.compliance_rate || 0), 0);
+        return sum / pointsUpToNow.length;
+      }
+    });
+
+    // Calculer la moyenne globale pour référence (utilisée dans le tooltip)
+    const totalStrategies = aggregatedArray.reduce((sum, d) => sum + (d.total_strategies || 0), 0);
+    const totalRespected = aggregatedArray.reduce((sum, d) => sum + (d.respected || 0), 0);
+    const averageRate = totalStrategies > 0
+      ? (totalRespected / totalStrategies) * 100
+      : aggregatedArray.reduce((sum, d) => sum + (d.compliance_rate || 0), 0) / aggregatedArray.length;
+
     return {
       labels: aggregatedArray.map(d => formatLabel(d.date)),
       datasets: [
@@ -1164,10 +1189,27 @@ const StrategiesPage: React.FC = () => {
           pointHoverBorderWidth: 3,
           cubicInterpolationMode: 'monotone' as const,
         },
+        {
+          label: t('strategies:averageRate', { defaultValue: 'Moyenne' }),
+          data: cumulativeAverageData,
+          borderColor: '#f06dad',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          tension: 0.3,
+          fill: false,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointBackgroundColor: '#f06dad',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+        },
       ],
       rawData: aggregatedArray,
       aggregation,
       formatTooltipDate,
+      averageRate,
+      cumulativeAverageData,
     };
   }, [selectedAccountCompliance, allAccountsCompliance, t]);
 
@@ -1184,7 +1226,16 @@ const StrategiesPage: React.FC = () => {
     },
     plugins: {
       legend: {
-        display: false,
+        display: true,
+        position: 'top' as const,
+        labels: {
+          usePointStyle: true,
+          padding: window.innerWidth < 640 ? 12 : 20,
+          font: {
+            size: window.innerWidth < 640 ? 10 : 12
+          },
+          color: chartColors.textSecondary,
+        },
       },
       datalabels: {
         display: false,
@@ -1223,10 +1274,17 @@ const StrategiesPage: React.FC = () => {
           },
           label: function(context: any) {
             const value = context.parsed.y || 0;
+            const datasetLabel = context.dataset.label || '';
+            
+            // Si c'est la courbe de moyenne, afficher la moyenne cumulative
+            if (datasetLabel === t('strategies:averageRate', { defaultValue: 'Moyenne' })) {
+              return `${datasetLabel}: ${formatNumber(value, 2)}%`;
+            }
+            
             const rawData = (evolutionData as any)?.rawData;
             const aggregation = (evolutionData as any)?.aggregation;
             const dayData = rawData?.[context.dataIndex];
-            if (!dayData) return `${context.dataset.label}: ${formatNumber(value, 2)}%`;
+            if (!dayData) return `${datasetLabel}: ${formatNumber(value, 2)}%`;
             
             const totalStrategies = dayData.total_strategies || 0;
             const respected = dayData.respected || 0;
@@ -1248,7 +1306,7 @@ const StrategiesPage: React.FC = () => {
                 : `(${count} ${t('strategies:days', { defaultValue: 'jours' })})`;
             }
             
-            return `${context.dataset.label}: ${formatNumber(value, 2)}% ${totalStrategies > 0 ? `(${respected}/${totalStrategies})` : ''} ${periodLabel}`;
+            return `${datasetLabel}: ${formatNumber(value, 2)}% ${totalStrategies > 0 ? `(${respected}/${totalStrategies})` : ''} ${periodLabel}`;
           },
         },
       },

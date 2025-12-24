@@ -47,14 +47,15 @@
   "tradesRespected": "trades respectés",
   "compliance": {
     "rate": "Taux de respect (%)",
-    "evolution": "Évolution du taux de respect",
+    "evolution": "Évolution du taux de respect (par stratégie/respect)",
     "trades": "trades respectés",
     "respected": "Respecté",
     "notRespected": "Non respecté",
     "dayWithoutTrade": "Jour sans trade"
   },
-  "complianceEvolutionAllAccountsTooltip": "Évolution du taux de respect de la stratégie pour tous vos comptes actifs confondus",
-  "complianceEvolutionSelectedAccountTooltip": "Évolution du taux de respect de la stratégie pour le compte sélectionné",
+  "averageRate": "Moyenne",
+  "complianceEvolutionAllAccountsTooltip": "Évolution du taux de respect, calculée à partir des stratégies et respects individuels (chaque stratégie ou respect compte pour une unité). La courbe bleue représente le taux quotidien, tandis que la ligne pointillée rose correspond à la moyenne cumulative depuis le début. Ce calcul diffère du taux de respect journalier affiché en haut de la page.",
+  "complianceEvolutionSelectedAccountTooltip": "Évolution du taux de respect, calculée à partir des stratégies et respects individuels (chaque stratégie ou respect compte pour une unité). La courbe bleue représente le taux quotidien, tandis que la ligne pointillée rose correspond à la moyenne cumulative depuis le début. Ce calcul diffère du taux de respect journalier affiché en haut de la page.",
   "date": "Date",
   "noDataForAccount": "Aucune donnée disponible pour ce compte",
   "complianceByWeekday": "Respect de la stratégie par jour de la semaine",

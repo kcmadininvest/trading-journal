@@ -61,6 +61,17 @@
     "fatigue": "Fatica",
     "panique": "Panico",
     "optimisme": "Ottimismo / Speranza"
-  }
+  },
+  "compliance": {
+    "rate": "Tasso di rispetto (%)",
+    "evolution": "Evoluzione del tasso di rispetto (per strategia/rispetto)",
+    "trades": "operazioni rispettate",
+    "respected": "Rispettato",
+    "notRespected": "Non rispettato",
+    "dayWithoutTrade": "Giorno senza operazione"
+  },
+  "averageRate": "Media",
+  "complianceEvolutionAllAccountsTooltip": "Evoluzione del tasso di rispetto, calcolato a partire da strategie e rispetti individuali (ogni strategia o rispetto conta come un'unità). La curva blu rappresenta il tasso giornaliero, mentre la linea tratteggiata rosa corrisponde alla media cumulativa dall'inizio. Questo calcolo differisce dal tasso di rispetto giornaliero mostrato in alto nella pagina.",
+  "complianceEvolutionSelectedAccountTooltip": "Evoluzione del tasso di rispetto, calcolato a partire da strategie e rispetti individuali (ogni strategia o rispetto conta come un'unità). La curva blu rappresenta il tasso giornaliero, mentre la linea tratteggiata rosa corrisponde alla media cumulativa dall'inizio. Questo calcolo differisce dal tasso di rispetto giornaliero mostrato in alto nella pagina."
 }
 

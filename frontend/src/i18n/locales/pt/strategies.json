@@ -61,6 +61,17 @@
     "fatigue": "Fadiga",
     "panique": "Pânico",
     "optimisme": "Otimismo / Esperança"
-  }
+  },
+  "compliance": {
+    "rate": "Taxa de respeito (%)",
+    "evolution": "Evolução da taxa de respeito (por estratégia/respeito)",
+    "trades": "operações respeitadas",
+    "respected": "Respeitado",
+    "notRespected": "Não respeitado",
+    "dayWithoutTrade": "Dia sem operação"
+  },
+  "averageRate": "Média",
+  "complianceEvolutionAllAccountsTooltip": "Evolução da taxa de respeito, calculada a partir de estratégias e respeitos individuais (cada estratégia ou respeito conta como uma unidade). A curva azul representa a taxa diária, enquanto a linha tracejada rosa corresponde à média cumulativa desde o início. Este cálculo difere da taxa de respeito diária exibida no topo da página.",
+  "complianceEvolutionSelectedAccountTooltip": "Evolução da taxa de respeito, calculada a partir de estratégias e respeitos individuais (cada estratégia ou respeito conta como uma unidade). A curva azul representa a taxa diária, enquanto a linha tracejada rosa corresponde à média cumulativa desde o início. Este cálculo difere da taxa de respeito diária exibida no topo da página."
 }
 
