@@ -1,5 +1,8 @@
 {
   "title": "À Propos",
+  "hero": {
+    "subtitle": "Découvrez l'histoire et la mission derrière K&C Trading Journal"
+  },
   "story": {
     "title": "Notre Histoire",
     "content1": "K&C Trading Journal est né d'une passion pour l'informatique et les marchés financiers. En tant que trader, j'ai rapidement réalisé l'importance de suivre et d'analyser ses performances pour progresser.",

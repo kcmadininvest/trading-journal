@@ -1,5 +1,8 @@
 {
   "title": "About",
+  "hero": {
+    "subtitle": "Discover the story and mission behind K&C Trading Journal"
+  },
   "story": {
     "title": "Our Story",
     "content1": "K&C Trading Journal was born from a passion for computer science and financial markets. As a trader, I quickly realized the importance of tracking and analyzing performance to progress.",
