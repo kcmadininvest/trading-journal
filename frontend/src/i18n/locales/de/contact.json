@@ -1,0 +1,31 @@
+{
+  "title": "Kontaktieren Sie uns",
+  "close": "Schließen",
+  "form": {
+    "email": {
+      "label": "Ihre E-Mail",
+      "placeholder": "ihre@email.com"
+    },
+    "subject": {
+      "label": "Betreff",
+      "placeholder": "Betreff Ihrer Nachricht"
+    },
+    "message": {
+      "label": "Nachricht",
+      "placeholder": "Ihre Nachricht..."
+    }
+  },
+  "buttons": {
+    "cancel": "Abbrechen",
+    "send": "Senden",
+    "sending": "Wird gesendet..."
+  },
+  "errors": {
+    "sendError": "Beim Senden Ihrer Nachricht ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    "sendErrorDefault": "Beim Senden Ihrer Nachricht ist ein Fehler aufgetreten."
+  },
+  "success": {
+    "messageSent": "Ihre Nachricht wurde erfolgreich gesendet!"
+  }
+}
+

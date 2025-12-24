@@ -73,6 +73,9 @@
     "subtitle": "Gratuit • Sans engagement • Configuration en 2 minutes",
     "registerButton": "S'inscrire - Gratuit"
   },
+  "contact": {
+    "button": "Nous contacter"
+  },
   "footer": {
     "copyright": "© 2025 K&C Trading Journal. Tous droits réservés.",
     "legalNotice": "Mentions légales"

@@ -1,0 +1,31 @@
+{
+  "title": "Contact Us",
+  "close": "Close",
+  "form": {
+    "email": {
+      "label": "Your email",
+      "placeholder": "your@email.com"
+    },
+    "subject": {
+      "label": "Subject",
+      "placeholder": "Subject of your message"
+    },
+    "message": {
+      "label": "Message",
+      "placeholder": "Your message..."
+    }
+  },
+  "buttons": {
+    "cancel": "Cancel",
+    "send": "Send",
+    "sending": "Sending..."
+  },
+  "errors": {
+    "sendError": "An error occurred while sending your message. Please try again.",
+    "sendErrorDefault": "An error occurred while sending your message."
+  },
+  "success": {
+    "messageSent": "Your message has been sent successfully!"
+  }
+}
+

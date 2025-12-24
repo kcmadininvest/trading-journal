@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getApiBaseUrl } from '../../utils/apiConfig';
 import { toast } from 'react-hot-toast';
 
@@ -11,6 +12,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
   isOpen, 
   onClose
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     email: '',
     subject: '',
@@ -74,10 +76,10 @@ const ContactModal: React.FC<ContactModalProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Une erreur est survenue lors de l\'envoi de votre message.');
+        throw new Error(data.error || t('contact:errors.sendErrorDefault'));
       }
 
-      toast.success(data.message || 'Votre message a été envoyé avec succès !');
+      toast.success(data.message || t('contact:success.messageSent'));
       setFormData({
         email: '',
         subject: '',
@@ -85,7 +87,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
       });
       onClose();
     } catch (err: any) {
-      const errorMessage = err.message || 'Une erreur est survenue lors de l\'envoi de votre message. Veuillez réessayer.';
+      const errorMessage = err.message || t('contact:errors.sendError');
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -106,11 +108,11 @@ const ContactModal: React.FC<ContactModalProps> = ({
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Contactez-nous</h2>
+          <h2 className="text-2xl font-bold">{t('contact:title')}</h2>
           <button
             onClick={onClose}
             className="text-white hover:text-gray-200 transition-colors p-2 hover:bg-white hover:bg-opacity-20 rounded-lg"
-            aria-label="Fermer"
+            aria-label={t('contact:close')}
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -128,7 +130,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Votre email <span className="text-red-500">*</span>
+              {t('contact:form.email.label')} <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -138,13 +140,13 @@ const ContactModal: React.FC<ContactModalProps> = ({
               onChange={handleInputChange}
               required
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-              placeholder="votre@email.com"
+              placeholder={t('contact:form.email.placeholder')}
             />
           </div>
 
           <div>
             <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
-              Motif <span className="text-red-500">*</span>
+              {t('contact:form.subject.label')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -154,13 +156,13 @@ const ContactModal: React.FC<ContactModalProps> = ({
               onChange={handleInputChange}
               required
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-              placeholder="Sujet de votre message"
+              placeholder={t('contact:form.subject.placeholder')}
             />
           </div>
 
           <div>
             <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
-              Message <span className="text-red-500">*</span>
+              {t('contact:form.message.label')} <span className="text-red-500">*</span>
             </label>
             <textarea
               id="message"
@@ -170,7 +172,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
               required
               rows={6}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors resize-none"
-              placeholder="Votre message..."
+              placeholder={t('contact:form.message.placeholder')}
             />
           </div>
 
@@ -182,7 +184,7 @@ const ContactModal: React.FC<ContactModalProps> = ({
               disabled={isLoading}
               className="px-6 py-2.5 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Annuler
+              {t('contact:buttons.cancel')}
             </button>
             <button
               type="submit"
@@ -195,10 +197,10 @@ const ContactModal: React.FC<ContactModalProps> = ({
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Envoi...
+                  {t('contact:buttons.sending')}
                 </>
               ) : (
-                'Envoyer'
+                t('contact:buttons.send')
               )}
             </button>
           </div>

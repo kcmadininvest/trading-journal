@@ -162,6 +162,11 @@ import enFeatures from './locales/en/features.json';
 import esFeatures from './locales/es/features.json';
 import deFeatures from './locales/de/features.json';
 
+import frContact from './locales/fr/contact.json';
+import enContact from './locales/en/contact.json';
+import esContact from './locales/es/contact.json';
+import deContact from './locales/de/contact.json';
+
 // Custom detector qui utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 const customNavigatorLanguagesDetector = {
   name: 'customNavigatorLanguages',
@@ -235,6 +240,7 @@ const resources = {
     legal: frLegal,
     about: frAbout,
     features: frFeatures,
+    contact: frContact,
   },
   en: {
     common: enCommon,
@@ -257,6 +263,7 @@ const resources = {
     legal: enLegal,
     about: enAbout,
     features: enFeatures,
+    contact: enContact,
   },
   es: {
     common: esCommon,
@@ -279,6 +286,7 @@ const resources = {
     legal: esLegal,
     about: esAbout,
     features: esFeatures,
+    contact: esContact,
   },
   de: {
     common: deCommon,
@@ -301,6 +309,7 @@ const resources = {
     legal: deLegal,
     about: deAbout,
     features: deFeatures,
+    contact: deContact,
   },
   it: {
     common: itCommon,
@@ -425,7 +434,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
