@@ -15,6 +15,7 @@ from .sitemap import StaticViewSitemap
 import os
 from xml.etree.ElementTree import Element, SubElement, tostring
 from django.utils.encoding import smart_str
+from datetime import datetime
 
 # Sitemaps
 sitemaps = {
@@ -32,10 +33,17 @@ def generate_sitemap(request):
     protocol = getattr(sitemap_instance, 'protocol', 'https')
     base_url = f'{protocol}://{domain}'
     
+    # Date actuelle au format ISO (YYYY-MM-DD)
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    
     for item in sitemap_instance.items():
         url_elem = SubElement(urlset, 'url')
         loc = SubElement(url_elem, 'loc')
         loc.text = f'{base_url}{item["url"]}'
+        
+        # Ajouter lastmod pour indiquer la date de dernière modification
+        lastmod = SubElement(url_elem, 'lastmod')
+        lastmod.text = current_date
         
         changefreq = SubElement(url_elem, 'changefreq')
         changefreq.text = getattr(sitemap_instance, 'changefreq', 'weekly')
