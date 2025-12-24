@@ -30,6 +30,11 @@
     "evolution": "Évolution du taux de respect",
     "trades": "trades respectés"
   },
+  "complianceEvolutionAllAccountsTooltip": "Évolution du taux de respect de la stratégie pour tous vos comptes actifs confondus",
+  "complianceEvolutionSelectedAccountTooltip": "Évolution du taux de respect de la stratégie pour le compte sélectionné",
+  "date": "Date",
+  "noDataForAccount": "Aucune donnée disponible pour ce compte",
+  "loading": "Chargement...",
   "performance": {
     "title": "Impact du Respect de la Stratégie",
     "subtitle": "Comparaison des performances selon le respect de la stratégie",

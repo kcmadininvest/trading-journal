@@ -30,6 +30,11 @@
     "evolution": "Entwicklung der Einhaltungsrate",
     "trades": "eingehaltene Trades"
   },
+  "complianceEvolutionAllAccountsTooltip": "Entwicklung der Strategieeinhaltungsrate für alle Ihre aktiven Konten zusammen",
+  "complianceEvolutionSelectedAccountTooltip": "Entwicklung der Strategieeinhaltungsrate für das ausgewählte Konto",
+  "date": "Datum",
+  "noDataForAccount": "Keine Daten für dieses Konto verfügbar",
+  "loading": "Laden...",
   "performance": {
     "title": "Auswirkung der Strategieeinhaltung",
     "subtitle": "Leistungsvergleich basierend auf Strategieeinhaltung",

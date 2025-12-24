@@ -30,6 +30,11 @@
     "evolution": "Evolución de la tasa de cumplimiento",
     "trades": "operaciones respetadas"
   },
+  "complianceEvolutionAllAccountsTooltip": "Evolución de la tasa de cumplimiento de la estrategia para todas sus cuentas activas combinadas",
+  "complianceEvolutionSelectedAccountTooltip": "Evolución de la tasa de cumplimiento de la estrategia para la cuenta seleccionada",
+  "date": "Fecha",
+  "noDataForAccount": "No hay datos disponibles para esta cuenta",
+  "loading": "Cargando...",
   "performance": {
     "title": "Impacto del Respeto de la Estrategia",
     "subtitle": "Comparación de rendimientos según el cumplimiento de la estrategia",

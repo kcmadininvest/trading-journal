@@ -30,6 +30,11 @@
     "evolution": "Compliance Rate Evolution",
     "trades": "trades respected"
   },
+  "complianceEvolutionAllAccountsTooltip": "Evolution of strategy compliance rate for all your active accounts combined",
+  "complianceEvolutionSelectedAccountTooltip": "Evolution of strategy compliance rate for the selected account",
+  "date": "Date",
+  "noDataForAccount": "No data available for this account",
+  "loading": "Loading...",
   "performance": {
     "title": "Impact of Strategy Compliance",
     "subtitle": "Performance comparison based on strategy compliance",
