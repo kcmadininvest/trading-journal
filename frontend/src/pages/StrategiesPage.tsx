@@ -897,10 +897,11 @@ const StrategiesPage: React.FC = () => {
     plugins: {
       datalabels: {
         display: true,
-        color: '#ffffff',
+        color: isDark ? '#ffffff' : '#374151',
         font: {
+          family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           weight: 600,
-          size: window.innerWidth < 640 ? 10 : 13,
+          size: window.innerWidth < 640 ? 11 : 14,
         },
         formatter: function(value: number, context: any) {
           const label = context.chart.data.labels[context.dataIndex] || '';
@@ -921,7 +922,9 @@ const StrategiesPage: React.FC = () => {
           usePointStyle: true,
           padding: 12,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+            size: window.innerWidth < 640 ? 11 : 13,
+            weight: 500,
           },
           color: chartColors.text,
           generateLabels: function(chart: any) {
@@ -936,6 +939,7 @@ const StrategiesPage: React.FC = () => {
                 fillStyle: data.datasets[0].backgroundColor[index],
                 strokeStyle: data.datasets[0].borderColor[index],
                 lineWidth: 2,
+                fontColor: chartColors.text,
                 hidden: false,
                 index: index,
               };
@@ -973,7 +977,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [emotionsData, chartColors, formatNumber]);
+  }), [emotionsData, chartColors, formatNumber, isDark]);
 
   // Graphique 5: Évolution du taux de compliance (prend en compte le sélecteur de compte)
   const evolutionData = useMemo(() => {
@@ -1252,7 +1256,6 @@ const StrategiesPage: React.FC = () => {
     scales: {
       y: {
         beginAtZero: false,
-        min: -5,
         max: 105,
         ticks: {
           callback: function(value: any) {
