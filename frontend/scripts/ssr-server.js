@@ -33,6 +33,15 @@ const PAGES_TO_PRERENDER = [
 ];
 
 /**
+ * Fonction helper pour forcer une URL à être en HTTPS (bonne pratique SEO)
+ */
+function ensureHttps(urlString) {
+  if (!urlString) return 'https://app.kctradingjournal.com';
+  // Si l'URL commence par http://, la remplacer par https://
+  return urlString.replace(/^http:\/\//i, 'https://');
+}
+
+/**
  * Génère le HTML pré-rendu pour une route
  */
 async function generatePrerenderedHTML(route, lang, query = '') {
@@ -74,8 +83,10 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     };
     
     const currentSeo = seoData[lang] || seoData.en;
-    const baseUrl = process.env.REACT_APP_BASE_URL || 'https://app.kctradingjournal.com';
-    const fullUrl = `${baseUrl}${route}${query}`;
+    // Forcer baseUrl à toujours être en HTTPS
+    const rawBaseUrl = process.env.REACT_APP_BASE_URL || 'https://app.kctradingjournal.com';
+    const baseUrl = ensureHttps(rawBaseUrl);
+    const fullUrl = ensureHttps(`${baseUrl}${route}${query}`);
     
     // Remplacer les balises meta avec des regex plus robustes
     html = html.replace(/<title>.*?<\/title>/i, `<title>${currentSeo.title}</title>`);

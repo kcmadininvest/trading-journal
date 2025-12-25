@@ -22,7 +22,20 @@ const SEOHead: React.FC<SEOHeadProps> = ({
 }) => {
   const { i18n } = useTranslation();
   const currentLang = i18n.language || 'fr';
-  const baseUrl = process.env.REACT_APP_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://app.kctradingjournal.com');
+  
+  // Fonction helper pour forcer une URL à être en HTTPS (bonne pratique SEO)
+  const ensureHttps = (urlString: string): string => {
+    if (!urlString) return 'https://app.kctradingjournal.com';
+    // Si l'URL commence par http://, la remplacer par https://
+    return urlString.replace(/^http:\/\//i, 'https://');
+  };
+  
+  // Forcer baseUrl à toujours être en HTTPS
+  const rawBaseUrl = process.env.REACT_APP_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://app.kctradingjournal.com');
+  const baseUrl = ensureHttps(rawBaseUrl);
+  
+  // Forcer l'URL canonique à toujours être en HTTPS
+  const canonicalUrl = ensureHttps(url);
 
   useEffect(() => {
     // Mettre à jour le titre
@@ -81,7 +94,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     updateMetaTag('og:title', title || 'K&C Trading Journal', true);
     updateMetaTag('og:description', description || '', true);
     updateMetaTag('og:image', `${baseUrl}${image}`, true);
-    updateMetaTag('og:url', url, true);
+    // Forcer og:url à toujours être en HTTPS
+    updateMetaTag('og:url', canonicalUrl, true);
     updateMetaTag('og:type', type, true);
     // Logo pour les résultats de recherche (certains réseaux sociaux et moteurs de recherche)
     updateMetaTag('og:logo', `${baseUrl}/logo.png`, true);
@@ -120,8 +134,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     const twitterImage = `${baseUrl}/twitter-card.png`;
     updateMetaTag('twitter:image', twitterImage);
 
-    // Canonical URL
-    updateLinkTag('canonical', url);
+    // Canonical URL - Toujours en HTTPS (bonne pratique SEO)
+    updateLinkTag('canonical', canonicalUrl);
 
     // Hreflang tags - Générer les URLs pour chaque langue selon la page actuelle
     const languages = ['fr', 'en', 'es', 'de'];
@@ -181,7 +195,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
 
     // Mettre à jour la langue HTML
     document.documentElement.lang = currentLang;
-  }, [title, description, keywords, image, url, type, noindex, currentLang, baseUrl]);
+  }, [title, description, keywords, image, url, type, noindex, currentLang, baseUrl, canonicalUrl]);
 
   return null; // Ce composant ne rend rien
 };
