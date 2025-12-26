@@ -188,10 +188,22 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
         info "🏷️  Tag détecté: $DEPLOY_TAG"
         
         # Vérifier si le tag existe localement ou à distance
-        TAG_COMMIT=$(git rev-parse "$DEPLOY_TAG" 2>/dev/null || echo "")
+        # Utiliser ^{} pour obtenir le commit pointé par le tag (même pour les tags annotés)
+        TAG_COMMIT=$(git rev-parse "$DEPLOY_TAG^{}" 2>/dev/null || echo "")
         if [ -z "$TAG_COMMIT" ]; then
             # Le tag n'existe pas localement, essayer de le récupérer depuis origin
-            TAG_COMMIT=$(git rev-parse "origin/$DEPLOY_TAG" 2>/dev/null || git ls-remote --tags origin "$DEPLOY_TAG" 2>/dev/null | cut -f1 || echo "")
+            # Pour les tags annotés, récupérer le commit pointé (ligne avec ^{})
+            REMOTE_TAG_INFO=$(git ls-remote --tags origin "$DEPLOY_TAG" 2>/dev/null || echo "")
+            if [ ! -z "$REMOTE_TAG_INFO" ]; then
+                # Chercher d'abord le commit pointé (ligne avec ^{})
+                COMMIT_HASH=$(echo "$REMOTE_TAG_INFO" | grep '\^{}' | cut -f1 || echo "")
+                if [ ! -z "$COMMIT_HASH" ]; then
+                    TAG_COMMIT="$COMMIT_HASH"
+                else
+                    # Si pas de ^{}, c'est peut-être un tag léger, utiliser le hash directement
+                    TAG_COMMIT=$(echo "$REMOTE_TAG_INFO" | head -1 | cut -f1 || echo "")
+                fi
+            fi
         fi
         
         if [ -z "$TAG_COMMIT" ]; then
