@@ -16,6 +16,10 @@ const ActivateAccountPage: React.FC<ActivateAccountPageProps> = ({ token: tokenP
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isAlreadyActivated, setIsAlreadyActivated] = useState(false);
+  const [canResend, setCanResend] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
     const activateAccount = async () => {
@@ -68,6 +72,12 @@ const ActivateAccountPage: React.FC<ActivateAccountPageProps> = ({ token: tokenP
             setTimeout(() => {
               window.location.href = '/';
             }, 2000);
+          } else if (data.can_resend && data.user_id) {
+            // Token expiré, proposer de renvoyer l'email
+            setError(data.error || t('auth:activationLinkExpired'));
+            setCanResend(true);
+            setUserId(data.user_id);
+            setIsSuccess(false);
           } else {
             setError(data.error || data.detail || t('auth:activationError'));
             setIsSuccess(false);
@@ -121,21 +131,71 @@ const ActivateAccountPage: React.FC<ActivateAccountPageProps> = ({ token: tokenP
           ) : (
             <>
               <div className="mb-4">
-                <svg className="mx-auto h-16 w-16 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg className="mx-auto h-16 w-16 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                {t('auth:activationError')}
+                {canResend ? t('auth:activationLinkExpired') : t('auth:activationError')}
               </h2>
               <p className="text-gray-700 dark:text-gray-300 mb-6">{error}</p>
+              
+              {canResend && !resendSuccess && (
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    {t('auth:activationLinkExpiredMessage')}
+                  </p>
+                  <button
+                    onClick={async () => {
+                      if (!userId) return;
+                      setIsResending(true);
+                      try {
+                        const response = await fetch(`${getApiBaseUrl()}/api/accounts/auth/resend-activation/`, {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({ user_id: userId }),
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                          setResendSuccess(true);
+                          setMessage(data.message || t('auth:activationEmailResent'));
+                        } else {
+                          setError(data.error || t('auth:resendActivationError'));
+                        }
+                      } catch (err: any) {
+                        setError(err.message || t('auth:resendActivationError'));
+                      } finally {
+                        setIsResending(false);
+                      }
+                    }}
+                    disabled={isResending}
+                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-xl transition-colors mb-3"
+                  >
+                    {isResending ? t('auth:sending') : t('auth:resendActivationEmail')}
+                  </button>
+                </div>
+              )}
+
+              {resendSuccess && (
+                <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-green-800 dark:text-green-300 text-sm">{message}</p>
+                  <p className="text-green-700 dark:text-green-400 text-xs mt-2">
+                    {t('auth:checkYourEmail')}
+                  </p>
+                </div>
+              )}
+
               <button
                 onClick={() => {
                   window.location.href = '/';
                 }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors"
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors"
               >
-                Aller à la page de connexion
+                {t('auth:goToLoginPage')}
               </button>
             </>
           )}

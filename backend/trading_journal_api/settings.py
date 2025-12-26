@@ -281,7 +281,7 @@ REST_FRAMEWORK = {
         'anon': '100/hour',  # Utilisateurs non authentifiés
         'user': '1000/hour',  # Utilisateurs authentifiés
         'login': '5/minute',  # Endpoint de login (personnalisé)
-        'register': '3/hour',  # Endpoint d'inscription (personnalisé)
+        'register': '5/hour',  # Endpoint d'inscription (personnalisé, basé sur email)
         'activate': '10/hour',  # Endpoint d'activation (personnalisé)
         'password_reset': '3/hour',  # Réinitialisation de mot de passe (personnalisé)
     },

@@ -23,7 +23,7 @@ security_logger = logging.getLogger('security')
 
 from .models import User, UserPreferences, LoginHistory, EmailActivationToken
 from .utils import send_activation_email, create_activation_token
-from .throttling import LoginThrottle, RegisterThrottle, ActivationThrottle, PasswordResetThrottle
+from .throttling import LoginThrottle, RegisterThrottle, EmailBasedRegisterThrottle, ActivationThrottle, PasswordResetThrottle
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -160,10 +160,10 @@ class UserRegistrationView(APIView):
     """
     Vue pour l'inscription des utilisateurs
     Le compte est désactivé par défaut et nécessite une activation par email
-    Protection contre le spam d'inscriptions avec rate limiting
+    Protection contre le spam d'inscriptions avec rate limiting basé sur l'email
     """
     permission_classes = [permissions.AllowAny]
-    throttle_classes = [RegisterThrottle]
+    throttle_classes = [EmailBasedRegisterThrottle]
     
     def post(self, request):
         try:
@@ -276,15 +276,21 @@ class AccountActivationView(APIView):
                         status=status.HTTP_400_BAD_REQUEST
                     )
                 elif activation_token.is_expired():
-                    # Proposer de renvoyer un nouvel email
-                    return Response(
-                        {
-                            'error': 'Ce lien d\'activation a expiré',
-                            'can_resend': True,
-                            'user_id': activation_token.user.id
-                        },
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+                    # Vérifier si le token expiré peut être utilisé quand même
+                    if activation_token.can_be_used_expired():
+                        # Le token est expiré mais peut être utilisé (moins de 30 jours, non utilisé, compte inactif)
+                        # On permet l'activation
+                        pass  # Continuer avec l'activation ci-dessous
+                    else:
+                        # Token trop ancien ou conditions non remplies, proposer de renvoyer un nouvel email
+                        return Response(
+                            {
+                                'error': 'Ce lien d\'activation a expiré',
+                                'can_resend': True,
+                                'user_id': activation_token.user.id
+                            },
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
             
             # Activer le compte
             user.is_active = True
@@ -336,15 +342,25 @@ class AccountActivationView(APIView):
                         status=status.HTTP_200_OK
                     )
                 elif activation_token.is_expired():
-                    return Response(
-                        {
-                            'valid': False,
-                            'error': 'Ce lien d\'activation a expiré',
-                            'can_resend': True,
-                            'user_id': activation_token.user.id
-                        },
-                        status=status.HTTP_200_OK
-                    )
+                    # Vérifier si le token expiré peut être utilisé quand même
+                    if activation_token.can_be_used_expired():
+                        # Token expiré mais utilisable (moins de 30 jours)
+                        return Response({
+                            'valid': True,
+                            'message': 'Token expiré mais utilisable',
+                            'expired_but_usable': True
+                        }, status=status.HTTP_200_OK)
+                    else:
+                        # Token trop ancien
+                        return Response(
+                            {
+                                'valid': False,
+                                'error': 'Ce lien d\'activation a expiré',
+                                'can_resend': True,
+                                'user_id': activation_token.user.id
+                            },
+                            status=status.HTTP_200_OK
+                        )
             
             return Response({
                 'valid': True,

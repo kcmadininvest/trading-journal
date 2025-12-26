@@ -5,6 +5,14 @@ from django.conf import settings
 import uuid
 from django.utils import timezone
 from datetime import timedelta
+from typing import Any
+
+# Constantes pour les valeurs par défaut des BooleanField
+_IS_VERIFIED_DEFAULT: Any = False
+_SIDEBAR_COLLAPSED_DEFAULT: Any = False
+_EMAIL_GOAL_ALERTS_DEFAULT: Any = True
+_LOGIN_SUCCESS_DEFAULT: Any = True
+_IS_USED_DEFAULT: Any = False
 
 
 class User(AbstractUser):
@@ -24,7 +32,7 @@ class User(AbstractUser):
         verbose_name=_('Rôle')
     )
     is_verified = models.BooleanField(
-        default=False,
+        default=_IS_VERIFIED_DEFAULT,
         verbose_name=_('Email vérifié')
     )
     created_at = models.DateTimeField(
@@ -153,16 +161,16 @@ class UserPreferences(models.Model):
         verbose_name=_('Taille de police')
     )
     sidebar_collapsed = models.BooleanField(
-        default=False,
+        default=_SIDEBAR_COLLAPSED_DEFAULT,
         verbose_name=_('Sidebar repliée'),
-        help_text=_('État de la sidebar (repliée ou dépliée)')
+        help_text=str(_('État de la sidebar (repliée ou dépliée)'))
     )
     
     # Notifications
     email_goal_alerts = models.BooleanField(
-        default=True,
+        default=_EMAIL_GOAL_ALERTS_DEFAULT,
         verbose_name=_('Alertes email pour les objectifs'),
-        help_text=_('Recevoir des emails quand un objectif est atteint ou en danger')
+        help_text=str(_('Recevoir des emails quand un objectif est atteint ou en danger'))
     )
     
     # Métadonnées
@@ -209,7 +217,7 @@ class LoginHistory(models.Model):
         verbose_name=_('User Agent')
     )
     success = models.BooleanField(
-        default=True,
+        default=_LOGIN_SUCCESS_DEFAULT,
         verbose_name=_('Connexion réussie')
     )
     
@@ -250,7 +258,7 @@ class EmailActivationToken(models.Model):
         verbose_name=_('Date d\'expiration')
     )
     is_used = models.BooleanField(
-        default=False,
+        default=_IS_USED_DEFAULT,
         verbose_name=_('Utilisé')
     )
     
@@ -279,3 +287,27 @@ class EmailActivationToken(models.Model):
     def is_valid(self):
         """Vérifie si le token est valide (non utilisé et non expiré)"""
         return not self.is_used and not self.is_expired()
+    
+    def can_be_used_expired(self):
+        """
+        Vérifie si un token expiré peut être utilisé pour activer le compte.
+        Conditions :
+        - Le token n'a jamais été utilisé
+        - Le compte n'est toujours pas activé
+        - Le token n'est pas trop ancien (moins de 30 jours depuis la création)
+        """
+        if self.is_used:
+            return False
+        
+        if not self.is_expired():
+            return False
+        
+        # Vérifier que le compte n'est pas déjà activé
+        if self.user.is_active:
+            return False
+        
+        # Vérifier que le token n'est pas trop ancien (30 jours max depuis la création)
+        if self.created_at:
+            days_since_creation = (timezone.now() - self.created_at).days  # type: ignore
+            return days_since_creation <= 30
+        return False
