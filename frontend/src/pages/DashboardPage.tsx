@@ -2064,7 +2064,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         }
                       },
                       datalabels: {
-                        display: true,
+                        display: windowWidth >= 640, // Masquer sur mobile
                         anchor: 'center' as const,
                         align: 'center' as const,
                         color: function(context: any) {

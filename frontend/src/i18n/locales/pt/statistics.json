@@ -99,7 +99,9 @@
     "breakEvenTradesTooltip": "Número de operações break-even: operações com P/L = 0 ou operações ganhadoras (P/L > 0) sem Take Profit alcançado (TP1 e TP2+ não alcançados)",
     "averageTradeCost": "Custo Médio de uma Operação",
     "averageCostPerTrade": "Custo médio por operação",
-    "averageTradeCostTooltip": "Custo médio (taxas + comissões) por operação. Calculado dividindo as taxas totais pelo número total de operações"
+    "averageTradeCostTooltip": "Custo médio (taxas + comissões) por operação. Calculado dividindo as taxas totais pelo número total de operações",
+    "medianCostPerTrade": "Custo mediano por operação",
+    "medianCostPerTradeTooltip": "Custo mediano por operação (taxas + comissões)"
   },
   "advancedAnalysis": {
     "title": "Análises Avançadas",

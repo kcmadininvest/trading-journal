@@ -99,7 +99,9 @@
     "breakEvenTradesTooltip": "Nombre de trades break-even : trades avec P/L = 0 ou trades gagnants (P/L > 0) sans Take Profit atteint (TP1 et TP2+ non atteints)",
     "averageTradeCost": "Coût Moyen d'un Trade",
     "averageCostPerTrade": "Coût moyen par trade",
-    "averageTradeCostTooltip": "Coût moyen (frais + commissions) par trade. Calculé en divisant les frais totaux par le nombre total de trades"
+    "averageTradeCostTooltip": "Coût moyen (frais + commissions) par trade. Calculé en divisant les frais totaux par le nombre total de trades",
+    "medianCostPerTrade": "Coût médian par trade",
+    "medianCostPerTradeTooltip": "Coût médian par trade (fees + commissions)"
   },
   "advancedAnalysis": {
     "title": "Analyses Avancées",

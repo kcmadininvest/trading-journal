@@ -39,7 +39,7 @@ import { MonthlyPerformanceChart } from '../components/analytics/MonthlyPerforma
 import { TradingVolumeChart } from '../components/analytics/TradingVolumeChart';
 import { TradesDistributionChart } from '../components/analytics/TradesDistributionChart';
 
-// Fonction pour créer le plugin de zones alternées avec le thème
+// Fonction pour créer le plugin de zones alternées avec le thème (hexagones imbriqués)
 const createRadarAlternatingZonesPlugin = (isDark: boolean) => ({
   id: 'radarAlternatingZones',
   beforeDraw: (chart: any) => {
@@ -53,11 +53,31 @@ const createRadarAlternatingZonesPlugin = (isDark: boolean) => ({
     const centerY = scale.yCenter;
     const maxRadius = scale.getDistanceFromCenterForValue(scale.max);
     
-    // Dessiner des zones alternées (cercles concentriques)
+    // Obtenir le nombre de points (métriques) - devrait être 6 pour un hexagone
+    const numPoints = chart.data?.labels?.length || 6;
+    
+    // Fonction pour calculer les points d'un hexagone à un rayon donné
+    const getHexagonPoints = (radius: number) => {
+      const points: { x: number; y: number }[] = [];
+      const angleStep = (Math.PI * 2) / numPoints;
+      
+      for (let i = 0; i < numPoints; i++) {
+        // Commencer en haut (-Math.PI / 2)
+        const angle = -Math.PI / 2 + (i * angleStep);
+        points.push({
+          x: centerX + Math.cos(angle) * radius,
+          y: centerY + Math.sin(angle) * radius
+        });
+      }
+      return points;
+    };
+    
+    // Dessiner des zones alternées (hexagones imbriqués)
     const stepSize = scale.options.ticks?.stepSize || 20;
     const steps = Math.floor((scale.max - scale.min) / stepSize);
     
-    for (let i = 0; i <= steps; i++) {
+    // Dessiner de l'extérieur vers l'intérieur pour créer les zones imbriquées
+    for (let i = steps; i >= 0; i--) {
       const value = i * stepSize;
       const radius = scale.getDistanceFromCenterForValue(value);
       const nextRadius = i < steps ? scale.getDistanceFromCenterForValue(value + stepSize) : maxRadius;
@@ -69,11 +89,33 @@ const createRadarAlternatingZonesPlugin = (isDark: boolean) => ({
         ctx.fillStyle = isDark ? 'rgba(31, 41, 55, 0.1)' : 'rgba(255, 255, 255, 0.5)'; // Blanc/Gris très clair
       }
       
-      // Dessiner un arc (zone entre deux cercles)
+      // Dessiner un hexagone (zone entre deux hexagones)
       ctx.beginPath();
-      ctx.arc(centerX, centerY, nextRadius, 0, Math.PI * 2);
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true); // Sens inverse pour créer un trou
-      ctx.fill();
+      
+      // Dessiner l'hexagone extérieur
+      const outerPoints = getHexagonPoints(nextRadius);
+      outerPoints.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.closePath();
+      
+      // Dessiner l'hexagone intérieur (dans le même sens)
+      const innerPoints = getHexagonPoints(radius);
+      innerPoints.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      });
+      ctx.closePath();
+      
+      // Remplir la zone entre les deux hexagones (evenodd rule crée automatiquement le trou)
+      ctx.fill('evenodd');
     }
   }
 });
@@ -1240,6 +1282,16 @@ const AnalyticsPage: React.FC = () => {
       maxDrawdown: Math.min(100, Math.max(0, normalize(statisticsData.max_drawdown_pct || 0, 0, 50, true))),
     };
 
+    // Couleurs pour chaque métrique
+    const metricPointColors = [
+      '#3b82f6', // Bleu - Profit Factor
+      '#10b981', // Vert - Win Rate
+      '#f59e0b', // Orange - Recovery Factor
+      '#8b5cf6', // Violet - Win/Loss Ratio
+      '#ec4899', // Rose - Expectancy
+      '#ef4444', // Rouge - Max Drawdown
+    ];
+
     return {
       labels: [
         t('analytics:radar.profitFactor', { defaultValue: 'Profit Factor' }),
@@ -1263,10 +1315,10 @@ const AnalyticsPage: React.FC = () => {
           backgroundColor: 'transparent', // Le dégradé sera dessiné par le plugin
           borderColor: isDark ? '#60a5fa' : '#1e40af', // Bleu plus foncé en mode clair pour meilleure visibilité
           borderWidth: 2, // Épaisseur uniforme
-          pointBackgroundColor: isDark ? '#60a5fa' : '#1e40af', // Points plus foncés en mode clair
+          pointBackgroundColor: metricPointColors, // Couleurs spécifiques pour chaque point
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2, // Bordure plus épaisse pour les points
-          pointHoverBackgroundColor: isDark ? '#93c5fd' : '#1e3a8a',
+          pointHoverBackgroundColor: metricPointColors, // Garder les mêmes couleurs au survol
           pointHoverBorderColor: '#ffffff',
           pointHoverBorderWidth: 3,
           pointRadius: 4,

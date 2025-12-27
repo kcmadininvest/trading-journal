@@ -99,7 +99,9 @@
     "breakEvenTradesTooltip": "ブレークイーブントレード数：P/L = 0のトレード、またはテイクプロフィット未達成（TP1およびTP2+未達成）の勝ちトレード（P/L > 0）",
     "averageTradeCost": "平均トレードコスト",
     "averageCostPerTrade": "トレードあたりの平均コスト",
-    "averageTradeCostTooltip": "トレードあたりの平均コスト（手数料 + コミッション）。総手数料を総トレード数で割って計算"
+    "averageTradeCostTooltip": "トレードあたりの平均コスト（手数料 + コミッション）。総手数料を総トレード数で割って計算",
+    "medianCostPerTrade": "トレードあたりの中央値コスト",
+    "medianCostPerTradeTooltip": "トレードあたりの中央値コスト（手数料 + コミッション）"
   },
   "advancedAnalysis": {
     "title": "高度な分析",

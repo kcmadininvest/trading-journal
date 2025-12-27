@@ -39,6 +39,16 @@ export const RadarChart: React.FC<RadarChartProps> = ({
     );
   }
 
+  // Définir les couleurs pour chaque métrique
+  const metricColors = [
+    { name: t('analytics:radar.profitFactor', { defaultValue: 'Profit Factor' }), color: '#3b82f6' }, // Bleu
+    { name: t('analytics:radar.winRate', { defaultValue: 'Win Rate' }), color: '#10b981' }, // Vert
+    { name: t('analytics:radar.recoveryFactor', { defaultValue: 'Recovery Factor' }), color: '#f59e0b' }, // Orange
+    { name: t('analytics:radar.winLossRatio', { defaultValue: 'Win/Loss Ratio' }), color: '#8b5cf6' }, // Violet
+    { name: t('analytics:radar.expectancy', { defaultValue: 'Expectancy' }), color: '#ec4899' }, // Rose
+    { name: t('analytics:radar.maxDrawdown', { defaultValue: 'Max Drawdown' }), color: '#ef4444' }, // Rouge
+  ];
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
       <div className="flex items-center gap-2 mb-6">
@@ -57,7 +67,11 @@ export const RadarChart: React.FC<RadarChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div style={{ height: '320px', position: 'relative' }}>
+      
+      {/* Graphique et légende côte à côte */}
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Graphique */}
+        <div className="flex-1" style={{ height: '320px', position: 'relative' }}>
           <ChartRadar
             data={data}
             plugins={[createRadarAlternatingZonesPlugin(isDark), createRadarGradientPlugin(isDark)]}
@@ -140,12 +154,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                     lineWidth: 1,
                   },
                   pointLabels: {
-                    color: chartColors.text,
-                    font: {
-                      size: 12,
-                      weight: 600,
-                    },
-                    padding: 15,
+                    display: false, // Masquer les labels autour du graphique
                   },
                   angleLines: {
                     color: isDark ? 'rgba(55, 65, 81, 0.4)' : 'rgba(156, 163, 175, 0.5)',
@@ -155,6 +164,22 @@ export const RadarChart: React.FC<RadarChartProps> = ({
               },
             }}
           />
+        </div>
+
+        {/* Légende avec points de couleur à droite */}
+        <div className="lg:w-48 flex-shrink-0">
+          <div className="flex flex-col gap-3 text-xs sm:text-sm">
+            {metricColors.map((metric, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full flex-shrink-0" 
+                  style={{ backgroundColor: metric.color }}
+                ></div>
+                <span className="text-gray-700 dark:text-gray-300">{metric.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

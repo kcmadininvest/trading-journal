@@ -256,7 +256,7 @@ const DailyView: React.FC<DailyViewProps> = ({
       </div>
 
       {/* Calendrier */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div className="md:bg-white md:dark:bg-gray-800 md:rounded-lg md:shadow-md md:overflow-hidden">
         {/* Vue grille pour desktop (md et plus) */}
         <div className="hidden md:block overflow-x-auto">
           {/* En-têtes des jours */}
@@ -445,43 +445,42 @@ const DailyView: React.FC<DailyViewProps> = ({
         </div>
 
         {/* Vue liste pour mobile (moins de md) */}
-        <div className="md:hidden">
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {Array.from({ length: rows }).map((_, rowIndex) => {
-              const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
-              
-              // Calculer le PnL total pour cette semaine
-              const weeklyPnl = weekCells.reduce((acc: number, day) => {
-                if (day !== null) {
-                  const dayData = dailyDataMap.get(day);
-                  return acc + (dayData?.pnl || 0);
-                }
-                return acc;
-              }, 0);
+        <div className="md:hidden space-y-3">
+          {Array.from({ length: rows }).map((_, rowIndex) => {
+            const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
+            
+            // Calculer le PnL total pour cette semaine
+            const weeklyPnl = weekCells.reduce((acc: number, day) => {
+              if (day !== null) {
+                const dayData = dailyDataMap.get(day);
+                return acc + (dayData?.pnl || 0);
+              }
+              return acc;
+            }, 0);
 
-              // Filtrer les jours valides (non null) pour cette semaine
-              const validDays = weekCells.filter(day => day !== null) as number[];
+            // Filtrer les jours valides (non null) pour cette semaine
+            const validDays = weekCells.filter(day => day !== null) as number[];
 
-              if (validDays.length === 0) return null;
+            if (validDays.length === 0) return null;
 
-              return (
-                <div key={rowIndex} className="py-2">
-                  {/* En-tête de semaine */}
-                  <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
-                        {t('calendar:week')} {rowIndex + 1}
+            return (
+              <div key={rowIndex} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+                {/* En-tête de semaine */}
+                <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                      {t('calendar:week')} {rowIndex + 1}
+                    </span>
+                    {weeklyPnl !== 0 && (
+                      <span className={`text-sm font-bold ${getPnlColor(weeklyPnl)}`}>
+                        {formatPnl(weeklyPnl)}
                       </span>
-                      {weeklyPnl !== 0 && (
-                        <span className={`text-sm font-bold ${getPnlColor(weeklyPnl)}`}>
-                          {formatPnl(weeklyPnl)}
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
+                </div>
 
-                  {/* Liste des jours de la semaine */}
-                  <div className="space-y-1">
+                {/* Liste des jours de la semaine */}
+                <div className="space-y-1 p-2">
                     {validDays.map((dayNumber) => {
                       const dayData = dailyDataMap.get(dayNumber);
                       const pnl = dayData?.pnl || 0;
@@ -494,10 +493,10 @@ const DailyView: React.FC<DailyViewProps> = ({
                       return (
                         <div
                           key={dayNumber}
-                          className={`px-4 py-3 mx-2 rounded-lg ${
+                          className={`px-4 py-3 rounded-lg ${
                             isToday 
                               ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400' 
-                              : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                              : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
                           } ${pnl > 0 ? 'border-l-4 border-green-500' : pnl < 0 ? 'border-l-4 border-red-500' : ''}`}
                         >
                           <div className="flex items-center justify-between">
@@ -602,13 +601,14 @@ const DailyView: React.FC<DailyViewProps> = ({
                         </div>
                       );
                     })}
-                  </div>
                 </div>
-              );
-            })}
+              </div>
+            );
+          })}
 
-            {/* Total mensuel */}
-            <div className="px-4 py-3 mx-2 mt-2 bg-gray-100 dark:bg-gray-700 rounded-lg border-t-2 border-gray-300 dark:border-gray-600">
+          {/* Total mensuel */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mt-3">
+            <div className="px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {t('calendar:total')} {monthNames[month - 1]} {year}

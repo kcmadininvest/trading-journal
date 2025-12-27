@@ -99,7 +99,9 @@
     "breakEvenTradesTooltip": "盈亏平衡交易数量：P/L = 0的交易，或未达到止盈（TP1和TP2+未达到）的盈利交易（P/L > 0）",
     "averageTradeCost": "平均交易成本",
     "averageCostPerTrade": "每笔交易平均成本",
-    "averageTradeCostTooltip": "每笔交易的平均成本（手续费 + 佣金）。通过总手续费除以总交易数计算"
+    "averageTradeCostTooltip": "每笔交易的平均成本（手续费 + 佣金）。通过总手续费除以总交易数计算",
+    "medianCostPerTrade": "每笔交易中位数成本",
+    "medianCostPerTradeTooltip": "每笔交易中位数成本（手续费 + 佣金）"
   },
   "advancedAnalysis": {
     "title": "高级分析",
