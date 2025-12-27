@@ -97,11 +97,11 @@
     "averageWinLossRatioTooltip": "Verhältnis zwischen durchschnittlichem Gewinn und durchschnittlichem Verlust. > 1.0 = durchschnittliche Gewinne sind größer als durchschnittliche Verluste (profitable Strategie)",
     "breakEvenTrades": "Break-even Trades",
     "breakEvenTradesTooltip": "Anzahl der Break-even-Trades: Trades mit P/L = 0 oder gewinnbringende Trades (P/L > 0) ohne erreichtes Take Profit (TP1 und TP2+ nicht erreicht)",
-    "averageTradeCost": "Durchschnittliche Trade-Kosten",
+    "averageAndMedianTradeCost": "Durchschnittliche und Median Trade-Kosten",
     "averageCostPerTrade": "Durchschnittliche Kosten pro Trade",
     "averageTradeCostTooltip": "Durchschnittliche Kosten (Gebühren + Provisionen) pro Trade. Berechnet durch Division der Gesamtgebühren durch die Gesamtzahl der Trades",
     "medianCostPerTrade": "Median-Kosten pro Trade",
-    "medianCostPerTradeTooltip": "Median-Kosten pro Trade (Gebühren + Provisionen)"
+    "medianCostPerTradeTooltip": "Median-Kosten (Gebühren + Provisionen) pro Trade"
   },
   "advancedAnalysis": {
     "title": "Erweiterte Analyse",

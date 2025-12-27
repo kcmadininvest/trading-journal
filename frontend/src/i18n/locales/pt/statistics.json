@@ -97,11 +97,11 @@
     "averageWinLossRatioTooltip": "Rácio entre o ganho médio e a perda média. > 1.0 = os ganhos médios são superiores às perdas médias (estratégia rentável)",
     "breakEvenTrades": "Operações Break-even",
     "breakEvenTradesTooltip": "Número de operações break-even: operações com P/L = 0 ou operações ganhadoras (P/L > 0) sem Take Profit alcançado (TP1 e TP2+ não alcançados)",
-    "averageTradeCost": "Custo Médio de uma Operação",
+    "averageAndMedianTradeCost": "Custo Médio e Mediano de uma Operação",
     "averageCostPerTrade": "Custo médio por operação",
     "averageTradeCostTooltip": "Custo médio (taxas + comissões) por operação. Calculado dividindo as taxas totais pelo número total de operações",
     "medianCostPerTrade": "Custo mediano por operação",
-    "medianCostPerTradeTooltip": "Custo mediano por operação (taxas + comissões)"
+    "medianCostPerTradeTooltip": "Custo mediano (taxas + comissões) por operação"
   },
   "advancedAnalysis": {
     "title": "Análises Avançadas",

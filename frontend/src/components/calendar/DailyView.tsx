@@ -446,40 +446,40 @@ const DailyView: React.FC<DailyViewProps> = ({
 
         {/* Vue liste pour mobile (moins de md) */}
         <div className="md:hidden space-y-3">
-          {Array.from({ length: rows }).map((_, rowIndex) => {
-            const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
-            
-            // Calculer le PnL total pour cette semaine
-            const weeklyPnl = weekCells.reduce((acc: number, day) => {
-              if (day !== null) {
-                const dayData = dailyDataMap.get(day);
-                return acc + (dayData?.pnl || 0);
-              }
-              return acc;
-            }, 0);
+            {Array.from({ length: rows }).map((_, rowIndex) => {
+              const weekCells = finalCalendarCells.slice(rowIndex * 7, (rowIndex + 1) * 7);
+              
+              // Calculer le PnL total pour cette semaine
+              const weeklyPnl = weekCells.reduce((acc: number, day) => {
+                if (day !== null) {
+                  const dayData = dailyDataMap.get(day);
+                  return acc + (dayData?.pnl || 0);
+                }
+                return acc;
+              }, 0);
 
-            // Filtrer les jours valides (non null) pour cette semaine
-            const validDays = weekCells.filter(day => day !== null) as number[];
+              // Filtrer les jours valides (non null) pour cette semaine
+              const validDays = weekCells.filter(day => day !== null) as number[];
 
-            if (validDays.length === 0) return null;
+              if (validDays.length === 0) return null;
 
-            return (
+              return (
               <div key={rowIndex} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                {/* En-tête de semaine */}
-                <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
-                      {t('calendar:week')} {rowIndex + 1}
-                    </span>
-                    {weeklyPnl !== 0 && (
-                      <span className={`text-sm font-bold ${getPnlColor(weeklyPnl)}`}>
-                        {formatPnl(weeklyPnl)}
+                  {/* En-tête de semaine */}
+                  <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-600">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">
+                        {t('calendar:week')} {rowIndex + 1}
                       </span>
-                    )}
+                      {weeklyPnl !== 0 && (
+                        <span className={`text-sm font-bold ${getPnlColor(weeklyPnl)}`}>
+                          {formatPnl(weeklyPnl)}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Liste des jours de la semaine */}
+                  {/* Liste des jours de la semaine */}
                 <div className="space-y-1 p-2">
                     {validDays.map((dayNumber) => {
                       const dayData = dailyDataMap.get(dayNumber);
@@ -601,12 +601,12 @@ const DailyView: React.FC<DailyViewProps> = ({
                         </div>
                       );
                     })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* Total mensuel */}
+            {/* Total mensuel */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 mt-3">
             <div className="px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
               <div className="flex items-center justify-between">

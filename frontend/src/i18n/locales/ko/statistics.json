@@ -97,7 +97,7 @@
     "averageWinLossRatioTooltip": "평균 수익과 평균 손실의 비율。> 1.0 = 평균 수익이 평균 손실보다 큼 (수익성 전략)",
     "breakEvenTrades": "손익분기 거래",
     "breakEvenTradesTooltip": "손익분기 거래 수: P/L = 0인 거래 또는 테이크 프로핏 미달성(TP1 및 TP2+ 미달성)인 승리 거래(P/L > 0)",
-    "averageTradeCost": "평균 거래 비용",
+    "averageAndMedianTradeCost": "평균 및 중앙값 거래 비용",
     "averageCostPerTrade": "거래당 평균 비용",
     "averageTradeCostTooltip": "거래당 평균 비용(수수료 + 커미션). 총 수수료를 총 거래 수로 나누어 계산",
     "medianCostPerTrade": "거래당 중앙값 비용",

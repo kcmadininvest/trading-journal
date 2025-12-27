@@ -97,11 +97,11 @@
     "averageWinLossRatioTooltip": "Ratio between average win and average loss. > 1.0 = average wins are greater than average losses (profitable strategy)",
     "breakEvenTrades": "Break-even Trades",
     "breakEvenTradesTooltip": "Number of break-even trades: trades with P/L = 0 or winning trades (P/L > 0) without Take Profit reached (TP1 and TP2+ not reached)",
-    "averageTradeCost": "Average Trade Cost",
+    "averageAndMedianTradeCost": "Average and Median Trade Cost",
     "averageCostPerTrade": "Average cost per trade",
     "averageTradeCostTooltip": "Average cost (fees + commissions) per trade. Calculated by dividing total fees by total number of trades",
     "medianCostPerTrade": "Median cost per trade",
-    "medianCostPerTradeTooltip": "Median cost per trade (fees + commissions)"
+    "medianCostPerTradeTooltip": "Median cost (fees + commissions) per trade"
   },
   "advancedAnalysis": {
     "title": "Advanced Analysis",
