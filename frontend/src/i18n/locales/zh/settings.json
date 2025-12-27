@@ -67,10 +67,14 @@
   "confirmDeletion": "Confirmer la suppression",
   "cancel": "Annuler",
   "profileUpdated": "Profil mis à jour avec succès",
-  "passwordUpdated": "Mot de passe mis à jour avec succès",
-  "preferencesUpdated": "Préférences mises à jour avec succès",
-  "sessionRevoked": "Session révoquée avec succès",
-  "allSessionsRevoked": "Toutes les autres sessions ont été révoquées",
-  "dataExported": "Données exportées avec succès",
-  "accountDeleted": "Compte supprimé avec succès"
+  "passwordUpdated": "密码更新成功",
+  "preferencesUpdated": "偏好设置更新成功",
+  "sessionRevoked": "会话已成功撤销",
+  "allSessionsRevoked": "所有其他会话已被撤销",
+  "dataExported": "数据导出成功",
+  "accountDeleted": "账户删除成功",
+  "hideInitialBalance": "隐藏初始余额",
+  "hideCurrentBalance": "隐藏当前余额",
+  "hideMll": "隐藏MLL",
+  "hideProfitLoss": "隐藏盈亏"
 }

@@ -5,12 +5,16 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { AccountIndicators } from '../../hooks/useAccountIndicators';
 import { Tooltip } from '../ui';
+import { maskValue } from '../../hooks/usePrivacySettings';
 
 interface AccountIndicatorsGridProps {
   indicators: AccountIndicators;
   currencySymbol?: string;
   className?: string;
   onNavigateToTransactions?: () => void;
+  hideInitialBalance?: boolean;
+  hideCurrentBalance?: boolean;
+  hideProfitLoss?: boolean;
 }
 
 export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
@@ -18,6 +22,9 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   currencySymbol = '',
   className = '',
   onNavigateToTransactions,
+  hideInitialBalance = false,
+  hideCurrentBalance = false,
+  hideProfitLoss = false,
 }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
@@ -52,7 +59,10 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
               </span>
               <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {formatCurrency(accountBalance.initial, currencySymbol, preferences.number_format, 2)}
+                {hideInitialBalance 
+                  ? maskValue(accountBalance.initial, currencySymbol)
+                  : formatCurrency(accountBalance.initial, currencySymbol, preferences.number_format, 2)
+                }
               </span>
             </div>
             <div className="flex flex-col gap-1 flex-1 xl:border-l xl:border-gray-300 xl:dark:border-gray-600 xl:pl-4">
@@ -64,7 +74,10 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                   ? 'text-blue-600 dark:text-blue-400' 
                   : 'text-pink-600 dark:text-pink-400'
               }`}>
-                {formatCurrency(accountBalance.current, currencySymbol, preferences.number_format, 2)}
+                {hideCurrentBalance 
+                  ? maskValue(accountBalance.current, currencySymbol)
+                  : formatCurrency(accountBalance.current, currencySymbol, preferences.number_format, 2)
+                }
               </span>
             </div>
           </div>
@@ -82,11 +95,18 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                   ? 'text-blue-600 dark:text-blue-400' 
                   : 'text-pink-600 dark:text-pink-400'
               }`}>
-                {formatCurrency(variationValue, currencySymbol, preferences.number_format, 2)}
-                {' '}
-                <span className="text-base">
-                  ({formatNumber(variationPercentage, 2, preferences.number_format)}%)
-                </span>
+                {hideProfitLoss 
+                  ? maskValue(variationValue, currencySymbol)
+                  : formatCurrency(variationValue, currencySymbol, preferences.number_format, 2)
+                }
+                {!hideProfitLoss && (
+                  <>
+                    {' '}
+                    <span className="text-base">
+                      ({formatNumber(variationPercentage, 2, preferences.number_format)}%)
+                    </span>
+                  </>
+                )}
               </span>
             </div>
           )}

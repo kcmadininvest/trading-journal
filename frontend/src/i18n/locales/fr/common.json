@@ -63,5 +63,9 @@
   "hours": "Heures",
   "minutes": "Minutes",
   "currentTime": "Heure actuelle",
-  "done": "Terminé"
+  "done": "Terminé",
+  "hidden": "Masqué",
+  "visible": "Visible",
+  "active": "Actif",
+  "inactive": "Inactif"
 }

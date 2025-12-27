@@ -24,6 +24,9 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
+import { usePrivacySettings } from '../hooks/usePrivacySettings';
+import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
+import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -181,6 +184,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { preferences } = usePreferences();
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
+  const privacySettings = usePrivacySettings('dashboard');
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
@@ -1444,6 +1448,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
   }), [isDark]);
 
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6">
       {/* Filtres */}
@@ -1472,6 +1477,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               }}
             />
           </div>
+
+          {/* Privacy Dropdown */}
+          <div className="flex-shrink-0 ml-auto">
+            <PrivacyDropdown 
+              pageContext={PAGE_CONTEXTS.DASHBOARD}
+              availableOptions={PAGE_PRIVACY_OPTIONS[PAGE_CONTEXTS.DASHBOARD]}
+            />
+          </div>
         </div>
       </div>
 
@@ -1484,6 +1497,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             onNavigateToTransactions={() => {
               window.location.hash = 'transactions';
             }}
+            hideInitialBalance={privacySettings.hideInitialBalance}
+            hideCurrentBalance={privacySettings.hideCurrentBalance}
+            hideProfitLoss={privacySettings.hideProfitLoss}
           />
         </div>
       )}
@@ -1721,6 +1737,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 }
                 trend={additionalStats.totalPnl >= 0 ? 'up' : 'down'}
                 trendValue={additionalStats.totalPnl >= 0 ? t('dashboard:profitable') : t('dashboard:losing')}
+                hideValue={privacySettings.hideProfitLoss}
               />
               
               <ModernStatCard
@@ -1919,30 +1936,32 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-3 gap-4">
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{t('dashboard:accountBalanceOverTime')}</h3>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {performanceStats.totalReturn >= 0 ? t('dashboard:totalGain') : t('dashboard:totalLoss')} :
-                        </span>
-                        <span className={`text-lg font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                          {formatCurrency(performanceStats.totalReturn, currencySymbol)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-500 dark:text-gray-400">
-                        <div className="flex items-center gap-1">
-                          <span>{t('dashboard:highest')} :</span>
-                          <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                            {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
+                    {!privacySettings.hideProfitLoss && (
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {performanceStats.totalReturn >= 0 ? t('dashboard:totalGain') : t('dashboard:totalLoss')} :
+                          </span>
+                          <span className={`text-lg font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                            {formatCurrency(performanceStats.totalReturn, currencySymbol)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span>{t('dashboard:lowest')} :</span>
-                          <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                            {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
-                          </span>
+                        <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-500 dark:text-gray-400">
+                          <div className="flex items-center gap-1">
+                            <span>{t('dashboard:highest')} :</span>
+                            <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                              {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span>{t('dashboard:lowest')} :</span>
+                            <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                              {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:ml-4 flex-shrink-0">
                     {/* Start Date Picker */}
@@ -1985,6 +2004,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   currencySymbol={currencySymbol}
                   formatCurrency={formatCurrency}
                   initialCapital={selectedAccount?.initial_capital ? parseFloat(String(selectedAccount.initial_capital)) : 0}
+                  hideMll={privacySettings.hideMll}
+                  hideProfitLoss={privacySettings.hideProfitLoss}
                 />
               </div>
             </div>
@@ -2064,7 +2085,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         }
                       },
                       datalabels: {
-                        display: windowWidth >= 640, // Masquer sur mobile
+                        display: !privacySettings.hideProfitLoss && windowWidth >= 640, // Masquer en mode streamer et sur mobile
                         anchor: 'center' as const,
                         align: 'center' as const,
                         color: function(context: any) {
@@ -2168,12 +2189,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </div>
                   {waterfallStats && (
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      <div className="flex items-center gap-1">
-                        <span>{t('dashboard:totalCapital')} :</span>
-                        <span className={`font-medium ${waterfallStats.totalPnl >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
-                          {formatCurrency(waterfallStats.totalPnl, currencySymbol)}
-                        </span>
-                      </div>
+                      {!privacySettings.hideProfitLoss && (
+                        <div className="flex items-center gap-1">
+                          <span>{t('dashboard:totalCapital')} :</span>
+                          <span className={`font-medium ${waterfallStats.totalPnl >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
+                            {formatCurrency(waterfallStats.totalPnl, currencySymbol)}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1">
                         <span>{t('dashboard:bestDay')} :</span>
                         <span className="font-medium text-blue-500">{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
@@ -2201,6 +2224,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           display: false
                         },
                         tooltip: {
+                          enabled: !privacySettings.hideProfitLoss,
                           backgroundColor: chartColors.tooltipBg,
                           titleColor: chartColors.text,
                           bodyColor: chartColors.text,

@@ -173,6 +173,14 @@ class UserPreferences(models.Model):
         help_text=str(_('Recevoir des emails quand un objectif est atteint ou en danger'))
     )
     
+    # Paramètres de confidentialité par page (réutilisable)
+    privacy_overrides = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Privacy Overrides par Page'),
+        help_text=str(_('Overrides de confidentialité par contexte de page (dashboard, statistics, trades, etc.)'))
+    )
+    
     # Métadonnées
     created_at = models.DateTimeField(
         auto_now_add=True,

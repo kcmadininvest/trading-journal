@@ -39,6 +39,12 @@ export interface PasswordChangeData {
   new_password_confirm: string;
 }
 
+export interface PrivacyOverrides {
+  [pageContext: string]: {
+    [field: string]: boolean | null;
+  };
+}
+
 export interface UserPreferences {
   language: 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
   timezone: string;
@@ -48,6 +54,7 @@ export interface UserPreferences {
   font_size: 'small' | 'medium' | 'large';
   sidebar_collapsed?: boolean;
   email_goal_alerts?: boolean;
+  privacy_overrides?: PrivacyOverrides;
   created_at?: string;
   updated_at?: string;
 }

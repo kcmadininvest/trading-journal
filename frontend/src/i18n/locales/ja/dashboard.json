@@ -106,6 +106,12 @@
   "currentRespectDays": "尊重日",
   "currentRespectTrades": "尊重取引",
   "currentNotRespectDays": "非尊重日",
-  "currentNotRespectTrades": "非尊重取引"
+  "currentNotRespectTrades": "非尊重取引",
+  "streamerMode": "ストリーマーモード",
+  "streamerModeTooltip": "プライバシー設定",
+  "privacyControls": "プライバシー設定",
+  "hideAll": "すべて非表示",
+  "hidden": "非表示",
+  "visible": "表示"
 }
 

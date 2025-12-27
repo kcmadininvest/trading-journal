@@ -106,6 +106,12 @@
   "currentRespectDays": "준수 일수",
   "currentRespectTrades": "준수 거래",
   "currentNotRespectDays": "비준수 일수",
-  "currentNotRespectTrades": "비준수 거래"
+  "currentNotRespectTrades": "비준수 거래",
+  "streamerMode": "스트리머 모드",
+  "streamerModeTooltip": "개인정보 보호 설정",
+  "privacyControls": "개인정보 보호 설정",
+  "hideAll": "모두 숨기기",
+  "hidden": "숨김",
+  "visible": "표시"
 }
 

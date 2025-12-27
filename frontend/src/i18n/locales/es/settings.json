@@ -84,5 +84,9 @@
   "passwordMismatch": "Las contraseñas no coinciden",
   "notifications": "Notificaciones",
   "emailGoalAlerts": "Alertas por email para objetivos",
-  "emailGoalAlertsDescription": "Recibir emails cuando un objetivo se alcanza o está en peligro"
+  "emailGoalAlertsDescription": "Recibir emails cuando un objetivo se alcanza o está en peligro",
+  "hideInitialBalance": "Ocultar saldo inicial",
+  "hideCurrentBalance": "Ocultar saldo actual",
+  "hideMll": "Ocultar MLL",
+  "hideProfitLoss": "Ocultar ganancias/pérdidas"
 }

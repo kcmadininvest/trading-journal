@@ -40,13 +40,17 @@ interface AccountBalanceChartProps {
   currencySymbol?: string;
   formatCurrency?: (value: number, currencySymbol?: string) => string;
   initialCapital?: number; // Capital initial pour la ligne de référence
+  hideMll?: boolean; // Masquer la ligne MLL
+  hideProfitLoss?: boolean; // Masquer les valeurs de profit/perte (mode streamer)
 }
 
 function AccountBalanceChart({ 
   data, 
   currencySymbol = '',
   formatCurrency: formatCurrencyProp,
-  initialCapital = 0
+  initialCapital = 0,
+  hideMll = false,
+  hideProfitLoss = false
 }: AccountBalanceChartProps) {
   const { t } = useI18nTranslation();
   const { theme } = useTheme();
@@ -257,8 +261,8 @@ function AccountBalanceChart({
             _isIntermediatePoint: isIntermediatePoint, // Stocker pour masquer les points intermédiaires
             order: 0, // Placer devant tout
           },
-          // Dataset pour le Maximum Loss Limit (MLL) - uniquement si des valeurs MLL sont présentes
-          ...(processedMllValues.some(mll => mll !== null && mll !== undefined) ? [{
+          // Dataset pour le Maximum Loss Limit (MLL) - uniquement si des valeurs MLL sont présentes et non masqué
+          ...(!hideMll && processedMllValues.some(mll => mll !== null && mll !== undefined) ? [{
             label: 'Maximum Loss Limit (MLL)',
             data: processedMllValues.map((mll, index) => {
               // Si le MLL n'est pas défini pour ce point, utiliser la dernière valeur définie
@@ -288,7 +292,7 @@ function AccountBalanceChart({
       chartLabels: processedLabels,
       pnlMapping: processedPnlMapping,
     };
-  }, [data, preferences.timezone, initialCapital]);
+  }, [data, preferences.timezone, initialCapital, hideMll]);
 
   // Options du graphique
   const options = useMemo(() => {
@@ -306,6 +310,7 @@ function AccountBalanceChart({
         display: false,
       },
       tooltip: {
+        enabled: !hideProfitLoss,
         backgroundColor: chartThemeColors.tooltipBg,
         titleColor: chartThemeColors.text,
         bodyColor: chartThemeColors.text,
@@ -420,6 +425,7 @@ function AccountBalanceChart({
       y: {
         beginAtZero: false,
         ticks: {
+          display: !hideProfitLoss,
           color: chartThemeColors.textSecondary,
           font: {
             size: 12,
@@ -456,7 +462,7 @@ function AccountBalanceChart({
         duration: 0, // Désactiver l'animation pour éviter le tremblement après chargement
       },
     };
-  }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t]);
+  }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t, hideProfitLoss]);
 
   if (data.length === 0) {
     return (

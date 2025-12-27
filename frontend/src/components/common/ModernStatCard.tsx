@@ -31,6 +31,8 @@ interface ModernStatCardProps {
 
   progressLabel?: string
 
+  hideValue?: boolean
+
 }
 
 
@@ -57,7 +59,9 @@ function ModernStatCard({
 
   progressMax,
 
-  progressLabel
+  progressLabel,
+
+  hideValue = false
 
 }: ModernStatCardProps) {
 
@@ -320,7 +324,7 @@ function ModernStatCard({
 
             `}>
 
-              {value}
+              {hideValue ? '***' : value}
 
             </div>
 

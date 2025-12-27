@@ -116,5 +116,11 @@
   "consistencyTargetBestDayDate": "Mejor día",
   "additionalProfitNeeded": "Beneficio adicional necesario: {amount}",
   "sequencesPeriodTooltip": "Calculado sobre los últimos 12 meses móviles",
-  "viewTransactions": "Ver transacciones"
+  "viewTransactions": "Ver transacciones",
+  "streamerMode": "Modo Streamer",
+  "streamerModeTooltip": "Controles de privacidad",
+  "privacyControls": "Controles de Privacidad",
+  "hideAll": "Ocultar todo",
+  "hidden": "Oculto",
+  "visible": "Visible"
 }

@@ -67,10 +67,14 @@
   "confirmDeletion": "Confirmer la suppression",
   "cancel": "Annuler",
   "profileUpdated": "Profil mis à jour avec succès",
-  "passwordUpdated": "Mot de passe mis à jour avec succès",
-  "preferencesUpdated": "Préférences mises à jour avec succès",
-  "sessionRevoked": "Session révoquée avec succès",
-  "allSessionsRevoked": "Toutes les autres sessions ont été révoquées",
-  "dataExported": "Données exportées avec succès",
-  "accountDeleted": "Compte supprimé avec succès"
+  "passwordUpdated": "비밀번호가 성공적으로 업데이트되었습니다",
+  "preferencesUpdated": "설정이 성공적으로 업데이트되었습니다",
+  "sessionRevoked": "세션이 성공적으로 취소되었습니다",
+  "allSessionsRevoked": "다른 모든 세션이 취소되었습니다",
+  "dataExported": "데이터가 성공적으로 내보내졌습니다",
+  "accountDeleted": "계정이 성공적으로 삭제되었습니다",
+  "hideInitialBalance": "초기 잔액 숨기기",
+  "hideCurrentBalance": "현재 잔액 숨기기",
+  "hideMll": "MLL 숨기기",
+  "hideProfitLoss": "손익 숨기기"
 }

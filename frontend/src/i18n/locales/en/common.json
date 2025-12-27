@@ -63,5 +63,9 @@
   "hours": "Hours",
   "minutes": "Minutes",
   "currentTime": "Current time",
-  "done": "Done"
+  "done": "Done",
+  "hidden": "Hidden",
+  "visible": "Visible",
+  "active": "Active",
+  "inactive": "Inactive"
 }

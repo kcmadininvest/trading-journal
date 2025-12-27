@@ -106,6 +106,12 @@
   "currentRespectDays": "Dias de respeito",
   "currentRespectTrades": "Negociações de respeito",
   "currentNotRespectDays": "Dias sem respeito",
-  "currentNotRespectTrades": "Negociações sem respeito"
+  "currentNotRespectTrades": "Negociações sem respeito",
+  "streamerMode": "Modo Streamer",
+  "streamerModeTooltip": "Controles de privacidade",
+  "privacyControls": "Controles de Privacidade",
+  "hideAll": "Ocultar tudo",
+  "hidden": "Oculto",
+  "visible": "Visível"
 }
 

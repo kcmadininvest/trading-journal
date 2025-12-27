@@ -68,8 +68,6 @@
   "allYears": "Toutes les années",
   "allMonths": "Tous les mois",
   "reset": "Réinitialiser",
-  "totalPnL": "P/L Total",
-  "profitFactor": "Profit Factor",
   "wlRatio": "Ratio W/L",
   "totalFees": "Frais Totaux",
   "sequenceRespect": "Respect Stratégie",
@@ -113,6 +111,12 @@
   "consistencyTargetBestDayDate": "Meilleur jour",
   "additionalProfitNeeded": "Profit supplémentaire requis: {amount}",
   "sequencesPeriodTooltip": "Calculé sur les 12 derniers mois glissants",
-  "viewTransactions": "Voir les transactions"
+  "viewTransactions": "Voir les transactions",
+  "streamerMode": "Streamer Mode",
+  "streamerModeTooltip": "Contrôles de confidentialité",
+  "privacyControls": "Contrôles de Confidentialité",
+  "hideAll": "Tout masquer",
+  "hidden": "Masqué",
+  "visible": "Visible"
 }
 

@@ -67,10 +67,14 @@
   "confirmDeletion": "Confirmer la suppression",
   "cancel": "Annuler",
   "profileUpdated": "Profil mis à jour avec succès",
-  "passwordUpdated": "Mot de passe mis à jour avec succès",
-  "preferencesUpdated": "Préférences mises à jour avec succès",
-  "sessionRevoked": "Session révoquée avec succès",
-  "allSessionsRevoked": "Toutes les autres sessions ont été révoquées",
-  "dataExported": "Données exportées avec succès",
-  "accountDeleted": "Compte supprimé avec succès"
+  "passwordUpdated": "パスワードが正常に更新されました",
+  "preferencesUpdated": "設定が正常に更新されました",
+  "sessionRevoked": "セッションが正常に取り消されました",
+  "allSessionsRevoked": "他のすべてのセッションが取り消されました",
+  "dataExported": "データが正常にエクスポートされました",
+  "accountDeleted": "アカウントが正常に削除されました",
+  "hideInitialBalance": "初期残高を非表示",
+  "hideCurrentBalance": "現在の残高を非表示",
+  "hideMll": "MLLを非表示",
+  "hideProfitLoss": "損益を非表示"
 }

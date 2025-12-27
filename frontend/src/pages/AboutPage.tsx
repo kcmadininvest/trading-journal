@@ -45,32 +45,25 @@ const AboutPage: React.FC = () => {
   const savedLang = getSavedLanguage();
   const [isLangApplied, setIsLangApplied] = useState(false);
   
-  console.log('📄 AboutPage - Langue détectée depuis URL/localStorage:', savedLang);
-  console.log('📄 AboutPage - URL actuelle:', window.location.pathname);
   
   // Utiliser useTranslation
   const { t, i18n: i18nHook } = useTranslation();
   
   // Appliquer la langue immédiatement au montage et écouter les changements
   useEffect(() => {
-    console.log('📄 AboutPage - useEffect - Langue i18n actuelle:', i18n.language);
-    console.log('📄 AboutPage - useEffect - Langue cible:', savedLang);
     
     const applyLang = async () => {
       const currentI18nLang = i18n.language?.split('-')[0] || 'fr';
       if (currentI18nLang !== savedLang) {
-        console.log('📄 AboutPage - Changement de langue:', currentI18nLang, '→', savedLang);
         // changeLanguage() sauvegarde automatiquement dans localStorage via LanguageDetector
         await changeLanguage(savedLang);
       } else {
-        console.log('📄 AboutPage - Langue déjà correcte:', savedLang);
       }
       setIsLangApplied(true);
     };
     
     // Écouter les changements de langue pour forcer un re-rendu
     const handleLanguageChanged = (lng: string) => {
-      console.log('📄 AboutPage - Événement languageChanged:', lng);
       setIsLangApplied(true);
     };
     

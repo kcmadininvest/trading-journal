@@ -67,10 +67,14 @@
   "confirmDeletion": "Confirmer la suppression",
   "cancel": "Annuler",
   "profileUpdated": "Profil mis à jour avec succès",
-  "passwordUpdated": "Mot de passe mis à jour avec succès",
-  "preferencesUpdated": "Préférences mises à jour avec succès",
-  "sessionRevoked": "Session révoquée avec succès",
-  "allSessionsRevoked": "Toutes les autres sessions ont été révoquées",
-  "dataExported": "Données exportées avec succès",
-  "accountDeleted": "Compte supprimé avec succès"
+  "passwordUpdated": "Senha atualizada com sucesso",
+  "preferencesUpdated": "Preferências atualizadas com sucesso",
+  "sessionRevoked": "Sessão revogada com sucesso",
+  "allSessionsRevoked": "Todas as outras sessões foram revogadas",
+  "dataExported": "Dados exportados com sucesso",
+  "accountDeleted": "Conta excluída com sucesso",
+  "hideInitialBalance": "Ocultar saldo inicial",
+  "hideCurrentBalance": "Ocultar saldo atual",
+  "hideMll": "Ocultar MLL",
+  "hideProfitLoss": "Ocultar lucros/perdas"
 }

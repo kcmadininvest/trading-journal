@@ -106,6 +106,12 @@
   "currentRespectDays": "尊重天数",
   "currentRespectTrades": "尊重交易",
   "currentNotRespectDays": "非尊重天数",
-  "currentNotRespectTrades": "非尊重交易"
+  "currentNotRespectTrades": "非尊重交易",
+  "streamerMode": "直播模式",
+  "streamerModeTooltip": "隐私控制",
+  "privacyControls": "隐私控制",
+  "hideAll": "全部隐藏",
+  "hidden": "隐藏",
+  "visible": "可见"
 }
 

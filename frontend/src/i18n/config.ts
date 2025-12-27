@@ -173,48 +173,39 @@ const customNavigatorLanguagesDetector = {
   
   lookup(): string | undefined {
     if (typeof navigator === 'undefined') {
-      console.log('🌐 Custom detector - navigator non disponible');
       return undefined;
     }
     
     // navigator.languages contient toutes les langues préférées dans l'ordre
     // Par exemple: ['en-US', 'fr-FR', 'en', 'fr']
     const languages = navigator.languages || [navigator.language || (navigator as any).userLanguage];
-    console.log('🌐 Custom detector - navigator.languages:', languages);
     
     // Parcourir les langues dans l'ordre de préférence
     for (const browserLang of languages) {
       if (!browserLang) continue;
       
       const lang = browserLang.split('-')[0].toLowerCase();
-      console.log('🌐 Custom detector - Test langue:', browserLang, '→', lang);
       
       // Prendre la première langue supportée dans l'ordre de préférence
       if (lang === 'en') {
-        console.log('✅ Custom detector - Langue détectée: anglais (en)');
         return 'en';
       }
       if (lang === 'fr') {
-        console.log('✅ Custom detector - Langue détectée: français (fr)');
         return 'fr';
       }
       if (lang === 'es') {
-        console.log('✅ Custom detector - Langue détectée: espagnol (es)');
         return 'es';
       }
       if (lang === 'de') {
-        console.log('✅ Custom detector - Langue détectée: allemand (de)');
         return 'de';
       }
     }
     
-    console.log('⚠️ Custom detector - Aucune langue supportée trouvée');
     return undefined;
   },
   
   cacheUserLanguage(lng: string): void {
     // Ne pas sauvegarder automatiquement - seulement via changeLanguage()
-    console.log('🌐 Custom detector - cacheUserLanguage appelé avec:', lng, '(ignoré - pas de sauvegarde automatique)');
   },
 };
 

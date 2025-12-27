@@ -394,7 +394,9 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
         model = UserPreferences
         fields = (
             'language', 'timezone', 'date_format', 'number_format',
-            'theme', 'font_size', 'sidebar_collapsed', 'email_goal_alerts', 'created_at', 'updated_at'
+            'theme', 'font_size', 'sidebar_collapsed', 'email_goal_alerts',
+            'privacy_overrides',
+            'created_at', 'updated_at'
         )
         read_only_fields = ('created_at', 'updated_at')
 

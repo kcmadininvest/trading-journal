@@ -53,7 +53,6 @@ const HomePage: React.FC = () => {
     
     const handleLanguageChanged = (lng: string) => {
       const langCode = lng.split('-')[0];
-      console.log('🏠 HomePage - Événement languageChanged:', langCode);
       if (['fr', 'en', 'es', 'de'].includes(langCode)) {
         setCurrentLanguage(langCode);
       }
@@ -66,7 +65,6 @@ const HomePage: React.FC = () => {
     
     // Si un paramètre lang est présent dans l'URL, l'utiliser en priorité
     if (urlLang && ['fr', 'en', 'es', 'de'].includes(urlLang)) {
-      console.log('🏠 HomePage - Langue détectée depuis URL param:', urlLang);
       targetLang = urlLang;
       // Changer la langue et sauvegarder (changeLanguage sauvegarde automatiquement)
       changeLanguage(urlLang);

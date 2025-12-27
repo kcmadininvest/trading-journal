@@ -116,6 +116,12 @@
   "consistencyTargetBestDayDate": "Best day",
   "additionalProfitNeeded": "Additional profit needed: {amount}",
   "sequencesPeriodTooltip": "Calculated over the last 12 rolling months",
-  "viewTransactions": "View transactions"
+  "viewTransactions": "View transactions",
+  "streamerMode": "Streamer Mode",
+  "streamerModeTooltip": "Privacy Controls",
+  "privacyControls": "Privacy Controls",
+  "hideAll": "Hide All",
+  "hidden": "Hidden",
+  "visible": "Visible"
 }
 

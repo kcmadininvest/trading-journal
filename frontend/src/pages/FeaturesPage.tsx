@@ -44,8 +44,6 @@ const FeaturesPage: React.FC = () => {
   // Lire la langue depuis l'URL ou localStorage
   const savedLang = getSavedLanguage();
   
-  console.log('📄 FeaturesPage - Langue détectée depuis URL/localStorage:', savedLang);
-  console.log('📄 FeaturesPage - URL actuelle:', window.location.pathname);
   
   const [isLangApplied, setIsLangApplied] = useState(() => {
     // Vérifier si la langue est déjà correcte
@@ -57,25 +55,19 @@ const FeaturesPage: React.FC = () => {
   
   // Appliquer la langue immédiatement au montage et écouter les changements
   useEffect(() => {
-    console.log('📄 FeaturesPage - useEffect - Langue i18n actuelle:', i18n.language);
-    console.log('📄 FeaturesPage - useEffect - Langue cible:', savedLang);
-    console.log('📄 FeaturesPage - useEffect - isLangApplied:', isLangApplied);
     
     const applyLang = async () => {
       const currentI18nLang = i18n.language?.split('-')[0] || 'fr';
       if (currentI18nLang !== savedLang) {
-        console.log('📄 FeaturesPage - Changement de langue:', currentI18nLang, '→', savedLang);
         // changeLanguage() sauvegarde automatiquement dans localStorage via LanguageDetector
         await changeLanguage(savedLang);
       } else {
-        console.log('📄 FeaturesPage - Langue déjà correcte:', savedLang);
       }
       setIsLangApplied(true);
     };
     
     // Écouter les changements de langue pour forcer un re-rendu
     const handleLanguageChanged = (lng: string) => {
-      console.log('📄 FeaturesPage - Événement languageChanged:', lng);
       setIsLangApplied(true);
     };
     
@@ -85,7 +77,6 @@ const FeaturesPage: React.FC = () => {
     if (!isLangApplied) {
       applyLang();
     } else {
-      console.log('📄 FeaturesPage - Langue déjà appliquée, pas de changement nécessaire');
     }
     
     return () => {

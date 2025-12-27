@@ -774,6 +774,7 @@ const SettingsPage: React.FC = () => {
                     ]}
                   />
                 </div>
+
                 <button
                   onClick={handlePreferencesUpdate}
                   disabled={loading}

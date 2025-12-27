@@ -220,11 +220,9 @@ function App() {
     const featuresPaths = ['/fonctionnalites', '/features', '/funcionalidades', '/funktionen'];
     
     if (aboutPaths.includes(pathname)) {
-      console.log('🧭 App - Affichage de AboutPage');
       return <AboutPage />;
     }
     if (featuresPaths.includes(pathname)) {
-      console.log('🧭 App - Affichage de FeaturesPage');
       return <FeaturesPage />;
     }
 
