@@ -202,7 +202,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       )}
 
       {/* Sidebar */}
-      <div className={`fixed lg:sticky lg:top-0 lg:h-screen lg:max-h-screen left-0 z-50 bg-gray-900 text-white border-r border-gray-700 dark:border-gray-600 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
+      <div className={`fixed lg:sticky lg:top-0 lg:h-screen lg:max-h-screen left-0 z-50 bg-blue-950 text-white border-r border-gray-700 dark:border-gray-600 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       } ${isCollapsed ? 'w-20' : 'w-64 sm:w-72'} flex flex-col h-screen`}>
       {/* Logo */}
@@ -249,7 +249,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       {/* Menu */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden mt-4 sm:mt-6 min-h-0 sidebar-scrollbar">
         {!isCollapsed && (
-          <div className="px-3 sm:px-4 sticky top-0 bg-gray-900 z-10 pt-2">
+          <div className="px-3 sm:px-4 sticky top-0 bg-blue-950 z-10 pt-2">
             <p className="text-[10px] sm:text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 sm:mb-3">
               {t('navigation:navigation')}
             </p>

@@ -83,14 +83,14 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 h-16 sm:h-20 flex items-center">
+    <header className="bg-blue-950 shadow-sm border-b border-gray-700 h-16 sm:h-20 flex items-center">
       <div className="flex items-center justify-between pl-20 sm:pl-6 pr-3 sm:pr-6 w-full h-full gap-2 sm:gap-4">
         {/* Page title */}
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100 truncate">
+          <h1 className="text-lg sm:text-2xl font-bold text-white truncate">
             {pageTitle}
           </h1>
-          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5 sm:mt-1 hidden sm:block">
+          <p className="text-xs sm:text-sm text-gray-300 mt-0.5 sm:mt-1 hidden sm:block">
             {pageDescription}
           </p>
         </div>
@@ -100,15 +100,15 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
           {/* User info - hidden on mobile, shown on sm and up */}
           <div className="text-right hidden md:block">
             <div className="flex items-center justify-end space-x-2">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[120px]">
+              <p className="text-sm font-medium text-white truncate max-w-[120px]">
                 {currentUser.first_name && currentUser.last_name 
                   ? `${currentUser.first_name} ${currentUser.last_name}` 
                   : currentUser.email}
               </p>
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
                 currentUser.is_admin 
-                  ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' 
-                  : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                  ? 'bg-red-500/20 text-red-300' 
+                  : 'bg-blue-500/20 text-blue-300'
               }`}>
                 {currentUser.is_admin ? t('navigation:admin') : t('navigation:user')}
               </span>
@@ -122,7 +122,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
               <Tooltip content={t('settings:language', { defaultValue: 'Language' })} position="left">
                 <button
                   onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-                  className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                  className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-300 hover:text-white hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-blue-950"
                   aria-label={t('settings:language', { defaultValue: 'Language' })}
                 >
                   <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -169,7 +169,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
                   setTheme(theme === 'dark' ? 'light' : 'dark');
                   e.currentTarget.blur();
                 }}
-                className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 focus-visible:ring-2"
+                className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-300 hover:text-white hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-blue-950 focus-visible:ring-2"
                 aria-label={theme === 'dark' ? t('settings:themeLight') : t('settings:themeDark')}
               >
                 {theme === 'dark' ? (
@@ -190,7 +190,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
             <Tooltip content={t('navigation:header.logout')} position="left">
               <button
                 onClick={handleLogout}
-                className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+                className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-gray-300 hover:text-white hover:bg-gray-700 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-blue-950"
               >
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
