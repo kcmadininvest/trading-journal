@@ -2,15 +2,18 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { StrategyComplianceStats } from '../../services/tradeStrategies';
+import { maskValue } from '../../hooks/usePrivacySettings';
 
 interface PerformanceComparisonProps {
   performanceComparison: StrategyComplianceStats['performance_comparison'];
   currencySymbol: string;
+  hideProfitLoss: boolean;
 }
 
 export const PerformanceComparison: React.FC<PerformanceComparisonProps> = ({
   performanceComparison,
   currencySymbol,
+  hideProfitLoss,
 }) => {
   const { t } = useTranslation();
 
@@ -65,7 +68,10 @@ export const PerformanceComparison: React.FC<PerformanceComparisonProps> = ({
                 {t('strategy:performance.totalPnl', { defaultValue: 'PnL Total' })}
               </span>
               <span className="font-semibold text-green-600 dark:text-green-400">
-                {formatCurrency(parseFloat(respected.total_pnl), currencySymbol)}
+                {hideProfitLoss 
+                  ? maskValue(parseFloat(respected.total_pnl), currencySymbol)
+                  : formatCurrency(parseFloat(respected.total_pnl), currencySymbol)
+                }
               </span>
             </div>
           </div>
@@ -107,7 +113,10 @@ export const PerformanceComparison: React.FC<PerformanceComparisonProps> = ({
                 {t('strategy:performance.totalPnl', { defaultValue: 'PnL Total' })}
               </span>
               <span className="font-semibold text-red-600 dark:text-red-400">
-                {formatCurrency(parseFloat(not_respected.total_pnl), currencySymbol)}
+                {hideProfitLoss 
+                  ? maskValue(parseFloat(not_respected.total_pnl), currencySymbol)
+                  : formatCurrency(parseFloat(not_respected.total_pnl), currencySymbol)
+                }
               </span>
             </div>
           </div>

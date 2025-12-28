@@ -1535,6 +1535,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             <PerformanceComparison
               performanceComparison={complianceStats.performance_comparison}
               currencySymbol={currencySymbol}
+              hideProfitLoss={privacySettings.hideProfitLoss}
             />
             <StrategyBadges badges={complianceStats.badges} />
           </div>
