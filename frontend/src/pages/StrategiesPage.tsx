@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
@@ -48,6 +48,34 @@ ChartJS.register(
   ArcElement,
   Filler,
   ChartDataLabels
+);
+
+// Composant Skeleton pour les graphiques en chargement
+const ChartSkeleton: React.FC<{ height?: string; title?: string }> = ({ 
+  height = 'h-64 sm:h-72 md:h-80', 
+  title 
+}) => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+    <div className="animate-pulse">
+      {/* Titre du graphique */}
+      {title && (
+        <div className="flex items-center gap-2 mb-3 sm:mb-4">
+          <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+          <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0"></div>
+        </div>
+      )}
+      {/* Zone du graphique */}
+      <div className={`${height} bg-gray-100 dark:bg-gray-700/50 rounded flex items-center justify-center`}>
+        <div className="space-y-3 w-full px-4">
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/6"></div>
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 );
 
 const StrategiesPage: React.FC = () => {
@@ -101,6 +129,24 @@ const StrategiesPage: React.FC = () => {
   const [loadingAllAccountsCompliance, setLoadingAllAccountsCompliance] = useState(false);
   const [loadingSelectedAccountCompliance, setLoadingSelectedAccountCompliance] = useState(false);
 
+  // Cache pour les données chargées (optimisation pour les changements de compte/période fréquents)
+  const dataCache = useRef<Map<string, {
+    statistics: any;
+    allAccountsCompliance: any;
+    selectedAccountCompliance: any;
+    timestamp: number;
+  }>>(new Map());
+
+  // Fonction pour générer une clé de cache unique
+  const getCacheKey = useCallback(() => {
+    const periodKey = selectedPeriod 
+      ? `${selectedPeriod.start}-${selectedPeriod.end}`
+      : selectedYear 
+        ? `${selectedYear}-${selectedMonth || 'all'}`
+        : 'all';
+    return `${accountId || 'all'}-${periodKey}`;
+  }, [accountId, selectedPeriod, selectedYear, selectedMonth]);
+
   // Générer les années disponibles (année en cours et 5 ans précédents)
 
   // Fonction pour obtenir le label d'une émotion traduit
@@ -108,9 +154,26 @@ const StrategiesPage: React.FC = () => {
     return t(`strategies:emotions.${emotion}` as any, { defaultValue: emotion });
   }, [t]);
 
-  const loadStatistics = useCallback(async () => {
+  // Fonction unifiée pour charger toutes les données en parallèle
+  const loadAllData = useCallback(async () => {
+    // Vérifier le cache d'abord
+    const cacheKey = getCacheKey();
+    const cached = dataCache.current.get(cacheKey);
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      // Utiliser les données en cache
+      setStatistics(cached.statistics);
+      setAllAccountsCompliance(cached.allAccountsCompliance);
+      setSelectedAccountCompliance(cached.selectedAccountCompliance);
+      return;
+    }
+    
     setIsLoading(true);
+    setLoadingAllAccountsCompliance(true);
+    setLoadingSelectedAccountCompliance(true);
     setError(null);
+    
     try {
       const params: {
         year?: number;
@@ -135,24 +198,61 @@ const StrategiesPage: React.FC = () => {
         params.tradingAccount = accountId;
       }
       
-      const data = await tradeStrategiesService.statistics(params);
-      setStatistics(data);
+      // Paralléliser tous les appels API
+      const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData] = 
+        await Promise.all([
+          // Appel 1: Statistics
+          tradeStrategiesService.statistics(params),
+          // Appel 2: Compliance tous comptes
+          tradeStrategiesService.strategyComplianceStats(undefined),
+          // Appel 3: Compliance compte sélectionné (si applicable)
+          accountId ? tradeStrategiesService.strategyComplianceStats(accountId) : Promise.resolve(null)
+        ]);
+      
+      // Stocker dans le cache
+      dataCache.current.set(cacheKey, {
+        statistics: statisticsData,
+        allAccountsCompliance: allAccountsComplianceData,
+        selectedAccountCompliance: selectedAccountComplianceData,
+        timestamp: Date.now(),
+      });
+      
+      // Limiter la taille du cache (garder seulement les 10 dernières entrées)
+      if (dataCache.current.size > 10) {
+        const firstKey = dataCache.current.keys().next().value;
+        dataCache.current.delete(firstKey);
+      }
+      
+      setStatistics(statisticsData);
+      setAllAccountsCompliance(allAccountsComplianceData);
+      setSelectedAccountCompliance(selectedAccountComplianceData);
     } catch (err: any) {
       setError(err.message || t('strategies:errorLoadingStatistics'));
-      console.error('Erreur:', err);
+      console.error('Erreur lors du chargement des données:', err);
     } finally {
       setIsLoading(false);
+      setLoadingAllAccountsCompliance(false);
+      setLoadingSelectedAccountCompliance(false);
     }
-  }, [selectedPeriod, selectedYear, selectedMonth, accountId, t]);
+  }, [getCacheKey, selectedPeriod, selectedYear, selectedMonth, accountId, t]);
 
-  // Charger les statistiques
+  // Charger toutes les données
   useEffect(() => {
-    // Attendre que le compte soit chargé avant de charger les statistiques
+    // Attendre que le compte soit chargé avant de charger les données
     if (accountLoading) {
       return;
     }
-    loadStatistics();
-  }, [loadStatistics, accountLoading]);
+    loadAllData();
+  }, [loadAllData, accountLoading]);
+
+  // État de chargement global : toutes les données sont chargées
+  const allDataLoaded = useMemo(() => {
+    return !isLoading && 
+           !loadingAllAccountsCompliance && 
+           !loadingSelectedAccountCompliance && 
+           statistics !== null && 
+           (allAccountsCompliance !== null || selectedAccountCompliance !== null);
+  }, [isLoading, loadingAllAccountsCompliance, loadingSelectedAccountCompliance, statistics, allAccountsCompliance, selectedAccountCompliance]);
 
   // Charger les devises
   useEffect(() => {
@@ -260,47 +360,6 @@ const StrategiesPage: React.FC = () => {
     loadFilteredTrades();
   }, [loadFilteredTrades]);
 
-  // Fonction pour charger les données de compliance pour tous les comptes
-  const loadAllAccountsCompliance = useCallback(async () => {
-    setLoadingAllAccountsCompliance(true);
-    try {
-      const data = await tradeStrategiesService.strategyComplianceStats(undefined);
-      setAllAccountsCompliance(data);
-    } catch (err) {
-      console.error('Erreur lors du chargement de la compliance tous comptes', err);
-      setAllAccountsCompliance(null);
-    } finally {
-      setLoadingAllAccountsCompliance(false);
-    }
-  }, []);
-
-  // Fonction pour charger les données de compliance pour le compte sélectionné
-  const loadSelectedAccountCompliance = useCallback(async () => {
-    if (!accountId || accountLoading) {
-      setSelectedAccountCompliance(null);
-      setLoadingSelectedAccountCompliance(false);
-      return;
-    }
-    setLoadingSelectedAccountCompliance(true);
-    try {
-      const data = await tradeStrategiesService.strategyComplianceStats(accountId);
-      setSelectedAccountCompliance(data);
-    } catch (err) {
-      console.error('Erreur lors du chargement de la compliance du compte', err);
-      setSelectedAccountCompliance(null);
-    } finally {
-      setLoadingSelectedAccountCompliance(false);
-    }
-  }, [accountId, accountLoading]);
-
-  // Charger les données de compliance
-  useEffect(() => {
-    if (accountLoading) {
-      return;
-    }
-    loadAllAccountsCompliance();
-    loadSelectedAccountCompliance();
-  }, [loadAllAccountsCompliance, loadSelectedAccountCompliance, accountLoading]);
 
   // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
   const indicators = useAccountIndicators({
@@ -312,6 +371,8 @@ const StrategiesPage: React.FC = () => {
   // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
   // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
   const respectChartData = useMemo(() => {
+    // Guard: éviter le calcul pendant le chargement
+    if (isLoading || !allDataLoaded) return null;
     if (!statistics?.statistics?.period_data || statistics.statistics.period_data.length === 0) return null;
     // Vérifier qu'il y a au moins une période avec des données (total > 0)
     const hasData = statistics.statistics.period_data.some((d: any) => d.total > 0);
@@ -360,7 +421,7 @@ const StrategiesPage: React.FC = () => {
     ],
       enrichedData, // Stocker les données enrichies pour les tooltips
   };
-  }, [statistics?.statistics?.period_data, t]);
+  }, [isLoading, allDataLoaded, statistics?.statistics?.period_data, t]);
 
   const respectChartOptions = useMemo(() => ({
     responsive: true,
@@ -514,6 +575,8 @@ const StrategiesPage: React.FC = () => {
 
   // Graphique 2: Taux de réussite selon respect de la stratégie
   const successRateData = useMemo(() => {
+    // Guard: éviter le calcul pendant le chargement
+    if (isLoading || !allDataLoaded) return null;
     if (!statistics?.statistics) return null;
     // Vérifier qu'il y a des statistiques significatives
     const hasData = statistics.statistics.total_strategies > 0;
@@ -540,7 +603,7 @@ const StrategiesPage: React.FC = () => {
       },
     ],
   };
-  }, [statistics?.statistics, t]);
+  }, [isLoading, allDataLoaded, statistics?.statistics, t]);
 
   const successRateOptions = useMemo(() => ({
     responsive: true,
@@ -647,6 +710,8 @@ const StrategiesPage: React.FC = () => {
 
   // Graphique 3: Répartition des sessions gagnantes selon TP1 et TP2+
   const winningSessionsData = useMemo(() => {
+    // Guard: éviter le calcul pendant le chargement
+    if (isLoading || !allDataLoaded) return null;
     if (!statistics?.statistics?.winning_sessions_distribution) return null;
     // Vérifier qu'il y a au moins une session gagnante
     const dist = statistics.statistics.winning_sessions_distribution;
@@ -678,7 +743,7 @@ const StrategiesPage: React.FC = () => {
       },
     ],
   };
-  }, [statistics?.statistics?.winning_sessions_distribution, t]);
+  }, [isLoading, allDataLoaded, statistics?.statistics?.winning_sessions_distribution, t]);
 
   // Calculer la valeur maximale pour l'axe Y avec marge
   const winningSessionsMax = useMemo(() => statistics?.statistics?.winning_sessions_distribution ? (() => {
@@ -833,10 +898,13 @@ const StrategiesPage: React.FC = () => {
     return { backgroundColor: colors, borderColor: borders };
   };
 
-  const emotionsData = useMemo(() => statistics?.statistics?.emotions_distribution ? (() => {
-    // Trier les émotions par fréquence (décroissant)
-    const sortedEmotions = [...statistics.statistics.emotions_distribution]
-      .sort((a: any, b: any) => b.count - a.count);
+  const emotionsData = useMemo(() => {
+    // Guard: éviter le calcul pendant le chargement
+    if (isLoading || !allDataLoaded) return null;
+    return statistics?.statistics?.emotions_distribution ? (() => {
+      // Trier les émotions par fréquence (décroissant)
+      const sortedEmotions = [...statistics.statistics.emotions_distribution]
+        .sort((a: any, b: any) => b.count - a.count);
     
     // Prendre les 5 premières émotions
     const top5Emotions = sortedEmotions.slice(0, 5);
@@ -881,7 +949,8 @@ const StrategiesPage: React.FC = () => {
       } : null, // Émotion la plus fréquente
       colors: colors, // Stocker les couleurs pour la légende
     };
-  })() : null, [statistics?.statistics?.emotions_distribution, getEmotionLabel, t]);
+    })() : null;
+  }, [isLoading, allDataLoaded, statistics?.statistics?.emotions_distribution, getEmotionLabel, t]);
 
   const emotionsOptions = useMemo(() => ({
     responsive: true,
@@ -981,6 +1050,8 @@ const StrategiesPage: React.FC = () => {
 
   // Graphique 5: Évolution du taux de compliance (prend en compte le sélecteur de compte)
   const evolutionData = useMemo(() => {
+    // Guard: éviter le calcul pendant le chargement
+    if (isLoading || !allDataLoaded) return null;
     // Utiliser les données du compte sélectionné si disponible, sinon tous les comptes
     const complianceData = selectedAccountCompliance || allAccountsCompliance;
     if (!complianceData?.daily_compliance || complianceData.daily_compliance.length === 0) return null;
@@ -1211,7 +1282,7 @@ const StrategiesPage: React.FC = () => {
       averageRate,
       cumulativeAverageData,
     };
-  }, [selectedAccountCompliance, allAccountsCompliance, t]);
+  }, [isLoading, allDataLoaded, selectedAccountCompliance, allAccountsCompliance, t]);
 
   const evolutionOptions = useMemo(() => ({
     responsive: true,
@@ -1384,6 +1455,8 @@ const StrategiesPage: React.FC = () => {
 
   // Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
   const weekdayComplianceData = useMemo(() => {
+    // Guard: éviter le calcul pendant le chargement
+    if (isLoading || !allDataLoaded) return null;
     // Utiliser les données du compte sélectionné si disponible, sinon tous les comptes
     const complianceData = selectedAccountCompliance || allAccountsCompliance;
     if (!complianceData?.daily_compliance || complianceData.daily_compliance.length === 0) return null;
@@ -1470,7 +1543,7 @@ const StrategiesPage: React.FC = () => {
       ],
       rawData: chartData,
     };
-  }, [selectedAccountCompliance, allAccountsCompliance, t]);
+  }, [isLoading, allDataLoaded, selectedAccountCompliance, allAccountsCompliance, t]);
 
   const weekdayComplianceOptions = useMemo(() => ({
     responsive: true,
@@ -1734,12 +1807,12 @@ const StrategiesPage: React.FC = () => {
         )}
 
         {/* Graphiques */}
-        {isLoading ? (
-          <div className="flex items-center justify-center h-48 sm:h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-3 sm:mb-4"></div>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">{t('strategies:loading')}</p>
-            </div>
+        {!allDataLoaded ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <ChartSkeleton title={t('strategies:strategyRespectPercentage')} />
+            <ChartSkeleton title={t('strategies:successRateByStrategyRespect')} />
+            <ChartSkeleton title={t('strategies:winningSessionsDistribution')} />
+            <ChartSkeleton title={t('strategies:dominantEmotionsDistribution')} />
           </div>
         ) : statistics ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -1877,81 +1950,82 @@ const StrategiesPage: React.FC = () => {
 
         {/* Graphiques de compliance et évolution */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
-          {/* Graphique: Compliance par jour de la semaine */}
-          {weekdayComplianceData ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
-                  {t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })}
-                </h3>
-                <Tooltip
-                  content={t('strategies:complianceByWeekdayTooltip', { defaultValue: 'Taux de respect moyen pour chaque jour de la semaine. Les jours en bleu sont ceux où vous respectez le mieux votre stratégie, les jours en rose sont ceux à améliorer.' })}
-                  position="top"
-                >
-                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
-                    <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </Tooltip>
-              </div>
-              <div className="h-64 sm:h-80 md:h-96">
-                <Bar data={weekdayComplianceData} options={weekdayComplianceOptions} />
-              </div>
-            </div>
-          ) : null}
-
-          {/* Graphique: Évolution du taux de respect */}
-          {(loadingAllAccountsCompliance || loadingSelectedAccountCompliance) ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
-                  {t('strategies:compliance.evolution')}
-                </h3>
-              </div>
-              <div className="h-64 sm:h-80 md:h-96 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-2"></div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{t('strategies:loading')}</p>
-                </div>
-              </div>
-            </div>
-          ) : evolutionData ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
-                  {t('strategies:compliance.evolution')}
-                </h3>
-                <Tooltip
-                  content={selectedAccount 
-                    ? t('strategies:complianceEvolutionSelectedAccountTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour le compte sélectionné' })
-                    : t('strategies:complianceEvolutionAllAccountsTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour tous vos comptes actifs' })}
-                  position="top"
-                >
-                  <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
-                    <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </Tooltip>
-              </div>
-              <div className="h-64 sm:h-80 md:h-96">
-                <Line data={evolutionData} options={evolutionOptions} />
-              </div>
-            </div>
+          {!allDataLoaded ? (
+            <>
+              <ChartSkeleton 
+                height="h-64 sm:h-80 md:h-96" 
+                title={t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })} 
+              />
+              <ChartSkeleton 
+                height="h-64 sm:h-80 md:h-96" 
+                title={t('strategies:compliance.evolution')} 
+              />
+            </>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-              <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
-                  {t('strategies:compliance.evolution')}
-                </h3>
-              </div>
-              <div className="h-64 sm:h-80 md:h-96 flex items-center justify-center">
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                  {t('strategies:noDataForAccount', { defaultValue: 'Aucune donnée disponible' })}
-                </p>
-              </div>
-            </div>
+            <>
+              {/* Graphique: Compliance par jour de la semaine */}
+              {weekdayComplianceData ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
+                      {t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })}
+                    </h3>
+                    <Tooltip
+                      content={t('strategies:complianceByWeekdayTooltip', { defaultValue: 'Taux de respect moyen pour chaque jour de la semaine. Les jours en bleu sont ceux où vous respectez le mieux votre stratégie, les jours en rose sont ceux à améliorer.' })}
+                      position="top"
+                    >
+                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
+                        <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </Tooltip>
+                  </div>
+                  <div className="h-64 sm:h-80 md:h-96">
+                    <Bar data={weekdayComplianceData} options={weekdayComplianceOptions} />
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Graphique: Évolution du taux de respect */}
+              {evolutionData ? (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
+                      {t('strategies:compliance.evolution')}
+                    </h3>
+                    <Tooltip
+                      content={selectedAccount 
+                        ? t('strategies:complianceEvolutionSelectedAccountTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour le compte sélectionné' })
+                        : t('strategies:complianceEvolutionAllAccountsTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour tous vos comptes actifs' })}
+                      position="top"
+                    >
+                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
+                        <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </Tooltip>
+                  </div>
+                  <div className="h-64 sm:h-80 md:h-96">
+                    <Line data={evolutionData} options={evolutionOptions} />
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
+                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
+                      {t('strategies:compliance.evolution')}
+                    </h3>
+                  </div>
+                  <div className="h-64 sm:h-80 md:h-96 flex items-center justify-center">
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                      {t('strategies:noDataForAccount', { defaultValue: 'Aucune donnée disponible' })}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -1959,14 +2033,11 @@ const StrategiesPage: React.FC = () => {
       <ImportTradesModal open={showImport} onClose={(done) => {
         setShowImport(false);
         if (done) {
-          // Recharger les statistiques après un import réussi
-          loadStatistics();
+          // Recharger toutes les données après un import réussi
+          loadAllData();
           // Recharger aussi les trades pour mettre à jour les soldes et les graphiques
           loadAllTrades();
           loadFilteredTrades();
-          // Recharger les données de compliance pour mettre à jour les graphiques d'évolution
-          loadAllAccountsCompliance();
-          loadSelectedAccountCompliance();
         }
       }} />
     </div>
