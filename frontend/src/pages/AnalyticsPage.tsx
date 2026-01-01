@@ -791,6 +791,20 @@ const AnalyticsPage: React.FC = () => {
       const min = Math.min(...values);
       const max = Math.max(...values);
       const range = max - min;
+      
+      // Cas spécial : si toutes les valeurs sont identiques (range = 0)
+      if (range === 0) {
+        return [{
+          range: `${formatNumber(min, 0)}`,
+          rangeLabel: `${formatNumber(min, 0)}`,
+          count: values.length,
+          midpoint: min,
+          start: min,
+          end: min,
+          binWidth: 0,
+        }];
+      }
+      
       const bins = Math.min(10, Math.max(5, Math.ceil(Math.sqrt(values.length))));
       const binWidth = range / bins;
 
