@@ -55,6 +55,8 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
   const [dropdownWidth, setDropdownWidth] = useState<number | undefined>(undefined);
   const [minWidth, setMinWidth] = useState<number | undefined>(undefined);
   const [buttonMinWidth, setButtonMinWidth] = useState<number | undefined>(undefined);
+  const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
+  const [maxDropdownHeight, setMaxDropdownHeight] = useState<number | undefined>(undefined);
   const isMountedRef = useRef(false);
 
   useEffect(() => {
@@ -199,12 +201,46 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
   }, [options]);
 
   // Calculer la largeur minimale (bouton) et la largeur nécessaire pour le contenu
+  // + position et hauteur adaptative
   useEffect(() => {
     if (open && buttonRef.current) {
-      const updateWidth = () => {
+      const updateDimensions = () => {
         if (buttonRef.current) {
           const buttonWidth = buttonRef.current.offsetWidth;
+          const buttonRect = buttonRef.current.getBoundingClientRect();
           setMinWidth(buttonWidth);
+          
+          // Calculer l'espace disponible au-dessus et en dessous du bouton
+          const spaceBelow = window.innerHeight - buttonRect.bottom;
+          const spaceAbove = buttonRect.top;
+          const marginSafety = 16; // Marge de sécurité
+          const minDropdownHeight = 200; // Hauteur minimale du dropdown
+          
+          // Déterminer la position optimale
+          let position: 'bottom' | 'top' = 'bottom';
+          let maxHeight: number;
+          
+          if (spaceBelow >= minDropdownHeight + marginSafety) {
+            // Assez d'espace en dessous
+            position = 'bottom';
+            maxHeight = spaceBelow - marginSafety;
+          } else if (spaceAbove >= minDropdownHeight + marginSafety) {
+            // Pas assez d'espace en dessous, mais assez au-dessus
+            position = 'top';
+            maxHeight = spaceAbove - marginSafety;
+          } else {
+            // Utiliser l'espace le plus grand
+            if (spaceBelow > spaceAbove) {
+              position = 'bottom';
+              maxHeight = spaceBelow - marginSafety;
+            } else {
+              position = 'top';
+              maxHeight = spaceAbove - marginSafety;
+            }
+          }
+          
+          setDropdownPosition(position);
+          setMaxDropdownHeight(maxHeight);
           
           // Calculer la largeur nécessaire pour le contenu le plus long
           const tempElement = document.createElement('span');
@@ -239,20 +275,24 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
       
       // Attendre que le DOM soit prêt et que le bouton soit rendu
       const timer = setTimeout(() => {
-        updateWidth();
+        updateDimensions();
       }, 10);
       
-      // Mettre à jour la largeur lors du resize
-      window.addEventListener('resize', updateWidth);
+      // Mettre à jour les dimensions lors du resize ou scroll
+      window.addEventListener('resize', updateDimensions);
+      window.addEventListener('scroll', updateDimensions, true);
       
       return () => {
         clearTimeout(timer);
-        window.removeEventListener('resize', updateWidth);
+        window.removeEventListener('resize', updateDimensions);
+        window.removeEventListener('scroll', updateDimensions, true);
       };
     } else {
-      // Réinitialiser les largeurs quand le dropdown est fermé
+      // Réinitialiser les dimensions quand le dropdown est fermé
       setDropdownWidth(undefined);
       setMinWidth(undefined);
+      setDropdownPosition('bottom');
+      setMaxDropdownHeight(undefined);
     }
   }, [open, options]);
 
@@ -312,10 +352,15 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
         </button>
         {open && (
           <div 
-            className="absolute z-50 mt-1 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg max-h-72 overflow-auto"
+            className="absolute z-50 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-auto"
             style={{ 
               width: dropdownWidth ? `${dropdownWidth}px` : '100%',
-              minWidth: buttonMinWidth ? `${buttonMinWidth}px` : (minWidth ? `${minWidth}px` : undefined)
+              minWidth: buttonMinWidth ? `${buttonMinWidth}px` : (minWidth ? `${minWidth}px` : undefined),
+              maxHeight: maxDropdownHeight ? `${maxDropdownHeight}px` : '288px',
+              ...(dropdownPosition === 'bottom' 
+                ? { top: '100%', marginTop: '4px' }
+                : { bottom: '100%', marginBottom: '4px' }
+              )
             }}
           >
             <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">

@@ -1359,8 +1359,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         return strategy?.strategy_respected === true;
       });
 
-      // Vérifier si tous les trades du jour ne respectent pas la stratégie
-      const allNotRespected = tradesWithStrategy.every(trade => {
+      // Vérifier s'il y a au moins un trade qui ne respecte pas la stratégie
+      const hasNotRespected = tradesWithStrategy.some(trade => {
         const strategy = strategiesForSequences.get(trade.id);
         return strategy?.strategy_respected === false;
       });
@@ -1371,13 +1371,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         currentConsecutiveDaysRespected++;
         currentConsecutiveDaysNotRespected = 0;
         maxConsecutiveDaysRespected = Math.max(maxConsecutiveDaysRespected, currentConsecutiveDaysRespected);
-      } else if (allNotRespected && tradesWithStrategy.length === dayTrades.length) {
-        // Tous les trades du jour ont une stratégie et aucun ne respecte
+      } else if (hasNotRespected && tradesWithStrategy.length === dayTrades.length) {
+        // Au moins un trade ne respecte pas la stratégie (inclut partiel et 100% non respecté)
+        // Un jour avec respect partiel = jour de non-respect
         currentConsecutiveDaysNotRespected++;
         currentConsecutiveDaysRespected = 0;
         maxConsecutiveDaysNotRespected = Math.max(maxConsecutiveDaysNotRespected, currentConsecutiveDaysNotRespected);
       } else {
-        // Mix de respect/non-respect ou certains trades sans stratégie
+        // Certains trades sans stratégie renseignée
         currentConsecutiveDaysRespected = 0;
         currentConsecutiveDaysNotRespected = 0;
       }

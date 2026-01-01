@@ -7,6 +7,9 @@ import TradingAccountModal from '../components/accounts/TradingAccountModal';
 import { AccountsFilters } from '../components/accounts/AccountsFilters';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
+type SortField = 'id' | 'name' | 'account_type' | 'broker_account_id' | 'status' | 'created_at' | 'initial_capital' | 'maximum_loss_limit' | 'trades_count';
+type SortDirection = 'asc' | 'desc';
+
 const TradingAccountsPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const [allAccounts, setAllAccounts] = useState<TradingAccount[]>([]);
@@ -14,13 +17,27 @@ const TradingAccountsPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [sortField, setSortField] = useState<SortField>('id');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [filters, setFilters] = useState({
     account_type: '' as '' | 'topstep' | 'ibkr' | 'ninjatrader' | 'tradovate' | 'other',
     status: '' as '' | 'active' | 'inactive',
     search: '',
   });
 
-  // Filtrer les comptes
+  // Fonction de tri
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Inverser la direction si on clique sur la même colonne
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Nouvelle colonne, tri ascendant par défaut (sauf pour ID qui est desc par défaut)
+      setSortField(field);
+      setSortDirection(field === 'id' ? 'desc' : 'asc');
+    }
+  };
+
+  // Filtrer et trier les comptes
   const filteredAccounts = useMemo(() => {
     let filtered = [...allAccounts];
     
@@ -43,8 +60,59 @@ const TradingAccountsPage: React.FC = () => {
       );
     }
     
+    // Tri selon le champ sélectionné
+    filtered.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'id':
+          aValue = a.id;
+          bValue = b.id;
+          break;
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'account_type':
+          aValue = a.account_type;
+          bValue = b.account_type;
+          break;
+        case 'broker_account_id':
+          aValue = a.broker_account_id?.toLowerCase() || '';
+          bValue = b.broker_account_id?.toLowerCase() || '';
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'created_at':
+          aValue = a.created_at ? new Date(a.created_at).getTime() : 0;
+          bValue = b.created_at ? new Date(b.created_at).getTime() : 0;
+          break;
+        case 'initial_capital':
+          aValue = parseFloat(String(a.initial_capital || 0));
+          bValue = parseFloat(String(b.initial_capital || 0));
+          break;
+        case 'maximum_loss_limit':
+          aValue = parseFloat(String(a.maximum_loss_limit || 0));
+          bValue = parseFloat(String(b.maximum_loss_limit || 0));
+          break;
+        case 'trades_count':
+          aValue = a.trades_count || 0;
+          bValue = b.trades_count || 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
     return filtered;
-  }, [allAccounts, filters]);
+  }, [allAccounts, filters, sortField, sortDirection]);
 
   // Pagination des comptes filtrés
   const paginatedAccounts = useMemo(() => {
@@ -59,6 +127,23 @@ const TradingAccountsPage: React.FC = () => {
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Composant pour les en-têtes de colonnes triables
+  const SortableHeader: React.FC<{ field: SortField; label: string; className?: string }> = ({ field, label, className = '' }) => (
+    <th 
+      className={`px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors select-none ${className}`}
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        <span>{label}</span>
+        {sortField === field && (
+          <svg className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${sortDirection === 'desc' ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
+        )}
+      </div>
+    </th>
+  );
 
   // Helper pour obtenir le symbole de devise d'un compte
   const getCurrencySymbol = (currencyCode: string): string => {
@@ -375,14 +460,15 @@ const TradingAccountsPage: React.FC = () => {
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700/50">
                     <tr>
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.account')}</th>
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.type')}</th>
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.brokerId', { defaultValue: 'ID Broker' })}</th>
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.status')}</th>
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.initialCapital')}</th>
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })}</th>
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.trades')}</th>
+                      <SortableHeader field="id" label="ID" />
+                      <SortableHeader field="name" label={t('accounts:columns.account')} />
+                      <SortableHeader field="account_type" label={t('accounts:columns.type')} />
+                      <SortableHeader field="broker_account_id" label={t('accounts:columns.brokerId', { defaultValue: 'ID Broker' })} />
+                      <SortableHeader field="status" label={t('accounts:columns.status')} />
+                      <SortableHeader field="created_at" label={t('accounts:columns.createdAt', { defaultValue: 'Date de création' })} />
+                      <SortableHeader field="initial_capital" label={t('accounts:columns.initialCapital')} />
+                      <SortableHeader field="maximum_loss_limit" label={t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })} />
+                      <SortableHeader field="trades_count" label={t('accounts:columns.trades')} />
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
                     </tr>
                   </thead>
@@ -396,6 +482,7 @@ const TradingAccountsPage: React.FC = () => {
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 text-right"><div className="h-8 bg-gray-100 dark:bg-gray-700 rounded w-40 ml-auto animate-pulse" /></td>
@@ -403,7 +490,7 @@ const TradingAccountsPage: React.FC = () => {
                       ))
                     ) : filteredAccounts.length === 0 ? (
                       <tr>
-                        <td colSpan={9} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
+                        <td colSpan={10} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
                           <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                             {allAccounts.length === 0 
                               ? t('accounts:noAccounts')
@@ -448,6 +535,13 @@ const TradingAccountsPage: React.FC = () => {
                                 ? t('accounts:status.inactive') 
                                 : acc.status}
                             </span>
+                          </td>
+                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                            {acc.created_at ? new Date(acc.created_at).toLocaleDateString('fr-FR', { 
+                              year: 'numeric', 
+                              month: '2-digit', 
+                              day: '2-digit' 
+                            }) : '-'}
                           </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {formatInitialCapital(acc)}
