@@ -374,12 +374,16 @@ const StrategiesPage: React.FC = () => {
     // Guard: éviter le calcul pendant le chargement
     if (isLoading || !allDataLoaded) return null;
     if (!statistics?.statistics?.period_data || statistics.statistics.period_data.length === 0) return null;
-    // Vérifier qu'il y a au moins une période avec des données (total > 0)
-    const hasData = statistics.statistics.period_data.some((d: any) => d.total > 0);
-    if (!hasData) return null;
+    
+    // Filtrer les périodes avec des données (total_with_strategy > 0 ou total > 0)
+    const periodsWithData = statistics.statistics.period_data.filter((d: any) => 
+      (d.total_with_strategy && d.total_with_strategy > 0) || (d.total && d.total > 0)
+    );
+    
+    if (periodsWithData.length === 0) return null;
     
     // Enrichir les données avec les informations nécessaires pour les tooltips
-    const enrichedData = statistics.statistics.period_data.map((d: any) => {
+    const enrichedData = periodsWithData.map((d: any) => {
       const totalTrades = d.total || 0;
       const totalWithStrategy = d.total_with_strategy || totalTrades; // Utiliser la valeur du backend si disponible
       const respectPercentage = d.respect_percentage || 0;
@@ -986,10 +990,13 @@ const StrategiesPage: React.FC = () => {
       },
       legend: {
         display: true,
-        position: 'right' as const,
+        position: 'bottom' as const,
+        align: 'center' as const,
         labels: {
           usePointStyle: true,
-          padding: 12,
+          padding: window.innerWidth < 640 ? 10 : 14,
+          boxWidth: window.innerWidth < 640 ? 12 : 14,
+          boxHeight: window.innerWidth < 640 ? 12 : 14,
           font: {
             family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
             size: window.innerWidth < 640 ? 11 : 13,
@@ -1239,7 +1246,7 @@ const StrategiesPage: React.FC = () => {
       ? (totalRespected / totalStrategies) * 100
       : aggregatedArray.reduce((sum, d) => sum + (d.compliance_rate || 0), 0) / aggregatedArray.length;
 
-    return {
+    const result = {
       labels: aggregatedArray.map(d => formatLabel(d.date)),
       datasets: [
         {
@@ -1282,6 +1289,7 @@ const StrategiesPage: React.FC = () => {
       averageRate,
       cumulativeAverageData,
     };
+    return result;
   }, [isLoading, allDataLoaded, selectedAccountCompliance, allAccountsCompliance, t]);
 
   const evolutionOptions = useMemo(() => ({
@@ -1898,9 +1906,10 @@ const StrategiesPage: React.FC = () => {
                     </div>
                   </Tooltip>
                 </div>
-                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-center lg:items-start">
-                  {/* Statistiques à gauche */}
-                  <div className="flex-shrink-0 w-full lg:w-64 space-y-4">
+                {/* Layout responsive : statistiques au-dessus sur mobile/tablette, à gauche sur desktop */}
+                <div className="space-y-4">
+                  {/* Statistiques en grille responsive */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4">
                       <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
                         {t('strategies:numberOfOccurrences', { defaultValue: 'Nombre d\'occurrences' })}
@@ -1918,7 +1927,7 @@ const StrategiesPage: React.FC = () => {
                       </div>
                     </div>
                     {(emotionsData as any)?.topEmotion && (
-                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4">
+                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4 sm:col-span-1">
                         <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
                           {t('strategies:mostFrequentEmotion', { defaultValue: 'Émotion la plus fréquente' })}
                         </div>
@@ -1932,10 +1941,12 @@ const StrategiesPage: React.FC = () => {
                     )}
                   </div>
                   
-                  {/* Graphique Doughnut au centre avec légende à droite intégrée */}
-                  <div className="flex-1 min-w-0 h-64 sm:h-72 md:h-80 flex items-center justify-center">
-                    <div className="w-full h-full scale-110 -mt-2">
-                      <Doughnut data={emotionsData} options={emotionsOptions} />
+                  {/* Graphique Doughnut avec légende responsive */}
+                  <div className="w-full">
+                    <div className="h-64 sm:h-80 md:h-96 flex items-center justify-center">
+                      <div className="w-full h-full max-w-2xl mx-auto">
+                        <Doughnut data={emotionsData} options={emotionsOptions} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1982,7 +1993,7 @@ const StrategiesPage: React.FC = () => {
                     </Tooltip>
                   </div>
                   <div className="h-64 sm:h-80 md:h-96">
-                    <Bar data={weekdayComplianceData} options={weekdayComplianceOptions} />
+                    <Bar data={weekdayComplianceData!} options={weekdayComplianceOptions} />
                   </div>
                 </div>
               ) : null}
@@ -2008,7 +2019,7 @@ const StrategiesPage: React.FC = () => {
                     </Tooltip>
                   </div>
                   <div className="h-64 sm:h-80 md:h-96">
-                    <Line data={evolutionData} options={evolutionOptions} />
+                    <Line data={evolutionData!} options={evolutionOptions} />
                   </div>
                 </div>
               ) : (

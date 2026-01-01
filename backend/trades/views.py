@@ -2954,61 +2954,68 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 })
                 current_date += timedelta(days=1)
         else:
-            # Par mois de l'année
-            target_year = year if year else now.year
-            for m in range(1, 13):
-                month_start = timezone.datetime(target_year, m, 1)
-                if m == 12:
-                    month_end = timezone.datetime(target_year + 1, 1, 1)
+            # Par mois de l'année - itérer sur les mois de la période sélectionnée
+            current_month_start = timezone.datetime(start_date.year, start_date.month, 1)
+            
+            while current_month_start < end_date:
+                # Calculer la fin du mois
+                if current_month_start.month == 12:
+                    month_end = timezone.datetime(current_month_start.year + 1, 1, 1)
                 else:
-                    month_end = timezone.datetime(target_year, m + 1, 1)
+                    month_end = timezone.datetime(current_month_start.year, current_month_start.month + 1, 1)
                 
-                # Vérifier que le mois est dans la période
-                if month_start < end_date and month_end > start_date:
-                    # Compter tous les trades du mois (pas seulement ceux avec stratégie)
-                    month_trades_queryset = period_trades_queryset.filter(
-                        trade_day__gte=month_start.strftime('%Y-%m-%d'),
-                        trade_day__lt=month_end.strftime('%Y-%m-%d')
-                    )
-                    if trading_account_id:
-                        month_trades_queryset = month_trades_queryset.filter(trading_account_id=trading_account_id)
-                    month_total_trades = month_trades_queryset.count()  # Tous les trades
-                    
-                    # Compter les trades respectés (ceux avec stratégie respectée)
-                    month_strategies = queryset.filter(
-                        trade__trade_day__gte=month_start.strftime('%Y-%m-%d'),
-                        trade__trade_day__lt=month_end.strftime('%Y-%m-%d')
-                    )
-                    month_with_respect = month_strategies.exclude(strategy_respected__isnull=True)
-                    month_respected = month_with_respect.filter(strategy_respected=True).count()
-                    month_not_respected = month_with_respect.filter(strategy_respected=False).count()
-                    
-                    # Ajouter les compliances pour les jours sans trades du mois (exclure les jours avec trades)
-                    month_day_compliances = period_day_compliances_queryset.filter(
-                        date__gte=month_start.date(),
-                        date__lt=month_end.date()
-                    )
-                    if trading_account_id:
-                        month_day_compliances = month_day_compliances.filter(trading_account_id=trading_account_id)
-                    
-                    # Exclure les compliances pour les jours qui ont des trades dans ce mois
-                    month_trades_dates = set(month_trades_queryset.values_list('trade_day', flat=True))
-                    month_trades_dates = {d for d in month_trades_dates if d is not None}  # Filtrer les None
-                    if month_trades_dates:
-                        # trade_day est déjà un objet date, pas besoin de conversion
-                        # Construire le Q object directement avec toutes les dates
-                        month_date_filters = Q(date__in=list(month_trades_dates))
-                        month_day_compliances = month_day_compliances.exclude(month_date_filters)
-                    
-                    month_day_respected = month_day_compliances.filter(strategy_respected=True).count()
-                    month_day_not_respected = month_day_compliances.filter(strategy_respected=False).count()
-                    month_respected += month_day_respected
-                    month_not_respected += month_day_not_respected
-                    
-                    # Pourcentages par rapport au total (trades + compliances, sans double comptage)
-                    month_total_with_strategy = month_total_trades + month_day_compliances.count()
-                    month_respect_percentage = (month_respected / month_total_with_strategy * 100) if month_total_with_strategy > 0 else 0
-                    month_not_respect_percentage = (month_not_respected / month_total_with_strategy * 100) if month_total_with_strategy > 0 else 0
+                month_start = current_month_start
+                
+                # S'assurer que month_end ne dépasse pas end_date
+                if month_end > end_date:
+                    month_end = end_date
+                
+                # Compter tous les trades du mois (pas seulement ceux avec stratégie)
+                month_trades_queryset = period_trades_queryset.filter(
+                    trade_day__gte=month_start.strftime('%Y-%m-%d'),
+                    trade_day__lt=month_end.strftime('%Y-%m-%d')
+                )
+                if trading_account_id:
+                    month_trades_queryset = month_trades_queryset.filter(trading_account_id=trading_account_id)
+                month_total_trades = month_trades_queryset.count()  # Tous les trades
+                
+                # Compter les trades respectés (ceux avec stratégie respectée)
+                month_strategies = queryset.filter(
+                    trade__trade_day__gte=month_start.strftime('%Y-%m-%d'),
+                    trade__trade_day__lt=month_end.strftime('%Y-%m-%d')
+                )
+                month_with_respect = month_strategies.exclude(strategy_respected__isnull=True)
+                month_respected = month_with_respect.filter(strategy_respected=True).count()
+                month_not_respected = month_with_respect.filter(strategy_respected=False).count()
+                
+                # Ajouter les compliances pour les jours sans trades du mois (exclure les jours avec trades)
+                month_day_compliances = period_day_compliances_queryset.filter(
+                    date__gte=month_start.date(),
+                    date__lt=month_end.date()
+                )
+                if trading_account_id:
+                    month_day_compliances = month_day_compliances.filter(trading_account_id=trading_account_id)
+                
+                # Exclure les compliances pour les jours qui ont des trades dans ce mois
+                month_trades_dates = set(month_trades_queryset.values_list('trade_day', flat=True))
+                month_trades_dates = {d for d in month_trades_dates if d is not None}  # Filtrer les None
+                if month_trades_dates:
+                    # trade_day est déjà un objet date, pas besoin de conversion
+                    # Construire le Q object directement avec toutes les dates
+                    month_date_filters = Q(date__in=list(month_trades_dates))
+                    month_day_compliances = month_day_compliances.exclude(month_date_filters)
+                
+                month_day_respected = month_day_compliances.filter(strategy_respected=True).count()
+                month_day_not_respected = month_day_compliances.filter(strategy_respected=False).count()
+                month_respected += month_day_respected
+                month_not_respected += month_day_not_respected
+                
+                # Pourcentages par rapport au total (trades + compliances, sans double comptage)
+                month_total_with_strategy = month_total_trades + month_day_compliances.count()
+                month_respect_percentage = (month_respected / month_total_with_strategy * 100) if month_total_with_strategy > 0 else 0
+                month_not_respect_percentage = (month_not_respected / month_total_with_strategy * 100) if month_total_with_strategy > 0 else 0
+                # N'ajouter que les mois avec des données
+                if month_total_with_strategy > 0:
                     period_data.append({
                         'period': month_start.strftime('%B %Y'),
                         'date': month_start.strftime('%Y-%m'),
@@ -3019,6 +3026,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                         'respected_count': month_respected,
                         'not_respected_count': month_not_respected
                     })
+                
+                # Passer au mois suivant
+                if current_month_start.month == 12:
+                    current_month_start = timezone.datetime(current_month_start.year + 1, 1, 1)
+                else:
+                    current_month_start = timezone.datetime(current_month_start.year, current_month_start.month + 1, 1)
         
         return Response({
             'period': {
@@ -3444,7 +3457,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                     'total': data['total'],
                     'respected': data['respected'],
                     'not_respected': data['not_respected'],
-                    'compliance_rate': round((data['respected'] / data['total'] * 100) if data['total'] > 0 else 0, 2)
+                    'compliance_rate': round((data['respected'] / data['with_strategy'] * 100) if data['with_strategy'] > 0 else 0, 2)
                 }
                 for date_str, data in sorted(daily_compliance.items())
             ]
