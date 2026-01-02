@@ -246,7 +246,9 @@ const StrategiesPage: React.FC = () => {
       // Limiter la taille du cache (garder seulement les 10 dernières entrées)
       if (dataCache.current.size > 10) {
         const firstKey = dataCache.current.keys().next().value;
-        dataCache.current.delete(firstKey);
+        if (firstKey !== undefined) {
+          dataCache.current.delete(firstKey);
+        }
       }
       
       setStatistics(statisticsData);
@@ -987,10 +989,10 @@ const StrategiesPage: React.FC = () => {
     maintainAspectRatio: false,
     layout: {
       padding: {
-        top: 20,
-        bottom: 40, // Plus d'espace en bas pour la légende
-        left: 20,
-        right: 20,
+        top: 10,
+        bottom: 10,
+        left: 10,
+        right: 10,
       },
     },
     plugins: {
@@ -1000,7 +1002,7 @@ const StrategiesPage: React.FC = () => {
           const total = emotionsData?.total || 1;
           const percentage = total > 0 ? (value / total) * 100 : 0;
           // Masquer les labels des très petits segments (< 4%) pour éviter les superpositions
-          // Ces informations seront disponibles dans la légende et le tooltip
+          // Ces informations seront disponibles dans le tooltip
           return percentage >= 4;
         },
         color: function(context: any) {
@@ -1018,7 +1020,7 @@ const StrategiesPage: React.FC = () => {
         font: {
           family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           weight: 600,
-          size: window.innerWidth < 640 ? 10 : 13,
+          size: window.innerWidth < 640 ? 10 : window.innerWidth < 1024 ? 11 : 12,
         },
         formatter: function(value: number, context: any) {
           const label = context.chart.data.labels[context.dataIndex] || '';
@@ -1069,39 +1071,7 @@ const StrategiesPage: React.FC = () => {
         textStrokeWidth: 3,
       },
       legend: {
-        display: true,
-        position: 'bottom' as const,
-        align: 'center' as const,
-        labels: {
-          usePointStyle: true,
-          padding: window.innerWidth < 640 ? 10 : 14,
-          boxWidth: window.innerWidth < 640 ? 12 : 14,
-          boxHeight: window.innerWidth < 640 ? 12 : 14,
-          font: {
-            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-            size: window.innerWidth < 640 ? 11 : 13,
-            weight: 500,
-          },
-          color: chartColors.text,
-          generateLabels: function(chart: any) {
-            const data = chart.data;
-            if (data.labels.length === 0) return [];
-            return data.labels.map((label: string, index: number) => {
-              const value = data.datasets[0].data[index];
-              const total = (emotionsData as any)?.total || 1;
-              const percentage = total > 0 ? (value / total) * 100 : 0;
-              return {
-                text: `${label} (${formatNumber(percentage, 1)}%)`,
-                fillStyle: data.datasets[0].backgroundColor[index],
-                strokeStyle: data.datasets[0].borderColor[index],
-                lineWidth: 2,
-                fontColor: chartColors.text,
-                hidden: false,
-                index: index,
-              };
-            });
-          },
-        },
+        display: false, // Désactiver la légende car les infos sont dans les statistiques latérales
       },
       title: {
         display: false,
@@ -1986,48 +1956,55 @@ const StrategiesPage: React.FC = () => {
                     </div>
                   </Tooltip>
                 </div>
-                {/* Layout responsive : statistiques au-dessus sur mobile/tablette, à gauche sur desktop */}
-                <div className="space-y-4">
-                  {/* Statistiques en grille responsive */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4">
-                      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
+                {/* Layout responsive : statistiques en haut sur mobile, sur les côtés sur desktop */}
+                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                  {/* Statistiques gauche (2 cartes) */}
+                  <div className="flex flex-row lg:flex-col gap-3 lg:gap-4 lg:w-52 xl:w-56 flex-shrink-0">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 lg:p-4 flex-1 lg:flex-none">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                         {t('strategies:numberOfOccurrences', { defaultValue: 'Nombre d\'occurrences' })}
                       </div>
-                      <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      <div className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {(emotionsData as any)?.total || 0}
                       </div>
                     </div>
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4">
-                      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 lg:p-4 flex-1 lg:flex-none">
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
                         {t('strategies:totalEmotions', { defaultValue: 'Émotions différentes' })}
                       </div>
-                      <div className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      <div className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
                         {(emotionsData as any)?.totalEmotions || 0}
                       </div>
                     </div>
-                    {(emotionsData as any)?.topEmotion && (
-                      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4 sm:col-span-1">
-                        <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          {t('strategies:mostFrequentEmotion', { defaultValue: 'Émotion la plus fréquente' })}
-                        </div>
-                        <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                          {(emotionsData as any).topEmotion.label}
-                        </div>
-                        <div className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">
-                          {formatNumber((emotionsData as any).topEmotion.percentage, 1)}%
-                        </div>
-                      </div>
-                    )}
                   </div>
                   
-                  {/* Graphique Doughnut avec légende responsive */}
-                  <div className="w-full">
-                    <div className="h-72 sm:h-96 md:h-[28rem] flex items-center justify-center mb-6">
-                      <div className="w-full h-full max-w-2xl mx-auto">
-                        <Doughnut data={emotionsData} options={emotionsOptions} />
-                      </div>
-                    </div>
+                  {/* Graphique Doughnut au centre */}
+                  <div className="flex-1 h-64 sm:h-72 md:h-80 min-w-0">
+                    <Doughnut data={emotionsData} options={emotionsOptions} />
+                  </div>
+                  
+                  {/* Statistiques droite (2 cartes) */}
+                  <div className="flex flex-row lg:flex-col gap-3 lg:gap-4 lg:w-52 xl:w-56 flex-shrink-0">
+                    {(emotionsData as any)?.topEmotion && (
+                      <>
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 lg:p-4 flex-1 lg:flex-none">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                            {t('strategies:mostFrequentEmotion', { defaultValue: 'Émotion la plus fréquente' })}
+                          </div>
+                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-0.5 truncate" title={(emotionsData as any).topEmotion.label}>
+                            {(emotionsData as any).topEmotion.label}
+                          </div>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 lg:p-4 flex-1 lg:flex-none">
+                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
+                            {t('strategies:percentage', { defaultValue: 'Pourcentage' })}
+                          </div>
+                          <div className="text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {formatNumber((emotionsData as any).topEmotion.percentage, 1)}%
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
