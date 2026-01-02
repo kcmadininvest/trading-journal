@@ -12,6 +12,7 @@ import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
 import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { getMonthName } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
@@ -81,14 +82,39 @@ const ChartSkeleton: React.FC<{ height?: string; title?: string }> = ({
 const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
   const { preferences } = usePreferences();
-  const { t } = useI18nTranslation();
+  const { t, i18n } = useI18nTranslation();
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+  
+  // Obtenir la langue actuelle depuis i18n (plus fiable que preferences.language)
+  // Utiliser useMemo pour que ça se mette à jour quand la langue change
+  const currentLanguage = useMemo(() => {
+    const lang = i18n.language?.split('-')[0] || 'fr';
+    const supportedLangs: Array<'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh'> = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
+    return (supportedLangs.includes(lang as any) ? lang : 'fr') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
+  }, [i18n.language]);
   
   // Wrapper pour formatNumber avec préférences
   const formatNumber = useCallback((value: number, digits: number = 2): string => {
     return formatNumberUtil(value, digits, preferences.number_format);
   }, [preferences.number_format]);
+
+  // Fonction pour formater une période selon la langue de l'utilisateur
+  // La période peut être au format "YYYY-MM" (mois) ou "DD/MM" (jour)
+  const formatPeriod = useCallback((period: string): string => {
+    // Vérifier si c'est un format de mois (YYYY-MM)
+    const monthMatch = period.match(/^(\d{4})-(\d{2})$/);
+    if (monthMatch) {
+      const year = parseInt(monthMatch[1], 10);
+      const month = parseInt(monthMatch[2], 10);
+      const monthName = getMonthName(month, currentLanguage);
+      // Mettre la première lettre en majuscule
+      const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+      return `${capitalizedMonthName} ${year}`;
+    }
+    // Sinon, retourner tel quel (format jour DD/MM)
+    return period;
+  }, [currentLanguage]);
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => ({
@@ -404,7 +430,7 @@ const StrategiesPage: React.FC = () => {
     });
     
     return {
-      labels: enrichedData.map((d: any) => d.period),
+      labels: enrichedData.map((d: any) => formatPeriod(d.period)),
     datasets: [
       {
         label: t('strategies:respected'),
@@ -425,7 +451,7 @@ const StrategiesPage: React.FC = () => {
     ],
       enrichedData, // Stocker les données enrichies pour les tooltips
   };
-  }, [isLoading, allDataLoaded, statistics?.statistics?.period_data, t]);
+  }, [isLoading, allDataLoaded, statistics?.statistics?.period_data, t, formatPeriod]);
 
   const respectChartOptions = useMemo(() => ({
     responsive: true,
@@ -480,7 +506,7 @@ const StrategiesPage: React.FC = () => {
         callbacks: {
           title: function(context: any) {
             const period = statistics?.statistics?.period_data?.[context[0].dataIndex]?.period || '';
-            return period;
+            return formatPeriod(period);
           },
           label: function(context: any) {
             const label = context.dataset.label || '';
@@ -575,7 +601,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.period_data, respectChartData, t, chartColors, formatNumber]);
+  }), [statistics?.statistics?.period_data, respectChartData, t, chartColors, formatNumber, formatPeriod]);
 
   // Graphique 2: Taux de réussite selon respect de la stratégie
   const successRateData = useMemo(() => {
@@ -961,32 +987,86 @@ const StrategiesPage: React.FC = () => {
     maintainAspectRatio: false,
     layout: {
       padding: {
-        top: 10,
-        bottom: 10,
-        left: 10,
-        right: 50,
+        top: 20,
+        bottom: 40, // Plus d'espace en bas pour la légende
+        left: 20,
+        right: 20,
       },
     },
     plugins: {
       datalabels: {
-        display: true,
-        color: isDark ? '#ffffff' : '#374151',
+        display: function(context: any) {
+          const value = context.dataset.data[context.dataIndex];
+          const total = emotionsData?.total || 1;
+          const percentage = total > 0 ? (value / total) * 100 : 0;
+          // Masquer les labels des très petits segments (< 4%) pour éviter les superpositions
+          // Ces informations seront disponibles dans la légende et le tooltip
+          return percentage >= 4;
+        },
+        color: function(context: any) {
+          const value = context.dataset.data[context.dataIndex];
+          const total = emotionsData?.total || 1;
+          const percentage = total > 0 ? (value / total) * 100 : 0;
+          
+          // Pour les petits segments, utiliser une couleur plus contrastée
+          if (percentage < 10) {
+            return isDark ? '#ffffff' : '#1f2937';
+          }
+          // Pour les grands segments, utiliser la couleur standard
+          return isDark ? '#ffffff' : '#374151';
+        },
         font: {
           family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           weight: 600,
-          size: window.innerWidth < 640 ? 11 : 14,
+          size: window.innerWidth < 640 ? 10 : 13,
         },
         formatter: function(value: number, context: any) {
           const label = context.chart.data.labels[context.dataIndex] || '';
           const total = emotionsData?.total || 1;
           const percentage = total > 0 ? (value / total) * 100 : 0;
-          // Afficher seulement si le segment est assez grand (> 3%)
-          // Sur mobile, afficher seulement le pourcentage si l'écran est petit
+          
+          // Sur mobile, afficher seulement le pourcentage pour économiser l'espace
           if (window.innerWidth < 640) {
-            return value > 0 && (value / total) * 100 > 3 ? `${formatNumber(percentage, 1)}%` : '';
+            return `${formatNumber(percentage, 1)}%`;
           }
-          return value > 0 && (value / total) * 100 > 3 ? `${label}\n${formatNumber(percentage, 1)}%` : '';
+          
+          // Pour les petits segments (4-10%), afficher seulement le pourcentage
+          if (percentage < 10) {
+            return `${formatNumber(percentage, 1)}%`;
+          }
+          
+          // Pour les segments moyens (10-20%), afficher label et pourcentage sur une ligne
+          if (percentage < 20) {
+            return `${label} ${formatNumber(percentage, 1)}%`;
+          }
+          
+          // Pour les grands segments (> 20%), afficher label et pourcentage sur deux lignes
+          return `${label}\n${formatNumber(percentage, 1)}%`;
         },
+        anchor: function(context: any) {
+          const value = context.dataset.data[context.dataIndex];
+          const total = emotionsData?.total || 1;
+          const percentage = total > 0 ? (value / total) * 100 : 0;
+          
+          // Pour les petits segments (< 10%), placer les labels au centre pour éviter les superpositions
+          if (percentage < 10) {
+            return 'center';
+          }
+          // Pour les segments moyens et grands, placer au centre aussi
+          return 'center';
+        },
+        align: function(context: any) {
+          // Toujours centrer pour éviter les problèmes de superposition
+          return 'center';
+        },
+        offset: 0, // Pas d'offset pour garder les labels centrés
+        clamp: false, // Permettre aux labels de dépasser légèrement si nécessaire
+        clip: false,
+        // Ajouter un contour pour améliorer la lisibilité sur les segments colorés
+        textStrokeColor: function(context: any) {
+          return isDark ? 'rgba(31, 41, 55, 0.8)' : 'rgba(255, 255, 255, 0.9)';
+        },
+        textStrokeWidth: 3,
       },
       legend: {
         display: true,
@@ -1943,7 +2023,7 @@ const StrategiesPage: React.FC = () => {
                   
                   {/* Graphique Doughnut avec légende responsive */}
                   <div className="w-full">
-                    <div className="h-64 sm:h-80 md:h-96 flex items-center justify-center">
+                    <div className="h-72 sm:h-96 md:h-[28rem] flex items-center justify-center mb-6">
                       <div className="w-full h-full max-w-2xl mx-auto">
                         <Doughnut data={emotionsData} options={emotionsOptions} />
                       </div>

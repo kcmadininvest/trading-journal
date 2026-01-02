@@ -40,6 +40,8 @@ from .serializers import (
 from .utils import TopStepCSVImporter
 
 
+
+
 class TradingAccountViewSet(viewsets.ModelViewSet):
     """
     ViewSet pour gérer les comptes de trading.
@@ -3016,8 +3018,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 month_not_respect_percentage = (month_not_respected / month_total_with_strategy * 100) if month_total_with_strategy > 0 else 0
                 # N'ajouter que les mois avec des données
                 if month_total_with_strategy > 0:
+                    # Envoyer la date au format ISO pour que le frontend puisse la formater selon la langue
                     period_data.append({
-                        'period': month_start.strftime('%B %Y'),
+                        'period': month_start.strftime('%Y-%m'),  # Format ISO pour le formatage côté frontend
                         'date': month_start.strftime('%Y-%m'),
                         'respect_percentage': round(month_respect_percentage, 2),
                         'not_respect_percentage': round(month_not_respect_percentage, 2),
