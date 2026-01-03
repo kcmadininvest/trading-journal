@@ -85,7 +85,8 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # XFrameOptionsMiddleware désactivé car X-Frame-Options est géré par Apache
+    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'trading_journal_api.urls'
@@ -207,19 +208,16 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     
-    # Autres paramètres de sécurité
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
-    
-    # Referrer Policy
-    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-    
-    # Note: Les headers CSP, X-Frame-Options, X-Content-Type-Options et Referrer-Policy
-    # sont maintenant gérés par Apache pour éviter les duplications
+    # Note: Les headers de sécurité (CSP, X-Frame-Options, X-Content-Type-Options, 
+    # Referrer-Policy) sont maintenant gérés par Apache pour éviter les duplications
+    # Les paramètres suivants sont désactivés pour éviter les doublons :
+    # SECURE_BROWSER_XSS_FILTER = True
+    # SECURE_CONTENT_TYPE_NOSNIFF = True
+    # X_FRAME_OPTIONS = 'DENY'
+    # SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 else:
-    # Referrer Policy
-    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    # En développement, les headers de sécurité sont aussi gérés par Apache
+    pass
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config(
