@@ -18,6 +18,7 @@ import GoalsPage from './pages/GoalsPage';
 import LegalNoticePage from './pages/LegalNoticePage';
 import AboutPage from './pages/AboutPage';
 import FeaturesPage from './pages/FeaturesPage';
+import OrganizationSchema from './components/SEO/OrganizationSchema';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { useTheme } from './hooks/useTheme';
@@ -300,6 +301,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" style={{ overflowX: 'hidden' }}>
+      {/* Charger le schéma JSON-LD pour le SEO de manière compatible CSP */}
+      <OrganizationSchema />
+      
       <Toaster 
         position="top-right"
         toastOptions={{

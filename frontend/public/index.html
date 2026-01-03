@@ -54,26 +54,8 @@
     <!-- Manifest -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     
-    <!-- Données structurées JSON-LD pour Google (Logo et Organisation) -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "K&C Trading Journal",
-      "url": "https://app.kctradingjournal.com",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://app.kctradingjournal.com/android-chrome-512x512.png",
-        "width": 512,
-        "height": 512
-      },
-      "image": "https://app.kctradingjournal.com/android-chrome-512x512.png",
-      "description": "Professional trading journal application to track, analyze and optimize your trading performance. 100% free, no hidden fees.",
-      "sameAs": [
-        "https://app.kctradingjournal.com"
-      ]
-    }
-    </script>
+    <!-- Données structurées JSON-LD chargées dynamiquement via React pour respecter la CSP -->
+    <!-- Voir: src/components/SEO/OrganizationSchema.tsx -->
     
     <!-- Title - Sera mis à jour dynamiquement par SEOHead selon la langue -->
     <title>Free Trading Journal | K&C Trading Journal</title>
