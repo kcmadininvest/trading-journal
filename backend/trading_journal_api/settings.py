@@ -86,7 +86,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'trading_journal_api.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'trading_journal_api.urls'
@@ -213,48 +212,14 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
     
-    # Content Security Policy (CSP) - Production
-    # Configuration stricte sans unsafe-inline ni unsafe-eval
-    CONTENT_SECURITY_POLICY = (
-        "default-src 'self'; "
-        "script-src 'self'; "
-        "style-src 'self'; "
-        "img-src 'self' data: https:; "
-        "font-src 'self' data: https://fonts.gstatic.com; "
-        "connect-src 'self'; "
-        "frame-src 'none'; "
-        "frame-ancestors 'none'; "
-        "object-src 'none'; "
-        "base-uri 'self'; "
-        "form-action 'self'; "
-        "upgrade-insecure-requests;"
-    )
-    
     # Referrer Policy
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
     
-    # Utiliser les nonces CSP pour les scripts inline (si nécessaire)
-    USE_CSP_NONCE = False
+    # Note: Les headers CSP, X-Frame-Options, X-Content-Type-Options et Referrer-Policy
+    # sont maintenant gérés par Apache pour éviter les duplications
 else:
-    # En développement, permettre unsafe-inline et unsafe-eval pour React DevTools
-    CONTENT_SECURITY_POLICY = (
-        "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-        "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data: https:; "
-        "font-src 'self' data: https://fonts.gstatic.com; "
-        "connect-src 'self' http://localhost:* ws://localhost:*; "
-        "frame-src 'none'; "
-        "frame-ancestors 'none'; "
-        "object-src 'none'; "
-        "base-uri 'self'; "
-        "form-action 'self';"
-    )
-    
     # Referrer Policy
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-    
-    USE_CSP_NONCE = False
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config(
