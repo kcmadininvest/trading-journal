@@ -19,7 +19,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 1.0, 
                 'changefreq': 'daily',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                     {'loc': '/og-image.png', 'title': 'K&C Trading Journal'},
                 ]
             },
@@ -28,7 +28,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                 ]
             },
             {
@@ -36,7 +36,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                 ]
             },
             {
@@ -44,7 +44,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                 ]
             },
             {
@@ -52,7 +52,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                 ]
             },
             {
@@ -60,7 +60,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                 ]
             },
             {
@@ -68,7 +68,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                 ]
             },
             {
@@ -76,7 +76,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                 ]
             },
             {
@@ -84,7 +84,7 @@ class StaticViewSitemap(Sitemap):
                 'priority': 0.8,
                 'changefreq': 'monthly',
                 'images': [
-                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
                 ]
             },
         ]

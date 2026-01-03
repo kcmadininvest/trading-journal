@@ -119,11 +119,11 @@ def organization_schema(request):
         "url": base_url,
         "logo": {
             "@type": "ImageObject",
-            "url": f"{base_url}/logo.png",
+            "url": f"{base_url}/android-chrome-512x512.png",
             "width": 512,
             "height": 512
         },
-        "image": f"{base_url}/logo.png",
+        "image": f"{base_url}/android-chrome-512x512.png",
         "description": "Professional trading journal application to track, analyze and optimize your trading performance. 100% free, no hidden fees.",
         "sameAs": [
             base_url
@@ -159,7 +159,6 @@ urlpatterns = [
     path('apple-touch-icon.png', serve_template_file, {'filename': 'apple-touch-icon.png'}, name='apple_touch_icon'),
     path('android-chrome-192x192.png', serve_template_file, {'filename': 'android-chrome-192x192.png'}, name='android_chrome_192'),
     path('android-chrome-512x512.png', serve_template_file, {'filename': 'android-chrome-512x512.png'}, name='android_chrome_512'),
-    path('logo.png', serve_template_file, {'filename': 'logo.png'}, name='logo'),
     path('og-image.png', serve_template_file, {'filename': 'og-image.png'}, name='og_image'),
     path('twitter-card.png', serve_template_file, {'filename': 'twitter-card.png'}, name='twitter_card'),
     path('manifest.json', serve_template_file, {'filename': 'manifest.json'}, name='manifest'),
