@@ -199,22 +199,20 @@ if not DEBUG:
     # Redirection HTTPS
     SECURE_SSL_REDIRECT = True
     
-    # HTTP Strict Transport Security (HSTS)
-    SECURE_HSTS_SECONDS = 31536000  # 1 an
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    # HTTP Strict Transport Security (HSTS) - Géré par Apache
+    # Désactivé dans Django pour éviter les doublons
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
     
     # Cookies sécurisés
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     
-    # Note: Les headers de sécurité (CSP, X-Frame-Options, X-Content-Type-Options, 
-    # Referrer-Policy) sont maintenant gérés par Apache pour éviter les duplications
-    # Les paramètres suivants sont désactivés pour éviter les doublons :
-    # SECURE_BROWSER_XSS_FILTER = True
-    # SECURE_CONTENT_TYPE_NOSNIFF = True
-    # X_FRAME_OPTIONS = 'DENY'
-    # SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    # Headers de sécurité - Tous gérés par Apache pour éviter les duplications
+    SECURE_BROWSER_XSS_FILTER = False
+    SECURE_CONTENT_TYPE_NOSNIFF = False
+    SECURE_REFERRER_POLICY = None
 else:
     # En développement, les headers de sécurité sont aussi gérés par Apache
     pass
