@@ -98,7 +98,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     updateMetaTag('og:url', canonicalUrl, true);
     updateMetaTag('og:type', type, true);
     // Logo pour les résultats de recherche (certains réseaux sociaux et moteurs de recherche)
-    updateMetaTag('og:logo', `${baseUrl}/logo.png`, true);
+    updateMetaTag('og:logo', `${baseUrl}/android-chrome-512x512.png`, true);
     
     // Locale mapping
     const localeMap: Record<string, string> = {
