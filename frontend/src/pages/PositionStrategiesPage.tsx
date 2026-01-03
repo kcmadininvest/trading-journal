@@ -94,8 +94,7 @@ const SortableSection: React.FC<SortableSectionProps> = ({
                   <path d="M19 8h2M19 12h2M19 16h2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-          <input
-            type="text"
+          <textarea
             placeholder={t('positionStrategies:sectionTitle', { defaultValue: 'Titre de la section' })}
             value={section.title}
             onChange={(e) => {
@@ -103,7 +102,14 @@ const SortableSection: React.FC<SortableSectionProps> = ({
               newSections[sectionIndex].title = e.target.value;
               setFormData({ ...formData, strategy_content: { sections: newSections } });
             }}
-            className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base font-semibold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            rows={1}
+            className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base font-semibold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+            style={{ minHeight: '42px' }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = target.scrollHeight + 'px';
+            }}
           />
           <button
             type="button"
@@ -168,11 +174,12 @@ const SortableSection: React.FC<SortableSectionProps> = ({
                     <path d="M19 8h2M19 12h2M19 16h2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <input
-                  type="text"
+                <textarea
                   value={section.rules[activeRuleIndex.ruleIndex] || ''}
                   readOnly
-                  className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  rows={1}
+                  className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none overflow-hidden"
+                  style={{ minHeight: '42px' }}
                 />
               </div>
             </DragOverlay>
@@ -245,8 +252,7 @@ const SortableRule: React.FC<SortableRuleProps> = ({
           <path d="M19 8h2M19 12h2M19 16h2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
-      <input
-        type="text"
+      <textarea
         placeholder={t('positionStrategies:rule', { defaultValue: 'Règle' })}
         value={ruleValue}
         onChange={(e) => {
@@ -254,7 +260,14 @@ const SortableRule: React.FC<SortableRuleProps> = ({
           newSections[sectionIndex].rules[ruleIndex] = e.target.value;
           setFormData({ ...formData, strategy_content: { sections: newSections } });
         }}
-        className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        rows={1}
+        className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+        style={{ minHeight: '42px' }}
+        onInput={(e) => {
+          const target = e.target as HTMLTextAreaElement;
+          target.style.height = 'auto';
+          target.style.height = target.scrollHeight + 'px';
+        }}
       />
       <button
         type="button"
@@ -378,6 +391,21 @@ const PositionStrategiesPage: React.FC = () => {
       };
     }
   }, [openMenuId]);
+
+  // Ajuster automatiquement la hauteur des textareas
+  useEffect(() => {
+    if (showModal) {
+      // Attendre que le DOM soit mis à jour
+      setTimeout(() => {
+        const textareas = document.querySelectorAll('textarea.resize-none');
+        textareas.forEach((textarea) => {
+          const element = textarea as HTMLTextAreaElement;
+          element.style.height = 'auto';
+          element.style.height = element.scrollHeight + 'px';
+        });
+      }, 0);
+    }
+  }, [showModal, formData]);
 
   // Charger toutes les stratégies pour les compteurs (sans filtre de statut)
   const loadAllStrategies = React.useCallback(async () => {
@@ -1497,7 +1525,7 @@ const PositionStrategiesPage: React.FC = () => {
             }}
           >
             <div
-              className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+              className="bg-white dark:bg-gray-800 w-full max-w-6xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -1535,11 +1563,17 @@ const PositionStrategiesPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('positionStrategies:title', { defaultValue: 'Titre' })} *
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={1}
+                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden"
+                    style={{ minHeight: '42px' }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = target.scrollHeight + 'px';
+                    }}
                     required
                   />
                 </div>
@@ -1677,11 +1711,12 @@ const PositionStrategiesPage: React.FC = () => {
                                   <path d="M19 8h2M19 12h2M19 16h2" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                               </div>
-                              <input
-                                type="text"
+                              <textarea
                                 value={formData.strategy_content.sections[activeSectionIndex]?.title || ''}
                                 readOnly
-                                className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base font-semibold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                rows={1}
+                                className="flex-1 min-w-0 px-3 py-2 text-sm sm:text-base font-semibold border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none overflow-hidden"
+                                style={{ minHeight: '42px' }}
                               />
                             </div>
                           </div>
