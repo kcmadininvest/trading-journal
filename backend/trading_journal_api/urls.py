@@ -24,9 +24,10 @@ sitemaps = {
 
 # Vue personnalisée pour générer le sitemap XML
 def generate_sitemap(request):
-    """Génère le sitemap XML manuellement"""
+    """Génère le sitemap XML manuellement avec support des images"""
     urlset = Element('urlset')
     urlset.set('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9')
+    urlset.set('xmlns:image', 'http://www.google.com/schemas/sitemap-image/1.1')
     
     sitemap_instance = StaticViewSitemap()
     domain = sitemap_instance.get_domain()
@@ -46,10 +47,25 @@ def generate_sitemap(request):
         lastmod.text = current_date
         
         changefreq = SubElement(url_elem, 'changefreq')
-        changefreq.text = getattr(sitemap_instance, 'changefreq', 'weekly')
+        changefreq.text = item.get('changefreq', getattr(sitemap_instance, 'changefreq', 'weekly'))
         
         priority = SubElement(url_elem, 'priority')
         priority.text = str(item.get('priority', 0.5))
+        
+        # Ajouter les images si présentes
+        if 'images' in item:
+            for img in item['images']:
+                image_elem = SubElement(url_elem, 'image:image')
+                image_loc = SubElement(image_elem, 'image:loc')
+                image_loc.text = f'{base_url}{img["loc"]}'
+                
+                if 'title' in img:
+                    image_title = SubElement(image_elem, 'image:title')
+                    image_title.text = img['title']
+                
+                if 'caption' in img:
+                    image_caption = SubElement(image_elem, 'image:caption')
+                    image_caption.text = img['caption']
     
     xml_content = tostring(urlset, encoding='utf-8', method='xml')
     xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -90,6 +106,37 @@ def serve_template_file(request, filename):
     except IOError:
         return HttpResponse(status=404)
 
+# Vue pour servir les données structurées JSON-LD pour le logo Google
+def organization_schema(request):
+    """Retourne les données structurées de l'organisation pour Google"""
+    domain = getattr(settings, 'SITE_DOMAIN', 'app.kctradingjournal.com')
+    base_url = f'https://{domain}'
+    
+    schema_data = {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "K&C Trading Journal",
+        "url": base_url,
+        "logo": {
+            "@type": "ImageObject",
+            "url": f"{base_url}/logo.png",
+            "width": 512,
+            "height": 512
+        },
+        "image": f"{base_url}/logo.png",
+        "description": "Professional trading journal application to track, analyze and optimize your trading performance. 100% free, no hidden fees.",
+        "sameAs": [
+            base_url
+        ],
+        "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "url": base_url
+        }
+    }
+    
+    return JsonResponse(schema_data, json_dumps_params={'indent': 2})
+
 urlpatterns = [
     # Test endpoint
     path("api/test/", lambda r: JsonResponse({"status": "ok"}), name="test"),
@@ -102,6 +149,9 @@ urlpatterns = [
     # Sitemap (vue personnalisée pour éviter les problèmes de template)
     path('sitemap.xml', generate_sitemap, name='sitemap'),
     
+    # Données structurées pour Google (logo, organisation)
+    path('organization.json', organization_schema, name='organization_schema'),
+    
     # Fichiers statiques depuis templates (favicon, manifest, logos)
     path('favicon.ico', serve_template_file, {'filename': 'favicon.ico'}, name='favicon_ico'),
     path('favicon-16x16.png', serve_template_file, {'filename': 'favicon-16x16.png'}, name='favicon_16'),
@@ -109,6 +159,9 @@ urlpatterns = [
     path('apple-touch-icon.png', serve_template_file, {'filename': 'apple-touch-icon.png'}, name='apple_touch_icon'),
     path('android-chrome-192x192.png', serve_template_file, {'filename': 'android-chrome-192x192.png'}, name='android_chrome_192'),
     path('android-chrome-512x512.png', serve_template_file, {'filename': 'android-chrome-512x512.png'}, name='android_chrome_512'),
+    path('logo.png', serve_template_file, {'filename': 'logo.png'}, name='logo'),
+    path('og-image.png', serve_template_file, {'filename': 'og-image.png'}, name='og_image'),
+    path('twitter-card.png', serve_template_file, {'filename': 'twitter-card.png'}, name='twitter_card'),
     path('manifest.json', serve_template_file, {'filename': 'manifest.json'}, name='manifest'),
     path('site.webmanifest', serve_template_file, {'filename': 'site.webmanifest'}, name='site_webmanifest'),
     

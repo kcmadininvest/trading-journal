@@ -12,17 +12,81 @@ class StaticViewSitemap(Sitemap):
     priority = 0.8
 
     def items(self):
-        # Liste des pages statiques publiques avec leurs URLs et priorités
+        # Liste des pages statiques publiques avec leurs URLs, priorités et images
         return [
-            {'url': '/', 'priority': 1.0},
-            {'url': '/a-propos', 'priority': 0.8},
-            {'url': '/about', 'priority': 0.8},
-            {'url': '/acerca-de', 'priority': 0.8},
-            {'url': '/uber-uns', 'priority': 0.8},
-            {'url': '/fonctionnalites', 'priority': 0.8},
-            {'url': '/features', 'priority': 0.8},
-            {'url': '/funcionalidades', 'priority': 0.8},
-            {'url': '/funktionen', 'priority': 0.8},
+            {
+                'url': '/', 
+                'priority': 1.0, 
+                'changefreq': 'daily',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/og-image.png', 'title': 'K&C Trading Journal'},
+                ]
+            },
+            {
+                'url': '/a-propos', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
+                'url': '/about', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
+                'url': '/acerca-de', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
+                'url': '/uber-uns', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
+                'url': '/fonctionnalites', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
+                'url': '/features', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
+                'url': '/funcionalidades', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
+            {
+                'url': '/funktionen', 
+                'priority': 0.8,
+                'changefreq': 'monthly',
+                'images': [
+                    {'loc': '/logo.png', 'title': 'K&C Trading Journal Logo'},
+                ]
+            },
         ]
 
     def location(self, item):
