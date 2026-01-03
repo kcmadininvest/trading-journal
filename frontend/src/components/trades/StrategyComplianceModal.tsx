@@ -4,9 +4,12 @@ import { tradeStrategiesService, TradeStrategy, BulkStrategyData } from '../../s
 import { dayStrategyComplianceService, DayStrategyCompliance } from '../../services/dayStrategyCompliance';
 import { Tooltip } from '../ui';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
+import ImageUpload from '../ui/ImageUpload';
+import screenshotsService from '../../services/screenshots';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
+import { openMediaUrl } from '../../utils/mediaUrl';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface StrategyComplianceModalProps {
@@ -30,6 +33,7 @@ interface TradeWithStrategy extends TradeListItem {
   gainIfStrategyRespected: boolean | null;
   dominantEmotions: string[];
   screenshotUrl: string;
+  screenshotThumbnailUrl?: string;
   videoUrl: string;
   tp1Reached: boolean;
   tp2PlusReached: boolean;
@@ -62,6 +66,8 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const [error, setError] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteScreenshotModalOpen, setDeleteScreenshotModalOpen] = useState(false);
+  const [screenshotToDelete, setScreenshotToDelete] = useState<{ url: string; type: 'day' | 'trade'; tradeId?: number } | null>(null);
   const isInitialLoad = useRef(true);
   const serverDataRef = useRef<TradeWithStrategy[]>([]); // Garder une référence aux données du serveur
   const serverDayComplianceRef = useRef<DayStrategyCompliance | null>(null); // Garder une référence à la compliance du serveur
@@ -202,6 +208,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
           gainIfStrategyRespected: strategy?.gain_if_strategy_respected ?? null,
           dominantEmotions: strategy?.dominant_emotions ?? [],
           screenshotUrl: strategy?.screenshot_url ?? '',
+          screenshotThumbnailUrl: undefined, // Les miniatures ne sont pas stockées en BDD, seulement générées à l'upload
           videoUrl: strategy?.video_url ?? '',
           tp1Reached: strategy?.tp1_reached ?? false,
           tp2PlusReached: strategy?.tp2_plus_reached ?? false,
@@ -260,6 +267,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   gainIfStrategyRespected: draftTrade.gainIfStrategyRespected ?? trade.gainIfStrategyRespected,
                   dominantEmotions: draftTrade.dominantEmotions ?? trade.dominantEmotions,
                   screenshotUrl: draftTrade.screenshotUrl ?? trade.screenshotUrl,
+                  screenshotThumbnailUrl: draftTrade.screenshotThumbnailUrl ?? trade.screenshotThumbnailUrl,
                   videoUrl: draftTrade.videoUrl ?? trade.videoUrl,
                   tp1Reached: draftTrade.tp1Reached ?? trade.tp1Reached,
                   tp2PlusReached: draftTrade.tp2PlusReached ?? trade.tp2PlusReached,
@@ -421,6 +429,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       gainIfStrategyRespected: trade.gainIfStrategyRespected,
       dominantEmotions: trade.dominantEmotions,
       screenshotUrl: trade.screenshotUrl,
+      screenshotThumbnailUrl: trade.screenshotThumbnailUrl,
       videoUrl: trade.videoUrl,
       tp1Reached: trade.tp1Reached,
       tp2PlusReached: trade.tp2PlusReached,
@@ -461,7 +470,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     }
   }, [open, date, tradingAccount, loadData]);
 
-  const updateTradeStrategy = (tradeId: number, field: 'strategyRespected' | 'gainIfStrategyRespected' | 'dominantEmotions' | 'screenshotUrl' | 'videoUrl' | 'tp1Reached' | 'tp2PlusReached' | 'emotionDetails' | 'possibleImprovements' | 'sessionRating', value: any) => {
+  const updateTradeStrategy = (tradeId: number, field: 'strategyRespected' | 'gainIfStrategyRespected' | 'dominantEmotions' | 'screenshotUrl' | 'screenshotThumbnailUrl' | 'videoUrl' | 'tp1Reached' | 'tp2PlusReached' | 'emotionDetails' | 'possibleImprovements' | 'sessionRating', value: any) => {
     setTrades((prev) =>
       prev.map((trade) => {
         if (trade.id === tradeId) {
@@ -475,7 +484,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     );
   };
 
-  const updateDayCompliance = (field: 'strategy_respected' | 'dominant_emotions' | 'screenshot_url' | 'video_url' | 'emotion_details' | 'possible_improvements' | 'session_rating', value: any) => {
+  const updateDayCompliance = (field: 'strategy_respected' | 'dominant_emotions' | 'screenshot_url' | 'screenshot_thumbnail_url' | 'video_url' | 'emotion_details' | 'possible_improvements' | 'session_rating', value: any) => {
     setDayCompliance((prev) => {
       if (!prev) {
         // Créer un nouvel objet si aucun n'existe
@@ -492,6 +501,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
           emotion_details: '',
           possible_improvements: '',
           screenshot_url: '',
+          screenshot_thumbnail_url: '',
           video_url: '',
           emotions_display: '',
           created_at: '',
@@ -522,6 +532,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         emotion_details: '',
         possible_improvements: '',
         screenshot_url: '',
+        screenshot_thumbnail_url: '',
         video_url: '',
         emotions_display: '',
         created_at: '',
@@ -557,13 +568,14 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       gainIfStrategyRespected: firstTrade.gainIfStrategyRespected,
       dominantEmotions: [...firstTrade.dominantEmotions],
       screenshotUrl: firstTrade.screenshotUrl,
+      screenshotThumbnailUrl: firstTrade.screenshotThumbnailUrl,
       videoUrl: firstTrade.videoUrl,
-          tp1Reached: firstTrade.tp1Reached,
-          tp2PlusReached: firstTrade.tp2PlusReached,
-          emotionDetails: firstTrade.emotionDetails,
-          possibleImprovements: firstTrade.possibleImprovements,
-          sessionRating: firstTrade.sessionRating,
-        };
+      tp1Reached: firstTrade.tp1Reached,
+      tp2PlusReached: firstTrade.tp2PlusReached,
+      emotionDetails: firstTrade.emotionDetails,
+      possibleImprovements: firstTrade.possibleImprovements,
+      sessionRating: firstTrade.sessionRating,
+    };
 
     // Appliquer les données du premier trade à tous les autres
     setTrades((prev) =>
@@ -579,6 +591,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
           gainIfStrategyRespected: dataToDuplicate.gainIfStrategyRespected,
           dominantEmotions: [...dataToDuplicate.dominantEmotions],
           screenshotUrl: dataToDuplicate.screenshotUrl,
+          screenshotThumbnailUrl: dataToDuplicate.screenshotThumbnailUrl,
           videoUrl: dataToDuplicate.videoUrl,
           tp1Reached: dataToDuplicate.tp1Reached,
           tp2PlusReached: dataToDuplicate.tp2PlusReached,
@@ -636,6 +649,45 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
     }
   };
 
+  const handleDeleteScreenshotConfirm = async () => {
+    if (!screenshotToDelete) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      if (screenshotToDelete.type === 'day') {
+        await screenshotsService.deleteDayScreenshot(screenshotToDelete.url);
+        updateDayCompliance('screenshot_url', '');
+        updateDayCompliance('screenshot_thumbnail_url', '');
+      } else if (screenshotToDelete.type === 'trade' && screenshotToDelete.tradeId) {
+        await screenshotsService.deleteTradeScreenshot(screenshotToDelete.url);
+        
+        // Mettre à jour tous les trades qui utilisent la même URL (en cas de duplication)
+        setTrades((prev) =>
+          prev.map((trade) => {
+            if (trade.screenshotUrl === screenshotToDelete.url) {
+              return {
+                ...trade,
+                screenshotUrl: '',
+                screenshotThumbnailUrl: '',
+              };
+            }
+            return trade;
+          })
+        );
+      }
+      setDeleteScreenshotModalOpen(false);
+      setScreenshotToDelete(null);
+    } catch (error: any) {
+      setError(error.message || t('trades:strategyCompliance.deleteError'));
+      setDeleteScreenshotModalOpen(false);
+      setScreenshotToDelete(null);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setError(null);
@@ -676,6 +728,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
             emotion_details: dayCompliance.emotion_details || '',
             possible_improvements: dayCompliance.possible_improvements || '',
             screenshot_url: dayCompliance.screenshot_url || '',
+            screenshot_thumbnail_url: dayCompliance.screenshot_thumbnail_url || '',
             video_url: dayCompliance.video_url || '',
           });
         } else {
@@ -689,6 +742,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
             emotion_details: dayCompliance.emotion_details || '',
             possible_improvements: dayCompliance.possible_improvements || '',
             screenshot_url: dayCompliance.screenshot_url || '',
+            screenshot_thumbnail_url: dayCompliance.screenshot_thumbnail_url || '',
             video_url: dayCompliance.video_url || '',
           });
         }
@@ -924,18 +978,20 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('trades:strategyCompliance.screenshotUrl')}
                   </label>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <input
-                      type="url"
-                      value={dayCompliance?.screenshot_url || ''}
-                      onChange={(e) => updateDayCompliance('screenshot_url', e.target.value)}
-                      placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
-                      className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                    {dayCompliance?.screenshot_url && (
+                  
+                  {/* Champ URL + boutons pour les URLs externes uniquement */}
+                  {dayCompliance?.screenshot_url && !dayCompliance.screenshot_url.startsWith('/media/') && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
+                      <input
+                        type="url"
+                        value={dayCompliance?.screenshot_url || ''}
+                        onChange={(e) => updateDayCompliance('screenshot_url', e.target.value)}
+                        placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
+                        className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
                       <button
                         type="button"
-                        onClick={() => window.open(dayCompliance.screenshot_url, '_blank', 'noopener,noreferrer')}
+                        onClick={() => openMediaUrl(dayCompliance.screenshot_url)}
                         className="px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0"
                         title={t('trades:strategyCompliance.openScreenshot')}
                       >
@@ -945,11 +1001,49 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                         <span className="hidden sm:inline">{t('trades:strategyCompliance.viewImage')}</span>
                         <span className="sm:hidden">{t('trades:strategyCompliance.viewImage', { defaultValue: 'Voir' })}</span>
                       </button>
-                    )}
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {t('trades:strategyCompliance.screenshotDescription')}
-                  </p>
+                    </div>
+                  )}
+                  
+                  {/* Champ URL pour saisie manuelle (si pas d'image uploadée) */}
+                  {!dayCompliance?.screenshot_url && (
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
+                      <input
+                        type="url"
+                        value={dayCompliance?.screenshot_url || ''}
+                        onChange={(e) => updateDayCompliance('screenshot_url', e.target.value)}
+                        placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
+                        className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Séparateur "ou" (si pas d'image) */}
+                  {!dayCompliance?.screenshot_url && (
+                    <div className="flex items-center gap-3 my-3">
+                      <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        {t('trades:strategyCompliance.orSeparator')}
+                      </span>
+                      <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
+                    </div>
+                  )}
+                  
+                  {/* Composant ImageUpload - toujours affiché */}
+                  <ImageUpload
+                    value={dayCompliance?.screenshot_url}
+                    thumbnailUrl={dayCompliance?.screenshot_thumbnail_url}
+                    onUpload={(urls) => {
+                      updateDayCompliance('screenshot_url', urls.original);
+                      updateDayCompliance('screenshot_thumbnail_url', urls.thumbnail);
+                    }}
+                    onRemove={() => {
+                      updateDayCompliance('screenshot_url', '');
+                      updateDayCompliance('screenshot_thumbnail_url', '');
+                    }}
+                    uploadFunction={(file) => screenshotsService.uploadDayScreenshot(file)}
+                    deleteFunction={(url) => screenshotsService.deleteDayScreenshot(url)}
+                    description={t('trades:strategyCompliance.screenshotDescription')}
+                  />
                 </div>
 
                 {/* Vidéo */}
@@ -1311,18 +1405,20 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       {t('trades:strategyCompliance.screenshotUrl')}
                     </label>
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <input
-                        type="url"
-                        value={trade.screenshotUrl || ''}
-                        onChange={(e) => updateTradeStrategy(trade.id, 'screenshotUrl', e.target.value)}
-                        placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
-                        className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      />
-                      {trade.screenshotUrl && (
+                    
+                    {/* Champ URL + boutons pour les URLs externes uniquement */}
+                    {trade.screenshotUrl && !trade.screenshotUrl.startsWith('/media/') && (
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
+                        <input
+                          type="url"
+                          value={trade.screenshotUrl || ''}
+                          onChange={(e) => updateTradeStrategy(trade.id, 'screenshotUrl', e.target.value)}
+                          placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
+                          className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
                         <button
                           type="button"
-                          onClick={() => window.open(trade.screenshotUrl, '_blank', 'noopener,noreferrer')}
+                          onClick={() => openMediaUrl(trade.screenshotUrl)}
                           className="px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2 flex-shrink-0"
                           title={t('trades:strategyCompliance.openScreenshot')}
                         >
@@ -1332,11 +1428,61 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                           <span className="hidden sm:inline">{t('trades:strategyCompliance.viewImage')}</span>
                           <span className="sm:hidden">{t('trades:strategyCompliance.viewImage', { defaultValue: 'Voir' })}</span>
                         </button>
-                      )}
-                    </div>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {t('trades:strategyCompliance.screenshotDescription')}
-                    </p>
+                      </div>
+                    )}
+                    
+                    {/* Champ URL pour saisie manuelle (si pas d'image uploadée) */}
+                    {!trade.screenshotUrl && (
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
+                        <input
+                          type="url"
+                          value={trade.screenshotUrl || ''}
+                          onChange={(e) => updateTradeStrategy(trade.id, 'screenshotUrl', e.target.value)}
+                          placeholder={t('trades:strategyCompliance.screenshotPlaceholder')}
+                          className="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Séparateur "ou" (si pas d'image) */}
+                    {!trade.screenshotUrl && (
+                      <div className="flex items-center gap-3 my-3">
+                        <div className="flex-1 h-px bg-gray-300 dark:border-gray-600"></div>
+                        <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                          {t('trades:strategyCompliance.orSeparator')}
+                        </span>
+                        <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
+                      </div>
+                    )}
+                    
+                    {/* Composant ImageUpload - toujours affiché */}
+                    <ImageUpload
+                      value={trade.screenshotUrl}
+                      thumbnailUrl={trade.screenshotThumbnailUrl}
+                      onUpload={(urls) => {
+                        updateTradeStrategy(trade.id, 'screenshotUrl', urls.original);
+                        updateTradeStrategy(trade.id, 'screenshotThumbnailUrl', urls.thumbnail);
+                      }}
+                      onRemove={() => {
+                        // Mettre à jour tous les trades qui utilisent la même URL (en cas de duplication)
+                        const urlToRemove = trade.screenshotUrl;
+                        setTrades((prev) =>
+                          prev.map((t) => {
+                            if (t.screenshotUrl === urlToRemove) {
+                              return {
+                                ...t,
+                                screenshotUrl: '',
+                                screenshotThumbnailUrl: '',
+                              };
+                            }
+                            return t;
+                          })
+                        );
+                      }}
+                      uploadFunction={(file) => screenshotsService.uploadTradeScreenshot(file)}
+                      deleteFunction={(url) => screenshotsService.deleteTradeScreenshot(url)}
+                      description={t('trades:strategyCompliance.screenshotDescription')}
+                    />
                   </div>
 
                   {/* Vidéo */}
@@ -1474,6 +1620,20 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         message={t('trades:strategyCompliance.deleteConfirmMessage', { defaultValue: 'Êtes-vous sûr de vouloir supprimer le respect de la stratégie pour ce jour ? Cette action est irréversible.' })}
         isLoading={isSaving}
         confirmButtonText={t('trades:strategyCompliance.delete', { defaultValue: 'Supprimer' })}
+      />
+
+      {/* Modale de confirmation de suppression de screenshot */}
+      <DeleteConfirmModal
+        isOpen={deleteScreenshotModalOpen}
+        onClose={() => {
+          setDeleteScreenshotModalOpen(false);
+          setScreenshotToDelete(null);
+        }}
+        onConfirm={handleDeleteScreenshotConfirm}
+        title={t('trades:strategyCompliance.deleteScreenshotTitle', { defaultValue: 'Supprimer le screenshot' })}
+        message={t('trades:strategyCompliance.deleteScreenshotMessage', { defaultValue: 'Êtes-vous sûr de vouloir supprimer ce screenshot ? Le fichier sera définitivement supprimé du serveur.' })}
+        isLoading={isSaving}
+        confirmButtonText={t('trades:strategyCompliance.removeScreenshot', { defaultValue: 'Supprimer' })}
       />
     </div>
   );

@@ -13,6 +13,7 @@ export interface DayStrategyCompliance {
   emotion_details: string;
   possible_improvements: string;
   screenshot_url: string;
+  screenshot_thumbnail_url: string;
   video_url: string;
   emotions_display: string;
   created_at: string;

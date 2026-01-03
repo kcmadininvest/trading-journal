@@ -3138,6 +3138,98 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser])
+    def upload_screenshot(self, request):
+        """
+        Upload un screenshot pour un trade.
+        Retourne les URLs de l'image originale et de la miniature.
+        """
+        from rest_framework.parsers import MultiPartParser
+        from .serializers import ScreenshotUploadSerializer
+        from .image_processor import image_processor
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Valider le fichier
+        serializer = ScreenshotUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            file = serializer.validated_data['file']
+            user_id = request.user.id
+            
+            # Traiter l'image (compression + miniature)
+            original_url, thumbnail_url = image_processor.process_screenshot(file, user_id)
+            
+            logger.info(
+                f"Screenshot uploadé avec succès pour l'utilisateur {user_id}: "
+                f"original={original_url}, thumbnail={thumbnail_url}"
+            )
+            
+            return Response({
+                'original_url': original_url,
+                'thumbnail_url': thumbnail_url,
+                'message': 'Screenshot uploadé avec succès'
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'upload du screenshot : {e}")
+            return Response({
+                'error': 'Erreur lors du traitement de l\'image',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def delete_screenshot(self, request):
+        """
+        Supprime un screenshot et sa miniature du serveur.
+        Seul le propriétaire peut supprimer ses fichiers.
+        """
+        from .image_processor import image_processor
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        screenshot_url = request.data.get('screenshot_url')
+        if not screenshot_url:
+            return Response({
+                'error': 'URL du screenshot requise'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Vérifier que l'URL appartient bien à l'utilisateur
+        # En vérifiant que le chemin contient l'ID de l'utilisateur
+        user_id = request.user.id
+        if f'/screenshots/{user_id}/' not in screenshot_url:
+            logger.warning(
+                f"Tentative de suppression d'un screenshot non autorisé par l'utilisateur {user_id}: {screenshot_url}"
+            )
+            return Response({
+                'error': 'Vous n\'êtes pas autorisé à supprimer ce fichier'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            # Supprimer le fichier et sa miniature
+            success = image_processor.delete_screenshot(screenshot_url)
+            
+            if success:
+                logger.info(f"Screenshot supprimé avec succès par l'utilisateur {user_id}: {screenshot_url}")
+                return Response({
+                    'message': 'Screenshot supprimé avec succès'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'Fichier non trouvé ou déjà supprimé'
+                }, status=status.HTTP_404_NOT_FOUND)
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression du screenshot : {e}")
+            return Response({
+                'error': 'Erreur lors de la suppression du fichier',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
     @action(detail=False, methods=['get'])
     def strategy_compliance_stats(self, request):
         """
@@ -3528,6 +3620,98 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
                 return Response(None, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser])
+    def upload_screenshot(self, request):
+        """
+        Upload un screenshot pour un jour sans trade.
+        Retourne les URLs de l'image originale et de la miniature.
+        """
+        from rest_framework.parsers import MultiPartParser
+        from .serializers import ScreenshotUploadSerializer
+        from .image_processor import image_processor
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Valider le fichier
+        serializer = ScreenshotUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            file = serializer.validated_data['file']
+            user_id = request.user.id
+            
+            # Traiter l'image (compression + miniature)
+            original_url, thumbnail_url = image_processor.process_screenshot(file, user_id)
+            
+            logger.info(
+                f"Screenshot uploadé avec succès pour l'utilisateur {user_id} (jour sans trade): "
+                f"original={original_url}, thumbnail={thumbnail_url}"
+            )
+            
+            return Response({
+                'original_url': original_url,
+                'thumbnail_url': thumbnail_url,
+                'message': 'Screenshot uploadé avec succès'
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'upload du screenshot (jour sans trade) : {e}")
+            return Response({
+                'error': 'Erreur lors du traitement de l\'image',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def delete_screenshot(self, request):
+        """
+        Supprime un screenshot et sa miniature du serveur.
+        Seul le propriétaire peut supprimer ses fichiers.
+        """
+        from .image_processor import image_processor
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        screenshot_url = request.data.get('screenshot_url')
+        if not screenshot_url:
+            return Response({
+                'error': 'URL du screenshot requise'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Vérifier que l'URL appartient bien à l'utilisateur
+        # En vérifiant que le chemin contient l'ID de l'utilisateur
+        user_id = request.user.id
+        if f'/screenshots/{user_id}/' not in screenshot_url:
+            logger.warning(
+                f"Tentative de suppression d'un screenshot non autorisé par l'utilisateur {user_id}: {screenshot_url}"
+            )
+            return Response({
+                'error': 'Vous n\'êtes pas autorisé à supprimer ce fichier'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            # Supprimer le fichier et sa miniature
+            success = image_processor.delete_screenshot(screenshot_url)
+            
+            if success:
+                logger.info(f"Screenshot supprimé avec succès par l'utilisateur {user_id} (jour sans trade): {screenshot_url}")
+                return Response({
+                    'message': 'Screenshot supprimé avec succès'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'Fichier non trouvé ou déjà supprimé'
+                }, status=status.HTTP_404_NOT_FOUND)
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression du screenshot : {e}")
+            return Response({
+                'error': 'Erreur lors de la suppression du fichier',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class PositionStrategyViewSet(viewsets.ModelViewSet):

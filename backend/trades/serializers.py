@@ -385,6 +385,36 @@ class CSVUploadSerializer(serializers.Serializer):
         return value
 
 
+class ScreenshotUploadSerializer(serializers.Serializer):
+    """
+    Serializer pour l'upload de screenshots avec validation stricte.
+    """
+    file = serializers.ImageField()
+    
+    def validate_file(self, value):
+        """
+        Valide le fichier image uploadé avec des vérifications strictes :
+        - Type MIME (JPEG, PNG, WebP)
+        - Magic bytes
+        - Taille maximale (5 MB)
+        - Dimensions (100x100 à 10000x10000)
+        - Protection contre les path traversal
+        """
+        from .image_validators import image_validator
+        
+        # Utiliser le validateur strict
+        try:
+            image_validator.validate(value)
+        except Exception as e:
+            # Convertir les ValidationError Django en ValidationError DRF
+            if hasattr(e, 'message'):
+                raise serializers.ValidationError(str(e.message))
+            else:
+                raise serializers.ValidationError(str(e))
+        
+        return value
+
+
 class TradeStrategySerializer(serializers.ModelSerializer):
     """
     Serializer pour les données de stratégie liées à un trade.

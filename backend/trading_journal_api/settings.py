@@ -185,7 +185,7 @@ if not DEBUG:
     if frontend_static_dir.exists():
         STATICFILES_DIRS.append(frontend_static_dir)
 
-MEDIA_URL = 'media/'
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type

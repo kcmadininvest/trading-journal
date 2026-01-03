@@ -115,15 +115,15 @@ urlpatterns = [
     # App URLs
     path('api/accounts/', include('accounts.urls')),
     path('api/trades/', include('trades.urls')),
-    
-    # Frontend React (catch-all pour SPA - doit être en dernier)
-    path('', TemplateView.as_view(template_name='index.html'), name='home'),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-else:
-    # En production, servir les fichiers statiques
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# Servir les fichiers media et static AVANT le catch-all React
+# Cela permet d'accéder aux fichiers uploadés directement
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Frontend React (catch-all pour SPA - doit être en dernier)
+# Toutes les URLs non matchées ci-dessus seront gérées par React
+urlpatterns += [
+    path('', TemplateView.as_view(template_name='index.html'), name='home'),
+]
