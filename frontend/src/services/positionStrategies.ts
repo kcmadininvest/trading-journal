@@ -218,6 +218,16 @@ class PositionStrategiesService {
 
     return res.json();
   }
+
+  async getPrintData(id: number): Promise<{ strategy: PositionStrategy; print_settings: any }> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/print_view/`);
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch print data: ${res.statusText}`);
+    }
+
+    return res.json();
+  }
 }
 
 export const positionStrategiesService = new PositionStrategiesService();

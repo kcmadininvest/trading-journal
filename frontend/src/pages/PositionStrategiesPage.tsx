@@ -5,6 +5,7 @@ import { formatDate } from '../utils/dateFormat';
 import { usePreferences } from '../hooks/usePreferences';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import { Tooltip } from '../components/ui';
+import { downloadStrategyPdf, printStrategy } from '../utils/pdfGenerator';
 import {
   DndContext,
   closestCenter,
@@ -819,6 +820,26 @@ const PositionStrategiesPage: React.FC = () => {
     }
   };
 
+  // Imprimer la stratégie
+  const handlePrint = (strategy: PositionStrategy) => {
+    try {
+      printStrategy(strategy, preferences, t);
+    } catch (err: any) {
+      console.error('Error printing strategy:', err);
+      setError(err.message || 'Erreur lors de l\'impression');
+    }
+  };
+
+  // Télécharger la stratégie en PDF
+  const handleDownloadPdf = (strategy: PositionStrategy) => {
+    try {
+      downloadStrategyPdf(strategy, preferences, t);
+    } catch (err: any) {
+      console.error('Error generating PDF:', err);
+      setError(err.message || 'Erreur lors de la génération du PDF');
+    }
+  };
+
   // Ajouter une section
   const addSection = (insertIndex?: number) => {
     const newSections = [...formData.strategy_content.sections];
@@ -1489,6 +1510,37 @@ const PositionStrategiesPage: React.FC = () => {
                               ? t('positionStrategies:unarchive', { defaultValue: 'Désarchiver' })
                               : t('positionStrategies:archive', { defaultValue: 'Archiver' })}
                           </button>
+                        )}
+                        {strategy.status === 'active' && strategy.is_current && (
+                          <>
+                            <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                            <button
+                              onClick={() => {
+                                handlePrint(strategy);
+                                setOpenMenuId(null);
+                                setMenuPosition(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                              </svg>
+                              {t('positionStrategies:print', { defaultValue: 'Imprimer' })}
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleDownloadPdf(strategy);
+                                setOpenMenuId(null);
+                                setMenuPosition(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition-colors"
+                            >
+                              <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                              {t('positionStrategies:downloadPdf', { defaultValue: 'Télécharger PDF' })}
+                            </button>
+                          </>
                         )}
                         <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                         <button
@@ -2299,6 +2351,7 @@ const PositionStrategiesPage: React.FC = () => {
           confirmButtonText={t('positionStrategies:delete', { defaultValue: 'Supprimer' })}
           cancelButtonText={t('positionStrategies:cancel', { defaultValue: 'Annuler' })}
         />
+
       </div>
     </div>
   );

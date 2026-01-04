@@ -37,11 +37,14 @@
   "latest": "Dernière",
   "restore": "Restaurer",
   "createdAt": "Créé le",
+  "updatedAt": "Mis à jour le",
   "compliance": "Respect de la stratégie",
   "sectionWithoutTitle": "Section sans titre",
   "noRules": "Aucune règle définie",
   "noSections": "Aucune section définie",
   "close": "Fermer",
-  "confirmDeleteTitle": "Supprimer la stratégie"
+  "confirmDeleteTitle": "Supprimer la stratégie",
+  "print": "Imprimer",
+  "downloadPdf": "Télécharger PDF"
 }
 
