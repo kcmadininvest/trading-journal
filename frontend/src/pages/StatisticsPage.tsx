@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useStatistics, useAnalytics, useTradesUpdateInvalidation } from '../hooks/useStatistics';
 import { useTradingAccounts } from '../hooks/useStatistics';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
-import { TradingAccountSelector } from '../components/TradingAccount/TradingAccountSelector';
+import { AccountSelector } from '../components/accounts/AccountSelector';
 import { TradingAccount } from '../services/tradingAccounts';
 import { StatisticsPageSkeleton } from '../components/ui/StatisticsPageSkeleton';
 import { currenciesService, Currency } from '../services/currencies';
@@ -295,11 +295,10 @@ function StatisticsPage() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('statistics:tradingAccount')}
               </label>
-              <TradingAccountSelector
-                selectedAccountId={selectedAccountId}
-                onAccountChange={(account) => {
-                  setSelectedAccountId(account?.id ?? null);
-                  setSelectedAccount(account);
+              <AccountSelector
+                value={selectedAccountId}
+                onChange={(accountId) => {
+                  setSelectedAccountId(accountId);
                 }}
                 hideLabel
               />

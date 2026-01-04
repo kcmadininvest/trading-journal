@@ -64,8 +64,21 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
       setLoading(true);
       try {
         const list = await tradingAccountsService.list();
-        // Par défaut ne montrer que les actifs
-        setAccounts(list.filter(a => a.status === 'active'));
+        // Par défaut ne montrer que les actifs, triés par date de création (plus récent au plus ancien)
+        const activeAccounts = list.filter(a => a.status === 'active');
+        activeAccounts.sort((a, b) => {
+          // Si les deux ont une date de création, trier du plus récent au plus ancien
+          if (a.created_at && b.created_at) {
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          }
+          // Si seulement a a une date, le mettre en premier
+          if (a.created_at) return -1;
+          // Si seulement b a une date, le mettre en premier
+          if (b.created_at) return 1;
+          // Si aucun n'a de date, garder l'ordre original
+          return 0;
+        });
+        setAccounts(activeAccounts);
       } catch {
         setAccounts([]);
       } finally {
