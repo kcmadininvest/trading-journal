@@ -1217,9 +1217,15 @@ class PositionStrategy(models.Model):
     
     def create_new_version(self, new_content, version_notes=''):
         """Crée une nouvelle version de la stratégie."""
-        # Marquer toutes les autres versions comme non actuelles
-        parent = self.parent_strategy or self
-        parent_id = self.parent_strategy_id if self.parent_strategy_id else self.pk  # type: ignore
+        # Déterminer le parent : si parent_strategy_id existe, récupérer depuis la DB, sinon c'est cette stratégie
+        if self.parent_strategy_id:
+            # C'est une version enfant, récupérer le parent depuis la DB
+            parent = PositionStrategy.objects.get(id=self.parent_strategy_id)  # type: ignore
+            parent_id = self.parent_strategy_id  # type: ignore
+        else:
+            # C'est le parent lui-même
+            parent = self
+            parent_id = self.pk  # type: ignore
         
         # Marquer toutes les versions de ce parent (y compris le parent lui-même) comme non actuelles
         # Utiliser Q pour inclure le parent et tous ses enfants
@@ -1241,6 +1247,9 @@ class PositionStrategy(models.Model):
         )['max_version'] or parent_version
         new_version = max_version + 1
         
+        # Préserver created_at de la version originale (parent_strategy)
+        original_created_at = parent.created_at
+        
         new_strategy = PositionStrategy.objects.create(  # type: ignore
             user=self.user,
             parent_strategy=parent,
@@ -1252,6 +1261,11 @@ class PositionStrategy(models.Model):
             version=new_version,
             is_current=True  # La nouvelle version est actuelle
         )
+        
+        # Préserver created_at de la version originale en faisant un update
+        # car auto_now_add=True l'a défini à maintenant lors de la création
+        PositionStrategy.objects.filter(id=new_strategy.id).update(created_at=original_created_at)  # type: ignore
+        new_strategy.refresh_from_db()  # Rafraîchir pour avoir la bonne valeur de created_at
         
         # Archiver l'ancienne version si elle était active
         # is_current est déjà False grâce au refresh_from_db() ci-dessus

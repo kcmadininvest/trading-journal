@@ -3945,9 +3945,39 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
         """Retourne la stratégie formatée pour l'impression."""
         strategy = self.get_object()
         
+        # Récupérer created_at du parent via parent_strategy_id
+        if strategy.parent_strategy_id:
+            # Récupérer la date de création du parent via une requête
+            parent = PositionStrategy.objects.get(id=strategy.parent_strategy_id)  # type: ignore
+            parent_created_at = parent.created_at
+            parent_id = strategy.parent_strategy_id
+        else:
+            # C'est le parent lui-même
+            parent_created_at = strategy.created_at
+            parent_id = strategy.id
+        
+        # Récupérer la version active (is_current=True) de cette stratégie
+        # Chercher parmi le parent et toutes ses versions enfants
+        active_version = PositionStrategy.objects.filter(  # type: ignore
+            Q(id=parent_id) | Q(parent_strategy_id=parent_id),
+            user=strategy.user,
+            is_current=True
+        ).first()
+        
+        # Si une version active existe, l'utiliser, sinon utiliser la stratégie demandée
+        strategy_to_print = active_version if active_version else strategy
+        
         # Préparer les données pour l'impression
+        strategy_data = PositionStrategySerializer(strategy_to_print).data
+        
+        # Mettre à jour les dates dans les données sérialisées
+        # created_at = date du parent (première version)
+        # updated_at = date de la version active
+        strategy_data['created_at'] = parent_created_at
+        strategy_data['updated_at'] = strategy_to_print.updated_at
+        
         print_data = {
-            'strategy': PositionStrategySerializer(strategy).data,
+            'strategy': strategy_data,
             'print_settings': {
                 'page_size': 'A4',
                 'orientation': 'landscape',

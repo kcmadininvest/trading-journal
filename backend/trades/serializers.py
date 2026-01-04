@@ -526,6 +526,8 @@ class PositionStrategySerializer(serializers.ModelSerializer):
     is_latest_version = serializers.BooleanField(read_only=True)
     version_count = serializers.SerializerMethodField()
     user_username = serializers.CharField(source='user.username', read_only=True)
+    created_at = serializers.SerializerMethodField()
+    updated_at = serializers.SerializerMethodField()
     
     class Meta:
         model = PositionStrategy
@@ -546,7 +548,7 @@ class PositionStrategySerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['user', 'version', 'parent_strategy', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'version', 'parent_strategy']
     
     def get_version_count(self, obj):
         """Retourne le nombre total de versions."""
@@ -560,6 +562,22 @@ class PositionStrategySerializer(serializers.ModelSerializer):
             logger = logging.getLogger(__name__)
             logger.error(f"Erreur lors du calcul du nombre de versions pour la stratégie {obj.id}: {str(e)}")
             return 1
+    
+    def get_created_at(self, obj):
+        """Retourne la date de création du parent via parent_strategy_id."""
+        if obj.parent_strategy_id:
+            # Récupérer la date de création du parent
+            try:
+                parent = PositionStrategy.objects.get(id=obj.parent_strategy_id)
+                return parent.created_at
+            except PositionStrategy.DoesNotExist:
+                return obj.created_at
+        # C'est le parent lui-même
+        return obj.created_at
+    
+    def get_updated_at(self, obj):
+        """Retourne la date de mise à jour de cette version."""
+        return obj.updated_at
     
     def validate_strategy_content(self, value):
         """Valide le contenu de la stratégie."""
