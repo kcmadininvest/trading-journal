@@ -1064,11 +1064,7 @@ const StrategiesPage: React.FC = () => {
         offset: 0, // Pas d'offset pour garder les labels centrés
         clamp: false, // Permettre aux labels de dépasser légèrement si nécessaire
         clip: false,
-        // Ajouter un contour pour améliorer la lisibilité sur les segments colorés
-        textStrokeColor: function(context: any) {
-          return isDark ? 'rgba(31, 41, 55, 0.8)' : 'rgba(255, 255, 255, 0.9)';
-        },
-        textStrokeWidth: 3,
+        textShadow: false, // Désactiver l'ombre des datalabels
       },
       legend: {
         display: false, // Désactiver la légende car les infos sont dans les statistiques latérales

@@ -2203,10 +2203,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         <span>{t('dashboard:bestDay')} :</span>
                         <span className="font-medium text-blue-500">{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span>{t('dashboard:worstDay')} :</span>
-                        <span className="font-medium text-pink-500">{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
-                      </div>
+                      {waterfallStats.worstDay < 0 && (
+                        <div className="flex items-center gap-1">
+                          <span>{t('dashboard:worstDay')} :</span>
+                          <span className="font-medium text-pink-500">{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1">
                         <span>{t('dashboard:winningDays')} :</span>
                         <span className="font-medium text-gray-700">{waterfallStats.positiveDays}/{waterfallData.length} ({formatNumber(waterfallStats.winRate, 1)}%)</span>
