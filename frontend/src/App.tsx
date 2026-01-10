@@ -343,7 +343,7 @@ function App() {
   const isDark = theme === 'dark';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" style={{ overflowX: 'hidden' }}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       {/* Charger le schéma JSON-LD pour le SEO de manière compatible CSP */}
       <OrganizationSchema />
       

@@ -299,7 +299,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                 <div
                   className="bg-purple-600 dark:bg-purple-500 h-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
+                  style={{ '--upload-progress': `${uploadProgress}%`, width: 'var(--upload-progress)' } as React.CSSProperties}
                 />
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400">{uploadProgress}%</p>

@@ -12,7 +12,10 @@ const ChartCard: React.FC<ChartCardProps> = ({ title, height = 420, children }) 
       <div className="mb-4">
         {title}
       </div>
-      <div style={{ height: `${height}px`, overflow: 'visible' }} className="relative">
+      <div 
+        className="relative overflow-visible"
+        style={{ '--chart-height': `${height}px` } as React.CSSProperties}
+      >
         {children}
       </div>
     </div>

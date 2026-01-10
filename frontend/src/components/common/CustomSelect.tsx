@@ -107,11 +107,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       ref={dropdownMenuRef}
       className="fixed z-[9999] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg max-h-72 overflow-auto"
       style={{
-        top: `${dropdownPosition.top}px`,
-        left: `${dropdownPosition.left}px`,
-        width: `${dropdownPosition.width}px`,
-        minWidth: `${dropdownPosition.minWidth}px`,
-      }}
+        '--dropdown-top': `${dropdownPosition.top}px`,
+        '--dropdown-left': `${dropdownPosition.left}px`,
+        '--dropdown-width': `${dropdownPosition.width}px`,
+        '--dropdown-min-width': `${dropdownPosition.minWidth}px`,
+        top: 'var(--dropdown-top)',
+        left: 'var(--dropdown-left)',
+        width: 'var(--dropdown-width)',
+        minWidth: 'var(--dropdown-min-width)',
+      } as React.CSSProperties}
     >
       <ul className="py-1 text-sm sm:text-base text-gray-700 dark:text-gray-300">
         {options.map((opt) => (

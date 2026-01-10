@@ -51,7 +51,7 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
               <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden mb-2">
                 <div
                   className="h-full bg-white rounded-full transition-all duration-500 relative"
-                  style={{ width: `${Math.min(progressToNextBadge, 100)}%` }}
+                  style={{ '--badge-progress': `${Math.min(progressToNextBadge, 100)}%`, width: 'var(--badge-progress)' } as React.CSSProperties}
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-shimmer"></div>
                 </div>

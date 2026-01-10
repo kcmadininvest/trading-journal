@@ -1,5 +1,27 @@
 import React from 'react'
 
+// Helper function to get gradient class based on progress and variant
+const getProgressGradientClass = (progressValue: number, progressMax: number, variant: string): string => {
+  const progress = progressValue / progressMax;
+  
+  if (progressValue >= progressMax) {
+    return 'progress-gradient-success';
+  }
+  
+  if (variant === 'info' || variant === 'default') {
+    if (progress >= 0.8) return 'progress-gradient-info-high';
+    if (progress >= 0.6) return 'progress-gradient-info-medium-high';
+    if (progress >= 0.4) return 'progress-gradient-info-medium';
+    return 'progress-gradient-info-low';
+  }
+  
+  if (variant === 'success') return 'progress-gradient-success';
+  if (variant === 'warning') return 'progress-gradient-warning';
+  if (variant === 'danger') return 'progress-gradient-danger';
+  
+  return 'progress-gradient-default';
+};
+
 
 
 export interface SubMetric {
@@ -341,53 +363,15 @@ function ModernStatCard({
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden relative">
                   <div
-                    className="h-full rounded-full transition-all duration-500 relative overflow-hidden"
+                    className={`h-full rounded-full transition-all duration-500 relative overflow-hidden ${getProgressGradientClass(progressValue, progressMax, variant)}`}
                     style={{ 
-                      width: `${Math.min((progressValue / progressMax) * 100, 100)}%`,
-                      background: (() => {
-                        const progress = progressValue / progressMax;
-                        if (progressValue >= progressMax) {
-                          return 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)'; // Vert émeraude gradient pour succès
-                        }
-                        
-                        // Gradient dynamique qui s'éclaircit et devient plus vibrant vers l'objectif
-                        if (variant === 'info' || variant === 'default') {
-                          // Pour "Respect Stratégie" : bleu qui devient plus clair et vibrant
-                          if (progress >= 0.8) {
-                            return 'linear-gradient(90deg, #3b82f6 0%, #60a5fa 30%, #93c5fd 60%, #dbeafe 100%)'; // Très clair et lumineux
-                          } else if (progress >= 0.6) {
-                            return 'linear-gradient(90deg, #2563eb 0%, #3b82f6 40%, #60a5fa 80%, #93c5fd 100%)'; // Plus clair
-                          } else if (progress >= 0.4) {
-                            return 'linear-gradient(90deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%)'; // Moyen
-                          } else {
-                            return 'linear-gradient(90deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%)'; // Foncé au début
-                          }
-                        }
-                        
-                        if (variant === 'success') {
-                          return 'linear-gradient(90deg, #10b981 0%, #34d399 50%, #6ee7b7 100%)'; // Vert émeraude gradient
-                        }
-                        if (variant === 'warning') {
-                          return 'linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #fcd34d 100%)'; // Amber gradient
-                        }
-                        if (variant === 'danger') {
-                          return 'linear-gradient(90deg, #ef4444 0%, #f87171 50%, #fca5a5 100%)'; // Rose gradient
-                        }
-                        return 'linear-gradient(90deg, #6366f1 0%, #818cf8 50%, #a78bfa 100%)'; // Indigo gradient par défaut
-                      })()
-                    }}
+                      '--progress-width': `${Math.min((progressValue / progressMax) * 100, 100)}%`,
+                      width: 'var(--progress-width)'
+                    } as React.CSSProperties}
                   />
                   {/* Effet de brillance animé pour encourager - positionné sur toute la largeur de la barre grise */}
                   {progressValue > 0 && progressValue < progressMax && (
-                    <div 
-                      className="absolute top-0 left-0 bottom-0 rounded-full pointer-events-none"
-                      style={{
-                        background: 'linear-gradient(90deg, transparent 0%, transparent 45%, rgba(255,255,255,0.9) 50%, transparent 55%, transparent 100%)',
-                        animation: 'shimmer 3s linear infinite',
-                        width: '100%',
-                        height: '100%',
-                      }}
-                    />
+                    <div className="absolute top-0 left-0 bottom-0 rounded-full pointer-events-none w-full h-full progress-shimmer" />
                   )}
                 </div>
               </div>

@@ -346,7 +346,7 @@ const SettingsPage: React.FC = () => {
       </div>
 
       {/* Contenu des onglets */}
-      <div className="flex-1 overflow-y-auto bg-white dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8" style={{ overflowX: 'visible' }}>
+      <div className="flex-1 overflow-y-auto overflow-x-visible bg-white dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8">
         {loading && (
           <div className="mb-4 text-gray-600 dark:text-gray-400">{t('common:loading')}</div>
         )}

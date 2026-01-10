@@ -497,7 +497,7 @@ const HomePage: React.FC = () => {
       <div className="max-w-7xl w-full">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-6xl md:text-7xl font-bold mb-8 pb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight" style={{ lineHeight: '1.1' }}>
+          <h1 className="text-6xl md:text-7xl font-bold mb-8 pb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent leading-[1.1]">
             {t('home:title')}
           </h1>
           <p className="text-2xl text-gray-700 max-w-3xl mx-auto mb-4 font-medium">

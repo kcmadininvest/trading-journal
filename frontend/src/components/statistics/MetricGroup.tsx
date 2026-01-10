@@ -25,8 +25,7 @@ export const MetricGroup: React.FC<MetricGroupProps> = ({
         type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
-        className="mb-4 flex items-center justify-between w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 group relative overflow-hidden"
-        style={{ cursor: 'default' }}
+        className="mb-4 flex items-center justify-between w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 group relative overflow-hidden cursor-default"
       >
         {/* Barre indicatrice à gauche */}
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 dark:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />

@@ -19,7 +19,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
     <div
       key={i}
       className={`animate-pulse bg-gray-200 dark:bg-gray-700 ${rounded ? 'rounded' : ''} ${className}`}
-      style={{ height, width }}
+      style={{ '--skeleton-height': height, '--skeleton-width': width, height: 'var(--skeleton-height)', width: 'var(--skeleton-width)' } as React.CSSProperties}
     />
   ));
 

@@ -164,9 +164,11 @@ const Tooltip: React.FC<TooltipProps> = ({
           ref={tooltipRef}
           className="fixed z-50 px-3 py-2 text-sm font-normal text-gray-900 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg pointer-events-none max-w-xs break-words"
           style={{
-            top: tooltipPosition.top,
-            left: tooltipPosition.left,
-          }}
+            '--tooltip-top': tooltipPosition.top,
+            '--tooltip-left': tooltipPosition.left,
+            top: 'var(--tooltip-top)',
+            left: 'var(--tooltip-left)',
+          } as React.CSSProperties}
         >
           {content}
           <div className={getArrowClasses()} />

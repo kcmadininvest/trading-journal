@@ -115,7 +115,7 @@ export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
                       <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                         <div
                           className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-                          style={{ width: `${Math.max(badge.progress, 0)}%` }}
+                          style={{ '--badge-progress': `${Math.max(badge.progress, 0)}%`, width: 'var(--badge-progress)' } as React.CSSProperties}
                         />
                       </div>
                       {badge.progress > 0 && (

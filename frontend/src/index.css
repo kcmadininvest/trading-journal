@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import progress gradients for CSP compliance */
+@import './styles/progress-gradients.css';
+
 /* Scrollbar styles for dark mode */
 .dark ::-webkit-scrollbar {
   width: 12px;

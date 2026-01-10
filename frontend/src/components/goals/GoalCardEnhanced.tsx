@@ -320,7 +320,7 @@ export const GoalCardEnhanced: React.FC<GoalCardEnhancedProps> = ({
         >
           <div
             className={`h-3 rounded-full transition-all duration-1000 ease-out ${colors.progress} relative`}
-            style={{ width: `${progressWidth}%` }}
+            style={{ '--progress-width': `${progressWidth}%`, width: 'var(--progress-width)' } as React.CSSProperties}
           >
             {goal.threshold_warning && (() => {
               const target = parseFloat(String(getTargetValue()));
@@ -330,8 +330,9 @@ export const GoalCardEnhanced: React.FC<GoalCardEnhancedProps> = ({
                 <div
                   className="absolute top-0 bottom-0 w-0.5 bg-yellow-400 dark:bg-yellow-500"
                   style={{
-                    left: `${((warning / target) * 100)}%`,
-                  }}
+                    '--warning-left': `${((warning / target) * 100)}%`,
+                    left: 'var(--warning-left)',
+                  } as React.CSSProperties}
                   title={t('goals:warningThreshold', { defaultValue: 'Seuil d\'alerte' })}
                 />
               );
