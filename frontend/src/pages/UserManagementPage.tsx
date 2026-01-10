@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast/headless';
 import { User, userService, UserUpdateData } from '../services/userService';
 import { authService } from '../services/auth';
 import { UserTable, UserEditModal, BulkActions } from '../components/users';

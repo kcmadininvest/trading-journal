@@ -61,7 +61,12 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Associe automatiquement le compte à l'utilisateur connecté."""
-        serializer.save(user=self.request.user)
+        user = self.request.user
+        has_default_account = TradingAccount.objects.filter(user=user, is_default=True).exists()  # type: ignore
+        serializer.save(
+            user=user,
+            is_default=serializer.validated_data.get('is_default') or not has_default_account
+        )
     
     @action(detail=False, methods=['get'])
     def default(self, request):
@@ -71,10 +76,17 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
         try:
             default_account = self.get_queryset().filter(is_default=True).first()
             if not default_account:
-                return Response(
-                    {'error': 'Aucun compte par défaut trouvé'}, 
-                    status=status.HTTP_404_NOT_FOUND
-                )
+                # Aucun compte marqué comme défaut : tenter d'en sélectionner un automatiquement
+                fallback_account = self.get_queryset().filter(status='active').order_by('created_at').first()
+                if fallback_account:
+                    fallback_account.is_default = True
+                    fallback_account.save(update_fields=['is_default'])
+                    default_account = fallback_account
+                else:
+                    return Response(
+                        {'error': 'Aucun compte disponible pour cet utilisateur'}, 
+                        status=status.HTTP_404_NOT_FOUND
+                    )
             serializer = self.get_serializer(default_account)
             return Response(serializer.data)
         except Exception as e:

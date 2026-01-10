@@ -26,6 +26,17 @@ export const TradingAccountProvider: React.FC<{ children: ReactNode }> = ({ chil
     }
 
     try {
+      // Vérifier d'abord si l'utilisateur a des comptes
+      const accounts = await tradingAccountsService.list();
+      if (!accounts || accounts.length === 0) {
+        // Aucun compte, pas besoin d'appeler /default/
+        setSelectedAccountIdState(null);
+        localStorage.setItem('selectedTradingAccountId', 'null');
+        setLoading(false);
+        return;
+      }
+
+      // L'utilisateur a des comptes, charger le compte par défaut
       const defaultAccount = await tradingAccountsService.default();
       if (defaultAccount && defaultAccount.status === 'active') {
         setSelectedAccountIdState(defaultAccount.id);

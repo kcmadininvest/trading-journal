@@ -58,6 +58,12 @@
     "saving": "Mise à jour...",
     "creating": "Création..."
   },
-  "defaultCurrencyName": "Dollar américain"
+  "defaultCurrencyName": "Dollar américain",
+  "onboarding": {
+    "title": "Crie sua primeira conta de trading",
+    "description": "Antes de começar a registrar suas operações, crie uma conta de trading. Redirecionamos você para a aba 'Contas de Trading' para orientá-lo.",
+    "openTab": "Ir para as contas",
+    "helper": "Clique em 'Nova Conta' para começar a criar."
+  }
 }
 

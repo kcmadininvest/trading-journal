@@ -58,6 +58,12 @@
     "saving": "Mise à jour...",
     "creating": "Création..."
   },
-  "defaultCurrencyName": "Dollar américain"
+  "defaultCurrencyName": "Dollar américain",
+  "onboarding": {
+    "title": "最初のトレーディングアカウントを作成",
+    "description": "トレードの記録を開始する前に、トレーディングアカウントを作成してください。「トレーディングアカウント」タブにリダイレクトしました。",
+    "openTab": "アカウントへ移動",
+    "helper": "「新しいアカウント」をクリックして作成を開始してください。"
+  }
 }
 

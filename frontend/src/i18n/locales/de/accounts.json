@@ -79,5 +79,11 @@
     "maximumLossLimitPlaceholder": "MLL eingeben",
     "maximumLossLimitDescription": "Maximale Verlustgrenze (manuelle Eingabe)"
   },
-  "defaultCurrencyName": "US-Dollar"
+  "defaultCurrencyName": "US-Dollar",
+  "onboarding": {
+    "title": "Erstellen Sie Ihr erstes Handelskonto",
+    "description": "Bevor Sie mit der Aufzeichnung Ihrer Trades beginnen, erstellen Sie ein Handelskonto. Wir haben Sie zur Registerkarte 'Handelskonten' weitergeleitet, um Sie zu führen.",
+    "openTab": "Zu den Konten gehen",
+    "helper": "Klicken Sie auf 'Neues Konto', um mit der Erstellung zu beginnen."
+  }
 }

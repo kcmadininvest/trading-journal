@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { User } from '../../services/auth';
-import { authService } from '../../services/auth';
+import { User, authService } from '../../services/auth';
 import { Tooltip } from '../ui';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { changeLanguage } from '../../i18n/config';
+import userService from '../../services/userService';
 
 interface HeaderProps {
   currentUser: User;
@@ -41,9 +41,20 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
     };
   }, []);
 
-  const handleLanguageChange = (lang: string) => {
+  const handleLanguageChange = async (lang: string) => {
+    // Changer la langue dans i18n
     changeLanguage(lang);
     setIsLanguageDropdownOpen(false);
+    
+    // Sauvegarder dans le backend si l'utilisateur est authentifié
+    if (authService.isAuthenticated()) {
+      try {
+        await userService.updatePreferences({ language: lang as any });
+        console.log('[Header] ✅ Langue sauvegardée dans le backend:', lang);
+      } catch (error) {
+        console.error('[Header] ❌ Erreur sauvegarde langue:', error);
+      }
+    }
   };
   
   const pageTitle = useMemo(() => {

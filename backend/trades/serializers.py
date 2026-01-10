@@ -159,6 +159,9 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['user', 'topstep_id', 'imported_at', 'updated_at', 'position_strategy_title', 'net_pnl', 'pnl_percentage', 'is_profitable', 'duration_str', 'formatted_entry_date', 'formatted_exit_date', 'user_username', 'trading_account_name', 'trading_account_type', 'planned_risk_reward_ratio', 'actual_risk_reward_ratio']
+        extra_kwargs = {
+            'trading_account': {'required': False, 'allow_null': True}
+        }
 
     def validate_position_strategy(self, value):
         """Valide que la stratégie appartient à l'utilisateur."""

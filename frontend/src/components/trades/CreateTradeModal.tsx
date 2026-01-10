@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast/headless';
 import { tradesService } from '../../services/trades';
 import { AccountSelector } from '../accounts/AccountSelector';
 import { positionStrategiesService, PositionStrategy } from '../../services/positionStrategies';

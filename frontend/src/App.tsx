@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast/headless';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
@@ -23,7 +23,8 @@ import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { useTheme } from './hooks/useTheme';
 import { goalsService, TradingGoal } from './services/goals';
-import { toast } from 'react-hot-toast';
+import { tradingAccountsService } from './services/tradingAccounts';
+import ToastViewport from './components/ui/ToastViewport';
 
 function App() {
   const { t } = useI18nTranslation();
@@ -31,6 +32,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('home');
   const currentPageRef = useRef(currentPage);
+  const [showAccountCreationPrompt, setShowAccountCreationPrompt] = useState(false);
   const { theme } = useTheme();
   const notifiedGoalsRef = useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
   
@@ -56,6 +58,47 @@ function App() {
 
     checkAuth();
   }, []);
+
+  // Déclencher l'onboarding "comptes de trading" pour les nouveaux utilisateurs
+  useEffect(() => {
+    if (!currentUser) {
+      setShowAccountCreationPrompt(false);
+      return;
+    }
+
+    let isMounted = true;
+    const storageKey = `account_onboarding_prompt_shown_${currentUser.id}`;
+    const alreadyShown = localStorage.getItem(storageKey) === 'true';
+
+    const ensureAccountSetup = async () => {
+      try {
+        const accounts = await tradingAccountsService.list({ include_archived: true, include_inactive: true });
+        if (!isMounted) return;
+
+        const hasAccounts = Array.isArray(accounts) && accounts.length > 0;
+
+        if (!hasAccounts && !alreadyShown) {
+          setShowAccountCreationPrompt(true);
+          localStorage.setItem(storageKey, 'true');
+          if (currentPageRef.current !== 'accounts') {
+            window.location.hash = 'accounts';
+            setCurrentPage('accounts');
+          }
+        } else if (hasAccounts) {
+          localStorage.setItem(storageKey, 'true');
+          setShowAccountCreationPrompt(false);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification des comptes de trading:', error);
+      }
+    };
+
+    ensureAccountSetup();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser]);
 
   // Vérification globale des objectifs récemment atteints (même si pas sur la page Goals)
   useEffect(() => {
@@ -304,31 +347,7 @@ function App() {
       {/* Charger le schéma JSON-LD pour le SEO de manière compatible CSP */}
       <OrganizationSchema />
       
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: isDark ? '#1f2937' : '#fff',
-            color: isDark ? '#f3f4f6' : '#1f2937',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-            borderRadius: '0.75rem',
-            padding: '1rem',
-          },
-          success: {
-            iconTheme: {
-              primary: '#10b981',
-              secondary: '#fff',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#fff',
-            },
-          },
-        }}
-      />
+      <ToastViewport />
       {currentUser ? (
         <Layout
           currentUser={currentUser}
@@ -340,6 +359,47 @@ function App() {
         </Layout>
       ) : (
         renderPage()
+      )}
+
+      {showAccountCreationPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-xl rounded-2xl bg-white dark:bg-gray-800 shadow-2xl p-6 space-y-4 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40">
+              <svg className="h-8 w-8 text-blue-600 dark:text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 11c0-2.828 2.686-5 6-5s6 2.172 6 5-2.686 5-6 5a7.6 7.6 0 01-2-.258L12 18v-4m-6 3a6 6 0 01-6-6c0-2.828 2.686-5 6-5s6 2.172 6 5-2.686 5-6 5a7.6 7.6 0 01-2-.258L0 18v-4" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {t('accounts:onboarding.title', { defaultValue: 'Créez votre premier compte de trading' })}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+              {t('accounts:onboarding.description', {
+                defaultValue: 'Avant de commencer à enregistrer vos trades, créez un compte de trading. Nous vous avons redirigé vers l’onglet « Comptes de trading » pour vous guider.',
+              })}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <button
+                onClick={() => {
+                  window.location.hash = 'accounts';
+                  setCurrentPage('accounts');
+                  setShowAccountCreationPrompt(false);
+                }}
+                className="flex-1 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 px-4 py-2.5 font-medium hover:bg-blue-100 dark:border-blue-700/50 dark:bg-blue-900/30 dark:text-blue-200 transition"
+              >
+                {t('accounts:onboarding.openTab', { defaultValue: 'Aller aux comptes' })}
+              </button>
+              <button
+                onClick={() => setShowAccountCreationPrompt(false)}
+                className="flex-1 rounded-xl bg-gray-900 text-white px-4 py-2.5 font-medium hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200 transition"
+              >
+                {t('common:gotIt', { defaultValue: 'Compris' })}
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {t('accounts:onboarding.helper', { defaultValue: 'Cliquez sur « Nouveau compte » pour lancer la création.' })}
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );

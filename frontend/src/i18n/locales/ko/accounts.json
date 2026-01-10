@@ -58,6 +58,12 @@
     "saving": "Mise à jour...",
     "creating": "Création..."
   },
-  "defaultCurrencyName": "Dollar américain"
+  "defaultCurrencyName": "Dollar américain",
+  "onboarding": {
+    "title": "첫 번째 트레이딩 계정 만들기",
+    "description": "거래 기록을 시작하기 전에 트레이딩 계정을 만드세요. '트레이딩 계정' 탭으로 리디렉션했습니다.",
+    "openTab": "계정으로 이동",
+    "helper": "'새 계정'을 클릭하여 생성을 시작하세요."
+  }
 }
 

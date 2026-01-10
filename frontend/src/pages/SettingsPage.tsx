@@ -156,9 +156,11 @@ const SettingsPage: React.FC = () => {
   };
 
   const handlePreferencesUpdate = async () => {
+    console.log('[SettingsPage] 💾 Sauvegarde des préférences...', preferences);
     setLoading(true);
     try {
       const updatedPreferences = await userService.updatePreferences(preferences);
+      console.log('[SettingsPage] ✅ Préférences sauvegardées:', updatedPreferences);
       showMessage('success', t('settings:preferencesUpdated'));
       // Appliquer le thème immédiatement si changé
       if (updatedPreferences.theme) {
@@ -178,13 +180,16 @@ const SettingsPage: React.FC = () => {
       }
       // Changer la langue i18n si elle a changé
       if (updatedPreferences.language) {
+        console.log('[SettingsPage] 🌐 Changement de langue vers:', updatedPreferences.language);
         changeLanguage(updatedPreferences.language);
       }
       // Mettre à jour les préférences locales avec la réponse du serveur
       setPreferences(updatedPreferences);
       // Déclencher un événement pour rafraîchir les préférences dans tous les composants
+      console.log('[SettingsPage] 📢 Dispatch event preferences:updated');
       window.dispatchEvent(new CustomEvent('preferences:updated'));
     } catch (error: any) {
+      console.error('[SettingsPage] ❌ Erreur sauvegarde:', error);
       showMessage('error', error.message || t('settings:errorPreferencesUpdate'));
     } finally {
       setLoading(false);
@@ -710,24 +715,6 @@ const SettingsPage: React.FC = () => {
           <div>
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">{t('settings:displayPreferences')}</h2>
               <div className="space-y-4 sm:space-y-6 max-w-md">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:language')}</label>
-                  <CustomSelect
-                    value={preferences.language}
-                    onChange={(value) => setPreferences({ ...preferences, language: value as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh' })}
-                    options={[
-                      { value: 'fr', label: 'Français' },
-                      { value: 'en', label: 'English' },
-                      { value: 'es', label: 'Español' },
-                      { value: 'de', label: 'Deutsch' },
-                      { value: 'it', label: 'Italiano' },
-                      { value: 'pt', label: 'Português' },
-                      { value: 'ja', label: '日本語' },
-                      { value: 'ko', label: '한국어' },
-                      { value: 'zh', label: '中文' },
-                    ]}
-                  />
-                </div>
                 <div>
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:timezone')}</label>
                   <CustomSelect

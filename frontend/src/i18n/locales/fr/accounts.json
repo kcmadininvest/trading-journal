@@ -79,6 +79,12 @@
     "maximumLossLimitPlaceholder": "Saisir le MLL",
     "maximumLossLimitDescription": "Limite de perte maximale (saisie manuelle)"
   },
-  "defaultCurrencyName": "Dollar américain"
+  "defaultCurrencyName": "Dollar américain",
+  "onboarding": {
+    "title": "Créez votre premier compte de trading",
+    "description": "Avant de commencer à enregistrer vos trades, créez un compte de trading. Nous vous avons redirigé vers l'onglet « Comptes de trading » pour vous guider.",
+    "openTab": "Aller aux comptes",
+    "helper": "Cliquez sur « Nouveau compte » pour lancer la création."
+  }
 }
 

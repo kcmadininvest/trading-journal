@@ -58,6 +58,12 @@
     "saving": "Mise à jour...",
     "creating": "Création..."
   },
-  "defaultCurrencyName": "Dollar américain"
+  "defaultCurrencyName": "Dollar américain",
+  "onboarding": {
+    "title": "创建您的第一个交易账户",
+    "description": "在开始记录交易之前，请创建一个交易账户。我们已将您重定向到交易账户选项卡以指导您。",
+    "openTab": "前往账户",
+    "helper": "点击新建账户开始创建。"
+  }
 }
 

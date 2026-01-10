@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast/headless';
 import { goalsService, TradingGoal, GoalsFilters, GoalStatistics } from '../services/goals';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';

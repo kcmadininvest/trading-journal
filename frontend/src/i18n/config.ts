@@ -407,11 +407,11 @@ const getDefaultLanguage = (): string => {
 const languageDetector = new LanguageDetector();
 languageDetector.addDetector(customNavigatorLanguagesDetector);
 
-// Obtenir la langue initiale : TOUJOURS utiliser la détection du navigateur (comme YouTube)
-// localStorage ne sera PAS utilisé pour l'initialisation - seulement pour les choix explicites
-// Cela garantit que la langue du navigateur a toujours la priorité
+// Obtenir la langue initiale : TOUJOURS détecter depuis le navigateur
+// Le backend synchronisera avec les préférences sauvegardées après connexion
 const getInitialLanguage = (): string => {
-  // Toujours utiliser la détection du navigateur (comme YouTube)
+  // Pour les utilisateurs non authentifiés : détecter depuis le navigateur
+  // Pour les utilisateurs authentifiés : usePreferences écrasera avec la langue backend
   const detectedLang = getDefaultLanguage();
   return detectedLang;
 };
@@ -433,14 +433,13 @@ i18n
     
     detection: {
       // Ordre de détection : 
-      // 1. customNavigatorLanguages (navigator.languages avec ordre de préférence) - PRIORITÉ ABSOLUE comme YouTube
+      // 1. customNavigatorLanguages (navigator.languages avec ordre de préférence)
       // 2. navigator (fallback standard)
-      // Note: localStorage n'est PAS dans l'ordre - la détection du navigateur a toujours la priorité
-      // localStorage sera utilisé seulement quand l'utilisateur fait un choix explicite via changeLanguage()
+      // Note: localStorage n'est PAS utilisé pour la détection initiale
+      // Le backend est la source de vérité et écrasera via usePreferences après connexion
       order: ['customNavigatorLanguages', 'navigator'],
-      // IMPORTANT: Ne pas sauvegarder automatiquement la langue détectée du navigateur
-      // Seulement sauvegarder quand l'utilisateur fait un choix explicite via changeLanguage()
-      caches: [], // Ne pas sauvegarder automatiquement - seulement via changeLanguage()
+      // Ne pas sauvegarder automatiquement - le backend gère la persistance
+      caches: [],
       lookupLocalStorage: 'i18nextLng',
     },
   })
@@ -456,9 +455,7 @@ i18n
 // Fonction pour changer la langue depuis les préférences utilisateur
 // Cette fonction sauvegarde automatiquement dans localStorage (choix explicite utilisateur)
 export const changeLanguage = (lang: string) => {
-  // Sauvegarder manuellement dans localStorage car caches: [] empêche la sauvegarde automatique
-  // Mais on veut sauvegarder quand l'utilisateur fait un choix explicite
-  localStorage.setItem('i18nextLng', lang);
+  // i18next sauvegarde automatiquement dans localStorage grâce à caches: ['localStorage']
   return i18n.changeLanguage(lang);
 };
 

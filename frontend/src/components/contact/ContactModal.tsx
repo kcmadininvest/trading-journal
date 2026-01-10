@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getApiBaseUrl } from '../../utils/apiConfig';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast/headless';
 
 interface ContactModalProps {
   isOpen: boolean;

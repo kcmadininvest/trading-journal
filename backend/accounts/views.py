@@ -1234,6 +1234,25 @@ class UserPreferencesView(APIView):
     def get(self, request):
         """Récupérer les préférences de l'utilisateur"""
         preferences, created = UserPreferences.objects.get_or_create(user=request.user)
+        
+        # Si les préférences viennent d'être créées, détecter la langue du navigateur
+        if created:
+            accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+            detected_lang = 'en'  # Par défaut
+            
+            # Parser Accept-Language header (ex: "en-US,en;q=0.9,fr;q=0.8")
+            if accept_language:
+                # Prendre la première langue
+                lang_code = accept_language.split(',')[0].split('-')[0].split(';')[0].lower()
+                # Vérifier si la langue est supportée
+                supported_langs = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh']
+                if lang_code in supported_langs:
+                    detected_lang = lang_code
+            
+            # Sauvegarder la langue détectée
+            preferences.language = detected_lang
+            preferences.save(update_fields=['language'])
+        
         serializer = UserPreferencesSerializer(preferences)
         return Response(serializer.data)
     

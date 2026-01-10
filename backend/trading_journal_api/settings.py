@@ -47,7 +47,7 @@ if not SECRET_KEY:
 # Configuration sécurisée des hôtes autorisés
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1' if DEBUG else '',
+    default='localhost,127.0.0.1,testserver' if DEBUG else '',
     cast=lambda v: [s.strip() for s in v.split(',') if s.strip()]
 )
 if not ALLOWED_HOSTS and not DEBUG:

@@ -81,7 +81,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
+      console.log('[usePreferences] 📥 Chargement des préférences depuis le backend...');
       const prefs = await userService.getPreferences();
+      console.log('[usePreferences] 📦 Préférences reçues:', { language: prefs.language, theme: prefs.theme });
+      
       if (prefs && prefs.date_format) {
         setPreferences(prefs);
         // Appliquer le thème immédiatement
@@ -103,9 +106,12 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         } catch (e) {
           // Ignorer les erreurs de localStorage
         }
-        // Changer la langue i18n quand les préférences sont chargées depuis le serveur
-        // (seulement si l'utilisateur est authentifié et a sauvegardé une préférence)
-        if (prefs.language && authService.isAuthenticated()) {
+        
+        // BACKEND = SOURCE DE VÉRITÉ ABSOLUE
+        // Toujours appliquer la langue du backend, sans condition
+        // Le backend a déjà détecté la langue du navigateur lors de la première création
+        if (prefs.language) {
+          console.log('[usePreferences] 🌐 Application de la langue:', prefs.language);
           changeLanguage(prefs.language);
         }
       }
@@ -162,13 +168,13 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     };
     
     window.addEventListener('preferences:updated', handlePreferencesUpdated);
-    window.addEventListener('auth:login', handleAuthChange);
-    window.addEventListener('auth:logout', handleAuthChange);
+    window.addEventListener('user:login', handleAuthChange);
+    window.addEventListener('user:logout', handleAuthChange);
     
     return () => {
       window.removeEventListener('preferences:updated', handlePreferencesUpdated);
-      window.removeEventListener('auth:login', handleAuthChange);
-      window.removeEventListener('auth:logout', handleAuthChange);
+      window.removeEventListener('user:login', handleAuthChange);
+      window.removeEventListener('user:logout', handleAuthChange);
     };
   }, []);
 

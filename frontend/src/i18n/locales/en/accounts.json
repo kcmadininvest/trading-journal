@@ -79,6 +79,12 @@
     "maximumLossLimitPlaceholder": "Enter MLL",
     "maximumLossLimitDescription": "Maximum loss limit (manual entry)"
   },
-  "defaultCurrencyName": "US Dollar"
+  "defaultCurrencyName": "US Dollar",
+  "onboarding": {
+    "title": "Create your first trading account",
+    "description": "Before you start recording your trades, create a trading account. We've redirected you to the 'Trading Accounts' tab to guide you.",
+    "openTab": "Go to accounts",
+    "helper": "Click 'New Account' to start creating."
+  }
 }
 

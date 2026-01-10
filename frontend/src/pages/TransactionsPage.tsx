@@ -4,7 +4,7 @@ import { TransactionFormModal } from '../components/transactions/TransactionForm
 import { TransactionHistory } from '../components/transactions/TransactionHistory';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast/headless';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 const TransactionsPage: React.FC = () => {
