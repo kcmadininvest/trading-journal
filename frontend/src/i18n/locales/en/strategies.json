@@ -61,6 +61,11 @@
   "complianceByWeekday": "Strategy Compliance by Day of Week",
   "complianceByWeekdayTooltip": "Average respect rate for each day of the week. Blue days are when you respect your strategy best, pink days need improvement.",
   "day": "day",
+  "tooltips": {
+    "respectByWeekday": "{{label}}: {{value}}% ({{basedOn}})",
+    "basedOn": "based on {{count}} {{dayLabel}}",
+    "dayLabel": "{{day}}"
+  },
   "emotions": {
     "confiance": "Confidence",
     "peur": "Fear",

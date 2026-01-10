@@ -143,13 +143,29 @@ export const DateInput: React.FC<DateInputProps> = ({
   // Fermer le calendrier quand on clique en dehors
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (showCalendar && containerRef.current && !containerRef.current.contains(target)) {
+      if (!showCalendar) return;
+
+      const target = e.target as Node | null;
+      if (!target) return;
+
+      const path = (e.composedPath && e.composedPath()) || [];
+      const calendarEl = calendarRef.current;
+      const containerEl = containerRef.current;
+
+      const isInsideCalendar = calendarEl
+        ? path.includes(calendarEl) || calendarEl.contains(target as Node)
+        : false;
+      const isInsideContainer = containerEl
+        ? path.includes(containerEl) || containerEl.contains(target as Node)
+        : false;
+
+      if (!isInsideCalendar && !isInsideContainer) {
         setShowCalendar(false);
         setShowMonthPicker(false);
         setShowYearPicker(false);
       }
     };
+
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [showCalendar]);
@@ -436,13 +452,18 @@ export const DateInput: React.FC<DateInputProps> = ({
         <div 
           ref={calendarRef}
           className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-3"
+          onMouseDown={(e) => e.stopPropagation()}
           style={calendarStyle}
         >
           {/* En-tête du calendrier */}
           <div className="flex items-center justify-between mb-3">
             <button
               type="button"
-              onClick={() => navigateMonth('prev')}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateMonth('prev');
+              }}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Mois précédent"
             >
@@ -456,7 +477,9 @@ export const DateInput: React.FC<DateInputProps> = ({
               <div className="relative" ref={monthPickerRef}>
                 <button
                   type="button"
-                  onClick={() => {
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setShowMonthPicker(!showMonthPicker);
                     setShowYearPicker(false);
                   }}
@@ -489,7 +512,9 @@ export const DateInput: React.FC<DateInputProps> = ({
               <div className="relative" ref={yearPickerRef}>
                 <button
                   type="button"
-                  onClick={() => {
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setShowYearPicker(!showYearPicker);
                     setShowMonthPicker(false);
                   }}
@@ -522,7 +547,11 @@ export const DateInput: React.FC<DateInputProps> = ({
             
             <button
               type="button"
-              onClick={() => navigateMonth('next')}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateMonth('next');
+              }}
               className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               title="Mois suivant"
             >
@@ -536,7 +565,11 @@ export const DateInput: React.FC<DateInputProps> = ({
           <div className="mb-2 flex justify-center">
             <button
               type="button"
-              onClick={goToToday}
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                goToToday();
+              }}
               className="px-3 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {t('calendar:today', { defaultValue: 'Aujourd\'hui' })}

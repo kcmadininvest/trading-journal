@@ -61,6 +61,11 @@
   "complianceByWeekday": "Strategieeinhaltung nach Wochentag",
   "complianceByWeekdayTooltip": "Durchschnittliche Respektrate für jeden Wochentag. Blaue Tage sind die, an denen Sie Ihre Strategie am besten einhalten, rosa Tage müssen verbessert werden.",
   "day": "Tag",
+  "tooltips": {
+    "respectByWeekday": "{{label}}: {{value}}% ({{basedOn}})",
+    "basedOn": "basierend auf {{count}} {{dayLabel}}",
+    "dayLabel": "{{day}}"
+  },
   "emotions": {
     "confiance": "Vertrauen",
     "peur": "Angst",

@@ -61,6 +61,11 @@
   "complianceByWeekday": "Respeto de la estrategia por día de la semana",
   "complianceByWeekdayTooltip": "Tasa de respeto promedio para cada día de la semana. Los días en azul son aquellos en los que respeta mejor su estrategia, los días en rosa necesitan mejora.",
   "day": "día",
+  "tooltips": {
+    "respectByWeekday": "{{label}}: {{value}}% ({{basedOn}})",
+    "basedOn": "basado en {{count}} {{dayLabel}}",
+    "dayLabel": "{{day}}"
+  },
   "emotions": {
     "confiance": "Confianza",
     "peur": "Miedo",

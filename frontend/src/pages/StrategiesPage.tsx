@@ -1644,14 +1644,40 @@ const StrategiesPage: React.FC = () => {
             const dayData = rawData?.[context.dataIndex];
             const count = dayData?.count || 0;
             const dayName = context.label || ''; // Nom du jour (Lundi, Mardi, etc.)
-            
+
             // Ne pas afficher le nombre de jours si c'est 0
             if (count === 0) {
               return `${context.dataset.label}: ${formatNumber(value, 2)}%`;
             }
-            
-            // Afficher "basé sur X lundis" pour être plus clair
-            return `${context.dataset.label}: ${formatNumber(value, 2)}% (basé sur ${count} ${count === 1 ? dayName.toLowerCase() : dayName.toLowerCase() + 's'})`;
+
+            const locale = i18n.language || 'fr';
+            const dayLabel = t('strategies:tooltips.dayLabel', {
+              defaultValue: dayName,
+              day: dayName,
+              dayOriginal: dayName,
+              locale,
+            });
+
+            const baseParams = {
+              label: context.dataset.label,
+              value: formatNumber(value, 2),
+              count,
+              day: dayLabel,
+              dayLabel,
+              dayOriginal: dayName,
+              locale,
+            } as const;
+
+            const basedOnText = t('strategies:tooltips.basedOn', {
+              defaultValue: 'basé sur {{count}} {{dayLabel}}',
+              ...baseParams,
+            });
+
+            return t('strategies:tooltips.respectByWeekday', {
+              defaultValue: '{{label}}: {{value}}% ({{basedOn}})',
+              basedOn: basedOnText,
+              ...baseParams,
+            });
           },
         },
       },
@@ -1706,7 +1732,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [weekdayComplianceData, chartColors, formatNumber, t]);
+  }), [weekdayComplianceData, chartColors, formatNumber, t, i18n.language]);
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
