@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import clsx from 'clsx';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
@@ -70,7 +71,7 @@ const getPerformanceLabel = (
   objective: number,
   metricType: 'winRate' | 'avgWinning' | 'avgLosing',
   t: (key: string) => string
-): { label: string; color: string; bgColor: string; borderColor: string } => {
+): { label: string; color: string } => {
   let percentage: number;
   let color: string;
   let label: string;
@@ -137,9 +138,20 @@ const getPerformanceLabel = (
   return {
     label,
     color,
-    bgColor: hexToRgba(color, 0.2),
-    borderColor: hexToRgba(color, 0.4),
   };
+};
+
+const getPerformanceBadgeClasses = (color?: string) => {
+  switch (color) {
+    case '#10b981':
+      return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-50 dark:border-emerald-800';
+    case '#f59e0b':
+      return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-50 dark:border-amber-800';
+    case '#ef4444':
+      return 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-50 dark:border-rose-800';
+    default:
+      return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-50 dark:border-blue-800';
+  }
 };
 
 // Fonction pour parser la durée ISO (ex: "PT7M34S" ou "00:07:34")
@@ -1602,10 +1614,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
                     {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
                   </div>
-                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
-                    backgroundColor: performanceLabels?.winRate.bgColor,
-                    color: performanceLabels?.winRate.color
-                  }}>
+                  <div
+                    className={clsx(
+                      'mt-2 px-2 py-1 rounded-full text-xs font-medium',
+                      getPerformanceBadgeClasses(performanceLabels?.winRate.color)
+                    )}
+                  >
                     {performanceLabels?.winRate.label}
                   </div>
                 </div>
@@ -1648,10 +1662,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
                     {t('dashboard:objective')}: {formatCurrency(gaugeObjectives?.avgWinning || 0, currencySymbol)}
                   </div>
-                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
-                    backgroundColor: performanceLabels?.avgWinning.bgColor,
-                    color: performanceLabels?.avgWinning.color
-                  }}>
+                  <div
+                    className={clsx(
+                      'mt-2 px-2 py-1 rounded-full text-xs font-medium',
+                      getPerformanceBadgeClasses(performanceLabels?.avgWinning.color)
+                    )}
+                  >
                     {performanceLabels?.avgWinning.label}
                   </div>
                 </div>
@@ -1694,10 +1710,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
                     {t('dashboard:objective')}: &lt; {formatCurrency(gaugeObjectives?.avgLosing || 0, currencySymbol)}
                   </div>
-                  <div className="mt-2 px-2 py-1 rounded-full text-xs font-medium" style={{ 
-                    backgroundColor: performanceLabels?.avgLosing.bgColor,
-                    color: performanceLabels?.avgLosing.color
-                  }}>
+                  <div
+                    className={clsx(
+                      'mt-2 px-2 py-1 rounded-full text-xs font-medium',
+                      getPerformanceBadgeClasses(performanceLabels?.avgLosing.color)
+                    )}
+                  >
                     {performanceLabels?.avgLosing.label}
                   </div>
                 </div>

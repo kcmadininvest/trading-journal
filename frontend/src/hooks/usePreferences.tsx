@@ -81,9 +81,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
-      console.log('[usePreferences] 📥 Chargement des préférences depuis le backend...');
       const prefs = await userService.getPreferences();
-      console.log('[usePreferences] 📦 Préférences reçues:', { language: prefs.language, theme: prefs.theme });
       
       if (prefs && prefs.date_format) {
         setPreferences(prefs);
@@ -111,7 +109,6 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         // Toujours appliquer la langue du backend, sans condition
         // Le backend a déjà détecté la langue du navigateur lors de la première création
         if (prefs.language) {
-          console.log('[usePreferences] 🌐 Application de la langue:', prefs.language);
           changeLanguage(prefs.language);
         }
       }
