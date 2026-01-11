@@ -17,8 +17,9 @@
     "type": "Type",
     "brokerId": "ID Broker",
     "status": "Statut",
+    "createdAt": "Date de création",
     "initialCapital": "Capital initial",
-    "maximumLossLimit": "Maximum Loss Limit",
+    "maximumLossLimit": "Limite de perte max.",
     "trades": "Trades",
     "actions": "Actions"
   },

@@ -17,6 +17,7 @@
     "type": "Tipo",
     "brokerId": "ID del Corredor",
     "status": "Estado",
+    "createdAt": "Fecha de Creación",
     "initialCapital": "Capital Inicial",
     "maximumLossLimit": "Límite Máximo de Pérdida",
     "trades": "Operaciones",

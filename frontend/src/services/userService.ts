@@ -55,6 +55,7 @@ export interface UserPreferences {
   sidebar_collapsed?: boolean;
   email_goal_alerts?: boolean;
   privacy_overrides?: PrivacyOverrides;
+  import_guide_collapsed?: boolean;
   created_at?: string;
   updated_at?: string;
 }

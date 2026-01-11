@@ -17,6 +17,7 @@
     "type": "Type",
     "brokerId": "Broker ID",
     "status": "Status",
+    "createdAt": "Created At",
     "initialCapital": "Initial Capital",
     "maximumLossLimit": "Maximum Loss Limit",
     "trades": "Trades",

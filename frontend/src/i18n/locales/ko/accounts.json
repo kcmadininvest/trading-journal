@@ -5,11 +5,15 @@
   "accountCountPlural": "{{count}} comptes",
   "noAccounts": "Aucun compte. Créez votre premier compte à droite.",
   "columns": {
-    "account": "Compte",
-    "type": "Type",
-    "status": "Statut",
-    "trades": "Trades",
-    "actions": "Actions"
+    "account": "계정",
+    "type": "유형",
+    "brokerId": "브로커 ID",
+    "status": "상태",
+    "createdAt": "생성일",
+    "initialCapital": "초기 자본",
+    "maximumLossLimit": "최대 손실 한도",
+    "trades": "거래",
+    "actions": "작업"
   },
   "status": {
     "active": "Actif",

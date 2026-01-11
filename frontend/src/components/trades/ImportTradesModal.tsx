@@ -5,6 +5,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../../contexts/TradingAccountContext';
+import userService from '../../services/userService';
 
 interface ImportTradesModalProps {
   open: boolean;
@@ -14,7 +15,7 @@ interface ImportTradesModalProps {
 type ModalState = 'initial' | 'preview' | 'importing' | 'success';
 
 export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onClose }) => {
-  const { preferences } = usePreferences();
+  const { preferences, refreshPreferences } = usePreferences();
   const { t } = useI18nTranslation();
   const { selectedAccountId } = useTradingAccount();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -73,7 +74,9 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
       setImportResult(null);
       setIsLoading(false);
       setIsDragging(false);
-      setShowFormatGuide(false);
+      // Ouvrir le guide par défaut lors de la première connexion (si import_guide_collapsed n'est pas défini)
+      // Une fois que l'utilisateur a replié/déplié le guide, on respecte son choix
+      setShowFormatGuide(preferences.import_guide_collapsed === undefined ? true : !preferences.import_guide_collapsed);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -92,7 +95,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
       previousFileRef.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedAccountId]);
+  }, [open, selectedAccountId, preferences.import_guide_collapsed]);
 
   // Réinitialiser l'aperçu si le fichier ou le compte change
   React.useEffect(() => {
@@ -243,7 +246,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
       onClick={() => state !== 'importing' && onClose(false)}
     >
       <div 
-        className="bg-white dark:bg-gray-800 w-full max-w-3xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+        className="bg-white dark:bg-gray-800 w-full max-w-6xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -476,7 +479,17 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
                 {t('trades:importModal.fileFormatRequired')}
               </p>
               <button
-                onClick={() => setShowFormatGuide(!showFormatGuide)}
+                onClick={async () => {
+                  const newState = !showFormatGuide;
+                  setShowFormatGuide(newState);
+                  // Sauvegarder la préférence de l'utilisateur
+                  try {
+                    await userService.updatePreferences({ import_guide_collapsed: !newState });
+                    await refreshPreferences();
+                  } catch (error) {
+                    console.error('Erreur lors de la sauvegarde de la préférence du guide d\'import:', error);
+                  }
+                }}
                 className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center gap-1"
               >
                 {showFormatGuide ? t('trades:importModal.hideFormatGuide') : t('trades:importModal.showFormatGuide')}

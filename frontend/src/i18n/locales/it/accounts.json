@@ -5,11 +5,15 @@
   "accountCountPlural": "{{count}} comptes",
   "noAccounts": "Aucun compte. Créez votre premier compte à droite.",
   "columns": {
-    "account": "Compte",
-    "type": "Type",
-    "status": "Statut",
-    "trades": "Trades",
-    "actions": "Actions"
+    "account": "Conto",
+    "type": "Tipo",
+    "brokerId": "ID Broker",
+    "status": "Stato",
+    "createdAt": "Data di Creazione",
+    "initialCapital": "Capitale Iniziale",
+    "maximumLossLimit": "Limite Massimo di Perdita",
+    "trades": "Operazioni",
+    "actions": "Azioni"
   },
   "status": {
     "active": "Actif",

@@ -11,6 +11,7 @@ from typing import Any
 _IS_VERIFIED_DEFAULT: Any = False
 _SIDEBAR_COLLAPSED_DEFAULT: Any = False
 _EMAIL_GOAL_ALERTS_DEFAULT: Any = True
+_IMPORT_GUIDE_COLLAPSED_DEFAULT: Any = None
 _LOGIN_SUCCESS_DEFAULT: Any = True
 _IS_USED_DEFAULT: Any = False
 
@@ -171,6 +172,15 @@ class UserPreferences(models.Model):
         default=_EMAIL_GOAL_ALERTS_DEFAULT,
         verbose_name=_('Alertes email pour les objectifs'),
         help_text=str(_('Recevoir des emails quand un objectif est atteint ou en danger'))
+    )
+    
+    # Préférences d'interface
+    import_guide_collapsed = models.BooleanField(
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name=_('Guide d\'import replié'),
+        help_text=str(_('État du guide d\'import dans la modale (None = première utilisation, True = replié, False = déplié)'))
     )
     
     # Paramètres de confidentialité par page (réutilisable)
