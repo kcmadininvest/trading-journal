@@ -34,8 +34,21 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   const rawBaseUrl = process.env.REACT_APP_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://app.kctradingjournal.com');
   const baseUrl = ensureHttps(rawBaseUrl);
   
-  // Forcer l'URL canonique à toujours être en HTTPS
-  const canonicalUrl = ensureHttps(url);
+  // Forcer l'URL canonique à toujours être en HTTPS et SANS paramètres de requête
+  // Cela évite les problèmes de contenu dupliqué avec Google
+  const cleanCanonicalUrl = (() => {
+    try {
+      const urlObj = new URL(ensureHttps(url));
+      // Supprimer tous les paramètres de requête (comme ?lang=en)
+      urlObj.search = '';
+      urlObj.hash = '';
+      return urlObj.toString();
+    } catch (e) {
+      // Fallback si l'URL n'est pas valide
+      return ensureHttps(url).split('?')[0].split('#')[0];
+    }
+  })();
+  const canonicalUrl = cleanCanonicalUrl;
 
   useEffect(() => {
     // Mettre à jour le titre
@@ -89,6 +102,9 @@ const SEOHead: React.FC<SEOHeadProps> = ({
 
     // Robots
     updateMetaTag('robots', noindex ? 'noindex, nofollow' : 'index, follow');
+    
+    // Content-Language pour indiquer la langue du contenu
+    updateMetaTag('content-language', currentLang);
 
     // Open Graph
     updateMetaTag('og:title', title || 'K&C Trading Journal', true);
@@ -143,14 +159,13 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     
     // URLs selon la page et la langue
     const getUrlForLanguage = (lang: string): string => {
-      // Page d'accueil - utiliser des paramètres de requête pour différencier les langues
-      // Cela permet à Google de comprendre qu'il y a différentes versions linguistiques
-      // Note: Idéalement, on utiliserait des chemins différents (/fr, /en, etc.) mais cela nécessiterait
-      // une refonte du routing. Pour l'instant, on utilise ?lang= pour la page d'accueil
+      // Page d'accueil - utiliser la même URL propre pour toutes les langues
+      // La détection de langue se fait côté client via navigator.language
+      // Cela évite les problèmes de contenu dupliqué avec Google
       if (currentPath === '/' || currentPath === '' || currentPath === '/#') {
-        // Pour la page d'accueil, on ajoute le paramètre lang pour différencier les versions
-        // Google peut ainsi indexer les différentes versions linguistiques
-        return `${baseUrl}?lang=${lang}`;
+        // Pour la page d'accueil, toutes les langues pointent vers la même URL
+        // La langue est détectée automatiquement côté client
+        return baseUrl;
       }
       
       // Page À Propos
@@ -177,8 +192,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
         return `${baseUrl}${featuresUrls[lang] || featuresUrls.fr}`;
       }
       
-      // Par défaut, retourner l'URL de base avec le paramètre lang
-      return `${baseUrl}?lang=${lang}`;
+      // Par défaut, retourner l'URL de base sans paramètre
+      return baseUrl;
     };
     
     // Supprimer les anciennes balises hreflang avant d'ajouter les nouvelles

@@ -47,10 +47,6 @@ const HomePage: React.FC = () => {
   // Synchroniser currentLanguage avec i18n.language (source de vérité unique)
   // i18next gère déjà localStorage automatiquement via LanguageDetector
   useEffect(() => {
-    // PRIORITÉ 1: Vérifier le paramètre URL ?lang= (passé depuis les autres pages)
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlLang = urlParams.get('lang');
-    
     const handleLanguageChanged = (lng: string) => {
       const langCode = lng.split('-')[0];
       if (['fr', 'en', 'es', 'de'].includes(langCode)) {
@@ -61,26 +57,16 @@ const HomePage: React.FC = () => {
     // Écouter les changements de langue
     i18nInstance.on('languageChanged', handleLanguageChanged);
     
-    let targetLang: string | null = null;
+    // Utiliser la langue actuelle de i18n (détectée automatiquement)
+    // i18next a déjà fait la détection avec l'ordre: customNavigatorLanguages → localStorage → navigator
+    // customNavigatorLanguages utilise navigator.languages en premier (comme YouTube)
+    const currentLang = i18nInstance.language?.split('-')[0] || 'fr';
+    setCurrentLanguage(currentLang);
     
-    // Si un paramètre lang est présent dans l'URL, l'utiliser en priorité
-    if (urlLang && ['fr', 'en', 'es', 'de'].includes(urlLang)) {
-      targetLang = urlLang;
-      // Changer la langue et sauvegarder (changeLanguage sauvegarde automatiquement)
-      changeLanguage(urlLang);
-      // Nettoyer le paramètre URL pour une URL propre
+    // Nettoyer les paramètres URL si présents (pour éviter les problèmes d'indexation)
+    if (window.location.search) {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
-    } else {
-      // Sinon, utiliser la langue actuelle de i18n (détectée automatiquement)
-      // i18next a déjà fait la détection avec l'ordre: customNavigatorLanguages → localStorage → navigator
-      // customNavigatorLanguages utilise navigator.languages en premier (comme YouTube)
-      const currentLang = i18nInstance.language?.split('-')[0] || 'fr';
-      targetLang = currentLang;
-    }
-    
-    if (targetLang) {
-      setCurrentLanguage(targetLang);
     }
     
     return () => {
