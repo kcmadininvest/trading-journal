@@ -8,13 +8,13 @@ interface ChartCardProps {
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, height = 420, children }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-      <div className="mb-4">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div className="pt-6 px-6 pb-2">
         {title}
       </div>
       <div 
-        className="relative overflow-visible"
-        style={{ '--chart-height': `${height}px` } as React.CSSProperties}
+        className="relative px-6"
+        style={{ height: `${height}px` }}
       >
         {children}
       </div>
