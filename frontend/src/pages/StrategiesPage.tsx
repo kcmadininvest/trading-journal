@@ -1143,17 +1143,17 @@ const StrategiesPage: React.FC = () => {
     let formatLabel: (date: Date) => string;
     let formatTooltipDate: (date: Date) => string;
 
-    // Seuil : plus de 100 points ou plus de 365 jours -> agréger
-    if (dataPoints > 500 || daysDiff > 730) {
-      // Agréger par année si plus de 2 ans
+    // Seuils optimisés pour éviter trop de points sur le graphique
+    if (dataPoints > 365 || daysDiff > 730) {
+      // Agréger par année si plus de 365 points ou plus de 2 ans
       aggregation = 'year';
       groupKey = (date: Date) => `${date.getFullYear()}`;
       formatLabel = (date: Date) => `${date.getFullYear()}`;
       formatTooltipDate = (date: Date) => {
         return date.toLocaleDateString('fr-FR', { year: 'numeric' });
       };
-    } else if (dataPoints > 200 || daysDiff > 365) {
-      // Agréger par mois si plus de 200 points ou plus d'un an
+    } else if (dataPoints > 120 || daysDiff > 365) {
+      // Agréger par mois si plus de 120 points ou plus d'un an
       aggregation = 'month';
       groupKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       formatLabel = (date: Date) => {
@@ -1164,8 +1164,8 @@ const StrategiesPage: React.FC = () => {
         const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
         return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
       };
-    } else if (dataPoints > 100 || daysDiff > 90) {
-      // Agréger par semaine si plus de 100 points ou plus de 90 jours
+    } else if (dataPoints > 60 || daysDiff > 90) {
+      // Agréger par semaine si plus de 60 points ou plus de 90 jours
       aggregation = 'week';
       groupKey = (date: Date) => {
         // Obtenir le lundi de la semaine
@@ -1338,140 +1338,174 @@ const StrategiesPage: React.FC = () => {
     return result;
   }, [isLoading, allDataLoaded, selectedAccountCompliance, allAccountsCompliance, t]);
 
-  const evolutionOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-      duration: 1000,
-      easing: 'easeInOutQuart' as const,
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index' as const,
-    },
-    plugins: {
-      legend: {
-        display: true,
-        position: 'top' as const,
-        labels: {
-          usePointStyle: true,
-          padding: window.innerWidth < 640 ? 12 : 20,
-          font: {
-            size: window.innerWidth < 640 ? 10 : 12
-          },
-          color: chartColors.textSecondary,
-        },
+  const evolutionOptions = useMemo(() => {
+    // Calculer le domaine dynamique de l'axe Y
+    let minValue = 100;
+    let maxValue = 0;
+    
+    if (evolutionData) {
+      const allValues = [
+        ...(evolutionData.datasets[0]?.data || []),
+        ...(evolutionData.datasets[1]?.data || [])
+      ].filter((v): v is number => typeof v === 'number');
+      
+      if (allValues.length > 0) {
+        minValue = Math.min(...allValues);
+        maxValue = Math.max(...allValues);
+      }
+    }
+    
+    // Déterminer le domaine optimal
+    let yMin: number;
+    let yMax: number;
+    
+    const range = maxValue - minValue;
+    
+    if (range < 1) {
+      // Si la variation est très faible (< 1%), zoomer sur une plage de 5%
+      const center = (minValue + maxValue) / 2;
+      yMin = Math.max(0, Math.floor(center - 2.5));
+      yMax = Math.min(100, Math.ceil(center + 2.5));
+    } else if (range < 5) {
+      // Si la variation est faible (< 5%), ajouter 2% de marge de chaque côté
+      yMin = Math.max(0, Math.floor(minValue - 2));
+      yMax = Math.min(100, Math.ceil(maxValue + 2));
+    } else {
+      // Sinon, ajouter 5% de marge
+      yMin = Math.max(0, Math.floor(minValue - 5));
+      yMax = Math.min(100, Math.ceil(maxValue + 5));
+    }
+    
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: {
+        duration: 1000,
+        easing: 'easeInOutQuart' as const,
       },
-      datalabels: {
-        display: false,
+      interaction: {
+        intersect: false,
+        mode: 'index' as const,
       },
-      title: {
-        display: false,
-      },
-      tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          size: 13,
-          weight: 500,
-        },
-        displayColors: true,
-        callbacks: {
-          title: function(context: any) {
-            const rawData = (evolutionData as any)?.rawData;
-            const formatTooltipDate = (evolutionData as any)?.formatTooltipDate;
-            if (rawData && rawData[context[0].dataIndex]) {
-              const dayData = rawData[context[0].dataIndex];
-              if (formatTooltipDate) {
-                return formatTooltipDate(dayData.date);
-              }
-              return dayData.date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            }
-            return context[0].label || '';
-          },
-          label: function(context: any) {
-            const value = context.parsed.y || 0;
-            const datasetLabel = context.dataset.label || '';
-            
-            // Si c'est la courbe de moyenne, afficher la moyenne cumulative
-            if (datasetLabel === t('strategies:averageRate', { defaultValue: 'Moyenne' })) {
-              return `${datasetLabel}: ${formatNumber(value, 2)}%`;
-            }
-            
-            const rawData = (evolutionData as any)?.rawData;
-            const aggregation = (evolutionData as any)?.aggregation;
-            const dayData = rawData?.[context.dataIndex];
-            if (!dayData) return `${datasetLabel}: ${formatNumber(value, 2)}%`;
-            
-            const totalStrategies = dayData.total_strategies || 0;
-            const respected = dayData.respected || 0;
-            const count = dayData.count || 1;
-            
-            // Afficher le nombre de jours/semaines/mois selon l'agrégation
-            let periodLabel = '';
-            if (aggregation === 'week') {
-              periodLabel = count === 1 
-                ? `(${count} ${t('strategies:day', { defaultValue: 'jour' })})`
-                : `(${count} ${t('strategies:days', { defaultValue: 'jours' })})`;
-            } else if (aggregation === 'month') {
-              periodLabel = count === 1 
-                ? `(${count} ${t('strategies:day', { defaultValue: 'jour' })})`
-                : `(${count} ${t('strategies:days', { defaultValue: 'jours' })})`;
-            } else if (aggregation === 'year') {
-              periodLabel = count === 1 
-                ? `(${count} ${t('strategies:day', { defaultValue: 'jour' })})`
-                : `(${count} ${t('strategies:days', { defaultValue: 'jours' })})`;
-            }
-            
-            return `${datasetLabel}: ${formatNumber(value, 2)}% ${totalStrategies > 0 ? `(${respected}/${totalStrategies})` : ''} ${periodLabel}`;
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top' as const,
+          labels: {
+            usePointStyle: true,
+            padding: window.innerWidth < 640 ? 12 : 20,
+            font: {
+              size: window.innerWidth < 640 ? 10 : 12
+            },
+            color: chartColors.textSecondary,
           },
         },
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: false,
-        max: 105,
-        ticks: {
-          callback: function(value: any) {
-            // Ne pas afficher le label pour 105% mais garder l'espace
-            if (value === 105) {
-              return '';
-            }
-            return value + '%';
-          },
-          color: chartColors.textSecondary,
-          font: {
-            size: window.innerWidth < 640 ? 10 : 12,
-          },
-        },
-        grid: {
-          color: 'rgba(148, 163, 184, 0.1)',
-          lineWidth: 1,
-          drawBorder: false,
-        },
-        border: {
-          color: chartColors.border,
+        datalabels: {
           display: false,
         },
         title: {
-          display: true,
-          text: t('strategies:compliance.rate'),
-          color: chartColors.text,
-          font: {
-            size: window.innerWidth < 640 ? 11 : 13,
+          display: false,
+        },
+        tooltip: {
+          backgroundColor: chartColors.tooltipBg,
+          titleColor: chartColors.tooltipTitle,
+          bodyColor: chartColors.tooltipBody,
+          borderColor: chartColors.tooltipBorder,
+          borderWidth: 1,
+          padding: 16,
+          titleFont: {
+            size: 14,
             weight: 600,
+          },
+          bodyFont: {
+            size: 13,
+            weight: 500,
+          },
+          displayColors: true,
+          callbacks: {
+            title: function(context: any) {
+              const rawData = (evolutionData as any)?.rawData;
+              const formatTooltipDate = (evolutionData as any)?.formatTooltipDate;
+              if (rawData && rawData[context[0].dataIndex]) {
+                const dayData = rawData[context[0].dataIndex];
+                if (formatTooltipDate) {
+                  return formatTooltipDate(dayData.date);
+                }
+                return dayData.date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+              }
+              return context[0].label || '';
+            },
+            label: function(context: any) {
+              const value = context.parsed.y || 0;
+              const datasetLabel = context.dataset.label || '';
+              
+              // Si c'est la courbe de moyenne, afficher la moyenne cumulative
+              if (datasetLabel === t('strategies:averageRate', { defaultValue: 'Moyenne' })) {
+                return `${datasetLabel}: ${formatNumber(value, 2)}%`;
+              }
+              
+              const rawData = (evolutionData as any)?.rawData;
+              const aggregation = (evolutionData as any)?.aggregation;
+              const dayData = rawData?.[context.dataIndex];
+              if (!dayData) return `${datasetLabel}: ${formatNumber(value, 2)}%`;
+              
+              const totalStrategies = dayData.total_strategies || 0;
+              const respected = dayData.respected || 0;
+              const count = dayData.count || 1;
+              
+              // Afficher le nombre de jours/semaines/mois selon l'agrégation
+              let periodLabel = '';
+              if (aggregation === 'week') {
+                periodLabel = count === 1 
+                  ? `(${count} ${t('strategies:day', { defaultValue: 'jour' })})`
+                  : `(${count} ${t('strategies:days', { defaultValue: 'jours' })})`;
+              } else if (aggregation === 'month') {
+                periodLabel = count === 1 
+                  ? `(${count} ${t('strategies:day', { defaultValue: 'jour' })})`
+                  : `(${count} ${t('strategies:days', { defaultValue: 'jours' })})`;
+              } else if (aggregation === 'year') {
+                periodLabel = count === 1 
+                  ? `(${count} ${t('strategies:day', { defaultValue: 'jour' })})`
+                  : `(${count} ${t('strategies:days', { defaultValue: 'jours' })})`;
+              }
+              
+              return `${datasetLabel}: ${formatNumber(value, 2)}% ${totalStrategies > 0 ? `(${respected}/${totalStrategies})` : ''} ${periodLabel}`;
+            },
           },
         },
       },
+      scales: {
+        y: {
+          min: yMin,
+          max: yMax,
+          ticks: {
+            callback: function(value: any) {
+              return value + '%';
+            },
+            color: chartColors.textSecondary,
+            font: {
+              size: window.innerWidth < 640 ? 10 : 12,
+            },
+          },
+          grid: {
+            color: 'rgba(148, 163, 184, 0.1)',
+            lineWidth: 1,
+            drawBorder: false,
+          },
+          border: {
+            color: chartColors.border,
+            display: false,
+          },
+          title: {
+            display: true,
+            text: t('strategies:compliance.rate'),
+            color: chartColors.text,
+            font: {
+              size: window.innerWidth < 640 ? 11 : 13,
+              weight: 600,
+            },
+          },
+        },
       x: {
         ticks: {
           color: chartColors.textSecondary,
@@ -1505,7 +1539,8 @@ const StrategiesPage: React.FC = () => {
         borderJoinStyle: 'round' as const,
       },
     },
-  }), [evolutionData, chartColors, formatNumber, t]);
+  };
+  }, [evolutionData, chartColors, formatNumber, t]);
 
   // Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
   const weekdayComplianceData = useMemo(() => {
