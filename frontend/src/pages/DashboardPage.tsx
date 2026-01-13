@@ -1234,9 +1234,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       ? currentAvgLoss * (1 - reductionPercentage)
       : gaugeMaxValues.avgLosing * 0.7; // Fallback si pas de perte
     
+    // Objectif pour avgWinning : augmenter le gain moyen de 20%
+    const currentAvgWin = tradingMetrics.avgWinningTrade;
+    const improvementPercentage = 0.20; // 20% d'amélioration
+    const avgWinningObjective = currentAvgWin > 0
+      ? currentAvgWin * (1 + improvementPercentage)
+      : gaugeMaxValues.avgWinning * 0.9; // Fallback si pas de gain
+    
     return {
       winRate: Math.max(60, Math.ceil(tradingMetrics.winRate / 10) * 10),
-      avgWinning: gaugeMaxValues.avgWinning * 0.9,
+      avgWinning: avgWinningObjective,
       avgLosing: avgLosingObjective,
     };
   }, [tradingMetrics, gaugeMaxValues]);
