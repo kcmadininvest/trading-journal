@@ -834,32 +834,6 @@ function StatisticsPage() {
                   />
                 </MetricCard>
 
-                <MetricCard
-                  title={`${t('statistics:advancedAnalysis.daysWithProfit')} / ${t('statistics:advancedAnalysis.daysWithLoss')}`}
-                  icon={
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  }
-                >
-                  <MetricItem
-                    label={t('statistics:advancedAnalysis.daysWithProfit')}
-                    value={analyticsData.daily_stats.days_with_profit || 0}
-                    variant="success"
-                  />
-                  <MetricItem
-                    label={t('statistics:advancedAnalysis.daysWithLoss')}
-                    value={analyticsData.daily_stats.days_with_loss || 0}
-                    variant="danger"
-                  />
-                  {analyticsData.daily_stats.days_break_even > 0 && (
-                    <MetricItem
-                      label={t('statistics:advancedAnalysis.daysBreakEven')}
-                      value={analyticsData.daily_stats.days_break_even}
-                      variant="default"
-                    />
-                  )}
-                </MetricCard>
               </>
             )}
           </div>
