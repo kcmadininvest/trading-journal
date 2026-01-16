@@ -95,7 +95,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
 
   return (
     <header className="bg-blue-950 shadow-sm border-b border-gray-700 h-16 sm:h-20 flex items-center">
-      <div className="flex items-center justify-between pl-20 sm:pl-6 pr-3 sm:pr-6 w-full h-full gap-2 sm:gap-4">
+      <div className="flex items-center justify-between pl-16 pr-3 sm:px-6 w-full h-full gap-2 sm:gap-4">
         {/* Page title */}
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-2xl font-bold text-white truncate">

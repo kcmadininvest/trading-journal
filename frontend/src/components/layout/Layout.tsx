@@ -80,8 +80,8 @@ const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Sidebar - fixe sur toute la hauteur */}
       <Sidebar
         currentUser={currentUser}
         currentPage={currentPage}
@@ -90,8 +90,10 @@ const Layout: React.FC<LayoutProps> = ({
         onToggleCollapse={handleToggleSidebar}
       />
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main content area - avec margin-left pour la sidebar */}
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ${
+        isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}>
         {/* Header */}
         <Header
           currentUser={currentUser}
@@ -100,7 +102,7 @@ const Layout: React.FC<LayoutProps> = ({
         />
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+        <main className="flex-1 bg-gray-50 dark:bg-gray-900">
           <div className="py-6 pb-20">
             {children}
           </div>

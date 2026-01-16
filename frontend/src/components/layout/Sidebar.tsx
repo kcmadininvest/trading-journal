@@ -214,10 +214,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       )}
 
       {/* Sidebar */}
-      <div className={`fixed lg:relative left-0 z-50 bg-blue-950 text-white border-r border-gray-700 dark:border-gray-600 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
+      <div className={`fixed left-0 top-0 z-50 bg-blue-950 text-white border-r border-gray-700 dark:border-gray-600 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      } ${isCollapsed ? 'w-20' : 'w-64 sm:w-72'} flex flex-col h-screen lg:h-auto lg:min-h-screen`}>
-      {/* Logo */}
+      } ${isCollapsed ? 'w-20' : 'w-64'} flex flex-col h-screen`}>
+      {/* Header - fixe en haut */}
       <div className={`h-16 sm:h-20 flex items-center border-b border-gray-700 relative flex-shrink-0 ${isCollapsed ? 'px-3 sm:px-4 justify-center' : 'px-4 sm:px-6'}`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-between w-full'}`}>
           <div className="flex items-center">
@@ -257,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
         </div>
       </div>
 
-      {/* Menu */}
+      {/* Menu - zone scrollable */}
       <nav className="flex-1 overflow-y-auto overflow-x-hidden mt-4 sm:mt-6 min-h-0 sidebar-scrollbar">
         {!isCollapsed && (
           <div className="px-3 sm:px-4 sticky top-0 bg-blue-950 z-10 pt-2">
@@ -297,7 +297,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
         </ul>
       </nav>
 
-      {/* API Status and Version */}
+      {/* Footer - fixe en bas */}
       <div className={`flex-shrink-0 ${isCollapsed ? 'w-20 px-2' : 'w-full px-3 sm:px-4'} py-3 sm:py-4 border-t border-gray-700`}>
         <div className={`flex flex-col ${isCollapsed ? 'items-center' : ''} space-y-1.5 sm:space-y-2`}>
           {/* API Status */}

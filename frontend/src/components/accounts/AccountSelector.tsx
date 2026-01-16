@@ -349,7 +349,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
             setHideNamePart(newValue);
             setHideAccountNamePart(newValue);
           }}
-          className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          className="p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
           title={hideNamePart ? t('common:showAccountNamePart', { defaultValue: 'Afficher le nom complet' }) : t('common:hideAccountNamePart', { defaultValue: 'Masquer une partie du nom' })}
         >
           {hideNamePart ? (
