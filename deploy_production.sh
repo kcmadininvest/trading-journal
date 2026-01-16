@@ -664,6 +664,18 @@ if [ ! -d "$LOGS_DIR" ]; then
     mkdir -p "$LOGS_DIR" 2>/dev/null || warn "Impossible de créer le répertoire de logs"
 fi
 
+# Créer les répertoires media si nécessaires (journal inclus)
+MEDIA_DIR="$BACKEND_DIR/media"
+JOURNAL_MEDIA_DIR="$MEDIA_DIR/daily_journal"
+if [ ! -d "$MEDIA_DIR" ]; then
+    info "Création du répertoire media: $MEDIA_DIR"
+    mkdir -p "$MEDIA_DIR" 2>/dev/null || warn "Impossible de créer le répertoire media"
+fi
+if [ ! -d "$JOURNAL_MEDIA_DIR" ]; then
+    info "Création du répertoire media journal: $JOURNAL_MEDIA_DIR"
+    mkdir -p "$JOURNAL_MEDIA_DIR" 2>/dev/null || warn "Impossible de créer le répertoire media journal"
+fi
+
 # Utiliser chown avec apache: (sans spécifier le groupe apache explicitement)
 # Cela appliquera les permissions à tout le projet, y compris le répertoire de logs
 chown -R apache: "$PROJECT_ROOT" 2>/dev/null || warn "Impossible de changer les permissions (peut nécessiter sudo)"
