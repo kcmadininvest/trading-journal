@@ -147,21 +147,6 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
     }
   };
 
-  const applyMarkdown = (before: string, after = '') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = content.slice(start, end);
-    const next = `${content.slice(0, start)}${before}${selected || ''}${after}${content.slice(end)}`;
-    setContent(next);
-    window.requestAnimationFrame(() => {
-      textarea.focus();
-      const cursor = start + before.length + (selected || '').length;
-      textarea.setSelectionRange(cursor, cursor);
-    });
-  };
-
   const toggleWrap = (before: string, after = before) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
