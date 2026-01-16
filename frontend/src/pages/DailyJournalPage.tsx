@@ -23,6 +23,8 @@ const DailyJournalPage: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [isEntryLoading, setIsEntryLoading] = useState(false);
   const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(true);
+  const [hoveredEntry, setHoveredEntry] = useState<DailyJournalGroupedEntry | null>(null);
+  const [hoveredEntryContent, setHoveredEntryContent] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
 
   const loadEntries = useCallback(async () => {
@@ -92,6 +94,21 @@ const DailyJournalPage: React.FC = () => {
     setNewEntryDate('');
   };
 
+  const handleEntryHover = async (entry: DailyJournalGroupedEntry) => {
+    setHoveredEntry(entry);
+    try {
+      const fullEntry = await dailyJournalService.getEntry(entry.id);
+      setHoveredEntryContent(fullEntry.content);
+    } catch (err) {
+      setHoveredEntryContent(entry.content_preview);
+    }
+  };
+
+  const handleEntryLeave = () => {
+    setHoveredEntry(null);
+    setHoveredEntryContent(null);
+  };
+
   const resolvedLanguage = useMemo<LanguageType>(() => {
     const lang = i18n.language?.split('-')[0];
     const supported: LanguageType[] = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
@@ -107,7 +124,14 @@ const DailyJournalPage: React.FC = () => {
 
   const monthNames = useMemo(() => getMonthNames(resolvedLanguage), [resolvedLanguage]);
 
-  const selectedYearData = groupedYears.find((year) => year.year === selectedYear) || null;
+  const selectedYearData = useMemo(() => {
+    const yearData = groupedYears.find((year) => year.year === selectedYear) || null;
+    if (!yearData) return null;
+    return {
+      ...yearData,
+      months: [...yearData.months].sort((a, b) => a.month - b.month)
+    };
+  }, [groupedYears, selectedYear]);
   const selectedMonthData = selectedYearData?.months.find((month) => month.month === selectedMonth) || null;
   const selectedEntries = useMemo(() => {
     const entries = selectedMonthData?.entries || [];
@@ -185,73 +209,176 @@ const DailyJournalPage: React.FC = () => {
         ) : (
           <>
             {/* Desktop layout */}
-            <div className="hidden md:grid grid-cols-12 gap-4">
-              <div className="col-span-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
-                <h3 className="text-xs font-semibold text-gray-500 mb-3">{t('dailyJournal.years', { defaultValue: 'Annees' })}</h3>
-                <div className="space-y-1">
-                  {groupedYears.map((year) => (
-                    <button
-                      key={year.year}
-                      onClick={() => {
-                        setSelectedYear(year.year);
-                        setSelectedMonth(year.months[0]?.month ?? null);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-                        selectedYear === year.year
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {year.year}
-                    </button>
-                  ))}
+            <div className="hidden md:block">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <div className="grid grid-cols-12 gap-4 items-start">
+                  <div className="col-span-3">
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">{t('dailyJournal.years', { defaultValue: 'Annees' })}</h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const currentIndex = groupedYears.findIndex(y => y.year === selectedYear);
+                          if (currentIndex > 0) {
+                            const newYear = groupedYears[currentIndex - 1];
+                            setSelectedYear(newYear.year);
+                            setSelectedMonth(newYear.months[0]?.month ?? null);
+                          }
+                        }}
+                        disabled={!selectedYear || groupedYears.findIndex(y => y.year === selectedYear) === 0}
+                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <div className="flex-1 overflow-hidden">
+                        <div className="flex gap-2">
+                          {groupedYears.map((year) => (
+                            <button
+                              key={year.year}
+                              onClick={() => {
+                                setSelectedYear(year.year);
+                                setSelectedMonth(year.months[0]?.month ?? null);
+                              }}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                                selectedYear === year.year
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              {year.year}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const currentIndex = groupedYears.findIndex(y => y.year === selectedYear);
+                          if (currentIndex < groupedYears.length - 1) {
+                            const newYear = groupedYears[currentIndex + 1];
+                            setSelectedYear(newYear.year);
+                            setSelectedMonth(newYear.months[0]?.month ?? null);
+                          }
+                        }}
+                        disabled={!selectedYear || groupedYears.findIndex(y => y.year === selectedYear) === groupedYears.length - 1}
+                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="col-span-9">
+                    <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-3">{t('dailyJournal.months', { defaultValue: 'Mois' })}</h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (!selectedYearData) return;
+                          const currentIndex = selectedYearData.months.findIndex(m => m.month === selectedMonth);
+                          if (currentIndex > 0) {
+                            setSelectedMonth(selectedYearData.months[currentIndex - 1].month);
+                          }
+                        }}
+                        disabled={!selectedYearData || !selectedMonth || selectedYearData.months.findIndex(m => m.month === selectedMonth) === 0}
+                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <div className="flex-1 overflow-hidden">
+                        <div className="flex gap-2">
+                          {selectedYearData?.months.map((month) => (
+                            <button
+                              key={`${selectedYearData?.year}-${month.month}`}
+                              onClick={() => setSelectedMonth(month.month)}
+                              className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                                selectedMonth === month.month
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              {monthNames[month.month - 1]}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!selectedYearData) return;
+                          const currentIndex = selectedYearData.months.findIndex(m => m.month === selectedMonth);
+                          if (currentIndex < selectedYearData.months.length - 1) {
+                            setSelectedMonth(selectedYearData.months[currentIndex + 1].month);
+                          }
+                        }}
+                        disabled={!selectedYearData || !selectedMonth || selectedYearData.months.findIndex(m => m.month === selectedMonth) === selectedYearData.months.length - 1}
+                        className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="col-span-1 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
-                <h3 className="text-xs font-semibold text-gray-500 mb-3">{t('dailyJournal.months', { defaultValue: 'Mois' })}</h3>
-                <div className="space-y-1">
-                  {selectedYearData?.months.map((month) => (
-                    <button
-                      key={`${selectedYearData?.year}-${month.month}`}
-                      onClick={() => setSelectedMonth(month.month)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm ${
-                        selectedMonth === month.month
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                      }`}
-                    >
-                      {monthNames[month.month - 1]}
-                      <span className="ml-2 text-xs text-gray-400">({month.entries.length})</span>
-                    </button>
-                  ))}
+
+              <div className="mt-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('dailyJournal.entries', { defaultValue: 'Entrees' })}</h3>
+                  <button
+                    type="button"
+                    onClick={handleNewEntry}
+                    disabled={!newEntryDate || accountLoading}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      newEntryDate
+                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {t('dailyJournal.create', { defaultValue: 'Creer' })}...
+                  </button>
                 </div>
-              </div>
-              <div className="col-span-10 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
-                <h3 className="text-xs font-semibold text-gray-500 mb-3">{t('dailyJournal.entries', { defaultValue: 'Entrees' })}</h3>
                 {selectedEntries.length === 0 ? (
-                  <div className="text-sm text-gray-500">{t('dailyJournal.noEntries', { defaultValue: 'Aucun journal' })}</div>
+                  <div className="text-sm text-gray-500 py-8 text-center">{t('dailyJournal.noEntries', { defaultValue: 'Aucun journal' })}</div>
                 ) : (
                   <div className="space-y-3">
                     {selectedEntries.map((entry: DailyJournalGroupedEntry) => (
-                      <button
+                      <div
                         key={entry.id}
-                        type="button"
-                        onClick={() => handleOpenEntry(entry.id)}
-                        className="w-full text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 hover:shadow-md transition-shadow"
+                        className="relative"
+                        onMouseEnter={() => handleEntryHover(entry)}
+                        onMouseLeave={handleEntryLeave}
                       >
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatDate(entry.date)}</p>
-                            {entry.trading_account_name && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400">{entry.trading_account_name}</p>
-                            )}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEntry(entry.id)}
+                          className="w-full text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatDate(entry.date)}</p>
+                              {entry.trading_account_name && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">{entry.trading_account_name}</p>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-400">{entry.images_count} image(s)</span>
                           </div>
-                          <span className="text-xs text-gray-400">{entry.images_count} image(s)</span>
-                        </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
-                          {entry.content_preview || t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
-                        </p>
-                      </button>
+                          <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+                            {entry.content_preview || t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
+                          </p>
+                        </button>
+                        
+                        {hoveredEntry?.id === entry.id && hoveredEntryContent && (
+                          <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl p-4 max-h-96 overflow-y-auto">
+                            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                              {hoveredEntryContent}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -353,32 +480,38 @@ const DailyJournalPage: React.FC = () => {
               )}
             </div>
 
-            <div className="hidden md:grid grid-cols-12 gap-4">
-              <div className="col-span-2" />
-              <div className="col-span-10 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            <div className="hidden md:block bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
                   {t('dailyJournal.editing', { defaultValue: 'Edition du journal' })} - {formatDate(editingEntry.date)}
                 </h3>
-                {isEntryLoading ? (
-                  <div className="text-center py-6 text-gray-500">{t('dailyJournal.loading', { defaultValue: 'Chargement...' })}</div>
-                ) : (
-                  <DailyJournalEditor
-                    date={editingEntry.date}
-                    entryId={editingEntry.id || undefined}
-                    initialEntry={editingEntry.id ? editingEntry : null}
-                    tradingAccountId={editingEntry.trading_account ?? selectedAccountId ?? undefined}
-                    compact
-                    onSaved={() => {
-                      setEditingEntry(null);
-                      loadEntries();
-                    }}
-                    onDeleted={() => {
-                      setEditingEntry(null);
-                      loadEntries();
-                    }}
-                  />
-                )}
+                <button
+                  type="button"
+                  onClick={() => setEditingEntry(null)}
+                  className="text-xs px-3 py-1 rounded-md border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
+                >
+                  {t('dailyJournal.close', { defaultValue: 'Fermer' })}
+                </button>
               </div>
+              {isEntryLoading ? (
+                <div className="text-center py-6 text-gray-500">{t('dailyJournal.loading', { defaultValue: 'Chargement...' })}</div>
+              ) : (
+                <DailyJournalEditor
+                  date={editingEntry.date}
+                  entryId={editingEntry.id || undefined}
+                  initialEntry={editingEntry.id ? editingEntry : null}
+                  tradingAccountId={editingEntry.trading_account ?? selectedAccountId ?? undefined}
+                  compact
+                  onSaved={() => {
+                    setEditingEntry(null);
+                    loadEntries();
+                  }}
+                  onDeleted={() => {
+                    setEditingEntry(null);
+                    loadEntries();
+                  }}
+                />
+              )}
             </div>
           </div>
         )}
