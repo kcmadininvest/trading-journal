@@ -290,6 +290,23 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
     }
   };
 
+  const handleInsertText = (text: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setContent((prev) => `${prev}${text}`);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const next = `${content.slice(0, start)}${text}${content.slice(end)}`;
+    setContent(next);
+    const cursor = start + text.length;
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  };
+
   const applySpanStyle = (style: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
@@ -396,7 +413,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
       )}
 
       <div className="flex items-center justify-between gap-3">
-        <JournalEditorToolbar onAction={handleToolbarAction} disabled={isLoading || isSaving} />
+        <JournalEditorToolbar onAction={handleToolbarAction} onInsertText={handleInsertText} disabled={isLoading || isSaving} />
         <button
           type="button"
           onClick={() => setShowPreview((prev) => !prev)}

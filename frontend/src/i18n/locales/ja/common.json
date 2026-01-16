@@ -105,7 +105,8 @@
       "bullet": "箇条書き",
       "numbered": "番号付きリスト",
       "quote": "引用",
-      "link": "リンク"
+      "link": "リンク",
+      "emoji": "絵文字"
     },
     "editAction": "編集",
     "empty": "この日付のジャーナルはありません。",

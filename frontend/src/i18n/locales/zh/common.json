@@ -105,7 +105,8 @@
       "bullet": "项目符号列表",
       "numbered": "编号列表",
       "quote": "引用",
-      "link": "链接"
+      "link": "链接",
+      "emoji": "表情符号"
     },
     "editAction": "编辑",
     "empty": "该日期没有日志。",

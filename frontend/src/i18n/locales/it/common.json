@@ -105,7 +105,8 @@
       "bullet": "Elenco puntato",
       "numbered": "Elenco numerato",
       "quote": "Citazione",
-      "link": "Link"
+      "link": "Link",
+      "emoji": "Emoji"
     },
     "editAction": "Modifica",
     "empty": "Nessun diario per questa data.",

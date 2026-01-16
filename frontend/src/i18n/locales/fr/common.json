@@ -118,7 +118,8 @@
       "bullet": "Liste a puces",
       "numbered": "Liste numerotee",
       "quote": "Citation",
-      "link": "Lien"
+      "link": "Lien",
+      "emoji": "Émoticônes"
     },
     "editAction": "Modifier",
     "empty": "Aucun journal pour cette date.",

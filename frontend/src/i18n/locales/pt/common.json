@@ -105,7 +105,8 @@
       "bullet": "Lista com marcadores",
       "numbered": "Lista numerada",
       "quote": "Citação",
-      "link": "Link"
+      "link": "Link",
+      "emoji": "Emojis"
     },
     "editAction": "Editar",
     "empty": "Nenhum diario para esta data.",

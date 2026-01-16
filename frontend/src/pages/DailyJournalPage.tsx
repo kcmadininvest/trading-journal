@@ -109,7 +109,10 @@ const DailyJournalPage: React.FC = () => {
 
   const selectedYearData = groupedYears.find((year) => year.year === selectedYear) || null;
   const selectedMonthData = selectedYearData?.months.find((month) => month.month === selectedMonth) || null;
-  const selectedEntries = selectedMonthData?.entries || [];
+  const selectedEntries = useMemo(() => {
+    const entries = selectedMonthData?.entries || [];
+    return [...entries].sort((a, b) => a.date.localeCompare(b.date));
+  }, [selectedMonthData]);
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-full">

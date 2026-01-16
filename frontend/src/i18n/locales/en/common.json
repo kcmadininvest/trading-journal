@@ -118,7 +118,8 @@
       "bullet": "Bulleted list",
       "numbered": "Numbered list",
       "quote": "Quote",
-      "link": "Link"
+      "link": "Link",
+      "emoji": "Emoji"
     },
     "editAction": "Edit",
     "empty": "No journal for this date.",

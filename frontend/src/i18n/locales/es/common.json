@@ -114,7 +114,8 @@
       "bullet": "Lista con viñetas",
       "numbered": "Lista numerada",
       "quote": "Cita",
-      "link": "Enlace"
+      "link": "Enlace",
+      "emoji": "Emoticones"
     },
     "editAction": "Editar",
     "empty": "No hay diario para esta fecha.",

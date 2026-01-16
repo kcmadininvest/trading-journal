@@ -214,9 +214,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       )}
 
       {/* Sidebar */}
-      <div className={`fixed lg:sticky lg:top-0 lg:h-screen lg:max-h-screen left-0 z-50 bg-blue-950 text-white border-r border-gray-700 dark:border-gray-600 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
+      <div className={`fixed lg:relative left-0 z-50 bg-blue-950 text-white border-r border-gray-700 dark:border-gray-600 transform transition-all duration-300 ease-in-out lg:translate-x-0 ${
         isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      } ${isCollapsed ? 'w-20' : 'w-64 sm:w-72'} flex flex-col h-screen`}>
+      } ${isCollapsed ? 'w-20' : 'w-64 sm:w-72'} flex flex-col h-screen lg:h-auto lg:min-h-screen`}>
       {/* Logo */}
       <div className={`h-16 sm:h-20 flex items-center border-b border-gray-700 relative flex-shrink-0 ${isCollapsed ? 'px-3 sm:px-4 justify-center' : 'px-4 sm:px-6'}`}>
         <div className={`flex items-center ${isCollapsed ? 'justify-center w-full' : 'justify-between w-full'}`}>

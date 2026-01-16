@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 interface TooltipProps {
   content: string;
@@ -21,6 +22,7 @@ const Tooltip: React.FC<TooltipProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [isPositioned, setIsPositioned] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -39,6 +41,7 @@ const Tooltip: React.FC<TooltipProps> = ({
       timeoutRef.current = null;
     }
     setIsVisible(false);
+    setIsPositioned(false);
   };
 
   const updatePosition = useCallback(() => {
@@ -86,6 +89,7 @@ const Tooltip: React.FC<TooltipProps> = ({
       top: top + (offset.y || 0), 
       left: left + (offset.x || 0) 
     });
+    setIsPositioned(true);
   }, [position, offset]);
 
   useEffect(() => {
@@ -159,21 +163,22 @@ const Tooltip: React.FC<TooltipProps> = ({
         {children}
       </div>
       
-      {isVisible && (
-        <div
-          ref={tooltipRef}
-          className="fixed z-50 px-3 py-2 text-sm font-normal text-gray-900 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg pointer-events-none max-w-xs break-words"
-          style={{
-            '--tooltip-top': tooltipPosition.top,
-            '--tooltip-left': tooltipPosition.left,
-            top: 'var(--tooltip-top)',
-            left: 'var(--tooltip-left)',
-          } as React.CSSProperties}
-        >
-          {content}
-          <div className={getArrowClasses()} />
-        </div>
-      )}
+      {isVisible && typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={tooltipRef}
+            className="fixed z-50 px-3 py-2 text-sm font-normal text-gray-900 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg pointer-events-none max-w-xs break-words transition-opacity duration-150"
+            style={{
+              top: `${tooltipPosition.top}px`,
+              left: `${tooltipPosition.left}px`,
+              opacity: isPositioned ? 1 : 0,
+            }}
+          >
+            {content}
+            <div className={getArrowClasses()} />
+          </div>,
+          document.body
+        )}
     </>
   );
 };

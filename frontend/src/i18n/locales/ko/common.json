@@ -105,7 +105,8 @@
       "bullet": "글머리 기호 목록",
       "numbered": "번호 매기기 목록",
       "quote": "인용",
-      "link": "링크"
+      "link": "링크",
+      "emoji": "이모지"
     },
     "editAction": "편집",
     "empty": "이 날짜의 저널이 없습니다.",
