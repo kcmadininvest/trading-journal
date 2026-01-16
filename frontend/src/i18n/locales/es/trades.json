@@ -152,6 +152,8 @@
   },
   "dayTradesModal": {
     "title": "Operaciones del Día",
+    "trades": "Operaciones",
+    "journal": "Diario",
     "error": "Error",
     "errorLoading": "Error al cargar las operaciones",
     "noTradesForDate": "No se encontraron operaciones para esta fecha",

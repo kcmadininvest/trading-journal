@@ -50,9 +50,8 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
     if (authService.isAuthenticated()) {
       try {
         await userService.updatePreferences({ language: lang as any });
-        console.log('[Header] ✅ Langue sauvegardée dans le backend:', lang);
       } catch (error) {
-        console.error('[Header] ❌ Erreur sauvegarde langue:', error);
+        // Ne pas logger en production
       }
     }
   };
@@ -61,6 +60,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
     const titles: { [key: string]: string } = {
       dashboard: t('navigation:dashboard'),
       calendar: t('navigation:calendar'),
+      'daily-journal': t('navigation:dailyJournal', { defaultValue: 'Journal' }),
       trades: t('navigation:trades'),
       statistics: t('navigation:statistics'),
       strategies: t('navigation:strategies'),

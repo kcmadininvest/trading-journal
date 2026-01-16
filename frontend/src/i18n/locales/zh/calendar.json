@@ -16,6 +16,8 @@
   "strategyPartiallyRespected": "Stratégie partiellement respectée",
   "viewDayTrades": "Voir les trades du jour",
   "manageStrategyCompliance": "Gérer le respect de la stratégie",
+  "hasJournal": "Journal available",
+  "viewJournal": "View journal",
   "importTrades": "Importer des trades",
   "trade": "trade",
   "trades": "trades"

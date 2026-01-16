@@ -69,6 +69,18 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, currentPage, onNavigate,
       visible: true,
     },
     {
+      id: 'daily-journal',
+      label: t('navigation:dailyJournal', { defaultValue: 'Journal' }),
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h10a2 2 0 012 2v11a1 1 0 01-1 1H8a2 2 0 01-2-2V8a2 2 0 012-2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6h-1a2 2 0 00-2 2v11a1 1 0 001 1h1" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 10h5M11 14h5M11 18h3" />
+        </svg>
+      ),
+      visible: true,
+    },
+    {
       id: 'analytics',
       label: t('navigation:analytics'),
       icon: (

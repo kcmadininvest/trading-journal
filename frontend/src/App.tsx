@@ -18,6 +18,7 @@ import GoalsPage from './pages/GoalsPage';
 import LegalNoticePage from './pages/LegalNoticePage';
 import AboutPage from './pages/AboutPage';
 import FeaturesPage from './pages/FeaturesPage';
+import DailyJournalPage from './pages/DailyJournalPage';
 import OrganizationSchema from './components/SEO/OrganizationSchema';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
@@ -33,7 +34,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const currentPageRef = useRef(currentPage);
   const [showAccountCreationPrompt, setShowAccountCreationPrompt] = useState(false);
-  const { theme } = useTheme();
+  useTheme();
   const notifiedGoalsRef = useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
   
   // Maintenir la ref à jour
@@ -162,7 +163,7 @@ function App() {
     // Gérer la navigation par hash
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').trim();
-      const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
+      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
       const page = currentPageRef.current;
       
       // Si on a un hash valide et qu'il est différent de la page actuelle
@@ -186,7 +187,7 @@ function App() {
     
     // Initialiser la page selon le hash actuel au premier rendu
     const currentHash = window.location.hash.replace('#', '').trim();
-    const validPages = ['dashboard', 'calendar', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
+    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
     const page = currentPageRef.current;
     
     if (currentHash && validPages.includes(currentHash)) {
@@ -284,6 +285,8 @@ function App() {
             return <TradesPage />;
           case 'calendar':
             return <CalendarPage />;
+          case 'daily-journal':
+            return <DailyJournalPage />;
           case 'statistics':
             return <StatisticsPage />;
           case 'strategies':
@@ -339,8 +342,6 @@ function App() {
       </div>
     );
   }
-
-  const isDark = theme === 'dark';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">

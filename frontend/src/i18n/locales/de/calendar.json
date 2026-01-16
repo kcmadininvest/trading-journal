@@ -21,6 +21,8 @@
   "manageStrategyCompliance": "Strategieeinhaltung verwalten",
   "viewTrades": "Trades anzeigen",
   "manageStrategy": "Strategie verwalten",
+  "hasJournal": "Tagebuch verfügbar",
+  "viewJournal": "Tagebuch ansehen",
   "importTrades": "Trades importieren",
   "trade": "Trade",
   "trades": "Trades"

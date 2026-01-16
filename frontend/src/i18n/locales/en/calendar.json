@@ -21,6 +21,8 @@
   "manageStrategyCompliance": "Manage strategy compliance",
   "viewTrades": "View trades",
   "manageStrategy": "Manage strategy",
+  "hasJournal": "Journal available",
+  "viewJournal": "View journal",
   "importTrades": "Import trades",
   "trade": "trade",
   "trades": "trades"

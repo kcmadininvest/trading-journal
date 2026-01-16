@@ -152,6 +152,8 @@
   },
   "dayTradesModal": {
     "title": "Tages-Trades",
+    "trades": "Trades",
+    "journal": "Tagebuch",
     "error": "Fehler",
     "errorLoading": "Fehler beim Laden der Trades",
     "noTradesForDate": "Keine Trades für dieses Datum gefunden",

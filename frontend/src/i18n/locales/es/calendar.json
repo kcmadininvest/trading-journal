@@ -21,6 +21,8 @@
   "manageStrategyCompliance": "Gestionar el cumplimiento de la estrategia",
   "viewTrades": "Ver operaciones",
   "manageStrategy": "Gestionar estrategia",
+  "hasJournal": "Diario disponible",
+  "viewJournal": "Ver el diario",
   "importTrades": "Importar operaciones",
   "trade": "operación",
   "trades": "operaciones"

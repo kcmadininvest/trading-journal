@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     # Local apps
     'accounts',
     'trades',
+    'daily_journal',
 ]
 
 MIDDLEWARE = [

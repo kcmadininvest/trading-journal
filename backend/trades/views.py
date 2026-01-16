@@ -16,6 +16,7 @@ from collections import defaultdict
 from typing import cast, Any
 
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
+from daily_journal.models import DailyJournalEntry
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -1506,13 +1507,6 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         """
         trades = self.get_queryset()
         
-        if not trades.exists():
-            return Response({
-                'daily_data': [],
-                'weekly_data': [],
-                'monthly_total': 0
-            })
-        
         # Récupérer les paramètres de date
         year = request.query_params.get('year')
         month = request.query_params.get('month')
@@ -1561,7 +1555,17 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 )
             except (ValueError, TypeError):
                 # Ignorer si l'ID n'est pas valide
-                pass
+                trading_account_id = None
+
+        # Récupérer les entrées de journal pour le mois
+        journal_entries = DailyJournalEntry.objects.filter(
+            user=request.user,
+            date__gte=start_date.date(),
+            date__lt=end_date.date()
+        )
+        if trading_account_id:
+            journal_entries = journal_entries.filter(trading_account_id=trading_account_id)
+        journal_entries_by_day = {entry.date.day: entry.id for entry in journal_entries}
         
         # Créer une map des compliances par jour (pour jours sans trades)
         compliances_by_day = {}
@@ -1654,7 +1658,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     'date': str(day),
                     'pnl': daily_data[day]['pnl'],
                     'trade_count': daily_data[day]['trade_count'],
-                    'strategy_compliance_status': compliance_status
+                    'strategy_compliance_status': compliance_status,
+                    'has_journal_entry': day in journal_entries_by_day,
+                    'journal_entry_id': journal_entries_by_day.get(day)
                 })
             else:
                 # Jour sans trade - vérifier s'il y a une compliance
@@ -1663,7 +1669,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     'date': str(day),
                     'pnl': 0.0,
                     'trade_count': 0,
-                    'strategy_compliance_status': compliance_status
+                    'strategy_compliance_status': compliance_status,
+                    'has_journal_entry': day in journal_entries_by_day,
+                    'journal_entry_id': journal_entries_by_day.get(day)
                 })
         
         # Agréger par semaine (vraies semaines du calendrier - dimanche à samedi)

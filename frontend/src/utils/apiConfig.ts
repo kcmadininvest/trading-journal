@@ -22,7 +22,7 @@ export const getApiBaseUrl = (): string => {
   
   // Fallback par défaut pour le développement
   return process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:8000'
+    ? 'http://127.0.0.1:8000'
     : (typeof window !== 'undefined'
         ? `${window.location.protocol}//${window.location.host}`
         : '');

@@ -129,6 +129,8 @@
   },
   "dayTradesModal": {
     "title": "Trades du jour",
+    "trades": "Trades",
+    "journal": "Journal",
     "error": "Erreur",
     "errorLoading": "Erreur lors du chargement des trades",
     "noTradesForDate": "Aucun trade trouvé pour cette date",

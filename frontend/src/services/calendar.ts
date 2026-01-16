@@ -5,6 +5,8 @@ export interface DailyCalendarData {
   pnl: number;
   trade_count: number;
   strategy_compliance_status?: 'compliant' | 'non_compliant' | 'partial' | 'unknown';
+  has_journal_entry?: boolean;
+  journal_entry_id?: number | null;
 }
 
 export interface WeeklyCalendarData {

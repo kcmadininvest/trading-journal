@@ -3,6 +3,7 @@ import { DailyCalendarData, WeeklyCalendarData } from '../../services/calendar';
 import { Tooltip } from '../ui';
 import { DayTradesModal } from '../trades/DayTradesModal';
 import { StrategyComplianceModal } from '../trades/StrategyComplianceModal';
+import { DailyJournalModal } from '../dailyJournal/DailyJournalModal';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { getMonthNames, getDayNames } from '../../utils/dateFormat';
@@ -39,6 +40,7 @@ const DailyView: React.FC<DailyViewProps> = ({
   const { t } = useI18nTranslation();
   const [selectedDateForTrades, setSelectedDateForTrades] = useState<string | null>(null);
   const [selectedDateForStrategy, setSelectedDateForStrategy] = useState<string | null>(null);
+  const [selectedDateForJournal, setSelectedDateForJournal] = useState<string | null>(null);
   
   const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
   const dayNames = useMemo(() => getDayNames(preferences.language), [preferences.language]);
@@ -116,6 +118,10 @@ const DailyView: React.FC<DailyViewProps> = ({
     setSelectedDateForStrategy(formatDateForApi(day));
   };
 
+  const handleJournalClick = (day: number) => {
+    setSelectedDateForJournal(formatDateForApi(day));
+  };
+
   const handleCloseTradesModal = () => {
     setSelectedDateForTrades(null);
   };
@@ -123,6 +129,13 @@ const DailyView: React.FC<DailyViewProps> = ({
   const handleCloseStrategyModal = (saved?: boolean) => {
     setSelectedDateForStrategy(null);
     if (saved && onDataRefresh) {
+      onDataRefresh();
+    }
+  };
+
+  const handleCloseJournalModal = () => {
+    setSelectedDateForJournal(null);
+    if (onDataRefresh) {
       onDataRefresh();
     }
   };
@@ -349,6 +362,11 @@ const DailyView: React.FC<DailyViewProps> = ({
                           <span className={`text-xs sm:text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                             {dayNumber}
                           </span>
+                          {dayData?.has_journal_entry && (
+                            <Tooltip content={t('calendar:hasJournal', { defaultValue: 'Journal disponible' })} position="top">
+                              <span className="w-2 h-2 rounded-full bg-blue-500" />
+                            </Tooltip>
+                          )}
                           <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
                             {/* Actions pour les jours avec trades */}
                             {tradeCount > 0 && (
@@ -377,6 +395,20 @@ const DailyView: React.FC<DailyViewProps> = ({
                                   </button>
                                 </Tooltip>
                               </>
+                            )}
+                            {dayData?.has_journal_entry && (
+                              <Tooltip content={t('calendar:viewJournal', { defaultValue: 'Voir le journal' })} position="top">
+                                <button
+                                  onClick={() => handleJournalClick(dayNumber)}
+                                  className="p-0.5 sm:p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 dark:text-amber-400 transition-colors flex-shrink-0"
+                                  aria-label={t('calendar:viewJournal', { defaultValue: 'Voir le journal' })}
+                                >
+                                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h10a2 2 0 012 2v11a1 1 0 01-1 1H8a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6h-1a2 2 0 00-2 2v11a1 1 0 001 1h1" />
+                                  </svg>
+                                </button>
+                              </Tooltip>
                             )}
                             {/* Action pour les jours sans trades - permettre de cliquer pour gérer la compliance */}
                             {tradeCount === 0 && (
@@ -509,6 +541,20 @@ const DailyView: React.FC<DailyViewProps> = ({
                                 <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">
                                   {dayName}
                                 </span>
+                                {dayData?.has_journal_entry && (
+                                  <Tooltip content={t('calendar:viewJournal', { defaultValue: 'Voir le journal' })} position="top">
+                                    <button
+                                      onClick={() => handleJournalClick(dayNumber)}
+                                      className="mt-1 p-1 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/30 text-amber-600 dark:text-amber-400 transition-colors"
+                                      aria-label={t('calendar:viewJournal', { defaultValue: 'Voir le journal' })}
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h10a2 2 0 012 2v11a1 1 0 01-1 1H8a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6h-1a2 2 0 00-2 2v11a1 1 0 001 1h1" />
+                                      </svg>
+                                    </button>
+                                  </Tooltip>
+                                )}
                               </div>
 
                               {/* PnL */}
@@ -639,6 +685,15 @@ const DailyView: React.FC<DailyViewProps> = ({
           date={selectedDateForStrategy}
           onClose={handleCloseStrategyModal}
           tradingAccount={tradingAccount}
+        />
+      )}
+
+      {selectedDateForJournal && (
+        <DailyJournalModal
+          open={true}
+          date={selectedDateForJournal}
+          tradingAccountId={tradingAccount}
+          onClose={handleCloseJournalModal}
         />
       )}
     </div>
