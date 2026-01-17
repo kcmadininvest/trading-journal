@@ -116,8 +116,8 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   }, []);
 
   const [showCustomModal, setShowCustomModal] = useState(false);
-  const [customStart, setCustomStart] = useState(value?.start || '');
-  const [customEnd, setCustomEnd] = useState(value?.end || '');
+  const [customStart, setCustomStart] = useState(value?.start || presets.today.start);
+  const [customEnd, setCustomEnd] = useState(value?.end || presets.today.end);
 
   const presetOptions = useMemo(() => [
     { key: 'today', label: t('dashboard:period.today', { defaultValue: "Aujourd'hui" }) },
@@ -170,17 +170,17 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         setCustomStart(value.start);
         setCustomEnd(value.end);
       } else {
-        // Sinon, utiliser la période actuelle comme point de départ
+        // Sinon, initialiser à aujourd'hui pour les deux dates
         const now = new Date();
-        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
         const formatDate = (date: Date): string => {
           const year = date.getFullYear();
           const month = String(date.getMonth() + 1).padStart(2, '0');
           const day = String(date.getDate()).padStart(2, '0');
           return `${year}-${month}-${day}`;
         };
-        setCustomStart(formatDate(threeMonthsAgo));
-        setCustomEnd(formatDate(now));
+        const today = formatDate(now);
+        setCustomStart(today);
+        setCustomEnd(today);
       }
     } else {
       onChange(presets[presetKey as keyof typeof presets]);

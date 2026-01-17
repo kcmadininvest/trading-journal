@@ -25,6 +25,7 @@ export interface DailyJournalFilters {
   start_date?: string;
   end_date?: string;
   trading_account?: number;
+  search?: string;
   page?: number;
   page_size?: number;
 }

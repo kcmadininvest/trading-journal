@@ -7,6 +7,7 @@ import { formatDateLong, LanguageType } from '../utils/dateFormat';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { getMonthNames } from '../utils/dateFormat';
+import { DateInput } from '../components/common/DateInput';
 
 const DailyJournalPage: React.FC = () => {
   const { t, i18n } = useI18nTranslation();
@@ -17,6 +18,7 @@ const DailyJournalPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [searchText, setSearchText] = useState('');
   const [editingEntry, setEditingEntry] = useState<DailyJournalEntry | null>(null);
   const [newEntryDate, setNewEntryDate] = useState('');
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -35,24 +37,33 @@ const DailyJournalPage: React.FC = () => {
         start_date: startDate || undefined,
         end_date: endDate || undefined,
         trading_account: selectedAccountId ?? undefined,
+        search: searchText || undefined,
       });
-      setGroupedYears(response.years || []);
-      if (response.years && response.years.length > 0) {
-        const initialYear = selectedYear ?? response.years[0].year;
-        const yearData = response.years.find((year) => year.year === initialYear) || response.years[0];
-        const initialMonth = selectedMonth ?? (yearData.months[0]?.month ?? null);
-        setSelectedYear(initialYear);
-        setSelectedMonth(initialMonth);
-      } else {
+      const years = response.years || [];
+      setGroupedYears(years);
+
+      if (years.length === 0) {
         setSelectedYear(null);
         setSelectedMonth(null);
+        return;
       }
+
+      const yearFromSelection = selectedYear ? years.find((year) => year.year === selectedYear) : null;
+      const nextYear = (yearFromSelection ?? years[0]).year;
+
+      const monthFromSelection = selectedMonth && yearFromSelection
+        ? yearFromSelection.months.find((month) => month.month === selectedMonth)
+        : null;
+      const nextMonth = monthFromSelection?.month ?? (yearFromSelection ?? years[0]).months[0]?.month ?? null;
+
+      setSelectedYear(nextYear);
+      setSelectedMonth(nextMonth ?? null);
     } catch (err: any) {
       setError(err?.message || t('dailyJournal.loadError', { defaultValue: 'Erreur lors du chargement du journal.' }));
     } finally {
       setIsLoading(false);
     }
-  }, [startDate, endDate, selectedAccountId, t, selectedYear, selectedMonth]);
+  }, [startDate, endDate, searchText, selectedAccountId, t, selectedYear, selectedMonth]);
 
   useEffect(() => {
     loadEntries();
@@ -142,8 +153,8 @@ const DailyJournalPage: React.FC = () => {
     <div className="bg-gray-50 dark:bg-gray-900 min-h-full">
       <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
+        <div className="grid grid-cols-1 lg:grid-cols-[auto_auto_auto_auto_auto] gap-3 items-end">
+          <div className="min-w-[180px]">
             <label className="text-xs text-gray-500">{t('dailyJournal.tradingAccount', { defaultValue: 'Compte de trading' })}</label>
             <div className="mt-1">
               <AccountSelector
@@ -154,32 +165,86 @@ const DailyJournalPage: React.FC = () => {
               />
             </div>
           </div>
-          <div>
+          <div className="w-[500px]">
+            <label className="text-xs text-gray-500">{t('dailyJournal.searchText', { defaultValue: 'Rechercher' })}</label>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder={t('dailyJournal.searchPlaceholder', { defaultValue: 'Rechercher dans les entrées...' })}
+                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent text-sm px-3 py-2 h-[42px] placeholder:text-gray-400"
+              />
+              <button
+                type="button"
+                onClick={() => setSearchText('')}
+                disabled={!searchText}
+                className={`px-3 h-[42px] rounded-md border text-xs font-semibold transition-colors ${
+                  searchText
+                    ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
+                    : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                }`}
+              >
+                {t('dailyJournal.resetDate', { defaultValue: 'Réinitialiser' })}
+              </button>
+            </div>
+          </div>
+          <div className="min-w-[180px]">
             <label className="text-xs text-gray-500">{t('dailyJournal.startDate', { defaultValue: 'Date debut' })}</label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(event) => setStartDate(event.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-            />
+            <div className="mt-1 flex items-center gap-2">
+              <DateInput
+                value={startDate}
+                onChange={setStartDate}
+                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent text-sm px-3 py-2 pr-10 h-[42px]"
+                max={endDate || undefined}
+                size="sm"
+              />
+              <button
+                type="button"
+                onClick={() => setStartDate('')}
+                disabled={!startDate}
+                className={`px-3 h-[42px] rounded-md border text-xs font-semibold transition-colors ${
+                  startDate
+                    ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
+                    : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                }`}
+              >
+                {t('dailyJournal.resetDate', { defaultValue: 'Réinitialiser' })}
+              </button>
+            </div>
           </div>
-          <div>
+          <div className="min-w-[180px]">
             <label className="text-xs text-gray-500">{t('dailyJournal.endDate', { defaultValue: 'Date fin' })}</label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(event) => setEndDate(event.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
-            />
+            <div className="mt-1 flex items-center gap-2">
+              <DateInput
+                value={endDate}
+                onChange={setEndDate}
+                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent text-sm px-3 py-2 pr-10 h-[42px]"
+                min={startDate || undefined}
+                size="sm"
+              />
+              <button
+                type="button"
+                onClick={() => setEndDate('')}
+                disabled={!endDate}
+                className={`px-3 h-[42px] rounded-md border text-xs font-semibold transition-colors ${
+                  endDate
+                    ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
+                    : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                }`}
+              >
+                {t('dailyJournal.resetDate', { defaultValue: 'Réinitialiser' })}
+              </button>
+            </div>
           </div>
-          <div>
+          <div className="min-w-[180px]">
             <label className="text-xs text-gray-500">{t('dailyJournal.newEntry', { defaultValue: 'Nouvelle entree' })}</label>
             <div className="flex gap-2 mt-1">
-              <input
-                type="date"
+              <DateInput
                 value={newEntryDate}
-                onChange={(event) => setNewEntryDate(event.target.value)}
-                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                onChange={setNewEntryDate}
+                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm h-[42px]"
+                size="sm"
               />
               <button
                 type="button"
@@ -326,20 +391,8 @@ const DailyJournalPage: React.FC = () => {
               </div>
 
               <div className="mt-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div className="flex items-center justify-between mb-4">
+                <div className="mb-4">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('dailyJournal.entries', { defaultValue: 'Entrees' })}</h3>
-                  <button
-                    type="button"
-                    onClick={handleNewEntry}
-                    disabled={!newEntryDate || accountLoading}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      newEntryDate
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
-                        : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {t('dailyJournal.create', { defaultValue: 'Creer' })}...
-                  </button>
                 </div>
                 {selectedEntries.length === 0 ? (
                   <div className="text-sm text-gray-500 py-8 text-center">{t('dailyJournal.noEntries', { defaultValue: 'Aucun journal' })}</div>

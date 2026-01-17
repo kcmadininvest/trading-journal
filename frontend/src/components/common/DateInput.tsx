@@ -11,6 +11,7 @@ interface DateInputProps {
   className?: string;
   min?: string;
   max?: string;
+  size?: 'sm' | 'md';
 }
 
 /**
@@ -26,9 +27,10 @@ export const DateInput: React.FC<DateInputProps> = ({
   className = '',
   min,
   max,
+  size = 'md',
 }) => {
   const { preferences } = usePreferences();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [displayValue, setDisplayValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -43,6 +45,7 @@ export const DateInput: React.FC<DateInputProps> = ({
   const yearPickerRef = useRef<HTMLDivElement>(null);
   const yearListRef = useRef<HTMLDivElement>(null);
   const [calendarStyle, setCalendarStyle] = useState<{ top?: string; bottom?: string; left?: string; width?: string }>({});
+  const isCompact = size === 'sm';
 
   // Convertir ISO (YYYY-MM-DD) vers format préféré pour l'affichage
   const formatForDisplay = useCallback((isoDate: string): string => {
@@ -247,10 +250,11 @@ export const DateInput: React.FC<DateInputProps> = ({
         if (!containerRef.current) return;
         
         const containerRect = containerRef.current.getBoundingClientRect();
-        const calendarHeight = 350; // Hauteur approximative du calendrier
+        const calendarHeight = isCompact ? 280 : 340; // Hauteur approximative du calendrier
         const spaceBelow = window.innerHeight - containerRect.bottom;
         const spaceAbove = containerRect.top;
-        const calendarWidth = Math.max(280, containerRect.width);
+        const calendarWidth = isCompact ? 320 : 380;
+        const viewportWidth = window.innerWidth;
         
         // Calculer la position
         let top: string | undefined;
@@ -270,7 +274,7 @@ export const DateInput: React.FC<DateInputProps> = ({
         setCalendarStyle({
           top: position === 'bottom' ? top : undefined,
           bottom: position === 'top' ? bottom : undefined,
-          left: `${containerRect.left}px`,
+          left: `${Math.max(8, Math.min(containerRect.right - calendarWidth, viewportWidth - calendarWidth - 8))}px`,
           width: `${calendarWidth}px`,
         });
       };
@@ -294,7 +298,7 @@ export const DateInput: React.FC<DateInputProps> = ({
     } else {
       setCalendarStyle({});
     }
-  }, [showCalendar, calendarMonth, calendarYear, showMonthPicker, showYearPicker]);
+  }, [showCalendar, calendarMonth, calendarYear, showMonthPicker, showYearPicker, isCompact]);
 
   const handleCalendarToggle = () => {
     setShowCalendar(!showCalendar);
@@ -341,8 +345,9 @@ export const DateInput: React.FC<DateInputProps> = ({
     return days;
   }, [calendarMonth, calendarYear]);
 
-  const monthNames = getMonthNames(preferences.language as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh');
-  const dayNames = getDayNames(preferences.language as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh');
+  const currentLanguage = (i18n.language?.split('-')[0] || 'fr') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
+  const monthNames = getMonthNames(currentLanguage);
+  const dayNames = getDayNames(currentLanguage);
   // Prendre seulement les 3 premiers caractères pour l'affichage compact
   const shortDayNames = dayNames.map(name => name.substring(0, 3));
 
@@ -451,12 +456,12 @@ export const DateInput: React.FC<DateInputProps> = ({
       {showCalendar && typeof document !== 'undefined' && createPortal(
         <div 
           ref={calendarRef}
-          className="fixed z-[9999] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-3"
+          className={`fixed z-[9999] bg-white dark:bg-gray-900 rounded-xl border border-gray-100/80 dark:border-gray-700 shadow-[0_20px_70px_-30px_rgba(15,23,42,1)] ${isCompact ? 'p-3' : 'p-4'} w-full max-w-[420px]`}
           onMouseDown={(e) => e.stopPropagation()}
           style={calendarStyle}
         >
           {/* En-tête du calendrier */}
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <button
               type="button"
               onMouseDown={(e) => e.stopPropagation()}
@@ -464,84 +469,86 @@ export const DateInput: React.FC<DateInputProps> = ({
                 e.stopPropagation();
                 navigateMonth('prev');
               }}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`inline-flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-900 hover:border-gray-300 transition-colors ${isCompact ? 'w-8 h-8 text-sm' : 'w-9 h-9 text-base'}`}
               title="Mois précédent"
             >
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             
             {/* Sélecteurs de mois et année */}
-            <div className="flex items-center gap-2">
-              <div className="relative" ref={monthPickerRef}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowMonthPicker(!showMonthPicker);
-                    setShowYearPicker(false);
-                  }}
-                  className="px-2 py-1 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[100px]"
-                >
-                  {monthNames[calendarMonth]}
-                </button>
-                {showMonthPicker && (
-                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-2 z-50 max-h-48 overflow-y-auto min-w-[120px]">
-                    <div className="grid grid-cols-3 gap-1">
-                      {monthNames.map((month, index) => (
-                        <button
-                          key={index}
-                          type="button"
-                          onClick={() => handleMonthSelect(index)}
-                          className={`px-2 py-1 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            calendarMonth === index
-                              ? 'bg-blue-600 text-white font-semibold'
-                              : 'text-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {month.substring(0, 3)}
-                        </button>
-                      ))}
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-2">
+                <div className="relative" ref={monthPickerRef}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMonthPicker(!showMonthPicker);
+                      setShowYearPicker(false);
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-full bg-gray-100/70 dark:bg-gray-800 px-4 py-1.5 font-semibold tracking-wide text-gray-900 dark:text-gray-100 transition ${isCompact ? 'text-sm' : 'text-base'}`}
+                  >
+                    {monthNames[calendarMonth]}
+                  </button>
+                  {showMonthPicker && (
+                    <div className={`absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg p-2 z-50 max-h-48 overflow-y-auto ${isCompact ? 'min-w-[110px]' : 'min-w-[140px]'}`}>
+                      <div className="grid grid-cols-3 gap-1">
+                        {monthNames.map((month, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => handleMonthSelect(index)}
+                            className={`px-2 py-1 ${isCompact ? 'text-[11px]' : 'text-xs'} rounded hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              calendarMonth === index
+                                ? 'bg-blue-600 text-white font-semibold'
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {month.substring(0, 3)}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="relative" ref={yearPickerRef}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowYearPicker(!showYearPicker);
-                    setShowMonthPicker(false);
-                  }}
-                  className="px-2 py-1 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[70px]"
-                >
-                  {calendarYear}
-                </button>
-                {showYearPicker && (
-                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl p-2 z-[70] min-w-[100px]">
-                    <div ref={yearListRef} className="flex flex-col max-h-80 overflow-y-auto">
-                      {yearList.map((year) => (
-                        <button
-                          key={year}
-                          type="button"
-                          onClick={() => handleYearSelect(year)}
-                          className={`w-full px-4 py-2.5 text-base rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-left ${
-                            calendarYear === year
-                              ? 'bg-blue-600 text-white font-semibold'
-                              : 'text-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {year}
-                        </button>
-                      ))}
+                  )}
+                </div>
+
+                <div className="relative" ref={yearPickerRef}>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowYearPicker(!showYearPicker);
+                      setShowMonthPicker(false);
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-full bg-gray-100/70 dark:bg-gray-800 px-4 py-1 text-gray-700 dark:text-gray-100 font-medium ${isCompact ? 'text-sm' : 'text-base'}`}
+                  >
+                    {calendarYear}
+                  </button>
+                  {showYearPicker && (
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-xl p-2 z-[70] min-w-[100px]">
+                      <div ref={yearListRef} className="flex flex-col max-h-72 overflow-y-auto">
+                        {yearList.map((year) => (
+                          <button
+                            key={year}
+                            type="button"
+                            onClick={() => handleYearSelect(year)}
+                            className={`w-full ${isCompact ? 'px-3 py-1.5 text-sm' : 'px-4 py-2.5 text-base'} rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors font-medium text-left ${
+                              calendarYear === year
+                                ? 'bg-blue-600 text-white font-semibold'
+                                : 'text-gray-700 dark:text-gray-300'
+                            }`}
+                          >
+                            {year}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
             
@@ -552,17 +559,17 @@ export const DateInput: React.FC<DateInputProps> = ({
                 e.stopPropagation();
                 navigateMonth('next');
               }}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`inline-flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-gray-900 hover:border-gray-300 transition-colors ${isCompact ? 'w-8 h-8 text-sm' : 'w-9 h-9 text-base'}`}
               title="Mois suivant"
             >
-              <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
           
           {/* Bouton "Aujourd'hui" */}
-          <div className="mb-2 flex justify-center">
+          <div className="mb-3 flex justify-center">
             <button
               type="button"
               onMouseDown={(e) => e.stopPropagation()}
@@ -570,23 +577,23 @@ export const DateInput: React.FC<DateInputProps> = ({
                 e.stopPropagation();
                 goToToday();
               }}
-              className="px-3 py-1 text-xs text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`text-center font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 transition ${isCompact ? 'text-xs' : 'text-sm'}`}
             >
               {t('calendar:today', { defaultValue: 'Aujourd\'hui' })}
             </button>
           </div>
 
           {/* Jours de la semaine */}
-          <div className="grid grid-cols-7 gap-1 mb-1">
+          <div className={`grid grid-cols-7 ${isCompact ? 'gap-1' : 'gap-1.5'} mb-2 px-2`}> 
             {shortDayNames.map((dayName, index) => (
-              <div key={index} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-1">
+              <div key={index} className={`text-center uppercase tracking-wide ${isCompact ? 'text-[11px] py-0.5' : 'text-xs py-1'} font-semibold text-gray-400 dark:text-gray-500`}>
                 {dayName}
               </div>
             ))}
           </div>
 
           {/* Grille du calendrier */}
-          <div className="grid grid-cols-7 gap-1">
+          <div className={`grid grid-cols-7 ${isCompact ? 'gap-1' : 'gap-1.5'} px-1 pb-1`}>
             {calendarDays.map((day, index) => (
               <div key={index}>
                 {day === null ? (
@@ -597,12 +604,12 @@ export const DateInput: React.FC<DateInputProps> = ({
                     onClick={() => handleDateSelect(day, calendarMonth, calendarYear)}
                     disabled={isDateDisabled(day)}
                     className={`
-                      w-full aspect-square text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500
+                      w-full aspect-square ${isCompact ? 'text-sm' : 'text-base'} rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition
                       ${isDateSelected(day)
-                        ? 'bg-blue-600 text-white font-semibold'
+                        ? 'bg-blue-100 text-blue-700 font-semibold shadow-inner'
                         : isToday(day)
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-semibold'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? 'border border-blue-500 text-blue-600 font-semibold'
+                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }
                       ${isDateDisabled(day) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                     `}

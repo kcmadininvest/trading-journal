@@ -54,6 +54,7 @@ class DailyJournalEntryViewSet(viewsets.ModelViewSet):
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
         trading_account = request.query_params.get('trading_account')
+        search = request.query_params.get('search')
 
         if start_date:
             queryset = queryset.filter(date__gte=start_date)
@@ -61,6 +62,8 @@ class DailyJournalEntryViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(date__lte=end_date)
         if trading_account:
             queryset = queryset.filter(trading_account_id=trading_account)
+        if search:
+            queryset = queryset.filter(content__icontains=search)
 
         queryset = queryset.order_by('-date', '-updated_at')
 
