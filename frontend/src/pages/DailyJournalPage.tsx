@@ -202,6 +202,37 @@ const DailyJournalPage: React.FC = () => {
                       size="sm"
                     />
                   </div>
+                  <div className="w-[180px]">
+                    <span className="text-xs text-gray-500">{t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}</span>
+                    <div className="mt-1">
+                      <Tooltip
+                        content={t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}
+                        position="top"
+                        delay={100}
+                        disabled={!hasActiveFilters}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchText('');
+                            setStartDate('');
+                            setEndDate('');
+                          }}
+                          disabled={!hasActiveFilters}
+                          aria-label={t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}
+                          className={`h-[42px] w-[42px] min-h-[42px] min-w-[42px] inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors ${
+                            hasActiveFilters
+                              ? 'hover:bg-gray-100 dark:hover:bg-gray-600'
+                              : 'cursor-not-allowed text-gray-400 bg-gray-50 dark:bg-gray-800'
+                          }`}
+                        >
+                          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-7M19 5a9 9 0 00-14 7" />
+                          </svg>
+                        </button>
+                      </Tooltip>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="flex-shrink-0 ml-auto min-w-[280px]">
@@ -225,32 +256,6 @@ const DailyJournalPage: React.FC = () => {
                   >
                     {accountLoading ? t('dailyJournal.loading', { defaultValue: 'Chargement...' }) : t('dailyJournal.create', { defaultValue: 'Creer' })}
                   </button>
-                  <Tooltip
-                    content={t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}
-                    position="top"
-                    delay={100}
-                    disabled={!hasActiveFilters}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchText('');
-                        setStartDate('');
-                        setEndDate('');
-                      }}
-                      disabled={!hasActiveFilters}
-                      aria-label={t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}
-                      className={`h-[42px] w-[42px] min-h-[42px] min-w-[42px] inline-flex items-center justify-center rounded-md border leading-none transition-colors ${
-                        hasActiveFilters
-                          ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
-                          : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
-                      }`}
-                    >
-                      <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-7M19 5a9 9 0 00-14 7" />
-                      </svg>
-                    </button>
-                  </Tooltip>
                 </div>
               </div>
             </div>
