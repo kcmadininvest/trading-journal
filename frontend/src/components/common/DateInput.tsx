@@ -212,7 +212,13 @@ export const DateInput: React.FC<DateInputProps> = ({
     // Délai pour permettre le clic sur le calendrier
     setTimeout(() => {
       setIsFocused(false);
-      const isoDate = parseToISO(e.target.value);
+      const rawValue = e.target.value;
+      if (!rawValue.trim()) {
+        setDisplayValue('');
+        onChange('');
+        return;
+      }
+      const isoDate = parseToISO(rawValue);
       if (isoDate) {
         // Valider les limites min/max si définies
         if (min && isoDate < min) {

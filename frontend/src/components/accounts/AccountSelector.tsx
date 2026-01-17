@@ -196,8 +196,13 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
         const iconWidth = 16;
         const gap = 8;
         const minButtonWidth = maxContentWidth + buttonPadding + iconWidth + gap;
+        const containerWidth = dropdownRef.current?.parentElement?.clientWidth;
+        const eyeButtonWidth = (dropdownRef.current?.lastElementChild as HTMLElement | null)?.clientWidth || 0;
+        const gapWidth = 8;
+        const availableWidth = containerWidth ? Math.max(containerWidth - eyeButtonWidth - gapWidth, 0) : undefined;
+        const cappedMinWidth = availableWidth ? Math.min(minButtonWidth, availableWidth) : minButtonWidth;
         
-        setButtonMinWidth(minButtonWidth);
+        setButtonMinWidth(cappedMinWidth);
       };
       
       // Calculer une fois que le composant est monté

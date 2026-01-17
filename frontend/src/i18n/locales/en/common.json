@@ -77,6 +77,8 @@
     "resetDate": "Reset",
     "searchText": "Search",
     "searchPlaceholder": "Search in entries...",
+    "resetFilters": "Reset filters",
+    "dateRange": "Dates",
     "tradingAccount": "Trading account",
     "allAccounts": "All accounts",
     "newEntry": "New entry",

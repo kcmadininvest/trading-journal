@@ -5,6 +5,7 @@ import { DailyJournalEditor } from '../components/dailyJournal/DailyJournalEdito
 import { usePreferences } from '../hooks/usePreferences';
 import { formatDateLong, LanguageType } from '../utils/dateFormat';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { Tooltip } from '../components/ui';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { getMonthNames } from '../utils/dateFormat';
 import { DateInput } from '../components/common/DateInput';
@@ -134,6 +135,7 @@ const DailyJournalPage: React.FC = () => {
   };
 
   const monthNames = useMemo(() => getMonthNames(resolvedLanguage), [resolvedLanguage]);
+  const hasActiveFilters = Boolean(searchText || startDate || endDate);
 
   const selectedYearData = useMemo(() => {
     const yearData = groupedYears.find((year) => year.year === selectedYear) || null;
@@ -153,114 +155,203 @@ const DailyJournalPage: React.FC = () => {
     <div className="bg-gray-50 dark:bg-gray-900 min-h-full">
       <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-[auto_auto_auto_auto_auto] gap-3 items-end">
-          <div className="min-w-[180px]">
-            <label className="text-xs text-gray-500">{t('dailyJournal.tradingAccount', { defaultValue: 'Compte de trading' })}</label>
-            <div className="mt-1">
-              <AccountSelector
-                value={selectedAccountId}
-                onChange={setSelectedAccountId}
-                allowAllActive
-                hideLabel
-              />
+          <div className="hidden md:block space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+              <div className="flex-shrink-0 max-w-sm">
+                <label className="text-xs text-gray-500">{t('dailyJournal.tradingAccount', { defaultValue: 'Compte de trading' })}</label>
+                <div className="mt-1">
+                  <AccountSelector
+                    value={selectedAccountId}
+                    onChange={setSelectedAccountId}
+                    allowAllActive
+                    hideLabel
+                  />
+                </div>
+              </div>
+              <div className="flex-1 min-w-[240px] max-w-[520px]">
+                <label className="text-xs text-gray-500">{t('dailyJournal.searchText', { defaultValue: 'Rechercher' })}</label>
+                <div className="mt-1">
+                  <input
+                    type="text"
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder={t('dailyJournal.searchPlaceholder', { defaultValue: 'Rechercher dans les entrées...' })}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 h-[42px] placeholder:text-gray-400"
+                  />
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <div className="mt-1 flex flex-wrap items-start gap-2">
+                  <div className="w-[180px]">
+                    <span className="text-xs text-gray-500">{t('dailyJournal.startDate', { defaultValue: 'Date debut' })}</span>
+                    <DateInput
+                      value={startDate}
+                      onChange={setStartDate}
+                      className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-[42px]"
+                      max={endDate || undefined}
+                      size="sm"
+                    />
+                  </div>
+                  <div className="w-[180px]">
+                    <span className="text-xs text-gray-500">{t('dailyJournal.endDate', { defaultValue: 'Date fin' })}</span>
+                    <DateInput
+                      value={endDate}
+                      onChange={setEndDate}
+                      className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-[42px]"
+                      min={startDate || undefined}
+                      size="sm"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex-shrink-0 ml-auto min-w-[280px]">
+                <label className="text-xs text-gray-500">{t('dailyJournal.newEntry', { defaultValue: 'Nouvelle entree' })}</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <DateInput
+                    value={newEntryDate}
+                    onChange={setNewEntryDate}
+                    className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 h-[42px]"
+                    size="sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleNewEntry}
+                    disabled={!newEntryDate || accountLoading}
+                    className={`px-4 h-[42px] rounded-md text-sm w-36 ${
+                      newEntryDate
+                        ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                        : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {accountLoading ? t('dailyJournal.loading', { defaultValue: 'Chargement...' }) : t('dailyJournal.create', { defaultValue: 'Creer' })}
+                  </button>
+                  <Tooltip
+                    content={t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}
+                    position="top"
+                    delay={100}
+                    disabled={!hasActiveFilters}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchText('');
+                        setStartDate('');
+                        setEndDate('');
+                      }}
+                      disabled={!hasActiveFilters}
+                      aria-label={t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}
+                      className={`h-[42px] w-[42px] min-h-[42px] min-w-[42px] inline-flex items-center justify-center rounded-md border leading-none transition-colors ${
+                        hasActiveFilters
+                          ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
+                          : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+                      }`}
+                    >
+                      <svg className="w-5 h-5 text-gray-600 dark:text-gray-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 0014-7M19 5a9 9 0 00-14 7" />
+                      </svg>
+                    </button>
+                  </Tooltip>
+                </div>
+              </div>
             </div>
+
           </div>
-          <div className="w-[500px]">
-            <label className="text-xs text-gray-500">{t('dailyJournal.searchText', { defaultValue: 'Rechercher' })}</label>
-            <div className="mt-1 flex items-center gap-2">
-              <input
-                type="text"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder={t('dailyJournal.searchPlaceholder', { defaultValue: 'Rechercher dans les entrées...' })}
-                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent text-sm px-3 py-2 h-[42px] placeholder:text-gray-400"
-              />
-              <button
-                type="button"
-                onClick={() => setSearchText('')}
-                disabled={!searchText}
-                className={`px-3 h-[42px] rounded-md border text-xs font-semibold transition-colors ${
-                  searchText
-                    ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
-                    : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
-                }`}
-              >
-                {t('dailyJournal.resetDate', { defaultValue: 'Réinitialiser' })}
-              </button>
-            </div>
+
+          <div className="md:hidden space-y-3">
+            <details open className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <summary className="px-3 py-2 cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('dailyJournal.tradingAccount', { defaultValue: 'Compte de trading' })}
+              </summary>
+              <div className="px-3 pb-3">
+                <AccountSelector
+                  value={selectedAccountId}
+                  onChange={setSelectedAccountId}
+                  allowAllActive
+                  hideLabel
+                />
+              </div>
+            </details>
+
+            <details className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <summary className="px-3 py-2 cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('dailyJournal.searchText', { defaultValue: 'Rechercher' })}
+              </summary>
+              <div className="px-3 pb-3">
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder={t('dailyJournal.searchPlaceholder', { defaultValue: 'Rechercher dans les entrées...' })}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 h-[42px] placeholder:text-gray-400"
+                />
+              </div>
+            </details>
+
+            <details className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <summary className="px-3 py-2 cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('dailyJournal.dateRange', { defaultValue: 'Dates' })}
+              </summary>
+              <div className="px-3 pb-3 space-y-2">
+                <DateInput
+                  value={startDate}
+                  onChange={setStartDate}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-[42px]"
+                  max={endDate || undefined}
+                  size="sm"
+                />
+                <DateInput
+                  value={endDate}
+                  onChange={setEndDate}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-[42px]"
+                  min={startDate || undefined}
+                  size="sm"
+                />
+              </div>
+            </details>
+
+            <details className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <summary className="px-3 py-2 cursor-pointer text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {t('dailyJournal.newEntry', { defaultValue: 'Nouvelle entree' })}
+              </summary>
+              <div className="px-3 pb-3 space-y-2">
+                <DateInput
+                  value={newEntryDate}
+                  onChange={setNewEntryDate}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 h-[42px]"
+                  size="sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleNewEntry}
+                  disabled={!newEntryDate || accountLoading}
+                  className={`w-full px-4 py-2 rounded-md text-sm ${
+                    newEntryDate
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white'
+                      : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {accountLoading ? t('dailyJournal.loading', { defaultValue: 'Chargement...' }) : t('dailyJournal.create', { defaultValue: 'Creer' })}
+                </button>
+              </div>
+            </details>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearchText('');
+                setStartDate('');
+                setEndDate('');
+              }}
+              disabled={!hasActiveFilters}
+              className={`w-full px-4 py-2 rounded-md text-sm border font-semibold transition-colors ${
+                hasActiveFilters
+                  ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
+                  : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
+              }`}
+            >
+              {t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}
+            </button>
           </div>
-          <div className="min-w-[180px]">
-            <label className="text-xs text-gray-500">{t('dailyJournal.startDate', { defaultValue: 'Date debut' })}</label>
-            <div className="mt-1 flex items-center gap-2">
-              <DateInput
-                value={startDate}
-                onChange={setStartDate}
-                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent text-sm px-3 py-2 pr-10 h-[42px]"
-                max={endDate || undefined}
-                size="sm"
-              />
-              <button
-                type="button"
-                onClick={() => setStartDate('')}
-                disabled={!startDate}
-                className={`px-3 h-[42px] rounded-md border text-xs font-semibold transition-colors ${
-                  startDate
-                    ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
-                    : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
-                }`}
-              >
-                {t('dailyJournal.resetDate', { defaultValue: 'Réinitialiser' })}
-              </button>
-            </div>
-          </div>
-          <div className="min-w-[180px]">
-            <label className="text-xs text-gray-500">{t('dailyJournal.endDate', { defaultValue: 'Date fin' })}</label>
-            <div className="mt-1 flex items-center gap-2">
-              <DateInput
-                value={endDate}
-                onChange={setEndDate}
-                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent text-sm px-3 py-2 pr-10 h-[42px]"
-                min={startDate || undefined}
-                size="sm"
-              />
-              <button
-                type="button"
-                onClick={() => setEndDate('')}
-                disabled={!endDate}
-                className={`px-3 h-[42px] rounded-md border text-xs font-semibold transition-colors ${
-                  endDate
-                    ? 'text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-500/40 dark:text-blue-300 dark:hover:bg-blue-500/10'
-                    : 'text-gray-400 border-gray-200 dark:border-gray-700 cursor-not-allowed'
-                }`}
-              >
-                {t('dailyJournal.resetDate', { defaultValue: 'Réinitialiser' })}
-              </button>
-            </div>
-          </div>
-          <div className="min-w-[180px]">
-            <label className="text-xs text-gray-500">{t('dailyJournal.newEntry', { defaultValue: 'Nouvelle entree' })}</label>
-            <div className="flex gap-2 mt-1">
-              <DateInput
-                value={newEntryDate}
-                onChange={setNewEntryDate}
-                className="flex-1 rounded-md border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm h-[42px]"
-                size="sm"
-              />
-              <button
-                type="button"
-                onClick={handleNewEntry}
-                disabled={!newEntryDate || accountLoading}
-                className={`px-4 py-2 rounded-md text-sm w-36 ${
-                  newEntryDate
-                    ? 'bg-blue-600 dark:bg-blue-500 text-white'
-                    : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                {accountLoading ? t('dailyJournal.loading', { defaultValue: 'Chargement...' }) : t('dailyJournal.create', { defaultValue: 'Creer' })}
-              </button>
-            </div>
-          </div>
-        </div>
         </div>
 
         {error && (
