@@ -158,8 +158,8 @@ const DailyJournalPage: React.FC = () => {
           <div className="hidden md:block space-y-4">
             <div className="flex flex-col lg:flex-row lg:items-end gap-4">
               <div className="flex-shrink-0 max-w-sm">
-                <label className="text-xs text-gray-500">{t('dailyJournal.tradingAccount', { defaultValue: 'Compte de trading' })}</label>
-                <div className="mt-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('dailyJournal.tradingAccount', { defaultValue: 'Compte de trading' })}</label>
+                <div>
                   <AccountSelector
                     value={selectedAccountId}
                     onChange={setSelectedAccountId}
@@ -169,8 +169,8 @@ const DailyJournalPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex-1 min-w-[240px] max-w-[520px]">
-                <label className="text-xs text-gray-500">{t('dailyJournal.searchText', { defaultValue: 'Rechercher' })}</label>
-                <div className="mt-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('dailyJournal.searchText', { defaultValue: 'Rechercher' })}</label>
+                <div>
                   <input
                     type="text"
                     value={searchText}
@@ -181,30 +181,30 @@ const DailyJournalPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex-shrink-0">
-                <div className="mt-1 flex flex-wrap items-start gap-2">
+                <div className="flex flex-wrap items-end gap-2">
                   <div className="w-[180px]">
-                    <span className="text-xs text-gray-500">{t('dailyJournal.startDate', { defaultValue: 'Date debut' })}</span>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('dailyJournal.startDate', { defaultValue: 'Date debut' })}</label>
                     <DateInput
                       value={startDate}
                       onChange={setStartDate}
-                      className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-[42px]"
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-[42px]"
                       max={endDate || undefined}
                       size="sm"
                     />
                   </div>
                   <div className="w-[180px]">
-                    <span className="text-xs text-gray-500">{t('dailyJournal.endDate', { defaultValue: 'Date fin' })}</span>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('dailyJournal.endDate', { defaultValue: 'Date fin' })}</label>
                     <DateInput
                       value={endDate}
                       onChange={setEndDate}
-                      className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-[42px]"
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm text-gray-900 dark:text-gray-100 px-3 py-2 pr-10 h-[42px]"
                       min={startDate || undefined}
                       size="sm"
                     />
                   </div>
                   <div className="w-[180px]">
-                    <span className="text-xs text-gray-500">{t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}</span>
-                    <div className="mt-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}</label>
+                    <div>
                       <Tooltip
                         content={t('dailyJournal.resetFilters', { defaultValue: 'Réinitialiser filtres' })}
                         position="top"
@@ -236,8 +236,8 @@ const DailyJournalPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex-shrink-0 ml-auto min-w-[280px]">
-                <label className="text-xs text-gray-500">{t('dailyJournal.newEntry', { defaultValue: 'Nouvelle entree' })}</label>
-                <div className="flex items-center gap-2 mt-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('dailyJournal.newEntry', { defaultValue: 'Nouvelle entree' })}</label>
+                <div className="flex items-center gap-2">
                   <DateInput
                     value={newEntryDate}
                     onChange={setNewEntryDate}

@@ -48,9 +48,12 @@ const TransactionsPage: React.FC = () => {
     <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
       {/* Filtres et actions */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
           {/* Sélecteur de compte */}
           <div className="flex-1 max-w-md">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('transactions:tradingAccount', { defaultValue: 'Compte de trading' })}
+            </label>
             <AccountSelector
               value={selectedAccountId}
               onChange={setSelectedAccountId}
