@@ -42,6 +42,18 @@ export interface CalendarWeeklyYearlyResponse {
   year: number;
 }
 
+export interface MarketHoliday {
+  date: string;
+  name: string;
+  type: 'holiday' | 'early_close';
+  market: string;
+}
+
+export interface MarketHolidaysResponse {
+  upcoming: MarketHoliday[];
+  count: number;
+}
+
 class CalendarService {
   private readonly BASE_URL = getApiBaseUrl();
 
@@ -137,6 +149,20 @@ class CalendarService {
     }
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/calendar_weekly_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données hebdomadaires');
+    return res.json();
+  }
+
+  /**
+   * Récupère les prochains jours fériés et demi-journées des marchés boursiers
+   * Endpoint public (pas besoin d'authentification)
+   */
+  async getMarketHolidays(count: number = 1, markets: string = 'XNYS,XPAR'): Promise<MarketHolidaysResponse> {
+    const params = new URLSearchParams({
+      count: String(count),
+      markets: markets,
+    });
+    const res = await fetch(`${this.BASE_URL}/api/trades/market-holidays/?${params}`);
+    if (!res.ok) throw new Error('Erreur lors du chargement des jours fériés des marchés');
     return res.json();
   }
 }

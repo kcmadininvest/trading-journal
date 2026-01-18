@@ -27,6 +27,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
 
   const currentLanguage = i18n.language?.split('-')[0] || 'en';
 
+
   // Fermer le dropdown quand on clique en dehors
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

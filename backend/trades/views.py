@@ -1,5 +1,5 @@
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField, Q
@@ -17,6 +17,7 @@ from typing import cast, Any
 
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
 from daily_journal.models import DailyJournalEntry
+from .market_holidays import MarketHolidaysService
 from .serializers import (
     TopStepTradeSerializer,
     TopStepTradeListSerializer,
@@ -4222,3 +4223,30 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
             'goals_by_type': goals_by_type,
             'goals_by_period': goals_by_period,
         })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def market_holidays(request):
+    """
+    Retourne les prochains jours fériés et demi-journées des marchés boursiers (NYSE et Euronext).
+    Endpoint public (pas besoin d'authentification).
+    """
+    count = request.GET.get('count', 1)
+    try:
+        count = int(count)
+        if count < 1 or count > 10:
+            count = 1
+    except (ValueError, TypeError):
+        count = 1
+    
+    # Récupérer les marchés demandés (par défaut: NYSE et Euronext Paris)
+    markets_param = request.GET.get('markets', 'XNYS,XPAR')
+    markets = [m.strip() for m in markets_param.split(',') if m.strip()]
+    
+    upcoming = MarketHolidaysService.get_next_holidays(count=count, markets=markets)
+    
+    return Response({
+        'upcoming': upcoming,
+        'count': len(upcoming)
+    })
