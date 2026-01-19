@@ -211,7 +211,7 @@ class MarketHolidaysService:
             
             for holiday_info in holidays_data:
                 holiday_date = holiday_info['date']
-                if holiday_date > today:
+                if holiday_date >= today:
                     upcoming.append({
                         'date': holiday_date.isoformat(),
                         'name': holiday_info['name'],
@@ -222,7 +222,7 @@ class MarketHolidaysService:
             # Récupérer les demi-journées
             early_closes = MarketHolidaysService.get_early_closes(market_code, today, end_date)
             for early_date in early_closes:
-                if early_date > today and early_date not in holiday_dates:
+                if early_date >= today and early_date not in holiday_dates:
                     upcoming.append({
                         'date': early_date.isoformat(),
                         'name': f'{market_name} Early Close',

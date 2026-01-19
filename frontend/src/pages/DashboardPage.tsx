@@ -601,7 +601,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       setHolidaysLoading(true);
       try {
         const response = await marketCalendarService.getMarketHolidays(1, 'XNYS,XPAR,XLON');
-        setMarketHolidays(response.upcoming);
+        // Filtrer pour inclure uniquement les jours fériés d'aujourd'hui ou futurs
+        // (pas les jours passés, mais garder celui d'aujourd'hui toute la journée)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const filteredHolidays = response.upcoming.filter(holiday => {
+          const holidayDate = new Date(holiday.date);
+          holidayDate.setHours(0, 0, 0, 0);
+          return holidayDate >= today;
+        });
+        setMarketHolidays(filteredHolidays);
       } catch (error) {
         // Silently fail - not critical
       } finally {
