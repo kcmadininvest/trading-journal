@@ -1596,7 +1596,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         <span className={`text-[11px] ${
                           isToday ? 'text-gray-700 dark:text-gray-300 font-semibold' : 'text-gray-500 dark:text-gray-400'
                         }`}>
-                          {isToday ? "Aujourd'hui" : new Date(holiday.date).toLocaleDateString(currentLanguage, { month: 'long', day: 'numeric' })}
+                          {isToday ? t('calendar:today', { defaultValue: "Aujourd'hui" }) : new Date(holiday.date).toLocaleDateString(currentLanguage, { month: 'long', day: 'numeric' })}
                         </span>
                       </div>
                     </div>
