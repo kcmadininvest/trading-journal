@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ReactMarkdown, { Components } from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { dailyJournalService, DailyJournalEntry, DailyJournalGroupedEntry, DailyJournalGroupedYear } from '../services/dailyJournal';
 import { DailyJournalEditor } from '../components/dailyJournal/DailyJournalEditor';
@@ -136,6 +139,69 @@ const DailyJournalPage: React.FC = () => {
 
   const monthNames = useMemo(() => getMonthNames(resolvedLanguage), [resolvedLanguage]);
   const hasActiveFilters = Boolean(searchText || startDate || endDate);
+
+  const markdownComponents = useMemo<Components>(() => ({
+    h1: ({ node, children, ...props }) => (
+      <h1 {...props} className="text-2xl font-bold mt-2 mb-2">
+        {children}
+      </h1>
+    ),
+    h2: ({ node, children, ...props }) => (
+      <h2 {...props} className="text-xl font-semibold mt-2 mb-2">
+        {children}
+      </h2>
+    ),
+    h3: ({ node, children, ...props }) => (
+      <h3 {...props} className="text-lg font-semibold mt-2 mb-2">
+        {children}
+      </h3>
+    ),
+    ul: ({ node, children, ...props }) => (
+      <ul {...props} className="list-disc pl-5 my-2 space-y-1">
+        {children}
+      </ul>
+    ),
+    ol: ({ node, children, ...props }) => (
+      <ol {...props} className="list-decimal pl-5 my-2 space-y-1">
+        {children}
+      </ol>
+    ),
+    li: ({ node, children, ...props }) => (
+      <li {...props} className="text-gray-800 dark:text-gray-200">
+        {children}
+      </li>
+    ),
+    a: ({ node, href, onClick, children, ...props }) => {
+      const normalizedHref = href && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(href)
+        ? `https://${href}`
+        : href;
+      return (
+        <a
+          {...props}
+          href={normalizedHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 dark:text-blue-400 underline"
+          onClick={(event) => {
+            onClick?.(event);
+            event.stopPropagation();
+          }}
+        >
+          {children}
+        </a>
+      );
+    },
+    blockquote: ({ node, children, ...props }) => (
+      <blockquote {...props} className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic text-gray-600 dark:text-gray-300 my-2">
+        {children}
+      </blockquote>
+    ),
+    p: ({ node, children, ...props }) => (
+      <p {...props} className="mb-2 last:mb-0">
+        {children}
+      </p>
+    ),
+  }), []);
 
   const selectedYearData = useMemo(() => {
     const yearData = groupedYears.find((year) => year.year === selectedYear) || null;
@@ -515,15 +581,33 @@ const DailyJournalPage: React.FC = () => {
                             </div>
                             <span className="text-xs text-gray-400">{entry.images_count} image(s)</span>
                           </div>
-                          <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
-                            {entry.content_preview || t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
-                          </p>
+                          {entry.content_preview ? (
+                            <div className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeRaw]}
+                                components={markdownComponents}
+                              >
+                                {entry.content_preview}
+                              </ReactMarkdown>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              {t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
+                            </p>
+                          )}
                         </button>
                         
                         {hoveredEntry?.id === entry.id && hoveredEntryContent && (
                           <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl p-4 max-h-96 overflow-y-auto">
-                            <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                              {hoveredEntryContent}
+                            <div className="text-sm text-gray-700 dark:text-gray-300">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeRaw]}
+                                components={markdownComponents}
+                              >
+                                {hoveredEntryContent}
+                              </ReactMarkdown>
                             </div>
                           </div>
                         )}
@@ -562,9 +646,21 @@ const DailyJournalPage: React.FC = () => {
                                   <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatDate(entry.date)}</p>
                                   <span className="text-xs text-gray-400">{entry.images_count} image(s)</span>
                                 </div>
-                                <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
-                                  {entry.content_preview || t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
-                                </p>
+                                {entry.content_preview ? (
+                                  <div className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      rehypePlugins={[rehypeRaw]}
+                                      components={markdownComponents}
+                                    >
+                                      {entry.content_preview}
+                                    </ReactMarkdown>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-gray-600 dark:text-gray-300">
+                                    {t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
+                                  </p>
+                                )}
                               </button>
                             ))
                           )}
