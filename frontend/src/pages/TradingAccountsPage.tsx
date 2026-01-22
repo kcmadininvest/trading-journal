@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import PaginationControls from '../components/ui/PaginationControls';
@@ -6,6 +6,10 @@ import { DeleteConfirmModal, Tooltip } from '../components/ui';
 import TradingAccountModal from '../components/accounts/TradingAccountModal';
 import { AccountsFilters } from '../components/accounts/AccountsFilters';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { usePreferences } from '../hooks/usePreferences';
+import userService from '../services/userService';
+
+const DEFAULT_ITEMS_PER_PAGE = 20;
 
 type SortField = 'id' | 'name' | 'account_type' | 'broker_account_id' | 'status' | 'created_at' | 'initial_capital' | 'maximum_loss_limit' | 'trades_count';
 type SortDirection = 'asc' | 'desc';
@@ -14,8 +18,10 @@ const TradingAccountsPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const [allAccounts, setAllAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
+  const { preferences, loading: preferencesLoading } = usePreferences();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(DEFAULT_ITEMS_PER_PAGE);
+  const lastPrefPageSizeRef = useRef<number | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [sortField, setSortField] = useState<SortField>('id');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -34,6 +40,29 @@ const TradingAccountsPage: React.FC = () => {
       // Nouvelle colonne, tri ascendant par défaut (sauf pour ID qui est desc par défaut)
       setSortField(field);
       setSortDirection(field === 'id' ? 'desc' : 'asc');
+    }
+  };
+
+  useEffect(() => {
+    if (preferencesLoading) {
+      return;
+    }
+    const prefSize = preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE;
+    lastPrefPageSizeRef.current = prefSize;
+    setPageSize(prev => (prev === prefSize ? prev : prefSize));
+    setPage(1);
+  }, [preferencesLoading, preferences.items_per_page]);
+
+  const handlePageSizeChange = async (size: number) => {
+    const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
+    setPageSize(sanitized);
+    setPage(1);
+    lastPrefPageSizeRef.current = sanitized;
+    try {
+      await userService.updatePreferences({ items_per_page: sanitized });
+      window.dispatchEvent(new CustomEvent('preferences:updated'));
+    } catch (error) {
+      console.error('[TradingAccountsPage] Failed to persist items_per_page', error);
     }
   };
 
@@ -444,10 +473,7 @@ const TradingAccountsPage: React.FC = () => {
                       setPage(p);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    onPageSizeChange={(size) => {
-                      setPageSize(size);
-                      setPage(1);
-                    }}
+                    onPageSizeChange={handlePageSizeChange}
                     pageSizeOptions={[5, 10, 25, 50, 100]}
                   />
                 </div>

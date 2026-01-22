@@ -52,6 +52,8 @@ const getInitialFontSize = (): 'small' | 'medium' | 'large' => {
   return 'medium';
 };
 
+const DEFAULT_ITEMS_PER_PAGE = 20;
+
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialiser la langue avec celle détectée par i18n (depuis navigator)
   // Au lieu de forcer 'fr' par défaut
@@ -70,6 +72,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     theme: getInitialTheme(),
     font_size: getInitialFontSize(),
     email_goal_alerts: true,
+    items_per_page: DEFAULT_ITEMS_PER_PAGE,
   });
   const [loading, setLoading] = useState(true);
 
@@ -84,7 +87,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const prefs = await userService.getPreferences();
       
       if (prefs && prefs.date_format) {
-        setPreferences(prefs);
+        setPreferences({
+          ...prefs,
+          items_per_page: prefs.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
+        });
         // Appliquer le thème immédiatement
         const root = document.documentElement;
         if (prefs.theme === 'dark') {
@@ -156,6 +162,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           number_format: 'comma',
           theme: getInitialTheme(),
           font_size: defaultFontSize,
+          items_per_page: DEFAULT_ITEMS_PER_PAGE,
+          email_goal_alerts: true,
         });
         // Réinitialiser la taille de police au document
         const root = document.documentElement;
@@ -223,6 +231,8 @@ export const usePreferences = (): PreferencesContextType => {
           number_format: 'comma',
           theme: 'light',
           font_size: defaultFontSize,
+          items_per_page: DEFAULT_ITEMS_PER_PAGE,
+          email_goal_alerts: true,
         },
         loading: false,
         refreshPreferences: async () => {},

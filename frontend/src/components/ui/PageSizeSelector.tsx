@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { CustomSelect } from '../common/CustomSelect';
 
 interface PageSizeSelectorProps {
   currentSize: number;
@@ -36,14 +35,20 @@ const PageSizeSelector: React.FC<PageSizeSelectorProps> = ({
           {t('common:pagination.itemsPerPage')}
         </label>
       </div>
-      
+
       <div className="relative">
-        <CustomSelect
+        <select
+          id="page-size"
           value={currentSize}
-          onChange={(value) => onSizeChange(value as number)}
-          options={allOptions}
-          className="w-20"
-        />
+          onChange={(e) => onSizeChange(Number(e.target.value))}
+          className="w-24 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {allOptions.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 from django.utils import timezone
 from datetime import timedelta
@@ -181,6 +182,14 @@ class UserPreferences(models.Model):
         default=None,
         verbose_name=_('Guide d\'import replié'),
         help_text=str(_('État du guide d\'import dans la modale (None = première utilisation, True = replié, False = déplié)'))
+    )
+
+    # Préférences de pagination
+    items_per_page = models.PositiveIntegerField(
+        default=20,
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+        verbose_name=_('Éléments par page'),
+        help_text=str(_('Nombre d\'éléments à afficher par page dans les listes (1-100)'))
     )
     
     # Paramètres de confidentialité par page (réutilisable)

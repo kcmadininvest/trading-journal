@@ -5,12 +5,25 @@ import { TradesFilters } from '../components/trades/TradesFilters';
 import { TradesTable } from '../components/trades/TradesTable';
 import { TradeModal } from '../components/trades/TradeModal';
 import { CreateTradeModal } from '../components/trades/CreateTradeModal';
- 
+
 import PaginationControls from '../components/ui/PaginationControls';
 import { DeleteConfirmModal } from '../components/ui';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { usePreferences } from '../hooks/usePreferences';
+import userService from '../services/userService';
+
+const DEFAULT_TRADES_PAGE_SIZE = 20;
+const TRADES_PAGE_SIZE_OPTIONS = [5, 10, 20, 25, 50, 100];
+
+const sanitizePageSize = (value: number | string | null | undefined) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : DEFAULT_TRADES_PAGE_SIZE;
+  }
+  const parsed = value !== undefined && value !== null ? parseInt(String(value), 10) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TRADES_PAGE_SIZE;
+};
 
 const TradesPage: React.FC = () => {
   const { t } = useI18nTranslation();
@@ -18,12 +31,9 @@ const TradesPage: React.FC = () => {
   const [items, setItems] = useState<TradeListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const { preferences, loading: preferencesLoading } = usePreferences();
   const [page, setPage] = useState(1);
-  // Restaurer pageSize depuis localStorage ou utiliser la valeur par défaut
-  const [pageSize, setPageSize] = useState(() => {
-    const saved = localStorage.getItem('trades_page_size');
-    return saved ? parseInt(saved, 10) : 20;
-  });
+  const [pageSize, setPageSize] = useState(DEFAULT_TRADES_PAGE_SIZE);
   const [instruments, setInstruments] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     trading_account: null as number | null,
@@ -46,6 +56,14 @@ const TradesPage: React.FC = () => {
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTradeId, setEditingTradeId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (preferencesLoading) {
+      return;
+    }
+    const prefSize = sanitizePageSize(preferences.items_per_page ?? DEFAULT_TRADES_PAGE_SIZE);
+    setPageSize((prev) => (prev === prefSize ? prev : prefSize));
+  }, [preferences.items_per_page, preferencesLoading]);
 
   // Créer une clé stable pour les dépendances des useEffect basée sur les valeurs de filters
   const filtersKey = useMemo(() => {
@@ -141,7 +159,7 @@ const TradesPage: React.FC = () => {
 
   useEffect(() => {
     // Attendre la fin de l'initialisation et que le compte soit chargé avant de charger
-    if (!hasInitialized || accountLoading) {
+    if (!hasInitialized || accountLoading || preferencesLoading) {
       return;
     }
     
@@ -197,6 +215,19 @@ const TradesPage: React.FC = () => {
     setSelectedAccountId(null);
     setFilters({ trading_account: null, contract: '', type: '', start_date: '', end_date: '', profitable: '' });
     setPage(1);
+  };
+
+  const handlePageSizeChange = async (size: number) => {
+    const sanitized = sanitizePageSize(size);
+    setPageSize(sanitized);
+    setPage(1);
+
+    try {
+      await userService.updatePreferences({ items_per_page: sanitized });
+      window.dispatchEvent(new CustomEvent('preferences:updated'));
+    } catch (error) {
+      console.error('[TradesPage] Failed to persist items_per_page preference', error);
+    }
   };
 
   const handleDeleteOne = async (id: number) => {
@@ -386,6 +417,11 @@ const TradesPage: React.FC = () => {
     }
   };
 
+  const safePageSize = sanitizePageSize(pageSize);
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const paginationStartIndex = total === 0 ? 0 : (page - 1) * safePageSize + 1;
+  const paginationEndIndex = total === 0 ? 0 : Math.min(page * safePageSize, total);
+
   return (
     <div className="bg-gray-50 dark:bg-gray-900 py-4 sm:py-6 md:py-8">
       <div className="px-3 sm:px-4 md:px-6 lg:px-8">
@@ -485,23 +521,17 @@ const TradesPage: React.FC = () => {
 
         <PaginationControls
           currentPage={page}
-          totalPages={Math.max(1, Math.ceil(total / pageSize))}
+          totalPages={totalPages}
           totalItems={total}
-          itemsPerPage={pageSize}
-          startIndex={(page - 1) * pageSize + 1}
-          endIndex={Math.min(page * pageSize, total)}
+          itemsPerPage={safePageSize}
+          startIndex={paginationStartIndex}
+          endIndex={paginationEndIndex}
           onPageChange={(p) => {
             setPage(p);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-            // Persister la taille de page dans localStorage
-            localStorage.setItem('trades_page_size', String(size));
-            // Le useEffect qui écoute pageSize déclenchera automatiquement le rechargement
-          }}
-          pageSizeOptions={[5, 10, 20, 25, 50, 100]}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={TRADES_PAGE_SIZE_OPTIONS}
         />
 
         {selectedId && (

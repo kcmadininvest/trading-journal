@@ -32,12 +32,27 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   showInfo = true,
   className = '',
 }) => {
+  if (!pageSizeOptions || pageSizeOptions.length === 0) {
+    pageSizeOptions = [5, 10, 20, 25, 50, 100];
+  }
+
+  // Toujours afficher le conteneur si on a des items ou si le sélecteur de taille est activé
+  const shouldShow = totalItems > 0 || (showPageSizeSelector && onPageSizeChange);
+
+  if (!shouldShow) {
+    return null;
+  }
+
+  const showPaginationInfo = showInfo && totalItems > 0;
+  const showPaginationNav = totalPages > 1;
+  const showPageSelector = showPageSizeSelector && onPageSizeChange;
+
   return (
     <div className={`bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-t border-gray-200 dark:border-gray-700 px-6 py-6 ${className}`}>
-      <div className="flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0 lg:space-x-6">
+      <div className="flex flex-col lg:flex-row lg:flex-wrap items-center lg:items-center justify-center lg:justify-between gap-4 lg:gap-6 w-full">
         {/* Informations de pagination */}
-        {showInfo && (
-          <div className="flex-shrink-0">
+        {showPaginationInfo && (
+          <div className="w-full lg:w-auto">
             <PaginationInfo
               currentPage={currentPage}
               totalPages={totalPages}
@@ -49,19 +64,21 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           </div>
         )}
 
-        {/* Navigation de pagination */}
-        <div className="flex-shrink-0">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={onPageChange}
-            maxVisiblePages={5}
-          />
-        </div>
+        {/* Navigation de pagination - seulement si plus d'une page */}
+        {showPaginationNav && (
+          <div className="w-full lg:w-auto">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={onPageChange}
+              maxVisiblePages={5}
+            />
+          </div>
+        )}
 
-        {/* Sélecteur de taille de page */}
-        {showPageSizeSelector && onPageSizeChange && (
-          <div className="flex-shrink-0">
+        {/* Sélecteur de taille de page - toujours visible si activé */}
+        {showPageSelector && (
+          <div className="w-full lg:w-auto flex justify-center lg:justify-end">
             <PageSizeSelector
               currentSize={itemsPerPage}
               onSizeChange={onPageSizeChange}

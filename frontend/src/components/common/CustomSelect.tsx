@@ -31,6 +31,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   const currentOption = options.find(opt => opt.value === value) || options[0];
 
+  const toggleDropdown = () => {
+    setOpen(prev => !prev);
+  };
+
+  const handleSelect = (selectedValue: string | number | null) => {
+    onChange(selectedValue);
+    setOpen(false);
+  };
+
   // Calculer la position et la largeur du dropdown
   useEffect(() => {
     if (open && buttonRef.current) {
@@ -122,10 +131,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           <li key={opt.value ?? 'empty'}>
             <button
               type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setOpen(false);
-              }}
+              onClick={() => handleSelect(opt.value)}
               className={`w-full flex items-center justify-start px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 opt.value === value ? 'bg-gray-50 dark:bg-gray-700' : ''
               }`}
@@ -145,7 +151,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           ref={buttonRef}
           type="button"
           disabled={disabled}
-          onClick={() => setOpen(v => !v)}
+          onClick={toggleDropdown}
           className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="text-gray-900 dark:text-gray-100">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { toast } from 'react-hot-toast/headless';
 import { User, userService, UserUpdateData } from '../services/userService';
 import { authService } from '../services/auth';
@@ -7,6 +7,9 @@ import { PaginationControls, DeleteConfirmModal } from '../components/ui';
 import { usePagination } from '../hooks';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { usePreferences } from '../hooks/usePreferences';
+
+const DEFAULT_ITEMS_PER_PAGE = 20;
 
 const UserManagementPage: React.FC = () => {
   const { t } = useI18nTranslation();
@@ -23,7 +26,8 @@ const UserManagementPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'user' | 'admin'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const { preferences, loading: preferencesLoading } = usePreferences();
+  const [itemsPerPage, setItemsPerPage] = useState(DEFAULT_ITEMS_PER_PAGE);
 
   const roleFilterOptions = useMemo(() => [
     { value: 'all', label: t('users:page.allRoles') },
@@ -36,6 +40,46 @@ const UserManagementPage: React.FC = () => {
     { value: 'active', label: t('users:active') },
     { value: 'inactive', label: t('users:inactive') }
   ], [t]);
+
+  // Filtrer les utilisateurs
+  const filteredUsers = Array.isArray(users) ? users.filter(user => {
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+                          user.username.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesStatus = statusFilter === 'all' || 
+                          (statusFilter === 'active' && user.is_active) ||
+                          (statusFilter === 'inactive' && !user.is_active);
+    return matchesSearch && matchesRole && matchesStatus;
+  }) : [];
+
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems: paginatedUsers,
+    totalItems,
+    goToPage,
+    startIndex,
+    endIndex,
+  } = usePagination(filteredUsers, {
+    itemsPerPage,
+    initialPage: 1,
+  });
+
+  const goToPageRef = useRef(goToPage);
+
+  useEffect(() => {
+    goToPageRef.current = goToPage;
+  }, [goToPage]);
+
+  useEffect(() => {
+    if (preferencesLoading) {
+      return;
+    }
+    const prefSize = preferences.items_per_page ?? DEFAULT_ITEMS_PER_PAGE;
+    setItemsPerPage(prev => (prev === prefSize ? prev : prefSize));
+    goToPageRef.current(1);
+  }, [preferencesLoading, preferences.items_per_page]);
 
   // Charger les utilisateurs
   const loadUsers = async () => {
@@ -65,33 +109,17 @@ const UserManagementPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filtrer les utilisateurs
-  const filteredUsers = Array.isArray(users) ? users.filter(user => {
-    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
-                          user.username.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || 
-                          (statusFilter === 'active' && user.is_active) ||
-                          (statusFilter === 'inactive' && !user.is_active);
-    
-    return matchesSearch && matchesRole && matchesStatus;
-  }) : [];
-
-  // Utiliser la pagination
-  const {
-    currentPage,
-    totalPages,
-    paginatedItems: paginatedUsers,
-    totalItems,
-    goToPage,
-    startIndex,
-    endIndex,
-  } = usePagination(filteredUsers, {
-    itemsPerPage,
-    initialPage: 1,
-  });
+  const handlePageSizeChange = async (size: number) => {
+    const sanitized = Number.isFinite(size) && size > 0 ? size : DEFAULT_ITEMS_PER_PAGE;
+    setItemsPerPage(sanitized);
+    goToPage(1);
+    try {
+      await userService.updatePreferences({ items_per_page: sanitized });
+      window.dispatchEvent(new CustomEvent('preferences:updated'));
+    } catch (error) {
+      console.error('[UserManagementPage] Failed to persist items_per_page', error);
+    }
+  };
 
   // Gestion de la sélection
   const handleSelectUser = (userId: number, selected: boolean) => {
@@ -370,16 +398,16 @@ const UserManagementPage: React.FC = () => {
 
             {/* Contrôles de pagination */}
             <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              itemsPerPage={itemsPerPage}
-              startIndex={startIndex}
-              endIndex={endIndex}
-              onPageChange={goToPage}
-              onPageSizeChange={setItemsPerPage}
-              pageSizeOptions={[5, 10, 25, 50]}
-            />
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          onPageChange={goToPage}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={[5, 10, 25, 50]}
+        />
 
         {/* Modal de modification */}
         <UserEditModal

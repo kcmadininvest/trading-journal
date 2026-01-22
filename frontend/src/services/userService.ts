@@ -54,6 +54,7 @@ export interface UserPreferences {
   font_size: 'small' | 'medium' | 'large';
   sidebar_collapsed?: boolean;
   email_goal_alerts?: boolean;
+  items_per_page?: number;
   privacy_overrides?: PrivacyOverrides;
   import_guide_collapsed?: boolean;
   created_at?: string;
