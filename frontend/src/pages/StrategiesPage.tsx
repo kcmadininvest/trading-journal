@@ -6,19 +6,25 @@ import { RespectRateCard } from '../components/common/RespectRateCard';
 import { PerformanceComparison } from '../components/strategy/PerformanceComparison';
 import { StrategyBadges } from '../components/strategy/StrategyBadges';
 import { tradeStrategiesService } from '../services/tradeStrategies';
-import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import Tooltip from '../components/ui/Tooltip';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
+import { useWindowSize } from '../hooks/useWindowSize';
+import { useStrategyTrades } from '../hooks/useStrategyTrades';
+import { useStrategyCharts } from '../hooks/useStrategyCharts';
+import { useComplianceAggregation } from '../hooks/useComplianceAggregation';
+import { useWeekdayCompliance } from '../hooks/useWeekdayCompliance';
 import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getMonthName } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
+import { getChartColors } from '../utils/chartConfig';
+import { ChartSkeleton } from '../components/strategy/charts/ChartSkeleton';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -32,7 +38,6 @@ import {
   ArcElement,
   Filler,
 } from 'chart.js';
-import type { ChartData } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar, Doughnut as ChartDoughnut, Line as ChartLine, Chart as ChartComponent } from 'react-chartjs-2';
 
@@ -56,46 +61,6 @@ ChartJS.register(
   ChartDataLabels
 );
 
-// Composant Skeleton pour les graphiques en chargement
-const ChartSkeleton: React.FC<{ height?: string; title?: string }> = ({ 
-  height = 'h-64 sm:h-72 md:h-80', 
-  title 
-}) => (
-  <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-    <div className="animate-pulse">
-      {/* Titre du graphique */}
-      {title && (
-        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-          <div className="h-5 sm:h-6 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-          <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0"></div>
-        </div>
-      )}
-      {/* Zone du graphique */}
-      <div className={`${height} bg-gray-100 dark:bg-gray-700/50 rounded flex items-center justify-center`}>
-        <div className="space-y-3 w-full px-4">
-          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
-          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
-          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/6"></div>
-          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-type WeekdayComplianceChartData = {
-  chartData: ChartData<'bar' | 'line', number[], string>;
-  dayStats: Array<{
-    day: string;
-    dayIndex: number;
-    rate: number;
-    count: number;
-    total: number;
-  }>;
-  avgRate: number;
-};
-
 const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
   const { preferences } = usePreferences();
@@ -103,6 +68,7 @@ const StrategiesPage: React.FC = () => {
   const privacySettings = usePrivacySettings('strategies');
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+  const windowSize = useWindowSize();
   
   // Obtenir la langue actuelle depuis i18n (plus fiable que preferences.language)
   // Utiliser useMemo pour que ça se mette à jour quand la langue change
@@ -135,17 +101,7 @@ const StrategiesPage: React.FC = () => {
   }, [currentLanguage]);
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
-  const chartColors = useMemo(() => ({
-    text: isDark ? '#d1d5db' : '#374151',
-    textSecondary: isDark ? '#9ca3af' : '#6b7280',
-    background: isDark ? '#1f2937' : '#ffffff',
-    grid: isDark ? '#374151' : '#e5e7eb',
-    border: isDark ? '#4b5563' : '#d1d5db',
-    tooltipBg: isDark ? '#374151' : '#ffffff',
-    tooltipTitle: isDark ? '#d1d5db' : '#4b5563',
-    tooltipBody: isDark ? '#f3f4f6' : '#1f2937',
-    tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
-  }), [isDark]);
+  const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
   const [showImport, setShowImport] = useState(false);
   // Utiliser un sélecteur de période moderne
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
@@ -166,8 +122,15 @@ const StrategiesPage: React.FC = () => {
   const [statistics, setStatistics] = useState<any>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
-  const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
+  
+  // Utiliser le hook optimisé pour charger les trades en parallèle
+  const { allTrades, filteredTrades, reload: reloadTrades } = useStrategyTrades({
+    accountId,
+    accountLoading,
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+  });
   const [allAccountsCompliance, setAllAccountsCompliance] = useState<any>(null);
   const [selectedAccountCompliance, setSelectedAccountCompliance] = useState<any>(null);
   const [loadingAllAccountsCompliance, setLoadingAllAccountsCompliance] = useState(false);
@@ -334,28 +297,6 @@ const StrategiesPage: React.FC = () => {
     loadAccount();
   }, [accountId]);
 
-  // Fonction pour charger tous les trades du compte
-  const loadAllTrades = useCallback(async () => {
-    if (!accountId || accountLoading) {
-      setAllTrades([]);
-      return;
-    }
-    try {
-      const response = await tradesService.list({
-        trading_account: accountId,
-        page_size: 10000, // Charger tous les trades
-      });
-      setAllTrades(response.results);
-    } catch (err) {
-      console.error('Erreur lors du chargement des trades', err);
-      setAllTrades([]);
-    }
-  }, [accountId, accountLoading]);
-
-  // Charger tous les trades du compte pour calculer le solde
-  useEffect(() => {
-    loadAllTrades();
-  }, [loadAllTrades]);
 
   // Obtenir le symbole de la devise du compte sélectionné
   const currencySymbol = useMemo(() => {
@@ -364,50 +305,6 @@ const StrategiesPage: React.FC = () => {
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
 
-  // Fonction pour charger les trades filtrés par période
-  const loadFilteredTrades = useCallback(async () => {
-    if (!accountId || accountLoading) {
-      setFilteredTrades([]);
-      return;
-    }
-    try {
-      const filters: any = {
-        trading_account: accountId,
-        page_size: 10000,
-      };
-
-      if (selectedPeriod) {
-        filters.start_date = selectedPeriod.start;
-        filters.end_date = selectedPeriod.end;
-      } else if (selectedYear) {
-        const startDate = selectedMonth 
-          ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
-          : `${selectedYear}-01-01`;
-        
-        let endDate: string;
-        if (selectedMonth) {
-          const lastDay = new Date(selectedYear, selectedMonth, 0);
-          endDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
-        } else {
-          endDate = `${selectedYear}-12-31`;
-        }
-        
-        filters.start_date = startDate;
-        filters.end_date = endDate;
-      }
-
-      const response = await tradesService.list(filters);
-      setFilteredTrades(response.results);
-    } catch (err) {
-      console.error('Erreur lors du chargement des trades filtrés', err);
-      setFilteredTrades([]);
-    }
-  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
-
-  // Charger les trades filtrés par période pour calculer le meilleur/pire jour
-  useEffect(() => {
-    loadFilteredTrades();
-  }, [loadFilteredTrades]);
 
 
   // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
@@ -417,64 +314,15 @@ const StrategiesPage: React.FC = () => {
     filteredTrades,
   });
 
-  // Graphique 1: Respect de la stratégie en % (graphique en barres groupées)
-  // Pour chaque période (mois ou jour), afficher les deux barres côte à côte
-  const respectChartData = useMemo(() => {
-    // Guard: éviter le calcul pendant le chargement
-    if (isLoading || !allDataLoaded) return null;
-    if (!statistics?.statistics?.period_data || statistics.statistics.period_data.length === 0) return null;
-    
-    // Filtrer les périodes avec des données (total_with_strategy > 0 ou total > 0)
-    const periodsWithData = statistics.statistics.period_data.filter((d: any) => 
-      (d.total_with_strategy && d.total_with_strategy > 0) || (d.total && d.total > 0)
-    );
-    
-    if (periodsWithData.length === 0) return null;
-    
-    // Enrichir les données avec les informations nécessaires pour les tooltips
-    const enrichedData = periodsWithData.map((d: any) => {
-      const totalTrades = d.total || 0;
-      const totalWithStrategy = d.total_with_strategy || totalTrades; // Utiliser la valeur du backend si disponible
-      const respectPercentage = d.respect_percentage || 0;
-      const notRespectPercentage = d.not_respect_percentage || 0;
-      
-      // Utiliser les valeurs du backend si disponibles, sinon calculer
-      const respectedCount = d.respected_count !== undefined ? d.respected_count : Math.round((respectPercentage / 100) * totalWithStrategy);
-      const notRespectedCount = d.not_respected_count !== undefined ? d.not_respected_count : Math.round((notRespectPercentage / 100) * totalWithStrategy);
-      const daysWithoutTrades = Math.max(0, totalWithStrategy - totalTrades);
-      
-    return {
-        ...d,
-        totalWithStrategy,
-        daysWithoutTrades,
-        respectedCount,
-        notRespectedCount,
-      };
-    });
-    
-    return {
-      labels: enrichedData.map((d: any) => formatPeriod(d.period)),
-    datasets: [
-      {
-        label: t('strategies:respected'),
-          data: enrichedData.map((d: any) => d.respect_percentage || 0),
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: '#3b82f6',
-        borderWidth: 0,
-        borderRadius: 0,
-      },
-      {
-        label: t('strategies:notRespected'),
-          data: enrichedData.map((d: any) => d.not_respect_percentage || 0),
-        backgroundColor: 'rgba(236, 72, 153, 0.8)',
-        borderColor: '#ec4899',
-        borderWidth: 0,
-        borderRadius: 0,
-      },
-    ],
-      enrichedData, // Stocker les données enrichies pour les tooltips
-  };
-  }, [isLoading, allDataLoaded, statistics?.statistics?.period_data, t, formatPeriod]);
+  // Utiliser le hook optimisé pour les graphiques de stratégie
+  const { respectChartData, successRateData, winningSessionsData, emotionsData } = useStrategyCharts({
+    statistics,
+    isLoading,
+    formatPeriod,
+    formatNumber,
+    getEmotionLabel,
+    t,
+  });
 
   const respectChartOptions = useMemo(() => ({
     responsive: true,
@@ -485,7 +333,7 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: window.innerWidth < 640 ? 10 : 13,
+          size: windowSize.isMobile ? 10 : 13,
         },
         formatter: function(value: number) {
           return value > 0 ? formatNumber(value, 1) + '%' : '';
@@ -498,9 +346,9 @@ const StrategiesPage: React.FC = () => {
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: window.innerWidth < 640 ? 12 : 20,
+          padding: windowSize.isMobile ? 12 : 20,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12
+            size: windowSize.isMobile ? 10 : 12
           },
           color: chartColors.textSecondary,
         },
@@ -589,7 +437,7 @@ const StrategiesPage: React.FC = () => {
           },
           color: chartColors.textSecondary,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            size: windowSize.isMobile ? 10 : 12,
           },
         },
         grid: {
@@ -609,7 +457,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            size: windowSize.isMobile ? 10 : 12,
           },
         },
         grid: {
@@ -624,39 +472,8 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.period_data, respectChartData, t, chartColors, formatNumber, formatPeriod]);
+  }), [statistics?.statistics?.period_data, respectChartData, t, chartColors, formatNumber, formatPeriod, windowSize.isMobile]);
 
-  // Graphique 2: Taux de réussite selon respect de la stratégie
-  const successRateData = useMemo(() => {
-    // Guard: éviter le calcul pendant le chargement
-    if (isLoading || !allDataLoaded) return null;
-    if (!statistics?.statistics) return null;
-    // Vérifier qu'il y a des statistiques significatives
-    const hasData = statistics.statistics.total_strategies > 0;
-    if (!hasData) return null;
-    
-    return {
-    labels: [t('strategies:successRateByStrategyRespect')],
-    datasets: [
-      {
-        label: t('strategies:ifStrategyRespected'),
-        data: [statistics.statistics.success_rate_if_respected || 0],
-        backgroundColor: 'rgba(59, 130, 246, 0.8)',
-        borderColor: '#3b82f6',
-        borderWidth: 0,
-        borderRadius: 0,
-      },
-      {
-        label: t('strategies:ifStrategyNotRespected'),
-        data: [statistics.statistics.success_rate_if_not_respected || 0],
-        backgroundColor: 'rgba(236, 72, 153, 0.8)',
-        borderColor: '#ec4899',
-        borderWidth: 0,
-        borderRadius: 0,
-      },
-    ],
-  };
-  }, [isLoading, allDataLoaded, statistics?.statistics, t]);
 
   const successRateOptions = useMemo(() => ({
     responsive: true,
@@ -667,7 +484,7 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: window.innerWidth < 640 ? 10 : 13,
+          size: windowSize.isMobile ? 10 : 13,
         },
         formatter: function(value: number) {
           // Afficher la valeur avec le symbole %
@@ -679,9 +496,9 @@ const StrategiesPage: React.FC = () => {
         position: 'top' as const,
         labels: {
           usePointStyle: true,
-          padding: window.innerWidth < 640 ? 12 : 20,
+          padding: windowSize.isMobile ? 12 : 20,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12
+            size: windowSize.isMobile ? 10 : 12
           },
           color: chartColors.textSecondary,
         },
@@ -725,7 +542,7 @@ const StrategiesPage: React.FC = () => {
           },
           color: chartColors.textSecondary,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            size: windowSize.isMobile ? 10 : 12,
           },
         },
         grid: {
@@ -747,7 +564,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            size: windowSize.isMobile ? 10 : 12,
           },
         },
         grid: {
@@ -759,44 +576,8 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [chartColors, formatNumber]);
+  }), [chartColors, formatNumber, windowSize.isMobile]);
 
-  // Graphique 3: Répartition des sessions gagnantes selon TP1 et TP2+
-  const winningSessionsData = useMemo(() => {
-    // Guard: éviter le calcul pendant le chargement
-    if (isLoading || !allDataLoaded) return null;
-    if (!statistics?.statistics?.winning_sessions_distribution) return null;
-    // Vérifier qu'il y a au moins une session gagnante
-    const dist = statistics.statistics.winning_sessions_distribution;
-    const hasData = (dist.tp1_only || 0) + (dist.tp2_plus || 0) + (dist.no_tp || 0) > 0;
-    if (!hasData) return null;
-    
-    return {
-    labels: [t('strategies:tp1Only'), t('strategies:tp2Plus'), t('strategies:noTp')],
-    datasets: [
-      {
-        label: t('strategies:numberOfWinningSessions'),
-        data: [
-          statistics.statistics.winning_sessions_distribution.tp1_only,
-          statistics.statistics.winning_sessions_distribution.tp2_plus,
-          statistics.statistics.winning_sessions_distribution.no_tp,
-        ],
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(249, 115, 22, 0.8)',
-          'rgba(156, 163, 175, 0.8)',
-        ],
-        borderColor: [
-          '#3b82f6',
-          '#f97316',
-          '#9ca3af',
-        ],
-        borderWidth: 0,
-        borderRadius: 0,
-      },
-    ],
-  };
-  }, [isLoading, allDataLoaded, statistics?.statistics?.winning_sessions_distribution, t]);
 
   // Calculer la valeur maximale pour l'axe Y avec marge
   const winningSessionsMax = useMemo(() => statistics?.statistics?.winning_sessions_distribution ? (() => {
@@ -819,7 +600,7 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: window.innerWidth < 640 ? 10 : 13,
+          size: windowSize.isMobile ? 10 : 13,
         },
         formatter: function(value: number) {
           return value > 0 ? value.toString() : '';
@@ -896,7 +677,7 @@ const StrategiesPage: React.FC = () => {
           text: t('strategies:numberOfWinningSessions'),
           color: chartColors.text,
           font: {
-            size: window.innerWidth < 640 ? 11 : 13,
+            size: windowSize.isMobile ? 11 : 13,
             weight: 600,
           },
         },
@@ -906,7 +687,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            size: windowSize.isMobile ? 10 : 12,
           },
         },
         grid: {
@@ -921,95 +702,8 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t, chartColors, formatNumber]);
+  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t, chartColors, formatNumber, windowSize.isMobile]);
 
-  // Graphique 4: Répartition des émotions dominantes (camembert)
-  const generateColors = (count: number) => {
-    const baseColors = [
-      { bg: 'rgba(59, 130, 246, 0.8)', border: 'rgb(59, 130, 246)' },   // blue
-      { bg: 'rgba(34, 197, 94, 0.8)', border: 'rgb(34, 197, 94)' },    // green
-      { bg: 'rgba(239, 68, 68, 0.8)', border: 'rgb(239, 68, 68)' },    // red
-      { bg: 'rgba(251, 191, 36, 0.8)', border: 'rgb(251, 191, 36)' },   // yellow
-      { bg: 'rgba(168, 85, 247, 0.8)', border: 'rgb(168, 85, 247)' },   // purple
-      { bg: 'rgba(236, 72, 153, 0.8)', border: 'rgb(236, 72, 153)' },   // pink
-      { bg: 'rgba(20, 184, 166, 0.8)', border: 'rgb(20, 184, 166)' },   // teal
-      { bg: 'rgba(249, 115, 22, 0.8)', border: 'rgb(249, 115, 22)' },   // orange
-      { bg: 'rgba(6, 182, 212, 0.8)', border: 'rgb(6, 182, 212)' },    // cyan
-      { bg: 'rgba(132, 204, 22, 0.8)', border: 'rgb(132, 204, 22)' },   // lime
-      { bg: 'rgba(234, 179, 8, 0.8)', border: 'rgb(234, 179, 8)' },    // amber
-      { bg: 'rgba(225, 29, 72, 0.8)', border: 'rgb(225, 29, 72)' },    // rose
-      { bg: 'rgba(139, 92, 246, 0.8)', border: 'rgb(139, 92, 246)' },   // violet
-      { bg: 'rgba(14, 165, 233, 0.8)', border: 'rgb(14, 165, 233)' },   // sky
-      { bg: 'rgba(5, 150, 105, 0.8)', border: 'rgb(5, 150, 105)' },    // emerald
-      { bg: 'rgba(217, 119, 6, 0.8)', border: 'rgb(217, 119, 6)' },    // amber
-      { bg: 'rgba(190, 24, 93, 0.8)', border: 'rgb(190, 24, 93)' },    // fuchsia
-      { bg: 'rgba(99, 102, 241, 0.8)', border: 'rgb(99, 102, 241)' },   // indigo
-    ];
-    
-    // Répéter les couleurs si nécessaire
-    const colors: string[] = [];
-    const borders: string[] = [];
-    for (let i = 0; i < count; i++) {
-      const color = baseColors[i % baseColors.length];
-      colors.push(color.bg);
-      borders.push(color.border);
-    }
-    return { backgroundColor: colors, borderColor: borders };
-  };
-
-  const emotionsData = useMemo(() => {
-    // Guard: éviter le calcul pendant le chargement
-    if (isLoading || !allDataLoaded) return null;
-    return statistics?.statistics?.emotions_distribution ? (() => {
-      // Trier les émotions par fréquence (décroissant)
-      const sortedEmotions = [...statistics.statistics.emotions_distribution]
-        .sort((a: any, b: any) => b.count - a.count);
-    
-    // Prendre les 5 premières émotions
-    const top5Emotions = sortedEmotions.slice(0, 5);
-    const otherEmotions = sortedEmotions.slice(5);
-    
-    // Calculer le total des autres émotions
-    const othersCount = otherEmotions.reduce((sum: number, e: any) => sum + e.count, 0);
-    
-    // Construire les labels et données
-    const labels = top5Emotions.map((e: any) => getEmotionLabel(e.emotion));
-    const data = top5Emotions.map((e: any) => e.count);
-    
-    // Ajouter "Autres" si nécessaire
-    if (othersCount > 0) {
-      labels.push(t('strategies:others'));
-      data.push(othersCount);
-    }
-    
-    const colors = generateColors(labels.length);
-    
-    // Calculer le total pour les pourcentages
-    const total = sortedEmotions.reduce((sum: number, e: any) => sum + e.count, 0);
-    
-    return {
-      labels,
-      data,
-      datasets: [
-        {
-          label: t('strategies:numberOfOccurrences'),
-          data,
-          backgroundColor: colors.backgroundColor,
-          borderColor: colors.borderColor,
-          borderWidth: 0,
-        },
-      ],
-      total, // Stocker le total pour les calculs de pourcentage
-      totalEmotions: sortedEmotions.length, // Nombre total d'émotions différentes
-      topEmotion: top5Emotions.length > 0 ? {
-        label: getEmotionLabel(top5Emotions[0].emotion),
-        count: top5Emotions[0].count,
-        percentage: total > 0 ? (top5Emotions[0].count / total) * 100 : 0,
-      } : null, // Émotion la plus fréquente
-      colors: colors, // Stocker les couleurs pour la légende
-    };
-    })() : null;
-  }, [isLoading, allDataLoaded, statistics?.statistics?.emotions_distribution, getEmotionLabel, t]);
 
   const emotionsOptions = useMemo(() => ({
     responsive: true,
@@ -1047,7 +741,7 @@ const StrategiesPage: React.FC = () => {
         font: {
           family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           weight: 600,
-          size: window.innerWidth < 640 ? 10 : window.innerWidth < 1024 ? 11 : 12,
+          size: windowSize.isMobile ? 10 : windowSize.isTablet ? 11 : 12,
         },
         formatter: function(value: number, context: any) {
           const label = context.chart.data.labels[context.dataIndex] || '';
@@ -1055,7 +749,7 @@ const StrategiesPage: React.FC = () => {
           const percentage = total > 0 ? (value / total) * 100 : 0;
           
           // Sur mobile, afficher seulement le pourcentage pour économiser l'espace
-          if (window.innerWidth < 640) {
+          if (windowSize.isMobile) {
             return `${formatNumber(percentage, 1)}%`;
           }
           
@@ -1126,163 +820,39 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [emotionsData, chartColors, formatNumber, isDark]);
+  }), [emotionsData, chartColors, formatNumber, isDark, windowSize.isMobile, windowSize.isTablet]);
 
   // Graphique 5: Évolution du taux de compliance (prend en compte le sélecteur de compte)
+  const complianceAggregation = useComplianceAggregation({
+    complianceData: selectedAccountCompliance || allAccountsCompliance,
+    isLoading: isLoading || !allDataLoaded,
+  });
+
   const evolutionData = useMemo(() => {
-    // Guard: éviter le calcul pendant le chargement
-    if (isLoading || !allDataLoaded) return null;
-    // Utiliser les données du compte sélectionné si disponible, sinon tous les comptes
-    const complianceData = selectedAccountCompliance || allAccountsCompliance;
-    if (!complianceData?.daily_compliance || complianceData.daily_compliance.length === 0) return null;
+    if (!complianceAggregation) return null;
     
-    const sortedData = [...complianceData.daily_compliance]
-      .map((d: any) => {
-        // Recalculer le compliance_rate pour gérer les jours sans trades mais avec compliance
-        // Pour un jour sans trades (total = 0) mais avec compliance, respected + not_respected = 1
-        // Le dénominateur doit être respected + not_respected (nombre de stratégies/compliances)
-        const totalStrategies = (d.respected || 0) + (d.not_respected || 0);
-        const complianceRate = totalStrategies > 0 
-          ? ((d.respected || 0) / totalStrategies) * 100 
-          : (d.compliance_rate || 0);
-        
-        return {
-          ...d,
-          compliance_rate: complianceRate,
-          total_strategies: totalStrategies || d.total || 0, // Pour l'affichage dans les tooltips
-          date: new Date(d.date),
-        };
-      })
-      .sort((a: any, b: any) => 
-        a.date.getTime() - b.date.getTime()
-      );
-
-    if (sortedData.length === 0) return null;
-
-    // Déterminer le niveau d'agrégation selon le nombre de points
-    const firstDate = sortedData[0].date;
-    const lastDate = sortedData[sortedData.length - 1].date;
-    const daysDiff = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24));
-    const dataPoints = sortedData.length;
-
-    let aggregation: 'day' | 'week' | 'month' | 'year' = 'day';
-    let groupKey: (date: Date) => string;
-    let formatLabel: (date: Date) => string;
-    let formatTooltipDate: (date: Date) => string;
-
-    // Seuils optimisés pour éviter trop de points sur le graphique
-    if (dataPoints > 365 || daysDiff > 730) {
-      // Agréger par année si plus de 365 points ou plus de 2 ans
-      aggregation = 'year';
-      groupKey = (date: Date) => `${date.getFullYear()}`;
-      formatLabel = (date: Date) => `${date.getFullYear()}`;
-      formatTooltipDate = (date: Date) => {
-        return date.toLocaleDateString('fr-FR', { year: 'numeric' });
-      };
-    } else if (dataPoints > 120 || daysDiff > 365) {
-      // Agréger par mois si plus de 120 points ou plus d'un an
-      aggregation = 'month';
-      groupKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      formatLabel = (date: Date) => {
-        const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-        return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-      };
-      formatTooltipDate = (date: Date) => {
-        const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-        return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-      };
-    } else if (dataPoints > 60 || daysDiff > 90) {
-      // Agréger par semaine si plus de 60 points ou plus de 90 jours
-      aggregation = 'week';
-      groupKey = (date: Date) => {
-        // Obtenir le lundi de la semaine
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajuster pour lundi = 1
-        const monday = new Date(d);
-        monday.setDate(diff);
-        monday.setHours(0, 0, 0, 0);
-        return `${monday.getFullYear()}-${String(monday.getMonth() + 1).padStart(2, '0')}-${String(monday.getDate()).padStart(2, '0')}`;
-      };
-      formatLabel = (date: Date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const monday = new Date(d);
-        monday.setDate(diff);
-        return monday.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-      };
-      formatTooltipDate = (date: Date) => {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const monday = new Date(d);
-        monday.setDate(diff);
-        const sunday = new Date(monday);
-        sunday.setDate(monday.getDate() + 6);
-        return `Semaine du ${monday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} au ${sunday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
-      };
-    } else {
-      // Garder par jour
-      aggregation = 'day';
-      groupKey = (date: Date) => date.toISOString().split('T')[0];
-      formatLabel = (date: Date) => date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-      formatTooltipDate = (date: Date) => date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    }
-
-    // Agréger les données
-    const aggregated: { [key: string]: { 
-      sum: number; 
-      count: number; 
-      totalRespected: number; 
-      totalStrategies: number;
-      dates: Date[];
-      rawData: any[];
-    } } = {};
-
-    sortedData.forEach((d: any) => {
-      const key = groupKey(d.date);
-      if (!aggregated[key]) {
-        aggregated[key] = {
-          sum: 0,
-          count: 0,
-          totalRespected: 0,
-          totalStrategies: 0,
-          dates: [],
-          rawData: [],
-        };
+    const { labels, data, rawData, aggregation, formatTooltipDate } = complianceAggregation;
+    
+    // Calculer la moyenne cumulative pour chaque point
+    const cumulativeAverageData = rawData.map((_, index) => {
+      const pointsUpToNow = rawData.slice(0, index + 1);
+      const totalStrategies = pointsUpToNow.reduce((sum, d) => sum + (d.total_strategies || 0), 0);
+      const totalRespected = pointsUpToNow.reduce((sum, d) => sum + (d.respected || 0), 0);
+      
+      if (totalStrategies > 0) {
+        return (totalRespected / totalStrategies) * 100;
+      } else {
+        const sum = pointsUpToNow.reduce((sum, d) => sum + (d.compliance_rate || 0), 0);
+        return sum / pointsUpToNow.length;
       }
-      aggregated[key].sum += d.compliance_rate;
-      aggregated[key].count += 1;
-      aggregated[key].totalRespected += d.respected || 0;
-      aggregated[key].totalStrategies += d.total_strategies || 0;
-      aggregated[key].dates.push(d.date);
-      aggregated[key].rawData.push(d);
     });
 
-    // Convertir en tableau trié et calculer la moyenne pondérée
-    const aggregatedArray = Object.keys(aggregated)
-      .map(key => {
-        const group = aggregated[key];
-        // Calculer la moyenne pondérée par le nombre de stratégies
-        const avgRate = group.totalStrategies > 0
-          ? (group.totalRespected / group.totalStrategies) * 100
-          : group.sum / group.count;
-        
-        // Utiliser la première date du groupe pour le label
-        const representativeDate = group.dates[0];
-        
-        return {
-          key,
-          date: representativeDate,
-          compliance_rate: avgRate,
-          total_strategies: group.totalStrategies,
-          respected: group.totalRespected,
-          count: group.count,
-          rawData: group.rawData,
-        };
-      })
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    // Calculer la moyenne globale
+    const totalStrategies = rawData.reduce((sum, d) => sum + (d.total_strategies || 0), 0);
+    const totalRespected = rawData.reduce((sum, d) => sum + (d.respected || 0), 0);
+    const averageRate = totalStrategies > 0
+      ? (totalRespected / totalStrategies) * 100
+      : rawData.reduce((sum, d) => sum + (d.compliance_rate || 0), 0) / rawData.length;
 
     // Créer un dégradé pour le remplissage
     const canvas = document.createElement('canvas');
@@ -1294,37 +864,12 @@ const StrategiesPage: React.FC = () => {
       gradient.addColorStop(1, 'rgba(98, 155, 248, 0.05)');
     }
 
-    // Calculer la moyenne cumulative pour chaque point (moyenne depuis le début jusqu'à ce point)
-    const cumulativeAverageData = aggregatedArray.map((_, index) => {
-      // Prendre tous les points depuis le début jusqu'à l'index actuel
-      const pointsUpToNow = aggregatedArray.slice(0, index + 1);
-      
-      // Calculer la moyenne pondérée par le nombre de stratégies
-      const totalStrategies = pointsUpToNow.reduce((sum, d) => sum + (d.total_strategies || 0), 0);
-      const totalRespected = pointsUpToNow.reduce((sum, d) => sum + (d.respected || 0), 0);
-      
-      if (totalStrategies > 0) {
-        return (totalRespected / totalStrategies) * 100;
-      } else {
-        // Fallback si pas de stratégies : moyenne simple
-        const sum = pointsUpToNow.reduce((sum, d) => sum + (d.compliance_rate || 0), 0);
-        return sum / pointsUpToNow.length;
-      }
-    });
-
-    // Calculer la moyenne globale pour référence (utilisée dans le tooltip)
-    const totalStrategies = aggregatedArray.reduce((sum, d) => sum + (d.total_strategies || 0), 0);
-    const totalRespected = aggregatedArray.reduce((sum, d) => sum + (d.respected || 0), 0);
-    const averageRate = totalStrategies > 0
-      ? (totalRespected / totalStrategies) * 100
-      : aggregatedArray.reduce((sum, d) => sum + (d.compliance_rate || 0), 0) / aggregatedArray.length;
-
-    const result = {
-      labels: aggregatedArray.map(d => formatLabel(d.date)),
+    return {
+      labels,
       datasets: [
         {
           label: t('strategies:compliance.rate'),
-          data: aggregatedArray.map((d: any) => d.compliance_rate || 0),
+          data,
           borderColor: '#629bf8',
           backgroundColor: gradient || 'rgba(98, 155, 248, 0.1)',
           borderWidth: 3,
@@ -1356,14 +901,13 @@ const StrategiesPage: React.FC = () => {
           pointBorderWidth: 2,
         },
       ],
-      rawData: aggregatedArray,
+      rawData,
       aggregation,
       formatTooltipDate,
       averageRate,
       cumulativeAverageData,
     };
-    return result;
-  }, [isLoading, allDataLoaded, selectedAccountCompliance, allAccountsCompliance, t]);
+  }, [complianceAggregation, t]);
 
   const evolutionOptions = useMemo(() => {
     // Calculer le domaine dynamique de l'axe Y
@@ -1420,9 +964,9 @@ const StrategiesPage: React.FC = () => {
           position: 'top' as const,
           labels: {
             usePointStyle: true,
-            padding: window.innerWidth < 640 ? 12 : 20,
+            padding: windowSize.isMobile ? 12 : 20,
             font: {
-              size: window.innerWidth < 640 ? 10 : 12
+              size: windowSize.isMobile ? 10 : 12
             },
             color: chartColors.textSecondary,
           },
@@ -1511,7 +1055,7 @@ const StrategiesPage: React.FC = () => {
             },
             color: chartColors.textSecondary,
             font: {
-              size: window.innerWidth < 640 ? 10 : 12,
+              size: windowSize.isMobile ? 10 : 12,
             },
           },
           grid: {
@@ -1528,7 +1072,7 @@ const StrategiesPage: React.FC = () => {
             text: t('strategies:compliance.rate'),
             color: chartColors.text,
             font: {
-              size: window.innerWidth < 640 ? 11 : 13,
+              size: windowSize.isMobile ? 11 : 13,
               weight: 600,
             },
           },
@@ -1537,7 +1081,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            size: windowSize.isMobile ? 10 : 12,
           },
           maxRotation: 45,
           minRotation: 45,
@@ -1567,120 +1111,14 @@ const StrategiesPage: React.FC = () => {
       },
     },
   };
-  }, [evolutionData, chartColors, formatNumber, t]);
+}, [evolutionData, chartColors, formatNumber, t, windowSize.isMobile]);
 
-  // Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
-  const weekdayComplianceData = useMemo<WeekdayComplianceChartData | null>(() => {
-    // Guard: éviter le calcul pendant le chargement
-    if (isLoading || !allDataLoaded) return null;
-    // Utiliser les données du compte sélectionné si disponible, sinon tous les comptes
-    const complianceData = selectedAccountCompliance || allAccountsCompliance;
-    if (!complianceData?.daily_compliance || complianceData.daily_compliance.length === 0) return null;
-
-    // Préparer les données avec le calcul correct du compliance_rate
-    const processedData = complianceData.daily_compliance.map((d: any) => {
-      const totalStrategies = (d.respected || 0) + (d.not_respected || 0);
-      const complianceRate = totalStrategies > 0 
-        ? ((d.respected || 0) / totalStrategies) * 100 
-        : (d.compliance_rate || 0);
-      return {
-        ...d,
-        compliance_rate: complianceRate,
-        date: new Date(d.date),
-      };
-    });
-
-    // Grouper par jour de la semaine (0 = dimanche, 1 = lundi, ..., 6 = samedi)
-    const weekdayStats: { [key: number]: { total: number; sum: number; count: number } } = {};
-    
-    processedData.forEach((d: any) => {
-      const weekday = d.date.getDay(); // 0 = dimanche, 1 = lundi, etc.
-      if (!weekdayStats[weekday]) {
-        weekdayStats[weekday] = { total: 0, sum: 0, count: 0 };
-      }
-      weekdayStats[weekday].sum += d.compliance_rate;
-      weekdayStats[weekday].count += 1;
-      weekdayStats[weekday].total += (d.respected || 0) + (d.not_respected || 0);
-    });
-
-    // Ordre des jours : lundi à dimanche
-    const weekdayOrder = [1, 2, 3, 4, 5, 6, 0]; // Lundi à dimanche
-    const weekdayNames = [
-      t('dashboard:sunday', { defaultValue: 'Dimanche' }),
-      t('dashboard:monday', { defaultValue: 'Lundi' }),
-      t('dashboard:tuesday', { defaultValue: 'Mardi' }),
-      t('dashboard:wednesday', { defaultValue: 'Mercredi' }),
-      t('dashboard:thursday', { defaultValue: 'Jeudi' }),
-      t('dashboard:friday', { defaultValue: 'Vendredi' }),
-      t('dashboard:saturday', { defaultValue: 'Samedi' }),
-    ];
-
-    const dayStats = weekdayOrder
-      .map(dayIndex => {
-        const stats = weekdayStats[dayIndex];
-        if (!stats || stats.count === 0) return null;
-        
-        const avgRate = stats.sum / stats.count;
-        return {
-          day: weekdayNames[dayIndex],
-          dayIndex,
-          rate: avgRate,
-          count: stats.count,
-          total: stats.total,
-        };
-      })
-      .filter((d): d is NonNullable<typeof d> => d !== null);
-
-    if (dayStats.length === 0) return null;
-
-    // Garder l'ordre lundi à dimanche (pas de tri)
-    // Calculer la moyenne pour déterminer positif/négatif
-    const avgRate = dayStats.reduce((sum, d) => sum + d.rate, 0) / dayStats.length;
-
-    const chartConfig: ChartData<'bar' | 'line', number[], string> = {
-      labels: dayStats.map(d => d.day),
-      datasets: [
-        {
-          type: 'bar' as const,
-          label: t('strategies:compliance.rate'),
-          data: dayStats.map(d => d.rate),
-          backgroundColor: dayStats.map(d => {
-            // Utiliser les couleurs du projet : #629bf8 pour positif, #f06dad pour négatif
-            // Positif si au-dessus de la moyenne, négatif si en dessous
-            const isPositive = d.rate >= avgRate;
-            return isPositive ? 'rgba(98, 155, 248, 0.8)' : 'rgba(240, 109, 173, 0.8)';
-          }),
-          borderColor: dayStats.map(d => {
-            const isPositive = d.rate >= avgRate;
-            return isPositive ? '#629bf8' : '#f06dad';
-          }),
-          borderWidth: 0,
-          borderRadius: 0,
-        },
-        {
-          type: 'line' as const,
-          label: t('strategies:compliance.averageLine', { defaultValue: 'Moyenne hebdomadaire' }),
-          data: dayStats.map(() => avgRate),
-          borderColor: '#fbbf24',
-          borderWidth: 2,
-          borderDash: [6, 4],
-          pointRadius: 0,
-          pointHoverRadius: 0,
-          tension: 0,
-          fill: false,
-          datalabels: {
-            display: false,
-          },
-        },
-      ],
-    };
-
-    return {
-      chartData: chartConfig,
-      dayStats,
-      avgRate,
-    };
-  }, [isLoading, allDataLoaded, selectedAccountCompliance, allAccountsCompliance, t]);
+// Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
+const weekdayComplianceData = useWeekdayCompliance({
+  complianceData: selectedAccountCompliance || allAccountsCompliance,
+  isLoading: isLoading || !allDataLoaded,
+  t,
+});
 
   const weekdayComplianceOptions = useMemo(() => ({
     responsive: true,
@@ -1701,7 +1139,7 @@ const StrategiesPage: React.FC = () => {
         color: '#ffffff',
         font: {
           weight: 600,
-          size: window.innerWidth < 640 ? 10 : 12,
+          size: windowSize.isMobile ? 10 : 12,
         },
         formatter: function(value: number) {
           return formatNumber(value, 1) + '%';
@@ -1789,7 +1227,7 @@ const StrategiesPage: React.FC = () => {
           },
           color: chartColors.textSecondary,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            size: windowSize.isMobile ? 10 : 12,
           },
         },
         grid: {
@@ -1805,7 +1243,7 @@ const StrategiesPage: React.FC = () => {
           text: t('strategies:compliance.rate'),
           color: chartColors.text,
           font: {
-            size: window.innerWidth < 640 ? 11 : 13,
+            size: windowSize.isMobile ? 11 : 13,
             weight: 600,
           },
         },
@@ -1814,7 +1252,7 @@ const StrategiesPage: React.FC = () => {
         ticks: {
           color: chartColors.textSecondary,
           font: {
-            size: window.innerWidth < 640 ? 10 : 12,
+            size: windowSize.isMobile ? 10 : 12,
           },
         },
         grid: {
@@ -1829,7 +1267,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [weekdayComplianceData, chartColors, formatNumber, t, i18n.language]);
+  }), [weekdayComplianceData, chartColors, formatNumber, t, i18n.language, windowSize.isMobile]);
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
@@ -2204,7 +1642,7 @@ const StrategiesPage: React.FC = () => {
                   <div className="h-64 sm:h-80 md:h-96">
                     <MixedChart<'bar' | 'line', number[], string>
                       type="bar"
-                      data={weekdayComplianceData.chartData}
+                      data={weekdayComplianceData}
                       options={weekdayComplianceOptions}
                     />
                   </div>
@@ -2260,8 +1698,7 @@ const StrategiesPage: React.FC = () => {
           // Recharger toutes les données après un import réussi
           loadAllData();
           // Recharger aussi les trades pour mettre à jour les soldes et les graphiques
-          loadAllTrades();
-          loadFilteredTrades();
+          reloadTrades();
         }
       }} />
     </div>
