@@ -8,7 +8,6 @@ import { StrategyBadges } from '../components/strategy/StrategyBadges';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
-import Tooltip from '../components/ui/Tooltip';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
@@ -25,6 +24,8 @@ import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
 import { getChartColors } from '../utils/chartConfig';
 import { ChartSkeleton } from '../components/strategy/charts/ChartSkeleton';
+import { LazyChart } from '../components/strategy/charts/LazyChart';
+import { ChartSection } from '../components/common/ChartSection';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -39,12 +40,7 @@ import {
   Filler,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Bar as ChartBar, Doughnut as ChartDoughnut, Line as ChartLine, Chart as ChartComponent } from 'react-chartjs-2';
-
-const Bar = ChartBar;
-const Doughnut = ChartDoughnut;
-const Line = ChartLine;
-const MixedChart = ChartComponent;
+import { MemoizedBar as Bar, MemoizedDoughnut as Doughnut, MemoizedLine as Line, MemoizedMixedChart as MixedChart } from '../components/strategy/charts/MemoizedCharts';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -69,6 +65,12 @@ const StrategiesPage: React.FC = () => {
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
   const windowSize = useWindowSize();
+  
+  // Tracker le premier rendu pour optimiser les animations (Optimisation L)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    isFirstRender.current = false;
+  }, []);
   
   // Obtenir la langue actuelle depuis i18n (plus fiable que preferences.language)
   // Utiliser useMemo pour que ça se mette à jour quand la langue change
@@ -102,6 +104,12 @@ const StrategiesPage: React.FC = () => {
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
+  
+  // Helper pour les options d'animation optimisées (Optimisation L)
+  const optimizedAnimation = useMemo(() => ({
+    duration: isFirstRender.current ? 0 : 750, // Pas d'animation au premier rendu
+    easing: 'easeInOutQuart' as const,
+  }), []);
   const [showImport, setShowImport] = useState(false);
   // Utiliser un sélecteur de période moderne
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
@@ -141,6 +149,8 @@ const StrategiesPage: React.FC = () => {
     statistics: any;
     allAccountsCompliance: any;
     selectedAccountCompliance: any;
+    currencies: Currency[];
+    selectedAccount: TradingAccount | null;
     timestamp: number;
   }>>(new Map());
 
@@ -173,6 +183,8 @@ const StrategiesPage: React.FC = () => {
       setStatistics(cached.statistics);
       setAllAccountsCompliance(cached.allAccountsCompliance);
       setSelectedAccountCompliance(cached.selectedAccountCompliance);
+      setCurrencies(cached.currencies);
+      setSelectedAccount(cached.selectedAccount);
       return;
     }
     
@@ -205,15 +217,19 @@ const StrategiesPage: React.FC = () => {
         params.tradingAccount = accountId;
       }
       
-      // Paralléliser tous les appels API
-      const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData] = 
+      // Paralléliser TOUS les appels API (optimisation Phase 1)
+      const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, currenciesData, accountData] = 
         await Promise.all([
           // Appel 1: Statistics
           tradeStrategiesService.statistics(params),
           // Appel 2: Compliance tous comptes
           tradeStrategiesService.strategyComplianceStats(undefined),
           // Appel 3: Compliance compte sélectionné (si applicable)
-          accountId ? tradeStrategiesService.strategyComplianceStats(accountId) : Promise.resolve(null)
+          accountId ? tradeStrategiesService.strategyComplianceStats(accountId) : Promise.resolve(null),
+          // Appel 4: Currencies (optimisation)
+          currenciesService.list(),
+          // Appel 5: Account sélectionné (optimisation)
+          accountId ? tradingAccountsService.get(accountId) : Promise.resolve(null)
         ]);
       
       // Stocker dans le cache
@@ -221,6 +237,8 @@ const StrategiesPage: React.FC = () => {
         statistics: statisticsData,
         allAccountsCompliance: allAccountsComplianceData,
         selectedAccountCompliance: selectedAccountComplianceData,
+        currencies: currenciesData,
+        selectedAccount: accountData,
         timestamp: Date.now(),
       });
       
@@ -235,6 +253,8 @@ const StrategiesPage: React.FC = () => {
       setStatistics(statisticsData);
       setAllAccountsCompliance(allAccountsComplianceData);
       setSelectedAccountCompliance(selectedAccountComplianceData);
+      setCurrencies(currenciesData);
+      setSelectedAccount(accountData);
     } catch (err: any) {
       setError(err.message || t('strategies:errorLoadingStatistics'));
       console.error('Erreur lors du chargement des données:', err);
@@ -266,37 +286,6 @@ const StrategiesPage: React.FC = () => {
   const complianceSectionData = useMemo(() => selectedAccountCompliance || allAccountsCompliance, [selectedAccountCompliance, allAccountsCompliance]);
   const complianceSectionLoading = loadingSelectedAccountCompliance || loadingAllAccountsCompliance;
 
-  // Charger les devises
-  useEffect(() => {
-    const loadCurrencies = async () => {
-      try {
-        const list = await currenciesService.list();
-        setCurrencies(list);
-      } catch (error) {
-        console.error('Error loading currencies:', error);
-      }
-    };
-    loadCurrencies();
-  }, []);
-
-  // Charger le compte sélectionné
-  useEffect(() => {
-    const loadAccount = async () => {
-      if (!accountId) {
-        setSelectedAccount(null);
-        return;
-      }
-      try {
-        const account = await tradingAccountsService.get(accountId);
-        setSelectedAccount(account);
-      } catch (err) {
-        console.error('Erreur lors du chargement du compte', err);
-        setSelectedAccount(null);
-      }
-    };
-    loadAccount();
-  }, [accountId]);
-
 
   // Obtenir le symbole de la devise du compte sélectionné
   const currencySymbol = useMemo(() => {
@@ -327,6 +316,7 @@ const StrategiesPage: React.FC = () => {
   const respectChartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: optimizedAnimation,
     plugins: {
       datalabels: {
         display: true,
@@ -472,12 +462,13 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.period_data, respectChartData, t, chartColors, formatNumber, formatPeriod, windowSize.isMobile]);
+  }), [statistics?.statistics?.period_data, respectChartData, t, chartColors, formatNumber, formatPeriod, windowSize.isMobile, optimizedAnimation]);
 
 
   const successRateOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: optimizedAnimation,
     plugins: {
       datalabels: {
         display: true,
@@ -576,7 +567,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [chartColors, formatNumber, windowSize.isMobile]);
+  }), [chartColors, formatNumber, windowSize.isMobile, optimizedAnimation]);
 
 
   // Calculer la valeur maximale pour l'axe Y avec marge
@@ -594,6 +585,7 @@ const StrategiesPage: React.FC = () => {
   const winningSessionsOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: optimizedAnimation,
     plugins: {
       datalabels: {
         display: true,
@@ -702,12 +694,13 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t, chartColors, formatNumber, windowSize.isMobile]);
+  }), [statistics?.statistics?.winning_sessions_distribution, winningSessionsMax, t, chartColors, formatNumber, windowSize.isMobile, optimizedAnimation]);
 
 
   const emotionsOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: optimizedAnimation,
     layout: {
       padding: {
         top: 10,
@@ -820,7 +813,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [emotionsData, chartColors, formatNumber, isDark, windowSize.isMobile, windowSize.isTablet]);
+  }), [emotionsData, chartColors, formatNumber, isDark, windowSize.isMobile, windowSize.isTablet, optimizedAnimation]);
 
   // Graphique 5: Évolution du taux de compliance (prend en compte le sélecteur de compte)
   const complianceAggregation = useComplianceAggregation({
@@ -950,10 +943,7 @@ const StrategiesPage: React.FC = () => {
     return {
       responsive: true,
       maintainAspectRatio: false,
-      animation: {
-        duration: 1000,
-        easing: 'easeInOutQuart' as const,
-      },
+      animation: optimizedAnimation,
       interaction: {
         intersect: false,
         mode: 'index' as const,
@@ -1111,7 +1101,7 @@ const StrategiesPage: React.FC = () => {
       },
     },
   };
-}, [evolutionData, chartColors, formatNumber, t, windowSize.isMobile]);
+}, [evolutionData, chartColors, formatNumber, t, windowSize.isMobile, optimizedAnimation]);
 
 // Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
 const weekdayComplianceData = useWeekdayCompliance({
@@ -1123,6 +1113,7 @@ const weekdayComplianceData = useWeekdayCompliance({
   const weekdayComplianceOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    animation: optimizedAnimation,
     indexAxis: 'x' as const, // Forcer les barres verticales
     plugins: {
       legend: {
@@ -1267,7 +1258,7 @@ const weekdayComplianceData = useWeekdayCompliance({
         },
       },
     },
-  }), [weekdayComplianceData, chartColors, formatNumber, t, i18n.language, windowSize.isMobile]);
+  }), [weekdayComplianceData, chartColors, formatNumber, t, i18n.language, windowSize.isMobile, optimizedAnimation]);
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
@@ -1466,87 +1457,37 @@ const weekdayComplianceData = useWeekdayCompliance({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Graphique 1: Respect de la stratégie en % */}
             {respectChartData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">{t('strategies:strategyRespectPercentage')}</h3>
-                  <Tooltip
-                    content={t('strategies:strategyRespectPercentageTooltip')}
-                    position="top"
-                  >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </Tooltip>
-                </div>
-                <div className="h-64 sm:h-72 md:h-80">
+              <ChartSection title={t('strategies:strategyRespectPercentage')} tooltip={t('strategies:strategyRespectPercentageTooltip')}>
+                <LazyChart height="h-64 sm:h-72 md:h-80">
                   <Bar data={respectChartData} options={respectChartOptions} />
-                </div>
-              </div>
+                </LazyChart>
+              </ChartSection>
             )}
 
             {/* Graphique 2: Taux de réussite si respect de la stratégie */}
             {successRateData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">{t('strategies:successRateByStrategyRespect')}</h3>
-                  <Tooltip
-                    content={t('strategies:successRateByStrategyRespectTooltip')}
-                    position="top"
-                  >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </Tooltip>
-                </div>
-                <div className="h-64 sm:h-72 md:h-80">
+              <ChartSection title={t('strategies:successRateByStrategyRespect')} tooltip={t('strategies:successRateByStrategyRespectTooltip')}>
+                <LazyChart height="h-64 sm:h-72 md:h-80">
                   <Bar data={successRateData} options={successRateOptions} />
-                </div>
-              </div>
+                </LazyChart>
+              </ChartSection>
             )}
 
-            {/* Graphique 3: Répartition des sessions gagnantes */}
+            {/* Graphique 3: Distribution des sessions gagnantes */}
             {winningSessionsData && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">{t('strategies:winningSessionsDistribution')}</h3>
-                  <Tooltip
-                    content={t('strategies:winningSessionsDistributionTooltip')}
-                    position="top"
-                  >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </Tooltip>
-                </div>
-                <div className="h-64 sm:h-72 md:h-80">
+              <ChartSection title={t('strategies:winningSessionsDistribution')} tooltip={t('strategies:winningSessionsDistributionTooltip')}>
+                <LazyChart height="h-64 sm:h-72 md:h-80">
                   <Bar data={winningSessionsData} options={winningSessionsOptions} />
-                </div>
-              </div>
+                </LazyChart>
+              </ChartSection>
             )}
 
-            {/* Graphique 4: Répartition des émotions dominantes */}
-            {emotionsData && emotionsData.labels.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">{t('strategies:dominantEmotionsDistribution')}</h3>
-                  <Tooltip
-                    content={t('strategies:dominantEmotionsDistributionTooltip')}
-                    position="top"
-                  >
-                    <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
-                      <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                  </Tooltip>
-                </div>
-                {/* Layout responsive : statistiques en haut sur mobile, sur les côtés sur desktop */}
+            {/* Graphique 4: Émotions dominantes */}
+            {emotionsData && (
+              <ChartSection
+                title={t('strategies:dominantEmotionsDistribution')}
+                tooltip={t('strategies:dominantEmotionsDistributionTooltip')}
+              >
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   {/* Statistiques gauche (2 cartes) */}
                   <div className="flex flex-row lg:flex-col gap-3 lg:gap-4 lg:w-52 xl:w-56 flex-shrink-0">
@@ -1597,7 +1538,7 @@ const weekdayComplianceData = useWeekdayCompliance({
                     )}
                   </div>
                 </div>
-              </div>
+              </ChartSection>
             )}
           </div>
         ) : (
@@ -1623,56 +1564,32 @@ const weekdayComplianceData = useWeekdayCompliance({
             <>
               {/* Graphique: Compliance par jour de la semaine */}
               {weekdayComplianceData ? (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
-                      {t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })}
-                    </h3>
-                    <Tooltip
-                      content={t('strategies:complianceByWeekdayTooltip', { defaultValue: 'Taux de respect moyen pour chaque jour de la semaine. Les jours en bleu sont ceux où vous respectez le mieux votre stratégie, les jours en rose sont ceux à améliorer.' })}
-                      position="top"
-                    >
-                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
-                        <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                    </Tooltip>
-                  </div>
-                  <div className="h-64 sm:h-80 md:h-96">
-                    <MixedChart<'bar' | 'line', number[], string>
+                <ChartSection 
+                  title={t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })}
+                  tooltip={t('strategies:complianceByWeekdayTooltip', { defaultValue: 'Taux de respect moyen pour chaque jour de la semaine. Les jours en bleu sont ceux où vous respectez le mieux votre stratégie, les jours en rose sont ceux à améliorer.' })}
+                >
+                  <LazyChart height="h-64 sm:h-80 md:h-96">
+                    <MixedChart
                       type="bar"
                       data={weekdayComplianceData}
                       options={weekdayComplianceOptions}
                     />
-                  </div>
-                </div>
+                  </LazyChart>
+                </ChartSection>
               ) : null}
 
               {/* Graphique: Évolution du taux de respect */}
               {evolutionData ? (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
-                      {t('strategies:compliance.evolution')}
-                    </h3>
-                    <Tooltip
-                      content={selectedAccount 
-                        ? t('strategies:complianceEvolutionSelectedAccountTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour le compte sélectionné' })
-                        : t('strategies:complianceEvolutionAllAccountsTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour tous vos comptes actifs' })}
-                      position="top"
-                    >
-                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help flex-shrink-0">
-                        <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </div>
-                    </Tooltip>
-                  </div>
-                  <div className="h-64 sm:h-80 md:h-96">
+                <ChartSection 
+                  title={t('strategies:compliance.evolution')}
+                  tooltip={selectedAccount 
+                    ? t('strategies:complianceEvolutionSelectedAccountTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour le compte sélectionné' })
+                    : t('strategies:complianceEvolutionAllAccountsTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour tous vos comptes actifs' })}
+                >
+                  <LazyChart height="h-64 sm:h-80 md:h-96">
                     <Line data={evolutionData!} options={evolutionOptions} />
-                  </div>
-                </div>
+                  </LazyChart>
+                </ChartSection>
               ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
                   <div className="flex items-center gap-2 mb-3 sm:mb-4">

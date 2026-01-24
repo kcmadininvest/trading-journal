@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { toast } from 'react-hot-toast/headless';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import HomePage from './pages/HomePage';
@@ -7,7 +7,6 @@ import CalendarPage from './pages/CalendarPage';
 import UserManagementPage from './pages/UserManagementPage';
 import TradesPage from './pages/TradesPage';
 import StatisticsPage from './pages/StatisticsPage';
-import StrategiesPage from './pages/StrategiesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import TradingAccountsPage from './pages/TradingAccountsPage';
 import TransactionsPage from './pages/TransactionsPage';
@@ -26,6 +25,9 @@ import { useTheme } from './hooks/useTheme';
 import { goalsService, TradingGoal } from './services/goals';
 import { tradingAccountsService } from './services/tradingAccounts';
 import ToastViewport from './components/ui/ToastViewport';
+
+// Lazy load StrategiesPage pour améliorer le temps de chargement initial (Optimisation K - Phase 1)
+const StrategiesPage = lazy(() => import('./pages/StrategiesPage'));
 
 function App() {
   const { t } = useI18nTranslation();
@@ -290,7 +292,13 @@ function App() {
           case 'statistics':
             return <StatisticsPage />;
           case 'strategies':
-            return <StrategiesPage />;
+            return (
+              <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              </div>}>
+                <StrategiesPage />
+              </Suspense>
+            );
           case 'position-strategies':
             return <PositionStrategiesPage />;
           case 'analytics':

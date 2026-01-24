@@ -2412,7 +2412,20 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         """Retourne uniquement les stratégies de l'utilisateur connecté."""
         if not self.request.user.is_authenticated:
             return TradeStrategy.objects.none()  # type: ignore
-        queryset = TradeStrategy.objects.filter(user=self.request.user).select_related('trade')  # type: ignore
+        
+        # Phase 1.3 : Optimisation des requêtes DB avec select_related/prefetch_related (-100-200ms)
+        queryset = TradeStrategy.objects.filter(user=self.request.user)\
+            .select_related('trade', 'trade__trading_account', 'trade__trading_account__currency')\
+            .prefetch_related('dominant_emotions')\
+            .only(
+                'id', 'strategy_respected', 'tp1_reached', 'tp2_plus_reached',
+                'session_rating', 'created_at', 'updated_at', 'emotion_details',
+                'possible_improvements', 'gain_if_strategy_respected',
+                'trade__id', 'trade__topstep_id', 'trade__contract_name', 'trade__trade_type',
+                'trade__net_pnl', 'trade__entered_at', 'trade__exited_at', 'trade__trade_day',
+                'trade__trading_account__id', 'trade__trading_account__name',
+                'trade__trading_account__currency__code', 'trade__trading_account__currency__symbol'
+            )  # type: ignore
         
         # Filtres optionnels
         trade_id = self.request.query_params.get('trade_id', None)
@@ -2462,10 +2475,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         try:
             # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
+            # Phase 1.3 : Optimisation avec select_related
             strategies = TradeStrategy.objects.filter(  # type: ignore
                 user=self.request.user,  # ✅ Filtre par utilisateur
                 trade__trade_day=date
-            ).select_related('trade')
+            ).select_related('trade', 'trade__trading_account', 'trade__trading_account__currency')\
+             .prefetch_related('dominant_emotions')
             
             # Filtrer par compte de trading si spécifié
             trading_account_id = request.query_params.get('trading_account')
@@ -2546,6 +2561,14 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def statistics(self, request):
         """Retourne les statistiques de stratégies pour une période donnée."""
+        # Phase 1.2 : Cache pour éviter les recalculs (-200-400ms après 1ère requête)
+        from django.core.cache import cache
+        
+        cache_key = f"strategy_stats_{request.user.id}_{request.query_params.urlencode()}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+        
         now = timezone.now()
         
         # Paramètres de filtrage
@@ -3063,7 +3086,8 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 else:
                     current_month_start = timezone.datetime(current_month_start.year, current_month_start.month + 1, 1)
         
-        return Response({
+        # Phase 1.2 : Construire la réponse et la mettre en cache
+        response_data = {
             'period': {
                 'year': year if year else now.year,
                 'month': month,
@@ -3119,7 +3143,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 'respected_count': period_days_respected,  # Jours respectés pour la période (tous comptes)
                 'not_respected_count': period_days_not_respected,  # Jours non respectés
             }
-        })
+        }
+        
+        # Mettre en cache (5 minutes)
+        cache.set(cache_key, response_data, 300)
+        
+        return Response(response_data)
     
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
@@ -3262,6 +3291,14 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         """
         Retourne les statistiques de respect de stratégie avec streaks et badges.
         """
+        # Phase 1.2 : Cache pour éviter les recalculs (-200-400ms après 1ère requête)
+        from django.core.cache import cache
+        
+        cache_key = f"compliance_stats_{request.user.id}_{request.query_params.urlencode()}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+        
         from collections import defaultdict
         from datetime import timedelta
         
@@ -3544,7 +3581,8 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         logger.info(f"📊 strategy_compliance_stats - account_id={trading_account_id}, current_streak={current_streak}, current_streak_start={current_streak_start}")
         print(f"📊 [DEBUG] strategy_compliance_stats - account_id={trading_account_id}, current_streak={current_streak}, current_streak_start={current_streak_start}")
         
-        return Response({
+        # Phase 1.2 : Construire la réponse et la mettre en cache
+        response_data = {
             'current_streak': current_streak,
             'current_streak_start': current_streak_start,
             'best_streak': best_streak,
@@ -3583,7 +3621,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 }
                 for date_str, data in sorted(daily_compliance.items())
             ]
-        })
+        }
+        
+        # Mettre en cache (5 minutes)
+        cache.set(cache_key, response_data, 300)
+        
+        return Response(response_data)
 
 
 class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
