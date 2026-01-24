@@ -51,7 +51,8 @@
     "trades": "operaciones respetadas",
     "respected": "Respetado",
     "notRespected": "No respetado",
-    "dayWithoutTrade": "Día sin operación"
+    "dayWithoutTrade": "Día sin operación",
+    "averageLine": "Línea promedio semanal"
   },
   "averageRate": "Promedio",
   "complianceEvolutionAllAccountsTooltip": "Evolución de la tasa de respeto, calculada a partir de estrategias y respetos individuales (cada estrategia o respeto cuenta como una unidad). La curva azul representa la tasa diaria, mientras que la línea discontinua rosa corresponde al promedio acumulativo desde el inicio. Este cálculo difiere de la tasa de respeto diaria mostrada en la parte superior de la página.",

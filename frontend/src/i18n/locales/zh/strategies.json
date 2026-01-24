@@ -68,7 +68,8 @@
     "trades": "遵守的交易",
     "respected": "遵守",
     "notRespected": "未遵守",
-    "dayWithoutTrade": "无交易日"
+    "dayWithoutTrade": "无交易日",
+    "averageLine": "每周平均线"
   },
   "averageRate": "平均值",
   "complianceEvolutionAllAccountsTooltip": "从单个策略和遵守计算的遵守率演变（每个策略或遵守计为一个单位）。蓝色曲线表示每日比率，而粉色虚线对应自开始以来的累积平均值。此计算与页面顶部显示的每日遵守率不同。",

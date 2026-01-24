@@ -68,7 +68,8 @@
     "trades": "遵守された取引",
     "respected": "遵守",
     "notRespected": "未遵守",
-    "dayWithoutTrade": "取引のない日"
+    "dayWithoutTrade": "取引のない日",
+    "averageLine": "週間平均ライン"
   },
   "averageRate": "平均",
   "complianceEvolutionAllAccountsTooltip": "個別の戦略と遵守から計算された遵守率の推移（各戦略または遵守は1単位としてカウント）。青い曲線は日次レートを表し、ピンクの破線は開始からの累積平均に対応します。この計算は、ページ上部に表示される日次遵守率とは異なります。",

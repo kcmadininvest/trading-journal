@@ -51,7 +51,8 @@
     "trades": "trades respectés",
     "respected": "Respecté",
     "notRespected": "Non respecté",
-    "dayWithoutTrade": "Jour sans trade"
+    "dayWithoutTrade": "Jour sans trade",
+    "averageLine": "Courbe moyenne hebdomadaire"
   },
   "averageRate": "Moyenne",
   "complianceEvolutionAllAccountsTooltip": "Évolution du taux de respect, calculée à partir des stratégies et respects individuels (chaque stratégie ou respect compte pour une unité). La courbe bleue représente le taux quotidien, tandis que la ligne pointillée rose correspond à la moyenne cumulative depuis le début. Ce calcul diffère du taux de respect journalier affiché en haut de la page.",

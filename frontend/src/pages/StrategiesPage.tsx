@@ -29,12 +29,14 @@ import {
   ArcElement,
   Filler,
 } from 'chart.js';
+import type { ChartData } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { Bar as ChartBar, Doughnut as ChartDoughnut, Line as ChartLine } from 'react-chartjs-2';
+import { Bar as ChartBar, Doughnut as ChartDoughnut, Line as ChartLine, Chart as ChartComponent } from 'react-chartjs-2';
 
 const Bar = ChartBar;
 const Doughnut = ChartDoughnut;
 const Line = ChartLine;
+const MixedChart = ChartComponent;
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -78,6 +80,18 @@ const ChartSkeleton: React.FC<{ height?: string; title?: string }> = ({
     </div>
   </div>
 );
+
+type WeekdayComplianceChartData = {
+  chartData: ChartData<'bar' | 'line', number[], string>;
+  dayStats: Array<{
+    day: string;
+    dayIndex: number;
+    rate: number;
+    count: number;
+    total: number;
+  }>;
+  avgRate: number;
+};
 
 const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
@@ -807,7 +821,13 @@ const StrategiesPage: React.FC = () => {
         align: 'center' as const,
       },
       legend: {
-        display: false,
+        display: true,
+        position: 'top' as const,
+        labels: {
+          color: chartColors.text,
+          usePointStyle: true,
+          padding: 16,
+        },
       },
       title: {
         display: false,
@@ -1543,7 +1563,7 @@ const StrategiesPage: React.FC = () => {
   }, [evolutionData, chartColors, formatNumber, t]);
 
   // Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
-  const weekdayComplianceData = useMemo(() => {
+  const weekdayComplianceData = useMemo<WeekdayComplianceChartData | null>(() => {
     // Guard: éviter le calcul pendant le chargement
     if (isLoading || !allDataLoaded) return null;
     // Utiliser les données du compte sélectionné si disponible, sinon tous les comptes
@@ -1588,7 +1608,7 @@ const StrategiesPage: React.FC = () => {
       t('dashboard:saturday', { defaultValue: 'Samedi' }),
     ];
 
-    const chartData = weekdayOrder
+    const dayStats = weekdayOrder
       .map(dayIndex => {
         const stats = weekdayStats[dayIndex];
         if (!stats || stats.count === 0) return null;
@@ -1604,33 +1624,54 @@ const StrategiesPage: React.FC = () => {
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
 
-    if (chartData.length === 0) return null;
+    if (dayStats.length === 0) return null;
 
     // Garder l'ordre lundi à dimanche (pas de tri)
     // Calculer la moyenne pour déterminer positif/négatif
-    const avgRate = chartData.reduce((sum, d) => sum + d.rate, 0) / chartData.length;
+    const avgRate = dayStats.reduce((sum, d) => sum + d.rate, 0) / dayStats.length;
 
-    return {
-      labels: chartData.map(d => d.day),
+    const chartConfig: ChartData<'bar' | 'line', number[], string> = {
+      labels: dayStats.map(d => d.day),
       datasets: [
         {
+          type: 'bar' as const,
           label: t('strategies:compliance.rate'),
-          data: chartData.map(d => d.rate),
-          backgroundColor: chartData.map(d => {
+          data: dayStats.map(d => d.rate),
+          backgroundColor: dayStats.map(d => {
             // Utiliser les couleurs du projet : #629bf8 pour positif, #f06dad pour négatif
             // Positif si au-dessus de la moyenne, négatif si en dessous
             const isPositive = d.rate >= avgRate;
             return isPositive ? 'rgba(98, 155, 248, 0.8)' : 'rgba(240, 109, 173, 0.8)';
           }),
-          borderColor: chartData.map(d => {
+          borderColor: dayStats.map(d => {
             const isPositive = d.rate >= avgRate;
             return isPositive ? '#629bf8' : '#f06dad';
           }),
           borderWidth: 0,
           borderRadius: 0,
         },
+        {
+          type: 'line' as const,
+          label: t('strategies:compliance.averageLine', { defaultValue: 'Moyenne hebdomadaire' }),
+          data: dayStats.map(() => avgRate),
+          borderColor: '#fbbf24',
+          borderWidth: 2,
+          borderDash: [6, 4],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0,
+          fill: false,
+          datalabels: {
+            display: false,
+          },
+        },
       ],
-      rawData: chartData,
+    };
+
+    return {
+      chartData: chartConfig,
+      dayStats,
+      avgRate,
     };
   }, [isLoading, allDataLoaded, selectedAccountCompliance, allAccountsCompliance, t]);
 
@@ -1640,7 +1681,13 @@ const StrategiesPage: React.FC = () => {
     indexAxis: 'x' as const, // Forcer les barres verticales
     plugins: {
       legend: {
-        display: false,
+        display: true,
+        position: 'top' as const,
+        labels: {
+          color: chartColors.text,
+          usePointStyle: true,
+          padding: 16,
+        },
       },
       datalabels: {
         display: true,
@@ -1653,7 +1700,9 @@ const StrategiesPage: React.FC = () => {
           return formatNumber(value, 1) + '%';
         },
         anchor: 'end' as const,
-        align: 'top' as const,
+        align: 'start' as const,
+        offset: -6,
+        clamp: true,
       },
       tooltip: {
         backgroundColor: chartColors.tooltipBg,
@@ -1674,9 +1723,15 @@ const StrategiesPage: React.FC = () => {
         callbacks: {
           label: function(context: any) {
             const value = context.parsed.y || 0;
+            const datasetType = context.dataset.type || 'bar';
+
+            if (datasetType === 'line') {
+              return `${context.dataset.label}: ${formatNumber(value, 2)}%`;
+            }
+
             // Utiliser directement weekdayComplianceData depuis la closure
-            const rawData = (weekdayComplianceData as any)?.rawData;
-            const dayData = rawData?.[context.dataIndex];
+            const dayStats = weekdayComplianceData?.dayStats;
+            const dayData = dayStats?.[context.dataIndex];
             const count = dayData?.count || 0;
             const dayName = context.label || ''; // Nom du jour (Lundi, Mardi, etc.)
 
@@ -2107,7 +2162,11 @@ const StrategiesPage: React.FC = () => {
                     </Tooltip>
                   </div>
                   <div className="h-64 sm:h-80 md:h-96">
-                    <Bar data={weekdayComplianceData!} options={weekdayComplianceOptions} />
+                    <MixedChart<'bar' | 'line', number[], string>
+                      type="bar"
+                      data={weekdayComplianceData.chartData}
+                      options={weekdayComplianceOptions}
+                    />
                   </div>
                 </div>
               ) : null}

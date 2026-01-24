@@ -51,7 +51,8 @@
     "trades": "eingehaltene Trades",
     "respected": "Eingehalten",
     "notRespected": "Nicht eingehalten",
-    "dayWithoutTrade": "Tag ohne Trade"
+    "dayWithoutTrade": "Tag ohne Trade",
+    "averageLine": "Wöchentliche Durchschnittslinie"
   },
   "averageRate": "Durchschnitt",
   "complianceEvolutionAllAccountsTooltip": "Entwicklung der Respektrate, berechnet aus einzelnen Strategien und Respekten (jede Strategie oder Respekt zählt als eine Einheit). Die blaue Kurve stellt die tägliche Rate dar, während die rosa gestrichelte Linie dem kumulativen Durchschnitt seit Beginn entspricht. Diese Berechnung unterscheidet sich von der täglichen Respektrate, die oben auf der Seite angezeigt wird.",

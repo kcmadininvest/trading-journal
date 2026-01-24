@@ -51,7 +51,8 @@
     "trades": "trades respected",
     "respected": "Respected",
     "notRespected": "Not Respected",
-    "dayWithoutTrade": "Day without trade"
+    "dayWithoutTrade": "Day without trade",
+    "averageLine": "Weekly average line"
   },
   "averageRate": "Average",
   "complianceEvolutionAllAccountsTooltip": "Evolution of respect rate, calculated from individual strategies and respects (each strategy or respect counts as one unit). The blue curve represents the daily rate, while the pink dashed line corresponds to the cumulative average since the beginning. This calculation differs from the daily respect rate displayed at the top of the page.",

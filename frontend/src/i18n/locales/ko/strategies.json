@@ -68,7 +68,8 @@
     "trades": "준수된 거래",
     "respected": "준수",
     "notRespected": "미준수",
-    "dayWithoutTrade": "거래 없는 날"
+    "dayWithoutTrade": "거래 없는 날",
+    "averageLine": "주간 평균선"
   },
   "averageRate": "평균",
   "complianceEvolutionAllAccountsTooltip": "개별 전략과 준수로부터 계산된 준수율 변화(각 전략 또는 준수는 하나의 단위로 계산). 파란색 곡선은 일일 비율을 나타내며, 분홍색 점선은 시작부터의 누적 평균에 해당합니다. 이 계산은 페이지 상단에 표시되는 일일 준수율과 다릅니다.",
