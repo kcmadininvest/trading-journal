@@ -1142,9 +1142,15 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         """Liste des instruments (contract_name) distincts pour l'utilisateur."""
         if not request.user.is_authenticated:
             return Response({'instruments': []})
+        trading_account_id = request.query_params.get('trading_account')
+        trades = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+        if trading_account_id:
+            try:
+                trades = trades.filter(trading_account_id=int(trading_account_id))
+            except (ValueError, TypeError):
+                pass
         instruments = (
-            TopStepTrade.objects
-            .filter(user=request.user)  # type: ignore
+            trades
             .values_list('contract_name', flat=True)
             .distinct()
             .order_by('contract_name')

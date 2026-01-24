@@ -198,16 +198,27 @@ const TradesPage: React.FC = () => {
   }, [filtersKey, hasInitialized, accountLoading]);
 
   useEffect(() => {
+    if (!hasInitialized || accountLoading) {
+      return;
+    }
+
     const loadInstruments = async () => {
       try {
-        const list = await tradesService.instruments();
+        const list = await tradesService.instruments(selectedAccountId ?? null);
         setInstruments(list);
+
+        setFilters(prev => {
+          if (prev.contract && !list.includes(prev.contract)) {
+            return { ...prev, contract: '' };
+          }
+          return prev;
+        });
       } catch (e) {
         console.error('[TradesPage] Error loading instruments', e);
       }
     };
     loadInstruments();
-  }, []);
+  }, [selectedAccountId, accountLoading, hasInitialized]);
 
  
 

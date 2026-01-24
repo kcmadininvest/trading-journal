@@ -155,8 +155,9 @@ class TradesService {
     return res.json();
   }
 
-  async instruments(): Promise<string[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/instruments/`);
+  async instruments(tradingAccount?: number | null): Promise<string[]> {
+    const qs = tradingAccount ? `?trading_account=${tradingAccount}` : '';
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/instruments/${qs}`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.instruments || [];
