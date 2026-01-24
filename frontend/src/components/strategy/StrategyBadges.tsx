@@ -137,23 +137,6 @@ export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
         })}
       </div>
     </div>
-    <style>{`
-      @keyframes badge-shine {
-        0% { transform: translateX(-120%); opacity: 0; }
-        20% { opacity: 0.4; }
-        60% { transform: translateX(120%); opacity: 0.4; }
-        80% { opacity: 0; }
-        100% { transform: translateX(120%); opacity: 0; }
-      }
-      .badge-shine-overlay {
-        position: absolute;
-        inset: -10%;
-        background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.7) 45%, rgba(255, 255, 255, 0.95) 50%, rgba(255,255,255,0.7) 55%, transparent 100%);
-        transform: translateX(-120%);
-        animation: badge-shine 4.5s ease-in-out infinite;
-        pointer-events: none;
-      }
-    `}</style>
     </>
   );
 };

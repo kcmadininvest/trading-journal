@@ -176,3 +176,33 @@ html.font-size-large {
   --text-xl: 1.5rem;      /* 24px */
   --text-2xl: 1.875rem;   /* 30px */
 }
+
+/* Badge shine animation for Strategy Badges */
+@keyframes badge-shine {
+  0% { 
+    transform: translateX(-120%) skewX(-20deg); 
+    opacity: 0; 
+  }
+  20% { 
+    opacity: 0.4; 
+  }
+  60% { 
+    transform: translateX(120%) skewX(-20deg); 
+    opacity: 0.4; 
+  }
+  80% { 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateX(120%) skewX(-20deg); 
+    opacity: 0; 
+  }
+}
+
+.badge-shine-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.7) 45%, rgba(255, 255, 255, 0.95) 50%, rgba(255,255,255,0.7) 55%, transparent 100%);
+  animation: badge-shine 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
