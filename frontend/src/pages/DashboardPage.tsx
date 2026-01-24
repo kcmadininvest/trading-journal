@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, lazy } from 'react';
 import clsx from 'clsx';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
@@ -6,15 +6,12 @@ import { DateInput } from '../components/common/DateInput';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday } from '../services/calendar';
-import { tradesService, TradeListItem } from '../services/trades';
+import { useDashboardData } from '../hooks/useDashboardData';
 import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
-import { tradeStrategiesService, TradeStrategy, StrategyComplianceStats } from '../services/tradeStrategies';
 import { StrategyStreakCard } from '../components/strategy/StrategyStreakCard';
 import ModernStatCard from '../components/common/ModernStatCard';
-import DurationDistributionChart from '../components/charts/DurationDistributionChart';
-import AccountBalanceChart from '../components/charts/AccountBalanceChart';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
@@ -37,6 +34,10 @@ import {
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar } from 'react-chartjs-2';
+
+// Lazy load heavy chart components for better performance
+const DurationDistributionChart = lazy(() => import('../components/charts/DurationDistributionChart'));
+const AccountBalanceChart = lazy(() => import('../components/charts/AccountBalanceChart'));
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -189,7 +190,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const privacySettings = usePrivacySettings('dashboard');
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
   
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
@@ -212,31 +213,26 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   });
   
-  // Garder selectedYear et selectedMonth pour compatibilité avec le code existant
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   // État pour gérer la largeur de l'écran (responsive)
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
-  const [trades, setTrades] = useState<TradeListItem[]>([]);
-  const [strategies, setStrategies] = useState<Map<number, TradeStrategy>>(new Map());
-  // Données agrégées par jour (beaucoup plus rapide)
-  const [dailyAggregates, setDailyAggregates] = useState<Array<{
-    date: string;
-    pnl: number;
-    trade_count: number;
-    winning_count: number;
-    losing_count: number;
-  }>>([]);
-  // Trades et stratégies pour le calcul des séquences consécutives (sans filtres date)
-  const [allTradesForSequences, setAllTradesForSequences] = useState<TradeListItem[]>([]);
-  const [allStrategiesForSequences, setAllStrategiesForSequences] = useState<Map<number, TradeStrategy>>(new Map());
-  const [strategiesLoading, setStrategiesLoading] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Use consolidated dashboard data hook for optimized loading
+  const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useDashboardData({
+    accountId,
+    startDate: selectedPeriod?.start,
+    endDate: selectedPeriod?.end,
+  });
+
+  // Extract data from consolidated response
+  const trades = useMemo(() => dashboardData?.trades || [], [dashboardData]);
+  const dailyAggregates = useMemo(() => dashboardData?.daily_aggregates || [], [dashboardData]);
+  const strategies = useMemo(() => new Map(), []);
+  const isLoading = dashboardLoading;
+  const error = dashboardError;
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [complianceStats, setComplianceStats] = useState<StrategyComplianceStats | null>(null);
-  const [complianceLoading, setComplianceLoading] = useState(true);
+  // Use compliance stats from consolidated endpoint
+  const complianceStats = useMemo(() => dashboardData?.compliance_stats || null, [dashboardData]);
+  const complianceLoading = dashboardLoading;
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
   const [marketHolidays, setMarketHolidays] = useState<MarketHoliday[]>([]);
@@ -319,35 +315,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [accountId]);
 
-  // Charger les statistiques de compliance
-  const loadComplianceStats = useCallback(async () => {
-    if (accountLoading) {
-      return;
-    }
-
-      setComplianceLoading(true);
-      try {
-        const stats = await tradeStrategiesService.strategyComplianceStats(accountId ?? undefined);
-        setComplianceStats(stats);
-      } catch (err) {
-        console.error('Erreur lors du chargement des statistiques de compliance', err);
-        setComplianceStats(null);
-      } finally {
-        setComplianceLoading(false);
-      }
-  }, [accountId, accountLoading]);
-
-  useEffect(() => {
-    loadComplianceStats();
-  }, [loadComplianceStats]);
-
-  // Écouter les événements de mise à jour de compliance pour recharger les stats
+  // Compliance stats are now loaded from consolidated endpoint
+  // Listen for compliance updates to refetch dashboard data
   useEffect(() => {
     const handleComplianceUpdate = (event: CustomEvent) => {
-      // Recharger les stats si l'événement concerne le compte actuel ou tous les comptes
       const eventAccount = event.detail?.tradingAccount;
       if (!eventAccount || eventAccount === accountId) {
-        loadComplianceStats();
+        // Dashboard data will auto-refresh via useDashboardData dependencies
       }
     };
 
@@ -355,7 +329,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     return () => {
       window.removeEventListener('strategy-compliance-updated', handleComplianceUpdate as EventListener);
     };
-  }, [accountId, loadComplianceStats]);
+  }, [accountId]);
 
   // Obtenir le symbole de devise
   const currencySymbol = useMemo(() => {
@@ -364,213 +338,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
 
-  // Charger les trades avec filtres
-  useEffect(() => {
-    // Attendre que le compte soit chargé avant de charger les données
-    if (accountLoading) {
-      return;
-    }
+  // Strategies are not needed for dashboard display - compliance stats come from consolidated endpoint
+  // Removed strategy loading to eliminate hundreds of unnecessary API calls
 
-    const loadTrades = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // Utiliser la période sélectionnée (priorité) ou calculer depuis année/mois (rétrocompatibilité)
-        let startDate: string;
-        let endDate: string;
-        
-        if (selectedPeriod) {
-          // Utiliser la période du sélecteur moderne
-          startDate = selectedPeriod.start;
-          endDate = selectedPeriod.end;
-        } else if (selectedYear) {
-          // Rétrocompatibilité avec l'ancien système année/mois
-          const yearToLoad = selectedYear;
-          startDate = selectedMonth 
-            ? `${yearToLoad}-${selectedMonth.toString().padStart(2, '0')}-01`
-            : `${yearToLoad}-01-01`;
-          
-          if (selectedMonth) {
-            const lastDay = new Date(yearToLoad, selectedMonth, 0);
-            const year = lastDay.getFullYear();
-            const month = String(lastDay.getMonth() + 1).padStart(2, '0');
-            const day = String(lastDay.getDate()).padStart(2, '0');
-            endDate = `${year}-${month}-${day}`;
-          } else {
-            endDate = `${yearToLoad}-12-31`;
-          }
-        } else {
-          // Par défaut: 3 derniers mois
-          const now = new Date();
-          const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-          startDate = `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`;
-          endDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        }
-
-        // CHARGER LES DONNÉES AGRÉGÉES PAR JOUR (beaucoup plus rapide)
-        // Cela permet d'afficher les graphiques immédiatement
-        const aggregatesResponse = await tradesService.dailyAggregates({
-          trading_account: accountId ?? undefined,
-          start_date: startDate,
-          end_date: endDate,
-        });
-        
-        setDailyAggregates(aggregatesResponse.results);
-        
-        // Charger les trades individuels seulement pour les statistiques détaillées
-        // Limiter à 1000 trades max pour les statistiques
-        const filters: any = {
-          trading_account: accountId ?? undefined,
-          page_size: 1000, // Limite réduite car on utilise les agrégats pour les graphiques
-          start_date: startDate,
-          end_date: endDate,
-        };
-
-        const response = await tradesService.list(filters);
-        
-        // Trier par date d'entrée croissante
-        const sortedTrades = [...response.results].sort((a, b) => {
-          const dateA = a.entered_at ? new Date(a.entered_at).getTime() : 0;
-          const dateB = b.entered_at ? new Date(b.entered_at).getTime() : 0;
-          return dateA - dateB;
-        });
-        
-        setTrades(sortedTrades);
-
-        // Charger les stratégies de manière asynchrone (non bloquant)
-        // pour ne pas ralentir l'affichage initial des données
-        (async () => {
-          const strategiesMap = new Map<number, TradeStrategy>();
-          try {
-            // Récupérer toutes les dates uniques des trades
-            const uniqueDates = new Set<string>();
-            sortedTrades.forEach((trade: TradeListItem) => {
-              if (trade.trade_day) {
-                uniqueDates.add(trade.trade_day);
-              }
-            });
-
-            // Limiter le nombre de dates à traiter pour éviter trop de requêtes
-            // Si trop de dates, on limite à un échantillon raisonnable
-            const datesArray = Array.from(uniqueDates).slice(0, 365); // Max 1 an de dates
-            
-            // Charger les stratégies en parallèle (batch de 10 à la fois pour éviter de surcharger)
-            const batchSize = 10;
-            for (let i = 0; i < datesArray.length; i += batchSize) {
-              const batch = datesArray.slice(i, i + batchSize);
-              await Promise.all(
-                batch.map(async (date) => {
-                  try {
-                    const dateStrategies = await tradeStrategiesService.byDate(date, accountId ?? undefined);
-                    dateStrategies.forEach(strategy => {
-                      // strategy.trade est l'ID numérique du trade TopStepTrade
-                      strategiesMap.set(strategy.trade, strategy);
-                    });
-                  } catch (e) {
-                    // Ignorer les erreurs pour les dates sans stratégies
-                  }
-                })
-              );
-            }
-          } catch (err) {
-            console.error('Erreur lors du chargement des stratégies', err);
-          }
-
-          setStrategies(strategiesMap);
-        })();
-      } catch (err) {
-        setError(t('dashboard:error'));
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadTrades();
-  }, [accountId, selectedPeriod, selectedYear, selectedMonth, accountLoading, t]);
-
-  // Charger tous les trades pour le calcul des séquences consécutives (sans filtres date)
-  useEffect(() => {
-    // Attendre que le compte soit chargé avant de charger les données
-    if (accountLoading) {
-      return;
-    }
-
-    const loadAllTradesForSequences = async () => {
-      try {
-        const filters: any = {
-          trading_account: accountId ?? undefined,
-          page_size: 10000, // Limite raisonnable pour toutes les périodes
-        };
-
-        const response = await tradesService.list(filters);
-        
-        // Trier par date d'entrée croissante
-        const sortedTrades = [...response.results].sort((a, b) => {
-          const dateA = a.entered_at ? new Date(a.entered_at).getTime() : 0;
-          const dateB = b.entered_at ? new Date(b.entered_at).getTime() : 0;
-          return dateA - dateB;
-        });
-        
-        setAllTradesForSequences(sortedTrades);
-
-        // Charger les stratégies pour tous les trades
-        (async () => {
-          setStrategiesLoading(true);
-          const strategiesMap = new Map<number, TradeStrategy>();
-          try {
-            // Récupérer toutes les dates uniques des trades
-            const uniqueDates = new Set<string>();
-            sortedTrades.forEach(trade => {
-              if (trade.trade_day) {
-                uniqueDates.add(trade.trade_day);
-              } else if (trade.entered_at) {
-                // Utiliser entered_at si trade_day n'est pas disponible
-                const date = new Date(trade.entered_at);
-                uniqueDates.add(date.toISOString().split('T')[0]);
-              }
-            });
-
-            // Limiter l'historique pour les séquences consécutives
-            // 12 mois glissant (365 jours) pour avoir un historique complet
-            // Les séquences consécutives sont calculées sur les 12 derniers mois
-            const allDates = Array.from(uniqueDates).sort().reverse(); // Du plus récent au plus ancien
-            const maxDays = 365; // 12 mois glissant
-            const datesArray = allDates.slice(0, maxDays);
-            
-            // Charger les stratégies en parallèle (batch de 10 à la fois)
-            const batchSize = 10;
-            for (let i = 0; i < datesArray.length; i += batchSize) {
-              const batch = datesArray.slice(i, i + batchSize);
-              await Promise.all(
-                batch.map(async (date) => {
-                  try {
-                    const dateStrategies = await tradeStrategiesService.byDate(date, accountId ?? undefined);
-                    dateStrategies.forEach(strategy => {
-                      strategiesMap.set(strategy.trade, strategy);
-                    });
-                  } catch (e) {
-                    // Ignorer les erreurs pour les dates sans stratégies
-                    console.debug(`Aucune stratégie pour la date ${date}`);
-                  }
-                })
-              );
-            }
-          } catch (err) {
-            console.error('Erreur lors du chargement des stratégies pour séquences', err);
-          } finally {
-            setStrategiesLoading(false);
-          }
-
-          setAllStrategiesForSequences(strategiesMap);
-        })();
-      } catch (err) {
-        console.error('Erreur lors du chargement des trades pour séquences', err);
-      }
-    };
-
-    loadAllTradesForSequences();
-  }, [accountId, accountLoading]);
+  // Use trades from dashboard data for sequences calculation
+  // allTradesForSequences is now the same as trades from useDashboardData
+  const allTradesForSequences = useMemo(() => trades, [trades]);
+  const allStrategiesForSequences = useMemo(() => strategies, [strategies]);
 
   // Charger les métriques quotidiennes (MLL)
   useEffect(() => {
@@ -1282,8 +1056,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     // Utiliser les trades complets (sans filtres date) pour les séquences
     // Si allTradesForSequences est vide, utiliser les trades filtrés (fallback)
     const tradesForSequences = allTradesForSequences.length > 0 ? allTradesForSequences : trades;
-    // Utiliser allStrategiesForSequences seulement si on a des trades complets ET que les stratégies sont chargées
-    const strategiesForSequences = (allTradesForSequences.length > 0 && allStrategiesForSequences.size > 0 && !strategiesLoading) 
+    // Utiliser allStrategiesForSequences seulement si on a des trades complets
+    const strategiesForSequences = (allTradesForSequences.length > 0 && allStrategiesForSequences.size > 0) 
       ? allStrategiesForSequences 
       : strategies;
     
@@ -1459,7 +1233,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       currentConsecutiveDaysNotRespected,
       currentWinningStreakDays,
     };
-  }, [trades, strategies, allTradesForSequences, allStrategiesForSequences, strategiesLoading]);
+  }, [trades, strategies, allTradesForSequences, allStrategiesForSequences]);
 
   // Préparer les données pour le hook (utiliser allTradesForSequences si disponible)
   const allTradesForIndicators = useMemo(() => {
@@ -1509,9 +1283,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               value={selectedPeriod}
               onChange={(period) => {
                 setSelectedPeriod(period);
-                // Réinitialiser les anciens sélecteurs
-                setSelectedYear(null);
-                setSelectedMonth(null);
               }}
             />
           </div>

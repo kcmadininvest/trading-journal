@@ -4275,6 +4275,229 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
 
 
 @api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def dashboard_summary(request):
+    """
+    Consolidated dashboard endpoint that returns all necessary data in a single request.
+    Reduces multiple API calls to 1-2 calls for optimal performance.
+    """
+    from django.core.cache import cache
+    from django.db.models.functions import Coalesce
+    
+    trading_account_id = request.GET.get('trading_account')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    # Build cache key
+    cache_key = f"dashboard_summary_{request.user.id}_{trading_account_id}_{start_date}_{end_date}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return Response(cached_data)
+    
+    # Base queryset
+    trades_queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+    
+    if trading_account_id:
+        trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
+    
+    # Apply date filters
+    if start_date:
+        try:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            paris_tz = pytz.timezone('Europe/Paris')
+            start_datetime = paris_tz.localize(start_datetime)
+            trades_queryset = trades_queryset.filter(entered_at__gte=start_datetime)
+        except ValueError:
+            pass
+    
+    if end_date:
+        try:
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+            paris_tz = pytz.timezone('Europe/Paris')
+            end_datetime = paris_tz.localize(end_datetime.replace(hour=23, minute=59, second=59))
+            trades_queryset = trades_queryset.filter(entered_at__lte=end_datetime)
+        except ValueError:
+            pass
+    
+    # 1. Daily aggregates (for charts)
+    daily_aggregates = trades_queryset.annotate(
+        date=Coalesce('trade_day', TruncDate('entered_at'))
+    ).values('date').annotate(
+        pnl=Sum('net_pnl'),
+        trade_count=Count('id'),
+        winning_count=Count('id', filter=Q(net_pnl__gt=0)),
+        losing_count=Count('id', filter=Q(net_pnl__lt=0)),
+    ).order_by('date')
+    
+    daily_data = []
+    for item in daily_aggregates:
+        if item['date']:
+            date_str = item['date'].strftime('%Y-%m-%d') if hasattr(item['date'], 'strftime') else str(item['date'])
+            daily_data.append({
+                'date': date_str,
+                'pnl': float(item['pnl'] or 0),
+                'trade_count': item['trade_count'],
+                'winning_count': item['winning_count'],
+                'losing_count': item['losing_count'],
+            })
+    
+    # 2. Key metrics (limited trades for detailed stats)
+    limited_trades = trades_queryset.select_related('trading_account')[:500]  # Limit to 500 most recent trades for stats
+    
+    trades_data = TopStepTradeListSerializer(limited_trades, many=True).data
+    
+    # 3. Strategy compliance stats (if account specified)
+    compliance_stats = None
+    if trading_account_id:
+        try:
+            trading_account_id_int = int(trading_account_id)
+            
+            # Get strategies with trade info in single query
+            strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
+                user=request.user,
+                trade__trading_account_id=trading_account_id_int
+            ).select_related('trade')
+            
+            day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
+                user=request.user,
+                trading_account_id=trading_account_id_int
+            )
+            
+            strategies_dict = {strategy.trade_id: strategy for strategy in strategies_queryset}
+            day_compliances_dict = {}
+            for compliance in day_compliances_queryset:
+                date_str = compliance.date.isoformat()
+                if date_str not in day_compliances_dict:
+                    day_compliances_dict[date_str] = compliance
+                elif compliance.created_at > day_compliances_dict[date_str].created_at:
+                    day_compliances_dict[date_str] = compliance
+            
+            # Calculate compliance stats
+            from collections import defaultdict
+            daily_compliance = defaultdict(lambda: {'total': 0, 'with_strategy': 0, 'respected': 0, 'not_respected': 0, 'has_day_compliance': False})
+            all_dates = []
+            
+            all_trades = TopStepTrade.objects.filter(  # type: ignore
+                trading_account__user=request.user,
+                trading_account_id=trading_account_id_int
+            )
+            
+            for trade in all_trades:
+                if trade.trade_day:
+                    date_str = trade.trade_day.isoformat()
+                    daily_compliance[date_str]['total'] += 1
+                    strategy = strategies_dict.get(trade.id)
+                    if strategy and strategy.strategy_respected is not None:
+                        daily_compliance[date_str]['with_strategy'] += 1
+                        if strategy.strategy_respected:
+                            daily_compliance[date_str]['respected'] += 1
+                        else:
+                            daily_compliance[date_str]['not_respected'] += 1
+                    if date_str not in all_dates:
+                        all_dates.append(date_str)
+            
+            for date_str, compliance in day_compliances_dict.items():
+                if compliance.strategy_respected is not None:
+                    if date_str not in all_dates:
+                        all_dates.append(date_str)
+                    daily_compliance[date_str]['has_day_compliance'] = True
+                    if daily_compliance[date_str]['total'] == 0:
+                        daily_compliance[date_str]['with_strategy'] += 1
+                        if compliance.strategy_respected:
+                            daily_compliance[date_str]['respected'] += 1
+                        else:
+                            daily_compliance[date_str]['not_respected'] += 1
+            
+            all_dates.sort()
+            
+            # Calculate streaks
+            current_streak = 0
+            best_streak = 0
+            current_streak_start = None
+            temp_streak = 0
+            temp_start = None
+            
+            from datetime import timedelta
+            today = timezone.now().date()
+            
+            for i, date_str in enumerate(all_dates):
+                date_obj = datetime.fromisoformat(date_str).date()
+                day_data = daily_compliance[date_str]
+                
+                is_respected = False
+                if day_data['has_day_compliance']:
+                    compliance = day_compliances_dict.get(date_str)
+                    is_respected = compliance and compliance.strategy_respected
+                elif day_data['with_strategy'] > 0:
+                    is_respected = day_data['respected'] == day_data['with_strategy']
+                
+                if is_respected:
+                    if temp_streak == 0:
+                        temp_start = date_str
+                    temp_streak += 1
+                    best_streak = max(best_streak, temp_streak)
+                else:
+                    temp_streak = 0
+                    temp_start = None
+            
+            # Check if streak is current
+            if all_dates:
+                last_date = datetime.fromisoformat(all_dates[-1]).date()
+                days_since = (today - last_date).days
+                
+                if days_since <= 1 and temp_streak > 0:
+                    current_streak = temp_streak
+                    current_streak_start = temp_start
+            
+            # Calculate next badge (aligned with original system)
+            badge_thresholds = [
+                {'id': 'beginner', 'name': 'Débutant discipliné', 'days': 3},
+                {'id': 'week', 'name': 'Semaine parfaite', 'days': 7},
+                {'id': 'two_weeks', 'name': 'Deux semaines exemplaires', 'days': 14},
+                {'id': 'month', 'name': 'Mois de discipline', 'days': 30},
+                {'id': 'two_months', 'name': 'Maître de la discipline', 'days': 60},
+                {'id': 'three_months', 'name': 'Légende de la stratégie', 'days': 90},
+                {'id': 'centurion', 'name': 'Centurion', 'days': 100},
+                {'id': 'year', 'name': 'Année parfaite', 'days': 365},
+            ]
+            
+            next_badge = None
+            for badge in badge_thresholds:
+                if current_streak < badge['days']:
+                    progress = (current_streak / badge['days']) * 100
+                    next_badge = {
+                        'id': badge['id'],
+                        'name': badge['name'],
+                        'days': badge['days'],
+                        'progress': progress
+                    }
+                    break
+            
+            compliance_stats = {
+                'current_streak': current_streak,
+                'best_streak': best_streak,
+                'current_streak_start': current_streak_start,
+                'next_badge': next_badge
+            }
+            
+        except (ValueError, TypeError):
+            pass
+    
+    # Build response
+    response_data = {
+        'daily_aggregates': daily_data,
+        'trades': trades_data,
+        'compliance_stats': compliance_stats,
+        'count': len(daily_data)
+    }
+    
+    # Cache for 2 minutes
+    cache.set(cache_key, response_data, 120)
+    
+    return Response(response_data)
+
+
+@api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def market_holidays(request):
     """
