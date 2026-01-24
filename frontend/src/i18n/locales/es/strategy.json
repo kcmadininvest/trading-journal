@@ -15,7 +15,17 @@
     "title": "Insignias de Disciplina",
     "earned": "Insignias obtenidas",
     "locked": "Insignias por desbloquear",
-    "days": "días"
+    "days": "días",
+    "labels": {
+      "beginner": "Principiante disciplinado",
+      "week": "Semana perfecta",
+      "two_weeks": "Dos semanas ejemplares",
+      "month": "Mes de disciplina",
+      "two_months": "Maestro de la disciplina",
+      "three_months": "Leyenda de la estrategia",
+      "centurion": "Centurión",
+      "year": "Año perfecto"
+    }
   },
   "metrics": {
     "overall": "Tasa Global",

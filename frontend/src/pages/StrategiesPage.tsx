@@ -3,6 +3,8 @@ import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { RespectRateCard } from '../components/common/RespectRateCard';
+import { PerformanceComparison } from '../components/strategy/PerformanceComparison';
+import { StrategyBadges } from '../components/strategy/StrategyBadges';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -10,6 +12,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import Tooltip from '../components/ui/Tooltip';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
+import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getMonthName } from '../utils/dateFormat';
@@ -97,6 +100,7 @@ const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
   const { preferences } = usePreferences();
   const { t, i18n } = useI18nTranslation();
+  const privacySettings = usePrivacySettings('strategies');
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
   
@@ -295,6 +299,9 @@ const StrategiesPage: React.FC = () => {
            statistics !== null && 
            (allAccountsCompliance !== null || selectedAccountCompliance !== null);
   }, [isLoading, loadingAllAccountsCompliance, loadingSelectedAccountCompliance, statistics, allAccountsCompliance, selectedAccountCompliance]);
+
+  const complianceSectionData = useMemo(() => selectedAccountCompliance || allAccountsCompliance, [selectedAccountCompliance, allAccountsCompliance]);
+  const complianceSectionLoading = loadingSelectedAccountCompliance || loadingAllAccountsCompliance;
 
   // Charger les devises
   useEffect(() => {
@@ -1973,6 +1980,39 @@ const StrategiesPage: React.FC = () => {
               secondarySubtitle={`(${t('strategies:forSelectedPeriod')})`}
               secondaryGradientColors={accountPeriodRespectColor}
             />
+          </div>
+        )}
+
+        {/* Discipline & Stratégie (hors bandeau) */}
+        {(complianceSectionData || complianceSectionLoading) && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  {t('strategy:section.title', { defaultValue: 'Discipline & Stratégie' })}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('strategy:section.subtitle', { defaultValue: 'Suivez votre respect de la stratégie et obtenez des récompenses' })}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              {complianceSectionData ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  <PerformanceComparison
+                    performanceComparison={complianceSectionData.performance_comparison}
+                    currencySymbol={currencySymbol}
+                    hideProfitLoss={privacySettings.hideProfitLoss}
+                  />
+                  <StrategyBadges badges={complianceSectionData.badges || []} />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
+                  <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
+                </div>
+              )}
+            </div>
           </div>
         )}
 

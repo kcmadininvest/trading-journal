@@ -9,6 +9,8 @@
   "delete": "Delete",
   "edit": "Edit",
   "add": "Add",
+  "show": "Show",
+  "hide": "Hide",
   "confirm": "Confirm",
   "close": "Close",
   "search": "Search",

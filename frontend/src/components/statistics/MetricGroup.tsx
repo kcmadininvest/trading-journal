@@ -7,6 +7,7 @@ interface MetricGroupProps {
   defaultCollapsed?: boolean;
   children: React.ReactNode;
   className?: string;
+  summaryContent?: React.ReactNode;
 }
 
 export const MetricGroup: React.FC<MetricGroupProps> = ({
@@ -15,49 +16,56 @@ export const MetricGroup: React.FC<MetricGroupProps> = ({
   defaultCollapsed = false,
   children,
   className = '',
+  summaryContent,
 }) => {
   const { t } = useTranslation();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
 
   return (
     <div className={`mb-8 ${className}`}>
+      {summaryContent && (
+        <div className="mb-4 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm px-4 py-4">
+          {summaryContent}
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => setIsCollapsed(!isCollapsed)}
         aria-expanded={!isCollapsed}
-        className="mb-4 flex items-center justify-between w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 group relative overflow-hidden cursor-default"
+        className="mb-4 w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 group relative overflow-visible cursor-default"
       >
         {/* Barre indicatrice à gauche */}
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 dark:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-        
-        <div className="flex-1 text-left">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              {subtitle}
-            </p>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2 ml-4">
-          <span className="hidden sm:inline text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
-            {isCollapsed ? t('common:show', { defaultValue: 'Afficher' }) : t('common:hide', { defaultValue: 'Masquer' })}
-          </span>
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors">
-            <svg
-              className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform duration-250 ${isCollapsed ? '' : 'rotate-180'}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center w-full">
+          <div className="flex-1 text-left">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition-colors">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 lg:ml-4">
+            <span className="hidden sm:inline text-sm font-medium text-gray-600 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors">
+              {isCollapsed ? t('common:show', { defaultValue: 'Afficher' }) : t('common:hide', { defaultValue: 'Masquer' })}
+            </span>
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors">
+              <svg
+                className={`w-5 h-5 text-gray-600 dark:text-gray-400 transition-transform duration-250 ${isCollapsed ? '' : 'rotate-180'}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
       </button>
-      
+
       {/* Contenu avec animation */}
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out ${

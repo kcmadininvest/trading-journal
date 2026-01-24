@@ -51,8 +51,11 @@ const badgeIcons: Record<string, React.ReactNode> = {
 
 export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
   const { t } = useTranslation();
+  const getBadgeLabel = (badgeId: string, fallback: string) =>
+    t(`strategy:badges.labels.${badgeId}`, { defaultValue: fallback });
 
   return (
+    <>
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow p-6 h-full flex flex-col">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('strategy:badges.title', { defaultValue: 'Badges de Discipline' })}
@@ -64,13 +67,15 @@ export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
             return (
               <div
                 key={badge.id}
-                className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg p-4 text-center transform hover:scale-105 transition-transform h-full flex flex-col justify-between"
+                className="bg-gradient-to-br from-yellow-400 via-amber-400 to-orange-500 rounded-lg p-4 text-center transform hover:scale-105 transition-transform h-full flex flex-col justify-between relative overflow-hidden shadow-lg"
               >
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none" />
+                <div className="badge-shine-overlay" />
                 <div className="text-yellow-900 mb-2 flex justify-center">
                   {badgeIcons[badge.id] || badgeIcons.beginner}
                 </div>
                 <div className="flex-1 flex flex-col justify-center">
-                  <div className="text-xs font-semibold text-yellow-900">{badge.name}</div>
+                  <div className="text-xs font-semibold text-yellow-900">{getBadgeLabel(badge.id, badge.name)}</div>
                   <div className="text-xs text-yellow-800 mt-1">{badge.days} {t('strategy:badges.days', { defaultValue: 'jours' })}</div>
                 </div>
               </div>
@@ -90,7 +95,7 @@ export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
                   {badgeIcons[badge.id] || badgeIcons.beginner}
                 </div>
                 <div className="flex-1 flex flex-col justify-center">
-                  <div className="text-xs font-semibold text-gray-400 dark:text-gray-500">{badge.name}</div>
+                  <div className="text-xs font-semibold text-gray-400 dark:text-gray-500">{getBadgeLabel(badge.id, badge.name)}</div>
                   <div className="text-xs text-gray-400 dark:text-gray-600 mt-1">{badge.days} {t('strategy:badges.days', { defaultValue: 'jours' })}</div>
                   <div className="mt-2">
                     <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5"></div>
@@ -108,7 +113,7 @@ export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
                   {badgeIcons[badge.id] || badgeIcons.beginner}
                 </div>
                 <div className="flex-1 flex flex-col justify-center">
-                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-400">{badge.name}</div>
+                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-400">{getBadgeLabel(badge.id, badge.name)}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">{badge.days} {t('strategy:badges.days', { defaultValue: 'jours' })}</div>
                   {badge.progress !== undefined && (
                     <div className="mt-2">
@@ -132,6 +137,24 @@ export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
         })}
       </div>
     </div>
+    <style>{`
+      @keyframes badge-shine {
+        0% { transform: translateX(-120%); opacity: 0; }
+        20% { opacity: 0.4; }
+        60% { transform: translateX(120%); opacity: 0.4; }
+        80% { opacity: 0; }
+        100% { transform: translateX(120%); opacity: 0; }
+      }
+      .badge-shine-overlay {
+        position: absolute;
+        inset: -10%;
+        background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.7) 45%, rgba(255, 255, 255, 0.95) 50%, rgba(255,255,255,0.7) 55%, transparent 100%);
+        transform: translateX(-120%);
+        animation: badge-shine 4.5s ease-in-out infinite;
+        pointer-events: none;
+      }
+    `}</style>
+    </>
   );
 };
 

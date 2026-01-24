@@ -6,7 +6,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 interface StrategyStreakCardProps {
   currentStreak: number;
   streakStartDate: string | null;
-  nextBadge: { name: string; days: number; progress?: number } | null;
+  nextBadge: { id?: string; name: string; days: number; progress?: number } | null;
 }
 
 export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
@@ -21,11 +21,14 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
   const progressToNextBadge = nextBadge?.progress || 0;
   // Utiliser currentStreak pour calculer les jours restants vers le prochain badge
   const daysToNextBadge = nextBadge ? Math.max(0, nextBadge.days - currentStreak) : 0;
+  const nextBadgeLabel = nextBadge
+    ? t(`strategy:badges.labels.${nextBadge.id ?? ''}`, { defaultValue: nextBadge.name })
+    : null;
 
   return (
-    <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 dark:from-blue-600 dark:via-blue-700 dark:to-purple-700 rounded-xl shadow-lg p-4 text-white relative overflow-hidden">
+    <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-purple-600 dark:from-blue-600 dark:via-blue-700 dark:to-purple-700 rounded-xl shadow-lg p-4 text-white relative">
       {/* Effet de brillance animé en arrière-plan */}
-      <div className="absolute inset-0 opacity-20">
+      <div className="absolute inset-0 opacity-20 overflow-hidden rounded-xl">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent transform -skew-x-12 animate-shimmer"></div>
       </div>
       
@@ -34,13 +37,19 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold mb-0.5 break-words">
               {t('strategy:streak.title', { defaultValue: 'Streak de Respect' })}
-              {currentStreak > 0 && streakStartDate && (
-                <span className="font-normal italic block sm:inline"> : {currentStreak} {t('strategy:streak.days', { defaultValue: 'jours' })} {t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} {formatDate(streakStartDate, preferences.date_format, false)}</span>
-              )}
             </h3>
-            <p className="text-xs opacity-90 leading-tight">
+            <p className="text-xs opacity-90 leading-tight mb-1">
               {t('strategy:streak.subtitle', { defaultValue: 'Jours consécutifs avec 100% de respect' })}
             </p>
+            {currentStreak > 0 && streakStartDate ? (
+              <p className="text-sm font-medium">
+                {currentStreak} {t('strategy:streak.days', { defaultValue: 'jours' })} {t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} {formatDate(streakStartDate, preferences.date_format, false)}
+              </p>
+            ) : (
+              <p className="text-sm opacity-80">
+                {t('strategy:streak.noStreak', { defaultValue: 'Aucun streak en cours' })}
+              </p>
+            )}
           </div>
           
           {nextBadge && (
@@ -57,7 +66,7 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
                 </div>
               </div>
               <div className="text-xs opacity-90 break-words">
-                {nextBadge.name} ({daysToNextBadge} {t('strategy:streak.daysLeft', { defaultValue: 'jours restants' })})
+                {nextBadgeLabel} ({daysToNextBadge} {t('strategy:streak.daysLeft', { defaultValue: 'jours restants' })})
               </div>
             </div>
           )}

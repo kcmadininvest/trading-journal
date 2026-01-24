@@ -15,7 +15,17 @@
     "title": "Disziplin-Abzeichen",
     "earned": "Verdiente Abzeichen",
     "locked": "Zu entsperrende Abzeichen",
-    "days": "Tage"
+    "days": "Tage",
+    "labels": {
+      "beginner": "Disziplinierter Anfänger",
+      "week": "Perfekte Woche",
+      "two_weeks": "Vorbildliche zwei Wochen",
+      "month": "Monat der Disziplin",
+      "two_months": "Meister der Disziplin",
+      "three_months": "Strategie-Legende",
+      "centurion": "Centurion",
+      "year": "Perfektes Jahr"
+    }
   },
   "metrics": {
     "overall": "Gesamtrate",

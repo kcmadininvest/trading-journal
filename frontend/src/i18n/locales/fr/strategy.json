@@ -15,7 +15,17 @@
     "title": "Badges de Discipline",
     "earned": "Badges obtenus",
     "locked": "Badges à débloquer",
-    "days": "jours"
+    "days": "jours",
+    "labels": {
+      "beginner": "Débutant discipliné",
+      "week": "Semaine parfaite",
+      "two_weeks": "Deux semaines exemplaires",
+      "month": "Mois de discipline",
+      "two_months": "Maître de la discipline",
+      "three_months": "Légende de la stratégie",
+      "centurion": "Centurion",
+      "year": "Année parfaite"
+    }
   },
   "metrics": {
     "overall": "Taux Global",

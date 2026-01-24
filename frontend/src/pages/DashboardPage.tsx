@@ -12,9 +12,6 @@ import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
 import { tradeStrategiesService, TradeStrategy, StrategyComplianceStats } from '../services/tradeStrategies';
 import { StrategyStreakCard } from '../components/strategy/StrategyStreakCard';
-import { StrategyBadges } from '../components/strategy/StrategyBadges';
-import { PerformanceComparison } from '../components/strategy/PerformanceComparison';
-import { MetricGroup } from '../components/statistics/MetricGroup';
 import ModernStatCard from '../components/common/ModernStatCard';
 import DurationDistributionChart from '../components/charts/DurationDistributionChart';
 import AccountBalanceChart from '../components/charts/AccountBalanceChart';
@@ -239,7 +236,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [complianceStats, setComplianceStats] = useState<StrategyComplianceStats | null>(null);
-  const [complianceLoading, setComplianceLoading] = useState(false);
+  const [complianceLoading, setComplianceLoading] = useState(true);
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
   const [marketHolidays, setMarketHolidays] = useState<MarketHoliday[]>([]);
@@ -1642,35 +1639,29 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         </div>
       )}
 
-      {/* Section Discipline & Stratégie */}
-      {complianceStats && !complianceLoading && (
-        <div className="mb-3">
-          <MetricGroup
-            title={t('strategy:section.title', { defaultValue: 'Discipline & Stratégie' })}
-            subtitle={t('strategy:section.subtitle', { defaultValue: 'Suivez votre respect de la stratégie et obtenez des récompenses' })}
-            defaultCollapsed={true}
-            className="mb-0"
-          >
-          {/* Streak Card */}
-          <div className="mb-6">
+      {/* Strategy Respect Streak banner */}
+      {(complianceStats || complianceLoading) && (
+        <div className="mb-6">
+          {complianceStats ? (
             <StrategyStreakCard
               key={`streak-${complianceStats.current_streak}-${complianceStats.current_streak_start}`}
               currentStreak={complianceStats.current_streak}
               streakStartDate={complianceStats.current_streak_start}
               nextBadge={complianceStats.next_badge}
             />
-          </div>
-
-          {/* Impact du respect de la stratégie et badges */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-            <PerformanceComparison
-              performanceComparison={complianceStats.performance_comparison}
-              currencySymbol={currencySymbol}
-              hideProfitLoss={privacySettings.hideProfitLoss}
-            />
-            <StrategyBadges badges={complianceStats.badges} />
-          </div>
-        </MetricGroup>
+          ) : (
+            <div className="bg-gradient-to-br from-blue-100 via-blue-200 to-purple-200 dark:from-blue-900 dark:via-blue-800 dark:to-purple-800 border border-blue-50 dark:border-blue-900/40 rounded-xl p-4 sm:p-5 shadow-sm animate-pulse text-blue-900 dark:text-blue-50">
+              <h3 className="text-base sm:text-lg font-semibold mb-1">
+                {t('strategy:streak.title', { defaultValue: 'Strategy Respect Streak' })}
+              </h3>
+              <p className="text-sm opacity-80">
+                {t('strategy:streak.subtitle', { defaultValue: 'Jours consécutifs avec 100% de respect' })}
+              </p>
+              <p className="text-sm mt-3">
+                {t('strategy:streak.loading', { defaultValue: 'Chargement des données de respect...' })}
+              </p>
+            </div>
+          )}
         </div>
       )}
 

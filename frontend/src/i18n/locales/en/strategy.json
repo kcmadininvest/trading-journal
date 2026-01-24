@@ -15,7 +15,17 @@
     "title": "Discipline Badges",
     "earned": "Earned badges",
     "locked": "Badges to unlock",
-    "days": "days"
+    "days": "days",
+    "labels": {
+      "beginner": "Disciplined Beginner",
+      "week": "Perfect Week",
+      "two_weeks": "Exemplary Two Weeks",
+      "month": "Discipline Month",
+      "two_months": "Discipline Master",
+      "three_months": "Strategy Legend",
+      "centurion": "Centurion",
+      "year": "Perfect Year"
+    }
   },
   "metrics": {
     "overall": "Overall Rate",
