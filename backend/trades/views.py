@@ -4430,15 +4430,14 @@ def dashboard_summary(request):
             
             all_dates.sort()
             
-            # Calculate streaks - include days without trades if they have day compliance
+            # Calculate streaks - UNIFIED LOGIC with strategy_compliance_stats
+            # Include days with respected trades OR days with DayCompliance = True
+            # Days without activity (no trades and no compliance) don't break the streak
             current_streak = 0
             best_streak = 0
             current_streak_start = None
             temp_streak = 0
             temp_start = None
-            
-            from datetime import timedelta
-            today = timezone.now().date()
             
             # Build complete date range including days without trades but with day compliance
             all_dates_set = set(all_dates)
@@ -4447,16 +4446,24 @@ def dashboard_summary(request):
                     all_dates.append(date_str)
             all_dates.sort()
             
-            for i, date_str in enumerate(all_dates):
-                date_obj = datetime.fromisoformat(date_str).date()
+            # Calculate best streak (forward pass through all dates)
+            for date_str in all_dates:
                 day_data = daily_compliance[date_str]
                 
+                # A day is respected if:
+                # 1. Has trades: ALL trades have strategy AND ALL respect it
+                # 2. No trades but has DayCompliance: compliance indicates respect
                 is_respected = False
-                if day_data['has_day_compliance']:
+                if day_data['total'] > 0:
+                    # Day with trades: all trades must have strategy and all must respect
+                    is_respected = day_data['with_strategy'] == day_data['total'] and day_data['not_respected'] == 0
+                elif day_data['has_day_compliance']:
+                    # Day without trades but with compliance: check compliance indicates respect
+                    is_respected = day_data['respected'] > 0 and day_data['not_respected'] == 0
+                    # Double check with compliance object
                     compliance = day_compliances_dict.get(date_str)
-                    is_respected = compliance and compliance.strategy_respected
-                elif day_data['with_strategy'] > 0:
-                    is_respected = day_data['respected'] == day_data['with_strategy']
+                    if compliance:
+                        is_respected = is_respected and compliance.strategy_respected is True
                 
                 if is_respected:
                     if temp_streak == 0:
@@ -4464,18 +4471,34 @@ def dashboard_summary(request):
                     temp_streak += 1
                     best_streak = max(best_streak, temp_streak)
                 else:
+                    # Streak is broken (day with activity but not respected)
                     temp_streak = 0
                     temp_start = None
             
-            # Check if streak is current - extend check to include weekends
-            if all_dates:
-                last_date = datetime.fromisoformat(all_dates[-1]).date()
-                days_since = (today - last_date).days
+            # Calculate current streak (reverse pass from most recent to oldest)
+            # Stop at first non-respected day with activity
+            current_streak = 0
+            current_streak_start = None
+            for date_str in reversed(all_dates):
+                day_data = daily_compliance[date_str]
                 
-                # Consider streak current if last respected day is within 3 days (includes weekends)
-                if days_since <= 3 and temp_streak > 0:
-                    current_streak = temp_streak
-                    current_streak_start = temp_start
+                # Same logic as best_streak calculation
+                is_respected = False
+                if day_data['total'] > 0:
+                    is_respected = day_data['with_strategy'] == day_data['total'] and day_data['not_respected'] == 0
+                elif day_data['has_day_compliance']:
+                    is_respected = day_data['respected'] > 0 and day_data['not_respected'] == 0
+                    compliance = day_compliances_dict.get(date_str)
+                    if compliance:
+                        is_respected = is_respected and compliance.strategy_respected is True
+                
+                if is_respected:
+                    # current_streak_start should be the oldest date of the streak
+                    current_streak_start = date_str
+                    current_streak += 1
+                else:
+                    # Current streak is broken, stop here
+                    break
             
             # Calculate next badge (aligned with original system)
             badge_thresholds = [
