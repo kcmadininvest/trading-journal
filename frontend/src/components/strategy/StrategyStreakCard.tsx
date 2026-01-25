@@ -17,10 +17,12 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
   const { t } = useTranslation();
   const { preferences } = usePreferences();
 
-
+  // Ensure currentStreak is a valid number (handle null/undefined)
+  const validCurrentStreak = currentStreak ?? 0;
+  
   const progressToNextBadge = nextBadge?.progress || 0;
-  // Utiliser currentStreak pour calculer les jours restants vers le prochain badge
-  const daysToNextBadge = nextBadge ? Math.max(0, nextBadge.days - currentStreak) : 0;
+  // Utiliser validCurrentStreak pour calculer les jours restants vers le prochain badge
+  const daysToNextBadge = nextBadge ? Math.max(0, nextBadge.days - validCurrentStreak) : 0;
   const nextBadgeLabel = nextBadge
     ? t(`strategy:badges.labels.${nextBadge.id ?? ''}`, { defaultValue: nextBadge.name })
     : null;
@@ -41,9 +43,9 @@ export const StrategyStreakCard: React.FC<StrategyStreakCardProps> = ({
             <p className="text-xs opacity-90 leading-tight mb-1">
               {t('strategy:streak.subtitle', { defaultValue: 'Jours consécutifs avec 100% de respect' })}
             </p>
-            {currentStreak > 0 && streakStartDate ? (
+            {validCurrentStreak > 0 && streakStartDate ? (
               <p className="text-sm font-medium">
-                {currentStreak} {t('strategy:streak.days', { defaultValue: 'jours' })} {t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} {formatDate(streakStartDate, preferences.date_format, false)}
+                {validCurrentStreak} {t('strategy:streak.days', { defaultValue: 'jours' })} {t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} {formatDate(streakStartDate, preferences.date_format, false)}
               </p>
             ) : (
               <p className="text-sm opacity-80">

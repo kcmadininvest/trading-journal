@@ -2443,7 +2443,17 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur connecté à la stratégie."""
-        serializer.save(user=self.request.user)
+        strategy = serializer.save(user=self.request.user)
+        
+        # Invalider le cache du dashboard pour ce compte
+        from django.core.cache import cache
+        if strategy.trade and strategy.trade.trading_account_id:
+            # Invalider les caches courants pour ce compte (avec et sans dates)
+            user_id = self.request.user.id
+            account_id = strategy.trade.trading_account_id
+            cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
+            # Invalider aussi les caches avec dates (on ne peut pas faire de pattern matching)
+            # L'utilisateur devra rafraîchir ou le cache expirera après 2 minutes
     
     @action(detail=False, methods=['get'])
     def by_trade(self, request):
@@ -3658,7 +3668,17 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur connecté à la compliance."""
-        serializer.save(user=self.request.user)
+        compliance = serializer.save(user=self.request.user)
+        
+        # Invalider le cache du dashboard pour ce compte
+        from django.core.cache import cache
+        if compliance.trading_account_id:
+            # Invalider les caches courants pour ce compte (avec et sans dates)
+            user_id = self.request.user.id
+            account_id = compliance.trading_account_id
+            cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
+            # Invalider aussi les caches avec dates (on ne peut pas faire de pattern matching)
+            # L'utilisateur devra rafraîchir ou le cache expirera après 2 minutes
     
     @action(detail=False, methods=['get'])
     def by_date(self, request):
@@ -4410,7 +4430,7 @@ def dashboard_summary(request):
             
             all_dates.sort()
             
-            # Calculate streaks
+            # Calculate streaks - include days without trades if they have day compliance
             current_streak = 0
             best_streak = 0
             current_streak_start = None
@@ -4419,6 +4439,13 @@ def dashboard_summary(request):
             
             from datetime import timedelta
             today = timezone.now().date()
+            
+            # Build complete date range including days without trades but with day compliance
+            all_dates_set = set(all_dates)
+            for date_str in day_compliances_dict.keys():
+                if date_str not in all_dates_set:
+                    all_dates.append(date_str)
+            all_dates.sort()
             
             for i, date_str in enumerate(all_dates):
                 date_obj = datetime.fromisoformat(date_str).date()
@@ -4440,12 +4467,13 @@ def dashboard_summary(request):
                     temp_streak = 0
                     temp_start = None
             
-            # Check if streak is current
+            # Check if streak is current - extend check to include weekends
             if all_dates:
                 last_date = datetime.fromisoformat(all_dates[-1]).date()
                 days_since = (today - last_date).days
                 
-                if days_since <= 1 and temp_streak > 0:
+                # Consider streak current if last respected day is within 3 days (includes weekends)
+                if days_since <= 3 and temp_streak > 0:
                     current_streak = temp_streak
                     current_streak_start = temp_start
             
