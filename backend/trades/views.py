@@ -2485,12 +2485,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         try:
             # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
-            # Phase 1.3 : Optimisation avec select_related
             strategies = TradeStrategy.objects.filter(  # type: ignore
                 user=self.request.user,  # ✅ Filtre par utilisateur
                 trade__trade_day=date
-            ).select_related('trade', 'trade__trading_account', 'trade__trading_account__currency')\
-             .prefetch_related('dominant_emotions')
+            ).select_related('trade', 'trade__trading_account')
             
             # Filtrer par compte de trading si spécifié
             trading_account_id = request.query_params.get('trading_account')
