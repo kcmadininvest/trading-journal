@@ -633,6 +633,10 @@ class TopStepTrade(models.Model):
             models.Index(fields=['trade_type']),
             models.Index(fields=['trade_day']),
             models.Index(fields=['topstep_id']),
+            # Optimisation StrategiesPage : filtres par user + trade_day
+            models.Index(fields=['user', 'trade_day']),
+            # Optimisation StrategiesPage : filtres par user + compte + trade_day
+            models.Index(fields=['user', 'trading_account', 'trade_day']),
         ]
     
     def __str__(self):
@@ -1030,6 +1034,10 @@ class TradeStrategy(models.Model):
         indexes = [
             models.Index(fields=['user', '-created_at']),
             models.Index(fields=['trade']),
+            # Optimisation StrategiesPage : filtres par user + strategy_respected
+            models.Index(fields=['user', 'strategy_respected']),
+            # Optimisation StrategiesPage : filtres par trade + strategy_respected
+            models.Index(fields=['trade', 'strategy_respected']),
         ]
     
     def __str__(self):
@@ -1747,6 +1755,10 @@ class DayStrategyCompliance(models.Model):
             models.Index(fields=['user', 'date']),
             models.Index(fields=['user', '-date']),
             models.Index(fields=['trading_account', 'date']),
+            # Optimisation StrategiesPage : filtres par user + compte + date
+            models.Index(fields=['user', 'trading_account', 'date']),
+            # Optimisation StrategiesPage : filtres par user + strategy_respected
+            models.Index(fields=['user', 'strategy_respected']),
         ]
     
     def __str__(self):
