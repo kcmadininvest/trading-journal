@@ -1415,17 +1415,7 @@ const weekdayComplianceData = useWeekdayCompliance({
         {/* Discipline & Stratégie (hors bandeau) */}
         {(complianceSectionData || complianceSectionLoading) && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {t('strategy:section.title', { defaultValue: 'Discipline & Stratégie' })}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {t('strategy:section.subtitle', { defaultValue: 'Suivez votre respect de la stratégie et obtenez des récompenses' })}
-                </p>
-              </div>
-            </div>
-            <div className="mt-4">
+            <div>
               {complianceSectionData ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <PerformanceComparison
