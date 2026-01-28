@@ -60,14 +60,19 @@
     "offline": "API nicht verfügbar",
     "checking": "API nicht verfügbar"
   },
-  "deleteConfirm": "Sind Sie sicher?",
-  "deleteItemConfirm": "Sind Sie sicher, dass Sie {{item}} löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "deleteConfirm": "Bist du sicher?",
+  "deleteItemConfirm": "Möchtest du {{item}} wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
   "deleteConfirmGeneric": "Diese Aktion kann nicht rückgängig gemacht werden.",
-  "deleting": "Löschen...",
+  "deleting": "Wird gelöscht...",
+  "confirmModal": {
+    "title": "Bestätigung",
+    "message": "Möchtest du fortfahren?",
+    "confirm": "Bestätigen"
+  },
   "backToHome": "Zurück zur Startseite",
   "hours": "Stunden",
   "minutes": "Minuten",
-  "currentTime": "Aktuelle Zeit",
+  "currentTime": "Aktuelle Uhrzeit",
   "done": "Fertig",
   "dailyJournal": {
     "title": "Tagebuch",

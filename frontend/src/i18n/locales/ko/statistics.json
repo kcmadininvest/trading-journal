@@ -36,6 +36,7 @@
     "title": "성과 비율",
     "subtitle": "거래 전략을 분석하기 위한 고급 지표",
     "mainPerformance": "주요 성과",
+    "detailedPerformance": "주요 성과",
     "recovery": "회복",
     "financialEfficiency": "재무 효율성",
     "temporalAnalysis": "시간 분석",
@@ -137,5 +138,49 @@
     "monthlyPerformance": "월간 성과",
     "month": "월",
     "pnl": "P/L"
+  },
+  "exportModal": {
+    "title": "통계 내보내기",
+    "subtitle": "PDF 또는 Excel 보고서 생성",
+    "tradingAccount": "거래 계좌",
+    "exportFormat": "내보내기 형식",
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "presetModel": "사전 구성 모델",
+    "custom": "사용자 지정",
+    "deleteModelAria": "선택한 모델 삭제",
+    "periodOptional": "기간(선택 사항)",
+    "startDate": "시작 날짜",
+    "endDate": "종료 날짜",
+    "customization": "사용자 지정",
+    "saveAsModel": "모델로 저장",
+    "modelNameLabel": "모델 이름",
+    "modelNamePlaceholder": "내 사용자 지정 모델",
+    "modelNameRequiredTitle": "이름 필요",
+    "modelNameRequiredMessage": "모델 이름을 입력하세요.",
+    "modelSavedSuccess": "모델이 저장되었습니다!",
+    "modelSavedError": "모델 저장 중 오류가 발생했습니다.",
+    "tradesListTitle": "거래 목록",
+    "tradesList": {
+      "none": "없음",
+      "top_10_best_worst": "상위 10(최고/최악)",
+      "top_10_best": "상위 10 최고",
+      "top_10_worst": "상위 10 최악",
+      "all": "모든 거래"
+    },
+    "optionsTitle": "옵션",
+    "options": {
+      "watermark": "워터마크 포함",
+      "pageNumbers": "페이지 번호"
+    },
+    "generating": "생성 중...",
+    "confirmExportTitle": "내보내기 확인",
+    "confirmExportMessage": "계정 {{account}}에 대한 {{format}} 보고서를 생성하시겠습니까?",
+    "deleteModelTitle": "모델 삭제",
+    "modelDeleteError": "모델 삭제 중 오류가 발생했습니다.",
+    "exportErrorMessage": "내보내는 중 오류가 발생했습니다. 다시 시도해 주세요.",
+    "reportFilePrefix": "report"
   }
 }

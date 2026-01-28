@@ -51,14 +51,19 @@
     "lastPage": "Dernière page",
     "pageNumber": "Page {{number}}"
   },
-  "deleteConfirm": "您确定吗？",
-  "deleteItemConfirm": "您确定要删除{{item}}吗？此操作无法撤销。",
-  "deleteConfirmGeneric": "此操作无法撤销。",
-  "deleting": "删除中...",
-  "backToHome": "返回首页",
-  "hours": "小时",
-  "minutes": "分钟",
-  "currentTime": "当前时间",
+  "deleteConfirm": "Êtes-vous sûr ?",
+  "deleteItemConfirm": "Êtes-vous sûr de vouloir supprimer {{item}} ? Cette action est irréversible.",
+  "deleteConfirmGeneric": "Cette action est irréversible.",
+  "deleting": "Suppression en cours...",
+  "confirmModal": {
+    "title": "确认",
+    "message": "是否继续？",
+    "confirm": "确认"
+  },
+  "backToHome": "Retour à l'accueil",
+  "hours": "Heures",
+  "minutes": "Minutes",
+  "currentTime": "Heure actuelle",
   "done": "完成",
   "dailyJournal": {
     "title": "Journal",

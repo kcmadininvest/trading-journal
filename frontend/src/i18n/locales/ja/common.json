@@ -55,6 +55,11 @@
   "deleteItemConfirm": "{{item}}を削除してもよろしいですか？この操作は元に戻せません。",
   "deleteConfirmGeneric": "この操作は元に戻せません。",
   "deleting": "削除中...",
+  "confirmModal": {
+    "title": "確認",
+    "message": "続行しますか？",
+    "confirm": "確認"
+  },
   "backToHome": "ホームに戻る",
   "hours": "時間",
   "minutes": "分",

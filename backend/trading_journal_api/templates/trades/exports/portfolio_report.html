@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="{{ i18n.lang|default:'fr' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ i18n.page_title|default:'Rapport de Performance' }} - {{ trading_account.name }}</title>
+</head>
+<body>
+    <div class="header">
+        <h1>{{ i18n.report_title|default:'RAPPORT DE PERFORMANCE' }}</h1>
+        {% if config.options.watermark and watermark_text %}
+        <p class="generated-on">{{ watermark_text }}</p>
+        {% endif %}
+        <div class="metadata">
+            <table class="metadata-table">
+                <thead>
+                    <tr>
+                        <th>{{ i18n.labels.account|default:'Compte de Trading' }}</th>
+                        <th>{{ i18n.labels.type|default:'Type' }}</th>
+                        <th>{{ i18n.labels.period|default:'Période' }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ trading_account.name }}</td>
+                        <td>{{ trading_account.get_account_type_display }}</td>
+                        <td>{{ config.options.period_start|default:"Début" }} - {{ config.options.period_end|default:"Aujourd'hui" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if 'header' in config.sections %}
+    <div class="stats-grid">
+        <div class="stat-card {% if stats.general.net_pnl > 0 %}positive{% elif stats.general.net_pnl < 0 %}negative{% endif %}">
+            <div class="label">{{ i18n.cards.initial_capital|default:'Capital Initial' }}</div>
+            <div class="value">{{ stats.general.initial_capital|floatformat:2 }} €</div>
+        </div>
+        <div class="stat-card {% if stats.general.net_pnl > 0 %}positive{% elif stats.general.net_pnl < 0 %}negative{% endif %}">
+            <div class="label">{{ i18n.cards.current_capital|default:'Capital Actuel' }}</div>
+            <div class="value">{{ stats.general.current_capital|floatformat:2 }} €</div>
+        </div>
+        <div class="stat-card {% if stats.general.net_pnl > 0 %}positive{% elif stats.general.net_pnl < 0 %}negative{% endif %}">
+            <div class="label">{{ i18n.cards.net_pnl|default:'P&L Net' }}</div>
+            <div class="value">{{ stats.general.net_pnl|floatformat:2 }} €</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">{{ i18n.cards.total_trades|default:'Total Trades' }}</div>
+            <div class="value">{{ stats.general.total_trades }}</div>
+        </div>
+        <div class="stat-card {% if stats.general.win_rate >= 50 %}positive{% else %}negative{% endif %}">
+            <div class="label">{{ i18n.cards.win_rate|default:'Win Rate' }}</div>
+            <div class="value">{{ stats.general.win_rate|floatformat:2 }}%</div>
+        </div>
+        <div class="stat-card {% if stats.performance.profit_factor >= 1.5 %}positive{% elif stats.performance.profit_factor < 1 %}negative{% endif %}">
+            <div class="label">{{ i18n.cards.profit_factor|default:'Profit Factor' }}</div>
+            <div class="value">{{ stats.performance.profit_factor|floatformat:2 }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if 'metrics' in config.sections %}
+    <div class="page-break"></div>
+    <h2>{{ i18n.sections.metrics|default:'Métriques de Performance' }}</h2>
+    
+    <h3>{{ i18n.sections.general|default:'Statistiques Générales' }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>{{ i18n.tables.metric_column|default:'Métrique' }}</th>
+                <th>{{ i18n.tables.value_column|default:'Valeur' }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ i18n.rows.total_trades|default:'Nombre total de trades' }}</td>
+                <td>{{ stats.general.total_trades }}</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.winning_trades|default:'Trades gagnants' }}</td>
+                <td class="positive">{{ stats.general.winning_trades }}</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.losing_trades|default:'Trades perdants' }}</td>
+                <td class="negative">{{ stats.general.losing_trades }}</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.breakeven_trades|default:'Trades breakeven' }}</td>
+                <td>{{ stats.general.breakeven_trades }}</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.win_rate|default:'Win Rate' }}</td>
+                <td>{{ stats.general.win_rate|floatformat:2 }}%</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.total_pnl|default:'P&L Total' }}</td>
+                <td class="{% if stats.general.total_pnl > 0 %}positive{% elif stats.general.total_pnl < 0 %}negative{% endif %}">{{ stats.general.total_pnl|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.total_fees|default:'Frais Totaux' }}</td>
+                <td>{{ stats.general.total_fees|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.net_pnl|default:'P&L Net' }}</td>
+                <td class="{% if stats.general.net_pnl > 0 %}positive{% elif stats.general.net_pnl < 0 %}negative{% endif %}">{{ stats.general.net_pnl|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.return_pct|default:'Rendement' }}</td>
+                <td class="{% if stats.general.return_pct > 0 %}positive{% elif stats.general.return_pct < 0 %}negative{% endif %}">{{ stats.general.return_pct|floatformat:2 }}%</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>{{ i18n.sections.performance|default:'Performance' }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>{{ i18n.tables.metric_column|default:'Métrique' }}</th>
+                <th>{{ i18n.tables.value_column|default:'Valeur' }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ i18n.rows.avg_win|default:'Gain moyen' }}</td>
+                <td class="positive">{{ stats.performance.average_win|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.avg_loss|default:'Perte moyenne' }}</td>
+                <td class="negative">{{ stats.performance.average_loss|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.largest_win|default:'Plus gros gain' }}</td>
+                <td class="positive">{{ stats.performance.largest_win|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.largest_loss|default:'Plus grosse perte' }}</td>
+                <td class="negative">{{ stats.performance.largest_loss|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.profit_factor|default:'Profit Factor' }}</td>
+                <td>{{ stats.performance.profit_factor|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.expectancy|default:'Expectancy' }}</td>
+                <td>{{ stats.performance.expectancy|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.risk_reward_ratio|default:'Ratio Risque/Rendement' }}</td>
+                <td>{{ stats.performance.risk_reward_ratio|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>{{ i18n.sections.risk|default:'Risque' }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>{{ i18n.tables.metric_column|default:'Métrique' }}</th>
+                <th>{{ i18n.tables.value_column|default:'Valeur' }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ i18n.rows.max_drawdown|default:'Drawdown Maximum' }}</td>
+                <td class="negative">{{ stats.risk.max_drawdown|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.max_drawdown_pct|default:'Drawdown Maximum (%)' }}</td>
+                <td class="negative">{{ stats.risk.max_drawdown_pct|floatformat:2 }}%</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.current_drawdown|default:'Drawdown Actuel' }}</td>
+                <td>{{ stats.risk.current_drawdown|floatformat:2 }} €</td>
+            </tr>
+            <tr>
+                <td>{{ i18n.rows.sharpe_ratio|default:'Sharpe Ratio' }}</td>
+                <td>{{ stats.risk.sharpe_ratio|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if config.sections.trades_list and config.sections.trades_list != 'none' %}
+    <div class="page-break"></div>
+    <h2>{{ i18n.sections.trades_list|default:'Liste des Trades' }}</h2>
+    
+    {% if stats.top_trades.best %}
+    <h3>{{ i18n.trades.best_title|default:'Meilleurs Trades' }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>{{ i18n.columns.date|default:'Date' }}</th>
+                <th>{{ i18n.columns.instrument|default:'Instrument' }}</th>
+                <th>{{ i18n.columns.strategy|default:'Stratégie' }}</th>
+                <th>{{ i18n.columns.direction|default:'Direction' }}</th>
+                <th>{{ i18n.columns.pnl|default:'P&L' }}</th>
+                <th>{{ i18n.columns.pnl_pct|default:'P&L %' }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trade in stats.top_trades.best %}
+            <tr>
+                <td>{{ trade.date|date:"d/m/Y" }}</td>
+                <td>{{ trade.instrument }}</td>
+                <td>{{ trade.strategy }}</td>
+                <td>{{ trade.direction }}</td>
+                <td class="positive">{{ trade.pnl|floatformat:2 }} €</td>
+                <td class="positive">{{ trade.pnl_pct|floatformat:2 }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if stats.top_trades.worst %}
+    <h3>{{ i18n.trades.worst_title|default:'Pires Trades' }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>{{ i18n.columns.date|default:'Date' }}</th>
+                <th>{{ i18n.columns.instrument|default:'Instrument' }}</th>
+                <th>{{ i18n.columns.strategy|default:'Stratégie' }}</th>
+                <th>{{ i18n.columns.direction|default:'Direction' }}</th>
+                <th>{{ i18n.columns.pnl|default:'P&L' }}</th>
+                <th>{{ i18n.columns.pnl_pct|default:'P&L %' }}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trade in stats.top_trades.worst %}
+            <tr>
+                <td>{{ trade.date|date:"d/m/Y" }}</td>
+                <td>{{ trade.instrument }}</td>
+                <td>{{ trade.strategy }}</td>
+                <td>{{ trade.direction }}</td>
+                <td class="negative">{{ trade.pnl|floatformat:2 }} €</td>
+                <td class="negative">{{ trade.pnl_pct|floatformat:2 }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    {% endif %}
+
+</body>
+</html>

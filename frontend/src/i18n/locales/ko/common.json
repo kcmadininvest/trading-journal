@@ -55,6 +55,11 @@
   "deleteItemConfirm": "{{item}}을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
   "deleteConfirmGeneric": "이 작업은 취소할 수 없습니다.",
   "deleting": "삭제 중...",
+  "confirmModal": {
+    "title": "확인",
+    "message": "계속하시겠습니까?",
+    "confirm": "확인"
+  },
   "backToHome": "홈으로 돌아가기",
   "hours": "시간",
   "minutes": "분",

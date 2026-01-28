@@ -1772,3 +1772,73 @@ class DayStrategyCompliance(models.Model):
             return "Aucune"
         emotion_labels = dict(self.EMOTION_CHOICES)
         return ", ".join([emotion_labels.get(emotion, emotion) for emotion in self.dominant_emotions])  # type: ignore
+
+
+class ExportTemplate(models.Model):
+    """
+    Modèle pour sauvegarder les configurations d'export personnalisées.
+    Permet aux utilisateurs de créer des templates réutilisables pour l'export PDF/Excel.
+    """
+    
+    FORMAT_CHOICES = [
+        ('pdf', 'PDF'),
+        ('excel', 'Excel'),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='export_templates',
+        verbose_name='Utilisateur'
+    )
+    
+    name = models.CharField(
+        max_length=100,
+        verbose_name='Nom du template',
+        help_text='Nom descriptif pour identifier ce template'
+    )
+    
+    format = models.CharField(
+        max_length=10,
+        choices=FORMAT_CHOICES,
+        default='pdf',
+        verbose_name='Format d\'export'
+    )
+    
+    is_default = models.BooleanField(
+        default=False,
+        verbose_name='Template par défaut',
+        help_text='Utiliser ce template par défaut pour les exports'
+    )
+    
+    configuration = models.JSONField(
+        default=dict,
+        verbose_name='Configuration',
+        help_text='Configuration JSON des sections et options à inclure dans l\'export'
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Date de création')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Dernière modification')
+    
+    class Meta:
+        ordering = ['-is_default', 'name']
+        verbose_name = 'Template d\'export'
+        verbose_name_plural = 'Templates d\'export'
+        unique_together = ['user', 'name']
+        indexes = [
+            models.Index(fields=['user', 'is_default']),
+            models.Index(fields=['user', 'name']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_format_display()})"
+    
+    def save(self, *args, **kwargs):
+        """Si ce template est défini comme défaut, retirer le flag des autres."""
+        if self.is_default:
+            ExportTemplate.objects.filter(
+                user=self.user,
+                format=self.format,
+                is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)

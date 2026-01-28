@@ -137,6 +137,49 @@
     "monthlyPerformance": "Performance Mensuelle",
     "month": "Mois",
     "pnl": "P/L"
+  },
+  "exportModal": {
+    "title": "Exporter les statistiques",
+    "subtitle": "Générer un rapport PDF ou Excel",
+    "tradingAccount": "Compte de trading",
+    "exportFormat": "Format d'export",
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "presetModel": "Modèle pré-configuré",
+    "custom": "Personnalisé",
+    "deleteModelAria": "Supprimer le modèle sélectionné",
+    "periodOptional": "Période (optionnel)",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "customization": "Personnalisation",
+    "saveAsModel": "Sauvegarder comme modèle",
+    "modelNameLabel": "Nom du modèle",
+    "modelNamePlaceholder": "Mon modèle personnalisé",
+    "modelNameRequiredTitle": "Nom requis",
+    "modelNameRequiredMessage": "Veuillez entrer un nom pour le modèle.",
+    "modelSavedSuccess": "Modèle sauvegardé avec succès !",
+    "modelSavedError": "Erreur lors de la sauvegarde du modèle.",
+    "tradesListTitle": "Liste des trades",
+    "tradesList": {
+      "none": "Aucun",
+      "top_10_best_worst": "Top 10 Meilleurs/Pires",
+      "top_10_best": "Top 10 Meilleurs",
+      "top_10_worst": "Top 10 Pires",
+      "all": "Tous les trades"
+    },
+    "optionsTitle": "Options",
+    "options": {
+      "watermark": "Inclure un watermark",
+      "pageNumbers": "Numérotation des pages"
+    },
+    "generating": "Génération...",
+    "confirmExportTitle": "Confirmer l'export",
+    "confirmExportMessage": "Voulez-vous générer un rapport {{format}} pour le compte {{account}} ?",
+    "deleteModelTitle": "Supprimer le modèle",
+    "modelDeleteError": "Erreur lors de la suppression du modèle.",
+    "exportErrorMessage": "Une erreur est survenue lors de l'export. Veuillez réessayer.",
+    "reportFilePrefix": "rapport"
   }
 }
-

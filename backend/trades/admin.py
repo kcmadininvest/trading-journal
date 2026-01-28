@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import TopStepTrade, TopStepImportLog, AccountTransaction, DayStrategyCompliance
+from .models import TopStepTrade, TopStepImportLog, AccountTransaction, DayStrategyCompliance, ExportTemplate
 
 
 @admin.register(TopStepTrade)
@@ -363,5 +363,52 @@ class DayStrategyComplianceAdmin(admin.ModelAdmin):
     
     def save_model(self, request, obj, form, change):
         if not change:  # Si c'est une création
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(ExportTemplate)
+class ExportTemplateAdmin(admin.ModelAdmin):
+    list_display = [
+        'name',
+        'user',
+        'format',
+        'is_default',
+        'created_at',
+        'updated_at'
+    ]
+    list_filter = [
+        'format',
+        'is_default',
+        'created_at'
+    ]
+    search_fields = [
+        'name',
+        'user__username',
+        'user__email'
+    ]
+    readonly_fields = ['created_at', 'updated_at']
+    fieldsets = (
+        ('Informations Générales', {
+            'fields': ('user', 'name', 'format', 'is_default')
+        }),
+        ('Configuration', {
+            'fields': ('configuration',),
+            'classes': ('wide',)
+        }),
+        ('Métadonnées', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if not request.user.is_superuser:
+            qs = qs.filter(user=request.user)
+        return qs
+    
+    def save_model(self, request, obj, form, change):
+        if not change:
             obj.user = request.user
         super().save_model(request, obj, form, change)

@@ -137,5 +137,49 @@
     "monthlyPerformance": "月度表现",
     "month": "月",
     "pnl": "P/L"
+  },
+  "exportModal": {
+    "title": "导出统计",
+    "subtitle": "生成 PDF 或 Excel 报告",
+    "tradingAccount": "交易账户",
+    "exportFormat": "导出格式",
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "presetModel": "预设模型",
+    "custom": "自定义",
+    "deleteModelAria": "删除所选模型",
+    "periodOptional": "时间范围（可选）",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "customization": "自定义",
+    "saveAsModel": "保存为模型",
+    "modelNameLabel": "模型名称",
+    "modelNamePlaceholder": "我的自定义模型",
+    "modelNameRequiredTitle": "需要名称",
+    "modelNameRequiredMessage": "请输入模型名称。",
+    "modelSavedSuccess": "模型保存成功！",
+    "modelSavedError": "保存模型时出错。",
+    "tradesListTitle": "交易列表",
+    "tradesList": {
+      "none": "无",
+      "top_10_best_worst": "前10（最好/最差）",
+      "top_10_best": "前10最好",
+      "top_10_worst": "前10最差",
+      "all": "所有交易"
+    },
+    "optionsTitle": "选项",
+    "options": {
+      "watermark": "包含水印",
+      "pageNumbers": "页码"
+    },
+    "generating": "生成中...",
+    "confirmExportTitle": "确认导出",
+    "confirmExportMessage": "是否为账户 {{account}} 生成 {{format}} 报告？",
+    "deleteModelTitle": "删除模型",
+    "modelDeleteError": "删除模型时出错。",
+    "exportErrorMessage": "导出时发生错误。请重试。",
+    "reportFilePrefix": "report"
   }
 }

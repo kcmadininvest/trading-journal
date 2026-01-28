@@ -55,6 +55,11 @@
   "deleteItemConfirm": "Sei sicuro di voler eliminare {{item}}? Questa azione non può essere annullata.",
   "deleteConfirmGeneric": "Questa azione non può essere annullata.",
   "deleting": "Eliminazione...",
+  "confirmModal": {
+    "title": "Conferma",
+    "message": "Vuoi continuare?",
+    "confirm": "Conferma"
+  },
   "backToHome": "Torna alla home",
   "hours": "Ore",
   "minutes": "Minuti",

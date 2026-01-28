@@ -36,6 +36,7 @@
     "title": "Performance Ratios",
     "subtitle": "Advanced metrics to analyze your trading strategy",
     "mainPerformance": "Main Performance",
+    "detailedPerformance": "Main Performance",
     "recovery": "Recovery",
     "financialEfficiency": "Financial Efficiency",
     "temporalAnalysis": "Temporal Analysis",
@@ -137,6 +138,50 @@
     "monthlyPerformance": "Monthly Performance",
     "month": "Month",
     "pnl": "P/L"
+  },
+  "exportModal": {
+    "title": "Export statistics",
+    "subtitle": "Generate a PDF or Excel report",
+    "tradingAccount": "Trading account",
+    "exportFormat": "Export format",
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "presetModel": "Pre-configured model",
+    "custom": "Custom",
+    "deleteModelAria": "Delete selected model",
+    "periodOptional": "Period (optional)",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "customization": "Customization",
+    "saveAsModel": "Save as model",
+    "modelNameLabel": "Model name",
+    "modelNamePlaceholder": "My custom model",
+    "modelNameRequiredTitle": "Name required",
+    "modelNameRequiredMessage": "Please enter a name for the model.",
+    "modelSavedSuccess": "Model saved successfully!",
+    "modelSavedError": "Error while saving the model.",
+    "tradesListTitle": "Trades list",
+    "tradesList": {
+      "none": "None",
+      "top_10_best_worst": "Top 10 best/worst",
+      "top_10_best": "Top 10 best",
+      "top_10_worst": "Top 10 worst",
+      "all": "All trades"
+    },
+    "optionsTitle": "Options",
+    "options": {
+      "watermark": "Include watermark",
+      "pageNumbers": "Page numbers"
+    },
+    "generating": "Generating...",
+    "confirmExportTitle": "Confirm export",
+    "confirmExportMessage": "Do you want to generate a {{format}} report for the account {{account}}?",
+    "deleteModelTitle": "Delete model",
+    "modelDeleteError": "Error while deleting the model.",
+    "exportErrorMessage": "An error occurred while exporting. Please try again.",
+    "reportFilePrefix": "report"
   }
 }
 

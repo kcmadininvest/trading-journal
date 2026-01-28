@@ -61,6 +61,11 @@
   "deleteItemConfirm": "Are you sure you want to delete {{item}}? This action cannot be undone.",
   "deleteConfirmGeneric": "This action cannot be undone.",
   "deleting": "Deleting...",
+  "confirmModal": {
+    "title": "Confirmation",
+    "message": "Do you want to continue?",
+    "confirm": "Confirm"
+  },
   "backToHome": "Back to home",
   "hours": "Hours",
   "minutes": "Minutes",

@@ -36,6 +36,7 @@
     "title": "Rácios de Desempenho",
     "subtitle": "Métricas avançadas para analisar sua estratégia de trading",
     "mainPerformance": "Desempenho Principal",
+    "detailedPerformance": "Desempenho Detalhado",
     "recovery": "Recuperação",
     "financialEfficiency": "Eficiência Financeira",
     "temporalAnalysis": "Análise Temporal",
@@ -137,5 +138,49 @@
     "monthlyPerformance": "Desempenho Mensal",
     "month": "Mês",
     "pnl": "P/L"
+  },
+  "exportModal": {
+    "title": "Exportar estatísticas",
+    "subtitle": "Gerar um relatório PDF ou Excel",
+    "tradingAccount": "Conta de trading",
+    "exportFormat": "Formato de exportação",
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "presetModel": "Modelo pré-configurado",
+    "custom": "Personalizado",
+    "deleteModelAria": "Excluir o modelo selecionado",
+    "periodOptional": "Período (opcional)",
+    "startDate": "Data de início",
+    "endDate": "Data de fim",
+    "customization": "Personalização",
+    "saveAsModel": "Salvar como modelo",
+    "modelNameLabel": "Nome do modelo",
+    "modelNamePlaceholder": "Meu modelo personalizado",
+    "modelNameRequiredTitle": "Nome obrigatório",
+    "modelNameRequiredMessage": "Informe um nome para o modelo.",
+    "modelSavedSuccess": "Modelo salvo com sucesso!",
+    "modelSavedError": "Erro ao salvar o modelo.",
+    "tradesListTitle": "Lista de operações",
+    "tradesList": {
+      "none": "Nenhum",
+      "top_10_best_worst": "Top 10 melhores/piores",
+      "top_10_best": "Top 10 melhores",
+      "top_10_worst": "Top 10 piores",
+      "all": "Todos os trades"
+    },
+    "optionsTitle": "Opções",
+    "options": {
+      "watermark": "Incluir marca d'água",
+      "pageNumbers": "Numeração de páginas"
+    },
+    "generating": "Gerando...",
+    "confirmExportTitle": "Confirmar exportação",
+    "confirmExportMessage": "Deseja gerar um relatório {{format}} para a conta {{account}}?",
+    "deleteModelTitle": "Excluir modelo",
+    "modelDeleteError": "Erro ao excluir o modelo.",
+    "exportErrorMessage": "Ocorreu um erro ao exportar. Tente novamente.",
+    "reportFilePrefix": "relatorio"
   }
 }

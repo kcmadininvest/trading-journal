@@ -137,5 +137,49 @@
     "monthlyPerformance": "Monatliche Leistung",
     "month": "Monat",
     "pnl": "P/L"
+  },
+  "exportModal": {
+    "title": "Statistiken exportieren",
+    "subtitle": "PDF- oder Excel-Bericht erstellen",
+    "tradingAccount": "Handelskonto",
+    "exportFormat": "Exportformat",
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "presetModel": "Vorkonfiguriertes Modell",
+    "custom": "Benutzerdefiniert",
+    "deleteModelAria": "Ausgewähltes Modell löschen",
+    "periodOptional": "Zeitraum (optional)",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "customization": "Anpassung",
+    "saveAsModel": "Als Modell speichern",
+    "modelNameLabel": "Modellname",
+    "modelNamePlaceholder": "Mein benutzerdefiniertes Modell",
+    "modelNameRequiredTitle": "Name erforderlich",
+    "modelNameRequiredMessage": "Bitte einen Namen für das Modell eingeben.",
+    "modelSavedSuccess": "Modell erfolgreich gespeichert!",
+    "modelSavedError": "Fehler beim Speichern des Modells.",
+    "tradesListTitle": "Trade-Liste",
+    "tradesList": {
+      "none": "Keine",
+      "top_10_best_worst": "Top 10 beste/schlechteste",
+      "top_10_best": "Top 10 beste",
+      "top_10_worst": "Top 10 schlechteste",
+      "all": "Alle Trades"
+    },
+    "optionsTitle": "Optionen",
+    "options": {
+      "watermark": "Wasserzeichen einschließen",
+      "pageNumbers": "Seitenzahlen"
+    },
+    "generating": "Wird erstellt...",
+    "confirmExportTitle": "Export bestätigen",
+    "confirmExportMessage": "Möchten Sie einen {{format}}-Bericht für das Konto {{account}} erstellen?",
+    "deleteModelTitle": "Modell löschen",
+    "modelDeleteError": "Fehler beim Löschen des Modells.",
+    "exportErrorMessage": "Beim Export ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    "reportFilePrefix": "bericht"
   }
 }

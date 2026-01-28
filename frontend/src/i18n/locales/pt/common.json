@@ -55,6 +55,11 @@
   "deleteItemConfirm": "Tem certeza de que deseja excluir {{item}}? Esta ação não pode ser desfeita.",
   "deleteConfirmGeneric": "Esta ação não pode ser desfeita.",
   "deleting": "Excluindo...",
+  "confirmModal": {
+    "title": "Confirmação",
+    "message": "Deseja continuar?",
+    "confirm": "Confirmar"
+  },
   "backToHome": "Voltar ao início",
   "hours": "Horas",
   "minutes": "Minutos",

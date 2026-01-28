@@ -137,5 +137,49 @@
     "monthlyPerformance": "Performance Mensile",
     "month": "Mese",
     "pnl": "P/L"
+  },
+  "exportModal": {
+    "title": "Esporta statistiche",
+    "subtitle": "Genera un report PDF o Excel",
+    "tradingAccount": "Conto di trading",
+    "exportFormat": "Formato di esportazione",
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "presetModel": "Modello preconfigurato",
+    "custom": "Personalizzato",
+    "deleteModelAria": "Elimina il modello selezionato",
+    "periodOptional": "Periodo (opzionale)",
+    "startDate": "Data di inizio",
+    "endDate": "Data di fine",
+    "customization": "Personalizzazione",
+    "saveAsModel": "Salva come modello",
+    "modelNameLabel": "Nome del modello",
+    "modelNamePlaceholder": "Il mio modello personalizzato",
+    "modelNameRequiredTitle": "Nome richiesto",
+    "modelNameRequiredMessage": "Inserisci un nome per il modello.",
+    "modelSavedSuccess": "Modello salvato con successo!",
+    "modelSavedError": "Errore durante il salvataggio del modello.",
+    "tradesListTitle": "Lista operazioni",
+    "tradesList": {
+      "none": "Nessuno",
+      "top_10_best_worst": "Top 10 migliori/peggiori",
+      "top_10_best": "Top 10 migliori",
+      "top_10_worst": "Top 10 peggiori",
+      "all": "Tutte le operazioni"
+    },
+    "optionsTitle": "Opzioni",
+    "options": {
+      "watermark": "Includi watermark",
+      "pageNumbers": "Numeri di pagina"
+    },
+    "generating": "Generazione...",
+    "confirmExportTitle": "Conferma esportazione",
+    "confirmExportMessage": "Vuoi generare un report {{format}} per il conto {{account}}?",
+    "deleteModelTitle": "Elimina modello",
+    "modelDeleteError": "Errore durante l'eliminazione del modello.",
+    "exportErrorMessage": "Si è verificato un errore durante l'esportazione. Riprova.",
+    "reportFilePrefix": "report"
   }
 }

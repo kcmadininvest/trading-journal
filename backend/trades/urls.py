@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .exports.views import ExportTemplateViewSet, PortfolioExportViewSet
 
 app_name = 'trades'
 
@@ -14,6 +15,8 @@ router.register(r'position-strategies', views.PositionStrategyViewSet, basename=
 router.register(r'currencies', views.CurrencyViewSet, basename='currency')
 router.register(r'goals', views.TradingGoalViewSet, basename='trading-goal')
 router.register(r'account-transactions', views.AccountTransactionViewSet, basename='account-transaction')
+router.register(r'export-templates', ExportTemplateViewSet, basename='export-template')
+router.register(r'portfolio-export', PortfolioExportViewSet, basename='portfolio-export')
 
 urlpatterns = [
     path('', include(router.urls)),

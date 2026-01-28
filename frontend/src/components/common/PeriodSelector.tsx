@@ -120,15 +120,15 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   const [customEnd, setCustomEnd] = useState(value?.end || presets.today.end);
 
   const presetOptions = useMemo(() => [
-    { key: 'today', label: t('dashboard:period.today', { defaultValue: "Aujourd'hui" }) },
-    { key: 'thisWeek', label: t('dashboard:period.thisWeek', { defaultValue: 'Cette semaine' }) },
-    { key: 'thisMonth', label: t('dashboard:period.thisMonth', { defaultValue: 'Ce mois' }) },
-    { key: 'lastMonth', label: t('dashboard:period.lastMonth', { defaultValue: 'Mois dernier' }) },
-    { key: 'last3Months', label: t('dashboard:period.last3Months', { defaultValue: '3 derniers mois' }) },
-    { key: 'last6Months', label: t('dashboard:period.last6Months', { defaultValue: '6 derniers mois' }) },
-    { key: 'thisYear', label: t('dashboard:period.thisYear', { defaultValue: 'Cette année' }) },
-    { key: 'lastYear', label: t('dashboard:period.lastYear', { defaultValue: 'Année dernière' }) },
-    { key: 'custom', label: t('dashboard:period.custom', { defaultValue: 'Personnalisé' }) },
+    { key: 'today', label: t('dashboard:periodPresets.today', { defaultValue: "Aujourd'hui" }) },
+    { key: 'thisWeek', label: t('dashboard:periodPresets.thisWeek', { defaultValue: 'Cette semaine' }) },
+    { key: 'thisMonth', label: t('dashboard:periodPresets.thisMonth', { defaultValue: 'Ce mois' }) },
+    { key: 'lastMonth', label: t('dashboard:periodPresets.lastMonth', { defaultValue: 'Mois dernier' }) },
+    { key: 'last3Months', label: t('dashboard:periodPresets.last3Months', { defaultValue: '3 derniers mois' }) },
+    { key: 'last6Months', label: t('dashboard:periodPresets.last6Months', { defaultValue: '6 derniers mois' }) },
+    { key: 'thisYear', label: t('dashboard:periodPresets.thisYear', { defaultValue: 'Cette année' }) },
+    { key: 'lastYear', label: t('dashboard:periodPresets.lastYear', { defaultValue: 'Année dernière' }) },
+    { key: 'custom', label: t('dashboard:periodPresets.custom', { defaultValue: 'Personnalisé' }) },
   ], [t]);
 
   // Options pour le CustomSelect

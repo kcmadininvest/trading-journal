@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance
+from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -948,3 +948,85 @@ class AccountDailyMetricsSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+
+class ExportTemplateSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les templates d'export personnalisés.
+    """
+    user_username = serializers.CharField(source='user.username', read_only=True)
+    
+    class Meta:
+        model = ExportTemplate
+        fields = [
+            'id',
+            'user',
+            'user_username',
+            'name',
+            'format',
+            'is_default',
+            'configuration',
+            'created_at',
+            'updated_at'
+        ]
+        read_only_fields = ['user', 'created_at', 'updated_at']
+    
+    def validate_name(self, value):
+        """Valide que le nom du template est unique pour l'utilisateur."""
+        user = self.context['request'].user
+        if self.instance:
+            if ExportTemplate.objects.filter(user=user, name=value).exclude(pk=self.instance.pk).exists():
+                raise serializers.ValidationError("Un template avec ce nom existe déjà.")
+        else:
+            if ExportTemplate.objects.filter(user=user, name=value).exists():
+                raise serializers.ValidationError("Un template avec ce nom existe déjà.")
+        return value
+    
+    def validate_configuration(self, value):
+        """Valide la structure de la configuration."""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("La configuration doit être un objet JSON.")
+        
+        if 'sections' not in value:
+            value['sections'] = {}
+        
+        if 'options' not in value:
+            value['options'] = {}
+        
+        return value
+
+
+class ExportRequestSerializer(serializers.Serializer):
+    """
+    Serializer pour les requêtes d'export de portefeuille.
+    """
+    trading_account_id = serializers.IntegerField(required=True)
+    format = serializers.ChoiceField(choices=['pdf', 'excel'], default='pdf')
+    template_id = serializers.IntegerField(required=False, allow_null=True)
+    configuration = serializers.JSONField(required=False)
+    language = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    start_date = serializers.DateTimeField(required=False, allow_null=True)
+    end_date = serializers.DateTimeField(required=False, allow_null=True)
+    
+    def validate_trading_account_id(self, value):
+        """Valide que le compte de trading existe et appartient à l'utilisateur."""
+        user = self.context['request'].user
+        if not TradingAccount.objects.filter(id=value, user=user).exists():
+            raise serializers.ValidationError("Compte de trading non trouvé.")
+        return value
+    
+    def validate_template_id(self, value):
+        """Valide que le template existe et appartient à l'utilisateur."""
+        if value is not None:
+            user = self.context['request'].user
+            if not ExportTemplate.objects.filter(id=value, user=user).exists():
+                raise serializers.ValidationError("Template d'export non trouvé.")
+        return value
+    
+    def validate(self, data):
+        """Valide que soit un template soit une configuration est fourni."""
+        if not data.get('template_id') and not data.get('configuration'):
+            raise serializers.ValidationError(
+                "Vous devez fournir soit un template_id soit une configuration."
+            )
+        return data

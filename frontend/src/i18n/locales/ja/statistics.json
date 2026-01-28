@@ -36,6 +36,7 @@
     "title": "パフォーマンス比率",
     "subtitle": "トレード戦略を分析するための高度なメトリクス",
     "mainPerformance": "主要パフォーマンス",
+    "detailedPerformance": "主要パフォーマンス",
     "recovery": "回復",
     "financialEfficiency": "財務効率",
     "temporalAnalysis": "時間分析",
@@ -137,5 +138,49 @@
     "monthlyPerformance": "月次パフォーマンス",
     "month": "月",
     "pnl": "P/L"
+  },
+  "exportModal": {
+    "title": "統計をエクスポート",
+    "subtitle": "PDF または Excel レポートを生成",
+    "tradingAccount": "取引口座",
+    "exportFormat": "エクスポート形式",
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel"
+    },
+    "presetModel": "事前設定モデル",
+    "custom": "カスタム",
+    "deleteModelAria": "選択したモデルを削除",
+    "periodOptional": "期間（任意）",
+    "startDate": "開始日",
+    "endDate": "終了日",
+    "customization": "カスタマイズ",
+    "saveAsModel": "モデルとして保存",
+    "modelNameLabel": "モデル名",
+    "modelNamePlaceholder": "カスタムモデル",
+    "modelNameRequiredTitle": "名前が必要です",
+    "modelNameRequiredMessage": "モデル名を入力してください。",
+    "modelSavedSuccess": "モデルを保存しました！",
+    "modelSavedError": "モデルの保存中にエラーが発生しました。",
+    "tradesListTitle": "取引一覧",
+    "tradesList": {
+      "none": "なし",
+      "top_10_best_worst": "トップ10（良/悪）",
+      "top_10_best": "トップ10（良）",
+      "top_10_worst": "トップ10（悪）",
+      "all": "すべての取引"
+    },
+    "optionsTitle": "オプション",
+    "options": {
+      "watermark": "透かしを含める",
+      "pageNumbers": "ページ番号"
+    },
+    "generating": "生成中...",
+    "confirmExportTitle": "エクスポートの確認",
+    "confirmExportMessage": "アカウント {{account}} の {{format}} レポートを生成しますか？",
+    "deleteModelTitle": "モデルを削除",
+    "modelDeleteError": "モデルの削除中にエラーが発生しました。",
+    "exportErrorMessage": "エクスポート中にエラーが発生しました。もう一度お試しください。",
+    "reportFilePrefix": "レポート"
   }
 }

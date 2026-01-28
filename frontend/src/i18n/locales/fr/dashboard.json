@@ -105,6 +105,17 @@
   "initialBalance": "Solde initial",
   "currentBalance": "Solde actuel",
   "period": "Période",
+  "periodPresets": {
+    "today": "Aujourd'hui",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois",
+    "lastMonth": "Mois dernier",
+    "last3Months": "3 derniers mois",
+    "last6Months": "6 derniers mois",
+    "thisYear": "Cette année",
+    "lastYear": "Année dernière",
+    "custom": "Personnalisé"
+  },
   "consistencyTarget": "Consistency Target",
   "consistencyTargetCompliant": "Conforme",
   "consistencyTargetNonCompliant": "Non conforme",

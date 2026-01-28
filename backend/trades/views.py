@@ -4437,14 +4437,10 @@ def dashboard_summary(request):
             temp_streak = 0
             temp_start = None
             
-            # Build complete date range including days without trades but with day compliance
-            all_dates_set = set(all_dates)
-            for date_str in day_compliances_dict.keys():
-                if date_str not in all_dates_set:
-                    all_dates.append(date_str)
             all_dates.sort()
             
             # Calculate best streak (forward pass through all dates)
+            # Include days with respected trades OR days with DayCompliance = True
             for date_str in all_dates:
                 day_data = daily_compliance[date_str]
                 
@@ -4458,7 +4454,6 @@ def dashboard_summary(request):
                 elif day_data['has_day_compliance']:
                     # Day without trades but with compliance: check compliance indicates respect
                     is_respected = day_data['respected'] > 0 and day_data['not_respected'] == 0
-                    # Double check with compliance object
                     compliance = day_compliances_dict.get(date_str)
                     if compliance:
                         is_respected = is_respected and compliance.strategy_respected is True
@@ -4474,7 +4469,7 @@ def dashboard_summary(request):
                     temp_start = None
             
             # Calculate current streak (reverse pass from most recent to oldest)
-            # Stop at first non-respected day with activity
+            # Include days with respected trades OR days with DayCompliance = True
             current_streak = 0
             current_streak_start = None
             for date_str in reversed(all_dates):

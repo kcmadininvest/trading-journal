@@ -58,9 +58,14 @@
     "checking": "API no disponible"
   },
   "deleteConfirm": "¿Estás seguro?",
-  "deleteItemConfirm": "¿Estás seguro de que deseas eliminar {{item}}? Esta acción no se puede deshacer.",
+  "deleteItemConfirm": "¿Estás seguro de que quieres eliminar {{item}}? Esta acción no se puede deshacer.",
   "deleteConfirmGeneric": "Esta acción no se puede deshacer.",
   "deleting": "Eliminando...",
+  "confirmModal": {
+    "title": "Confirmación",
+    "message": "¿Deseas continuar?",
+    "confirm": "Confirmar"
+  },
   "backToHome": "Volver al inicio",
   "hours": "Horas",
   "minutes": "Minutos",
