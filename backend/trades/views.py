@@ -3318,6 +3318,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             except (ValueError, TypeError):
                 trading_account_id = None
         
+        # Récupérer les paramètres de période
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        year = request.query_params.get('year')
+        month = request.query_params.get('month')
+        
         # Récupérer tous les trades du compte pour vérifier si tous ont une stratégie
         from .models import TopStepTrade
         trades_queryset = TopStepTrade.objects.filter(  # type: ignore
@@ -3326,6 +3332,16 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         if trading_account_id:
             trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
         
+        # Appliquer les filtres de période
+        if start_date:
+            trades_queryset = trades_queryset.filter(trade_day__gte=start_date)
+        if end_date:
+            trades_queryset = trades_queryset.filter(trade_day__lte=end_date)
+        if year:
+            trades_queryset = trades_queryset.filter(trade_day__year=int(year))
+        if month:
+            trades_queryset = trades_queryset.filter(trade_day__month=int(month))
+        
         # Récupérer toutes les stratégies de l'utilisateur avec leurs trades
         strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
             user=self.request.user
@@ -3333,6 +3349,16 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         if trading_account_id:
             strategies_queryset = strategies_queryset.filter(trade__trading_account_id=trading_account_id)
+        
+        # Appliquer les filtres de période aux stratégies
+        if start_date:
+            strategies_queryset = strategies_queryset.filter(trade__trade_day__gte=start_date)
+        if end_date:
+            strategies_queryset = strategies_queryset.filter(trade__trade_day__lte=end_date)
+        if year:
+            strategies_queryset = strategies_queryset.filter(trade__trade_day__year=int(year))
+        if month:
+            strategies_queryset = strategies_queryset.filter(trade__trade_day__month=int(month))
         
         # Récupérer toutes les compliances pour les jours sans trades
         day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
@@ -3343,6 +3369,16 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             day_compliances_queryset = day_compliances_queryset.filter(
                 trading_account_id=trading_account_id
             )
+        
+        # Appliquer les filtres de période aux compliances
+        if start_date:
+            day_compliances_queryset = day_compliances_queryset.filter(date__gte=start_date)
+        if end_date:
+            day_compliances_queryset = day_compliances_queryset.filter(date__lte=end_date)
+        if year:
+            day_compliances_queryset = day_compliances_queryset.filter(date__year=int(year))
+        if month:
+            day_compliances_queryset = day_compliances_queryset.filter(date__month=int(month))
         
         # Créer un dictionnaire pour accéder rapidement aux stratégies par trade_id
         strategies_dict = {strategy.trade_id: strategy for strategy in strategies_queryset}

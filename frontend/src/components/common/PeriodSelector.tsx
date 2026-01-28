@@ -6,6 +6,7 @@ import { CustomSelect } from './CustomSelect';
 export type PeriodPreset = 
   | 'today'
   | 'thisWeek'
+  | 'lastWeek'
   | 'thisMonth'
   | 'lastMonth'
   | 'last3Months'
@@ -44,6 +45,12 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Ajuster pour lundi
     thisWeekStart.setDate(diff);
     
+    // Semaine dernière (lundi à dimanche)
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    const lastWeekEnd = new Date(lastWeekStart);
+    lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
+    
     // Ce mois
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     
@@ -81,6 +88,11 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         start: formatDate(thisWeekStart),
         end: formatDate(today),
         preset: 'thisWeek' as PeriodPreset,
+      },
+      lastWeek: {
+        start: formatDate(lastWeekStart),
+        end: formatDate(lastWeekEnd),
+        preset: 'lastWeek' as PeriodPreset,
       },
       thisMonth: {
         start: formatDate(thisMonthStart),
@@ -122,6 +134,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   const presetOptions = useMemo(() => [
     { key: 'today', label: t('dashboard:periodPresets.today', { defaultValue: "Aujourd'hui" }) },
     { key: 'thisWeek', label: t('dashboard:periodPresets.thisWeek', { defaultValue: 'Cette semaine' }) },
+    { key: 'lastWeek', label: t('dashboard:periodPresets.lastWeek', { defaultValue: 'Semaine dernière' }) },
     { key: 'thisMonth', label: t('dashboard:periodPresets.thisMonth', { defaultValue: 'Ce mois' }) },
     { key: 'lastMonth', label: t('dashboard:periodPresets.lastMonth', { defaultValue: 'Mois dernier' }) },
     { key: 'last3Months', label: t('dashboard:periodPresets.last3Months', { defaultValue: '3 derniers mois' }) },

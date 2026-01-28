@@ -223,9 +223,9 @@ const StrategiesPage: React.FC = () => {
           // Appel 1: Statistics
           tradeStrategiesService.statistics(params),
           // Appel 2: Compliance tous comptes
-          tradeStrategiesService.strategyComplianceStats(undefined),
+          tradeStrategiesService.strategyComplianceStats(undefined, params),
           // Appel 3: Compliance compte sélectionné (si applicable)
-          accountId ? tradeStrategiesService.strategyComplianceStats(accountId) : Promise.resolve(null),
+          accountId ? tradeStrategiesService.strategyComplianceStats(accountId, params) : Promise.resolve(null),
           // Appel 4: Currencies (optimisation)
           currenciesService.list(),
           // Appel 5: Account sélectionné (optimisation)

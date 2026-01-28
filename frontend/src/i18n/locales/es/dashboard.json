@@ -108,6 +108,7 @@
   "periodPresets": {
     "today": "Hoy",
     "thisWeek": "Esta semana",
+    "lastWeek": "Semana pasada",
     "thisMonth": "Este mes",
     "lastMonth": "Mes pasado",
     "last3Months": "Últimos 3 meses",

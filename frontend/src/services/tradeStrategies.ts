@@ -363,10 +363,32 @@ class TradeStrategiesService {
   /**
    * Récupère les statistiques de respect de stratégie avec streaks et badges
    */
-  async strategyComplianceStats(tradingAccount?: number): Promise<StrategyComplianceStats> {
+  async strategyComplianceStats(
+    tradingAccount?: number,
+    filters?: {
+      year?: number;
+      month?: number;
+      start_date?: string;
+      end_date?: string;
+    }
+  ): Promise<StrategyComplianceStats> {
     const queryParams = new URLSearchParams();
     if (tradingAccount) {
       queryParams.append('trading_account', String(tradingAccount));
+    }
+    if (filters) {
+      if (filters.start_date) {
+        queryParams.append('start_date', filters.start_date);
+      }
+      if (filters.end_date) {
+        queryParams.append('end_date', filters.end_date);
+      }
+      if (filters.year) {
+        queryParams.append('year', String(filters.year));
+      }
+      if (filters.month) {
+        queryParams.append('month', String(filters.month));
+      }
     }
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/strategy_compliance_stats/?${queryParams}`
