@@ -1421,16 +1421,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               nextBadge={complianceStats.next_badge}
             />
           ) : (
-            <div className="bg-gradient-to-br from-blue-100 via-blue-200 to-purple-200 dark:from-blue-900 dark:via-blue-800 dark:to-purple-800 border border-blue-50 dark:border-blue-900/40 rounded-xl p-4 sm:p-5 shadow-sm animate-pulse text-blue-900 dark:text-blue-50">
-              <h3 className="text-base sm:text-lg font-semibold mb-1">
-                {t('strategy:streak.title', { defaultValue: 'Strategy Respect Streak' })}
-              </h3>
-              <p className="text-sm opacity-80">
-                {t('strategy:streak.subtitle', { defaultValue: 'Jours consécutifs avec 100% de respect' })}
-              </p>
-              <p className="text-sm mt-3">
-                {t('strategy:streak.loading', { defaultValue: 'Chargement des données de respect...' })}
-              </p>
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 shadow-sm">
+              <div className="animate-pulse">
+                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-3"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-56"></div>
+              </div>
             </div>
           )}
         </div>
