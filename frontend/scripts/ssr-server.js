@@ -16,12 +16,12 @@ const PORT = 3001;
 const BUILD_DIR = path.join(__dirname, '..', 'build');
 const PRERENDER_DIR = path.join(BUILD_DIR, 'prerendered');
 
-// Pages à pré-rendre
+// Pages à pré-rendre (SANS paramètres de requête pour éviter les problèmes SEO)
 const PAGES_TO_PRERENDER = [
-  { path: '/', lang: 'fr', query: '?lang=fr' },
-  { path: '/', lang: 'en', query: '?lang=en' },
-  { path: '/', lang: 'es', query: '?lang=es' },
-  { path: '/', lang: 'de', query: '?lang=de' },
+  { path: '/', lang: 'fr' },
+  { path: '/', lang: 'en' },
+  { path: '/', lang: 'es' },
+  { path: '/', lang: 'de' },
   { path: '/a-propos', lang: 'fr' },
   { path: '/about', lang: 'en' },
   { path: '/acerca-de', lang: 'es' },
@@ -54,39 +54,77 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     
     let html = fs.readFileSync(indexPath, 'utf8');
     
-    // Données SEO selon la langue
-    const seoData = {
-      fr: {
-        title: 'Journal de Trading Gratuit | K&C Trading Journal',
-        description: 'Journal de trading professionnel gratuit - Suivez, analysez et optimisez vos performances de trading avec des outils avancés. Import CSV, multi-comptes, statistiques détaillées. 100% gratuit, sans frais cachés.',
-        keywords: 'journal de trading, trading journal, suivi de trades, analyse trading, performance trading',
-        locale: 'fr_FR',
+    // Données SEO selon la langue et la page (KEYWORDS AMÉLIORÉS)
+    const seoDataByPage = {
+      '/': {
+        fr: {
+          title: 'Journal de Trading Gratuit | K&C Trading Journal',
+          description: 'Journal de trading professionnel gratuit - Suivez, analysez et optimisez vos performances de trading avec des outils avancés. Import CSV, multi-comptes, statistiques détaillées. 100% gratuit, sans frais cachés.',
+          keywords: 'journal de trading, trading journal, suivi de trades, analyse trading, performance trading, logiciel trading, application trading',
+          locale: 'fr_FR',
+        },
+        en: {
+          title: 'Free Trading Journal & Performance Tracker | K&C Trading Journal',
+          description: 'Professional trading journal software to track trades, analyze performance, and improve your strategy. Free forever with CSV import, multi-account support, advanced statistics, and analytics. No hidden fees.',
+          keywords: 'trading journal, trading diary, trade tracker, trading log, stock trading journal, forex trading journal, crypto trading journal, day trading journal, trading performance tracker, trading analytics, free trading journal software, trading journal app, trade management, position tracking',
+          locale: 'en_US',
+        },
+        es: {
+          title: 'Diario de Trading Gratuito | K&C Trading Journal',
+          description: 'Diario de trading profesional gratuito - Rastrea, analiza y optimiza tu rendimiento de trading con herramientas avanzadas. Importación CSV, multi-cuenta, estadísticas detalladas. 100% gratuito, sin costos ocultos.',
+          keywords: 'diario de trading, trading journal, seguimiento de trades, análisis de trading, rendimiento de trading, software de trading',
+          locale: 'es_ES',
+        },
+        de: {
+          title: 'Kostenloses Trading-Journal | K&C Trading Journal',
+          description: 'Kostenloses professionelles Trading-Journal - Verfolgen, analysieren und optimieren Sie Ihre Trading-Leistung mit erweiterten Tools. CSV-Import, Multi-Konto, detaillierte Statistiken. 100% kostenlos, keine versteckten Gebühren.',
+          keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung, Trading-Software',
+          locale: 'de_DE',
+        },
       },
-      en: {
-        title: 'Free Trading Journal | K&C Trading Journal',
-        description: 'Free professional trading journal - Track, analyze and optimize your trading performance with advanced tools. CSV import, multi-account, detailed statistics. 100% free, no hidden fees.',
-        keywords: 'trading journal, journal de trading, trade tracking, trading analysis, trading performance',
-        locale: 'en_US',
+      '/about': {
+        en: {
+          title: 'About Us - Free Trading Journal Platform | K&C Trading Journal',
+          description: 'Discover the story and mission of K&C Trading Journal. A free platform created with passion to help traders track and improve their performance. Learn about our commitment to providing the best free trading journal software.',
+          keywords: 'about trading journal, free trading software, trading platform, trading journal mission, professional trading tools, trading performance tracking, trader community',
+          locale: 'en_US',
+        },
       },
-      es: {
-        title: 'Diario de Trading Gratuito | K&C Trading Journal',
-        description: 'Diario de trading profesional gratuito - Rastrea, analiza y optimiza tu rendimiento de trading con herramientas avanzadas. Importación CSV, multi-cuenta, estadísticas detalladas. 100% gratuito, sin costos ocultos.',
-        keywords: 'diario de trading, trading journal, seguimiento de trades, análisis de trading, rendimiento de trading',
-        locale: 'es_ES',
+      '/a-propos': {
+        fr: {
+          title: 'À Propos | K&C Trading Journal',
+          description: 'Découvrez l\'histoire et la mission de K&C Trading Journal. Une plateforme gratuite créée par passion pour aider les traders à suivre et améliorer leurs performances.',
+          keywords: 'à propos, trading journal, histoire, mission, équipe',
+          locale: 'fr_FR',
+        },
       },
-      de: {
-        title: 'Kostenloses Trading-Journal | K&C Trading Journal',
-        description: 'Kostenloses professionelles Trading-Journal - Verfolgen, analysieren und optimieren Sie Ihre Trading-Leistung mit erweiterten Tools. CSV-Import, Multi-Konto, detaillierte Statistiken. 100% kostenlos, keine versteckten Gebühren.',
-        keywords: 'Trading-Journal, Journal de trading, Trade-Tracking, Trading-Analyse, Trading-Leistung',
-        locale: 'de_DE',
+      '/features': {
+        en: {
+          title: 'Trading Journal Features - Track, Analyze & Optimize | K&C Trading Journal',
+          description: 'Discover all the features of K&C Trading Journal: trade tracking, advanced analytics, strategy management, detailed statistics, CSV import, multi-account support, performance metrics, and much more. 100% free trading journal software.',
+          keywords: 'trading journal features, trade tracking software, trading analytics, performance tracking, trading statistics, strategy management, CSV import, multi-account trading, trading metrics, position tracking, trade analysis tools',
+          locale: 'en_US',
+        },
+      },
+      '/fonctionnalites': {
+        fr: {
+          title: 'Fonctionnalités | K&C Trading Journal',
+          description: 'Découvrez toutes les fonctionnalités de K&C Trading Journal : suivi de trades, analyses avancées, gestion de stratégies, statistiques détaillées et bien plus encore.',
+          keywords: 'fonctionnalités, features, suivi trades, analyse trading, statistiques trading, journal trading',
+          locale: 'fr_FR',
+        },
       },
     };
     
-    const currentSeo = seoData[lang] || seoData.en;
+    // Récupérer les données SEO pour la page et la langue
+    const pageSeo = seoDataByPage[route] || seoDataByPage['/'];
+    const currentSeo = pageSeo[lang] || pageSeo['en'] || seoDataByPage['/']['en'];
+    
     // Forcer baseUrl à toujours être en HTTPS
     const rawBaseUrl = process.env.REACT_APP_BASE_URL || 'https://app.kctradingjournal.com';
     const baseUrl = ensureHttps(rawBaseUrl);
-    const fullUrl = ensureHttps(`${baseUrl}${route}${query}`);
+    // URL canonique SANS paramètres de requête (bonne pratique SEO)
+    const fullUrl = ensureHttps(`${baseUrl}${route}`);
     
     // Remplacer les balises meta avec des regex plus robustes
     html = html.replace(/<title>.*?<\/title>/i, `<title>${currentSeo.title}</title>`);
@@ -112,17 +150,30 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     // Mettre à jour le canonical
     html = html.replace(/<link\s+rel=["']canonical["']\s+href=["'][^"']*["']/i, `<link rel="canonical" href="${fullUrl}"`);
     
-    // Mettre à jour les balises hreflang pour la page d'accueil
+    // Mettre à jour les balises hreflang (SANS paramètres de requête)
+    const hreflangUrls = {
+      '/': baseUrl,
+      '/about': `${baseUrl}/about`,
+      '/a-propos': `${baseUrl}/a-propos`,
+      '/acerca-de': `${baseUrl}/acerca-de`,
+      '/uber-uns': `${baseUrl}/uber-uns`,
+      '/features': `${baseUrl}/features`,
+      '/fonctionnalites': `${baseUrl}/fonctionnalites`,
+      '/funcionalidades': `${baseUrl}/funcionalidades`,
+      '/funktionen': `${baseUrl}/funktionen`,
+    };
+    
+    const currentHreflangUrl = hreflangUrls[route] || baseUrl;
+    
+    // Pour la page d'accueil, toutes les langues pointent vers la même URL
     if (route === '/') {
-      const hreflangPattern = /<link\s+rel=["']alternate["']\s+hreflang=["'][^"']*["']\s+href=["'][^"']*["']/gi;
       const hreflangReplacements = {
-        fr: `<link rel="alternate" hreflang="fr" href="${baseUrl}?lang=fr" />`,
-        en: `<link rel="alternate" hreflang="en" href="${baseUrl}?lang=en" />`,
-        es: `<link rel="alternate" hreflang="es" href="${baseUrl}?lang=es" />`,
-        de: `<link rel="alternate" hreflang="de" href="${baseUrl}?lang=de" />`,
+        fr: `<link rel="alternate" hreflang="fr" href="${baseUrl}/" />`,
+        en: `<link rel="alternate" hreflang="en" href="${baseUrl}/" />`,
+        es: `<link rel="alternate" hreflang="es" href="${baseUrl}/" />`,
+        de: `<link rel="alternate" hreflang="de" href="${baseUrl}/" />`,
       };
       
-      // Remplacer les balises hreflang existantes
       ['fr', 'en', 'es', 'de'].forEach((l) => {
         const regex = new RegExp(`<link\\s+rel=["']alternate["']\\s+hreflang=["']${l}["']\\s+href=["'][^"']*["']`, 'i');
         html = html.replace(regex, hreflangReplacements[l]);
@@ -130,7 +181,8 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     }
     
     // Ajouter un commentaire pour indiquer que c'est pré-rendu
-    html = html.replace('</head>', `<!-- Pré-rendu pour ${route}${query} (${lang}) -->\n</head>`);
+    html = html.replace('</head>', `<!-- Pré-rendu SSR pour ${route} (${lang}) - SEO optimisé -->
+</head>`);
     
     return html;
     
@@ -177,7 +229,7 @@ async function prerenderAllPages() {
   // Pré-rendre toutes les pages
   for (const page of PAGES_TO_PRERENDER) {
     try {
-      const html = await generatePrerenderedHTML(page.path, page.lang, page.query || '');
+      const html = await generatePrerenderedHTML(page.path, page.lang, '');
       
       // Créer le répertoire de destination
       const outputDir = path.join(PRERENDER_DIR, page.path === '/' ? '' : page.path.replace(/^\//, ''));
@@ -187,14 +239,14 @@ async function prerenderAllPages() {
       
       // Déterminer le nom du fichier
       let filename = 'index.html';
-      if (page.path === '/' && page.query) {
+      if (page.path === '/') {
         filename = `index.${page.lang}.html`;
       }
       
       const outputPath = path.join(outputDir, filename);
       fs.writeFileSync(outputPath, html, 'utf8');
       
-      console.log(`✅ Pré-rendu généré: ${page.path}${page.query || ''} (${page.lang})`);
+      console.log(`✅ Pré-rendu généré: ${page.path} (${page.lang})`);
       
       // Pour la page d'accueil en français, mettre à jour aussi index.html par défaut
       if (page.path === '/' && page.lang === 'fr') {

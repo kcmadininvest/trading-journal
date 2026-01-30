@@ -90,9 +90,9 @@ const AboutPage: React.FC = () => {
       name: 'À Propos - K&C Trading Journal',
     },
     en: {
-      title: 'About | K&C Trading Journal',
-      description: 'Discover the story and mission of K&C Trading Journal. A free platform created with passion to help traders track and improve their performance.',
-      keywords: 'about, trading journal, story, mission, team',
+      title: 'About Us - Free Trading Journal Platform | K&C Trading Journal',
+      description: 'Discover the story and mission of K&C Trading Journal. A free platform created with passion to help traders track and improve their performance. Learn about our commitment to providing the best free trading journal software.',
+      keywords: 'about trading journal, free trading software, trading platform, trading journal mission, professional trading tools, trading performance tracking, trader community',
       name: 'About - K&C Trading Journal',
     },
     es: {
@@ -171,7 +171,7 @@ const AboutPage: React.FC = () => {
           {/* Back Button */}
           <div className="mb-8">
             <a
-              href={`/?lang=${finalLang}`}
+              href="/"
               className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl border border-gray-200"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -360,7 +360,7 @@ const AboutPage: React.FC = () => {
           {/* Call to Action */}
           <div className="text-center">
             <a
-              href={`/?lang=${finalLang}`}
+              href="/"
               className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl text-lg"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

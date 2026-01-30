@@ -113,9 +113,9 @@ const FeaturesPage: React.FC = () => {
       name: 'Fonctionnalités - K&C Trading Journal',
     },
     en: {
-      title: 'Features | K&C Trading Journal',
-      description: 'Discover all the features of K&C Trading Journal: trade tracking, advanced analytics, strategy management, detailed statistics and much more.',
-      keywords: 'features, fonctionnalités, trade tracking, trading analysis, trading statistics, trading journal',
+      title: 'Trading Journal Features - Track, Analyze & Optimize | K&C Trading Journal',
+      description: 'Discover all the features of K&C Trading Journal: trade tracking, advanced analytics, strategy management, detailed statistics, CSV import, multi-account support, performance metrics, and much more. 100% free trading journal software.',
+      keywords: 'trading journal features, trade tracking software, trading analytics, performance tracking, trading statistics, strategy management, CSV import, multi-account trading, trading metrics, position tracking, trade analysis tools',
       name: 'Features - K&C Trading Journal',
     },
     es: {
@@ -278,7 +278,7 @@ const FeaturesPage: React.FC = () => {
 
           <div className="mt-12 text-center">
             <a
-              href={`/?lang=${finalLang}`}
+              href="/"
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

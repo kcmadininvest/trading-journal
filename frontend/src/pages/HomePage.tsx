@@ -145,9 +145,9 @@ const HomePage: React.FC = () => {
       keywords: 'journal de trading, trading journal, suivi de trades, analyse trading, performance trading, logiciel trading, application trading',
     },
     en: {
-      title: 'Free Trading Journal | K&C Trading Journal',
-      description: 'Free professional trading journal - Track, analyze and optimize your trading performance with advanced tools. CSV import, multi-account, detailed statistics. 100% free, no hidden fees.',
-      keywords: 'trading journal, journal de trading, trade tracking, trading analysis, trading performance, trading software, trading application',
+      title: 'Free Trading Journal & Performance Tracker | K&C Trading Journal',
+      description: 'Professional trading journal software to track trades, analyze performance, and improve your strategy. Free forever with CSV import, multi-account support, advanced statistics, and analytics. No hidden fees.',
+      keywords: 'trading journal, trading diary, trade tracker, trading log, stock trading journal, forex trading journal, crypto trading journal, day trading journal, trading performance tracker, trading analytics, free trading journal software, trading journal app, trade management, position tracking',
     },
     es: {
       title: 'Diario de Trading Gratuito | K&C Trading Journal',
