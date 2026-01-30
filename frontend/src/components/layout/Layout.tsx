@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { User } from '../../services/auth';
-import userService from '../../services/userService';
-import Sidebar from './Sidebar';
 import Header from './Header';
 import Footer from './Footer';
 
@@ -13,8 +11,6 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const SIDEBAR_COLLAPSED_KEY = 'sidebar_collapsed';
-
 const Layout: React.FC<LayoutProps> = ({
   currentUser,
   currentPage,
@@ -22,95 +18,25 @@ const Layout: React.FC<LayoutProps> = ({
   onLogout,
   children,
 }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    // Charger depuis localStorage en premier (pour un chargement immédiat)
-    const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-    return saved === 'true';
-  });
-  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
-
-  // Charger les préférences utilisateur au montage
-  useEffect(() => {
-    const loadPreferences = async () => {
-      try {
-        const preferences = await userService.getPreferences();
-        if (preferences.sidebar_collapsed !== undefined) {
-          setIsSidebarCollapsed(preferences.sidebar_collapsed);
-          // Synchroniser avec localStorage
-          localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(preferences.sidebar_collapsed));
-        }
-      } catch (error) {
-        // Si les préférences n'existent pas encore, utiliser localStorage
-        console.error('Erreur lors du chargement des préférences:', error);
-      } finally {
-        setIsLoadingPreferences(false);
-      }
-    };
-    loadPreferences();
-
-    // Écouter les changements de préférences
-    const handlePreferencesUpdate = () => {
-      loadPreferences();
-    };
-    window.addEventListener('preferences:updated', handlePreferencesUpdate);
-    return () => {
-      window.removeEventListener('preferences:updated', handlePreferencesUpdate);
-    };
-  }, []);
-
-  // Sauvegarder dans localStorage immédiatement pour un feedback instantané
-  useEffect(() => {
-    if (!isLoadingPreferences) {
-      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(isSidebarCollapsed));
-      
-      // Sauvegarder dans les préférences utilisateur en arrière-plan
-      const saveToServer = async () => {
-        try {
-          await userService.updatePreferences({ sidebar_collapsed: isSidebarCollapsed });
-        } catch (error) {
-          console.error('Erreur lors de la sauvegarde de l\'état de la sidebar:', error);
-        }
-      };
-      saveToServer();
-    }
-  }, [isSidebarCollapsed, isLoadingPreferences]);
-
-  const handleToggleSidebar = () => {
-    setIsSidebarCollapsed(!isSidebarCollapsed);
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar - fixe sur toute la hauteur */}
-      <Sidebar
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Header with integrated navigation */}
+      <Header
         currentUser={currentUser}
         currentPage={currentPage}
         onNavigate={onNavigate}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={handleToggleSidebar}
+        onLogout={onLogout}
       />
 
-      {/* Main content area - avec margin-left pour la sidebar */}
-      <div className={`flex flex-col min-h-screen transition-all duration-300 ${
-        isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
-        {/* Header */}
-        <Header
-          currentUser={currentUser}
-          currentPage={currentPage}
-          onLogout={onLogout}
-        />
+      {/* Main content - full width */}
+      <main className="flex-1 bg-gray-50 dark:bg-gray-900">
+        <div className="py-6 pb-24">
+          {children}
+        </div>
+      </main>
 
-        {/* Main content */}
-        <main className="flex-1 bg-gray-50 dark:bg-gray-900">
-          <div className="py-6 pb-20">
-            {children}
-          </div>
-        </main>
-
-        {/* Footer */}
-        <Footer onNavigate={onNavigate} />
-      </div>
+      {/* Footer */}
+      <Footer onNavigate={onNavigate} />
     </div>
   );
 };

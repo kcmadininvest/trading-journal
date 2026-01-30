@@ -13,8 +13,15 @@
   "users": "Benutzerverwaltung",
   "settings": "Einstellungen",
   "navigation": "Navigation",
+  "menu": "Menü",
   "admin": "Administrator",
   "user": "Benutzer",
+  "groups": {
+    "trading": "Trading",
+    "management": "Verwaltung",
+    "strategies": "Strategien",
+    "system": "System"
+  },
   "header": {
     "dashboardDescription": "Übersicht Ihrer Handelsaktivitäten",
     "goalsDescription": "Definieren und verfolgen Sie Ihre Trading-Ziele",

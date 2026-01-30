@@ -5,14 +5,16 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { changeLanguage } from '../../i18n/config';
 import userService from '../../services/userService';
+import { NavigationMenu } from '../navigation';
 
 interface HeaderProps {
   currentUser: User;
   currentPage: string;
+  onNavigate: (page: string) => void;
   onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, onLogout }) => {
   const { t, i18n } = useI18nTranslation();
   const { theme, setTheme } = useTheme();
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
@@ -75,19 +77,6 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
     };
     return titles[currentPage] || t('navigation:header.appName');
   }, [currentPage, t]);
-  
-  const pageDescription = useMemo(() => {
-    if (currentPage === 'dashboard') {
-      return t('navigation:header.dashboardDescription');
-    }
-    if (currentPage === 'goals') {
-      return t('navigation:header.goalsDescription');
-    }
-    if (currentPage === 'transactions') {
-      return t('navigation:header.transactionsDescription');
-    }
-    return `${t('navigation:header.managementPrefix')} ${pageTitle.toLowerCase()}`;
-  }, [currentPage, pageTitle, t]);
 
   const handleLogout = () => {
     authService.logout();
@@ -95,19 +84,46 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onLogout }) =
   };
 
   return (
-    <header className="bg-blue-950 shadow-sm border-b border-gray-700 h-16 sm:h-20 flex items-center">
-      <div className="flex items-center justify-between pl-16 pr-3 sm:px-6 w-full h-full gap-2 sm:gap-4">
-        {/* Page title */}
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-2xl font-bold text-white truncate">
-            {pageTitle}
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-300 mt-0.5 sm:mt-1 hidden sm:block">
-            {pageDescription}
-          </p>
+    <header className="bg-blue-950 shadow-sm border-b border-gray-700 h-16 sm:h-20 flex items-center sticky top-0 z-30">
+      <div className="flex items-center justify-between px-3 sm:px-6 w-full h-full gap-2 sm:gap-4">
+        {/* Left: Logo + App Title */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Logo/Brand - clickable to dashboard */}
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity flex-shrink-0"
+            title="Retour au tableau de bord"
+          >
+            <img 
+              src="/android-chrome-512x512.png" 
+              alt="K&C Trading Journal" 
+              className="w-8 h-8 object-contain"
+            />
+            <span className="text-base lg:text-lg font-semibold text-white whitespace-nowrap hidden sm:inline">K&C Trading Journal</span>
+          </button>
+          
+          {/* Separator */}
+          <div className="hidden lg:block h-8 w-px bg-gray-600"></div>
         </div>
 
-        {/* User info and actions */}
+        {/* Center: Navigation + Page Title */}
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          {/* Navigation Menu (Mobile hamburger + Desktop nav) */}
+          <NavigationMenu
+            currentUser={currentUser}
+            currentPage={currentPage}
+            onNavigate={onNavigate}
+          />
+          
+          {/* Page title - centered between navigation and user actions */}
+          <div className="hidden md:flex items-center justify-center flex-1 min-w-0">
+            <h1 className="text-base lg:text-lg font-semibold text-white truncate">
+              {pageTitle}
+            </h1>
+          </div>
+        </div>
+
+        {/* Right: User info and actions */}
         <div className="flex items-center space-x-1 sm:space-x-4 flex-shrink-0">
           {/* User info - hidden on mobile, shown on sm and up */}
           <div className="text-right hidden md:block">

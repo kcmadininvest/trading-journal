@@ -1198,6 +1198,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     // Calculer la série en cours de jours consécutifs avec P/L positif
     // Cette série compte depuis le jour le plus récent jusqu'à trouver une perte
     let currentWinningStreakDays = 0;
+    let maxWinningStreakDays = 0;
+    let tempWinningStreak = 0;
+    
     if (sortedDays.length > 0) {
       // Trier les jours par date (du plus récent au plus ancien)
       const sortedDaysReverse = [...sortedDays].sort().reverse();
@@ -1212,6 +1215,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         } else {
           // Dès qu'on trouve une perte ou un break-even, on s'arrête
           break;
+        }
+      }
+      
+      // Calculer le record maximum de jours consécutifs avec P/L positif
+      for (const dayKey of sortedDays) {
+        const dayTrades = tradesByDay.get(dayKey)!;
+        const dayPnl = dayTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
+        
+        if (dayPnl > 0) {
+          tempWinningStreak++;
+          maxWinningStreakDays = Math.max(maxWinningStreakDays, tempWinningStreak);
+        } else {
+          tempWinningStreak = 0;
         }
       }
     }
@@ -1232,6 +1248,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       currentConsecutiveDaysRespected,
       currentConsecutiveDaysNotRespected,
       currentWinningStreakDays,
+      maxWinningStreakDays,
     };
   }, [trades, strategies, allTradesForSequences, allStrategiesForSequences]);
 
@@ -1608,20 +1625,32 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 value={
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-2 sm:gap-0">
                     <span className="break-words">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
-                    <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
-                      <span className="inline-flex items-center gap-1 cursor-help flex-shrink-0">
-                        <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                          {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })}
+                    <div className="flex flex-col gap-1 flex-shrink-0">
+                      <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
+                        <span className="inline-flex items-center gap-1 cursor-help">
+                          <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })}
+                          </span>
+                          <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${
+                            additionalStats.currentWinningStreakDays > 0 
+                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                          }`}>
+                            {additionalStats.currentWinningStreakDays || 0} {(additionalStats.currentWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                          </span>
                         </span>
-                        <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${
-                          additionalStats.currentWinningStreakDays > 0 
-                            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                        }`}>
-                          {additionalStats.currentWinningStreakDays || 0} {(additionalStats.currentWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                      </Tooltip>
+                      <Tooltip content={t('statistics:overview.maxWinningStreakTooltip', { defaultValue: 'Record de jours consécutifs avec un P/L positif' })}>
+                        <span className="flex items-center justify-between gap-2 cursor-help">
+                          <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                            {t('statistics:overview.maxWinningStreak', { defaultValue: 'Record' })}
+                          </span>
+                          <span className="text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                            {additionalStats.maxWinningStreakDays || 0} {(additionalStats.maxWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
+                          </span>
                         </span>
-                      </span>
-                    </Tooltip>
+                      </Tooltip>
+                    </div>
                   </div>
                 }
                 variant={additionalStats.totalPnl >= 0 ? 'success' : 'danger'}
