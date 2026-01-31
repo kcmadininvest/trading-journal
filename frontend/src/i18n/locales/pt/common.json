@@ -127,6 +127,9 @@
     "noEntries": "Nenhuma entrada",
     "collapse": "Recolher",
     "expand": "Abrir",
-    "close": "Fechar"
+    "close": "Fechar",
+    "viewMode": "Modo de visualização",
+    "gridView": "Vista em grade",
+    "listView": "Vista em lista"
   }
 }

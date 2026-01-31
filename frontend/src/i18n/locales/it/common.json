@@ -127,6 +127,9 @@
     "noEntries": "Nessuna voce",
     "collapse": "Riduci",
     "expand": "Apri",
-    "close": "Chiudi"
+    "close": "Chiudi",
+    "viewMode": "Modalità di visualizzazione",
+    "gridView": "Vista griglia",
+    "listView": "Vista elenco"
   }
 }

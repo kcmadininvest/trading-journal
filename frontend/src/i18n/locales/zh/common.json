@@ -127,6 +127,9 @@
     "noEntries": "暂无条目",
     "collapse": "收起",
     "expand": "展开",
-    "close": "关闭"
+    "close": "关闭",
+    "viewMode": "显示模式",
+    "gridView": "网格视图",
+    "listView": "列表视图"
   }
 }

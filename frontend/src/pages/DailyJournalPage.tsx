@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { dailyJournalService, DailyJournalEntry, DailyJournalGroupedEntry, DailyJournalGroupedYear } from '../services/dailyJournal';
 import { DailyJournalEditor } from '../components/dailyJournal/DailyJournalEditor';
+import { DailyJournalCard } from '../components/dailyJournal/DailyJournalCard';
 import { usePreferences } from '../hooks/usePreferences';
 import { formatDateLong, LanguageType } from '../utils/dateFormat';
 import { AccountSelector } from '../components/accounts/AccountSelector';
@@ -32,6 +33,11 @@ const DailyJournalPage: React.FC = () => {
   const [hoveredEntry, setHoveredEntry] = useState<DailyJournalGroupedEntry | null>(null);
   const [hoveredEntryContent, setHoveredEntryContent] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    const saved = localStorage.getItem('dailyJournal_viewMode');
+    return (saved === 'grid' || saved === 'list') ? saved : 'grid';
+  });
 
   const loadEntries = useCallback(async () => {
     setIsLoading(true);
@@ -110,18 +116,41 @@ const DailyJournalPage: React.FC = () => {
   };
 
   const handleEntryHover = async (entry: DailyJournalGroupedEntry) => {
-    setHoveredEntry(entry);
-    try {
-      const fullEntry = await dailyJournalService.getEntry(entry.id);
-      setHoveredEntryContent(fullEntry.content);
-    } catch (err) {
-      setHoveredEntryContent(entry.content_preview);
+    // Annuler le timeout de sortie s'il existe
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
     }
+
+    // Délai de 300ms avant d'afficher le preview
+    hoverTimeoutRef.current = setTimeout(async () => {
+      setHoveredEntry(entry);
+      try {
+        const fullEntry = await dailyJournalService.getEntry(entry.id);
+        setHoveredEntryContent(fullEntry.content);
+      } catch (err) {
+        setHoveredEntryContent(entry.content_preview);
+      }
+    }, 300);
   };
 
   const handleEntryLeave = () => {
-    setHoveredEntry(null);
-    setHoveredEntryContent(null);
+    // Annuler le timeout d'entrée s'il existe
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+
+    // Délai de 100ms avant de masquer le preview
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredEntry(null);
+      setHoveredEntryContent(null);
+    }, 100);
+  };
+
+  const handleViewModeChange = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('dailyJournal_viewMode', mode);
   };
 
   const resolvedLanguage = useMemo<LanguageType>(() => {
@@ -553,67 +582,86 @@ const DailyJournalPage: React.FC = () => {
               </div>
 
               <div className="mt-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <div className="mb-4">
+                <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('dailyJournal.entries', { defaultValue: 'Entrees' })}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t('dailyJournal.viewMode', { defaultValue: 'Mode d\'affichage' })}
+                    </span>
+                    <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => handleViewModeChange('grid')}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                          viewMode === 'grid'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                        title={t('dailyJournal.gridView', { defaultValue: 'Vue grille' })}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleViewModeChange('list')}
+                        className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                          viewMode === 'list'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                        title={t('dailyJournal.listView', { defaultValue: 'Vue liste' })}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 {selectedEntries.length === 0 ? (
                   <div className="text-sm text-gray-500 py-8 text-center">{t('dailyJournal.noEntries', { defaultValue: 'Aucun journal' })}</div>
                 ) : (
-                  <div className="space-y-3">
-                    {selectedEntries.map((entry: DailyJournalGroupedEntry) => (
-                      <div
-                        key={entry.id}
-                        className="relative"
-                        onMouseEnter={() => handleEntryHover(entry)}
+                  <>
+                    <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-3'}>
+                      {selectedEntries.map((entry: DailyJournalGroupedEntry) => (
+                        <DailyJournalCard
+                          key={entry.id}
+                          entry={entry}
+                          formatDate={formatDate}
+                          onOpenEntry={handleOpenEntry}
+                          onHover={handleEntryHover}
+                          onLeave={handleEntryLeave}
+                          viewMode={viewMode}
+                          markdownComponents={markdownComponents}
+                          emptyText={t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
+                        />
+                      ))}
+                    </div>
+                    {hoveredEntry && hoveredEntryContent && (
+                      <div 
+                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-600 rounded-xl shadow-2xl p-6 max-h-[80vh] max-w-2xl w-full overflow-y-auto transition-all duration-200 pointer-events-auto"
+                        onMouseEnter={() => {
+                          if (hoverTimeoutRef.current) {
+                            clearTimeout(hoverTimeoutRef.current);
+                            hoverTimeoutRef.current = null;
+                          }
+                        }}
                         onMouseLeave={handleEntryLeave}
                       >
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEntry(entry.id)}
-                          className="w-full text-left rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4 hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatDate(entry.date)}</p>
-                              {entry.trading_account_name && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">{entry.trading_account_name}</p>
-                              )}
-                            </div>
-                            <span className="text-xs text-gray-400">{entry.images_count} image(s)</span>
-                          </div>
-                          {entry.content_preview ? (
-                            <div className="text-sm text-gray-700 dark:text-gray-300 line-clamp-3">
-                              <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                rehypePlugins={[rehypeRaw]}
-                                components={markdownComponents}
-                              >
-                                {entry.content_preview}
-                              </ReactMarkdown>
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                              {t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
-                            </p>
-                          )}
-                        </button>
-                        
-                        {hoveredEntry?.id === entry.id && hoveredEntryContent && (
-                          <div className="absolute left-0 right-0 top-full mt-2 z-50 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl shadow-2xl p-4 max-h-96 overflow-y-auto">
-                            <div className="text-sm text-gray-700 dark:text-gray-300">
-                              <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                rehypePlugins={[rehypeRaw]}
-                                components={markdownComponents}
-                              >
-                                {hoveredEntryContent}
-                              </ReactMarkdown>
-                            </div>
-                          </div>
-                        )}
+                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw]}
+                            components={markdownComponents}
+                          >
+                            {hoveredEntryContent}
+                          </ReactMarkdown>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

@@ -127,6 +127,9 @@
     "noEntries": "エントリーがありません",
     "collapse": "折りたたむ",
     "expand": "開く",
-    "close": "閉じる"
+    "close": "閉じる",
+    "viewMode": "表示モード",
+    "gridView": "グリッド表示",
+    "listView": "リスト表示"
   }
 }

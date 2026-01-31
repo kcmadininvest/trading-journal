@@ -141,6 +141,9 @@
     "noEntries": "Aucun journal",
     "collapse": "Réduire",
     "expand": "Ouvrir",
-    "close": "Fermer"
+    "close": "Fermer",
+    "viewMode": "Mode d'affichage",
+    "gridView": "Vue grille",
+    "listView": "Vue liste"
   }
 }

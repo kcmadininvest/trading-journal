@@ -138,6 +138,9 @@
     "noEntries": "Keine Einträge",
     "collapse": "Einklappen",
     "expand": "Ausklappen",
-    "close": "Schliessen"
+    "close": "Schliessen",
+    "viewMode": "Anzeigemodus",
+    "gridView": "Rasteransicht",
+    "listView": "Listenansicht"
   }
 }

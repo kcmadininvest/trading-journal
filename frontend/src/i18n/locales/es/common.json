@@ -136,6 +136,9 @@
     "noEntries": "No hay entradas",
     "collapse": "Reducir",
     "expand": "Abrir",
-    "close": "Cerrar"
+    "close": "Cerrar",
+    "viewMode": "Modo de visualización",
+    "gridView": "Vista de cuadrícula",
+    "listView": "Vista de lista"
   }
 }

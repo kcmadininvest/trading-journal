@@ -141,6 +141,9 @@
     "noEntries": "No journal entries",
     "collapse": "Collapse",
     "expand": "Expand",
-    "close": "Close"
+    "close": "Close",
+    "viewMode": "View mode",
+    "gridView": "Grid view",
+    "listView": "List view"
   }
 }

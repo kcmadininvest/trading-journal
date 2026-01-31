@@ -74,7 +74,7 @@ class DailyJournalEntryViewSet(viewsets.ModelViewSet):
             grouped[year][month].append({
                 'id': entry.id,
                 'date': entry.date.isoformat(),
-                'content_preview': (entry.content or '')[:180],
+                'content_preview': (entry.content or '')[:400],
                 'images_count': entry.images.count(),
                 'updated_at': entry.updated_at.isoformat(),
                 'trading_account': entry.trading_account_id,

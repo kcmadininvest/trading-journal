@@ -127,6 +127,9 @@
     "noEntries": "항목이 없습니다",
     "collapse": "접기",
     "expand": "열기",
-    "close": "닫기"
+    "close": "닫기",
+    "viewMode": "보기 모드",
+    "gridView": "그리드 보기",
+    "listView": "목록 보기"
   }
 }
