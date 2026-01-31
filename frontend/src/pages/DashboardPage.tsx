@@ -1627,11 +1627,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     <span className="break-words">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
                     <div className="flex flex-col gap-1 flex-shrink-0">
                       <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
-                        <span className="inline-flex items-center gap-1 cursor-help">
+                        <span className="inline-flex items-center gap-2 cursor-help">
                           <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
                             {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })}
                           </span>
-                          <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${
+                          <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap min-w-[4rem] inline-block text-center ${
                             additionalStats.currentWinningStreakDays > 0 
                               ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
@@ -1645,7 +1645,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
                             {t('statistics:overview.maxWinningStreak', { defaultValue: 'Record' })}
                           </span>
-                          <span className="text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                          <span className="text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap min-w-[4rem] inline-block text-center bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
                             {additionalStats.maxWinningStreakDays || 0} {(additionalStats.maxWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
                           </span>
                         </span>

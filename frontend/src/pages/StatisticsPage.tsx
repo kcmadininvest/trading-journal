@@ -364,13 +364,13 @@ function StatisticsPage() {
                 <MetricItem
                   label={t('statistics:overview.totalPnL')}
                   value={formatCurrency(parseFloat(statisticsData.total_pnl), currencySymbol)}
-                  tooltip={t('statistics:overview.totalPnL')}
+                  tooltip={t('statistics:overview.totalPnLTooltip')}
                   variant={parseFloat(statisticsData.total_pnl) >= 0 ? 'success' : 'danger'}
                 />
                 <MetricItem
                   label={t('statistics:overview.winRate')}
                   value={`${formatNumber(statisticsData.win_rate, 1)}%`}
-                  tooltip={t('statistics:overview.winRate')}
+                  tooltip={t('statistics:overview.winRateTooltip')}
                   variant={statisticsData.win_rate >= 50 ? 'success' : statisticsData.win_rate >= 40 ? 'warning' : 'danger'}
                 />
               </MetricCard>
