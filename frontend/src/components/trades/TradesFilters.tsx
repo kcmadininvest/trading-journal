@@ -10,6 +10,7 @@ interface TradesFiltersProps {
     start_date: string;
     end_date: string;
     profitable: '' | 'true' | 'false';
+    has_strategy: '' | 'true' | 'false';
   };
   instruments?: string[];
   onChange: (next: Partial<TradesFiltersProps['values']>) => void;
@@ -36,9 +37,15 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
     { value: 'false', label: t('trades:filters.losers') }
   ], [t]);
 
+  const strategyOptions = useMemo(() => [
+    { value: '', label: t('trades:filters.strategy', { defaultValue: 'Stratégie' }) },
+    { value: 'true', label: t('trades:filters.withStrategy', { defaultValue: 'Avec stratégie' }) },
+    { value: 'false', label: t('trades:filters.withoutStrategy', { defaultValue: 'Sans stratégie' }) }
+  ], [t]);
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-5 mb-4 sm:mb-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 items-end">
         <CustomSelect
           value={values.contract}
           onChange={(value) => onChange({ contract: value as string })}
@@ -63,6 +70,11 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
           value={values.profitable}
           onChange={(value) => onChange({ profitable: value as '' | 'true' | 'false' })}
           options={profitableOptions}
+        />
+        <CustomSelect
+          value={values.has_strategy}
+          onChange={(value) => onChange({ has_strategy: value as '' | 'true' | 'false' })}
+          options={strategyOptions}
         />
         <div className="w-full flex items-end">
           <button

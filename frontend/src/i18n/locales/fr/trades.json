@@ -6,6 +6,7 @@
   "deselectAll": "Tout désélectionner",
   "deleteSelected": "Supprimer sélection",
   "selected": "sélectionné(s)",
+  "selectAllPages": "Sélectionner les {{count}} trades sur toutes les pages",
   "trade": "Trade",
   "trades": "Trades",
   "contract": "Contrat",
@@ -17,6 +18,7 @@
   "fees": "Frais",
   "netPnl": "PnL Net",
   "duration": "Durée",
+  "strategyColumn": "Stratégie",
   "date": "Date",
   "actions": "Actions",
   "long": "Long",
@@ -35,7 +37,7 @@
   "import": "Importer",
   "export": "Exporter",
   "add": "Ajouter",
-  "filters": "Filtres",
+  "filtersButton": "Filtres",
   "reset": "Réinitialiser",
   "account": "Compte",
   "allAccounts": "Tous les comptes",
@@ -53,6 +55,8 @@
   "modal": {
     "editTitle": "Modifier le trade",
     "strategy": "Stratégie",
+  "noStrategy": "Aucune",
+  "strategyAssigned": "Stratégie assignée",
     "notes": "Notes",
     "cancel": "Annuler",
     "save": "Enregistrer"
@@ -100,9 +104,9 @@
     "possibleImprovementsPlaceholder": "Identifiez les points d'amélioration pour ce trade...",
     "tradesWithStrategyRespected": "{{count}} / {{total}} trades avec stratégie respectée",
     "unsavedChanges": "Modifications non sauvegardées",
-    "cancel": "Annuler",
+    "cancelButton": "Annuler",
     "saving": "Sauvegarde...",
-    "save": "Enregistrer",
+    "saveButton": "Enregistrer",
     "uploadScreenshot": "Importer un screenshot",
     "dragDropHint": "Glissez-déposez une image ou cliquez pour sélectionner",
     "uploadingScreenshot": "Upload en cours...",
@@ -112,8 +116,8 @@
     "orSeparator": "ou",
     "maxFileSize": "Taille max : 5 MB",
     "confirmDeleteScreenshot": "Êtes-vous sûr de vouloir supprimer ce screenshot ?",
-    "deleteError": "Erreur lors de la suppression",
-    "delete": "Supprimer",
+    "deleteScreenshotError": "Erreur lors de la suppression",
+    "deleteScreenshotButton": "Supprimer",
     "deleteScreenshotTitle": "Supprimer le screenshot",
     "deleteScreenshotMessage": "Êtes-vous sûr de vouloir supprimer ce screenshot ? Le fichier sera définitivement supprimé du serveur.",
     "supportedFormats": "Formats : JPG, PNG, WebP",
@@ -121,10 +125,10 @@
     "fileTooLarge": "Le fichier est trop volumineux. Taille maximale : 5 MB",
     "fileEmpty": "Le fichier est vide",
     "openImage": "Ouvrir",
-    "delete": "Supprimer",
-    "deleteConfirmTitle": "Supprimer le respect de la stratégie",
-    "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer le respect de la stratégie pour ce jour ? Cette action est irréversible.",
-    "deleteError": "Erreur lors de la suppression"
+    "deleteComplianceButton": "Supprimer",
+    "deleteComplianceTitle": "Supprimer le respect de la stratégie",
+    "deleteComplianceMessage": "Êtes-vous sûr de vouloir supprimer le respect de la stratégie pour ce jour ? Cette action est irréversible.",
+    "deleteComplianceError": "Erreur lors de la suppression"
   },
   "emotions": {
     "confiance": "Confiance",
@@ -153,7 +157,10 @@
     "type": "Type",
     "pnl": "PnL",
     "winners": "Gagnants",
-    "losers": "Perdants"
+    "losers": "Perdants",
+    "strategy": "Stratégie",
+    "withStrategy": "Avec stratégie",
+    "withoutStrategy": "Sans stratégie"
   },
   "dayTradesModal": {
     "title": "Trades du jour",
@@ -271,5 +278,17 @@
     "importing": "Import en cours...",
     "previewButton": "Aperçu",
     "importButton": "Importer"
+  },
+  "bulkAssignStrategy": {
+    "button": "Assigner une stratégie",
+    "title": "Assigner une stratégie",
+    "description": "Sélectionnez une stratégie à assigner aux {{count}} trades sélectionnés",
+    "strategyLabel": "Stratégie",
+    "selectStrategy": "Sélectionner une stratégie",
+    "noStrategy": "Aucune stratégie",
+    "assign": "Assigner",
+    "loadError": "Erreur lors du chargement des stratégies",
+    "error": "Erreur lors de l'assignation",
+    "success": "Stratégie assignée avec succès"
   }
 }

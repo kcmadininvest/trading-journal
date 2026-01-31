@@ -71,7 +71,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           document.body.removeChild(tempElement);
           
           // Utiliser le maximum entre la largeur minimale (bouton) et la largeur du contenu
-          const finalWidth = Math.max(minWidth, maxContentWidth);
+          // Ajouter 40px de marge pour le padding et les bordures
+          const finalWidth = Math.max(minWidth, maxContentWidth + 40);
           
           setDropdownPosition({
             top: rect.bottom + window.scrollY + 4,

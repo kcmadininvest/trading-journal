@@ -51,6 +51,7 @@ export interface TradesFilters {
   start_date?: string; // YYYY-MM-DD
   end_date?: string;   // YYYY-MM-DD
   profitable?: 'true' | 'false';
+  has_strategy?: 'true' | 'false';
   trade_day?: string;  // YYYY-MM-DD
   page?: number;
   page_size?: number;
@@ -429,6 +430,37 @@ class TradesService {
     const res = await this.fetchWithAuth(url);
     if (!res.ok) throw new Error('Erreur lors du chargement des analytics');
     return res.json();
+  }
+
+  async bulkAssignStrategy(tradeIds: number[], positionStrategyId: number | null): Promise<{
+    success: boolean;
+    updated_count: number;
+    message: string;
+  }> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/bulk_assign_strategy/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        trade_ids: tradeIds,
+        position_strategy_id: positionStrategyId,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erreur lors de l\'assignation de la stratégie');
+    }
+    return res.json();
+  }
+
+  async getAllIds(filters: TradesFilters): Promise<number[]> {
+    const query = this.toQuery({
+      ...filters,
+      page_size: 10000, // Récupérer tous les trades
+    });
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/?${query}`);
+    if (!res.ok) throw new Error('Erreur lors de la récupération des IDs');
+    const data = await res.json();
+    return data.results.map((trade: TradeListItem) => trade.id);
   }
 }
 

@@ -6,6 +6,7 @@
   "deselectAll": "Deselect all",
   "deleteSelected": "Delete selection",
   "selected": "selected",
+  "selectAllPages": "Select all {{count}} trades across all pages",
   "trade": "Trade",
   "trades": "Trades",
   "contract": "Contract",
@@ -17,6 +18,7 @@
   "fees": "Fees",
   "netPnl": "Net PnL",
   "duration": "Duration",
+  "strategyColumn": "Strategy",
   "date": "Date",
   "actions": "Actions",
   "long": "Long",
@@ -35,7 +37,7 @@
   "import": "Import",
   "export": "Export",
   "add": "Add",
-  "filters": "Filters",
+  "filtersButton": "Filters",
   "reset": "Reset",
   "account": "Account",
   "allAccounts": "All accounts",
@@ -53,6 +55,8 @@
   "modal": {
     "editTitle": "Edit trade",
     "strategy": "Strategy",
+  "noStrategy": "None",
+  "strategyAssigned": "Strategy assigned",
     "notes": "Notes",
     "cancel": "Cancel",
     "save": "Save"
@@ -100,9 +104,9 @@
     "possibleImprovementsPlaceholder": "Identify improvement points for this trade...",
     "tradesWithStrategyRespected": "{{count}} / {{total}} trades with strategy respected",
     "unsavedChanges": "Unsaved changes",
-    "cancel": "Cancel",
+    "cancelButton": "Cancel",
     "saving": "Saving...",
-    "save": "Save",
+    "saveButton": "Save",
     "uploadScreenshot": "Upload screenshot",
     "dragDropHint": "Drag and drop an image or click to select",
     "uploadingScreenshot": "Uploading...",
@@ -112,8 +116,8 @@
     "orSeparator": "or",
     "maxFileSize": "Max size: 5 MB",
     "confirmDeleteScreenshot": "Are you sure you want to delete this screenshot?",
-    "deleteError": "Deletion error",
-    "delete": "Delete",
+    "deleteScreenshotError": "Deletion error",
+    "deleteScreenshotButton": "Delete",
     "deleteScreenshotTitle": "Delete screenshot",
     "deleteScreenshotMessage": "Are you sure you want to delete this screenshot? The file will be permanently deleted from the server.",
     "supportedFormats": "Formats: JPG, PNG, WebP",
@@ -121,10 +125,10 @@
     "fileTooLarge": "File is too large. Maximum size: 5 MB",
     "fileEmpty": "File is empty",
     "openImage": "Open",
-    "delete": "Delete",
-    "deleteConfirmTitle": "Delete strategy compliance",
-    "deleteConfirmMessage": "Are you sure you want to delete the strategy compliance for this day? This action is irreversible.",
-    "deleteError": "Error during deletion"
+    "deleteComplianceButton": "Delete",
+    "deleteComplianceTitle": "Delete strategy compliance",
+    "deleteComplianceMessage": "Are you sure you want to delete the strategy compliance for this day? This action is irreversible.",
+    "deleteComplianceError": "Error during deletion"
   },
   "emotions": {
     "confiance": "Confidence",
@@ -153,7 +157,10 @@
     "type": "Type",
     "pnl": "PnL",
     "winners": "Winners",
-    "losers": "Losers"
+    "losers": "Losers",
+    "strategy": "Strategy",
+    "withStrategy": "With strategy",
+    "withoutStrategy": "Without strategy"
   },
   "dayTradesModal": {
     "title": "Day Trades",
@@ -271,5 +278,17 @@
     "importing": "Importing...",
     "previewButton": "Preview",
     "importButton": "Import"
+  },
+  "bulkAssignStrategy": {
+    "button": "Assign Strategy",
+    "title": "Assign Strategy",
+    "description": "Select a strategy to assign to {{count}} selected trades",
+    "strategyLabel": "Strategy",
+    "selectStrategy": "Select a strategy",
+    "noStrategy": "No strategy",
+    "assign": "Assign",
+    "loadError": "Error loading strategies",
+    "error": "Error assigning strategy",
+    "success": "Strategy assigned successfully"
   }
 }

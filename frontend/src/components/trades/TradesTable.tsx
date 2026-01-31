@@ -63,16 +63,18 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
       <div className="block md:hidden">
         {/* Header avec sélection pour mobile */}
         {!isLoading && items.length > 0 && (
-          <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={allSelectedOnPage}
-              onChange={(e) => onToggleAll && onToggleAll(e.target.checked, visibleIds)}
-              className="h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400"
-            />
-            <span className="text-sm text-gray-700 dark:text-gray-300">
-              {t('trades:selectAll', { defaultValue: 'Sélectionner tout' })}
-            </span>
+          <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={allSelectedOnPage}
+                onChange={(e) => onToggleAll && onToggleAll(e.target.checked, visibleIds)}
+                className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 cursor-pointer"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                {t('trades:selectAll', { defaultValue: 'Sélectionner tout' })}
+              </span>
+            </label>
           </div>
         )}
         {isLoading ? (
@@ -104,16 +106,18 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(trade.id)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        onToggleRow && onToggleRow(trade.id, e.target.checked);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 flex-shrink-0"
-                    />
+                    <label className="flex items-center cursor-pointer p-1 -m-1" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(trade.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          onToggleRow && onToggleRow(trade.id, e.target.checked);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 flex-shrink-0 cursor-pointer"
+                      />
+                    </label>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                         {formatTradeDate(trade.entered_at)}
@@ -155,6 +159,26 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     )}
                   </div>
                 </div>
+                
+                {/* Indicateur de stratégie */}
+                <div className="mb-3">
+                  {trade.position_strategy ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      {trade.position_strategy_title || t('trades:strategyAssigned', { defaultValue: 'Stratégie assignée' })}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {t('trades:noStrategy', { defaultValue: 'Aucune stratégie' })}
+                    </span>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:size')}</div>
@@ -288,23 +312,24 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
 
       {/* Vue tableau pour desktop */}
       <div className="hidden md:block overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
               <th className="px-2 sm:px-4 py-2 sm:py-3 w-10">
-                <div className="flex items-center">
+                <label className="flex items-center justify-center cursor-pointer">
                   <input
                     type="checkbox"
                     checked={allSelectedOnPage}
                     onChange={(e) => onToggleAll && onToggleAll(e.target.checked, visibleIds)}
-                    className="h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400"
+                    className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 cursor-pointer"
                   />
-                </div>
+                </label>
               </th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:date')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:account')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:contract')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:type')}</th>
+              <th className="px-1 sm:px-2 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider max-w-[180px]">{t('trades:strategyColumn')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:size')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:entry')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:exit')}</th>
@@ -320,11 +345,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {isLoading ? (
               <tr>
-                <td colSpan={15} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
+                <td colSpan={16} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={15} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
+                <td colSpan={16} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
               </tr>
             ) : (
               items.map((trade) => (
@@ -367,7 +392,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   }}
                 >
                   <td className="px-2 sm:px-4 py-2 sm:py-3 w-10">
-                    <div className="flex items-center">
+                    <label className="flex items-center justify-center cursor-pointer p-2 -m-2" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(trade.id)}
@@ -376,9 +401,9 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                           onToggleRow && onToggleRow(trade.id, e.target.checked);
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400"
+                        className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 cursor-pointer"
                       />
-                    </div>
+                    </label>
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">{formatTradeDate(trade.entered_at)}</td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">{trade.trading_account_name || '-'}</td>
@@ -400,6 +425,25 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                       )}
                       {trade.trade_type === 'Long' ? t('trades:long') : t('trades:short')}
                     </span>
+                  </td>
+                  <td className="px-1 sm:px-2 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm max-w-[180px]">
+                    {trade.position_strategy ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300" title={trade.position_strategy_title || ''}>
+                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        {trade.position_strategy_title && trade.position_strategy_title.length > 20 
+                          ? trade.position_strategy_title.substring(0, 20) + '...' 
+                          : trade.position_strategy_title || t('trades:strategyAssigned', { defaultValue: 'Stratégie' })}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
+                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        {t('trades:noStrategy', { defaultValue: 'Aucune' })}
+                      </span>
+                    )}
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtNumber(trade.size, 4)}</td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtNumber(trade.entry_price, 2)}</td>

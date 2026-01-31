@@ -191,38 +191,38 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
 
             {/* Cases à cocher avec styles améliorés */}
             <div className="space-y-2 sm:space-y-3">
-              <div className="flex items-start gap-2 sm:gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+              <label htmlFor="is_active" className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer">
                 <input
                   type="checkbox"
                   id="is_active"
                   name="is_active"
                   checked={formData.is_active}
                   onChange={handleInputChange}
-                  className="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 rounded appearance-none flex-shrink-0"
+                  className="h-5 w-5 mt-0.5 rounded appearance-none flex-shrink-0 cursor-pointer"
                 />
-                <label htmlFor="is_active" className="flex-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100 cursor-pointer select-none">
+                <div className="flex-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100 select-none">
                   <span className="font-medium">{t('users:editModal.accountActive')}</span>
                   <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {formData.is_active ? t('users:active') : t('users:inactive')}
                   </p>
-                </label>
-              </div>
-              <div className="flex items-start gap-2 sm:gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                </div>
+              </label>
+              <label htmlFor="is_verified" className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer">
                 <input
                   type="checkbox"
                   id="is_verified"
                   name="is_verified"
                   checked={formData.is_verified}
                   onChange={handleInputChange}
-                  className="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 rounded appearance-none flex-shrink-0"
+                  className="h-5 w-5 mt-0.5 rounded appearance-none flex-shrink-0 cursor-pointer"
                 />
-                <label htmlFor="is_verified" className="flex-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100 cursor-pointer select-none">
+                <div className="flex-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100 select-none">
                   <span className="font-medium">{t('users:editModal.emailVerified')}</span>
                   <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     {formData.is_verified ? t('users:verified') : t('users:notVerified')}
                   </p>
-                </label>
-              </div>
+                </div>
+              </label>
             </div>
 
             {/* Footer avec boutons */}

@@ -6,6 +6,7 @@
   "deselectAll": "Alle abwählen",
   "deleteSelected": "Auswahl löschen",
   "selected": "ausgewählt",
+  "selectAllPages": "Alle {{count}} Trades auf allen Seiten auswählen",
   "trade": "Trade",
   "trades": "Trades",
   "contract": "Kontrakt",
@@ -17,6 +18,7 @@
   "fees": "Gebühren",
   "netPnl": "Netto-PnL",
   "duration": "Dauer",
+  "strategyColumn": "Strategie",
   "date": "Datum",
   "actions": "Aktionen",
   "long": "Long",
@@ -35,7 +37,6 @@
   "import": "Importieren",
   "export": "Exportieren",
   "add": "Hinzufügen",
-  "filters": "Filter",
   "reset": "Zurücksetzen",
   "account": "Konto",
   "allAccounts": "Alle Konten",
@@ -53,6 +54,8 @@
   "modal": {
     "editTitle": "Trade bearbeiten",
     "strategy": "Strategie",
+  "noStrategy": "Keine",
+  "strategyAssigned": "Strategie zugewiesen",
     "notes": "Notizen",
     "cancel": "Abbrechen",
     "save": "Speichern"
@@ -118,8 +121,7 @@
     "deleteScreenshotMessage": "Sind Sie sicher, dass Sie diesen Screenshot löschen möchten? Die Datei wird dauerhaft vom Server gelöscht.",
     "supportedFormats": "Formate: JPG, PNG, WebP",
     "invalidFileType": "Ungültiger Dateityp. Akzeptierte Formate: JPG, PNG, WebP",
-    "fileTooLarge": "Die Datei ist zu groß. Maximale Größe: 5 MB",
-    "screenshotDescription": "Fügen Sie einen Screenshot Ihrer Trading-Sitzung hinzu"
+    "fileTooLarge": "Die Datei ist zu groß. Maximale Größe: 5 MB"
   },
   "emotions": {
     "confiance": "Vertrauen",
@@ -148,7 +150,10 @@
     "type": "Typ",
     "pnl": "PnL",
     "winners": "Gewinner",
-    "losers": "Verlierer"
+    "losers": "Verlierer",
+    "strategy": "Strategie",
+    "withStrategy": "Mit Strategie",
+    "withoutStrategy": "Ohne Strategie"
   },
   "dayTradesModal": {
     "title": "Tages-Trades",
@@ -266,5 +271,17 @@
     "importing": "Importieren...",
     "previewButton": "Vorschau",
     "importButton": "Importieren"
+  },
+  "bulkAssignStrategy": {
+    "button": "Strategie zuweisen",
+    "title": "Strategie zuweisen",
+    "description": "Wählen Sie eine Strategie aus, die {{count}} ausgewählten Trades zugewiesen werden soll",
+    "strategyLabel": "Strategie",
+    "selectStrategy": "Strategie auswählen",
+    "noStrategy": "Keine Strategie",
+    "assign": "Zuweisen",
+    "loadError": "Fehler beim Laden der Strategien",
+    "error": "Fehler beim Zuweisen der Strategie",
+    "success": "Strategie erfolgreich zugewiesen"
   }
 }

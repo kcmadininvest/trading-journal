@@ -68,12 +68,14 @@ const UserTable: React.FC<UserTableProps> = ({
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={(e) => onSelectUser(user.id, e.target.checked)}
-                      className="h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 flex-shrink-0 mt-1"
-                    />
+                    <label className="flex items-center cursor-pointer p-1 -m-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={(e) => onSelectUser(user.id, e.target.checked)}
+                        className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 flex-shrink-0 cursor-pointer"
+                      />
+                    </label>
                     <div className="flex-shrink-0 h-10 w-10">
                       <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -178,42 +180,44 @@ const UserTable: React.FC<UserTableProps> = ({
 
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto overflow-y-clip">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={allSelected}
-                  ref={(input) => {
-                    if (input) input.indeterminate = someSelected;
-                  }}
-                  onChange={(e) => onSelectAll(e.target.checked)}
-                  className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400"
-                />
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left" style={{width: '3%'}}>
+                <label className="flex items-center justify-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(input) => {
+                      if (input) input.indeterminate = someSelected;
+                    }}
+                    onChange={(e) => onSelectAll(e.target.checked)}
+                    className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 cursor-pointer"
+                  />
+                </label>
               </th>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '5%'}}>
                 {t('users:id')}
               </th>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '25%'}}>
                 {t('users:user')}
               </th>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '8%'}}>
                 {t('users:role')}
               </th>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '10%'}}>
                 {t('users:accountStatus')}
               </th>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '10%'}}>
                 {t('users:emailStatus')}
               </th>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '13%'}}>
                 {t('users:createdAt')}
               </th>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '13%'}}>
                 {t('users:lastLogin')}
               </th>
-              <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '13%'}}>
                 {t('common:actions')}
               </th>
             </tr>
@@ -228,18 +232,20 @@ const UserTable: React.FC<UserTableProps> = ({
             ) : (
               users.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={(e) => onSelectUser(user.id, e.target.checked)}
-                      className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400"
-                    />
+                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap" style={{width: '3%'}}>
+                    <label className="flex items-center justify-center cursor-pointer p-2 -m-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(user.id)}
+                        onChange={(e) => onSelectUser(user.id, e.target.checked)}
+                        className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 cursor-pointer"
+                      />
+                    </label>
                   </td>
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono">
+                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-mono" style={{width: '5%'}}>
                     {user.id}
                   </td>
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4">
+                  <td className="px-2 sm:px-4 py-3 sm:py-4" style={{width: '25%'}}>
                     <div className="flex items-center min-w-0">
                       <div className="flex-shrink-0 h-8 w-8 sm:h-10 sm:w-10">
                         <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
@@ -258,17 +264,17 @@ const UserTable: React.FC<UserTableProps> = ({
                       </div>
                     </div>
                   </td>
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap" style={{width: '8%'}}>
                     <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold rounded-full ${getRoleBadge(user.role)}`}>
                       {user.role === 'admin' ? t('users:admin') : t('users:user')}
                     </span>
                   </td>
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap" style={{width: '10%'}}>
                     <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold rounded-full ${getStatusBadge(user.is_active)}`}>
                       {user.is_active ? t('users:active') : t('users:inactive')}
                     </span>
                   </td>
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
+                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap" style={{width: '10%'}}>
                     <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold rounded-full ${
                       user.is_verified 
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
@@ -277,13 +283,13 @@ const UserTable: React.FC<UserTableProps> = ({
                       {user.is_verified ? t('users:verified') : t('users:notVerified')}
                     </span>
                   </td>
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-[10px] sm:text-xs text-gray-500 dark:text-gray-400" style={{width: '13%'}}>
                     {formatDate(user.created_at)}
                   </td>
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-[10px] sm:text-xs text-gray-500 dark:text-gray-400" style={{width: '13%'}}>
                     {user.last_login ? formatDate(user.last_login) : t('users:never')}
                   </td>
-                  <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-2 sm:px-4 py-3 sm:py-4 whitespace-nowrap text-sm font-medium" style={{width: '13%'}}>
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       {/* Bouton Modifier */}
                       <Tooltip content={t('users:editUser')} position="top">

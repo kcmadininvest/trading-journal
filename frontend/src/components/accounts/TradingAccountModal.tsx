@@ -293,7 +293,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                 <NumberInput
                   value={(form as any).initial_capital || ''}
                   onChange={(value) => setForm(prev => ({ ...prev, initial_capital: value ? parseFloat(value) : null } as any))}
-                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                   placeholder={t('accounts:form.initialCapitalPlaceholder')}
                   min={0}
                   step="0.01"
@@ -303,18 +303,18 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center">
+            <label htmlFor="mll_enabled" className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
               <input
                 type="checkbox"
                 id="mll_enabled"
                 checked={(form as any).mll_enabled !== false}
                 onChange={(e) => setForm(prev => ({ ...prev, mll_enabled: e.target.checked } as any))}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 cursor-pointer flex-shrink-0"
               />
-              <label htmlFor="mll_enabled" className="ml-2 block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('accounts:form.enableMLL', { defaultValue: 'Activer le Maximum Loss Limit (MLL)' })}
-              </label>
-            </div>
+              </span>
+            </label>
             {(form as any).mll_enabled !== false && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
@@ -329,7 +329,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                     return isNaN(numValue) ? '' : numValue;
                   })()}
                   onChange={(value) => setForm(prev => ({ ...prev, maximum_loss_limit: value ? parseFloat(value) : null } as any))}
-                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
                   placeholder={t('accounts:form.maximumLossLimitPlaceholder', { defaultValue: 'Saisir le MLL' })}
                   min={0}
                   step="0.01"
@@ -400,14 +400,14 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <label className="inline-flex items-center gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+              <label className="inline-flex items-center gap-3 text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
                 <input
                   type="checkbox"
-                  className="h-3.5 w-3.5 sm:h-4 sm:w-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400"
+                  className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 cursor-pointer flex-shrink-0"
                   checked={Boolean((form as any).is_default)}
                   onChange={(e) => setForm(prev => ({ ...prev, is_default: e.target.checked } as any))}
                 />
-                {t('accounts:form.setAsDefault')}
+                <span>{t('accounts:form.setAsDefault', { defaultValue: 'Définir comme compte par défaut' })}</span>
               </label>
               <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.onlyOneDefault')}</div>
             </div>

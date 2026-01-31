@@ -5,6 +5,7 @@ import { TradesFilters } from '../components/trades/TradesFilters';
 import { TradesTable } from '../components/trades/TradesTable';
 import { TradeModal } from '../components/trades/TradeModal';
 import { CreateTradeModal } from '../components/trades/CreateTradeModal';
+import { BulkStrategyAssignModal } from '../components/trades/BulkStrategyAssignModal';
 
 import PaginationControls from '../components/ui/PaginationControls';
 import { DeleteConfirmModal } from '../components/ui';
@@ -42,9 +43,11 @@ const TradesPage: React.FC = () => {
     start_date: '',
     end_date: '',
     profitable: '' as '' | 'true' | 'false',
+    has_strategy: '' as '' | 'true' | 'false',
   });
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAllPages, setSelectAllPages] = useState(false);
   const [stats, setStats] = useState<{ total_trades: number; total_pnl: number; total_fees: number; total_raw_pnl?: number } | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -56,6 +59,7 @@ const TradesPage: React.FC = () => {
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTradeId, setEditingTradeId] = useState<number | null>(null);
+  const [showBulkStrategyModal, setShowBulkStrategyModal] = useState(false);
 
   useEffect(() => {
     if (preferencesLoading) {
@@ -74,6 +78,7 @@ const TradesPage: React.FC = () => {
       start_date: filters.start_date,
       end_date: filters.end_date,
       profitable: filters.profitable,
+      has_strategy: filters.has_strategy,
     });
   }, [
     filters.trading_account,
@@ -82,6 +87,7 @@ const TradesPage: React.FC = () => {
     filters.start_date,
     filters.end_date,
     filters.profitable,
+    filters.has_strategy,
   ]);
 
   // Utiliser useCallback pour garantir que load() utilise toujours les valeurs à jour
@@ -100,6 +106,7 @@ const TradesPage: React.FC = () => {
         start_date: currentFilters.start_date || undefined,
         end_date: currentFilters.end_date || undefined,
         profitable: currentFilters.profitable || undefined,
+        has_strategy: currentFilters.has_strategy || undefined,
         page: currentPage,
         page_size: currentPageSize,
       });
@@ -122,6 +129,7 @@ const TradesPage: React.FC = () => {
         start_date: start_date || undefined,
         end_date: end_date || undefined,
         profitable: profitable || undefined,
+        has_strategy: filters.has_strategy || undefined,
       });
       setStats(s);
     } catch {
@@ -175,7 +183,7 @@ const TradesPage: React.FC = () => {
     }
     
     // Capturer les valeurs de filters pour éviter les problèmes de closure
-    const { trading_account, contract, type, start_date, end_date, profitable } = filters;
+    const { trading_account, contract, type, start_date, end_date, profitable, has_strategy } = filters;
     const loadStats = async () => {
       try {
         // Passer trading_account même s'il est null (tous les comptes) - undefined sera ignoré par l'API
@@ -186,6 +194,7 @@ const TradesPage: React.FC = () => {
           start_date: start_date || undefined,
           end_date: end_date || undefined,
           profitable: profitable || undefined,
+          has_strategy: has_strategy || undefined,
         });
         setStats(s);
       } catch (e) {
@@ -223,8 +232,15 @@ const TradesPage: React.FC = () => {
  
 
   const resetFilters = () => {
-    setSelectedAccountId(null);
-    setFilters({ trading_account: null, contract: '', type: '', start_date: '', end_date: '', profitable: '' });
+    setFilters({
+      trading_account: selectedAccountId,
+      contract: '',
+      type: '',
+      start_date: '',
+      end_date: '',
+      profitable: '',
+      has_strategy: '',
+    });
     setPage(1);
   };
 
@@ -494,11 +510,54 @@ const TradesPage: React.FC = () => {
         />
 
         {selectedIds.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300">{selectedIds.length} {t('trades:selected')}</div>
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-              <button onClick={() => setSelectedIds([])} className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">{t('common:reset')}</button>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6 flex flex-col gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-col gap-1">
+                <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300">
+                  {selectAllPages ? (
+                    <span className="font-semibold">{total} {t('trades:selected')}</span>
+                  ) : (
+                    <span>{selectedIds.length} {t('trades:selected')}</span>
+                  )}
+                </div>
+                {!selectAllPages && selectedIds.length > 0 && total > pageSize && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const allIds = await tradesService.getAllIds({
+                          trading_account: filters.trading_account ?? undefined,
+                          contract: filters.contract || undefined,
+                          type: filters.type || undefined,
+                          start_date: filters.start_date || undefined,
+                          end_date: filters.end_date || undefined,
+                          profitable: filters.profitable || undefined,
+                          has_strategy: filters.has_strategy || undefined,
+                        });
+                        setSelectedIds(allIds);
+                        setSelectAllPages(true);
+                      } catch (e) {
+                        console.error('Error selecting all:', e);
+                      }
+                    }}
+                    className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:underline text-left"
+                  >
+                    {t('trades:selectAllPages', { count: total, defaultValue: `Sélectionner les ${total} trades sur toutes les pages` })}
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <button onClick={() => { setSelectedIds([]); setSelectAllPages(false); }} className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600">{t('common:reset')}</button>
+              <button 
+                onClick={() => setShowBulkStrategyModal(true)} 
+                className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 dark:bg-blue-500 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {t('trades:bulkAssignStrategy.button', { defaultValue: 'Assigner une stratégie' })}
+              </button>
               <button onClick={handleBulkDelete} className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-rose-600 dark:bg-rose-500 text-white rounded hover:bg-rose-700 dark:hover:bg-rose-600">{t('trades:deleteSelected')}</button>
+              </div>
             </div>
           </div>
         )}
@@ -513,8 +572,14 @@ const TradesPage: React.FC = () => {
           onSelect={(t) => setSelectedId(t.id)}
           hideFooter
           selectedIds={selectedIds}
-          onToggleRow={(id, selected) => setSelectedIds(prev => selected ? [...prev, id] : prev.filter(x => x !== id))}
-          onToggleAll={(selected, ids) => setSelectedIds(prev => selected ? Array.from(new Set([...prev, ...ids])) : prev.filter(x => !ids.includes(x)))}
+          onToggleRow={(id, selected) => {
+            setSelectAllPages(false);
+            setSelectedIds(prev => selected ? [...prev, id] : prev.filter(x => x !== id));
+          }}
+          onToggleAll={(selected, ids) => {
+            setSelectAllPages(false);
+            setSelectedIds(prev => selected ? Array.from(new Set([...prev, ...ids])) : prev.filter(x => !ids.includes(x)));
+          }}
         totals={{
           pnl: stats?.total_raw_pnl,
           fees: stats?.total_fees,
@@ -605,6 +670,17 @@ const TradesPage: React.FC = () => {
           reloadStats();
         }}
         tradeId={editingTradeId}
+      />
+
+      <BulkStrategyAssignModal
+        isOpen={showBulkStrategyModal}
+        onClose={() => setShowBulkStrategyModal(false)}
+        onSuccess={() => {
+          // Recharger la liste après assignation réussie
+          load();
+          setSelectedIds([]);
+        }}
+        selectedTradeIds={selectedIds}
       />
     </div>
   );

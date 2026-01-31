@@ -2246,13 +2246,14 @@ const PositionStrategiesPage: React.FC = () => {
                                       ? 'border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-900/10'
                                       : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50'
                                   }`}>
-                                    <input
-                                      type="checkbox"
-                                      checked={isChecked}
-                                      onChange={() => toggleRule(sectionIndex, ruleIndex)}
-                                      className="mt-0.5 w-5 h-5 sm:w-5 sm:h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 cursor-pointer flex-shrink-0"
-                                    />
-                                    <div className="flex-1 min-w-0">
+                                    <label className="flex items-start gap-3 cursor-pointer flex-1 min-w-0">
+                                      <input
+                                        type="checkbox"
+                                        checked={isChecked}
+                                        onChange={() => toggleRule(sectionIndex, ruleIndex)}
+                                        className="mt-0.5 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 cursor-pointer flex-shrink-0"
+                                      />
+                                      <div className="flex-1 min-w-0">
                                       <div className="flex items-start gap-2">
                                         {ruleChangeType && (
                                           <span className={`px-2 py-0.5 text-xs font-medium rounded flex-shrink-0 mt-0.5 ${
@@ -2277,7 +2278,8 @@ const PositionStrategiesPage: React.FC = () => {
                                           {ruleText}
                                         </span>
                                       </div>
-                                    </div>
+                                      </div>
+                                    </label>
                                   </li>
                                 );
                               })}

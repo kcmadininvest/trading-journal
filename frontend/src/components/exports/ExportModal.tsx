@@ -469,7 +469,7 @@ const ExportModal: React.FC<ExportModalProps> = ({
               <div>
                 <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{t('statistics:exportModal.optionsTitle', { defaultValue: 'Options' })}</h4>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <input
                       type="checkbox"
                       checked={configuration.options.watermark}
@@ -482,11 +482,11 @@ const ExportModal: React.FC<ExportModalProps> = ({
                           },
                         }))
                       }
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer flex-shrink-0"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">{t('statistics:exportModal.options.watermark', { defaultValue: 'Inclure un watermark' })}</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
                     <input
                       type="checkbox"
                       checked={configuration.options.page_numbers}
@@ -499,9 +499,9 @@ const ExportModal: React.FC<ExportModalProps> = ({
                           },
                         }))
                       }
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer flex-shrink-0"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('statistics:exportModal.options.pageNumbers', { defaultValue: 'Numérotation des pages' })}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('statistics:exportModal.options.pageNumbers', { defaultValue: 'Numéros de page' })}</span>
                   </label>
                 </div>
               </div>

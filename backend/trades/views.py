@@ -342,7 +342,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         queryset = (
             TopStepTrade.objects
             .filter(user=self.request.user)  # type: ignore
-            .select_related('trading_account', 'user')
+            .select_related('trading_account', 'user', 'position_strategy')
             .order_by('-entered_at')
         )
         
@@ -358,11 +358,17 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         end_date = self.request.query_params.get('end_date', None)
         profitable = self.request.query_params.get('profitable', None)
         trade_day = self.request.query_params.get('trade_day', None)
+        has_strategy = self.request.query_params.get('has_strategy', None)
         
         if contract:
             queryset = queryset.filter(contract_name=contract)
         if trade_type:
             queryset = queryset.filter(trade_type=trade_type)
+        if has_strategy is not None:
+            if has_strategy.lower() == 'true':  # type: ignore
+                queryset = queryset.filter(position_strategy__isnull=False)
+            elif has_strategy.lower() == 'false':  # type: ignore
+                queryset = queryset.filter(position_strategy__isnull=True)
         if start_date:
             # Convertir la date de début en datetime timezone-aware
             try:
@@ -1422,6 +1428,52 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
             logger.info(f"=== FIN UPLOAD CSV ===")
+
+    @action(detail=False, methods=['post'])
+    def bulk_assign_strategy(self, request):
+        """
+        Assigne une stratégie de position à plusieurs trades en une seule requête.
+        """
+        trade_ids = request.data.get('trade_ids', [])
+        position_strategy_id = request.data.get('position_strategy_id')
+        
+        if not isinstance(trade_ids, list) or len(trade_ids) == 0:
+            return Response({
+                'error': 'Le paramètre trade_ids doit être une liste non vide'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Vérifier que la stratégie existe et appartient à l'utilisateur (si fournie)
+        position_strategy = None
+        if position_strategy_id is not None:
+            try:
+                position_strategy = PositionStrategy.objects.get(  # type: ignore
+                    id=position_strategy_id,
+                    user=request.user
+                )
+            except PositionStrategy.DoesNotExist:  # type: ignore
+                return Response({
+                    'error': 'Stratégie invalide ou non trouvée'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Récupérer les trades de l'utilisateur avec les IDs fournis
+        trades = TopStepTrade.objects.filter(  # type: ignore
+            id__in=trade_ids,
+            user=request.user
+        )
+        
+        if not trades.exists():
+            return Response({
+                'error': 'Aucun trade trouvé avec les IDs fournis'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Mettre à jour les trades
+        updated_count = trades.update(position_strategy=position_strategy)
+        
+        return Response({
+            'success': True,
+            'updated_count': updated_count,
+            'message': f'{updated_count} trade(s) mis à jour'
+        }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def capital_evolution(self, request):

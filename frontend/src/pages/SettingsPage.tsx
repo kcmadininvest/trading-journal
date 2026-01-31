@@ -681,12 +681,12 @@ const SettingsPage: React.FC = () => {
                 </div>
                 <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
                   <h3 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">{t('settings:notifications', { defaultValue: 'Notifications' })}</h3>
-                  <div className="flex items-start sm:items-center justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <label htmlFor="email_goal_alerts" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <label htmlFor="email_goal_alerts" className="flex items-start sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                    <div className="flex-1">
+                      <div className="block text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
                         {t('settings:emailGoalAlerts', { defaultValue: 'Alertes email pour les objectifs' })}
-                      </label>
-                      <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 break-words">
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                         {t('settings:emailGoalAlertsDescription', { defaultValue: 'Recevoir des emails quand un objectif est atteint ou en danger' })}
                       </p>
                     </div>
@@ -695,9 +695,9 @@ const SettingsPage: React.FC = () => {
                       type="checkbox"
                       checked={preferences.email_goal_alerts !== false}
                       onChange={(e) => setPreferences({ ...preferences, email_goal_alerts: e.target.checked })}
-                      className="h-4 w-4 sm:h-5 sm:w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700 flex-shrink-0 mt-0.5 sm:mt-0"
+                      className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700 flex-shrink-0 cursor-pointer"
                     />
-                  </div>
+                  </label>
                 </div>
                 <button
                   onClick={handlePreferencesUpdate}

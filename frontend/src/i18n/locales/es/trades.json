@@ -6,6 +6,7 @@
   "deselectAll": "Deseleccionar todo",
   "deleteSelected": "Eliminar selección",
   "selected": "seleccionado(s)",
+  "selectAllPages": "Seleccionar las {{count}} operaciones en todas las páginas",
   "trade": "Operación",
   "trades": "Operaciones",
   "contract": "Contrato",
@@ -17,6 +18,7 @@
   "fees": "Comisiones",
   "netPnl": "PnL Neto",
   "duration": "Duración",
+  "strategyColumn": "Estrategia",
   "date": "Fecha",
   "actions": "Acciones",
   "long": "Largo",
@@ -35,7 +37,6 @@
   "import": "Importar",
   "export": "Exportar",
   "add": "Añadir",
-  "filters": "Filtros",
   "reset": "Restablecer",
   "account": "Cuenta",
   "allAccounts": "Todas las cuentas",
@@ -53,6 +54,8 @@
   "modal": {
     "editTitle": "Editar operación",
     "strategy": "Estrategia",
+  "noStrategy": "Ninguna",
+  "strategyAssigned": "Estrategia asignada",
     "notes": "Notas",
     "cancel": "Cancelar",
     "save": "Guardar"
@@ -118,8 +121,7 @@
     "deleteScreenshotMessage": "¿Estás seguro de que quieres eliminar esta captura de pantalla? El archivo se eliminará permanentemente del servidor.",
     "supportedFormats": "Formatos: JPG, PNG, WebP",
     "invalidFileType": "Tipo de archivo no válido. Formatos aceptados: JPG, PNG, WebP",
-    "fileTooLarge": "El archivo es demasiado grande. Tamaño máximo: 5 MB",
-    "screenshotDescription": "Añade una captura de pantalla de tu sesión de trading"
+    "fileTooLarge": "El archivo es demasiado grande. Tamaño máximo: 5 MB"
   },
   "emotions": {
     "confiance": "Confianza",
@@ -147,8 +149,11 @@
     "instrument": "Instrumento",
     "type": "Tipo",
     "pnl": "PnL",
-    "winners": "Ganadoras",
-    "losers": "Perdedoras"
+    "winners": "Ganadores",
+    "losers": "Perdedores",
+    "strategy": "Estrategia",
+    "withStrategy": "Con estrategia",
+    "withoutStrategy": "Sin estrategia"
   },
   "dayTradesModal": {
     "title": "Operaciones del Día",
@@ -266,5 +271,17 @@
     "importing": "Importando...",
     "previewButton": "Vista previa",
     "importButton": "Importar"
+  },
+  "bulkAssignStrategy": {
+    "button": "Asignar estrategia",
+    "title": "Asignar estrategia",
+    "description": "Seleccione una estrategia para asignar a {{count}} operaciones seleccionadas",
+    "strategyLabel": "Estrategia",
+    "selectStrategy": "Seleccionar una estrategia",
+    "noStrategy": "Sin estrategia",
+    "assign": "Asignar",
+    "loadError": "Error al cargar las estrategias",
+    "error": "Error al asignar la estrategia",
+    "success": "Estrategia asignada con éxito"
   }
 }
