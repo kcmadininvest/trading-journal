@@ -84,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
   };
 
   return (
-    <header className="bg-blue-950 shadow-sm border-b border-gray-700 h-16 sm:h-20 flex items-center sticky top-0 z-30">
+    <header className="bg-blue-950 shadow-sm border-b border-gray-700 h-16 sm:h-20 flex items-center fixed top-0 left-0 right-0 z-30">
       <div className="flex items-center justify-between px-3 sm:px-6 w-full h-full gap-2 sm:gap-4">
         {/* Left: Logo + App Title */}
         <div className="flex items-center gap-3 flex-shrink-0">
