@@ -88,5 +88,21 @@
   "hideInitialBalance": "Hide initial balance",
   "hideCurrentBalance": "Hide current balance",
   "hideMll": "Hide MLL",
-  "hideProfitLoss": "Hide profit/loss"
+  "hideProfitLoss": "Hide profit/loss",
+  "unsavedChanges": "Unsaved changes",
+  "unsavedChangesDesc": "You have unsaved changes",
+  "profileInfoDesc": "Manage your personal information",
+  "changePasswordDesc": "Change your password to secure your account",
+  "activeSessionsDesc": "Manage devices connected to your account",
+  "loginHistoryDesc": "View your login history",
+  "tradingPreferencesDesc": "Configure your trading preferences",
+  "displayPreferencesDesc": "Customize the application appearance",
+  "dangerZoneDesc": "Irreversible and permanent actions",
+  "passwordStrength": "Password strength",
+  "passwordWeak": "Weak",
+  "passwordMedium": "Medium",
+  "passwordGood": "Good",
+  "passwordStrong": "Strong",
+  "showAll": "Show all",
+  "showLess": "Show less"
 }

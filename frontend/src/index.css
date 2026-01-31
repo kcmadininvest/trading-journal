@@ -206,3 +206,39 @@ html.font-size-large {
   animation: badge-shine 4.5s ease-in-out infinite;
   pointer-events: none;
 }
+
+/* Animations pour les toasts et notifications */
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out-right {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-slide-out-right {
+  animation: slide-out-right 0.3s ease-in;
+}
+
+/* Safe area pour mobile */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

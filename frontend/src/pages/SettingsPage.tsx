@@ -7,6 +7,16 @@ import { useTheme } from '../hooks/useTheme';
 import { CustomSelect } from '../components/common/CustomSelect';
 import PaginationControls from '../components/ui/PaginationControls';
 
+import { SettingsLayout } from '../components/settings/SettingsLayout';
+import { SettingsSidebar } from '../components/settings/SettingsSidebar';
+import { SettingsSection } from '../components/settings/SettingsSection';
+import { SettingsInput } from '../components/settings/SettingsInput';
+import { UnsavedChangesBar } from '../components/settings/UnsavedChangesBar';
+import { PasswordStrengthMeter } from '../components/settings/PasswordStrengthMeter';
+import { SessionCard } from '../components/settings/SessionCard';
+import { DangerZoneCard } from '../components/settings/DangerZoneCard';
+import { SettingsToast } from '../components/settings/SettingsToast';
+
 const TIMEZONES = [
   'Europe/Paris',
   'Europe/London',
@@ -26,6 +36,8 @@ const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'trading' | 'display' | 'data'>('profile');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialData, setInitialData] = useState<any>(null);
 
   // Profil
   const [profile, setProfile] = useState({
@@ -54,36 +66,31 @@ const SettingsPage: React.FC = () => {
   });
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
   const [loginHistory, setLoginHistory] = useState<LoginHistoryEntry[]>([]);
-  const [sessionsExpanded, setSessionsExpanded] = useState(false);
-  const [historyExpanded, setHistoryExpanded] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPageSize, setHistoryPageSize] = useState(5);
-
-  // Suppression de compte
-  const [deleteConfirm, setDeleteConfirm] = useState('');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAllSessions, setShowAllSessions] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Charger le profil
       const userProfile = await userService.getCurrentUserProfile();
-      setProfile({
+      const profileData = {
         first_name: userProfile.first_name || '',
         last_name: userProfile.last_name || '',
         email: userProfile.email || '',
         username: userProfile.username || '',
-      });
+      };
+      setProfile(profileData);
 
-      // Charger les préférences
       try {
         const prefs = await userService.getPreferences();
         setPreferences(prefs);
+        setInitialData({ profile: profileData, preferences: prefs });
       } catch {
-        // Les préférences n'existent pas encore, utiliser les valeurs par défaut
+        setInitialData({ profile: profileData, preferences });
       }
 
-      // Charger les sessions et l'historique
       loadSecurityData();
     } catch (error: any) {
       showMessage('error', error.message || t('common:error'));
@@ -96,6 +103,16 @@ const SettingsPage: React.FC = () => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Détecter les changements non sauvegardés
+  useEffect(() => {
+    if (!initialData) return;
+    
+    const profileChanged = JSON.stringify(profile) !== JSON.stringify(initialData.profile);
+    const preferencesChanged = JSON.stringify(preferences) !== JSON.stringify(initialData.preferences);
+    
+    setHasUnsavedChanges(profileChanged || preferencesChanged);
+  }, [profile, preferences, initialData]);
 
   const loadSecurityData = async () => {
     try {
@@ -112,24 +129,24 @@ const SettingsPage: React.FC = () => {
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
   };
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleProfileUpdate = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     try {
       const result = await userService.updateCurrentUserProfile(profile);
       showMessage('success', t('settings:profileUpdated'));
       
-      // Mettre à jour l'utilisateur dans authService et localStorage
       if (result.user) {
         authService.updateUser(result.user);
-        // Déclencher un événement pour mettre à jour l'interface
         window.dispatchEvent(new CustomEvent('user:profile-updated', { 
           detail: { user: result.user } 
         }));
       }
+      
+      setInitialData({ ...initialData, profile });
+      setHasUnsavedChanges(false);
     } catch (error: any) {
       showMessage('error', error.message || t('settings:errorProfileUpdate'));
     } finally {
@@ -156,59 +173,64 @@ const SettingsPage: React.FC = () => {
   };
 
   const handlePreferencesUpdate = async () => {
-    console.log('[SettingsPage] 💾 Sauvegarde des préférences...', preferences);
     setLoading(true);
     try {
       const updatedPreferences = await userService.updatePreferences(preferences);
-      console.log('[SettingsPage] ✅ Préférences sauvegardées:', updatedPreferences);
       showMessage('success', t('settings:preferencesUpdated'));
-      // Appliquer le thème immédiatement si changé
+      
       if (updatedPreferences.theme) {
         setTheme(updatedPreferences.theme as 'light' | 'dark');
       }
-      // Appliquer la taille de police immédiatement si changée
+      
       if (updatedPreferences.font_size) {
         const root = document.documentElement;
         root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
         root.classList.add(`font-size-${updatedPreferences.font_size}`);
-        // Sauvegarder dans localStorage
         try {
           localStorage.setItem('font_size', updatedPreferences.font_size);
-        } catch (e) {
-          // Ignorer les erreurs de localStorage
-        }
+        } catch (e) {}
       }
-      // Changer la langue i18n si elle a changé
+      
       if (updatedPreferences.language) {
-        console.log('[SettingsPage] 🌐 Changement de langue vers:', updatedPreferences.language);
         changeLanguage(updatedPreferences.language);
       }
-      // Mettre à jour les préférences locales avec la réponse du serveur
+      
       setPreferences(updatedPreferences);
-      // Déclencher un événement pour rafraîchir les préférences dans tous les composants
-      console.log('[SettingsPage] 📢 Dispatch event preferences:updated');
+      setInitialData({ ...initialData, preferences: updatedPreferences });
+      setHasUnsavedChanges(false);
       window.dispatchEvent(new CustomEvent('preferences:updated'));
     } catch (error: any) {
-      console.error('[SettingsPage] ❌ Erreur sauvegarde:', error);
       showMessage('error', error.message || t('settings:errorPreferencesUpdate'));
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSaveChanges = async () => {
+    if (activeTab === 'profile') {
+      await handleProfileUpdate();
+    } else if (activeTab === 'trading' || activeTab === 'display') {
+      await handlePreferencesUpdate();
+    }
+  };
+
+  const handleDiscardChanges = () => {
+    if (initialData) {
+      setProfile(initialData.profile);
+      setPreferences(initialData.preferences);
+      setHasUnsavedChanges(false);
+    }
+  };
+
   const handleThemeToggle = async () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
-    // Mettre à jour localement immédiatement pour un feedback instantané
     setPreferences({ ...preferences, theme: newTheme });
-    // Appliquer le thème immédiatement
     await setTheme(newTheme);
-    // Sauvegarder sur le serveur en arrière-plan
+    
     try {
       await userService.updatePreferences({ ...preferences, theme: newTheme });
       window.dispatchEvent(new CustomEvent('preferences:updated'));
     } catch (error: any) {
-      console.error('Erreur lors de la sauvegarde du thème:', error);
-      // Revenir en arrière en cas d'erreur
       const previousTheme = theme;
       setPreferences({ ...preferences, theme: previousTheme });
       await setTheme(previousTheme);
@@ -265,13 +287,6 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirm !== 'SUPPRIMER') {
-      showMessage('error', t('settings:deleteConfirmPrompt'));
-      return;
-    }
-    if (!window.confirm(t('settings:deleteAccountWarning'))) return;
-    
-    setLoading(true);
     try {
       await userService.deleteCurrentUserAccount();
       showMessage('success', t('settings:accountDeleted'));
@@ -281,8 +296,7 @@ const SettingsPage: React.FC = () => {
       }, 2000);
     } catch (error: any) {
       showMessage('error', error.message || t('settings:errorAccountDelete'));
-    } finally {
-      setLoading(false);
+      throw error;
     }
   };
 
@@ -298,558 +312,527 @@ const SettingsPage: React.FC = () => {
     });
   };
 
-  // Pagination de l'historique des connexions
   const paginatedHistory = useMemo(() => {
     const startIndex = (historyPage - 1) * historyPageSize;
     const endIndex = startIndex + historyPageSize;
     return loginHistory.slice(startIndex, endIndex);
   }, [loginHistory, historyPage, historyPageSize]);
 
+  const visibleSessions = showAllSessions ? sessions : sessions.slice(0, 3);
+  const visibleHistory = showAllHistory ? paginatedHistory : paginatedHistory.slice(0, 3);
+
   const tabs = [
-    { id: 'profile' as const, label: t('settings:profile'), icon: '👤' },
-    { id: 'security' as const, label: t('settings:security'), icon: '🔒' },
-    { id: 'trading' as const, label: t('settings:trading'), icon: '📊' },
-    { id: 'display' as const, label: t('settings:display'), icon: '🎨' },
-    { id: 'data' as const, label: t('settings:data'), icon: '💾' },
+    {
+      id: 'profile' as const,
+      label: t('settings:profile'),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'security' as const,
+      label: t('settings:security'),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      ),
+      badge: sessions.length,
+    },
+    {
+      id: 'trading' as const,
+      label: t('settings:trading'),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'display' as const,
+      label: t('settings:display'),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'data' as const,
+      label: t('settings:data'),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+        </svg>
+      ),
+    },
   ];
 
   return (
-    <div className="h-full flex flex-col -my-6 relative">
-      {message && (
-        <div className={`m-3 sm:m-4 p-3 sm:p-4 rounded-lg text-xs sm:text-sm ${
-          message.type === 'success' 
-            ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-800' 
-            : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
-        }`}>
-          {message.text}
-        </div>
-      )}
-
-      {/* Onglets */}
-      <div className="border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 md:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <nav className="-mb-px flex space-x-4 sm:space-x-6 md:space-x-8 overflow-x-auto">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
-              } whitespace-nowrap py-3 sm:py-4 px-1 sm:px-2 border-b-2 font-medium text-xs sm:text-sm flex-shrink-0`}
-            >
-              <span className="mr-1 sm:mr-2">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* Contenu des onglets */}
-      <div className="flex-1 overflow-y-auto overflow-x-visible bg-white dark:bg-gray-900 p-3 sm:p-4 md:p-6 lg:p-8">
-        {loading && (
-          <div className="mb-4 text-gray-600 dark:text-gray-400">{t('common:loading')}</div>
+    <SettingsLayout
+      sidebar={
+        <SettingsSidebar
+          activeTab={activeTab}
+          onTabChange={(tabId) => setActiveTab(tabId as any)}
+          tabs={tabs}
+        />
+      }
+      header={
+        message && (
+          <SettingsToast
+            type={message.type}
+            message={message.text}
+            onClose={() => setMessage(null)}
+          />
+        )
+      }
+    >
+      <div className="space-y-6">
+        {/* Section Profil */}
+        {activeTab === 'profile' && (
+          <SettingsSection
+            title={t('settings:profileInfo')}
+            description={t('settings:profileInfoDesc', { defaultValue: 'Gérez vos informations personnelles' })}
+            icon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            }
+          >
+            <form onSubmit={handleProfileUpdate} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <SettingsInput
+                  label={t('settings:firstName')}
+                  value={profile.first_name}
+                  onChange={(value) => setProfile({ ...profile, first_name: value })}
+                  required
+                  icon={
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  }
+                />
+                <SettingsInput
+                  label={t('settings:lastName')}
+                  value={profile.last_name}
+                  onChange={(value) => setProfile({ ...profile, last_name: value })}
+                  required
+                  icon={
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  }
+                />
+              </div>
+              <SettingsInput
+                label={t('settings:email')}
+                type="email"
+                value={profile.email}
+                onChange={(value) => setProfile({ ...profile, email: value })}
+                required
+                icon={
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                }
+              />
+              <SettingsInput
+                label={t('settings:username')}
+                value={profile.username}
+                onChange={(value) => setProfile({ ...profile, username: value })}
+                required
+                icon={
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                }
+              />
+            </form>
+          </SettingsSection>
         )}
 
-        {/* Profil */}
-        {activeTab === 'profile' && (
-          <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">{t('settings:profileInfo')}</h2>
-              <form onSubmit={handleProfileUpdate} className="space-y-4 sm:space-y-6 max-w-md">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:firstName')}</label>
-                    <input
-                      type="text"
-                      value={profile.first_name}
-                      onChange={(e) => setProfile({ ...profile, first_name: e.target.value })}
-                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:lastName')}</label>
-                    <input
-                      type="text"
-                      value={profile.last_name}
-                      onChange={(e) => setProfile({ ...profile, last_name: e.target.value })}
-                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      required
-                    />
-                  </div>
-                </div>
+        {/* Section Sécurité */}
+        {activeTab === 'security' && (
+          <>
+            <SettingsSection
+              title={t('settings:changePassword')}
+              description={t('settings:changePasswordDesc', { defaultValue: 'Modifiez votre mot de passe pour sécuriser votre compte' })}
+              icon={
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              }
+            >
+              <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+                <SettingsInput
+                  label={t('settings:oldPassword')}
+                  type="password"
+                  value={passwordForm.old_password}
+                  onChange={(value) => setPasswordForm({ ...passwordForm, old_password: value })}
+                  required
+                  icon={
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  }
+                />
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:email')}</label>
-                  <input
-                    type="email"
-                    value={profile.email}
-                    onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  <SettingsInput
+                    label={t('settings:newPassword')}
+                    type="password"
+                    value={passwordForm.new_password}
+                    onChange={(value) => setPasswordForm({ ...passwordForm, new_password: value })}
                     required
+                    icon={
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    }
                   />
+                  <PasswordStrengthMeter password={passwordForm.new_password} />
                 </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:username')}</label>
-                  <input
-                    type="text"
-                    value={profile.username}
-                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-                    className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                    required
-                  />
-                </div>
+                <SettingsInput
+                  label={t('settings:confirmNewPassword')}
+                  type="password"
+                  value={passwordForm.new_password_confirm}
+                  onChange={(value) => setPasswordForm({ ...passwordForm, new_password_confirm: value })}
+                  required
+                  icon={
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  }
+                />
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
                 >
-                  {t('settings:saveChanges')}
+                  {t('settings:updatePassword')}
                 </button>
               </form>
-          </div>
-        )}
+            </SettingsSection>
 
-        {/* Sécurité */}
-        {activeTab === 'security' && (
-          <div className="space-y-6 sm:space-y-8">
-              {/* Changement de mot de passe */}
-              <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">{t('settings:changePassword')}</h2>
-                <form onSubmit={handlePasswordChange} className="space-y-3 sm:space-y-4 max-w-md">
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:oldPassword')}</label>
-                    <input
-                      type="password"
-                      value={passwordForm.old_password}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, old_password: e.target.value })}
-                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:newPassword')}</label>
-                    <input
-                      type="password"
-                      value={passwordForm.new_password}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:confirmNewPassword')}</label>
-                    <input
-                      type="password"
-                      value={passwordForm.new_password_confirm}
-                      onChange={(e) => setPasswordForm({ ...passwordForm, new_password_confirm: e.target.value })}
-                      className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      required
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-                  >
-                    {t('settings:updatePassword')}
-                  </button>
-                </form>
-              </div>
-
-              {/* Sessions actives */}
-              <div>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 mb-3 sm:mb-4">
-                  <button
-                    onClick={() => setSessionsExpanded(!sessionsExpanded)}
-                    className="flex items-center text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300"
-                  >
-                    <svg
-                      className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 transition-transform ${sessionsExpanded ? 'rotate-90' : ''}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                    {t('settings:activeSessions')}
-                    <span className="ml-2 px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                      {sessions.length}
-                    </span>
-                  </button>
-                  {sessionsExpanded && sessions.length > 1 && (
-                    <button
-                      onClick={handleRevokeAllSessions}
-                      className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-sm sm:text-base bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
-                    >
-                      {t('settings:disconnectAllOther')}
-                    </button>
-                  )}
-                </div>
-                {sessionsExpanded && (
-                  <div className="space-y-3">
-                    {sessions.length === 0 ? (
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 py-4">{t('settings:noActiveSessions')}</p>
-                    ) : (
-                      sessions.map((session) => (
-                        <div
-                          key={session.jti}
-                          className={`p-3 sm:p-4 border rounded-md ${
-                            session.is_current 
-                              ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20' 
-                              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                          }`}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
-                                {session.device_info || t('settings:unknownDevice')}
-                                {session.is_current && (
-                                  <span className="ml-2 px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded">{t('settings:currentSession')}</span>
-                                )}
-                              </div>
-                              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1 break-words">
-                                {t('settings:createdOn')} {formatDate(session.created_at)}
-                              </div>
-                              <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">
-                                {t('settings:expiresOn')} {formatDate(session.expires_at)}
-                              </div>
-                            </div>
-                            {!session.is_current && (
-                              <button
-                                onClick={() => handleRevokeSession(session.jti)}
-                                className="w-full sm:w-auto px-3 py-1.5 sm:py-1 text-sm sm:text-base text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0"
-                              >
-                                {t('settings:disconnect')}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Historique des connexions */}
-              <div>
-                <button
-                  onClick={() => {
-                    setHistoryExpanded(!historyExpanded);
-                    if (!historyExpanded) {
-                      setHistoryPage(1);
-                    }
-                  }}
-                  className="flex items-center text-base sm:text-lg md:text-xl font-semibold text-gray-900 dark:text-gray-100 hover:text-gray-700 dark:hover:text-gray-300 mb-3 sm:mb-4"
-                >
-                  <svg
-                    className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 transition-transform ${historyExpanded ? 'rotate-90' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  {t('settings:loginHistory')}
-                  <span className="ml-2 px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                    {loginHistory.length}
-                  </span>
-                </button>
-                {historyExpanded && (
+            <SettingsSection
+              title={t('settings:activeSessions')}
+              description={t('settings:activeSessionsDesc', { defaultValue: 'Gérez les appareils connectés à votre compte' })}
+              icon={
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              }
+            >
+              <div className="space-y-4">
+                {sessions.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 py-4">
+                    {t('settings:noActiveSessions')}
+                  </p>
+                ) : (
                   <>
-                    {loginHistory.length === 0 ? (
-                      <div className="text-center py-8 sm:py-12 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">{t('settings:noLoginHistory')}</p>
-                        <p className="text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 mt-2">{t('settings:loginHistoryInfo')}</p>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Mobile Card View */}
-                        <div className="block md:hidden space-y-3">
-                          {paginatedHistory.map((entry, index) => (
-                            <div
-                              key={index}
-                              className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-                            >
-                              <div className="space-y-2">
-                                <div>
-                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">{t('settings:date')}</div>
-                                  <div className="text-xs sm:text-sm text-gray-900 dark:text-gray-100 break-words">{formatDate(entry.date)}</div>
-                                </div>
-                                <div>
-                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">{t('settings:ip')}</div>
-                                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">{entry.ip_address || t('common:na')}</div>
-                                </div>
-                                <div>
-                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">{t('settings:device')}</div>
-                                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 break-words">{entry.user_agent || t('common:na')}</div>
-                                </div>
-                                <div>
-                                  <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">{t('settings:status')}</div>
-                                  <span className={`inline-flex px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full ${
-                                    entry.success 
-                                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-                                      : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                                  }`}>
-                                    {entry.success ? t('settings:success') : t('settings:failed')}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        {/* Desktop Table View */}
-                        <div className="hidden md:block overflow-x-auto">
-                          <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead className="bg-gray-50 dark:bg-gray-800">
-                              <tr>
-                                <th className="px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:date')}</th>
-                                <th className="px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:ip')}</th>
-                                <th className="px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:device')}</th>
-                                <th className="px-4 lg:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings:status')}</th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                              {paginatedHistory.map((entry, index) => (
-                                <tr key={index}>
-                                  <td className="px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900 dark:text-gray-100">{formatDate(entry.date)}</td>
-                                  <td className="px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-600 dark:text-gray-400">{entry.ip_address || t('common:na')}</td>
-                                  <td className="px-4 lg:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate" title={entry.user_agent || t('common:na')}>{entry.user_agent || t('common:na')}</td>
-                                  <td className="px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-[10px] sm:text-xs leading-5 font-semibold rounded-full ${
-                                      entry.success 
-                                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-                                        : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                                    }`}>
-                                      {entry.success ? t('settings:success') : t('settings:failed')}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        {loginHistory.length > historyPageSize && (
-                          <PaginationControls
-                            currentPage={historyPage}
-                            totalPages={Math.max(1, Math.ceil(loginHistory.length / historyPageSize))}
-                            totalItems={loginHistory.length}
-                            itemsPerPage={historyPageSize}
-                            startIndex={(historyPage - 1) * historyPageSize + 1}
-                            endIndex={Math.min(historyPage * historyPageSize, loginHistory.length)}
-                            onPageChange={(page) => setHistoryPage(page)}
-                            onPageSizeChange={(size) => {
-                              setHistoryPageSize(size);
-                              setHistoryPage(1);
-                            }}
-                            pageSizeOptions={[5, 10, 25, 50]}
-                          />
-                        )}
-                      </>
-                    )}
+                    <div className="space-y-3">
+                      {visibleSessions.map((session) => (
+                        <SessionCard
+                          key={session.jti}
+                          session={session}
+                          onRevoke={handleRevokeSession}
+                          formatDate={formatDate}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mt-4">
+                      {sessions.length > 3 && (
+                        <button
+                          onClick={() => setShowAllSessions(!showAllSessions)}
+                          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {showAllSessions
+                            ? t('settings:showLess', { defaultValue: 'Voir moins' })
+                            : t('settings:showAll', { defaultValue: `Voir tout (${sessions.length})` })}
+                        </button>
+                      )}
+                      {sessions.length > 1 && (
+                        <button
+                          onClick={handleRevokeAllSessions}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                          {t('settings:disconnectAllOther')}
+                        </button>
+                      )}
+                    </div>
                   </>
                 )}
               </div>
-          </div>
-        )}
+            </SettingsSection>
 
-        {/* Préférences de trading */}
-        {activeTab === 'trading' && (
-          <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">{t('settings:tradingPreferences')}</h2>
-              <div className="space-y-4 sm:space-y-6 max-w-md">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:dateFormat')}</label>
-                  <CustomSelect
-                    value={preferences.date_format}
-                    onChange={(value) => setPreferences({ ...preferences, date_format: value as 'US' | 'EU' })}
-                    options={[
-                      { value: 'EU', label: t('settings:dateFormatEU') },
-                      { value: 'US', label: t('settings:dateFormatUS') },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:numberFormat')}</label>
-                  <CustomSelect
-                    value={preferences.number_format}
-                    onChange={(value) => setPreferences({ ...preferences, number_format: value as 'point' | 'comma' })}
-                    options={[
-                      { value: 'comma', label: t('settings:numberFormatComma') },
-                      { value: 'point', label: t('settings:numberFormatPoint') },
-                    ]}
-                  />
-                </div>
-                <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h3 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">{t('settings:notifications', { defaultValue: 'Notifications' })}</h3>
-                  <label htmlFor="email_goal_alerts" className="flex items-start sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <div className="flex-1">
-                      <div className="block text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
-                        {t('settings:emailGoalAlerts', { defaultValue: 'Alertes email pour les objectifs' })}
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        {t('settings:emailGoalAlertsDescription', { defaultValue: 'Recevoir des emails quand un objectif est atteint ou en danger' })}
-                      </p>
-                    </div>
-                    <input
-                      id="email_goal_alerts"
-                      type="checkbox"
-                      checked={preferences.email_goal_alerts !== false}
-                      onChange={(e) => setPreferences({ ...preferences, email_goal_alerts: e.target.checked })}
-                      className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700 flex-shrink-0 cursor-pointer"
-                    />
-                  </label>
-                </div>
-                <button
-                  onClick={handlePreferencesUpdate}
-                  disabled={loading}
-                  className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  {t('settings:savePreferences')}
-                </button>
-              </div>
-          </div>
-        )}
-
-        {/* Préférences d'affichage */}
-        {activeTab === 'display' && (
-          <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">{t('settings:displayPreferences')}</h2>
-              <div className="space-y-4 sm:space-y-6 max-w-md">
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:timezone')}</label>
-                  <CustomSelect
-                    value={preferences.timezone}
-                    onChange={(value) => setPreferences({ ...preferences, timezone: value as string })}
-                    options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">{t('settings:theme')}</label>
-                  <div className="flex items-center space-x-3 sm:space-x-4">
-                    <span className={`text-xs sm:text-sm ${theme === 'light' ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-                      {t('settings:themeLight')}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleThemeToggle}
-                      className={`relative inline-flex h-5 w-9 sm:h-6 sm:w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                        theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                      }`}
-                      role="switch"
-                      aria-checked={theme === 'dark'}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 sm:h-5 sm:w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          theme === 'dark' ? 'translate-x-4 sm:translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                    <span className={`text-xs sm:text-sm ${theme === 'dark' ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-                      {t('settings:themeDark')}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">{t('settings:fontSize')}</label>
-                  <CustomSelect
-                    value={preferences.font_size}
-                    onChange={(value) => setPreferences({ ...preferences, font_size: value as 'small' | 'medium' | 'large' })}
-                    options={[
-                      { value: 'small', label: t('settings:fontSizeSmall') },
-                      { value: 'medium', label: t('settings:fontSizeMedium') },
-                      { value: 'large', label: t('settings:fontSizeLarge') },
-                    ]}
-                  />
-                </div>
-
-                <button
-                  onClick={handlePreferencesUpdate}
-                  disabled={loading}
-                  className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  {t('settings:savePreferences')}
-                </button>
-              </div>
-          </div>
-        )}
-
-        {/* Données et confidentialité */}
-        {activeTab === 'data' && (
-          <div className="space-y-6 sm:space-y-8">
-              <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4 sm:mb-6">{t('settings:dataExport')}</h2>
-                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3 sm:mb-4 break-words">
-                  {t('settings:dataExportDescription')}
-                </p>
-                <button
-                  onClick={handleExportData}
-                  disabled={loading}
-                  className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-                >
-                  {t('settings:exportMyData')}
-                </button>
-              </div>
-
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-6 sm:pt-8">
-                <h2 className="text-lg sm:text-xl font-semibold text-red-900 dark:text-red-400 mb-4 sm:mb-6">{t('settings:dangerZone')}</h2>
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 sm:p-6">
-                  <h3 className="text-base sm:text-lg font-semibold text-red-900 dark:text-red-400 mb-2">{t('settings:deleteAccount')}</h3>
-                  <p className="text-xs sm:text-sm text-red-700 dark:text-red-300 mb-3 sm:mb-4 break-words">
-                    {t('settings:deleteAccountWarning')}
+            <SettingsSection
+              title={t('settings:loginHistory')}
+              description={t('settings:loginHistoryDesc', { defaultValue: 'Consultez l\'historique de vos connexions' })}
+              icon={
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              }
+            >
+              {loginHistory.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('settings:noLoginHistory')}
                   </p>
-                  <ul className="list-disc list-inside text-xs sm:text-sm text-red-700 dark:text-red-300 mb-3 sm:mb-4 space-y-1">
-                    <li>{t('settings:deleteAccountList1')}</li>
-                    <li>{t('settings:deleteAccountList2')}</li>
-                    <li>{t('settings:deleteAccountList3')}</li>
-                    <li>{t('settings:deleteAccountList4')}</li>
-        </ul>
-                  {!showDeleteModal ? (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                    {t('settings:loginHistoryInfo')}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {visibleHistory.map((entry, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {formatDate(entry.date)}
+                            </span>
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                              entry.success
+                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                            }`}>
+                              {entry.success ? t('settings:success') : t('settings:failed')}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                            {entry.ip_address || t('common:na')} • {entry.user_agent || t('common:na')}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {loginHistory.length > 3 && (
                     <button
-                      onClick={() => setShowDeleteModal(true)}
-                      className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                      onClick={() => setShowAllHistory(!showAllHistory)}
+                      className="mt-3 text-sm text-blue-600 dark:text-blue-400 hover:underline"
                     >
-                      {t('settings:deleteAccountButton')}
+                      {showAllHistory
+                        ? t('settings:showLess', { defaultValue: 'Voir moins' })
+                        : t('settings:showAll', { defaultValue: `Voir tout (${loginHistory.length})` })}
                     </button>
-                  ) : (
-                    <div className="space-y-3 sm:space-y-4">
-                      <div>
-                        <label className="block text-xs sm:text-sm font-medium text-red-900 dark:text-red-400 mb-1.5 sm:mb-2">
-                          {t('settings:deleteConfirmPrompt')}
-                        </label>
-                        <input
-                          type="text"
-                          value={deleteConfirm}
-                          onChange={(e) => setDeleteConfirm(e.target.value)}
-                          className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-sm sm:text-base border border-red-300 dark:border-red-700 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                          placeholder="SUPPRIMER"
-                        />
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-2 sm:space-x-3">
-                        <button
-                          onClick={handleDeleteAccount}
-                          disabled={loading || deleteConfirm !== 'SUPPRIMER'}
-                          className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 dark:bg-red-500 dark:hover:bg-red-600"
-                        >
-                          {t('settings:confirmDeletion')}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowDeleteModal(false);
-                            setDeleteConfirm('');
-                          }}
-                          className="w-full sm:w-auto px-3 sm:px-4 py-2 text-sm sm:text-base bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
-                        >
-                          {t('common:cancel')}
-                        </button>
-                      </div>
+                  )}
+                  {showAllHistory && loginHistory.length > historyPageSize && (
+                    <div className="mt-4">
+                      <PaginationControls
+                        currentPage={historyPage}
+                        totalPages={Math.max(1, Math.ceil(loginHistory.length / historyPageSize))}
+                        totalItems={loginHistory.length}
+                        itemsPerPage={historyPageSize}
+                        startIndex={(historyPage - 1) * historyPageSize + 1}
+                        endIndex={Math.min(historyPage * historyPageSize, loginHistory.length)}
+                        onPageChange={(page) => setHistoryPage(page)}
+                        onPageSizeChange={(size) => {
+                          setHistoryPageSize(size);
+                          setHistoryPage(1);
+                        }}
+                        pageSizeOptions={[5, 10, 25, 50]}
+                      />
                     </div>
                   )}
+                </>
+              )}
+            </SettingsSection>
+          </>
+        )}
+
+        {/* Section Trading */}
+        {activeTab === 'trading' && (
+          <SettingsSection
+            title={t('settings:tradingPreferences')}
+            description={t('settings:tradingPreferencesDesc', { defaultValue: 'Configurez vos préférences de trading' })}
+            icon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            }
+          >
+            <div className="space-y-6 max-w-md">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings:dateFormat')}
+                </label>
+                <CustomSelect
+                  value={preferences.date_format}
+                  onChange={(value) => setPreferences({ ...preferences, date_format: value as 'US' | 'EU' })}
+                  options={[
+                    { value: 'EU', label: t('settings:dateFormatEU') },
+                    { value: 'US', label: t('settings:dateFormatUS') },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings:numberFormat')}
+                </label>
+                <CustomSelect
+                  value={preferences.number_format}
+                  onChange={(value) => setPreferences({ ...preferences, number_format: value as 'point' | 'comma' })}
+                  options={[
+                    { value: 'comma', label: t('settings:numberFormatComma') },
+                    { value: 'point', label: t('settings:numberFormatPoint') },
+                  ]}
+                />
+              </div>
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
+                  {t('settings:notifications', { defaultValue: 'Notifications' })}
+                </h4>
+                <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {t('settings:emailGoalAlerts', { defaultValue: 'Alertes email pour les objectifs' })}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {t('settings:emailGoalAlertsDescription', { defaultValue: 'Recevoir des emails quand un objectif est atteint ou en danger' })}
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={preferences.email_goal_alerts !== false}
+                    onChange={(e) => setPreferences({ ...preferences, email_goal_alerts: e.target.checked })}
+                    className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700 cursor-pointer ml-3"
+                  />
+                </label>
+              </div>
+            </div>
+          </SettingsSection>
+        )}
+
+        {/* Section Affichage */}
+        {activeTab === 'display' && (
+          <SettingsSection
+            title={t('settings:displayPreferences')}
+            description={t('settings:displayPreferencesDesc', { defaultValue: 'Personnalisez l\'apparence de l\'application' })}
+            icon={
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            }
+          >
+            <div className="space-y-6 max-w-md">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings:language')}
+                </label>
+                <CustomSelect
+                  value={preferences.language}
+                  onChange={(value) => setPreferences({ ...preferences, language: value as 'de' | 'en' | 'fr' | 'es' | 'it' | 'pt' | 'ja' | 'ko' | 'zh' })}
+                  options={[
+                    { value: 'fr', label: 'Français' },
+                    { value: 'en', label: 'English' },
+                    { value: 'es', label: 'Español' },
+                    { value: 'de', label: 'Deutsch' },
+                    { value: 'it', label: 'Italiano' },
+                    { value: 'pt', label: 'Português' },
+                    { value: 'ja', label: '日本語' },
+                    { value: 'zh', label: '中文' },
+                    { value: 'ko', label: '한국어' },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings:timezone')}
+                </label>
+                <CustomSelect
+                  value={preferences.timezone}
+                  onChange={(value) => setPreferences({ ...preferences, timezone: value as string })}
+                  options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  {t('settings:theme')}
+                </label>
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {theme === 'light' ? t('settings:themeLight') : t('settings:themeDark')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleThemeToggle}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('settings:fontSize')}
+                </label>
+                <CustomSelect
+                  value={preferences.font_size}
+                  onChange={(value) => setPreferences({ ...preferences, font_size: value as 'small' | 'medium' | 'large' })}
+                  options={[
+                    { value: 'small', label: t('settings:fontSizeSmall') },
+                    { value: 'medium', label: t('settings:fontSizeMedium') },
+                    { value: 'large', label: t('settings:fontSizeLarge') },
+                  ]}
+                />
+              </div>
+            </div>
+          </SettingsSection>
+        )}
+
+        {/* Section Données */}
+        {activeTab === 'data' && (
+          <>
+            <SettingsSection
+              title={t('settings:dataExport')}
+              description={t('settings:dataExportDescription')}
+              icon={
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              }
+            >
+              <button
+                onClick={handleExportData}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                {t('settings:exportMyData')}
+              </button>
+            </SettingsSection>
+
+            <DangerZoneCard onDeleteAccount={handleDeleteAccount} />
+          </>
         )}
       </div>
-    </div>
+
+      <UnsavedChangesBar
+        hasChanges={hasUnsavedChanges}
+        onSave={handleSaveChanges}
+        onDiscard={handleDiscardChanges}
+        isSaving={loading}
+      />
+    </SettingsLayout>
   );
 };
 

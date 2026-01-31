@@ -88,5 +88,21 @@
   "hideInitialBalance": "Anfangssaldo ausblenden",
   "hideCurrentBalance": "Aktuellen Saldo ausblenden",
   "hideMll": "MLL ausblenden",
-  "hideProfitLoss": "Gewinn/Verlust ausblenden"
+  "hideProfitLoss": "Gewinn/Verlust ausblenden",
+  "unsavedChanges": "Nicht gespeicherte Änderungen",
+  "unsavedChangesDesc": "Sie haben nicht gespeicherte Änderungen",
+  "profileInfoDesc": "Verwalten Sie Ihre persönlichen Informationen",
+  "changePasswordDesc": "Ändern Sie Ihr Passwort, um Ihr Konto zu sichern",
+  "activeSessionsDesc": "Verwalten Sie mit Ihrem Konto verbundene Geräte",
+  "loginHistoryDesc": "Sehen Sie Ihren Anmeldeverlauf ein",
+  "tradingPreferencesDesc": "Konfigurieren Sie Ihre Handelseinstellungen",
+  "displayPreferencesDesc": "Passen Sie das Erscheinungsbild der Anwendung an",
+  "dangerZoneDesc": "Unwiderrufliche und dauerhafte Aktionen",
+  "passwordStrength": "Passwortstärke",
+  "passwordWeak": "Schwach",
+  "passwordMedium": "Mittel",
+  "passwordGood": "Gut",
+  "passwordStrong": "Stark",
+  "showAll": "Alle anzeigen",
+  "showLess": "Weniger anzeigen"
 }
