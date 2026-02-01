@@ -1293,7 +1293,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       {/* Gain si stratégie respectée - seulement si le trade est perdant ET la stratégie n'a pas été respectée */}
                       {trade.strategyRespected === false && trade.net_pnl && parseFloat(trade.net_pnl) <= 0 && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2 flex-wrap">
+                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2 flex-wrap">
                             <span className="break-words">{t('trades:strategyCompliance.gainIfStrategyRespected')}</span>
                             <Tooltip 
                               content={t('trades:strategyCompliance.gainIfStrategyRespectedTooltip')} 
@@ -1570,7 +1570,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
               disabled={isSaving}
               className="px-3 sm:px-4 py-2 rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 text-sm sm:text-base font-medium transition-colors disabled:opacity-50 flex-1 sm:flex-initial"
             >
-              {t('trades:strategyCompliance.cancel')}
+              {t('trades:strategyCompliance.cancelButton', { defaultValue: 'Annuler' })}
             </button>
             {/* Bouton de suppression - uniquement pour les jours sans trades avec compliance existante */}
             {isDayWithoutTrades && dayCompliance?.id ? (
@@ -1603,7 +1603,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  {t('trades:strategyCompliance.save')}
+                  {t('trades:strategyCompliance.saveButton', { defaultValue: 'Enregistrer' })}
                 </>
               )}
             </button>
