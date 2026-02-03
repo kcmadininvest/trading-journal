@@ -225,7 +225,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Extract data from consolidated response
   const trades = useMemo(() => dashboardData?.trades || [], [dashboardData]);
   const dailyAggregates = useMemo(() => dashboardData?.daily_aggregates || [], [dashboardData]);
-  const strategies = useMemo(() => new Map(), []);
+  const strategies = useMemo(() => {
+    const strategiesMap = new Map();
+    if (dashboardData?.strategies) {
+      dashboardData.strategies.forEach((strategy: any) => {
+        strategiesMap.set(strategy.trade, strategy);
+      });
+    }
+    return strategiesMap;
+  }, [dashboardData]);
   const isLoading = dashboardLoading;
   const error = dashboardError;
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);

@@ -18,6 +18,7 @@ export interface ComplianceStats {
 export interface DashboardSummary {
   daily_aggregates: DailyAggregate[];
   trades: any[];
+  strategies: any[];
   compliance_stats: ComplianceStats | null;
   count: number;
 }

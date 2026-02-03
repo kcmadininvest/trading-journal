@@ -4612,13 +4612,19 @@ def dashboard_summary(request):
                 'next_badge': next_badge
             }
             
+            # Serialize strategies for frontend
+            from .serializers import TradeStrategySerializer
+            strategies_data = TradeStrategySerializer(strategies_queryset, many=True).data
+            
         except (ValueError, TypeError):
+            strategies_data = []
             pass
     
     # Build response
     response_data = {
         'daily_aggregates': daily_data,
         'trades': trades_data,
+        'strategies': strategies_data if trading_account_id else [],
         'compliance_stats': compliance_stats,
         'count': len(daily_data)
     }
