@@ -190,7 +190,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const privacySettings = usePrivacySettings('dashboard');
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId } = useTradingAccount();
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
   
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
@@ -220,6 +220,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     accountId,
     startDate: selectedPeriod?.start,
     endDate: selectedPeriod?.end,
+    loading: accountLoading,
   });
 
   // Extract data from consolidated response

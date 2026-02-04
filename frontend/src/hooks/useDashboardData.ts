@@ -5,14 +5,20 @@ interface DashboardDataParams {
   accountId: number | null;
   startDate?: string;
   endDate?: string;
+  loading?: boolean;
 }
 
-export function useDashboardData({ accountId, startDate, endDate }: DashboardDataParams) {
+export function useDashboardData({ accountId, startDate, endDate, loading }: DashboardDataParams) {
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    // Don't fetch if the context is still loading (determining default account)
+    if (loading) {
+      return;
+    }
+
     // Don't fetch if accountId is explicitly undefined (not yet loaded)
     if (accountId === undefined) {
       return;
@@ -39,7 +45,7 @@ export function useDashboardData({ accountId, startDate, endDate }: DashboardDat
     } finally {
       setIsLoading(false);
     }
-  }, [accountId, startDate, endDate]);
+  }, [accountId, startDate, endDate, loading]);
 
   useEffect(() => {
     fetchData();
