@@ -39,6 +39,10 @@
   "performanceRatios": {
     "title": "Leistungskennzahlen",
     "subtitle": "Erweiterte Metriken zur Analyse Ihrer Handelsstrategie",
+    "performance": "Leistung",
+    "riskManagement": "Risikomanagement",
+    "performanceSubtitle": "Globale Leistungsmetriken",
+    "riskManagementSubtitle": "Risiko- und Erholungsindikatoren",
     "mainPerformance": "Hauptleistung",
     "recovery": "Erholung",
     "financialEfficiency": "Finanzielle Effizienz",

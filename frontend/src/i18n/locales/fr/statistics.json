@@ -39,6 +39,10 @@
   "performanceRatios": {
     "title": "Ratios de Performance",
     "subtitle": "Métriques avancées pour analyser votre stratégie de trading",
+    "performance": "Performance",
+    "riskManagement": "Gestion du Risque",
+    "performanceSubtitle": "Métriques de performance globale",
+    "riskManagementSubtitle": "Indicateurs de risque et récupération",
     "mainPerformance": "Performance Principale",
     "recovery": "Récupération",
     "financialEfficiency": "Efficacité Financière",
@@ -205,5 +209,12 @@
     "modelDeleteError": "Erreur lors de la suppression du modèle.",
     "exportErrorMessage": "Une erreur est survenue lors de l'export. Veuillez réessayer.",
     "reportFilePrefix": "rapport"
+  },
+  "gauge": {
+    "excellent": "Excellent",
+    "good": "Bon",
+    "average": "Moyen",
+    "poor": "Faible",
+    "target": "Objectif"
   }
 }

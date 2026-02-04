@@ -14,6 +14,8 @@ import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
 import { MetricGroup } from '../components/statistics/MetricGroup';
+import { MetricCardWithGauge } from '../components/statistics/MetricCardWithGauge';
+import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
 import { ExportButton } from '../components/exports';
@@ -367,12 +369,17 @@ function StatisticsPage() {
                   tooltip={t('statistics:overview.totalPnLTooltip')}
                   variant={parseFloat(statisticsData.total_pnl) >= 0 ? 'success' : 'danger'}
                 />
-                <MetricItem
-                  label={t('statistics:overview.winRate')}
-                  value={`${formatNumber(statisticsData.win_rate, 1)}%`}
-                  tooltip={t('statistics:overview.winRateTooltip')}
-                  variant={statisticsData.win_rate >= 50 ? 'success' : statisticsData.win_rate >= 40 ? 'warning' : 'danger'}
-                />
+                <div className="mt-4">
+                  <MetricGauge
+                    label={t('statistics:overview.winRate')}
+                    value={statisticsData.win_rate}
+                    config={GAUGE_CONFIGS.winRate}
+                    tooltip={t('statistics:overview.winRateTooltip')}
+                    formatValue={(val: number) => `${formatNumber(val, 1)}%`}
+                    showLabels={true}
+                    size="md"
+                  />
+                </div>
               </MetricCard>
 
               <MetricCard
@@ -480,23 +487,31 @@ function StatisticsPage() {
                   }
                 >
                   <MetricItem
-                    label={t('statistics:performanceRatios.profitFactor')}
-                    value={formatNumber(statisticsData.profit_factor, 2)}
-                    tooltip={t('statistics:performanceRatios.profitFactorTooltip')}
-                    variant={statisticsData.profit_factor >= 1.0 ? 'success' : 'danger'}
-                  />
-                  <MetricItem
-                    label={t('statistics:performanceRatios.winLossRatio')}
-                    value={formatNumber(statisticsData.win_loss_ratio, 2)}
-                    tooltip={t('statistics:performanceRatios.winLossRatioTooltip')}
-                    variant={statisticsData.win_loss_ratio >= 1.0 ? 'success' : 'danger'}
-                  />
-                  <MetricItem
                     label={t('statistics:performanceRatios.expectancy')}
                     value={formatCurrency(statisticsData.expectancy, currencySymbol)}
                     tooltip={t('statistics:performanceRatios.expectancyTooltip')}
                     variant={statisticsData.expectancy >= 0 ? 'success' : 'danger'}
                   />
+                  <div className="mt-4 space-y-4">
+                    <MetricGauge
+                      label={t('statistics:performanceRatios.profitFactor')}
+                      value={statisticsData.profit_factor}
+                      config={GAUGE_CONFIGS.profitFactor}
+                      tooltip={t('statistics:performanceRatios.profitFactorTooltip')}
+                      formatValue={(val: number) => formatNumber(val, 2)}
+                      showLabels={false}
+                      size="md"
+                    />
+                    <MetricGauge
+                      label={t('statistics:performanceRatios.winLossRatio')}
+                      value={statisticsData.win_loss_ratio}
+                      config={GAUGE_CONFIGS.winLossRatio}
+                      tooltip={t('statistics:performanceRatios.winLossRatioTooltip')}
+                      formatValue={(val: number) => formatNumber(val, 2)}
+                      showLabels={true}
+                      size="md"
+                    />
+                  </div>
                 </MetricCard>
 
                 <MetricCard
@@ -508,52 +523,67 @@ function StatisticsPage() {
                   }
                 >
                   <MetricItem
-                    label={t('statistics:performanceRatios.feesRatio')}
-                    value={`${formatNumber(statisticsData.fees_ratio * 100, 1)}%`}
-                    tooltip={t('statistics:performanceRatios.feesRatioTooltip')}
-                    variant={statisticsData.fees_ratio <= 0.1 ? 'success' : 'warning'}
-                  />
-                  <MetricItem
                     label={t('statistics:performanceRatios.volumePnLRatio')}
                     value={formatRatio(statisticsData.volume_pnl_ratio)}
                     tooltip={t('statistics:performanceRatios.volumePnLRatioTooltip')}
                     variant="default"
                   />
-                  <MetricItem
-                    label={t('statistics:performanceRatios.tradeEfficiency')}
-                    value={`${formatNumber(statisticsData.trade_efficiency, 1)}%`}
-                    tooltip={t('statistics:performanceRatios.tradeEfficiencyTooltip')}
-                    variant={statisticsData.trade_efficiency >= 50 ? 'success' : statisticsData.trade_efficiency >= 30 ? 'warning' : 'danger'}
-                  />
+                  <div className="mt-4 space-y-4">
+                    <MetricGauge
+                      label={t('statistics:performanceRatios.feesRatio')}
+                      value={statisticsData.fees_ratio * 100}
+                      config={GAUGE_CONFIGS.feesRatio}
+                      tooltip={t('statistics:performanceRatios.feesRatioTooltip')}
+                      formatValue={(val: number) => `${formatNumber(val, 1)}%`}
+                      showLabels={false}
+                      size="md"
+                    />
+                    <MetricGauge
+                      label={t('statistics:performanceRatios.tradeEfficiency')}
+                      value={statisticsData.trade_efficiency}
+                      config={GAUGE_CONFIGS.tradeEfficiency}
+                      tooltip={t('statistics:performanceRatios.tradeEfficiencyTooltip')}
+                      formatValue={(val: number) => `${formatNumber(val, 1)}%`}
+                      showLabels={true}
+                      size="md"
+                    />
+                  </div>
                 </MetricCard>
 
-                <MetricCard
+                <MetricCardWithGauge
                   title={t('statistics:performanceRatios.riskAdjustedPerformance')}
                   icon={
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   }
-                >
-                  <MetricItem
-                    label={t('statistics:performanceRatios.sharpeRatio')}
-                    value={formatNumber(statisticsData.sharpe_ratio, 2)}
-                    tooltip={t('statistics:performanceRatios.sharpeRatioTooltip')}
-                    variant={statisticsData.sharpe_ratio >= 1.0 ? 'success' : 'warning'}
-                  />
-                  <MetricItem
-                    label={t('statistics:performanceRatios.sortinoRatio')}
-                    value={formatNumber(statisticsData.sortino_ratio, 2)}
-                    tooltip={t('statistics:performanceRatios.sortinoRatioTooltip')}
-                    variant={statisticsData.sortino_ratio >= 1.0 ? 'success' : 'warning'}
-                  />
-                  <MetricItem
-                    label={t('statistics:performanceRatios.calmarRatio')}
-                    value={formatNumber(statisticsData.calmar_ratio, 2)}
-                    tooltip={t('statistics:performanceRatios.calmarRatioTooltip')}
-                    variant={statisticsData.calmar_ratio >= 1.0 ? 'success' : 'warning'}
-                  />
-                </MetricCard>
+                  metrics={[
+                    {
+                      label: t('statistics:performanceRatios.sharpeRatio'),
+                      value: statisticsData.sharpe_ratio,
+                      config: GAUGE_CONFIGS.sharpeRatio,
+                      tooltip: t('statistics:performanceRatios.sharpeRatioTooltip'),
+                      formatValue: (val) => formatNumber(val, 2),
+                      showLabels: false,
+                    },
+                    {
+                      label: t('statistics:performanceRatios.sortinoRatio'),
+                      value: statisticsData.sortino_ratio,
+                      config: GAUGE_CONFIGS.sharpeRatio,
+                      tooltip: t('statistics:performanceRatios.sortinoRatioTooltip'),
+                      formatValue: (val) => formatNumber(val, 2),
+                      showLabels: false,
+                    },
+                    {
+                      label: t('statistics:performanceRatios.calmarRatio'),
+                      value: statisticsData.calmar_ratio,
+                      config: GAUGE_CONFIGS.sharpeRatio,
+                      tooltip: t('statistics:performanceRatios.calmarRatioTooltip'),
+                      formatValue: (val) => formatNumber(val, 2),
+                      showLabels: true,
+                    },
+                  ]}
+                />
 
                 <MetricCard
                   title={t('statistics:performanceRatios.recovery')}
@@ -917,17 +947,22 @@ function StatisticsPage() {
                 }
               >
                 <MetricItem
-                  label={t('statistics:riskReward.planRespectRate', { defaultValue: 'Taux de respect' })}
-                  value={`${formatNumber(statisticsData.plan_respect_rate, 1)}%`}
-                  tooltip={t('statistics:riskReward.planRespectRateTooltip', { defaultValue: 'Pourcentage de trades où le R:R réel est supérieur ou égal au R:R prévu' })}
-                  variant={statisticsData.plan_respect_rate >= 70 ? 'success' : statisticsData.plan_respect_rate >= 50 ? 'warning' : 'danger'}
-                />
-                <MetricItem
                   label={t('statistics:riskReward.tradesWithBothRR', { defaultValue: 'Trades comparables' })}
                   value={statisticsData.trades_with_both_rr}
                   tooltip={t('statistics:riskReward.tradesWithBothRRTooltip', { defaultValue: 'Nombre de trades ayant à la fois un R:R prévu et un R:R réel' })}
                   variant="default"
                 />
+                <div className="mt-4">
+                  <MetricGauge
+                    label={t('statistics:riskReward.planRespectRate', { defaultValue: 'Taux de respect' })}
+                    value={statisticsData.plan_respect_rate}
+                    config={GAUGE_CONFIGS.planRespectRate}
+                    tooltip={t('statistics:riskReward.planRespectRateTooltip', { defaultValue: 'Pourcentage de trades où le R:R réel est supérieur ou égal au R:R prévu' })}
+                    formatValue={(val: number) => `${formatNumber(val, 1)}%`}
+                    showLabels={true}
+                    size="md"
+                  />
+                </div>
               </MetricCard>
             </div>
             {statisticsData.trades_with_planned_rr === 0 && statisticsData.trades_with_actual_rr === 0 && (

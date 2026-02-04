@@ -39,6 +39,10 @@
   "performanceRatios": {
     "title": "Performance Ratios",
     "subtitle": "Advanced metrics to analyze your trading strategy",
+    "performance": "Performance",
+    "riskManagement": "Risk Management",
+    "performanceSubtitle": "Global performance metrics",
+    "riskManagementSubtitle": "Risk and recovery indicators",
     "mainPerformance": "Main Performance",
     "detailedPerformance": "Main Performance",
     "recovery": "Recovery",
@@ -206,6 +210,13 @@
     "modelDeleteError": "Error while deleting the model.",
     "exportErrorMessage": "An error occurred while exporting. Please try again.",
     "reportFilePrefix": "report"
+  },
+  "gauge": {
+    "excellent": "Excellent",
+    "good": "Good",
+    "average": "Average",
+    "poor": "Poor",
+    "target": "Target"
   }
 }
 

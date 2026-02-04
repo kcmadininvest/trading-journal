@@ -39,6 +39,10 @@
   "performanceRatios": {
     "title": "Ratios de Rendimiento",
     "subtitle": "Métricas avanzadas para analizar tu estrategia de trading",
+    "performance": "Rendimiento",
+    "riskManagement": "Gestión del Riesgo",
+    "performanceSubtitle": "Métricas de rendimiento global",
+    "riskManagementSubtitle": "Indicadores de riesgo y recuperación",
     "mainPerformance": "Rendimiento Principal",
     "recovery": "Recuperación",
     "financialEfficiency": "Eficiencia Financiera",
