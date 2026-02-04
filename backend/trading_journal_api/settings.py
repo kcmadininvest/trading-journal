@@ -207,17 +207,24 @@ if not DEBUG:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
     SECURE_HSTS_PRELOAD = False
     
-    # Cookies sécurisés
+    # Cookies sécurisés avec HttpOnly
     SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
     
     # Headers de sécurité - Tous gérés par Apache pour éviter les duplications
     SECURE_BROWSER_XSS_FILTER = False
     SECURE_CONTENT_TYPE_NOSNIFF = False
     SECURE_REFERRER_POLICY = None
 else:
-    # En développement, les headers de sécurité sont aussi gérés par Apache
-    pass
+    # En développement, activer HttpOnly même sans HTTPS
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = config(
