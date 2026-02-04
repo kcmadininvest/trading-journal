@@ -52,7 +52,7 @@
     "winLossRatio": "Ratio Ganancia/Pérdida",
     "winLossRatioTooltip": "Ratio entre el número de operaciones ganadoras y perdedoras. > 1.0 = más ganancias que pérdidas",
     "recoveryRatio": "Ratio de Recuperación",
-    "recoveryRatioTooltip": "Ratio entre la mejor operación y la peor pérdida. > 1.0 = la mejor ganancia cubre la peor pérdida",
+    "recoveryRatioTooltip": "Relación entre Max Run-up y Max Drawdown (mejor subida / peor caída). > 1.0 = la mejor subida cubre la peor caída, > 1.5 = excelente capacidad de recuperación",
     "pnlPerTrade": "P/L por Operación",
     "pnlPerTradeTooltip": "Ganancia o pérdida promedio por operación. Indica la rentabilidad promedio de cada operación",
     "feesRatio": "Ratio de Comisiones",

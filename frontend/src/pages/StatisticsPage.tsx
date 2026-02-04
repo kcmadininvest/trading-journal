@@ -394,13 +394,13 @@ function StatisticsPage() {
                   label={t('statistics:performanceRatios.maxDrawdown', { defaultValue: 'Max Drawdown' })}
                   value={`${formatNumber(statisticsData.max_drawdown_global_pct, 2)}% (${formatCurrency(statisticsData.max_drawdown_global, currencySymbol)})`}
                   tooltip={t('statistics:performanceRatios.maxDrawdownGlobalTooltip', { defaultValue: 'Plus grande baisse depuis un pic (tous les temps). Indicateur de risque. Plus bas = moins de risque.' })}
-                  variant="default"
+                  variant="danger"
                 />
                 <MetricItem
                   label={t('statistics:performanceRatios.maxRunupGlobal', { defaultValue: 'Max Run-up Global' })}
                   value={`${formatNumber(statisticsData.max_runup_global_pct, 2)}% (${formatCurrency(statisticsData.max_runup_global, currencySymbol)})`}
                   tooltip={t('statistics:performanceRatios.maxRunupTooltip', { defaultValue: 'Plus grande hausse depuis un point bas' })}
-                  variant="default"
+                  variant="success"
                 />
               </MetricCard>
 
@@ -594,12 +594,6 @@ function StatisticsPage() {
                   }
                 >
                   <MetricItem
-                    label={t('statistics:performanceRatios.recoveryRatio')}
-                    value={formatNumber(statisticsData.recovery_ratio, 2)}
-                    tooltip={t('statistics:performanceRatios.recoveryRatioTooltip')}
-                    variant={statisticsData.recovery_ratio >= 1.0 ? 'success' : 'warning'}
-                  />
-                  <MetricItem
                     label={t('statistics:performanceRatios.recoveryTime')}
                     value={
                       statisticsData.recovery_time !== undefined && statisticsData.recovery_time !== null && statisticsData.recovery_time > 0
@@ -609,6 +603,17 @@ function StatisticsPage() {
                     tooltip={t('statistics:performanceRatios.recoveryTimeTooltip')}
                     variant="default"
                   />
+                  <div className="mt-4">
+                    <MetricGauge
+                      label={t('statistics:performanceRatios.recoveryRatio')}
+                      value={statisticsData.recovery_ratio}
+                      config={GAUGE_CONFIGS.recoveryRatio}
+                      tooltip={t('statistics:performanceRatios.recoveryRatioTooltip')}
+                      formatValue={(val: number) => formatNumber(val, 2)}
+                      showLabels={true}
+                      size="md"
+                    />
+                  </div>
                 </MetricCard>
               </div>
             </div>

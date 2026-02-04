@@ -52,7 +52,7 @@
     "winLossRatio": "Gewinn/Verlust-Verhältnis",
     "winLossRatioTooltip": "Verhältnis zwischen der Anzahl gewinnender und verlierender Trades. > 1.0 = mehr Gewinne als Verluste",
     "recoveryRatio": "Erholungsverhältnis",
-    "recoveryRatioTooltip": "Verhältnis zwischen dem besten Trade und dem schlechtesten Verlust. > 1.0 = bester Gewinn deckt schlechtesten Verlust",
+    "recoveryRatioTooltip": "Verhältnis zwischen Max Run-up und Max Drawdown (bester Anstieg / schlechtester Rückgang). > 1.0 = bester Anstieg deckt schlechtesten Rückgang, > 1.5 = ausgezeichnete Erholungsfähigkeit",
     "pnlPerTrade": "P/L pro Trade",
     "pnlPerTradeTooltip": "Durchschnittlicher Gewinn oder Verlust pro Trade. Zeigt die durchschnittliche Rentabilität jeder Operation",
     "feesRatio": "Gebührenverhältnis",
