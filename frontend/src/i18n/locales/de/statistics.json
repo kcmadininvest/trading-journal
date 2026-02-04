@@ -142,6 +142,26 @@
     "month": "Monat",
     "pnl": "P/L"
   },
+  "riskReward": {
+    "title": "Risiko/Rendite-Verhältnis",
+    "subtitle": "Analyse des geplanten vs. tatsächlichen Risiko/Rendite-Verhältnisses",
+    "plannedRR": "Geplantes R:R",
+    "actualRR": "Tatsächliches R:R",
+    "planRespect": "Planeinhaltung",
+    "averagePlannedRR": "Durchschnittliches geplantes R:R",
+    "averagePlannedRRTooltip": "Durchschnittliches Risiko/Rendite-Verhältnis, das beim Trade-Einstieg geplant war",
+    "tradesWithPlannedRR": "Trades mit geplantem R:R",
+    "tradesWithPlannedRRTooltip": "Anzahl der Trades mit einem definierten geplanten R:R",
+    "averageActualRR": "Durchschnittliches tatsächliches R:R",
+    "averageActualRRTooltip": "Durchschnittliches Risiko/Rendite-Verhältnis, das tatsächlich beim Trade-Ausstieg erzielt wurde",
+    "tradesWithActualRR": "Trades mit tatsächlichem R:R",
+    "tradesWithActualRRTooltip": "Anzahl der Trades mit einem berechneten tatsächlichen R:R",
+    "planRespectRate": "Einhaltungsrate",
+    "planRespectRateTooltip": "Prozentsatz der Trades, bei denen das tatsächliche R:R größer oder gleich dem geplanten R:R ist",
+    "tradesWithBothRR": "Vergleichbare Trades",
+    "tradesWithBothRRTooltip": "Anzahl der Trades mit sowohl geplantem als auch tatsächlichem R:R",
+    "noDataMessage": "Keine R:R-Daten verfügbar. Fügen Sie beim Erstellen oder Ändern eines Trades einen Stop Loss und einen geplanten Take Profit hinzu, um R:R-Statistiken zu sehen."
+  },
   "exportModal": {
     "title": "Statistiken exportieren",
     "subtitle": "PDF- oder Excel-Bericht erstellen",

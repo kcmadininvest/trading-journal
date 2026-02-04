@@ -143,6 +143,26 @@
     "month": "Month",
     "pnl": "P/L"
   },
+  "riskReward": {
+    "title": "Risk/Reward Ratio",
+    "subtitle": "Analysis of planned vs actual risk/reward ratio",
+    "plannedRR": "Planned R:R",
+    "actualRR": "Actual R:R",
+    "planRespect": "Plan Respect",
+    "averagePlannedRR": "Average planned R:R",
+    "averagePlannedRRTooltip": "Average Risk/Reward ratio planned at trade entry",
+    "tradesWithPlannedRR": "Trades with planned R:R",
+    "tradesWithPlannedRRTooltip": "Number of trades with a defined planned R:R",
+    "averageActualRR": "Average actual R:R",
+    "averageActualRRTooltip": "Average Risk/Reward ratio actually obtained at trade exit",
+    "tradesWithActualRR": "Trades with actual R:R",
+    "tradesWithActualRRTooltip": "Number of trades with a calculated actual R:R",
+    "planRespectRate": "Respect rate",
+    "planRespectRateTooltip": "Percentage of trades where actual R:R is greater than or equal to planned R:R",
+    "tradesWithBothRR": "Comparable trades",
+    "tradesWithBothRRTooltip": "Number of trades with both planned and actual R:R",
+    "noDataMessage": "No R:R data available. Add a Stop Loss and planned Take Profit when creating or modifying a trade to see R:R statistics."
+  },
   "exportModal": {
     "title": "Export statistics",
     "subtitle": "Generate a PDF or Excel report",

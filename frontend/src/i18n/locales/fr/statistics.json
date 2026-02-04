@@ -142,6 +142,26 @@
     "month": "Mois",
     "pnl": "P/L"
   },
+  "riskReward": {
+    "title": "Ratio Risque/Récompense",
+    "subtitle": "Analyse du ratio risque/récompense prévu vs réel",
+    "plannedRR": "R:R Prévu",
+    "actualRR": "R:R Réel",
+    "planRespect": "Respect du Plan",
+    "averagePlannedRR": "R:R moyen prévu",
+    "averagePlannedRRTooltip": "Ratio Risque/Récompense moyen prévu à l'entrée des trades",
+    "tradesWithPlannedRR": "Trades avec R:R prévu",
+    "tradesWithPlannedRRTooltip": "Nombre de trades ayant un R:R prévu défini",
+    "averageActualRR": "R:R moyen réel",
+    "averageActualRRTooltip": "Ratio Risque/Récompense moyen réel obtenu à la sortie des trades",
+    "tradesWithActualRR": "Trades avec R:R réel",
+    "tradesWithActualRRTooltip": "Nombre de trades ayant un R:R réel calculé",
+    "planRespectRate": "Taux de respect",
+    "planRespectRateTooltip": "Pourcentage de trades où le R:R réel est supérieur ou égal au R:R prévu",
+    "tradesWithBothRR": "Trades comparables",
+    "tradesWithBothRRTooltip": "Nombre de trades ayant à la fois un R:R prévu et un R:R réel",
+    "noDataMessage": "Aucun R:R disponible. Ajoutez un Stop Loss et un Take Profit prévu lors de la création ou modification d'un trade pour voir les statistiques R:R."
+  },
   "exportModal": {
     "title": "Exporter les statistiques",
     "subtitle": "Générer un rapport PDF ou Excel",

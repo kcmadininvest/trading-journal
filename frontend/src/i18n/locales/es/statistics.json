@@ -142,6 +142,26 @@
     "month": "Mes",
     "pnl": "P/L"
   },
+  "riskReward": {
+    "title": "Ratio Riesgo/Recompensa",
+    "subtitle": "Análisis del ratio riesgo/recompensa planificado vs real",
+    "plannedRR": "R:R Planificado",
+    "actualRR": "R:R Real",
+    "planRespect": "Respeto del Plan",
+    "averagePlannedRR": "R:R promedio planificado",
+    "averagePlannedRRTooltip": "Ratio Riesgo/Recompensa promedio planificado en la entrada de las operaciones",
+    "tradesWithPlannedRR": "Operaciones con R:R planificado",
+    "tradesWithPlannedRRTooltip": "Número de operaciones con un R:R planificado definido",
+    "averageActualRR": "R:R promedio real",
+    "averageActualRRTooltip": "Ratio Riesgo/Recompensa promedio real obtenido en la salida de las operaciones",
+    "tradesWithActualRR": "Operaciones con R:R real",
+    "tradesWithActualRRTooltip": "Número de operaciones con un R:R real calculado",
+    "planRespectRate": "Tasa de respeto",
+    "planRespectRateTooltip": "Porcentaje de operaciones donde el R:R real es mayor o igual al R:R planificado",
+    "tradesWithBothRR": "Operaciones comparables",
+    "tradesWithBothRRTooltip": "Número de operaciones con R:R planificado y real",
+    "noDataMessage": "No hay datos de R:R disponibles. Agregue un Stop Loss y un Take Profit planificado al crear o modificar una operación para ver las estadísticas de R:R."
+  },
   "exportModal": {
     "title": "Exportar estadísticas",
     "subtitle": "Generar un informe PDF o Excel",
