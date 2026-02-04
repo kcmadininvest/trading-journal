@@ -88,6 +88,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
     scales: {
       x: {
         beginAtZero: true,
+        grace: 1,
         ticks: {
           stepSize: 1,
           color: chartColors.textSecondary,
@@ -193,6 +194,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
     scales: {
       x: {
         beginAtZero: true,
+        grace: 1,
         ticks: {
           stepSize: 1,
           color: chartColors.textSecondary,
