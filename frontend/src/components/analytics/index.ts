@@ -4,4 +4,10 @@ export { DrawdownChart } from './DrawdownChart';
 export { MonthlyPerformanceChart } from './MonthlyPerformanceChart';
 export { TradingVolumeChart } from './TradingVolumeChart';
 export { TradesDistributionChart } from './TradesDistributionChart';
-
+export { HourlyPerformanceScatterChart } from './HourlyPerformanceScatterChart';
+export { CorrelationChart } from './CorrelationChart';
+export { HourlyPerformanceBarsChart } from './HourlyPerformanceBarsChart';
+export { HeatmapChart } from './HeatmapChart';
+export { GainsVsLossesChart } from './GainsVsLossesChart';
+export { PnlDistributionChart } from './PnlDistributionChart';
+export { createRadarAlternatingZonesPlugin, createRadarGradientPlugin } from './radarChartPlugins';
