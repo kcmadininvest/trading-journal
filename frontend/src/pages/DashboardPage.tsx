@@ -216,7 +216,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // État pour gérer la largeur de l'écran (responsive)
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
   // Use consolidated dashboard data hook for optimized loading
-  const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useDashboardData({
+  const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError, refetch } = useDashboardData({
     accountId,
     startDate: selectedPeriod?.start,
     endDate: selectedPeriod?.end,
@@ -330,7 +330,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const handleComplianceUpdate = (event: CustomEvent) => {
       const eventAccount = event.detail?.tradingAccount;
       if (!eventAccount || eventAccount === accountId) {
-        // Dashboard data will auto-refresh via useDashboardData dependencies
+        refetch();
       }
     };
 
@@ -338,7 +338,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     return () => {
       window.removeEventListener('strategy-compliance-updated', handleComplianceUpdate as EventListener);
     };
-  }, [accountId]);
+  }, [accountId, refetch]);
 
   // Obtenir le symbole de devise
   const currencySymbol = useMemo(() => {
