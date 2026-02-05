@@ -115,6 +115,7 @@
     "last6Months": "6 derniers mois",
     "thisYear": "Cette année",
     "lastYear": "Année dernière",
+    "rollingYear": "Année glissante",
     "custom": "Personnalisé"
   },
   "consistencyTarget": "Consistency Target",

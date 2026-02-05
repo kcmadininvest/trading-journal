@@ -114,6 +114,7 @@
     "last6Months": "過去6か月",
     "thisYear": "今年",
     "lastYear": "昨年",
+    "rollingYear": "直近12か月",
     "custom": "カスタム"
   },
   "hideAll": "すべて非表示",

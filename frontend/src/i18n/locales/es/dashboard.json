@@ -115,6 +115,7 @@
     "last6Months": "Últimos 6 meses",
     "thisYear": "Este año",
     "lastYear": "Año pasado",
+    "rollingYear": "Año móvil",
     "custom": "Personalizado"
   },
   "consistencyTarget": "Objetivo de Consistencia",

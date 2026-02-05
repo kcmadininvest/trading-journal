@@ -13,6 +13,7 @@ export type PeriodPreset =
   | 'last6Months'
   | 'thisYear'
   | 'lastYear'
+  | 'rollingYear'
   | 'custom';
 
 export interface PeriodRange {
@@ -70,6 +71,9 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     // Année dernière
     const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
     const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31);
+    
+    // Année glissante (12 derniers mois)
+    const rollingYearStart = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
 
     const formatDate = (date: Date): string => {
       const year = date.getFullYear();
@@ -124,6 +128,11 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         end: formatDate(lastYearEnd),
         preset: 'lastYear' as PeriodPreset,
       },
+      rollingYear: {
+        start: formatDate(rollingYearStart),
+        end: formatDate(today),
+        preset: 'rollingYear' as PeriodPreset,
+      },
     };
   }, []);
 
@@ -141,6 +150,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     { key: 'last6Months', label: t('dashboard:periodPresets.last6Months', { defaultValue: '6 derniers mois' }) },
     { key: 'thisYear', label: t('dashboard:periodPresets.thisYear', { defaultValue: 'Cette année' }) },
     { key: 'lastYear', label: t('dashboard:periodPresets.lastYear', { defaultValue: 'Année dernière' }) },
+    { key: 'rollingYear', label: t('dashboard:periodPresets.rollingYear', { defaultValue: 'Année glissante' }) },
     { key: 'custom', label: t('dashboard:periodPresets.custom', { defaultValue: 'Personnalisé' }) },
   ], [t]);
 
