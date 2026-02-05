@@ -116,7 +116,25 @@
     "thisYear": "Quest'anno",
     "lastYear": "Anno scorso",
     "rollingYear": "Anno mobile",
+    "allTime": "Dall'inizio",
     "custom": "Personalizzato"
+  },
+  "periodShort": {
+    "1W": "1S",
+    "1M": "1M",
+    "3M": "3M",
+    "6M": "6M",
+    "YTD": "YTD",
+    "1Y": "1A",
+    "all": "Tutto"
+  },
+  "periodMore": "Altro",
+  "periodModal": {
+    "custom": "Periodo personalizzato",
+    "startDate": "Data di inizio",
+    "endDate": "Data di fine",
+    "cancel": "Annulla",
+    "apply": "Applica"
   },
   "hideAll": "Nascondi tutto",
   "hidden": "Nascosto",

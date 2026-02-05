@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { createPortal } from 'react-dom';
 import { DateInput } from './DateInput';
-import { CustomSelect } from './CustomSelect';
 
 export type PeriodPreset = 
   | 'today'
@@ -14,6 +14,7 @@ export type PeriodPreset =
   | 'thisYear'
   | 'lastYear'
   | 'rollingYear'
+  | 'allTime'
   | 'custom';
 
 export interface PeriodRange {
@@ -28,12 +29,23 @@ interface PeriodSelectorProps {
   className?: string;
 }
 
+// Boutons rapides visibles (pill buttons) — les plus courants pour le trading
+const QUICK_PRESETS: PeriodPreset[] = ['thisWeek', 'thisMonth', 'last3Months', 'last6Months', 'thisYear', 'rollingYear', 'allTime'];
+
+// Presets dans le dropdown "Plus" — moins courants
+const MORE_PRESETS: PeriodPreset[] = ['today', 'lastWeek', 'lastMonth', 'lastYear'];
+
+
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   value,
   onChange,
   className = '',
 }) => {
-  const { t } = useI18nTranslation();
+  const { t, i18n } = useI18nTranslation();
+  const moreButtonRef = useRef<HTMLButtonElement>(null);
+  const moreDropdownRef = useRef<HTMLDivElement>(null);
+  const [showMore, setShowMore] = useState(false);
+  const [morePosition, setMorePosition] = useState({ top: 0, left: 0 });
 
   // Calculer les périodes prédéfinies
   const presets = useMemo(() => {
@@ -74,6 +86,9 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     
     // Année glissante (12 derniers mois)
     const rollingYearStart = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+
+    // Tout (depuis 2000-01-01)
+    const allTimeStart = new Date(2000, 0, 1);
 
     const formatDate = (date: Date): string => {
       const year = date.getFullYear();
@@ -133,6 +148,11 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         end: formatDate(today),
         preset: 'rollingYear' as PeriodPreset,
       },
+      allTime: {
+        start: formatDate(allTimeStart),
+        end: formatDate(today),
+        preset: 'allTime' as PeriodPreset,
+      },
     };
   }, []);
 
@@ -140,60 +160,62 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   const [customStart, setCustomStart] = useState(value?.start || presets.today.start);
   const [customEnd, setCustomEnd] = useState(value?.end || presets.today.end);
 
-  const presetOptions = useMemo(() => [
-    { key: 'today', label: t('dashboard:periodPresets.today', { defaultValue: "Aujourd'hui" }) },
-    { key: 'thisWeek', label: t('dashboard:periodPresets.thisWeek', { defaultValue: 'Cette semaine' }) },
-    { key: 'lastWeek', label: t('dashboard:periodPresets.lastWeek', { defaultValue: 'Semaine dernière' }) },
-    { key: 'thisMonth', label: t('dashboard:periodPresets.thisMonth', { defaultValue: 'Ce mois' }) },
-    { key: 'lastMonth', label: t('dashboard:periodPresets.lastMonth', { defaultValue: 'Mois dernier' }) },
-    { key: 'last3Months', label: t('dashboard:periodPresets.last3Months', { defaultValue: '3 derniers mois' }) },
-    { key: 'last6Months', label: t('dashboard:periodPresets.last6Months', { defaultValue: '6 derniers mois' }) },
-    { key: 'thisYear', label: t('dashboard:periodPresets.thisYear', { defaultValue: 'Cette année' }) },
-    { key: 'lastYear', label: t('dashboard:periodPresets.lastYear', { defaultValue: 'Année dernière' }) },
-    { key: 'rollingYear', label: t('dashboard:periodPresets.rollingYear', { defaultValue: 'Année glissante' }) },
-    { key: 'custom', label: t('dashboard:periodPresets.custom', { defaultValue: 'Personnalisé' }) },
-  ], [t]);
+  // Labels complets pour le dropdown "Plus"
+  const fullLabels = useMemo(() => ({
+    today: t('dashboard:periodPresets.today', { defaultValue: "Aujourd'hui" }),
+    thisWeek: t('dashboard:periodPresets.thisWeek', { defaultValue: 'Cette semaine' }),
+    lastWeek: t('dashboard:periodPresets.lastWeek', { defaultValue: 'Semaine dernière' }),
+    thisMonth: t('dashboard:periodPresets.thisMonth', { defaultValue: 'Ce mois' }),
+    lastMonth: t('dashboard:periodPresets.lastMonth', { defaultValue: 'Mois dernier' }),
+    last3Months: t('dashboard:periodPresets.last3Months', { defaultValue: '3 derniers mois' }),
+    last6Months: t('dashboard:periodPresets.last6Months', { defaultValue: '6 derniers mois' }),
+    thisYear: t('dashboard:periodPresets.thisYear', { defaultValue: 'Cette année' }),
+    lastYear: t('dashboard:periodPresets.lastYear', { defaultValue: 'Année dernière' }),
+    rollingYear: t('dashboard:periodPresets.rollingYear', { defaultValue: 'Année glissante' }),
+    allTime: t('dashboard:periodPresets.allTime', { defaultValue: 'Depuis le début' }),
+    custom: t('dashboard:periodPresets.custom', { defaultValue: 'Personnalisé' }),
+  }), [t]);
 
-  // Options pour le CustomSelect
-  const selectOptions = useMemo(() => {
-    return presetOptions.map(option => ({
-      value: option.key,
-      label: option.label,
-    }));
-  }, [presetOptions]);
+  // Labels courts pour les pill buttons
+  const shortLabels = useMemo(() => ({
+    thisWeek: t('dashboard:periodShort.1W', { defaultValue: '1S' }),
+    thisMonth: t('dashboard:periodShort.1M', { defaultValue: '1M' }),
+    last3Months: t('dashboard:periodShort.3M', { defaultValue: '3M' }),
+    last6Months: t('dashboard:periodShort.6M', { defaultValue: '6M' }),
+    thisYear: t('dashboard:periodShort.YTD', { defaultValue: 'YTD' }),
+    rollingYear: t('dashboard:periodShort.1Y', { defaultValue: '1A' }),
+    allTime: t('dashboard:periodShort.all', { defaultValue: 'Tout' }),
+  }), [t]);
 
   // Trouver la clé de la période active
-  const getActivePresetKey = (): string | null => {
+  const getActivePresetKey = useCallback((): string | null => {
     if (!value) return null;
     
-    // Vérifier si c'est une période prédéfinie
-    for (const option of presetOptions) {
-      if (option.key !== 'custom') {
-        const preset = presets[option.key as keyof typeof presets];
-        if (preset && value.start === preset.start && value.end === preset.end) {
-          return option.key;
-        }
+    // Vérifier toutes les périodes prédéfinies
+    const allPresetKeys = [...QUICK_PRESETS, ...MORE_PRESETS];
+    for (const key of allPresetKeys) {
+      const preset = presets[key as keyof typeof presets];
+      if (preset && value.start === preset.start && value.end === preset.end) {
+        return key;
       }
     }
     
     // Si c'est une période personnalisée
     return 'custom';
-  };
+  }, [value, presets]);
 
   const activePresetKey = getActivePresetKey();
 
-  const handlePresetChange = (presetKey: string | null) => {
-    if (!presetKey) return;
-    
+  // Vérifier si le preset actif est dans le dropdown "Plus"
+  const isMorePresetActive = activePresetKey !== null && MORE_PRESETS.includes(activePresetKey as PeriodPreset);
+
+  const handlePresetChange = (presetKey: string) => {
     if (presetKey === 'custom') {
-      // Ouvrir la modale
       setShowCustomModal(true);
-      // Si on a déjà une période personnalisée, l'utiliser
       if (value && (value.preset === 'custom' || (!value.preset && !Object.values(presets).some(p => p.start === value.start && p.end === value.end)))) {
         setCustomStart(value.start);
         setCustomEnd(value.end);
       } else {
-        // Sinon, initialiser à aujourd'hui pour les deux dates
         const now = new Date();
         const formatDate = (date: Date): string => {
           const year = date.getFullYear();
@@ -208,6 +230,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     } else {
       onChange(presets[presetKey as keyof typeof presets]);
     }
+    setShowMore(false);
   };
 
   const handleCustomApply = () => {
@@ -242,27 +265,8 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     };
   }, [showCustomModal]);
 
-  // Mettre à jour le label pour les périodes personnalisées dans le select
-  const selectOptionsWithCustomLabel = useMemo(() => {
-    return selectOptions.map(option => {
-      if (option.value === 'custom' && value && activePresetKey === 'custom') {
-        // Afficher les dates pour la période personnalisée
-        const startDate = new Date(value.start);
-        const endDate = new Date(value.end);
-        const formatDate = (date: Date) => {
-          return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
-        };
-        return {
-          ...option,
-          label: `${formatDate(startDate)} - ${formatDate(endDate)}`,
-        };
-      }
-      return option;
-    });
-  }, [selectOptions, value, activePresetKey]);
-
   // Mettre à jour les dates personnalisées quand la valeur change
-  React.useEffect(() => {
+  useEffect(() => {
     if (value && (value.preset === 'custom' || !value.preset)) {
       const isCustom = !Object.values(presets).some(p => p.start === value.start && p.end === value.end);
       if (isCustom) {
@@ -272,20 +276,162 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     }
   }, [value, presets]);
 
+  // Position du dropdown "Plus"
+  useEffect(() => {
+    if (showMore && moreButtonRef.current) {
+      const updatePosition = () => {
+        if (moreButtonRef.current) {
+          const rect = moreButtonRef.current.getBoundingClientRect();
+          setMorePosition({
+            top: rect.bottom + window.scrollY + 4,
+            left: rect.left + window.scrollX,
+          });
+        }
+      };
+      updatePosition();
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
+    }
+  }, [showMore]);
+
+  // Fermer le dropdown "Plus" en cliquant à l'extérieur
+  useEffect(() => {
+    if (!showMore) return;
+    const onDocClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        moreButtonRef.current && !moreButtonRef.current.contains(target) &&
+        moreDropdownRef.current && !moreDropdownRef.current.contains(target)
+      ) {
+        setShowMore(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [showMore]);
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       handleCustomCancel();
     }
   };
 
+  // Formater la date personnalisée pour l'affichage
+  const formatCustomDateLabel = () => {
+    if (!value) return '';
+    const locale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-US';
+    const startDate = new Date(value.start);
+    const endDate = new Date(value.end);
+    const fmt = (date: Date) => date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+    return `${fmt(startDate)} – ${fmt(endDate)}`;
+  };
+
+  // Pill button classes — aligné sur la hauteur et le style du AccountSelector (px-3 py-2 text-sm rounded-md border-gray-300)
+  const pillBase = 'px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap border shadow-sm';
+  const pillActive = 'bg-blue-600 text-white border-blue-600';
+  const pillInactive = 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500';
+
+  // Dropdown "Plus" content
+  const moreDropdownContent = showMore && (
+    <div
+      ref={moreDropdownRef}
+      className="fixed z-[9999] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl py-1 min-w-[180px]"
+      style={{
+        top: `${morePosition.top}px`,
+        left: `${morePosition.left}px`,
+      }}
+    >
+      {MORE_PRESETS.map((key) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => handlePresetChange(key)}
+          className={`w-full flex items-center px-3 py-2 text-sm transition-colors ${
+            activePresetKey === key
+              ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+          }`}
+        >
+          {fullLabels[key as keyof typeof fullLabels]}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className={className}>
-      <CustomSelect
-        value={activePresetKey}
-        onChange={(val) => handlePresetChange(val as string | null)}
-        options={selectOptionsWithCustomLabel}
-        placeholder={t('dashboard:period.select', { defaultValue: 'Sélectionner une période' })}
-      />
+    <div className={`${className}`}>
+      {/* Barre de boutons segmentés */}
+      <div className="flex items-center gap-1 flex-wrap sm:flex-nowrap">
+        {/* Quick preset pills */}
+        {QUICK_PRESETS.map((key) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => handlePresetChange(key)}
+            className={`${pillBase} ${activePresetKey === key ? pillActive : pillInactive}`}
+            title={fullLabels[key as keyof typeof fullLabels]}
+          >
+            {shortLabels[key as keyof typeof shortLabels]}
+          </button>
+        ))}
+
+        {/* Séparateur vertical */}
+        <div className="h-5 w-px bg-gray-200 dark:bg-gray-600 mx-0.5" />
+
+        {/* Bouton "Plus" avec dropdown */}
+        <div className="relative">
+          <button
+            ref={moreButtonRef}
+            type="button"
+            onClick={() => setShowMore(!showMore)}
+            className={`${pillBase} flex items-center gap-1 ${
+              isMorePresetActive ? pillActive : pillInactive
+            }`}
+            title={t('dashboard:periodMore', { defaultValue: 'Plus de périodes' })}
+          >
+            {isMorePresetActive ? fullLabels[activePresetKey as keyof typeof fullLabels] : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+                </svg>
+                <span className="hidden sm:inline">{t('dashboard:periodMore', { defaultValue: 'Plus' })}</span>
+              </>
+            )}
+            <svg className={`w-3 h-3 transition-transform ${showMore ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Séparateur vertical */}
+        <div className="h-5 w-px bg-gray-200 dark:bg-gray-600 mx-0.5" />
+
+        {/* Bouton Personnalisé avec icône calendrier */}
+        <button
+          type="button"
+          onClick={() => handlePresetChange('custom')}
+          className={`${pillBase} flex items-center gap-1 ${
+            activePresetKey === 'custom' ? pillActive : pillInactive
+          }`}
+          title={fullLabels.custom}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {activePresetKey === 'custom' ? (
+            <span className="text-xs">{formatCustomDateLabel()}</span>
+          ) : (
+            <span className="hidden sm:inline">{fullLabels.custom}</span>
+          )}
+        </button>
+      </div>
+
+      {/* Portal pour le dropdown "Plus" */}
+      {showMore && typeof document !== 'undefined' && createPortal(moreDropdownContent, document.body)}
       
       {/* Modale pour le sélecteur de période personnalisée */}
       {showCustomModal && (
@@ -301,7 +447,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  {t('dashboard:period.custom', { defaultValue: 'Période personnalisée' })}
+                  {t('dashboard:periodModal.custom', { defaultValue: 'Période personnalisée' })}
                 </h2>
                 <button
                   type="button"
@@ -320,7 +466,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
               <div className="grid grid-cols-1 gap-4">
                 <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('dashboard:period.startDate', { defaultValue: 'Date de début' })}
+                    {t('dashboard:periodModal.startDate', { defaultValue: 'Date de début' })}
                   </label>
                   <DateInput
                     value={customStart}
@@ -331,7 +477,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('dashboard:period.endDate', { defaultValue: 'Date de fin' })}
+                    {t('dashboard:periodModal.endDate', { defaultValue: 'Date de fin' })}
                   </label>
                   <DateInput
                     value={customEnd}
@@ -350,7 +496,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 onClick={handleCustomCancel}
                 className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
               >
-                {t('dashboard:period.cancel', { defaultValue: 'Annuler' })}
+                {t('dashboard:periodModal.cancel', { defaultValue: 'Annuler' })}
               </button>
               <button
                 type="button"
@@ -358,7 +504,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 disabled={!customStart || !customEnd || customStart > customEnd}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
               >
-                {t('dashboard:period.apply', { defaultValue: 'Appliquer' })}
+                {t('dashboard:periodModal.apply', { defaultValue: 'Appliquer' })}
               </button>
             </div>
           </div>
@@ -368,4 +514,3 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     </div>
   );
 };
-

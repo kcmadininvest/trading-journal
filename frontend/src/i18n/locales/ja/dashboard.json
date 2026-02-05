@@ -115,7 +115,25 @@
     "thisYear": "今年",
     "lastYear": "昨年",
     "rollingYear": "直近12か月",
+    "allTime": "全期間",
     "custom": "カスタム"
+  },
+  "periodShort": {
+    "1W": "1週",
+    "1M": "1月",
+    "3M": "3月",
+    "6M": "6月",
+    "YTD": "YTD",
+    "1Y": "1年",
+    "all": "全て"
+  },
+  "periodMore": "その他",
+  "periodModal": {
+    "custom": "カスタム期間",
+    "startDate": "開始日",
+    "endDate": "終了日",
+    "cancel": "キャンセル",
+    "apply": "適用"
   },
   "hideAll": "すべて非表示",
   "hidden": "非表示",

@@ -1301,7 +1301,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           </div>
           
           {/* Sélecteur de période moderne */}
-          <div className="flex-shrink-0 lg:w-80">
+          <div className="flex-shrink-0">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('dashboard:period', { defaultValue: 'Période' })}
             </label>

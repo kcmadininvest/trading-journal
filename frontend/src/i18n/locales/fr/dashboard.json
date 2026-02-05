@@ -116,7 +116,25 @@
     "thisYear": "Cette année",
     "lastYear": "Année dernière",
     "rollingYear": "Année glissante",
+    "allTime": "Depuis le début",
     "custom": "Personnalisé"
+  },
+  "periodShort": {
+    "1W": "1S",
+    "1M": "1M",
+    "3M": "3M",
+    "6M": "6M",
+    "YTD": "YTD",
+    "1Y": "1A",
+    "all": "Tout"
+  },
+  "periodMore": "Plus",
+  "periodModal": {
+    "custom": "Période personnalisée",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "cancel": "Annuler",
+    "apply": "Appliquer"
   },
   "consistencyTarget": "Consistency Target",
   "consistencyTargetCompliant": "Conforme",

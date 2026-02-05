@@ -115,7 +115,25 @@
     "thisYear": "今年",
     "lastYear": "去年",
     "rollingYear": "滚动年度",
+    "allTime": "全部时间",
     "custom": "自定义"
+  },
+  "periodShort": {
+    "1W": "1周",
+    "1M": "1月",
+    "3M": "3月",
+    "6M": "6月",
+    "YTD": "YTD",
+    "1Y": "1年",
+    "all": "全部"
+  },
+  "periodMore": "更多",
+  "periodModal": {
+    "custom": "自定义时间段",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "cancel": "取消",
+    "apply": "应用"
   },
   "hideAll": "全部隐藏",
   "hidden": "隐藏",

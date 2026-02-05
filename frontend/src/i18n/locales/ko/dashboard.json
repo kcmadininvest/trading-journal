@@ -113,7 +113,25 @@
     "thisYear": "올해",
     "lastYear": "작년",
     "rollingYear": "최근 12개월",
+    "allTime": "전체 기간",
     "custom": "사용자 지정"
+  },
+  "periodShort": {
+    "1W": "1주",
+    "1M": "1개월",
+    "3M": "3개월",
+    "6M": "6개월",
+    "YTD": "YTD",
+    "1Y": "1년",
+    "all": "전체"
+  },
+  "periodMore": "더보기",
+  "periodModal": {
+    "custom": "사용자 지정 기간",
+    "startDate": "시작일",
+    "endDate": "종료일",
+    "cancel": "취소",
+    "apply": "적용"
   },
   "hideAll": "모두 숨기기",
   "hidden": "숨김",

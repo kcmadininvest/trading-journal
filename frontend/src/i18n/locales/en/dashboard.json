@@ -115,7 +115,25 @@
     "thisYear": "This year",
     "lastYear": "Last year",
     "rollingYear": "Rolling year",
+    "allTime": "All time",
     "custom": "Custom"
+  },
+  "periodShort": {
+    "1W": "1W",
+    "1M": "1M",
+    "3M": "3M",
+    "6M": "6M",
+    "YTD": "YTD",
+    "1Y": "1Y",
+    "all": "All"
+  },
+  "periodMore": "More",
+  "periodModal": {
+    "custom": "Custom period",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "cancel": "Cancel",
+    "apply": "Apply"
   },
   "consistencyTarget": "Consistency Target",
   "consistencyTargetCompliant": "Compliant",
