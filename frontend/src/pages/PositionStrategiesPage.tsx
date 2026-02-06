@@ -559,6 +559,24 @@ const PositionStrategiesPage: React.FC = () => {
     setPreviousVersion(null);
     setCheckedRules({});
   };
+
+  // Détacher la checklist dans une fenêtre popup
+  const handleDetachChecklist = () => {
+    if (!selectedStrategy) return;
+    
+    const width = 450;
+    const height = 700;
+    const left = window.screenX + window.outerWidth - width - 30;
+    const top = window.screenY + 50;
+    
+    window.open(
+      `/strategy-checklist?strategyId=${selectedStrategy.id}`,
+      `strategy-checklist-${selectedStrategy.id}`,
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+    
+    handleCloseViewModal();
+  };
   
   // Fonction pour comparer deux versions et identifier les changements
   const getVersionChanges = (current: PositionStrategy, previous: PositionStrategy | null) => {
@@ -1354,6 +1372,28 @@ const PositionStrategiesPage: React.FC = () => {
                                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                                     <button
                                       onClick={() => {
+                                        const width = 450;
+                                        const height = 700;
+                                        const left = window.screenX + window.outerWidth - width - 30;
+                                        const top = window.screenY + 50;
+                                        window.open(
+                                          `/strategy-checklist?strategyId=${strategy.id}`,
+                                          `strategy-checklist-${strategy.id}`,
+                                          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+                                        );
+                                        setOpenMenuId(null);
+                                        setMenuPosition(null);
+                                      }}
+                                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition-colors"
+                                    >
+                                      <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                      {t('positionStrategies:detach', { defaultValue: 'Détacher' })}
+                                    </button>
+                                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                                    <button
+                                      onClick={() => {
                                         handleDeleteClick(strategy);
                                         setOpenMenuId(null);
                                         setMenuPosition(null);
@@ -1542,6 +1582,28 @@ const PositionStrategiesPage: React.FC = () => {
                             </button>
                           </>
                         )}
+                        <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                        <button
+                          onClick={() => {
+                            const width = 450;
+                            const height = 700;
+                            const left = window.screenX + window.outerWidth - width - 30;
+                            const top = window.screenY + 50;
+                            window.open(
+                              `/strategy-checklist?strategyId=${strategy.id}`,
+                              `strategy-checklist-${strategy.id}`,
+                              `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+                            );
+                            setOpenMenuId(null);
+                            setMenuPosition(null);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition-colors"
+                        >
+                          <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          {t('positionStrategies:detach', { defaultValue: 'Détacher' })}
+                        </button>
                         <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                         <button
                           onClick={() => {
@@ -1980,14 +2042,26 @@ const PositionStrategiesPage: React.FC = () => {
                     })()}
                   </div>
                 </div>
-                <button
-                  onClick={handleCloseViewModal}
-                  className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <Tooltip content={t('positionStrategies:detachTooltip', { defaultValue: 'Détacher dans une fenêtre flottante' })} position="bottom">
+                    <button
+                      onClick={handleDetachChecklist}
+                      className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-center transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                  </Tooltip>
+                  <button
+                    onClick={handleCloseViewModal}
+                    className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               {/* Contenu scrollable */}

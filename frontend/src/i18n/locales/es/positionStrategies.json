@@ -45,6 +45,12 @@
   "close": "Cerrar",
   "confirmDeleteTitle": "Eliminar estrategia",
   "print": "Imprimir",
-  "downloadPdf": "Descargar PDF"
+  "downloadPdf": "Descargar PDF",
+  "detach": "Separar",
+  "detachTooltip": "Separar en una ventana flotante",
+  "resetChecklist": "Desmarcar todo",
+  "strategyChecklist": "Checklist",
+  "rulesFollowed": "{{checked}} / {{total}} reglas seguidas",
+  "allRulesFollowed": "¡Todas las reglas se cumplen!"
 }
 

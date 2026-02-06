@@ -40,9 +40,9 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
       {/* Grille responsive : toutes les cartes sur une ligne en grand écran */}
       <div className={`grid grid-cols-1 md:grid-cols-2 ${consistencyTarget ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-4`}>
         {/* Solde initial et actuel regroupés */}
-        <div className="relative flex flex-col gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div className="relative flex flex-col xl:flex-row xl:items-stretch gap-3 xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
           {onNavigateToTransactions && (
-            <Tooltip content={t('dashboard:viewTransactions', { defaultValue: 'Voir les transactions' })} position="bottom" className="absolute top-2 right-2">
+            <Tooltip content={t('dashboard:viewTransactions', { defaultValue: 'Voir les transactions' })} position="bottom" className="absolute top-2 right-2 z-10">
               <button
                 onClick={onNavigateToTransactions}
                 className="p-2.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
@@ -53,38 +53,37 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               </button>
             </Tooltip>
           )}
-          <div className="flex flex-col xl:flex-row xl:gap-4 gap-3">
-            <div className="flex flex-col gap-1 flex-1">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
-              </span>
-              <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {hideInitialBalance 
-                  ? maskValue(accountBalance.initial, currencySymbol)
-                  : formatCurrency(accountBalance.initial, currencySymbol, preferences.number_format, 2)
-                }
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 flex-1 xl:border-l xl:border-gray-300 xl:dark:border-gray-600 xl:pl-4">
-              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
-              </span>
-              <span className={`text-xl font-semibold ${
-                accountBalance.current >= accountBalance.initial 
-                  ? 'text-blue-600 dark:text-blue-400' 
-                  : 'text-pink-600 dark:text-pink-400'
-              }`}>
-                {hideCurrentBalance 
-                  ? maskValue(accountBalance.current, currencySymbol)
-                  : formatCurrency(accountBalance.current, currencySymbol, preferences.number_format, 2)
-                }
-              </span>
-            </div>
+          <div className="flex flex-col gap-1 flex-1">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
+            </span>
+            <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              {hideInitialBalance 
+                ? maskValue(accountBalance.initial, currencySymbol)
+                : formatCurrency(accountBalance.initial, currencySymbol, preferences.number_format, 2)
+              }
+            </span>
+          </div>
+          <div className="hidden xl:block w-px bg-gray-300 dark:bg-gray-600 mx-4 self-stretch"></div>
+          <div className="flex flex-col gap-1 flex-1">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
+            </span>
+            <span className={`text-xl font-semibold ${
+              accountBalance.current >= accountBalance.initial 
+                ? 'text-blue-600 dark:text-blue-400' 
+                : 'text-pink-600 dark:text-pink-400'
+            }`}>
+              {hideCurrentBalance 
+                ? maskValue(accountBalance.current, currencySymbol)
+                : formatCurrency(accountBalance.current, currencySymbol, preferences.number_format, 2)
+              }
+            </span>
           </div>
         </div>
 
         {/* Variation et Total Trades regroupés */}
-        <div className="flex flex-col xl:flex-row xl:gap-4 gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div className="flex flex-col xl:flex-row xl:items-stretch gap-3 xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
           {accountBalance.initial > 0 && (
             <div className="flex flex-col gap-1 flex-1">
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -110,8 +109,11 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               </span>
             </div>
           )}
+          {totalTrades > 0 && accountBalance.initial > 0 && (
+            <div className="hidden xl:block w-px bg-gray-300 dark:bg-gray-600 mx-4 self-stretch"></div>
+          )}
           {totalTrades > 0 && (
-            <div className={`flex flex-col gap-1 flex-1 ${accountBalance.initial > 0 ? 'xl:border-l xl:border-gray-300 xl:dark:border-gray-600 xl:pl-4' : ''}`}>
+            <div className="flex flex-col gap-1 flex-1">
               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
               </span>

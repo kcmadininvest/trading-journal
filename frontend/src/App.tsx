@@ -13,6 +13,7 @@ import TransactionsPage from './pages/TransactionsPage';
 import SettingsPage from './pages/SettingsPage';
 import ActivateAccountPage from './pages/ActivateAccountPage';
 import PositionStrategiesPage from './pages/PositionStrategiesPage';
+import StrategyChecklistPopup from './pages/StrategyChecklistPopup';
 import GoalsPage from './pages/GoalsPage';
 import LegalNoticePage from './pages/LegalNoticePage';
 import AboutPage from './pages/AboutPage';
@@ -414,4 +415,12 @@ function App() {
   );
 }
 
-export default App;
+// Wrapper pour gérer la route spéciale /strategy-checklist sans Layout
+function AppRouter() {
+  if (window.location.pathname === '/strategy-checklist') {
+    return <StrategyChecklistPopup />;
+  }
+  return <App />;
+}
+
+export default AppRouter;
