@@ -1,6 +1,6 @@
 {
   "title": "Stratégies",
-  "loading": "Chargement des statistiques...",
+  "loading": "加载统计数据中...",
   "errorLoadingStatistics": "Erreur lors du chargement des statistiques",
   "tradingAccount": "Compte de trading",
   "year": "Année",

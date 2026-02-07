@@ -1,6 +1,6 @@
 {
   "title": "Calendrier",
-  "loading": "Chargement...",
+  "loading": "로딩 중...",
   "errorLoadingMonthlyData": "Erreur lors du chargement des données mensuelles",
   "errorLoadingYearlyData": "Erreur lors du chargement des données annuelles",
   "daily": "Quotidienne",

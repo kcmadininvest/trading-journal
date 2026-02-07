@@ -32,7 +32,7 @@
     "save": "Sauvegarder"
   },
   "page": {
-    "loading": "Chargement des utilisateurs...",
+    "loading": "ユーザーを読み込み中...",
     "totalUsers": "Total utilisateurs",
     "administrators": "Administrateurs",
     "activeAccounts": "Comptes actifs",
@@ -44,7 +44,7 @@
     "refreshing": "Actualisation...",
     "error": {
       "invalidDataFormat": "Format de données invalide reçu du serveur",
-      "loading": "Erreur lors du chargement des utilisateurs",
+      "loading": "ユーザーの読み込みエラー",
       "updateStatus": "Erreur lors de la modification du statut",
       "delete": "Erreur lors de la suppression",
       "bulkDelete": "Erreur lors de la suppression en masse"

@@ -1,7 +1,7 @@
 {
   "appName": "K&C Trading Journal",
   "welcome": "Bienvenue",
-  "loading": "Chargement...",
+  "loading": "Caricamento...",
   "error": "Erreur",
   "success": "Succès",
   "cancel": "Annulla",
@@ -100,7 +100,7 @@
     "caption": "Caption (optional)",
     "save": "Save",
     "saving": "Saving...",
-    "loading": "Loading...",
+    "loading": "Caricamento...",
     "editing": "Editing journal",
     "tooltip": {
       "bold": "Grassetto",

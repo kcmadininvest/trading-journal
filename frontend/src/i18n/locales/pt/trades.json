@@ -1,6 +1,6 @@
 {
   "title": "Mes trades",
-  "loading": "Chargement...",
+  "loading": "Carregando...",
   "noTrades": "Aucun trade trouvé",
   "selectAll": "Tout sélectionner",
   "deselectAll": "Tout désélectionner",
@@ -31,7 +31,7 @@
   "count": "Nombre",
   "import": "Importer",
   "add": "Ajouter",
-  "filters": "Filtres",
+  "filtersButton": "Filtres",
   "reset": "Réinitialiser",
   "account": "Compte",
   "allAccounts": "Tous les comptes",
