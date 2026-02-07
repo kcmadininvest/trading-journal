@@ -25,6 +25,8 @@
   "unknownDevice": "Appareil inconnu",
   "disconnect": "Déconnecter",
   "disconnectAllOther": "Déconnecter toutes les autres sessions",
+  "confirmDisconnectSession": "このセッションを切断してもよろしいですか？デバイスは再度ログインする必要があります。",
+  "confirmDisconnectAllSessions": "他のすべてのセッションを切断してもよろしいですか？他のすべてのデバイスは再度ログインする必要があります。",
   "loginHistory": "Historique des connexions",
   "noLoginHistory": "Aucun historique de connexion disponible.",
   "loginHistoryInfo": "L'historique sera enregistré lors de vos prochaines connexions.",

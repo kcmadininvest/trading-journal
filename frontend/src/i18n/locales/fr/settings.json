@@ -25,6 +25,8 @@
   "unknownDevice": "Appareil inconnu",
   "disconnect": "Déconnecter",
   "disconnectAllOther": "Déconnecter toutes les autres sessions",
+  "confirmDisconnectSession": "Êtes-vous sûr de vouloir déconnecter cette session ? L'appareil devra se reconnecter.",
+  "confirmDisconnectAllSessions": "Êtes-vous sûr de vouloir déconnecter toutes les autres sessions ? Tous les autres appareils devront se reconnecter.",
   "loginHistory": "Historique des connexions",
   "noLoginHistory": "Aucun historique de connexion disponible.",
   "loginHistoryInfo": "L'historique sera enregistré lors de vos prochaines connexions.",

@@ -16,10 +16,6 @@ export const DangerZoneCard: React.FC<DangerZoneCardProps> = ({ onDeleteAccount 
       return;
     }
 
-    if (!window.confirm(t('settings:deleteAccountWarning'))) {
-      return;
-    }
-
     setIsDeleting(true);
     try {
       await onDeleteAccount();

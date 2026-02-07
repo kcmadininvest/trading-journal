@@ -25,6 +25,8 @@
   "unknownDevice": "Unbekanntes Gerät",
   "disconnect": "Trennen",
   "disconnectAllOther": "Alle anderen Sitzungen trennen",
+  "confirmDisconnectSession": "Sind Sie sicher, dass Sie diese Sitzung trennen möchten? Das Gerät muss sich erneut anmelden.",
+  "confirmDisconnectAllSessions": "Sind Sie sicher, dass Sie alle anderen Sitzungen trennen möchten? Alle anderen Geräte müssen sich erneut anmelden.",
   "loginHistory": "Anmeldeverlauf",
   "noLoginHistory": "Kein Anmeldeverlauf verfügbar.",
   "loginHistoryInfo": "Der Verlauf wird bei Ihren nächsten Anmeldungen aufgezeichnet.",

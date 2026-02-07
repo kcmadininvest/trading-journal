@@ -25,6 +25,8 @@
   "unknownDevice": "Unknown Device",
   "disconnect": "Disconnect",
   "disconnectAllOther": "Disconnect All Other Sessions",
+  "confirmDisconnectSession": "Are you sure you want to disconnect this session? The device will need to log in again.",
+  "confirmDisconnectAllSessions": "Are you sure you want to disconnect all other sessions? All other devices will need to log in again.",
   "loginHistory": "Login History",
   "noLoginHistory": "No login history available.",
   "loginHistoryInfo": "History will be recorded on your next logins.",

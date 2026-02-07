@@ -6,6 +6,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
 import { CustomSelect } from '../components/common/CustomSelect';
 import PaginationControls from '../components/ui/PaginationControls';
+import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 
 import { SettingsLayout } from '../components/settings/SettingsLayout';
 import { SettingsSidebar } from '../components/settings/SettingsSidebar';
@@ -70,6 +71,10 @@ const SettingsPage: React.FC = () => {
   const [historyPageSize, setHistoryPageSize] = useState(5);
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
+  const [showRevokeSessionModal, setShowRevokeSessionModal] = useState(false);
+  const [revokeSessionJti, setRevokeSessionJti] = useState<string | null>(null);
+  const [showRevokeAllSessionsModal, setShowRevokeAllSessionsModal] = useState(false);
+  const [revokeLoading, setRevokeLoading] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -238,23 +243,33 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleRevokeSession = async (jti: string) => {
-    if (!window.confirm(t('settings:disconnect') + '?')) return;
-    setLoading(true);
+  const handleRevokeSession = (jti: string) => {
+    setRevokeSessionJti(jti);
+    setShowRevokeSessionModal(true);
+  };
+
+  const confirmRevokeSession = async () => {
+    if (!revokeSessionJti) return;
+    setRevokeLoading(true);
     try {
-      await userService.revokeSession(jti);
+      await userService.revokeSession(revokeSessionJti);
       showMessage('success', t('settings:sessionRevoked'));
       await loadSecurityData();
     } catch (error: any) {
       showMessage('error', error.message || t('settings:errorSessionDisconnect'));
     } finally {
-      setLoading(false);
+      setRevokeLoading(false);
+      setShowRevokeSessionModal(false);
+      setRevokeSessionJti(null);
     }
   };
 
-  const handleRevokeAllSessions = async () => {
-    if (!window.confirm(t('settings:disconnectAllOther') + '?')) return;
-    setLoading(true);
+  const handleRevokeAllSessions = () => {
+    setShowRevokeAllSessionsModal(true);
+  };
+
+  const confirmRevokeAllSessions = async () => {
+    setRevokeLoading(true);
     try {
       await userService.revokeAllOtherSessions();
       showMessage('success', t('settings:allSessionsRevoked'));
@@ -262,7 +277,8 @@ const SettingsPage: React.FC = () => {
     } catch (error: any) {
       showMessage('error', error.message || t('settings:errorSessionsDisconnect'));
     } finally {
-      setLoading(false);
+      setRevokeLoading(false);
+      setShowRevokeAllSessionsModal(false);
     }
   };
 
@@ -831,6 +847,31 @@ const SettingsPage: React.FC = () => {
         onSave={handleSaveChanges}
         onDiscard={handleDiscardChanges}
         isSaving={loading}
+      />
+
+      {/* Modal de confirmation - Déconnecter une session */}
+      <DeleteConfirmModal
+        isOpen={showRevokeSessionModal}
+        onClose={() => {
+          setShowRevokeSessionModal(false);
+          setRevokeSessionJti(null);
+        }}
+        onConfirm={confirmRevokeSession}
+        title={t('settings:disconnect', { defaultValue: 'Disconnect session' })}
+        message={t('settings:confirmDisconnectSession', { defaultValue: 'Are you sure you want to disconnect this session? The device will need to log in again.' })}
+        isLoading={revokeLoading}
+        confirmButtonText={t('settings:disconnect', { defaultValue: 'Disconnect' })}
+      />
+
+      {/* Modal de confirmation - Déconnecter toutes les autres sessions */}
+      <DeleteConfirmModal
+        isOpen={showRevokeAllSessionsModal}
+        onClose={() => setShowRevokeAllSessionsModal(false)}
+        onConfirm={confirmRevokeAllSessions}
+        title={t('settings:disconnectAllOther', { defaultValue: 'Disconnect all other sessions' })}
+        message={t('settings:confirmDisconnectAllSessions', { defaultValue: 'Are you sure you want to disconnect all other sessions? All other devices will need to log in again.' })}
+        isLoading={revokeLoading}
+        confirmButtonText={t('settings:disconnectAllOther', { defaultValue: 'Disconnect all' })}
       />
     </SettingsLayout>
   );
