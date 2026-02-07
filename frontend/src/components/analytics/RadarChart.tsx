@@ -29,11 +29,14 @@ export const RadarChart: React.FC<RadarChartProps> = ({
   if (!data || !statisticsData) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
-        <div className="flex items-center justify-center h-[450px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 dark:border-purple-500 mx-auto mb-3"></div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">{t('analytics:loadingData', { defaultValue: 'Chargement des données...' })}</p>
-          </div>
+        <div className="flex items-center gap-2 mb-6">
+          <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full mr-3"></div>
+          <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+            {t('analytics:radar.title', { defaultValue: 'Radar de Performance' })}
+          </h3>
+        </div>
+        <div className="flex items-center justify-center h-[350px]">
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
         </div>
       </div>
     );

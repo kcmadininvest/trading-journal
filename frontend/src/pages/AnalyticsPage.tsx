@@ -29,6 +29,7 @@ import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
 import { useStatistics } from '../hooks/useStatistics';
+import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
 import {
   RadarChart,
   EquityCurveChart,
@@ -109,7 +110,7 @@ const AnalyticsPage: React.FC = () => {
   const [showImport, setShowImport] = useState(false);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   // accountId vient maintenant du contexte global
@@ -253,7 +254,7 @@ const AnalyticsPage: React.FC = () => {
   });
 
   // Récupérer les statistiques pour le graphique radar
-  const { data: statisticsData } = useStatistics(
+  const { data: statisticsData, isLoading: statisticsLoading } = useStatistics(
     accountLoading ? undefined : accountId,
     selectedPeriod ? null : selectedYear,
     selectedPeriod ? null : selectedMonth,
@@ -1234,6 +1235,11 @@ const AnalyticsPage: React.FC = () => {
     return isDark ? '#4b5563' : '#f3f4f6'; // Gris adapté au thème pour zéro
   };
 
+  // Afficher le skeleton pendant le chargement initial pour une expérience uniforme
+  if (accountLoading || isLoading || statisticsLoading) {
+    return <AnalyticsPageSkeleton />;
+  }
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Filtres */}
@@ -1322,15 +1328,7 @@ const AnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">{t('analytics:loadingData')}</p>
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <HourlyPerformanceScatterChart
             data={hourlyPerformanceScatter}
             currencySymbol={currencySymbol}
@@ -1371,7 +1369,6 @@ const AnalyticsPage: React.FC = () => {
             windowWidth={windowWidth}
           />
         </div>
-      )}
 
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
     </div>
