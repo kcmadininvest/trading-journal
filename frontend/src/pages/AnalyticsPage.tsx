@@ -27,7 +27,8 @@ import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
-import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
+import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
+import { useDashboardData } from '../hooks/useDashboardData';
 import { useStatistics } from '../hooks/useStatistics';
 import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
 import {
@@ -117,6 +118,36 @@ const AnalyticsPage: React.FC = () => {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   // État pour gérer la largeur de l'écran (responsive)
   const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+  const { summaryStartDate, summaryEndDate } = useMemo(() => {
+    if (selectedPeriod) {
+      return { summaryStartDate: selectedPeriod.start, summaryEndDate: selectedPeriod.end };
+    }
+    if (selectedYear) {
+      if (selectedMonth) {
+        const lastDay = new Date(selectedYear, selectedMonth, 0);
+        const year = lastDay.getFullYear();
+        const month = String(selectedMonth).padStart(2, '0');
+        const day = String(lastDay.getDate()).padStart(2, '0');
+        return {
+          summaryStartDate: `${selectedYear}-${month}-01`,
+          summaryEndDate: `${year}-${month}-${day}`,
+        };
+      }
+      return {
+        summaryStartDate: `${selectedYear}-01-01`,
+        summaryEndDate: `${selectedYear}-12-31`,
+      };
+    }
+    return { summaryStartDate: undefined, summaryEndDate: undefined };
+  }, [selectedPeriod, selectedYear, selectedMonth]);
+
+  const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
+    accountId,
+    startDate: summaryStartDate,
+    endDate: summaryEndDate,
+    loading: accountLoading,
+  });
 
   // Gérer le redimensionnement de la fenêtre pour le responsive
   useEffect(() => {
@@ -251,6 +282,7 @@ const AnalyticsPage: React.FC = () => {
     selectedAccount,
     allTrades,
     filteredTrades: trades,
+    activeDays: dashboardSummary?.active_days,
   });
 
   // Récupérer les statistiques pour le graphique radar
@@ -1273,12 +1305,13 @@ const AnalyticsPage: React.FC = () => {
 
       {/* Soldes du compte */}
       {selectedAccount && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <AccountIndicatorsGrid 
-            indicators={indicators} 
-            currencySymbol={currencySymbol} 
-          />
-        </div>
+        <AccountSummaryCard 
+          className="mb-6"
+          indicators={indicators} 
+          currencySymbol={currencySymbol} 
+          loading={isLoading || summaryLoading}
+          error={error || summaryError}
+        />
       )}
 
       {/* Graphiques de performance : Radar, Equity Curve et Drawdown */}

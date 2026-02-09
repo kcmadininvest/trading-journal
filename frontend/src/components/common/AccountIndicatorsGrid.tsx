@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -28,12 +28,15 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
 }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
-  const { accountBalance, totalTrades, bestAndWorstDays, consistencyTarget } = indicators;
+  const { accountBalance, totalTrades, bestAndWorstDays, consistencyTarget, activeDays } = indicators;
 
   const variationValue = accountBalance.current - accountBalance.initial;
   const variationPercentage = accountBalance.initial > 0 
     ? ((variationValue / accountBalance.initial) * 100) 
     : 0;
+
+  const hasActiveDays = useMemo(() => typeof activeDays === 'number' && activeDays >= 0, [activeDays]);
+  const showTradesSection = useMemo(() => totalTrades > 0 || hasActiveDays, [totalTrades, hasActiveDays]);
 
   // Barre de progression pour le Consistency Target
   const progressPercentage = consistencyTarget
@@ -129,10 +132,10 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               </div>
             </div>
           )}
-          {totalTrades > 0 && accountBalance.initial > 0 && (
+          {showTradesSection && accountBalance.initial > 0 && (
             <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
           )}
-          {totalTrades > 0 && (
+          {showTradesSection && (
             <div className="flex flex-col gap-1 flex-1">
               <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -140,9 +143,19 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 </svg>
                 {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
               </span>
-              <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {totalTrades}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  {totalTrades}
+                </span>
+                {hasActiveDays && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200/70 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-11 8h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}: <span className="font-semibold">{activeDays}</span>
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>

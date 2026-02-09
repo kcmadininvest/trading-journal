@@ -21,7 +21,8 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getMonthName } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
-import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
+import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
+import { useDashboardData } from '../hooks/useDashboardData';
 import { getChartColors } from '../utils/chartConfig';
 import { ChartSkeleton } from '../components/strategy/charts/ChartSkeleton';
 import { LazyChart } from '../components/strategy/charts/LazyChart';
@@ -164,6 +165,36 @@ const StrategiesPage: React.FC = () => {
     return `${accountId || 'all'}-${periodKey}`;
   }, [accountId, selectedPeriod, selectedYear, selectedMonth]);
 
+  const { summaryStartDate, summaryEndDate } = useMemo(() => {
+    if (selectedPeriod) {
+      return { summaryStartDate: selectedPeriod.start, summaryEndDate: selectedPeriod.end };
+    }
+    if (selectedYear) {
+      if (selectedMonth) {
+        const lastDay = new Date(selectedYear, selectedMonth, 0);
+        const year = lastDay.getFullYear();
+        const month = String(selectedMonth).padStart(2, '0');
+        const day = String(lastDay.getDate()).padStart(2, '0');
+        return {
+          summaryStartDate: `${selectedYear}-${month}-01`,
+          summaryEndDate: `${year}-${month}-${day}`,
+        };
+      }
+      return {
+        summaryStartDate: `${selectedYear}-01-01`,
+        summaryEndDate: `${selectedYear}-12-31`,
+      };
+    }
+    return { summaryStartDate: undefined, summaryEndDate: undefined };
+  }, [selectedPeriod, selectedYear, selectedMonth]);
+
+  const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
+    accountId,
+    startDate: summaryStartDate,
+    endDate: summaryEndDate,
+    loading: accountLoading,
+  });
+
   // Générer les années disponibles (année en cours et 5 ans précédents)
 
   // Fonction pour obtenir le label d'une émotion traduit
@@ -295,13 +326,13 @@ const StrategiesPage: React.FC = () => {
   }, [selectedAccount, currencies]);
 
 
-
-  // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
   const indicators = useAccountIndicators({
     selectedAccount,
     allTrades,
     filteredTrades,
+    activeDays: dashboardSummary?.active_days,
   });
+
 
   // Utiliser le hook optimisé pour les graphiques de stratégie
   const { respectChartData, successRateData, winningSessionsData, emotionsData } = useStrategyCharts({
@@ -376,7 +407,6 @@ const StrategiesPage: React.FC = () => {
             const periodData = enrichedData?.[context.dataIndex];
             
             if (!periodData) {
-              // Fallback si les données enrichies ne sont pas disponibles
               const fallbackData = statistics?.statistics?.period_data?.[context.dataIndex];
               const totalTrades = fallbackData?.total || 0;
               const count = Math.round((value / 100) * totalTrades);
@@ -389,24 +419,17 @@ const StrategiesPage: React.FC = () => {
             const totalWithStrategy = periodData.totalWithStrategy || totalTrades;
             const daysWithoutTrades = periodData.daysWithoutTrades || 0;
             
-            // Calculer la répartition entre trades et jours sans trades
-            // Si count <= totalTrades, tous sont des trades
-            // Sinon, il y a des jours sans trades dans le count
             let elementTrades = 0;
             let elementDays = 0;
             
             if (count <= totalTrades) {
-              // Tous les éléments respectés/non respectés sont des trades
               elementTrades = count;
               elementDays = 0;
             } else {
-              // Il y a des jours sans trades dans le count
               elementDays = Math.min(count - totalTrades, daysWithoutTrades);
               elementTrades = count - elementDays;
             }
             
-            // Afficher le tooltip avec les informations détaillées
-            // Utiliser totalWithStrategy pour le dénominateur car c'est ce qui est utilisé pour le calcul du pourcentage
             if (elementDays > 0) {
               return `${label}: ${formatNumber(value, 2)}% (${elementTrades} ${t('strategies:trades')} + ${elementDays} ${elementDays === 1 ? 'jour sans trade' : 'jours sans trades'} ${t('strategies:on', { defaultValue: 'sur' })} ${totalWithStrategy})`;
             } else {
@@ -462,7 +485,7 @@ const StrategiesPage: React.FC = () => {
         },
       },
     },
-  }), [statistics?.statistics?.period_data, respectChartData, t, chartColors, formatNumber, formatPeriod, windowSize.isMobile, optimizedAnimation]);
+  }), [optimizedAnimation, windowSize.isMobile, chartColors, formatNumber, formatPeriod, respectChartData, statistics, t]);
 
 
   const successRateOptions = useMemo(() => ({
@@ -1346,12 +1369,13 @@ const weekdayComplianceData = useWeekdayCompliance({
 
         {/* Soldes du compte */}
         {selectedAccount && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
-            <AccountIndicatorsGrid 
-              indicators={indicators} 
-              currencySymbol={currencySymbol} 
-            />
-          </div>
+          <AccountSummaryCard 
+            className="mb-4 sm:mb-6"
+            indicators={indicators} 
+            currencySymbol={currencySymbol} 
+            loading={isLoading || summaryLoading}
+            error={error || summaryError || null}
+          />
         )}
 
         {/* Message d'erreur */}

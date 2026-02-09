@@ -20,6 +20,7 @@ export interface DashboardSummary {
   trades: any[];
   strategies: any[];
   compliance_stats: ComplianceStats | null;
+  active_days?: number;
   count: number;
 }
 

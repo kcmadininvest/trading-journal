@@ -4393,6 +4393,8 @@ def dashboard_summary(request):
     trading_account_id = request.GET.get('trading_account')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
+    start_date_obj = None
+    end_date_obj = None
     
     # Build cache key
     cache_key = f"dashboard_summary_{request.user.id}_{trading_account_id}_{start_date}_{end_date}"
@@ -4407,23 +4409,31 @@ def dashboard_summary(request):
         trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
     
     # Apply date filters
+    # Use user preference timezone if available, fallback to Paris
+    user_timezone = getattr(getattr(request.user, 'preferences', None), 'timezone', None)
+    try:
+        user_tz = pytz.timezone(user_timezone) if user_timezone else pytz.timezone('Europe/Paris')
+    except Exception:
+        user_tz = pytz.timezone('Europe/Paris')
+
     if start_date:
         try:
             start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
-            paris_tz = pytz.timezone('Europe/Paris')
-            start_datetime = paris_tz.localize(start_datetime)
+            start_date_obj = start_datetime.date()
+            start_datetime = user_tz.localize(start_datetime)
             trades_queryset = trades_queryset.filter(entered_at__gte=start_datetime)
         except ValueError:
-            pass
-    
+            start_date_obj = None
+
     if end_date:
         try:
             end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
-            paris_tz = pytz.timezone('Europe/Paris')
-            end_datetime = paris_tz.localize(end_datetime.replace(hour=23, minute=59, second=59))
+            end_date_obj = end_datetime.date()
+            end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
+            end_datetime = user_tz.localize(end_datetime)
             trades_queryset = trades_queryset.filter(entered_at__lte=end_datetime)
         except ValueError:
-            pass
+            end_date_obj = None
     
     # 1. Daily aggregates (for charts)
     daily_aggregates = trades_queryset.annotate(
@@ -4436,6 +4446,7 @@ def dashboard_summary(request):
     ).order_by('date')
     
     daily_data = []
+    active_dates = set()
     for item in daily_aggregates:
         if item['date']:
             date_str = item['date'].strftime('%Y-%m-%d') if hasattr(item['date'], 'strftime') else str(item['date'])
@@ -4446,6 +4457,27 @@ def dashboard_summary(request):
                 'winning_count': item['winning_count'],
                 'losing_count': item['losing_count'],
             })
+            active_dates.add(date_str)
+
+    # Add days with strategy compliance (days without trades but with stats)
+    day_compliance_filter = DayStrategyCompliance.objects.filter(  # type: ignore
+        user=request.user,
+        strategy_respected__isnull=False,
+    )
+
+    if trading_account_id:
+        day_compliance_filter = day_compliance_filter.filter(trading_account_id=trading_account_id)
+    if start_date_obj:
+        day_compliance_filter = day_compliance_filter.filter(date__gte=start_date_obj)
+    if end_date_obj:
+        day_compliance_filter = day_compliance_filter.filter(date__lte=end_date_obj)
+
+    compliance_dates = day_compliance_filter.values_list('date', flat=True).distinct()
+    for compliance_date in compliance_dates:
+        if compliance_date:
+            active_dates.add(compliance_date.isoformat())
+
+    active_days_count = len(active_dates)
     
     # 2. Key metrics (limited trades for detailed stats)
     limited_trades = trades_queryset.select_related('trading_account')[:500]  # Limit to 500 most recent trades for stats
@@ -4626,6 +4658,7 @@ def dashboard_summary(request):
         'trades': trades_data,
         'strategies': strategies_data if trading_account_id else [],
         'compliance_stats': compliance_stats,
+        'active_days': active_days_count,
         'count': len(daily_data)
     }
     

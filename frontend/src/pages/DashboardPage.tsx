@@ -19,7 +19,7 @@ import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil 
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
-import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
+import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
 import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
@@ -1272,6 +1272,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     allTrades: allTradesForIndicators,
     filteredTrades: trades,
     filteredBalanceData,
+    activeDays: dashboardData?.active_days,
   });
 
 
@@ -1415,18 +1416,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       {/* Soldes du compte */}
       {selectedAccount && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-          <AccountIndicatorsGrid 
-            indicators={indicators} 
-            currencySymbol={currencySymbol}
-            onNavigateToTransactions={() => {
-              window.location.hash = 'transactions';
-            }}
-            hideInitialBalance={privacySettings.hideInitialBalance}
-            hideCurrentBalance={privacySettings.hideCurrentBalance}
-            hideProfitLoss={privacySettings.hideProfitLoss}
-          />
-        </div>
+        <AccountSummaryCard
+          className="mb-6"
+          indicators={indicators}
+          currencySymbol={currencySymbol}
+          onNavigateToTransactions={() => {
+            window.location.hash = 'transactions';
+          }}
+          hideInitialBalance={privacySettings.hideInitialBalance}
+          hideCurrentBalance={privacySettings.hideCurrentBalance}
+          hideProfitLoss={privacySettings.hideProfitLoss}
+          loading={dashboardLoading}
+          error={dashboardError}
+        />
       )}
 
       {/* Message d'erreur */}

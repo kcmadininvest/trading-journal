@@ -18,6 +18,7 @@
   "performanceMetrics": "Leistungskennzahlen",
   "accountBalance": "Kontostand",
   "totalTrades": "Gesamte Trades",
+  "activeDays": "Aktive Tage",
   "winningTrades": "Gewinnende Trades",
   "losingTrades": "Verlierende Trades",
   "totalPnL": "Gesamt-PnL",

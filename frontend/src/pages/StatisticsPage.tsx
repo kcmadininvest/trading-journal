@@ -17,7 +17,8 @@ import { MetricGroup } from '../components/statistics/MetricGroup';
 import { MetricCardWithGauge } from '../components/statistics/MetricCardWithGauge';
 import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
-import { AccountIndicatorsGrid } from '../components/common/AccountIndicatorsGrid';
+import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
+import { useDashboardData } from '../hooks/useDashboardData';
 import { ExportButton } from '../components/exports';
 
 function StatisticsPage() {
@@ -61,6 +62,36 @@ function StatisticsPage() {
     selectedPeriod?.start || null,
     selectedPeriod?.end || null
   );
+
+  const { summaryStartDate, summaryEndDate } = useMemo(() => {
+    if (selectedPeriod) {
+      return { summaryStartDate: selectedPeriod.start, summaryEndDate: selectedPeriod.end };
+    }
+    if (selectedYear) {
+      if (selectedMonth) {
+        const lastDay = new Date(selectedYear, selectedMonth, 0);
+        const year = lastDay.getFullYear();
+        const month = String(selectedMonth).padStart(2, '0');
+        const day = String(lastDay.getDate()).padStart(2, '0');
+        return {
+          summaryStartDate: `${selectedYear}-${month}-01`,
+          summaryEndDate: `${year}-${month}-${day}`,
+        };
+      }
+      return {
+        summaryStartDate: `${selectedYear}-01-01`,
+        summaryEndDate: `${selectedYear}-12-31`,
+      };
+    }
+    return { summaryStartDate: undefined, summaryEndDate: undefined };
+  }, [selectedPeriod, selectedYear, selectedMonth]);
+
+  const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
+    accountId: selectedAccountId,
+    startDate: summaryStartDate,
+    endDate: summaryEndDate,
+    loading: accountLoading,
+  });
   
   // Fonction pour recharger les statistiques après un import
   const reloadStatistics = () => {
@@ -201,6 +232,7 @@ function StatisticsPage() {
     allTrades,
     filteredTrades,
     analyticsData,
+    activeDays: dashboardSummary?.active_days,
   });
 
   // Calculer le coût médian d'un trade
@@ -339,12 +371,13 @@ function StatisticsPage() {
 
         {/* Soldes du compte */}
         {selectedAccount && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
-            <AccountIndicatorsGrid 
-              indicators={indicators} 
-              currencySymbol={currencySymbol} 
-            />
-          </div>
+          <AccountSummaryCard 
+            className="mb-4 sm:mb-6"
+            indicators={indicators} 
+            currencySymbol={currencySymbol} 
+            loading={isLoading || summaryLoading}
+            error={hasError ? t('statistics:errorLoadingData') : summaryError}
+          />
         )}
 
         {/* Niveau 1: Hero Metrics - KPIs Principaux */}

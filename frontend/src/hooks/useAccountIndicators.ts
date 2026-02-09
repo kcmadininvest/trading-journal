@@ -33,6 +33,7 @@ export interface ConsistencyTarget {
 export interface AccountIndicators {
   accountBalance: AccountBalance;
   totalTrades: number;
+  activeDays?: number;
   bestAndWorstDays: {
     bestDay: BestWorstDay | null;
     worstDay: BestWorstDay | null;
@@ -55,6 +56,7 @@ interface UseAccountIndicatorsParams {
       worst_day_pnl?: number;
     };
   } | null;
+  activeDays?: number;
 }
 
 /**
@@ -67,6 +69,7 @@ export function useAccountIndicators({
   filteredTrades,
   filteredBalanceData,
   analyticsData,
+  activeDays,
 }: UseAccountIndicatorsParams): AccountIndicators {
   // État pour le solde avec transactions
   const [balanceWithTransactions, setBalanceWithTransactions] = useState<AccountBalanceData | null>(null);
@@ -272,6 +275,7 @@ export function useAccountIndicators({
   return {
     accountBalance,
     totalTrades,
+    activeDays,
     bestAndWorstDays,
     consistencyTarget,
   };

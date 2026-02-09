@@ -18,6 +18,7 @@
   "performanceMetrics": "Performance Metrics",
   "accountBalance": "Account Balance",
   "totalTrades": "Total Trades",
+  "activeDays": "Active days",
   "winningTrades": "Winning Trades",
   "losingTrades": "Losing Trades",
   "totalPnL": "Total PnL",
