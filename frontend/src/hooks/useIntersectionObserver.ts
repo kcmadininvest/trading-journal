@@ -8,7 +8,7 @@ interface UseIntersectionObserverOptions {
 
 /**
  * Hook pour détecter quand un élément entre dans le viewport
- * Utilisé pour le lazy loading des graphiques (Optimisation A - Phase 2)
+ * Utilisé pour le lazy loading des graphiques
  */
 export const useIntersectionObserver = (
   options: UseIntersectionObserverOptions = {}

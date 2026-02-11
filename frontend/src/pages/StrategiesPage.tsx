@@ -23,7 +23,7 @@ import { getMonthName } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { dashboardService } from '../services/dashboard';
 import { getChartColors } from '../utils/chartConfig';
 import { ChartSkeleton } from '../components/strategy/charts/ChartSkeleton';
 import { LazyChart } from '../components/strategy/charts/LazyChart';
@@ -133,18 +133,23 @@ const StrategiesPage: React.FC = () => {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   
-  // Utiliser le hook optimisé pour charger les trades en parallèle
-  const { allTrades, filteredTrades, reload: reloadTrades } = useStrategyTrades({
+  // Utiliser le hook optimisé pour charger les trades filtrés (allTrades n'est plus chargé)
+  const { filteredTrades, reload: reloadTrades } = useStrategyTrades({
     accountId,
     accountLoading,
     selectedPeriod,
     selectedYear,
     selectedMonth,
+    skipAllTrades: true,
   });
   const [allAccountsCompliance, setAllAccountsCompliance] = useState<any>(null);
   const [selectedAccountCompliance, setSelectedAccountCompliance] = useState<any>(null);
   const [loadingAllAccountsCompliance, setLoadingAllAccountsCompliance] = useState(false);
   const [loadingSelectedAccountCompliance, setLoadingSelectedAccountCompliance] = useState(false);
+
+  // État pour le dashboard summary (intégré dans loadAllData)
+  const [dashboardSummary, setDashboardSummary] = useState<any>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
 
   // Cache pour les données chargées (optimisation pour les changements de compte/période fréquents)
   const dataCache = useRef<Map<string, {
@@ -153,6 +158,7 @@ const StrategiesPage: React.FC = () => {
     selectedAccountCompliance: any;
     currencies: Currency[];
     selectedAccount: TradingAccount | null;
+    dashboardSummary: any;
     timestamp: number;
   }>>(new Map());
 
@@ -189,13 +195,6 @@ const StrategiesPage: React.FC = () => {
     return { summaryStartDate: undefined, summaryEndDate: undefined };
   }, [selectedPeriod, selectedYear, selectedMonth]);
 
-  const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
-    accountId,
-    startDate: summaryStartDate,
-    endDate: summaryEndDate,
-    loading: accountLoading,
-  });
-
   // Générer les années disponibles (année en cours et 5 ans précédents)
 
   // Fonction pour obtenir le label d'une émotion traduit
@@ -217,12 +216,14 @@ const StrategiesPage: React.FC = () => {
       setSelectedAccountCompliance(cached.selectedAccountCompliance);
       setCurrencies(cached.currencies);
       setSelectedAccount(cached.selectedAccount);
+      setDashboardSummary(cached.dashboardSummary);
       return;
     }
     
     setIsLoading(true);
     setLoadingAllAccountsCompliance(true);
     setLoadingSelectedAccountCompliance(true);
+    setSummaryLoading(true);
     setError(null);
     
     try {
@@ -249,8 +250,13 @@ const StrategiesPage: React.FC = () => {
         params.tradingAccount = accountId;
       }
       
-      // Paralléliser TOUS les appels API (optimisation Phase 1)
-      const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, currenciesData, accountData] = 
+      // Paralléliser TOUS les appels API y compris dashboard summary
+      const dashboardFilters: any = {};
+      if (accountId) dashboardFilters.trading_account = accountId;
+      if (summaryStartDate) dashboardFilters.start_date = summaryStartDate;
+      if (summaryEndDate) dashboardFilters.end_date = summaryEndDate;
+
+      const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, currenciesData, accountData, dashboardData] = 
         await Promise.all([
           // Appel 1: Statistics
           tradeStrategiesService.statistics(params),
@@ -258,10 +264,12 @@ const StrategiesPage: React.FC = () => {
           tradeStrategiesService.strategyComplianceStats(undefined, params),
           // Appel 3: Compliance compte sélectionné (si applicable)
           accountId ? tradeStrategiesService.strategyComplianceStats(accountId, params) : Promise.resolve(null),
-          // Appel 4: Currencies (optimisation)
+          // Appel 4: Currencies (caché côté service)
           currenciesService.list(),
-          // Appel 5: Account sélectionné (optimisation)
-          accountId ? tradingAccountsService.get(accountId) : Promise.resolve(null)
+          // Appel 5: Account sélectionné
+          accountId ? tradingAccountsService.get(accountId) : Promise.resolve(null),
+          // Appel 6: Dashboard summary
+          dashboardService.getSummary(dashboardFilters).catch(() => null),
         ]);
       
       // Stocker dans le cache
@@ -271,6 +279,7 @@ const StrategiesPage: React.FC = () => {
         selectedAccountCompliance: selectedAccountComplianceData,
         currencies: currenciesData,
         selectedAccount: accountData,
+        dashboardSummary: dashboardData,
         timestamp: Date.now(),
       });
       
@@ -287,6 +296,7 @@ const StrategiesPage: React.FC = () => {
       setSelectedAccountCompliance(selectedAccountComplianceData);
       setCurrencies(currenciesData);
       setSelectedAccount(accountData);
+      setDashboardSummary(dashboardData);
     } catch (err: any) {
       setError(err.message || t('strategies:errorLoadingStatistics'));
       console.error('Erreur lors du chargement des données:', err);
@@ -294,8 +304,9 @@ const StrategiesPage: React.FC = () => {
       setIsLoading(false);
       setLoadingAllAccountsCompliance(false);
       setLoadingSelectedAccountCompliance(false);
+      setSummaryLoading(false);
     }
-  }, [getCacheKey, selectedPeriod, selectedYear, selectedMonth, accountId, t]);
+  }, [getCacheKey, selectedPeriod, selectedYear, selectedMonth, accountId, summaryStartDate, summaryEndDate, t]);
 
   // Charger toutes les données
   useEffect(() => {
@@ -306,14 +317,6 @@ const StrategiesPage: React.FC = () => {
     loadAllData();
   }, [loadAllData, accountLoading]);
 
-  // État de chargement global : toutes les données sont chargées
-  const allDataLoaded = useMemo(() => {
-    return !isLoading && 
-           !loadingAllAccountsCompliance && 
-           !loadingSelectedAccountCompliance && 
-           statistics !== null && 
-           (allAccountsCompliance !== null || selectedAccountCompliance !== null);
-  }, [isLoading, loadingAllAccountsCompliance, loadingSelectedAccountCompliance, statistics, allAccountsCompliance, selectedAccountCompliance]);
 
   const complianceSectionData = useMemo(() => selectedAccountCompliance || allAccountsCompliance, [selectedAccountCompliance, allAccountsCompliance]);
   const complianceSectionLoading = loadingSelectedAccountCompliance || loadingAllAccountsCompliance;
@@ -327,9 +330,10 @@ const StrategiesPage: React.FC = () => {
   }, [selectedAccount, currencies]);
 
 
+  // allTrades n'est plus chargé, passer un tableau vide (le fallback balance n'est plus utilisé)
   const indicators = useAccountIndicators({
     selectedAccount,
-    allTrades,
+    allTrades: [],
     filteredTrades,
     activeDays: dashboardSummary?.active_days,
   });
@@ -345,14 +349,14 @@ const StrategiesPage: React.FC = () => {
     t,
   });
 
-  // Utiliser le hook optimisé pour les options de graphiques (Phase 1 - Optimisation)
+  // Hook optimisé pour les options de graphiques
   // Les données volatiles (statistics, chartData, etc.) sont passées via refs dans le hook
   // pour éviter d'invalider les useMemo à chaque changement de données
 
   // Graphique 5: Évolution du taux de compliance (prend en compte le sélecteur de compte)
   const complianceAggregation = useComplianceAggregation({
     complianceData: selectedAccountCompliance || allAccountsCompliance,
-    isLoading: isLoading || !allDataLoaded,
+    isLoading,
   });
 
   const evolutionData = useMemo(() => {
@@ -381,16 +385,6 @@ const StrategiesPage: React.FC = () => {
       ? (totalRespected / totalStrategies) * 100
       : rawData.reduce((sum, d) => sum + (d.compliance_rate || 0), 0) / rawData.length;
 
-    // Créer un dégradé pour le remplissage
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const gradient = ctx ? ctx.createLinearGradient(0, 0, 0, 400) : null;
-    if (gradient) {
-      gradient.addColorStop(0, 'rgba(98, 155, 248, 0.3)');
-      gradient.addColorStop(0.5, 'rgba(98, 155, 248, 0.15)');
-      gradient.addColorStop(1, 'rgba(98, 155, 248, 0.05)');
-    }
-
     return {
       labels,
       datasets: [
@@ -398,7 +392,8 @@ const StrategiesPage: React.FC = () => {
           label: t('strategies:compliance.rate'),
           data,
           borderColor: '#629bf8',
-          backgroundColor: gradient || 'rgba(98, 155, 248, 0.1)',
+          // Couleur statique de fallback — le dégradé est appliqué par le plugin evolutionGradientPlugin
+          backgroundColor: 'rgba(98, 155, 248, 0.15)',
           borderWidth: 3,
           tension: 0.5,
           fill: true,
@@ -439,11 +434,11 @@ const StrategiesPage: React.FC = () => {
   // Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
   const weekdayComplianceData = useWeekdayCompliance({
     complianceData: selectedAccountCompliance || allAccountsCompliance,
-    isLoading: isLoading || !allDataLoaded,
+    isLoading,
     t,
   });
 
-  // Hook optimisé pour toutes les options de graphiques (Phase 1)
+  // Hook optimisé pour toutes les options de graphiques
   const {
     respectChartOptions,
     successRateOptions,
@@ -467,6 +462,23 @@ const StrategiesPage: React.FC = () => {
     weekdayComplianceData,
   });
 
+  // Plugin Chart.js inline pour appliquer le dégradé sur le graphique Respect Rate Evolution
+  // Solution pérenne : le plugin s'exécute sur le canvas réel du graphique à chaque cycle de rendu
+  // Fonctionne en dev ET en production (pas de document.createElement, pas de scriptable options)
+  const evolutionGradientPlugin = useMemo(() => [{
+    id: 'evolutionGradient',
+    beforeDraw(chart: any) {
+      const dataset = chart.data.datasets[0];
+      if (!dataset || !chart.chartArea) return;
+      const { ctx, chartArea } = chart;
+      const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+      gradient.addColorStop(0, 'rgba(98, 155, 248, 0.3)');
+      gradient.addColorStop(0.5, 'rgba(98, 155, 248, 0.15)');
+      gradient.addColorStop(1, 'rgba(98, 155, 248, 0.05)');
+      dataset.backgroundColor = gradient;
+    },
+  }], []);
+
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
   // Taux de respect total pour la période sélectionnée (tous comptes)
@@ -476,7 +488,7 @@ const StrategiesPage: React.FC = () => {
   // Taux de respect du compte pour la période sélectionnée
   const accountPeriodRespect = statistics?.statistics?.period?.respect_percentage || 0;
   
-  // Fonction pour déterminer la couleur du gradient selon le taux de respect (Phase 5 - mémorisée)
+  // Fonction pour déterminer la couleur du gradient selon le taux de respect
   // Bonnes pratiques de trading : >80% excellent, 70-80% bon, 50-70% moyen, <50% à améliorer
   const getRespectRateColor = useCallback((rate: number) => {
     if (rate >= 80) {
@@ -490,7 +502,7 @@ const StrategiesPage: React.FC = () => {
     }
   }, []);
   
-  // Phase 5: Mémoiser les couleurs dérivées
+  // Mémoiser les couleurs dérivées
   const accountRespectColor = useMemo(() => getRespectRateColor(accountRespect), [getRespectRateColor, accountRespect]);
   const accountPeriodRespectColor = useMemo(() => getRespectRateColor(accountPeriodRespect), [getRespectRateColor, accountPeriodRespect]);
   const allTimeRespectColor = useMemo(() => getRespectRateColor(allTimeRespect), [getRespectRateColor, allTimeRespect]);
@@ -535,7 +547,7 @@ const StrategiesPage: React.FC = () => {
             indicators={indicators} 
             currencySymbol={currencySymbol} 
             loading={isLoading || summaryLoading}
-            error={error || summaryError || null}
+            error={error || null}
           />
         )}
 
@@ -620,8 +632,8 @@ const StrategiesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Graphiques */}
-        {!allDataLoaded ? (
+        {/* Graphiques (rendu progressif : chaque graphique s'affiche dès que ses données arrivent) */}
+        {isLoading && !statistics ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
             <ChartSkeleton title={t('strategies:strategyRespectPercentage')} />
             <ChartSkeleton title={t('strategies:successRateByStrategyRespect')} />
@@ -722,9 +734,9 @@ const StrategiesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Graphiques de compliance et évolution */}
+        {/* Graphiques de compliance et évolution (rendu progressif) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
-          {!allDataLoaded ? (
+          {(isLoading && !complianceSectionData) ? (
             <>
               <ChartSkeleton 
                 height="h-64 sm:h-80 md:h-96" 
@@ -762,7 +774,7 @@ const StrategiesPage: React.FC = () => {
                     : t('strategies:complianceEvolutionAllAccountsTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour tous vos comptes actifs' })}
                 >
                   <LazyChart height="h-64 sm:h-80 md:h-96">
-                    <Line data={evolutionData!} options={evolutionOptions} />
+                    <Line data={evolutionData!} options={evolutionOptions} plugins={evolutionGradientPlugin} />
                   </LazyChart>
                 </ChartSection>
               ) : (

@@ -9,7 +9,7 @@ interface LazyChartProps {
 
 /**
  * Composant pour le lazy loading des graphiques
- * Charge le graphique uniquement quand il devient visible (Optimisation A - Phase 2)
+ * Charge le graphique uniquement quand il devient visible
  */
 export const LazyChart: React.FC<LazyChartProps> = ({ children, height = 'h-64 sm:h-80 md:h-96' }) => {
   const [ref, isVisible] = useIntersectionObserver({

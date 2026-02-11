@@ -27,7 +27,7 @@ import { goalsService, TradingGoal } from './services/goals';
 import { tradingAccountsService } from './services/tradingAccounts';
 import ToastViewport from './components/ui/ToastViewport';
 
-// Lazy load StrategiesPage pour améliorer le temps de chargement initial (Optimisation K - Phase 1)
+// Lazy load StrategiesPage pour améliorer le temps de chargement initial
 const StrategiesPage = lazy(() => import('./pages/StrategiesPage'));
 
 function App() {

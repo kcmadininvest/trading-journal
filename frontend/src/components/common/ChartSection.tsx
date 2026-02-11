@@ -10,7 +10,7 @@ interface ChartSectionProps {
 
 /**
  * Composant wrapper pour les sections de graphiques avec Suspense boundary
- * Optimisation B - Phase 2
+ * Wrapper avec Suspense boundary pour le lazy loading
  */
 export const ChartSection: React.FC<ChartSectionProps> = React.memo(({ 
   title, 

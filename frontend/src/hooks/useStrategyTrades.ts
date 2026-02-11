@@ -11,6 +11,7 @@ interface UseStrategyTradesParams {
   } | null;
   selectedYear: number | null;
   selectedMonth: number | null;
+  skipAllTrades?: boolean;
 }
 
 interface UseStrategyTradesReturn {
@@ -27,6 +28,7 @@ export const useStrategyTrades = ({
   selectedPeriod,
   selectedYear,
   selectedMonth,
+  skipAllTrades = false,
 }: UseStrategyTradesParams): UseStrategyTradesReturn => {
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
@@ -70,17 +72,22 @@ export const useStrategyTrades = ({
         filteredFilters.end_date = endDate;
       }
 
-      // Charger les deux ensembles de trades en parallèle
-      const [allTradesResponse, filteredTradesResponse] = await Promise.all([
-        tradesService.list({
-          trading_account: accountId,
-          page_size: 1000, // Réduit de 10000 à 1000
-        }),
-        tradesService.list(filteredFilters),
-      ]);
-
-      setAllTrades(allTradesResponse.results);
-      setFilteredTrades(filteredTradesResponse.results);
+      // Ne charger allTrades que si nécessaire
+      if (skipAllTrades) {
+        const filteredTradesResponse = await tradesService.list(filteredFilters);
+        setAllTrades([]);
+        setFilteredTrades(filteredTradesResponse.results);
+      } else {
+        const [allTradesResponse, filteredTradesResponse] = await Promise.all([
+          tradesService.list({
+            trading_account: accountId,
+            page_size: 1000,
+          }),
+          tradesService.list(filteredFilters),
+        ]);
+        setAllTrades(allTradesResponse.results);
+        setFilteredTrades(filteredTradesResponse.results);
+      }
     } catch (err: any) {
       console.error('Erreur lors du chargement des trades', err);
       setError(err.message || 'Erreur lors du chargement des trades');
@@ -89,7 +96,7 @@ export const useStrategyTrades = ({
     } finally {
       setLoading(false);
     }
-  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
+  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth, skipAllTrades]);
 
   useEffect(() => {
     loadTrades();
