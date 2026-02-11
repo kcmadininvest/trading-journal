@@ -586,7 +586,10 @@ export const useChartOptions = ({
           display: function(context: any) {
             return context.dataset.type !== 'line';
           },
-          color: '#ffffff',
+          color: function(context: any) {
+            const value = context.dataset.data[context.dataIndex];
+            return value <= 5 ? (isDark ? '#d1d5db' : '#6b7280') : '#ffffff';
+          },
           font: {
             weight: 600,
             size: windowSize.isMobile ? 9 : 11,
@@ -594,8 +597,14 @@ export const useChartOptions = ({
           formatter: function(value: number) {
             return formatNumberRef.current(value, 0) + '%';
           },
-          anchor: 'end' as const,
-          align: 'start' as const,
+          anchor: function(context: any) {
+            const value = context.dataset.data[context.dataIndex];
+            return value <= 5 ? 'end' : 'end';
+          } as any,
+          align: function(context: any) {
+            const value = context.dataset.data[context.dataIndex];
+            return value <= 5 ? 'end' : 'start';
+          } as any,
           clamp: true,
         },
         title: {
@@ -728,7 +737,7 @@ export const useChartOptions = ({
         },
       },
     };
-  }, [chartColors, windowSize.isMobile, optimizedAnimation]);
+  }, [chartColors, windowSize.isMobile, optimizedAnimation, isDark]);
 
   // Weekday compliance chart options
   const weekdayComplianceOptions = useMemo(() => ({
