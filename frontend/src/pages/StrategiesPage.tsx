@@ -42,7 +42,7 @@ import {
   Filler,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { MemoizedBar as Bar, MemoizedDoughnut as Doughnut, MemoizedLine as Line, MemoizedMixedChart as MixedChart } from '../components/strategy/charts/MemoizedCharts';
+import { MemoizedBar as Bar, MemoizedDoughnut as Doughnut, MemoizedMixedChart as MixedChart } from '../components/strategy/charts/MemoizedCharts';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -385,36 +385,37 @@ const StrategiesPage: React.FC = () => {
       ? (totalRespected / totalStrategies) * 100
       : rawData.reduce((sum, d) => sum + (d.compliance_rate || 0), 0) / rawData.length;
 
+    // Couleur des barres : bleu si >= moyenne cumulative, fuchsia si en dessous
+    const barBgColors = data.map((value: number, i: number) => {
+      return value >= cumulativeAverageData[i] ? 'rgba(98, 155, 248, 0.7)' : 'rgba(240, 109, 173, 0.7)';
+    });
+    const barBorderColors = data.map((value: number, i: number) => {
+      return value >= cumulativeAverageData[i] ? '#629bf8' : '#f06dad';
+    });
+
     return {
       labels,
       datasets: [
         {
+          type: 'bar' as const,
           label: t('strategies:compliance.rate'),
           data,
-          borderColor: '#629bf8',
-          // Couleur statique de fallback — le dégradé est appliqué par le plugin evolutionGradientPlugin
-          backgroundColor: 'rgba(98, 155, 248, 0.15)',
-          borderWidth: 3,
-          tension: 0.5,
-          fill: true,
-          pointRadius: 0,
-          pointHoverRadius: 6,
-          pointBackgroundColor: '#629bf8',
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 3,
-          pointHoverBackgroundColor: '#ffffff',
-          pointHoverBorderColor: '#629bf8',
-          pointHoverBorderWidth: 3,
-          cubicInterpolationMode: 'monotone' as const,
+          backgroundColor: barBgColors,
+          borderColor: barBorderColors,
+          borderWidth: 1,
+          borderRadius: 4,
+          barPercentage: 0.8,
+          categoryPercentage: 0.85,
         },
         {
+          type: 'line' as const,
           label: t('strategies:averageRate', { defaultValue: 'Moyenne' }),
           data: cumulativeAverageData,
           borderColor: '#f06dad',
           backgroundColor: 'transparent',
           borderWidth: 2,
           borderDash: [5, 5],
-          tension: 0.3,
+          tension: 0.4,
           fill: false,
           pointRadius: 0,
           pointHoverRadius: 4,
@@ -461,23 +462,6 @@ const StrategiesPage: React.FC = () => {
     evolutionData,
     weekdayComplianceData,
   });
-
-  // Plugin Chart.js inline pour appliquer le dégradé sur le graphique Respect Rate Evolution
-  // Solution pérenne : le plugin s'exécute sur le canvas réel du graphique à chaque cycle de rendu
-  // Fonctionne en dev ET en production (pas de document.createElement, pas de scriptable options)
-  const evolutionGradientPlugin = useMemo(() => [{
-    id: 'evolutionGradient',
-    beforeDraw(chart: any) {
-      const dataset = chart.data.datasets[0];
-      if (!dataset || !chart.chartArea) return;
-      const { ctx, chartArea } = chart;
-      const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-      gradient.addColorStop(0, 'rgba(98, 155, 248, 0.3)');
-      gradient.addColorStop(0.5, 'rgba(98, 155, 248, 0.15)');
-      gradient.addColorStop(1, 'rgba(98, 155, 248, 0.05)');
-      dataset.backgroundColor = gradient;
-    },
-  }], []);
 
   // Indicateur 5: Taux de respect total toutes périodes confondues
   const allTimeRespect = statistics?.all_time?.respect_percentage || 0;
@@ -774,7 +758,7 @@ const StrategiesPage: React.FC = () => {
                     : t('strategies:complianceEvolutionAllAccountsTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour tous vos comptes actifs' })}
                 >
                   <LazyChart height="h-64 sm:h-80 md:h-96">
-                    <Line data={evolutionData!} options={evolutionOptions} plugins={evolutionGradientPlugin} />
+                    <MixedChart type="bar" data={evolutionData!} options={evolutionOptions} />
                   </LazyChart>
                 </ChartSection>
               ) : (

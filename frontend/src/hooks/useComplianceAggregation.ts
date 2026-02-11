@@ -55,6 +55,8 @@ export const useComplianceAggregation = ({
           date: new Date(d.date),
         };
       })
+      // Exclure les jours sans évaluation de stratégie (évite les pics verticaux à 0% dans le graphique)
+      .filter((d: any) => d.total_strategies > 0 || d.compliance_rate > 0)
       .sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
 
     if (sortedData.length === 0) return null;

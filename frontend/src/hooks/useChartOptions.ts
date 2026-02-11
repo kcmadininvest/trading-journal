@@ -615,12 +615,27 @@ export const useChartOptions = ({
           },
         },
         datalabels: {
-          display: false,
+          display: function(context: any) {
+            return context.dataset.type !== 'line';
+          },
+          color: '#ffffff',
+          font: {
+            weight: 600,
+            size: windowSize.isMobile ? 9 : 11,
+          },
+          formatter: function(value: number) {
+            return formatNumberRef.current(value, 0) + '%';
+          },
+          anchor: 'end' as const,
+          align: 'start' as const,
+          clamp: true,
         },
         title: {
           display: false,
         },
         tooltip: {
+          mode: 'index' as const,
+          intersect: false,
           backgroundColor: chartColors.tooltipBg,
           titleColor: chartColors.tooltipTitle,
           bodyColor: chartColors.tooltipBody,
@@ -737,12 +752,11 @@ export const useChartOptions = ({
       },
       elements: {
         point: {
-          hoverRadius: 6,
-          hoverBorderWidth: 3,
+          hoverRadius: 4,
+          hoverBorderWidth: 2,
         },
-        line: {
-          borderCapStyle: 'round' as const,
-          borderJoinStyle: 'round' as const,
+        bar: {
+          borderRadius: 4,
         },
       },
     };
