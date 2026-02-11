@@ -558,41 +558,9 @@ export const useChartOptions = ({
     },
   }), [chartColors, isDark, windowSize.isMobile, windowSize.isTablet, optimizedAnimation]);
 
-  // Evolution line chart options
+  // Evolution bar+line mixed chart options
   const evolutionOptions = useMemo(() => {
-    let minValue = 100;
-    let maxValue = 0;
-    
-    const evoData = evolutionDataRef.current;
-    if (evoData) {
-      const allValues = [
-        ...(evoData.datasets[0]?.data || []),
-        ...(evoData.datasets[1]?.data || [])
-      ].filter((v: any): v is number => typeof v === 'number');
-      
-      if (allValues.length > 0) {
-        minValue = Math.min(...allValues);
-        maxValue = Math.max(...allValues);
-      }
-    }
-    
-    let yMin: number;
-    let yMax: number;
-    
-    const range = maxValue - minValue;
-    
-    if (range < 1) {
-      const center = (minValue + maxValue) / 2;
-      yMin = Math.max(0, Math.floor(center - 2.5));
-      yMax = Math.min(100, Math.ceil(center + 2.5));
-    } else if (range < 5) {
-      yMin = Math.max(0, Math.floor(minValue - 2));
-      yMax = Math.min(100, Math.ceil(maxValue + 2));
-    } else {
-      yMin = Math.max(0, Math.floor(minValue - 5));
-      yMax = Math.min(100, Math.ceil(maxValue + 5));
-    }
-    
+    // Bar chart : toujours 0-100% pour que les barres soient proportionnelles
     return {
       responsive: true,
       maintainAspectRatio: false,
@@ -697,8 +665,8 @@ export const useChartOptions = ({
       },
       scales: {
         y: {
-          min: yMin,
-          max: yMax,
+          min: 0,
+          max: 100,
           ticks: {
             callback: function(value: any) {
               return value + '%';
