@@ -49,7 +49,7 @@ const badgeIcons: Record<string, React.ReactNode> = {
   ),
 };
 
-export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
+export const StrategyBadges: React.FC<StrategyBadgesProps> = React.memo(({ badges }) => {
   const { t } = useTranslation();
   const getBadgeLabel = (badgeId: string, fallback: string) =>
     t(`strategy:badges.labels.${badgeId}`, { defaultValue: fallback });
@@ -139,5 +139,5 @@ export const StrategyBadges: React.FC<StrategyBadgesProps> = ({ badges }) => {
     </div>
     </>
   );
-};
+});
 

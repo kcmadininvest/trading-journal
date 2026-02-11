@@ -14,7 +14,7 @@ interface AccountSummaryCardProps {
   error?: string | null;
 }
 
-export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = ({
+export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(({
   indicators,
   currencySymbol,
   className = '',
@@ -60,4 +60,4 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = ({
       />
     </div>
   );
-};
+});

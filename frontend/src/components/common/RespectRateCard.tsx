@@ -33,7 +33,7 @@ interface RespectRateCardProps {
   secondaryGradientColors?: RespectRateColor;
 }
 
-export const RespectRateCard: React.FC<RespectRateCardProps> = ({
+export const RespectRateCard: React.FC<RespectRateCardProps> = React.memo(({
   title,
   subtitle,
   percentage,
@@ -57,9 +57,9 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
   const { preferences } = usePreferences();
   
   // Wrapper pour formatNumber avec préférences
-  const formatNumber = (value: number, digits: number = 2): string => {
+  const formatNumber = React.useCallback((value: number, digits: number = 2): string => {
     return formatNumberUtil(value, digits, preferences.number_format);
-  };
+  }, [preferences.number_format]);
 
   const hasSecondary = secondaryPercentage !== undefined && secondaryPercentage !== null;
   
@@ -125,5 +125,4 @@ export const RespectRateCard: React.FC<RespectRateCardProps> = ({
       </div>
     </div>
   );
-};
-
+});

@@ -12,7 +12,7 @@ interface ChartSectionProps {
  * Composant wrapper pour les sections de graphiques avec Suspense boundary
  * Optimisation B - Phase 2
  */
-export const ChartSection: React.FC<ChartSectionProps> = ({ 
+export const ChartSection: React.FC<ChartSectionProps> = React.memo(({ 
   title, 
   tooltip, 
   children, 
@@ -37,4 +37,4 @@ export const ChartSection: React.FC<ChartSectionProps> = ({
       </Suspense>
     </div>
   );
-};
+});

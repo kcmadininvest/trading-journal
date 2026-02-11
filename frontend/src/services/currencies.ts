@@ -9,6 +9,10 @@ export interface Currency {
 
 class CurrenciesService {
   private readonly BASE_URL = getApiBaseUrl();
+  private cachedCurrencies: Currency[] | null = null;
+  private cacheTimestamp: number = 0;
+  private readonly CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+  private pendingRequest: Promise<Currency[]> | null = null;
 
   private getAuthHeaders() {
     const token = localStorage.getItem('access_token');
@@ -60,10 +64,31 @@ class CurrenciesService {
   }
 
   async list(): Promise<Currency[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/currencies/?page_size=200`);
-    if (!res.ok) throw new Error('Erreur lors du chargement des devises');
-    const data = await res.json();
-    return Array.isArray(data) ? data : (data?.results ?? []);
+    // Return cached data if still valid
+    if (this.cachedCurrencies && (Date.now() - this.cacheTimestamp) < this.CACHE_DURATION) {
+      return this.cachedCurrencies;
+    }
+
+    // Deduplicate concurrent requests
+    if (this.pendingRequest) {
+      return this.pendingRequest;
+    }
+
+    this.pendingRequest = (async () => {
+      try {
+        const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/currencies/?page_size=200`);
+        if (!res.ok) throw new Error('Erreur lors du chargement des devises');
+        const data = await res.json();
+        const currencies = Array.isArray(data) ? data : (data?.results ?? []);
+        this.cachedCurrencies = currencies;
+        this.cacheTimestamp = Date.now();
+        return currencies;
+      } finally {
+        this.pendingRequest = null;
+      }
+    })();
+
+    return this.pendingRequest;
   }
 }
 

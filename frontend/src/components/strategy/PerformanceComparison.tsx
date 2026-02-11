@@ -10,7 +10,7 @@ interface PerformanceComparisonProps {
   hideProfitLoss: boolean;
 }
 
-export const PerformanceComparison: React.FC<PerformanceComparisonProps> = ({
+export const PerformanceComparison: React.FC<PerformanceComparisonProps> = React.memo(({
   performanceComparison,
   currencySymbol,
   hideProfitLoss,
@@ -143,5 +143,5 @@ export const PerformanceComparison: React.FC<PerformanceComparisonProps> = ({
       )}
     </div>
   );
-};
+});
 
