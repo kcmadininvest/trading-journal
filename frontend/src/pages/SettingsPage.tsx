@@ -481,7 +481,7 @@ const SettingsPage: React.FC = () => {
                 </svg>
               }
             >
-              <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
+              <form onSubmit={handlePasswordChange} className="space-y-4">
                 <SettingsInput
                   label={t('settings:oldPassword')}
                   type="password"
@@ -673,32 +673,34 @@ const SettingsPage: React.FC = () => {
               </svg>
             }
           >
-            <div className="space-y-6 max-w-md">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('settings:dateFormat')}
-                </label>
-                <CustomSelect
-                  value={preferences.date_format}
-                  onChange={(value) => setPreferences({ ...preferences, date_format: value as 'US' | 'EU' })}
-                  options={[
-                    { value: 'EU', label: t('settings:dateFormatEU') },
-                    { value: 'US', label: t('settings:dateFormatUS') },
-                  ]}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('settings:numberFormat')}
-                </label>
-                <CustomSelect
-                  value={preferences.number_format}
-                  onChange={(value) => setPreferences({ ...preferences, number_format: value as 'point' | 'comma' })}
-                  options={[
-                    { value: 'comma', label: t('settings:numberFormatComma') },
-                    { value: 'point', label: t('settings:numberFormatPoint') },
-                  ]}
-                />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('settings:dateFormat')}
+                  </label>
+                  <CustomSelect
+                    value={preferences.date_format}
+                    onChange={(value) => setPreferences({ ...preferences, date_format: value as 'US' | 'EU' })}
+                    options={[
+                      { value: 'EU', label: t('settings:dateFormatEU') },
+                      { value: 'US', label: t('settings:dateFormatUS') },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('settings:numberFormat')}
+                  </label>
+                  <CustomSelect
+                    value={preferences.number_format}
+                    onChange={(value) => setPreferences({ ...preferences, number_format: value as 'point' | 'comma' })}
+                    options={[
+                      { value: 'comma', label: t('settings:numberFormatComma') },
+                      { value: 'point', label: t('settings:numberFormatPoint') },
+                    ]}
+                  />
+                </div>
               </div>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
@@ -736,78 +738,77 @@ const SettingsPage: React.FC = () => {
               </svg>
             }
           >
-            <div className="space-y-6 max-w-md">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('settings:language')}
-                </label>
-                <CustomSelect
-                  value={preferences.language}
-                  onChange={(value) => setPreferences({ ...preferences, language: value as 'de' | 'en' | 'fr' | 'es' | 'it' | 'pt' | 'ja' | 'ko' | 'zh' })}
-                  options={[
-                    { value: 'fr', label: 'Français' },
-                    { value: 'en', label: 'English' },
-                    { value: 'es', label: 'Español' },
-                    { value: 'de', label: 'Deutsch' },
-                    { value: 'it', label: 'Italiano' },
-                    { value: 'pt', label: 'Português' },
-                    { value: 'ja', label: '日本語' },
-                    { value: 'zh', label: '中文' },
-                    { value: 'ko', label: '한국어' },
-                  ]}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('settings:timezone')}
-                </label>
-                <CustomSelect
-                  value={preferences.timezone}
-                  onChange={(value) => setPreferences({ ...preferences, timezone: value as string })}
-                  options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  {t('settings:theme')}
-                </label>
-                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {theme === 'light' ? t('settings:themeLight') : t('settings:themeDark')}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleThemeToggle}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                      theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('settings:language')}
+                  </label>
+                  <CustomSelect
+                    value={preferences.language}
+                    onChange={(value) => setPreferences({ ...preferences, language: value as 'de' | 'en' | 'fr' | 'es' })}
+                    options={[
+                      { value: 'fr', label: 'Français' },
+                      { value: 'en', label: 'English' },
+                      { value: 'de', label: 'Deutsch' },
+                      { value: 'es', label: 'Español' },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('settings:timezone')}
+                  </label>
+                  <CustomSelect
+                    value={preferences.timezone}
+                    onChange={(value) => setPreferences({ ...preferences, timezone: value as string })}
+                    options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
+                  />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('settings:fontSize')}
-                </label>
-                <CustomSelect
-                  value={preferences.font_size}
-                  onChange={(value) => setPreferences({ ...preferences, font_size: value as 'small' | 'medium' | 'large' })}
-                  options={[
-                    { value: 'small', label: t('settings:fontSizeSmall') },
-                    { value: 'medium', label: t('settings:fontSizeMedium') },
-                    { value: 'large', label: t('settings:fontSizeLarge') },
-                  ]}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    {t('settings:theme')}
+                  </label>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {theme === 'light' ? t('settings:themeLight') : t('settings:themeDark')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleThemeToggle}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('settings:fontSize')}
+                  </label>
+                  <CustomSelect
+                    value={preferences.font_size}
+                    onChange={(value) => setPreferences({ ...preferences, font_size: value as 'small' | 'medium' | 'large' })}
+                    options={[
+                      { value: 'small', label: t('settings:fontSizeSmall') },
+                      { value: 'medium', label: t('settings:fontSizeMedium') },
+                      { value: 'large', label: t('settings:fontSizeLarge') },
+                    ]}
+                  />
+                </div>
               </div>
             </div>
           </SettingsSection>
