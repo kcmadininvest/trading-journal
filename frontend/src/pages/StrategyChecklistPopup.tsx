@@ -26,7 +26,7 @@ const StrategyChecklistPopup: React.FC = () => {
         } else {
           document.documentElement.classList.remove('dark');
         }
-      } catch (e) {
+      } catch {
         // Ignorer
       }
     };
@@ -40,7 +40,7 @@ const StrategyChecklistPopup: React.FC = () => {
         document.documentElement.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
         document.documentElement.classList.add(`font-size-${savedFontSize}`);
       }
-    } catch (e) {
+    } catch {
       // Ignorer
     }
 
@@ -75,7 +75,7 @@ const StrategyChecklistPopup: React.FC = () => {
             if (saved) {
               setCheckedRules(JSON.parse(saved));
             }
-          } catch (e) {
+          } catch {
             // Ignorer
           }
         }
@@ -118,7 +118,7 @@ const StrategyChecklistPopup: React.FC = () => {
     if (storageKey) {
       try {
         localStorage.setItem(storageKey, JSON.stringify(newChecked));
-      } catch (e) {
+      } catch {
         // Ignorer
       }
     }

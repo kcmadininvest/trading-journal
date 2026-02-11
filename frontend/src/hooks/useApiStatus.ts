@@ -33,7 +33,7 @@ export const useApiStatus = () => {
         setStatus('offline');
         setLastChecked(new Date());
       }
-    } catch (error) {
+    } catch {
       // Erreur réseau, timeout, ou API inaccessible
       setStatus('offline');
       setLastChecked(new Date());

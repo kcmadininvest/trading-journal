@@ -32,7 +32,7 @@ export const BulkStrategyAssignModal: React.FC<BulkStrategyAssignModalProps> = (
         is_current: true 
       });
       setStrategies(list);
-    } catch (err) {
+    } catch {
       setStrategies([]);
       setError(t('trades:bulkAssignStrategy.loadError', { defaultValue: 'Erreur lors du chargement des stratégies' }));
     } finally {

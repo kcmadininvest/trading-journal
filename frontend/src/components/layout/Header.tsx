@@ -53,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
     if (authService.isAuthenticated()) {
       try {
         await userService.updatePreferences({ language: lang as any });
-      } catch (error) {
+      } catch {
         // Ne pas logger en production
       }
     }

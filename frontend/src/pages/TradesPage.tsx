@@ -292,7 +292,7 @@ const TradesPage: React.FC = () => {
       }, 0);
       setShowDeleteModal(false);
       setTradeToDelete(null);
-    } catch (e) {
+    } catch {
       // Fallback: recharger
       load();
     } finally {

@@ -43,7 +43,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       urlObj.search = '';
       urlObj.hash = '';
       return urlObj.toString();
-    } catch (e) {
+    } catch {
       // Fallback si l'URL n'est pas valide
       return ensureHttps(url).split('?')[0].split('#')[0];
     }

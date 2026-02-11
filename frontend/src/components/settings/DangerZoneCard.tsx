@@ -19,7 +19,7 @@ export const DangerZoneCard: React.FC<DangerZoneCardProps> = ({ onDeleteAccount 
     setIsDeleting(true);
     try {
       await onDeleteAccount();
-    } catch (error) {
+    } catch {
       setIsDeleting(false);
     }
   };

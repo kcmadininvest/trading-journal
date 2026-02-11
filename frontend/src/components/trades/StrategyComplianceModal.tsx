@@ -170,7 +170,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
             setDayCompliance(null);
             serverDayComplianceRef.current = null;
           }
-        } catch (e) {
+        } catch {
           // Pas de compliance existante, ce n'est pas grave
           setDayCompliance(null);
           serverDayComplianceRef.current = null;
@@ -187,7 +187,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       let strategies: TradeStrategy[] = [];
       try {
         strategies = await tradeStrategiesService.byDate(date, tradingAccount ?? undefined);
-      } catch (e) {
+      } catch {
         // Pas de stratégies existantes, ce n'est pas grave
       }
 
@@ -625,7 +625,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       if (draftKey) {
         try {
           localStorage.removeItem(draftKey);
-        } catch (e) {
+        } catch {
           // Ignorer les erreurs de nettoyage
         }
       }
@@ -769,7 +769,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       if (draftKey) {
         try {
           localStorage.removeItem(draftKey);
-        } catch (e) {
+        } catch {
           // Ignorer les erreurs de nettoyage
         }
       }

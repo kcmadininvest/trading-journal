@@ -295,7 +295,7 @@ const TradingAccountsPage: React.FC = () => {
       });
       setShowDeleteModal(false);
       setAccountToDelete(null);
-    } catch (e) {
+    } catch {
       // noop (on peut ajouter un toast plus tard)
     } finally {
       setDeleteLoading(false);

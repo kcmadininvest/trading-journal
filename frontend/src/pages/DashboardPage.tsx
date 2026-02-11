@@ -391,7 +391,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           return holidayDate >= today;
         });
         setMarketHolidays(filteredHolidays);
-      } catch (error) {
+      } catch {
         // Silently fail - not critical
       } finally {
         setHolidaysLoading(false);

@@ -37,7 +37,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const handleConfirm = async () => {
     try {
       await onConfirm();
-    } catch (error) {
+    } catch {
       // L'erreur sera gérée par le composant parent
     }
   };

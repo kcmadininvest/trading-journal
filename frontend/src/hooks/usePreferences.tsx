@@ -29,7 +29,7 @@ const getInitialTheme = (): 'light' | 'dark' => {
       }
       return savedTheme;
     }
-  } catch (e) {
+  } catch {
     // Ignorer les erreurs de localStorage
   }
   return 'light';
@@ -46,7 +46,7 @@ const getInitialFontSize = (): 'small' | 'medium' | 'large' => {
       root.classList.add(`font-size-${savedFontSize}`);
       return savedFontSize;
     }
-  } catch (e) {
+  } catch {
     // Ignorer les erreurs de localStorage
   }
   return 'medium';
@@ -107,7 +107,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         try {
           localStorage.setItem('theme', prefs.theme || 'light');
           localStorage.setItem('font_size', prefs.font_size || 'medium');
-        } catch (e) {
+        } catch {
           // Ignorer les erreurs de localStorage
         }
         
@@ -202,7 +202,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Sauvegarder dans localStorage
     try {
       localStorage.setItem('font_size', preferences.font_size || 'medium');
-    } catch (e) {
+    } catch {
       // Ignorer les erreurs de localStorage
     }
   }, [preferences.font_size]);

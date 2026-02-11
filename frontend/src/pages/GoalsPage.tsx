@@ -223,7 +223,7 @@ const GoalsPage: React.FC = () => {
           }
           return prevStats; // Pas de changement, garder l'ancien
         });
-      } catch (err) {
+      } catch {
         // Ignorer les erreurs de statistiques, ce n'est pas critique
       }
     };
@@ -309,7 +309,7 @@ const GoalsPage: React.FC = () => {
       try {
         const stats = await goalsService.getStatistics();
         setStatistics(stats);
-      } catch (err) {
+      } catch {
         // Ignorer les erreurs de statistiques
       }
       
@@ -336,7 +336,7 @@ const GoalsPage: React.FC = () => {
       try {
         const stats = await goalsService.getStatistics();
         setStatistics(stats);
-      } catch (err) {
+      } catch {
         // Ignorer les erreurs de statistiques
       }
       

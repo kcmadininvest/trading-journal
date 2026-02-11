@@ -193,7 +193,7 @@ const SettingsPage: React.FC = () => {
         root.classList.add(`font-size-${updatedPreferences.font_size}`);
         try {
           localStorage.setItem('font_size', updatedPreferences.font_size);
-        } catch (e) {}
+        } catch {}
       }
       
       if (updatedPreferences.language) {
@@ -235,7 +235,7 @@ const SettingsPage: React.FC = () => {
     try {
       await userService.updatePreferences({ ...preferences, theme: newTheme });
       window.dispatchEvent(new CustomEvent('preferences:updated'));
-    } catch (error: any) {
+    } catch {
       const previousTheme = theme;
       setPreferences({ ...preferences, theme: previousTheme });
       await setTheme(previousTheme);

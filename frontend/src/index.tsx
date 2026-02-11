@@ -17,7 +17,7 @@ try {
     // Appliquer la taille par défaut
     document.documentElement.classList.add('font-size-medium');
   }
-} catch (e) {
+} catch {
   // Ignorer les erreurs de localStorage
   document.documentElement.classList.add('font-size-medium');
 }

@@ -39,7 +39,7 @@ export const useTheme = () => {
     // Sauvegarder dans localStorage pour éviter le flash au prochain chargement
     try {
       localStorage.setItem('theme', newTheme);
-    } catch (e) {
+    } catch {
       // Ignorer les erreurs de localStorage
     }
     
@@ -76,7 +76,7 @@ export const useTheme = () => {
     // Sauvegarder dans localStorage pour éviter le flash au prochain chargement
     try {
       localStorage.setItem('theme', theme);
-    } catch (e) {
+    } catch {
       // Ignorer les erreurs de localStorage
     }
 

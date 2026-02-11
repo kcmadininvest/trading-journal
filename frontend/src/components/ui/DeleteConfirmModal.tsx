@@ -37,7 +37,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   const handleConfirm = async () => {
     try {
       await onConfirm();
-    } catch (error) {
+    } catch {
       // L'erreur sera gérée par le composant parent
     }
   };

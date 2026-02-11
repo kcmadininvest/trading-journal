@@ -128,7 +128,7 @@ const DailyJournalPage: React.FC = () => {
       try {
         const fullEntry = await dailyJournalService.getEntry(entry.id);
         setHoveredEntryContent(fullEntry.content);
-      } catch (err) {
+      } catch {
         setHoveredEntryContent(entry.content_preview);
       }
     }, 300);
