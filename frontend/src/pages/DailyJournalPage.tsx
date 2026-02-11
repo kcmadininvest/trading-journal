@@ -34,6 +34,12 @@ const DailyJournalPage: React.FC = () => {
   const [hoveredEntryContent, setHoveredEntryContent] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const selectedYearRef = useRef<number | null>(null);
+  const selectedMonthRef = useRef<number | null>(null);
+
+  useEffect(() => { selectedYearRef.current = selectedYear; }, [selectedYear]);
+  useEffect(() => { selectedMonthRef.current = selectedMonth; }, [selectedMonth]);
+
   const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
     const saved = localStorage.getItem('dailyJournal_viewMode');
     return (saved === 'grid' || saved === 'list') ? saved : 'grid';
@@ -58,11 +64,14 @@ const DailyJournalPage: React.FC = () => {
         return;
       }
 
-      const yearFromSelection = selectedYear ? years.find((year) => year.year === selectedYear) : null;
+      const curYear = selectedYearRef.current;
+      const curMonth = selectedMonthRef.current;
+
+      const yearFromSelection = curYear ? years.find((year) => year.year === curYear) : null;
       const nextYear = (yearFromSelection ?? years[0]).year;
 
-      const monthFromSelection = selectedMonth && yearFromSelection
-        ? yearFromSelection.months.find((month) => month.month === selectedMonth)
+      const monthFromSelection = curMonth && yearFromSelection
+        ? yearFromSelection.months.find((month) => month.month === curMonth)
         : null;
       const nextMonth = monthFromSelection?.month ?? (yearFromSelection ?? years[0]).months[0]?.month ?? null;
 
@@ -73,7 +82,7 @@ const DailyJournalPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [startDate, endDate, searchText, selectedAccountId, t, selectedYear, selectedMonth]);
+  }, [startDate, endDate, searchText, selectedAccountId, t]);
 
   useEffect(() => {
     loadEntries();
