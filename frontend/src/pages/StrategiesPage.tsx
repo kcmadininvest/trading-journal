@@ -42,7 +42,10 @@ import {
   Filler,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { MemoizedBar as Bar, MemoizedDoughnut as Doughnut, MemoizedMixedChart as MixedChart } from '../components/strategy/charts/MemoizedCharts';
+import { MemoizedBar as Bar, MemoizedMixedChart as MixedChart } from '../components/strategy/charts/MemoizedCharts';
+import { EmotionsChart } from '../components/strategy/charts/EmotionsChart';
+import { EvolutionChart } from '../components/strategy/charts/EvolutionChart';
+import { useEvolutionData } from '../hooks/useEvolutionData';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -359,78 +362,10 @@ const StrategiesPage: React.FC = () => {
     isLoading,
   });
 
-  const evolutionData = useMemo(() => {
-    if (!complianceAggregation) return null;
-    
-    const { labels, data, rawData, aggregation, formatTooltipDate } = complianceAggregation;
-    
-    // Calculer la moyenne cumulative pour chaque point
-    const cumulativeAverageData = rawData.map((_, index) => {
-      const pointsUpToNow = rawData.slice(0, index + 1);
-      const totalStrategies = pointsUpToNow.reduce((sum, d) => sum + (d.total_strategies || 0), 0);
-      const totalRespected = pointsUpToNow.reduce((sum, d) => sum + (d.respected || 0), 0);
-      
-      if (totalStrategies > 0) {
-        return (totalRespected / totalStrategies) * 100;
-      } else {
-        const sum = pointsUpToNow.reduce((sum, d) => sum + (d.compliance_rate || 0), 0);
-        return sum / pointsUpToNow.length;
-      }
-    });
-
-    // Calculer la moyenne globale
-    const totalStrategies = rawData.reduce((sum, d) => sum + (d.total_strategies || 0), 0);
-    const totalRespected = rawData.reduce((sum, d) => sum + (d.respected || 0), 0);
-    const averageRate = totalStrategies > 0
-      ? (totalRespected / totalStrategies) * 100
-      : rawData.reduce((sum, d) => sum + (d.compliance_rate || 0), 0) / rawData.length;
-
-    // Couleur des barres : bleu si >= moyenne cumulative, fuchsia si en dessous
-    const barBgColors = data.map((value: number, i: number) => {
-      return value >= cumulativeAverageData[i] ? 'rgba(98, 155, 248, 0.7)' : 'rgba(240, 109, 173, 0.7)';
-    });
-    const barBorderColors = data.map((value: number, i: number) => {
-      return value >= cumulativeAverageData[i] ? '#629bf8' : '#f06dad';
-    });
-
-    return {
-      labels,
-      datasets: [
-        {
-          type: 'bar' as const,
-          label: t('strategies:compliance.rate'),
-          data,
-          backgroundColor: barBgColors,
-          borderColor: barBorderColors,
-          borderWidth: 1,
-          borderRadius: 4,
-          barPercentage: 0.8,
-          categoryPercentage: 0.85,
-        },
-        {
-          type: 'line' as const,
-          label: t('strategies:averageRate', { defaultValue: 'Moyenne' }),
-          data: cumulativeAverageData,
-          borderColor: '#f06dad',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          tension: 0.4,
-          fill: false,
-          pointRadius: 0,
-          pointHoverRadius: 4,
-          pointBackgroundColor: '#f06dad',
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 2,
-        },
-      ],
-      rawData,
-      aggregation,
-      formatTooltipDate,
-      averageRate,
-      cumulativeAverageData,
-    };
-  }, [complianceAggregation, t]);
+  const evolutionData = useEvolutionData({
+    complianceAggregation,
+    t,
+  });
 
   // Graphique 7: Compliance par jour de la semaine (prend en compte le sélecteur de compte)
   const weekdayComplianceData = useWeekdayCompliance({
@@ -655,61 +590,12 @@ const StrategiesPage: React.FC = () => {
 
             {/* Graphique 4: Émotions dominantes */}
             {emotionsData && (
-              <ChartSection
-                title={t('strategies:dominantEmotionsDistribution')}
-                tooltip={t('strategies:dominantEmotionsDistributionTooltip')}
-              >
-                <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                  {/* Statistiques gauche (2 cartes) */}
-                  <div className="flex flex-row lg:flex-col gap-3 lg:gap-4 lg:w-52 xl:w-56 flex-shrink-0">
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 lg:p-4 flex-1 lg:flex-none">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        {t('strategies:numberOfOccurrences', { defaultValue: 'Nombre d\'occurrences' })}
-                      </div>
-                      <div className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {(emotionsData as any)?.total || 0}
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 lg:p-4 flex-1 lg:flex-none">
-                      <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        {t('strategies:totalEmotions', { defaultValue: 'Émotions différentes' })}
-                      </div>
-                      <div className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {(emotionsData as any)?.totalEmotions || 0}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Graphique Doughnut au centre */}
-                  <div className="flex-1 h-64 sm:h-72 md:h-80 min-w-0">
-                    <Doughnut data={emotionsData} options={emotionsOptions} />
-                  </div>
-                  
-                  {/* Statistiques droite (2 cartes) */}
-                  <div className="flex flex-row lg:flex-col gap-3 lg:gap-4 lg:w-52 xl:w-56 flex-shrink-0">
-                    {(emotionsData as any)?.topEmotion && (
-                      <>
-                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 lg:p-4 flex-1 lg:flex-none">
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                            {t('strategies:mostFrequentEmotion', { defaultValue: 'Émotion la plus fréquente' })}
-                          </div>
-                          <div className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-0.5 truncate" title={(emotionsData as any).topEmotion.label}>
-                            {(emotionsData as any).topEmotion.label}
-                          </div>
-                        </div>
-                        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 lg:p-4 flex-1 lg:flex-none">
-                          <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                            {t('strategies:percentage', { defaultValue: 'Pourcentage' })}
-                          </div>
-                          <div className="text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">
-                            {formatNumber((emotionsData as any).topEmotion.percentage, 1)}%
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </ChartSection>
+              <EmotionsChart
+                data={emotionsData}
+                options={emotionsOptions}
+                formatNumber={formatNumber}
+                t={t}
+              />
             )}
           </div>
         ) : (
@@ -750,31 +636,12 @@ const StrategiesPage: React.FC = () => {
               ) : null}
 
               {/* Graphique: Évolution du taux de respect */}
-              {evolutionData ? (
-                <ChartSection 
-                  title={t('strategies:compliance.evolution')}
-                  tooltip={selectedAccount 
-                    ? t('strategies:complianceEvolutionSelectedAccountTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour le compte sélectionné' })
-                    : t('strategies:complianceEvolutionAllAccountsTooltip', { defaultValue: 'Évolution du taux de respect de la stratégie pour tous vos comptes actifs' })}
-                >
-                  <LazyChart height="h-64 sm:h-80 md:h-96">
-                    <MixedChart type="bar" data={evolutionData!} options={evolutionOptions} />
-                  </LazyChart>
-                </ChartSection>
-              ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-                  <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                    <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
-                      {t('strategies:compliance.evolution')}
-                    </h3>
-                  </div>
-                  <div className="h-64 sm:h-80 md:h-96 flex items-center justify-center">
-                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                      {t('strategies:noDataForAccount', { defaultValue: 'Aucune donnée disponible' })}
-                    </p>
-                  </div>
-                </div>
-              )}
+              <EvolutionChart
+                data={evolutionData}
+                options={evolutionOptions}
+                selectedAccount={selectedAccount}
+                t={t}
+              />
             </>
           )}
         </div>
