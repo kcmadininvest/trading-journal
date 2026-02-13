@@ -509,47 +509,41 @@ const PositionStrategiesPage: React.FC = () => {
   };
 
   // Ouvrir le modal de visualisation
-  const handleView = async (strategy: PositionStrategy) => {
+  const handleView = (strategy: PositionStrategy) => {
     setSelectedStrategy(strategy);
     // Réinitialiser les cases cochées à chaque ouverture
     setCheckedRules({});
     setPreviousVersion(null);
-    
-    // Charger la version précédente pour comparaison (si ce n'est pas la version 1)
-    if (strategy.version > 1) {
-      try {
-        const versionsData = await positionStrategiesService.getVersions(strategy.id);
-        // Trier par version décroissante et trouver la version précédente
-        const sortedVersions = [...versionsData].sort((a, b) => b.version - a.version);
-        const currentIndex = sortedVersions.findIndex(v => v.id === strategy.id);
-        if (currentIndex >= 0 && currentIndex < sortedVersions.length - 1) {
-          const prevVersionData = sortedVersions[currentIndex + 1];
-          // Récupérer la version complète seulement si elle existe dans les versions disponibles
-          // Vérifier d'abord si l'ID existe dans la liste des stratégies accessibles
-          try {
-            const prevVersion = await positionStrategiesService.get(prevVersionData.id);
-            // Vérifier que la version récupérée appartient bien au même utilisateur
-            if (prevVersion && prevVersion.user === strategy.user) {
-              setPreviousVersion(prevVersion);
-            } else {
-              setPreviousVersion(null);
-            }
-          } catch (err: any) {
-            // Si la stratégie n'existe pas ou n'est pas accessible (404, 403, etc.), ignorer silencieusement
-            console.warn('Previous version not accessible:', prevVersionData.id, err.message || err);
-            setPreviousVersion(null);
-          }
-        } else {
-          setPreviousVersion(null);
-        }
-      } catch (err) {
-        // En cas d'erreur lors du chargement des versions, continuer sans comparaison
-        console.warn('Error loading versions for comparison:', err);
-        setPreviousVersion(null);
-      }
-    }
-    
     setShowViewModal(true);
+    
+    // Charger la version précédente pour comparaison en arrière-plan (si ce n'est pas la version 1)
+    if (strategy.version > 1) {
+      (async () => {
+        try {
+          const versionsData = await positionStrategiesService.getVersions(strategy.id);
+          // Trier par version décroissante et trouver la version précédente
+          const sortedVersions = [...versionsData].sort((a, b) => b.version - a.version);
+          const currentIndex = sortedVersions.findIndex(v => v.id === strategy.id);
+          if (currentIndex >= 0 && currentIndex < sortedVersions.length - 1) {
+            const prevVersionData = sortedVersions[currentIndex + 1];
+            // Récupérer la version complète seulement si elle existe dans les versions disponibles
+            try {
+              const prevVersion = await positionStrategiesService.get(prevVersionData.id);
+              // Vérifier que la version récupérée appartient bien au même utilisateur
+              if (prevVersion && prevVersion.user === strategy.user) {
+                setPreviousVersion(prevVersion);
+              }
+            } catch (err: any) {
+              // Si la stratégie n'existe pas ou n'est pas accessible (404, 403, etc.), ignorer silencieusement
+              console.warn('Previous version not accessible:', prevVersionData.id, err.message || err);
+            }
+          }
+        } catch (err) {
+          // En cas d'erreur lors du chargement des versions, continuer sans comparaison
+          console.warn('Error loading versions for comparison:', err);
+        }
+      })();
+    }
   };
 
   // Fermer le modal de visualisation et réinitialiser
@@ -1224,7 +1218,7 @@ const PositionStrategiesPage: React.FC = () => {
         )}
 
         {/* Liste des stratégies */}
-        {isLoading && strategies.length === 0 ? (
+        {isLoading ? (
           <div className="flex items-center justify-center h-48 sm:h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-3 sm:mb-4"></div>
@@ -1334,6 +1328,26 @@ const PositionStrategiesPage: React.FC = () => {
                                     <span className="text-xs font-medium">{strategy.version_count}</span>
                                   </button>
                                 </Tooltip>
+                                <Tooltip content={t('positionStrategies:detachTooltip', { defaultValue: 'Détacher dans une fenêtre flottante' })} position="top">
+                                  <button
+                                    onClick={() => {
+                                      const width = 450;
+                                      const height = 700;
+                                      const left = window.screenX + window.outerWidth - width - 30;
+                                      const top = window.screenY + 50;
+                                      window.open(
+                                        `/strategy-checklist?strategyId=${strategy.id}`,
+                                        `strategy-checklist-${strategy.id}`,
+                                        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+                                      );
+                                    }}
+                                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                  </button>
+                                </Tooltip>
                               </div>
                               
                               {/* Menu dropdown pour actions supplémentaires */}
@@ -1368,28 +1382,6 @@ const PositionStrategiesPage: React.FC = () => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                                       </svg>
                                       {t('positionStrategies:unarchive', { defaultValue: 'Désarchiver' })}
-                                    </button>
-                                    <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                                    <button
-                                      onClick={() => {
-                                        const width = 450;
-                                        const height = 700;
-                                        const left = window.screenX + window.outerWidth - width - 30;
-                                        const top = window.screenY + 50;
-                                        window.open(
-                                          `/strategy-checklist?strategyId=${strategy.id}`,
-                                          `strategy-checklist-${strategy.id}`,
-                                          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-                                        );
-                                        setOpenMenuId(null);
-                                        setMenuPosition(null);
-                                      }}
-                                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition-colors"
-                                    >
-                                      <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                      </svg>
-                                      {t('positionStrategies:detach', { defaultValue: 'Détacher' })}
                                     </button>
                                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                                     <button
@@ -1493,6 +1485,26 @@ const PositionStrategiesPage: React.FC = () => {
                         <span className="text-xs font-medium">{strategy.version_count}</span>
                       </button>
                     </Tooltip>
+                    <Tooltip content={t('positionStrategies:detachTooltip', { defaultValue: 'Détacher dans une fenêtre flottante' })} position="top">
+                      <button
+                        onClick={() => {
+                          const width = 450;
+                          const height = 700;
+                          const left = window.screenX + window.outerWidth - width - 30;
+                          const top = window.screenY + 50;
+                          window.open(
+                            `/strategy-checklist?strategyId=${strategy.id}`,
+                            `strategy-checklist-${strategy.id}`,
+                            `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+                          );
+                        }}
+                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </button>
+                    </Tooltip>
                   </div>
                   
                   {/* Menu dropdown pour actions supplémentaires */}
@@ -1582,28 +1594,6 @@ const PositionStrategiesPage: React.FC = () => {
                             </button>
                           </>
                         )}
-                        <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                        <button
-                          onClick={() => {
-                            const width = 450;
-                            const height = 700;
-                            const left = window.screenX + window.outerWidth - width - 30;
-                            const top = window.screenY + 50;
-                            window.open(
-                              `/strategy-checklist?strategyId=${strategy.id}`,
-                              `strategy-checklist-${strategy.id}`,
-                              `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-                            );
-                            setOpenMenuId(null);
-                            setMenuPosition(null);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2 transition-colors"
-                        >
-                          <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
-                          {t('positionStrategies:detach', { defaultValue: 'Détacher' })}
-                        </button>
                         <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                         <button
                           onClick={() => {
@@ -2174,6 +2164,16 @@ const PositionStrategiesPage: React.FC = () => {
                         {formatDate(selectedStrategy.created_at, preferences.date_format, false, preferences.timezone)}
                       </span>
                     </div>
+                    {selectedStrategy.updated_at && selectedStrategy.updated_at !== selectedStrategy.created_at && (
+                      <div>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">
+                          {t('positionStrategies:updatedAt', { defaultValue: 'Mis à jour le' })}:
+                        </span>
+                        <span className="ml-2 text-gray-600 dark:text-gray-400 break-words">
+                          {formatDate(selectedStrategy.updated_at, preferences.date_format, false, preferences.timezone)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
