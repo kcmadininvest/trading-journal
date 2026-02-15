@@ -42,6 +42,15 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
     return formatDateTimeShort(dateStr, preferences.date_format, preferences.timezone);
   };
 
+  // Fonction pour calculer les points gagnés/perdus
+  const calcPoints = (trade: TradeListItem): number | null => {
+    if (!trade.entry_price || !trade.exit_price) return null;
+    const entry = parseFloat(trade.entry_price);
+    const exit = parseFloat(trade.exit_price);
+    if (isNaN(entry) || isNaN(exit)) return null;
+    return trade.trade_type === 'Long' ? exit - entry : entry - exit;
+  };
+
   // Fonction pour vérifier si les deux R:R sont identiques (TP atteint)
   const areRRIdentical = (planned: string | null | undefined, actual: string | null | undefined): boolean => {
     if (!planned || !actual || planned === 'null' || actual === 'null' || planned === '' || actual === '') {
@@ -193,6 +202,20 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     <div className="font-medium text-gray-900 dark:text-gray-100 tabular-nums">{fmtNumber(trade.exit_price, 2)}</div>
                   </div>
                   <div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:points', { defaultValue: 'Points' })}</div>
+                    {(() => {
+                      const pts = calcPoints(trade);
+                      return (
+                        <div
+                          className="font-semibold tabular-nums"
+                          style={pts == null ? undefined : { color: pts >= 0 ? '#05967c' : '#e11d48' }}
+                        >
+                          {pts == null ? '—' : (pts >= 0 ? '+' : '') + fmtNumber(String(pts), 2)}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  <div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:duration')}</div>
                     <div className="font-medium text-gray-900 dark:text-gray-100">{trade.duration_str ?? '-'}</div>
                   </div>
@@ -333,6 +356,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:size')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:entry')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:exit')}</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:points', { defaultValue: 'Points' })}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:pnl')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:fees')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:netPnl')}</th>
@@ -345,11 +369,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {isLoading ? (
               <tr>
-                <td colSpan={16} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
+                <td colSpan={17} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
-                <td colSpan={16} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
+                <td colSpan={17} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
               </tr>
             ) : (
               items.map((trade) => (
@@ -449,6 +473,20 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtNumber(trade.entry_price, 2)}</td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtNumber(trade.exit_price, 2)}</td>
                   <td
+                    className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold"
+                    style={(() => {
+                      const pts = calcPoints(trade);
+                      if (pts == null) return undefined;
+                      return { color: pts >= 0 ? '#05967c' : '#e11d48' };
+                    })()}
+                  >
+                    {(() => {
+                      const pts = calcPoints(trade);
+                      if (pts == null) return '—';
+                      return (pts >= 0 ? '+' : '') + fmtNumber(String(pts), 2);
+                    })()}
+                  </td>
+                  <td
                     className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold`}
                     style={
                       trade.pnl == null || isNaN(parseFloat(trade.pnl))
@@ -525,7 +563,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
           {(!isLoading && items.length > 0 && totals) && (
             <tfoot className="bg-gray-50 dark:bg-gray-700/50">
               <tr className="border-t-2 border-gray-200 dark:border-gray-600">
-                <td colSpan={9} className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                <td colSpan={10} className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                   <span className="inline-flex items-center gap-1 sm:gap-2 font-medium">
                     <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

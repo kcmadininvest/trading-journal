@@ -260,6 +260,37 @@ function StatisticsPage() {
     }
   }, [filteredTrades]);
 
+  // Calculer les statistiques de points à partir des trades filtrés
+  const pointsStats = useMemo(() => {
+    if (!filteredTrades || filteredTrades.length === 0) return null;
+
+    const calcPts = (t: TradeListItem): number | null => {
+      if (!t.entry_price || !t.exit_price) return null;
+      const entry = parseFloat(t.entry_price);
+      const exit = parseFloat(t.exit_price);
+      if (isNaN(entry) || isNaN(exit)) return null;
+      return t.trade_type === 'Long' ? exit - entry : entry - exit;
+    };
+
+    const allPts = filteredTrades.map(calcPts).filter((p): p is number => p !== null);
+    if (allPts.length === 0) return null;
+
+    const winPts = allPts.filter(p => p > 0);
+    const losePts = allPts.filter(p => p < 0);
+
+    const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
+    return {
+      avgPointsPerTrade: avg(allPts),
+      avgPointsWin: avg(winPts),
+      avgPointsLoss: avg(losePts),
+      maxPointsGain: allPts.length > 0 ? Math.max(...allPts) : 0,
+      maxPointsLoss: allPts.length > 0 ? Math.min(...allPts) : 0,
+      totalPoints: allPts.reduce((a, b) => a + b, 0),
+      tradesWithPoints: allPts.length,
+    };
+  }, [filteredTrades]);
+
   // Fonctions utilitaires - DOIT être avant tous les return conditionnels
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = useCallback((value: number, currencySymbol: string = ''): string => {
@@ -680,6 +711,58 @@ function StatisticsPage() {
                     <MetricItem
                       label={t('statistics:tradesAnalysis.averageLoss')}
                       value={analyticsData.trade_stats.avg_losing_trade ? formatCurrency(analyticsData.trade_stats.avg_losing_trade, currencySymbol) : 'N/A'}
+                      variant="danger"
+                    />
+                  </MetricCard>
+                )}
+
+                {pointsStats && (
+                  <MetricCard
+                    title={t('statistics:tradesAnalysis.avgPoints', { defaultValue: 'Points Moyens' })}
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                      </svg>
+                    }
+                  >
+                    <MetricItem
+                      label={t('statistics:tradesAnalysis.avgPointsPerTrade', { defaultValue: 'Moy. points / trade' })}
+                      value={`${pointsStats.avgPointsPerTrade >= 0 ? '+' : ''}${formatNumber(pointsStats.avgPointsPerTrade, 2)} pts`}
+                      tooltip={t('statistics:tradesAnalysis.avgPointsPerTradeTooltip', { defaultValue: 'Nombre moyen de points gagnés ou perdus par trade (indépendant de la taille de position)' })}
+                      variant={pointsStats.avgPointsPerTrade >= 0 ? 'success' : 'danger'}
+                    />
+                    <MetricItem
+                      label={t('statistics:tradesAnalysis.avgPointsWin', { defaultValue: 'Moy. points gagnants' })}
+                      value={pointsStats.avgPointsWin > 0 ? `+${formatNumber(pointsStats.avgPointsWin, 2)} pts` : 'N/A'}
+                      tooltip={t('statistics:tradesAnalysis.avgPointsWinTooltip', { defaultValue: 'Points moyens captés sur les trades gagnants' })}
+                      variant="success"
+                    />
+                    <MetricItem
+                      label={t('statistics:tradesAnalysis.avgPointsLoss', { defaultValue: 'Moy. points perdants' })}
+                      value={pointsStats.avgPointsLoss < 0 ? `${formatNumber(pointsStats.avgPointsLoss, 2)} pts` : 'N/A'}
+                      tooltip={t('statistics:tradesAnalysis.avgPointsLossTooltip', { defaultValue: 'Points moyens perdus sur les trades perdants' })}
+                      variant="danger"
+                    />
+                  </MetricCard>
+                )}
+
+                {pointsStats && (
+                  <MetricCard
+                    title={t('statistics:tradesAnalysis.extremePoints', { defaultValue: 'Points Extrêmes' })}
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    }
+                  >
+                    <MetricItem
+                      label={t('statistics:tradesAnalysis.maxPointsGain', { defaultValue: 'Max points gagnés' })}
+                      value={`+${formatNumber(pointsStats.maxPointsGain, 2)} pts`}
+                      variant="success"
+                    />
+                    <MetricItem
+                      label={t('statistics:tradesAnalysis.maxPointsLoss', { defaultValue: 'Max points perdus' })}
+                      value={`${formatNumber(pointsStats.maxPointsLoss, 2)} pts`}
                       variant="danger"
                     />
                   </MetricCard>

@@ -105,7 +105,18 @@
     "averageCostPerTrade": "每笔交易平均成本",
     "averageTradeCostTooltip": "每笔交易的平均成本（手续费 + 佣金）。通过总手续费除以总交易数计算",
     "medianCostPerTrade": "每笔交易中位数成本",
-    "medianCostPerTradeTooltip": "每笔交易的中位数成本（手续费 + 佣金）"
+    "medianCostPerTradeTooltip": "每笔交易的中位数成本（手续费 + 佣金）",
+    "pointsAnalysis": "点数分析",
+    "avgPoints": "平均点数",
+    "extremePoints": "极端点数",
+    "avgPointsPerTrade": "平均点数 / 交易",
+    "avgPointsPerTradeTooltip": "每笔交易平均获得或损失的点数（与仓位大小无关）",
+    "avgPointsWin": "平均盈利点数",
+    "avgPointsWinTooltip": "盈利交易中获得的平均点数",
+    "avgPointsLoss": "平均亏损点数",
+    "avgPointsLossTooltip": "亏损交易中损失的平均点数",
+    "maxPointsGain": "最大盈利点数",
+    "maxPointsLoss": "最大亏损点数"
   },
   "advancedAnalysis": {
     "title": "高级分析",

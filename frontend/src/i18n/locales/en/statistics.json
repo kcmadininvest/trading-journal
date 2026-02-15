@@ -110,7 +110,18 @@
     "averageCostPerTrade": "Average cost per trade",
     "averageTradeCostTooltip": "Average cost (fees + commissions) per trade. Calculated by dividing total fees by total number of trades",
     "medianCostPerTrade": "Median cost per trade",
-    "medianCostPerTradeTooltip": "Median cost (fees + commissions) per trade"
+    "medianCostPerTradeTooltip": "Median cost (fees + commissions) per trade",
+    "pointsAnalysis": "Points Analysis",
+    "avgPoints": "Average Points",
+    "extremePoints": "Extreme Points",
+    "avgPointsPerTrade": "Avg. points / trade",
+    "avgPointsPerTradeTooltip": "Average number of points gained or lost per trade (independent of position size)",
+    "avgPointsWin": "Avg. winning points",
+    "avgPointsWinTooltip": "Average points captured on winning trades",
+    "avgPointsLoss": "Avg. losing points",
+    "avgPointsLossTooltip": "Average points lost on losing trades",
+    "maxPointsGain": "Max points gained",
+    "maxPointsLoss": "Max points lost"
   },
   "advancedAnalysis": {
     "title": "Advanced Analysis",

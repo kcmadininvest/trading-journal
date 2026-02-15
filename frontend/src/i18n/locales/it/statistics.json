@@ -105,7 +105,18 @@
     "averageCostPerTrade": "Costo medio per operazione",
     "averageTradeCostTooltip": "Costo medio (commissioni + fees) per operazione. Calcolato dividendo le commissioni totali per il numero totale di operazioni",
     "medianCostPerTrade": "Costo mediano per operazione",
-    "medianCostPerTradeTooltip": "Costo mediano (commissioni + fees) per operazione"
+    "medianCostPerTradeTooltip": "Costo mediano (commissioni + fees) per operazione",
+    "pointsAnalysis": "Analisi dei Punti",
+    "avgPoints": "Punti Medi",
+    "extremePoints": "Punti Estremi",
+    "avgPointsPerTrade": "Media punti / operazione",
+    "avgPointsPerTradeTooltip": "Numero medio di punti guadagnati o persi per operazione (indipendente dalla dimensione della posizione)",
+    "avgPointsWin": "Media punti vincenti",
+    "avgPointsWinTooltip": "Punti medi catturati nelle operazioni vincenti",
+    "avgPointsLoss": "Media punti perdenti",
+    "avgPointsLossTooltip": "Punti medi persi nelle operazioni perdenti",
+    "maxPointsGain": "Max punti guadagnati",
+    "maxPointsLoss": "Max punti persi"
   },
   "advancedAnalysis": {
     "title": "Analisi Avanzate",

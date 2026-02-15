@@ -106,7 +106,18 @@
     "averageCostPerTrade": "トレードあたりの平均コスト",
     "averageTradeCostTooltip": "トレードあたりの平均コスト（手数料 + コミッション）。総手数料を総トレード数で割って計算",
     "medianCostPerTrade": "トレードあたりの中央値コスト",
-    "medianCostPerTradeTooltip": "トレードあたりの中央値コスト（手数料 + コミッション）"
+    "medianCostPerTradeTooltip": "トレードあたりの中央値コスト（手数料 + コミッション）",
+    "pointsAnalysis": "ポイント分析",
+    "avgPoints": "平均ポイント",
+    "extremePoints": "極端ポイント",
+    "avgPointsPerTrade": "平均ポイント / トレード",
+    "avgPointsPerTradeTooltip": "トレードあたりの平均獲得・損失ポイント数（ポジションサイズに依存しない）",
+    "avgPointsWin": "平均獲得ポイント",
+    "avgPointsWinTooltip": "勝ちトレードで獲得した平均ポイント",
+    "avgPointsLoss": "平均損失ポイント",
+    "avgPointsLossTooltip": "負けトレードで失った平均ポイント",
+    "maxPointsGain": "最大獲得ポイント",
+    "maxPointsLoss": "最大損失ポイント"
   },
   "advancedAnalysis": {
     "title": "高度な分析",

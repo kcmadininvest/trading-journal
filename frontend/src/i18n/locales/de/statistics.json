@@ -109,7 +109,18 @@
     "averageCostPerTrade": "Durchschnittliche Kosten pro Trade",
     "averageTradeCostTooltip": "Durchschnittliche Kosten (Gebühren + Provisionen) pro Trade. Berechnet durch Division der Gesamtgebühren durch die Gesamtzahl der Trades",
     "medianCostPerTrade": "Median-Kosten pro Trade",
-    "medianCostPerTradeTooltip": "Median-Kosten (Gebühren + Provisionen) pro Trade"
+    "medianCostPerTradeTooltip": "Median-Kosten (Gebühren + Provisionen) pro Trade",
+    "pointsAnalysis": "Punkte-Analyse",
+    "avgPoints": "Durchschnittliche Punkte",
+    "extremePoints": "Extreme Punkte",
+    "avgPointsPerTrade": "Durchschn. Punkte / Trade",
+    "avgPointsPerTradeTooltip": "Durchschnittliche Anzahl gewonnener oder verlorener Punkte pro Trade (unabhängig von der Positionsgröße)",
+    "avgPointsWin": "Durchschn. Gewinnpunkte",
+    "avgPointsWinTooltip": "Durchschnittlich erzielte Punkte bei Gewinntrades",
+    "avgPointsLoss": "Durchschn. Verlustpunkte",
+    "avgPointsLossTooltip": "Durchschnittlich verlorene Punkte bei Verlusttrades",
+    "maxPointsGain": "Max gewonnene Punkte",
+    "maxPointsLoss": "Max verlorene Punkte"
   },
   "advancedAnalysis": {
     "title": "Erweiterte Analyse",
