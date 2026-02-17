@@ -330,6 +330,8 @@ class TradeStatisticsSerializer(serializers.Serializer):
     max_runup_global_pct = serializers.FloatField()
     expectancy = serializers.FloatField()
     break_even_trades = serializers.IntegerField()
+    break_even_zero_trades = serializers.IntegerField()
+    break_even_positive_trades = serializers.IntegerField()
     sharpe_ratio = serializers.FloatField()
     sortino_ratio = serializers.FloatField()
     calmar_ratio = serializers.FloatField()

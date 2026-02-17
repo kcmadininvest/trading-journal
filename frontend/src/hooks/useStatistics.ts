@@ -38,6 +38,8 @@ export interface StatisticsData {
   max_runup_global_pct: number;
   expectancy: number;
   break_even_trades: number;
+  break_even_zero_trades: number;
+  break_even_positive_trades: number;
   sharpe_ratio: number;
   sortino_ratio: number;
   calmar_ratio: number;
@@ -141,6 +143,8 @@ export function useStatistics(
           trades_with_actual_rr: result.trades_with_actual_rr ?? 0,
           trades_with_both_rr: result.trades_with_both_rr ?? 0,
           plan_respect_rate: result.plan_respect_rate ?? 0,
+          break_even_zero_trades: result.break_even_zero_trades ?? 0,
+          break_even_positive_trades: result.break_even_positive_trades ?? 0,
         } as StatisticsData);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Erreur lors du chargement des statistiques'));

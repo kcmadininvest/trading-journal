@@ -511,6 +511,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'max_runup_global_pct': 0.0,
                 'expectancy': 0.0,
                 'break_even_trades': 0,
+                'break_even_zero_trades': 0,
+                'break_even_positive_trades': 0,
                 'sharpe_ratio': 0.0,
                 'sortino_ratio': 0.0,
                 'calmar_ratio': 0.0,
@@ -953,7 +955,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         )
         
         # Compter les deux types de break-even
-        break_even_trades = trades_with_zero_pnl.count() + winning_trades_without_tp.count()
+        zero_break_even_count = trades_with_zero_pnl.count()
+        winning_break_even_count = winning_trades_without_tp.count()
+        break_even_trades = zero_break_even_count + winning_break_even_count
         
         # 14. Sharpe Ratio (rendement ajusté à la volatilité)
         sharpe_ratio = 0.0
@@ -1118,6 +1122,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'max_runup_global_pct': round(max_runup_global_pct, 2),
             'expectancy': round(expectancy, 2),
             'break_even_trades': break_even_trades,
+            'break_even_zero_trades': zero_break_even_count,
+            'break_even_positive_trades': winning_break_even_count,
             'sharpe_ratio': round(sharpe_ratio, 2),
             'sortino_ratio': round(sortino_ratio, 2),
             'calmar_ratio': round(calmar_ratio, 2),

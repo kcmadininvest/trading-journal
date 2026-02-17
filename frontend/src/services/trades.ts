@@ -295,6 +295,8 @@ class TradesService {
     max_drawdown_global_pct: number;
     expectancy: number;
     break_even_trades: number;
+    break_even_zero_trades: number;
+    break_even_positive_trades: number;
     sharpe_ratio: number;
     sortino_ratio: number;
     calmar_ratio: number;
