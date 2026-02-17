@@ -2499,20 +2499,26 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         return queryset.order_by('-created_at')
     
+    def _invalidate_compliance_caches(self, user_id, account_id):
+        """Invalide les caches dashboard et compliance_stats pour un utilisateur/compte."""
+        from django.core.cache import cache
+        cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
+        cache.delete(f"compliance_stats_{user_id}_trading_account%3D{account_id}")
+        cache.delete(f"compliance_stats_{user_id}_trading_account={account_id}")
+        cache.delete(f"compliance_stats_{user_id}_")
+
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur connecté à la stratégie."""
         strategy = serializer.save(user=self.request.user)
-        
-        # Invalider le cache du dashboard pour ce compte
-        from django.core.cache import cache
         if strategy.trade and strategy.trade.trading_account_id:
-            # Invalider les caches courants pour ce compte (avec et sans dates)
-            user_id = self.request.user.id
-            account_id = strategy.trade.trading_account_id
-            cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
-            # Invalider aussi les caches avec dates (on ne peut pas faire de pattern matching)
-            # L'utilisateur devra rafraîchir ou le cache expirera après 2 minutes
-    
+            self._invalidate_compliance_caches(self.request.user.id, strategy.trade.trading_account_id)
+
+    def perform_update(self, serializer):
+        """Met à jour la stratégie et invalide les caches associés."""
+        strategy = serializer.save()
+        if strategy.trade and strategy.trade.trading_account_id:
+            self._invalidate_compliance_caches(self.request.user.id, strategy.trade.trading_account_id)
+
     @action(detail=False, methods=['get'])
     def by_trade(self, request):
         """Récupère la stratégie pour un trade spécifique."""
@@ -3813,19 +3819,25 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
         
         return queryset.order_by('-date', '-created_at')
     
+    def _invalidate_compliance_caches(self, user_id, account_id):
+        """Invalide les caches dashboard et compliance_stats pour un utilisateur/compte."""
+        from django.core.cache import cache
+        cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
+        cache.delete(f"compliance_stats_{user_id}_trading_account%3D{account_id}")
+        cache.delete(f"compliance_stats_{user_id}_trading_account={account_id}")
+        cache.delete(f"compliance_stats_{user_id}_")
+
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur connecté à la compliance."""
         compliance = serializer.save(user=self.request.user)
-        
-        # Invalider le cache du dashboard pour ce compte
-        from django.core.cache import cache
         if compliance.trading_account_id:
-            # Invalider les caches courants pour ce compte (avec et sans dates)
-            user_id = self.request.user.id
-            account_id = compliance.trading_account_id
-            cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
-            # Invalider aussi les caches avec dates (on ne peut pas faire de pattern matching)
-            # L'utilisateur devra rafraîchir ou le cache expirera après 2 minutes
+            self._invalidate_compliance_caches(self.request.user.id, compliance.trading_account_id)
+
+    def perform_update(self, serializer):
+        """Met à jour la compliance et invalide les caches associés."""
+        compliance = serializer.save()
+        if compliance.trading_account_id:
+            self._invalidate_compliance_caches(self.request.user.id, compliance.trading_account_id)
     
     @action(detail=False, methods=['get'])
     def by_date(self, request):
