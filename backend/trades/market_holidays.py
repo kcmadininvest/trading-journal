@@ -197,7 +197,8 @@ class MarketHolidaysService:
         market_names = {
             'XNYS': 'NYSE',
             'XPAR': 'Euronext Paris',
-            'XLON': 'LSE'
+            'XLON': 'LSE',
+            'XTKS': 'Tokyo SE'
         }
         
         upcoming = []

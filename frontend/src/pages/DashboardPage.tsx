@@ -380,7 +380,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const loadHolidays = async () => {
       setHolidaysLoading(true);
       try {
-        const response = await marketCalendarService.getMarketHolidays(1, 'XNYS,XPAR,XLON');
+        const response = await marketCalendarService.getMarketHolidays(1, 'XNYS,XPAR,XLON,XTKS');
         // Filtrer pour inclure uniquement les jours fériés d'aujourd'hui ou futurs
         // (pas les jours passés, mais garder celui d'aujourd'hui toute la journée)
         const today = new Date();
@@ -1378,9 +1378,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               ? isToday ? 'text-blue-700 dark:text-blue-300' : 'text-blue-600 dark:text-blue-400' 
                               : holiday.market === 'XPAR'
                               ? isToday ? 'text-purple-700 dark:text-purple-300' : 'text-purple-600 dark:text-purple-400'
-                              : isToday ? 'text-red-700 dark:text-red-300' : 'text-red-600 dark:text-red-400'
+                              : holiday.market === 'XLON'
+                              ? isToday ? 'text-red-700 dark:text-red-300' : 'text-red-600 dark:text-red-400'
+                              : isToday ? 'text-rose-700 dark:text-rose-300' : 'text-rose-600 dark:text-rose-400'
                           }`}>
-                            {holiday.market === 'XNYS' ? 'NYSE 🇺🇸' : holiday.market === 'XPAR' ? 'Euronext 🇫🇷' : 'LSE 🇬🇧'}
+                            {holiday.market === 'XNYS' ? 'NYSE' : holiday.market === 'XPAR' ? 'Euronext' : holiday.market === 'XLON' ? 'LSE' : 'Tokyo SE'}
+                            {' '}
+                            <img
+                              src={`https://flagcdn.com/16x12/${holiday.market === 'XNYS' ? 'us' : holiday.market === 'XPAR' ? 'fr' : holiday.market === 'XLON' ? 'gb' : 'jp'}.png`}
+                              srcSet={`https://flagcdn.com/32x24/${holiday.market === 'XNYS' ? 'us' : holiday.market === 'XPAR' ? 'fr' : holiday.market === 'XLON' ? 'gb' : 'jp'}.png 2x`}
+                              width="16"
+                              height="12"
+                              alt={holiday.market === 'XNYS' ? 'US' : holiday.market === 'XPAR' ? 'FR' : holiday.market === 'XLON' ? 'GB' : 'JP'}
+                              className="inline-block align-middle"
+                            />
                           </span>
                         </div>
                         <span className={`text-xs font-medium leading-tight ${
