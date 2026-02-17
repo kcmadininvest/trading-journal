@@ -142,5 +142,16 @@
     "viewMode": "Anzeigemodus",
     "gridView": "Rasteransicht",
     "listView": "Listenansicht"
+  },
+  "marketHours": {
+    "title": "Märkte",
+    "open": "Geöffnet",
+    "closed": "Geschlossen",
+    "preMarket": "Vorbörse",
+    "afterHours": "Nachbörse",
+    "opensAt": "Öffnet um {{time}}",
+    "closesAt": "Schließt um {{time}}",
+    "hours": "{{open}} – {{close}}",
+    "localTime": "Ortszeit: {{time}}"
   }
 }

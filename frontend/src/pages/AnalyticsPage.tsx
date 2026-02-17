@@ -1276,30 +1276,33 @@ const AnalyticsPage: React.FC = () => {
     <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Filtres */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-4">
-          {/* Compte de trading */}
-          <div className="flex-shrink-0 max-w-sm">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('analytics:tradingAccount')}
-            </label>
-            <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+            {/* Compte de trading */}
+            <div className="flex-shrink-0 max-w-sm">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('analytics:tradingAccount')}
+              </label>
+              <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
+            </div>
+            
+            {/* Sélecteur de période moderne */}
+            <div className="flex-shrink-0 lg:w-80">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('analytics:period', { defaultValue: 'Période' })}
+              </label>
+              <PeriodSelector
+                value={selectedPeriod}
+                onChange={(period) => {
+                  setSelectedPeriod(period);
+                  // Réinitialiser les anciens sélecteurs
+                  setSelectedYear(null);
+                  setSelectedMonth(null);
+                }}
+              />
+            </div>
           </div>
-          
-          {/* Sélecteur de période moderne */}
-          <div className="flex-shrink-0 lg:w-80">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('analytics:period', { defaultValue: 'Période' })}
-            </label>
-            <PeriodSelector
-              value={selectedPeriod}
-              onChange={(period) => {
-                setSelectedPeriod(period);
-                // Réinitialiser les anciens sélecteurs
-                setSelectedYear(null);
-                setSelectedMonth(null);
-              }}
-            />
-          </div>
+
         </div>
       </div>
 

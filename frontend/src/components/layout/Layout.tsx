@@ -2,6 +2,7 @@ import React from 'react';
 import { User } from '../../services/auth';
 import Header from './Header';
 import Footer from './Footer';
+import { MarketHoursWidget } from '../common/MarketHoursWidget';
 
 interface LayoutProps {
   currentUser: User;
@@ -27,6 +28,13 @@ const Layout: React.FC<LayoutProps> = ({
         onNavigate={onNavigate}
         onLogout={onLogout}
       />
+
+      {/* Barre horaires marchés - fixe sous le header, desktop uniquement */}
+      <div className="hidden 2xl:flex fixed top-16 sm:top-20 left-0 right-0 z-20 justify-center items-start pointer-events-none">
+        <div className="pointer-events-auto mt-3">
+          <MarketHoursWidget />
+        </div>
+      </div>
 
       {/* Main content - full width */}
       <main className="flex-1 bg-gray-50 dark:bg-gray-900 pt-16 sm:pt-20">

@@ -12,7 +12,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   header,
 }) => {
   return (
-    <div className="h-full flex flex-col -my-6">
+    <div className="h-full flex flex-col -my-6 2xl:pt-8">
       {/* Header avec messages/notifications */}
       {header && <div className="flex-shrink-0">{header}</div>}
 

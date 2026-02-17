@@ -145,5 +145,16 @@
     "viewMode": "Mode d'affichage",
     "gridView": "Vue grille",
     "listView": "Vue liste"
+  },
+  "marketHours": {
+    "title": "Marchés",
+    "open": "Ouvert",
+    "closed": "Fermé",
+    "preMarket": "Pré-marché",
+    "afterHours": "After-hours",
+    "opensAt": "Ouvre à {{time}}",
+    "closesAt": "Ferme à {{time}}",
+    "hours": "{{open}} – {{close}}",
+    "localTime": "Heure locale : {{time}}"
   }
 }
