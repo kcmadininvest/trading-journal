@@ -25,6 +25,7 @@ interface MetricGaugeProps {
   formatValue?: (value: number) => string;
   showLabels?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  compactBar?: boolean;
 }
 
 export const MetricGauge: React.FC<MetricGaugeProps> = ({
@@ -35,6 +36,7 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
   formatValue,
   showLabels = true,
   size = 'md',
+  compactBar = false,
 }) => {
   const { min, max, thresholds, unit = '' } = config;
 
@@ -112,6 +114,56 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
 
   const displayValue = formatValue ? formatValue(value) : `${value.toFixed(2)}${unit}`;
 
+  const barContent = (
+    <div className="relative">
+      {/* Arrière-plan avec zones de couleur */}
+      <div
+        className={`w-full ${sizeClasses[size]} rounded-full overflow-hidden`}
+        style={{ background: getBackgroundGradient() }}
+      >
+        {/* Barre de progression */}
+        <div
+          className={`${sizeClasses[size]} ${colorClasses[currentColor]} rounded-full transition-all duration-700 ease-out relative`}
+          style={{ width: `${percentage}%` }}
+        >
+          {/* Indicateur de position */}
+          <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 ${colorClasses[currentColor]} rounded-full shadow-lg`} />
+        </div>
+      </div>
+
+      {/* Marqueurs de seuils */}
+      {thresholds.map((threshold, index) => {
+        const thresholdPercentage = ((threshold.value - min) / (max - min)) * 100;
+        if (thresholdPercentage <= 0 || thresholdPercentage >= 100) return null;
+        return (
+          <div
+            key={index}
+            className="absolute top-0 bottom-0 w-px bg-gray-400 dark:bg-gray-600"
+            style={{ left: `${thresholdPercentage}%` }}
+          >
+            {showLabels && (
+              <span className="absolute top-full mt-1 -translate-x-1/2 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                {threshold.value}
+              </span>
+            )}
+          </div>
+        );
+      })}
+
+      {/* Labels des zones (positionnés en absolu pour ne pas affecter la hauteur) */}
+      {showLabels && (
+        <div className="absolute top-full mt-1 left-0 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
+          <span>{min}</span>
+          <span>{max}+</span>
+        </div>
+      )}
+    </div>
+  );
+
+  if (compactBar) {
+    return <div className="w-full">{barContent}</div>;
+  }
+
   return (
     <div className={showLabels ? 'mb-4' : ''}>
     <div className="flex items-center gap-3">
@@ -136,52 +188,7 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
 
       {/* Jauge (côté droit) */}
       <div className="flex-1 min-w-0 relative">
-        <div className="relative">
-          {/* Arrière-plan avec zones de couleur */}
-          <div 
-            className={`w-full ${sizeClasses[size]} rounded-full overflow-hidden`}
-            style={{ 
-              background: getBackgroundGradient(),
-            }}
-          >
-            {/* Barre de progression */}
-            <div
-              className={`${sizeClasses[size]} ${colorClasses[currentColor]} rounded-full transition-all duration-700 ease-out relative`}
-              style={{ width: `${percentage}%` }}
-            >
-              {/* Indicateur de position */}
-              <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 ${colorClasses[currentColor]} rounded-full shadow-lg`} />
-            </div>
-          </div>
-
-          {/* Marqueurs de seuils */}
-          {thresholds.map((threshold, index) => {
-            const thresholdPercentage = ((threshold.value - min) / (max - min)) * 100;
-            if (thresholdPercentage <= 0 || thresholdPercentage >= 100) return null;
-            
-            return (
-              <div
-                key={index}
-                className="absolute top-0 bottom-0 w-px bg-gray-400 dark:bg-gray-600"
-                style={{ left: `${thresholdPercentage}%` }}
-              >
-                {showLabels && (
-                  <span className="absolute top-full mt-1 -translate-x-1/2 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                    {threshold.value}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Labels des zones (positionnés en absolu pour ne pas affecter la hauteur) */}
-          {showLabels && (
-            <div className="absolute top-full mt-1 left-0 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
-              <span>{min}</span>
-              <span>{max}+</span>
-            </div>
-          )}
-        </div>
+        {barContent}
       </div>
     </div>
     </div>

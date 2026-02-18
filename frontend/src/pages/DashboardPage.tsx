@@ -13,6 +13,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
 import { StrategyStreakCard } from '../components/strategy/StrategyStreakCard';
 import ModernStatCard from '../components/common/ModernStatCard';
+import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
@@ -1679,7 +1680,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               
               <ModernStatCard
                 label={t('dashboard:profitFactor')}
-                value={formatNumber(additionalStats.profitFactor, 2)}
+                value={
+                  <div className="w-full flex flex-col h-full">
+                    <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                      {formatNumber(additionalStats.profitFactor, 2)}
+                    </div>
+                    <div className="flex-1 flex items-center py-6">
+                      <div className="w-full">
+                        <MetricGauge
+                          label=""
+                          value={additionalStats.profitFactor}
+                          config={GAUGE_CONFIGS.profitFactor}
+                          showLabels={false}
+                          size="lg"
+                          compactBar
+                        />
+                      </div>
+                    </div>
+                  </div>
+                }
                 variant={additionalStats.profitFactor >= 1.5 ? 'success' : additionalStats.profitFactor >= 1 ? 'warning' : 'danger'}
                 size="small"
                 icon={
@@ -1699,7 +1718,30 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               
               <ModernStatCard
                 label={t('dashboard:wlRatio')}
-                value={tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 ? formatNumber(Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade), 2) : formatNumber(0, 2)}
+                value={(() => {
+                  const wlRatio = tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0
+                    ? Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade)
+                    : 0;
+                  return (
+                    <div className="w-full flex flex-col h-full">
+                      <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {formatNumber(wlRatio, 2)}
+                      </div>
+                      <div className="flex-1 flex items-center py-6">
+                        <div className="w-full">
+                          <MetricGauge
+                            label=""
+                            value={wlRatio}
+                            config={GAUGE_CONFIGS.winLossRatio}
+                            showLabels={false}
+                            size="lg"
+                            compactBar
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 variant={tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 && Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade) >= 2 ? 'success' : tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0 && Math.abs(tradingMetrics.avgWinningTrade / tradingMetrics.avgLosingTrade) >= 1.5 ? 'warning' : 'info'}
                 size="small"
                 icon={
@@ -1844,7 +1886,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     size="small"
                     icon={
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     }
                     subMetrics={[
