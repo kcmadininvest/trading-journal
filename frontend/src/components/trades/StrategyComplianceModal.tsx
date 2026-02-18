@@ -7,6 +7,7 @@ import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import ImageUpload from '../ui/ImageUpload';
 import screenshotsService from '../../services/screenshots';
 import { usePreferences } from '../../hooks/usePreferences';
+import { useComplianceRefresh } from '../../contexts/ComplianceRefreshContext';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { openMediaUrl } from '../../utils/mediaUrl';
@@ -49,6 +50,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   tradingAccount,
 }) => {
   const { preferences } = usePreferences();
+  const { triggerRefresh } = useComplianceRefresh();
   const { t } = useI18nTranslation();
   const [trades, setTrades] = useState<TradeWithStrategy[]>([]);
   const [isDayWithoutTrades, setIsDayWithoutTrades] = useState(false);
@@ -620,6 +622,12 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
 
     try {
       await dayStrategyComplianceService.delete(dayCompliance.id);
+
+      // Notifier immédiatement les autres pages (avant loadData pour éviter le délai)
+      triggerRefresh();
+      window.dispatchEvent(new CustomEvent('strategy-compliance-updated', {
+        detail: { date, tradingAccount }
+      }));
       
       // Nettoyer le localStorage
       if (draftKey) {
@@ -634,12 +642,6 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
       isInitialLoad.current = true;
       setDeleteModalOpen(false);
       await loadData();
-      
-      // Déclencher un événement personnalisé pour notifier les autres composants du changement
-      window.dispatchEvent(new CustomEvent('strategy-compliance-updated', {
-        detail: { date, tradingAccount }
-      }));
-      
       onClose(true);
     } catch (e: any) {
       setError(e?.message || t('trades:strategyCompliance.deleteError', { defaultValue: 'Erreur lors de la suppression' }));
@@ -774,17 +776,15 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         }
       }
       
-      setHasUnsavedChanges(false);
-      isInitialLoad.current = true; // Réinitialiser pour éviter la sauvegarde auto lors du rechargement
-      // Recharger les données après la sauvegarde pour avoir les données à jour
-      // Le localStorage est déjà nettoyé, donc loadData() ne restaurera pas de brouillon
-      await loadData();
-      
-      // Déclencher un événement personnalisé pour notifier les autres composants du changement
+      // Notifier immédiatement les autres pages (avant loadData pour éviter le délai)
+      triggerRefresh();
       window.dispatchEvent(new CustomEvent('strategy-compliance-updated', {
         detail: { date, tradingAccount }
       }));
-      
+
+      setHasUnsavedChanges(false);
+      isInitialLoad.current = true;
+      await loadData();
       onClose(true);
     } catch (e: any) {
       setError(e?.message || t('trades:strategyCompliance.error'));

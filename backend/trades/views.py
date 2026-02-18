@@ -2502,10 +2502,17 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
     def _invalidate_compliance_caches(self, user_id, account_id):
         """Invalide les caches dashboard et compliance_stats pour un utilisateur/compte."""
         from django.core.cache import cache
-        cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
-        cache.delete(f"compliance_stats_{user_id}_trading_account%3D{account_id}")
-        cache.delete(f"compliance_stats_{user_id}_trading_account={account_id}")
-        cache.delete(f"compliance_stats_{user_id}_")
+        # Supprimer tous les caches dashboard_summary pour cet utilisateur (toutes dates)
+        # Le pattern *dashboard_summary_{user_id}_* couvre tous les préfixes Redis (ex: :1:)
+        try:
+            cache.delete_pattern(f"*dashboard_summary_{user_id}_*")
+            cache.delete_pattern(f"*compliance_stats_{user_id}_*")
+        except AttributeError:
+            # Fallback pour les backends sans delete_pattern (ex: LocMemCache)
+            cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
+            cache.delete(f"compliance_stats_{user_id}_trading_account%3D{account_id}")
+            cache.delete(f"compliance_stats_{user_id}_trading_account={account_id}")
+            cache.delete(f"compliance_stats_{user_id}_")
 
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur connecté à la stratégie."""
@@ -2684,13 +2691,6 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def statistics(self, request):
         """Retourne les statistiques de stratégies pour une période donnée."""
-        # Cache pour éviter les recalculs
-        from django.core.cache import cache
-        
-        cache_key = f"strategy_stats_{request.user.id}_{request.query_params.urlencode()}"
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return Response(cached_data)
         
         now = timezone.now()
         
@@ -3266,9 +3266,6 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             }
         }
         
-        # Mettre en cache (5 minutes)
-        cache.set(cache_key, response_data, 300)
-        
         return Response(response_data)
     
     @action(detail=False, methods=['post'])
@@ -3412,14 +3409,6 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         """
         Retourne les statistiques de respect de stratégie avec streaks et badges.
         """
-        # Cache pour éviter les recalculs
-        from django.core.cache import cache
-        
-        cache_key = f"compliance_stats_{request.user.id}_{request.query_params.urlencode()}"
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return Response(cached_data)
-        
         from collections import defaultdict
         from datetime import timedelta
         
@@ -3738,13 +3727,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         not_respected_win_rate = (performance_comparison['not_respected']['winning_trades'] / 
                                 performance_comparison['not_respected']['count'] * 100) if performance_comparison['not_respected']['count'] > 0 else 0
         
-        # Log de débogage
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"📊 strategy_compliance_stats - account_id={trading_account_id}, current_streak={current_streak}, current_streak_start={current_streak_start}")
-        print(f"📊 [DEBUG] strategy_compliance_stats - account_id={trading_account_id}, current_streak={current_streak}, current_streak_start={current_streak_start}")
-        
-        # Construire la réponse et la mettre en cache
+        # Construire la réponse
         response_data = {
             'current_streak': current_streak,
             'current_streak_start': current_streak_start,
@@ -3786,9 +3769,6 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             ]
         }
         
-        # Mettre en cache (5 minutes)
-        cache.set(cache_key, response_data, 300)
-        
         return Response(response_data)
 
 
@@ -3822,23 +3802,35 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
     def _invalidate_compliance_caches(self, user_id, account_id):
         """Invalide les caches dashboard et compliance_stats pour un utilisateur/compte."""
         from django.core.cache import cache
-        cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
-        cache.delete(f"compliance_stats_{user_id}_trading_account%3D{account_id}")
-        cache.delete(f"compliance_stats_{user_id}_trading_account={account_id}")
-        cache.delete(f"compliance_stats_{user_id}_")
+        # Supprimer tous les caches dashboard_summary pour cet utilisateur (toutes dates)
+        # Le pattern *dashboard_summary_{user_id}_* couvre tous les préfixes Redis (ex: :1:)
+        try:
+            cache.delete_pattern(f"*dashboard_summary_{user_id}_*")
+            cache.delete_pattern(f"*compliance_stats_{user_id}_*")
+        except AttributeError:
+            # Fallback pour les backends sans delete_pattern (ex: LocMemCache)
+            cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
+            cache.delete(f"compliance_stats_{user_id}_trading_account%3D{account_id}")
+            cache.delete(f"compliance_stats_{user_id}_trading_account={account_id}")
+            cache.delete(f"compliance_stats_{user_id}_")
 
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur connecté à la compliance."""
         compliance = serializer.save(user=self.request.user)
-        if compliance.trading_account_id:
-            self._invalidate_compliance_caches(self.request.user.id, compliance.trading_account_id)
+        self._invalidate_compliance_caches(self.request.user.id, compliance.trading_account_id)
 
     def perform_update(self, serializer):
         """Met à jour la compliance et invalide les caches associés."""
         compliance = serializer.save()
-        if compliance.trading_account_id:
-            self._invalidate_compliance_caches(self.request.user.id, compliance.trading_account_id)
-    
+        self._invalidate_compliance_caches(self.request.user.id, compliance.trading_account_id)
+
+    def perform_destroy(self, instance):
+        """Supprime la compliance et invalide les caches associés."""
+        account_id = instance.trading_account_id
+        user_id = self.request.user.id
+        instance.delete()
+        self._invalidate_compliance_caches(user_id, account_id)
+
     @action(detail=False, methods=['get'])
     def by_date(self, request):
         """Récupère la compliance pour une date spécifique."""
@@ -4460,7 +4452,6 @@ def dashboard_summary(request):
     Consolidated dashboard endpoint that returns all necessary data in a single request.
     Reduces multiple API calls to 1-2 calls for optimal performance.
     """
-    from django.core.cache import cache
     from django.db.models.functions import Coalesce
     
     trading_account_id = request.GET.get('trading_account')
@@ -4468,12 +4459,6 @@ def dashboard_summary(request):
     end_date = request.GET.get('end_date')
     start_date_obj = None
     end_date_obj = None
-    
-    # Build cache key
-    cache_key = f"dashboard_summary_{request.user.id}_{trading_account_id}_{start_date}_{end_date}"
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return Response(cached_data)
     
     # Base queryset
     trades_queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
@@ -4734,9 +4719,6 @@ def dashboard_summary(request):
         'active_days': active_days_count,
         'count': len(daily_data)
     }
-    
-    # Cache for 2 minutes
-    cache.set(cache_key, response_data, 120)
     
     return Response(response_data)
 

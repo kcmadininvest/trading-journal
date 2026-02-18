@@ -21,6 +21,7 @@ import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getMonthName } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useComplianceRefresh } from '../contexts/ComplianceRefreshContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { dashboardService } from '../services/dashboard';
@@ -69,6 +70,7 @@ const StrategiesPage: React.FC = () => {
   const privacySettings = usePrivacySettings('strategies');
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+  const { refreshCount } = useComplianceRefresh();
   const windowSize = useWindowSize();
   
   // Tracker le premier rendu pour optimiser les animations (Optimisation L)
@@ -154,27 +156,6 @@ const StrategiesPage: React.FC = () => {
   const [dashboardSummary, setDashboardSummary] = useState<any>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
-  // Cache pour les données chargées (optimisation pour les changements de compte/période fréquents)
-  const dataCache = useRef<Map<string, {
-    statistics: any;
-    allAccountsCompliance: any;
-    selectedAccountCompliance: any;
-    currencies: Currency[];
-    selectedAccount: TradingAccount | null;
-    dashboardSummary: any;
-    timestamp: number;
-  }>>(new Map());
-
-  // Fonction pour générer une clé de cache unique
-  const getCacheKey = useCallback(() => {
-    const periodKey = selectedPeriod 
-      ? `${selectedPeriod.start}-${selectedPeriod.end}`
-      : selectedYear 
-        ? `${selectedYear}-${selectedMonth || 'all'}`
-        : 'all';
-    return `${accountId || 'all'}-${periodKey}`;
-  }, [accountId, selectedPeriod, selectedYear, selectedMonth]);
-
   const { summaryStartDate, summaryEndDate } = useMemo(() => {
     if (selectedPeriod) {
       return { summaryStartDate: selectedPeriod.start, summaryEndDate: selectedPeriod.end };
@@ -207,22 +188,6 @@ const StrategiesPage: React.FC = () => {
 
   // Fonction unifiée pour charger toutes les données en parallèle
   const loadAllData = useCallback(async () => {
-    // Vérifier le cache d'abord
-    const cacheKey = getCacheKey();
-    const cached = dataCache.current.get(cacheKey);
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-    
-    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-      // Utiliser les données en cache
-      setStatistics(cached.statistics);
-      setAllAccountsCompliance(cached.allAccountsCompliance);
-      setSelectedAccountCompliance(cached.selectedAccountCompliance);
-      setCurrencies(cached.currencies);
-      setSelectedAccount(cached.selectedAccount);
-      setDashboardSummary(cached.dashboardSummary);
-      return;
-    }
-    
     setIsLoading(true);
     setLoadingAllAccountsCompliance(true);
     setLoadingSelectedAccountCompliance(true);
@@ -275,25 +240,6 @@ const StrategiesPage: React.FC = () => {
           dashboardService.getSummary(dashboardFilters).catch(() => null),
         ]);
       
-      // Stocker dans le cache
-      dataCache.current.set(cacheKey, {
-        statistics: statisticsData,
-        allAccountsCompliance: allAccountsComplianceData,
-        selectedAccountCompliance: selectedAccountComplianceData,
-        currencies: currenciesData,
-        selectedAccount: accountData,
-        dashboardSummary: dashboardData,
-        timestamp: Date.now(),
-      });
-      
-      // Limiter la taille du cache (garder seulement les 10 dernières entrées)
-      if (dataCache.current.size > 10) {
-        const firstKey = dataCache.current.keys().next().value;
-        if (firstKey !== undefined) {
-          dataCache.current.delete(firstKey);
-        }
-      }
-      
       setStatistics(statisticsData);
       setAllAccountsCompliance(allAccountsComplianceData);
       setSelectedAccountCompliance(selectedAccountComplianceData);
@@ -309,7 +255,7 @@ const StrategiesPage: React.FC = () => {
       setLoadingSelectedAccountCompliance(false);
       setSummaryLoading(false);
     }
-  }, [getCacheKey, selectedPeriod, selectedYear, selectedMonth, accountId, summaryStartDate, summaryEndDate, t]);
+  }, [selectedPeriod, selectedYear, selectedMonth, accountId, summaryStartDate, summaryEndDate, t]);
 
   // Charger toutes les données
   useEffect(() => {
@@ -319,6 +265,15 @@ const StrategiesPage: React.FC = () => {
     }
     loadAllData();
   }, [loadAllData, accountLoading]);
+
+  // Se mettre à jour quand une compliance est sauvegardée/supprimée (via ComplianceRefreshContext)
+  // On mémorise la valeur de refreshCount au montage pour ne réagir qu'aux changements post-montage
+  const mountedRefreshCount = useRef(refreshCount);
+  useEffect(() => {
+    if (refreshCount === mountedRefreshCount.current) return;
+    loadAllData();
+    reloadTrades();
+  }, [refreshCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const complianceSectionData = useMemo(() => selectedAccountCompliance || allAccountsCompliance, [selectedAccountCompliance, allAccountsCompliance]);
