@@ -81,22 +81,6 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               }
             </span>
           </div>
-          {onNavigateToTransactions && (
-            <>
-              <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
-              <div className="xl:flex xl:items-center">
-                <button
-                  onClick={onNavigateToTransactions}
-                  className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  {t('dashboard:viewTransactions', { defaultValue: 'Voir les transactions' })}
-                </button>
-              </div>
-            </>
-          )}
         </div>
 
         {/* Variation et Total Trades regroupés */}
