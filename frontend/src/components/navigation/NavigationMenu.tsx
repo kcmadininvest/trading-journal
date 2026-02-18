@@ -179,7 +179,7 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
       />
 
       {/* Desktop Navigation */}
-      <nav className="hidden lg:flex items-center gap-1">
+      <nav className="hidden 2xl:flex items-center gap-1">
         {/* Dashboard - direct link */}
         <NavItem
           id="dashboard"

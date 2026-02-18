@@ -536,7 +536,7 @@ const StrategiesPage: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
             <div>
               {complianceSectionData ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <PerformanceComparison
                     performanceComparison={complianceSectionData.performance_comparison}
                     currencySymbol={currencySymbol}
@@ -545,7 +545,7 @@ const StrategiesPage: React.FC = () => {
                   <StrategyBadges badges={complianceSectionData.badges || []} />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
                   <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
                 </div>
@@ -556,14 +556,14 @@ const StrategiesPage: React.FC = () => {
 
         {/* Graphiques (rendu progressif : chaque graphique s'affiche dès que ses données arrivent) */}
         {isLoading && !statistics ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <ChartSkeleton title={t('strategies:strategyRespectPercentage')} />
             <ChartSkeleton title={t('strategies:successRateByStrategyRespect')} />
             <ChartSkeleton title={t('strategies:winningSessionsDistribution')} />
             <ChartSkeleton title={t('strategies:dominantEmotionsDistribution')} />
           </div>
         ) : statistics ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Graphique 1: Respect de la stratégie en % */}
             {respectChartData && (
               <ChartSection title={t('strategies:strategyRespectPercentage')} tooltip={t('strategies:strategyRespectPercentageTooltip')}>
@@ -608,7 +608,7 @@ const StrategiesPage: React.FC = () => {
         )}
 
         {/* Graphiques de compliance et évolution (rendu progressif) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
           {(isLoading && !complianceSectionData) ? (
             <>
               <ChartSkeleton 

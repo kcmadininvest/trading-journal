@@ -42,7 +42,7 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentUser, currentPage, onNavig
       {/* Mobile menu button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden inline-flex items-center justify-center w-10 h-10 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-all duration-200"
+        className="2xl:hidden inline-flex items-center justify-center w-10 h-10 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-all duration-200"
         aria-label={t('navigation:menu', { defaultValue: 'Menu' })}
         aria-expanded={isOpen}
       >
@@ -58,13 +58,13 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentUser, currentPage, onNavig
       {/* Mobile overlay */}
       {isOpen && (
         <div 
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+          className="2xl:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in duration-200"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Mobile drawer */}
-      <div className={`lg:hidden fixed top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-gray-900 border-r border-gray-700 z-50 transform transition-transform duration-300 ease-out ${
+      <div className={`2xl:hidden fixed top-0 left-0 bottom-0 w-80 max-w-[85vw] bg-gray-900 border-r border-gray-700 z-50 transform transition-transform duration-300 ease-out ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         {/* Header */}

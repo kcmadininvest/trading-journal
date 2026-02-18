@@ -58,7 +58,7 @@ export const AnalyticsPageSkeleton: React.FC = () => {
       </div>
 
       {/* Row 3: Remaining charts (2 columns) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <SkeletonChartCard />
         <SkeletonChartCard />
         <SkeletonChartCard />

@@ -489,11 +489,11 @@ const TradingAccountsPage: React.FC = () => {
                       <SortableHeader field="id" label="ID" />
                       <SortableHeader field="name" label={t('accounts:columns.account')} />
                       <SortableHeader field="account_type" label={t('accounts:columns.type')} />
-                      <SortableHeader field="broker_account_id" label={t('accounts:columns.brokerId', { defaultValue: 'ID Broker' })} />
+                      <SortableHeader field="broker_account_id" label={t('accounts:columns.brokerId', { defaultValue: 'ID Broker' })} className="hidden lg:table-cell" />
                       <SortableHeader field="status" label={t('accounts:columns.status')} />
-                      <SortableHeader field="created_at" label={t('accounts:columns.createdAt', { defaultValue: 'Date de création' })} />
+                      <SortableHeader field="created_at" label={t('accounts:columns.createdAt', { defaultValue: 'Date de création' })} className="hidden lg:table-cell" />
                       <SortableHeader field="initial_capital" label={t('accounts:columns.initialCapital')} />
-                      <SortableHeader field="maximum_loss_limit" label={t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })} />
+                      <SortableHeader field="maximum_loss_limit" label={t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })} className="hidden xl:table-cell" />
                       <SortableHeader field="trades_count" label={t('accounts:columns.trades')} />
                       <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
                     </tr>
@@ -505,11 +505,11 @@ const TradingAccountsPage: React.FC = () => {
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/3 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
+                          <td className="hidden lg:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
+                          <td className="hidden lg:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
+                          <td className="hidden xl:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 text-right"><div className="h-8 bg-gray-100 dark:bg-gray-700 rounded w-40 ml-auto animate-pulse" /></td>
                         </tr>
@@ -550,7 +550,7 @@ const TradingAccountsPage: React.FC = () => {
                               {t(`accounts:accountTypes.${acc.account_type}`)}
                             </span>
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          <td className="hidden lg:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {acc.broker_account_id || '-'}
                           </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
@@ -562,7 +562,7 @@ const TradingAccountsPage: React.FC = () => {
                                 : acc.status}
                             </span>
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          <td className="hidden lg:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {acc.created_at ? new Date(acc.created_at).toLocaleDateString('fr-FR', { 
                               year: 'numeric', 
                               month: '2-digit', 
@@ -572,7 +572,7 @@ const TradingAccountsPage: React.FC = () => {
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {formatInitialCapital(acc)}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          <td className="hidden xl:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {formatMaximumLossLimit(acc)}
                           </td>
                           <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">

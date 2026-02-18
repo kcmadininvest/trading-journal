@@ -419,7 +419,7 @@ function StatisticsPage() {
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{t('statistics:overview.title')}</h2>
               <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{t('statistics:overview.subtitle')}</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <MetricCard
                 title={t('statistics:overview.performance', { defaultValue: 'Performance' })}
                 icon={
@@ -571,7 +571,7 @@ function StatisticsPage() {
                   {t('statistics:performanceRatios.performanceSubtitle', { defaultValue: 'Métriques de performance globale' })} • {t('statistics:performanceRatios.riskManagementSubtitle', { defaultValue: 'Indicateurs de risque et récupération' })}
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
                 <MetricCard
                   title={t('statistics:performanceRatios.mainPerformance')}
                   icon={
@@ -721,7 +721,7 @@ function StatisticsPage() {
           subtitle={t('statistics:tradesAnalysis.subtitle')}
           defaultCollapsed={false}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {statisticsData && (
               <>
                 {analyticsData?.trade_stats && (
@@ -855,7 +855,7 @@ function StatisticsPage() {
           subtitle={t('statistics:advancedAnalysis.subtitle')}
           defaultCollapsed={false}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-4 sm:mb-6">
             {statisticsData && analyticsData && (
               <>
                 <MetricCard
@@ -1028,7 +1028,7 @@ function StatisticsPage() {
                 {t('statistics:riskReward.subtitle', { defaultValue: 'Analyse du ratio risque/récompense prévu vs réel' })}
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
               <MetricCard
                 title={t('statistics:riskReward.plannedRR', { defaultValue: 'R:R Prévu' })}
                 icon={

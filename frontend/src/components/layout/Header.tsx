@@ -103,7 +103,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
           </button>
           
           {/* Separator */}
-          <div className="hidden lg:block h-8 w-px bg-gray-600"></div>
+          <div className="hidden 2xl:block h-8 w-px bg-gray-600"></div>
         </div>
 
         {/* Center: Navigation + Page Title */}
@@ -115,8 +115,14 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
             onNavigate={onNavigate}
           />
           
-          {/* Page title - centered between navigation and user actions */}
-          <div className="hidden md:flex items-center justify-center flex-1 min-w-0">
+          {/* Page title - visible below 2xl (where nav is hidden), hidden on 2xl+ */}
+          <div className="flex 2xl:hidden items-center justify-center flex-1 min-w-0">
+            <h1 className="text-sm sm:text-base font-semibold text-white truncate">
+              {pageTitle}
+            </h1>
+          </div>
+          {/* Page title - centered on 2xl+ where full nav is shown */}
+          <div className="hidden 2xl:flex items-center justify-center flex-1 min-w-0">
             <h1 className="text-base lg:text-lg font-semibold text-white truncate">
               {pageTitle}
             </h1>
@@ -126,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
         {/* Right: User info and actions */}
         <div className="flex items-center space-x-1 sm:space-x-4 flex-shrink-0">
           {/* User info - hidden on mobile, shown on sm and up */}
-          <div className="text-right hidden md:block">
+          <div className="text-right hidden 2xl:block">
             <div className="flex items-center justify-end space-x-2">
               <p className="text-sm font-medium text-white truncate max-w-[120px]">
                 {currentUser.first_name && currentUser.last_name 

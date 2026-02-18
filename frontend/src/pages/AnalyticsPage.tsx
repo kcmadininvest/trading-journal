@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useWindowWidth } from '../hooks/useWindowWidth';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
@@ -116,8 +117,7 @@ const AnalyticsPage: React.FC = () => {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   // accountId vient maintenant du contexte global
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  // État pour gérer la largeur de l'écran (responsive)
-  const [windowWidth, setWindowWidth] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const windowWidth = useWindowWidth();
 
   const { summaryStartDate, summaryEndDate } = useMemo(() => {
     if (selectedPeriod) {
@@ -148,18 +148,6 @@ const AnalyticsPage: React.FC = () => {
     endDate: summaryEndDate,
     loading: accountLoading,
   });
-
-  // Gérer le redimensionnement de la fenêtre pour le responsive
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-    
-    if (typeof window !== 'undefined') {
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
-  }, []);
 
   // Récupérer la liste des devises
   useEffect(() => {
@@ -1364,7 +1352,7 @@ const AnalyticsPage: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <HourlyPerformanceScatterChart
             data={hourlyPerformanceScatter}
             currencySymbol={currencySymbol}

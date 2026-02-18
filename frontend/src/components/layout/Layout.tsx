@@ -38,7 +38,7 @@ const Layout: React.FC<LayoutProps> = ({
 
       {/* Main content - full width */}
       <main className="flex-1 bg-gray-50 dark:bg-gray-900 pt-16 sm:pt-20">
-        <div className="py-6 pb-24">
+        <div className="py-6 pb-24 lg:pb-8">
           {children}
         </div>
       </main>
