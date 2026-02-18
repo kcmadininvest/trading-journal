@@ -129,7 +129,11 @@
     "deleteComplianceButton": "Delete",
     "deleteComplianceTitle": "Delete strategy compliance",
     "deleteComplianceMessage": "Are you sure you want to delete the strategy compliance for this day? This action is irreversible.",
-    "deleteComplianceError": "Error during deletion"
+    "deleteComplianceError": "Error during deletion",
+    "delete": "Delete",
+    "deleteError": "Error during deletion",
+    "deleteConfirmTitle": "Delete strategy compliance",
+    "deleteConfirmMessage": "Are you sure you want to delete the strategy compliance for this day? This action is irreversible."
   },
   "emotions": {
     "confiance": "Confidence",

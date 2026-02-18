@@ -122,7 +122,17 @@
     "deleteScreenshotMessage": "Sind Sie sicher, dass Sie diesen Screenshot löschen möchten? Die Datei wird dauerhaft vom Server gelöscht.",
     "supportedFormats": "Formate: JPG, PNG, WebP",
     "invalidFileType": "Ungültiger Dateityp. Akzeptierte Formate: JPG, PNG, WebP",
-    "fileTooLarge": "Die Datei ist zu groß. Maximale Größe: 5 MB"
+    "fileTooLarge": "Die Datei ist zu groß. Maximale Größe: 5 MB",
+    "fileEmpty": "Die Datei ist leer",
+    "openImage": "Öffnen",
+    "cancelButton": "Abbrechen",
+    "saveButton": "Speichern",
+    "deleteConfirmTitle": "Strategieeinhaltung löschen",
+    "deleteConfirmMessage": "Sind Sie sicher, dass Sie die Strategieeinhaltung für diesen Tag löschen möchten? Diese Aktion ist unwiderruflich.",
+    "deleteComplianceButton": "Löschen",
+    "deleteComplianceTitle": "Strategieeinhaltung löschen",
+    "deleteComplianceMessage": "Sind Sie sicher, dass Sie die Strategieeinhaltung für diesen Tag löschen möchten? Diese Aktion ist unwiderruflich.",
+    "deleteComplianceError": "Fehler beim Löschen"
   },
   "emotions": {
     "confiance": "Vertrauen",

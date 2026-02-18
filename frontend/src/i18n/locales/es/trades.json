@@ -122,7 +122,17 @@
     "deleteScreenshotMessage": "¿Estás seguro de que quieres eliminar esta captura de pantalla? El archivo se eliminará permanentemente del servidor.",
     "supportedFormats": "Formatos: JPG, PNG, WebP",
     "invalidFileType": "Tipo de archivo no válido. Formatos aceptados: JPG, PNG, WebP",
-    "fileTooLarge": "El archivo es demasiado grande. Tamaño máximo: 5 MB"
+    "fileTooLarge": "El archivo es demasiado grande. Tamaño máximo: 5 MB",
+    "fileEmpty": "El archivo está vacío",
+    "openImage": "Abrir",
+    "cancelButton": "Cancelar",
+    "saveButton": "Guardar",
+    "deleteConfirmTitle": "Eliminar cumplimiento de estrategia",
+    "deleteConfirmMessage": "¿Estás seguro de que quieres eliminar el cumplimiento de estrategia para este día? Esta acción es irreversible.",
+    "deleteComplianceButton": "Eliminar",
+    "deleteComplianceTitle": "Eliminar cumplimiento de estrategia",
+    "deleteComplianceMessage": "¿Estás seguro de que quieres eliminar el cumplimiento de estrategia para este día? Esta acción es irreversible.",
+    "deleteComplianceError": "Error al eliminar"
   },
   "emotions": {
     "confiance": "Confianza",

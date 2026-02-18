@@ -2499,33 +2499,6 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         return queryset.order_by('-created_at')
     
-    def _invalidate_compliance_caches(self, user_id, account_id):
-        """Invalide les caches dashboard et compliance_stats pour un utilisateur/compte."""
-        from django.core.cache import cache
-        # Supprimer tous les caches dashboard_summary pour cet utilisateur (toutes dates)
-        # Le pattern *dashboard_summary_{user_id}_* couvre tous les préfixes Redis (ex: :1:)
-        try:
-            cache.delete_pattern(f"*dashboard_summary_{user_id}_*")
-            cache.delete_pattern(f"*compliance_stats_{user_id}_*")
-        except AttributeError:
-            # Fallback pour les backends sans delete_pattern (ex: LocMemCache)
-            cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
-            cache.delete(f"compliance_stats_{user_id}_trading_account%3D{account_id}")
-            cache.delete(f"compliance_stats_{user_id}_trading_account={account_id}")
-            cache.delete(f"compliance_stats_{user_id}_")
-
-    def perform_create(self, serializer):
-        """Associe automatiquement l'utilisateur connecté à la stratégie."""
-        strategy = serializer.save(user=self.request.user)
-        if strategy.trade and strategy.trade.trading_account_id:
-            self._invalidate_compliance_caches(self.request.user.id, strategy.trade.trading_account_id)
-
-    def perform_update(self, serializer):
-        """Met à jour la stratégie et invalide les caches associés."""
-        strategy = serializer.save()
-        if strategy.trade and strategy.trade.trading_account_id:
-            self._invalidate_compliance_caches(self.request.user.id, strategy.trade.trading_account_id)
-
     @action(detail=False, methods=['get'])
     def by_trade(self, request):
         """Récupère la stratégie pour un trade spécifique."""
@@ -3798,38 +3771,10 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(trading_account_id=trading_account_id)
         
         return queryset.order_by('-date', '-created_at')
-    
-    def _invalidate_compliance_caches(self, user_id, account_id):
-        """Invalide les caches dashboard et compliance_stats pour un utilisateur/compte."""
-        from django.core.cache import cache
-        # Supprimer tous les caches dashboard_summary pour cet utilisateur (toutes dates)
-        # Le pattern *dashboard_summary_{user_id}_* couvre tous les préfixes Redis (ex: :1:)
-        try:
-            cache.delete_pattern(f"*dashboard_summary_{user_id}_*")
-            cache.delete_pattern(f"*compliance_stats_{user_id}_*")
-        except AttributeError:
-            # Fallback pour les backends sans delete_pattern (ex: LocMemCache)
-            cache.delete(f"dashboard_summary_{user_id}_{account_id}_None_None")
-            cache.delete(f"compliance_stats_{user_id}_trading_account%3D{account_id}")
-            cache.delete(f"compliance_stats_{user_id}_trading_account={account_id}")
-            cache.delete(f"compliance_stats_{user_id}_")
 
     def perform_create(self, serializer):
         """Associe automatiquement l'utilisateur connecté à la compliance."""
-        compliance = serializer.save(user=self.request.user)
-        self._invalidate_compliance_caches(self.request.user.id, compliance.trading_account_id)
-
-    def perform_update(self, serializer):
-        """Met à jour la compliance et invalide les caches associés."""
-        compliance = serializer.save()
-        self._invalidate_compliance_caches(self.request.user.id, compliance.trading_account_id)
-
-    def perform_destroy(self, instance):
-        """Supprime la compliance et invalide les caches associés."""
-        account_id = instance.trading_account_id
-        user_id = self.request.user.id
-        instance.delete()
-        self._invalidate_compliance_caches(user_id, account_id)
+        serializer.save(user=self.request.user)
 
     @action(detail=False, methods=['get'])
     def by_date(self, request):

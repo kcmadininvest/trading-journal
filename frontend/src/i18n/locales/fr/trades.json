@@ -129,7 +129,11 @@
     "deleteComplianceButton": "Supprimer",
     "deleteComplianceTitle": "Supprimer le respect de la stratégie",
     "deleteComplianceMessage": "Êtes-vous sûr de vouloir supprimer le respect de la stratégie pour ce jour ? Cette action est irréversible.",
-    "deleteComplianceError": "Erreur lors de la suppression"
+    "deleteComplianceError": "Erreur lors de la suppression",
+    "delete": "Supprimer",
+    "deleteError": "Erreur lors de la suppression",
+    "deleteConfirmTitle": "Supprimer le respect de la stratégie",
+    "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer le respect de la stratégie pour ce jour ? Cette action est irréversible."
   },
   "emotions": {
     "confiance": "Confiance",
