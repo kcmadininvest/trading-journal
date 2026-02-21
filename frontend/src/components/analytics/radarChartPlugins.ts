@@ -94,9 +94,14 @@ export const createRadarGradientPlugin = (isDark: boolean) => ({
     const centerY = scale.yCenter;
     
     // Trouver le rayon maximum utilisé par les données
+    // Clamp les valeurs pour s'assurer qu'elles ne dépassent pas les limites de l'échelle
+    const scaleMax = scale.max || 100;
+    const scaleMin = scale.min || 0;
     let maxDataRadius = 0;
     dataset.data.forEach((value: number) => {
-      const radius = scale.getDistanceFromCenterForValue(value);
+      // Clamp la valeur dans la plage de l'échelle
+      const clampedValue = Math.min(scaleMax, Math.max(scaleMin, value));
+      const radius = scale.getDistanceFromCenterForValue(clampedValue);
       if (radius > maxDataRadius) {
         maxDataRadius = radius;
       }
@@ -128,7 +133,9 @@ export const createRadarGradientPlugin = (isDark: boolean) => ({
     
     dataPoints.forEach((value: number, index: number) => {
       const angle = -Math.PI / 2 + (index * angleStep); // Commencer en haut
-      const radius = scale.getDistanceFromCenterForValue(value);
+      // Clamp la valeur dans la plage de l'échelle pour éviter les débordements
+      const clampedValue = Math.min(scaleMax, Math.max(scaleMin, value));
+      const radius = scale.getDistanceFromCenterForValue(clampedValue);
       const x = centerX + Math.cos(angle) * radius;
       const y = centerY + Math.sin(angle) * radius;
       

@@ -1,8 +1,16 @@
 {
-  "title": "Analyses",
-  "errorLoadingData": "Erreur lors du chargement des données",
-  "loadingData": "Chargement des données...",
-  "importTrades": "Importer des trades",
+  "title": "Analisi",
+  "errorLoadingData": "Errore nel caricamento dei dati",
+  "loadingData": "Caricamento dati...",
+  "importTrades": "Importa operazioni",
+  "tradingAccount": "Conto di trading",
+  "year": "Anno",
+  "month": "Mese",
+  "allYears": "Tutti gli Anni",
+  "allMonths": "Tutti i Mesi",
+  "reset": "Ripristina",
+  "period": "Periodo",
+  "noData": "Nessun dato disponibile",
   "charts": {
     "hourlyPerformanceScatter": {
       "title": "Performance par heure (Nuage de points)",
@@ -27,42 +35,119 @@
       "outliersDescription": "Punti: Valori eccezionali (blu = guadagni, rosa = perdite)"
     },
     "correlation": {
-      "title": "Corrélation PnL vs Nombre de Trades",
-      "label": "Corrélation",
-      "xAxis": "Nombre de trades",
-      "yAxis": "PnL total"
+      "title": "Correlazione PnL vs Numero di Operazioni",
+      "label": "Correlazione",
+      "xAxis": "Numero di operazioni",
+      "yAxis": "PnL totale",
+      "regressionLine": "Linea di regressione",
+      "rSquaredTooltip": "Il coefficiente di determinazione (R²) misura la forza della correlazione tra il numero di operazioni e il PnL. R² vicino a 1 indica una forte correlazione, R² vicino a 0 indica una correlazione debole. La linea di regressione mostra la tendenza generale."
     },
     "drawdown": {
-      "title": "Drawdown par jour",
+      "title": "Drawdown Giornaliero",
       "label": "Drawdown",
       "yAxis": "Drawdown (%)",
-      "tooltip": "Ce graphique montre la distance depuis votre meilleur niveau (pic). La ligne à 0 représente votre pic. Plus la valeur est élevée, plus vous êtes loin de votre meilleur niveau. Quand vous atteignez un nouveau pic, le drawdown revient à 0. Les pourcentages (%) représentent le pourcentage de perte depuis le pic. Par exemple, 10% signifie que vous avez perdu 10% par rapport à votre meilleur niveau.",
-      "amount": "Montant",
-      "percentage": "Pourcentage",
-      "lossFromPeak": "perte depuis le pic"
+      "tooltip": "Questo grafico mostra la distanza dal tuo miglior livello (picco). La linea a 0 rappresenta il tuo picco. Più alto è il valore, più sei lontano dal tuo miglior livello. Quando raggiungi un nuovo picco, il drawdown torna a 0. Le percentuali (%) rappresentano la percentuale di perdita dal picco. Ad esempio, 10% significa che hai perso il 10% rispetto al tuo miglior livello.",
+      "amount": "Importo",
+      "cumulativePnl": "P/L Cumulativo",
+      "percentage": "Percentuale",
+      "lossFromPeak": "perdita dal picco"
     },
     "hourlyPerformanceBars": {
-      "title": "Performance par heure (Barres)",
-      "label": "Performance",
-      "yAxis": "PnL total"
+      "title": "Prestazione per Ora (Barre)",
+      "label": "Prestazione",
+      "yAxis": "PnL Totale"
     },
     "heatmap": {
-      "title": "Heatmap de Performance (Jour × Heure)",
-      "losses": "Pertes",
-      "neutral": "Neutre",
-      "gains": "Gains"
+      "title": "Prestazione per Giorno della Settimana e Ora",
+      "losses": "Perdite",
+      "neutral": "Neutro",
+      "gains": "Guadagni",
+      "tooltip": "Questa mappa di calore mostra la tua prestazione (PnL) per giorno della settimana e per ora. Ogni cella rappresenta il PnL totale per una combinazione giorno/ora. I colori blu indicano guadagni, i colori rosa indicano perdite. Più intenso è il colore, più alto è il valore. Vengono mostrate solo le ore con dati, con un'ora di contesto prima e dopo."
     },
     "pnlDistribution": {
-      "title": "Distribution des PnL",
-      "label": "Pourcentage de trades",
-      "yAxis": "Pourcentage de trades",
-      "range": "P&L: de {{start}} à {{end}}",
-      "onTotal": "sur {{total}} total"
+      "title": "Distribuzione dei PnL",
+      "label": "Percentuale di operazioni",
+      "yAxis": "Percentuale di operazioni",
+      "range": "P&L: da {{start}} a {{end}}",
+      "onTotal": "su {{total}} totale",
+      "tooltip": "Questo grafico mostra la distribuzione dei tuoi PnL (profitti e perdite) raggruppando le operazioni in intervalli di valori. Ogni barra rappresenta un intervallo di PnL e la sua altezza indica la percentuale di operazioni che rientrano in quell'intervallo. Questo aiuta a identificare gli intervalli di PnL più frequenti nel tuo trading."
+    },
+    "gainsVsLosses": {
+      "title": "Distribuzione Guadagni vs Perdite",
+      "gains": "Guadagni",
+      "losses": "Perdite",
+      "range": "Intervallo",
+      "count": "Conteggio",
+      "percentage": "Percentuale",
+      "tooltip": "Questo grafico confronta la distribuzione dei tuoi guadagni e delle tue perdite separatamente. L'istogramma a sinistra mostra la distribuzione delle operazioni vincenti per intervalli di valori, e quello a destra mostra la distribuzione delle operazioni perdenti. Questo aiuta a identificare i pattern e confrontare la distribuzione di guadagni e perdite per ottimizzare la tua strategia."
+    },
+    "monthlyPerformance": {
+      "title": "Prestazione Mensile/Annuale",
+      "pnl": "PnL",
+      "trades": "Operazioni",
+      "yAxis": "PnL",
+      "tooltip": "Questo grafico mostra la tua prestazione (PnL) per mese. Ogni barra rappresenta il PnL totale per un dato mese. Questo aiuta a identificare i mesi più redditizi e le tendenze stagionali."
+    },
+    "tradingVolume": {
+      "title": "Volume di Trading nel Tempo",
+      "label": "Numero di operazioni",
+      "yAxis": "Numero di operazioni",
+      "tooltip": "Questo grafico mostra il numero di operazioni al giorno nel tempo. Questo aiuta a identificare periodi di attività intensa e periodi tranquilli."
+    },
+    "tradesDistribution": {
+      "title": "Distribuzione delle Operazioni per Risultato",
+      "winners": "Vincenti",
+      "losers": "Perdenti",
+      "neutral": "Neutrali",
+      "percentage": "Percentuale",
+      "tooltip": "Questo grafico mostra la distribuzione delle tue operazioni tra vincenti, perdenti e neutrali. Questo permette di visualizzare rapidamente il rapporto tra operazioni vincenti e perdenti."
+    },
+    "riskReward": {
+      "title": "Rapporto Rischio/Rendimento nel Tempo",
+      "label": "Rapporto R:R medio",
+      "referenceLine": "Riferimento (R:R = 1)",
+      "trades": "Operazioni",
+      "tooltip": "Questo grafico mostra l'evoluzione del rapporto rischio/rendimento (R:R) medio nel tempo. Un rapporto superiore a 1 indica che i guadagni medi sono superiori alle perdite medie. Questo aiuta a valutare l'efficacia della tua gestione del rischio nel tempo."
     }
   },
+  "radar": {
+    "title": "Prestazione Globale",
+    "subtitle": "Analisi delle metriche chiave",
+    "performance": "Prestazione",
+    "profitFactor": "Fattore di Profitto",
+    "winRate": "Tasso di Successo",
+    "recoveryFactor": "Recupero",
+    "winLossRatio": "Rapporto G/P",
+    "expectancy": "Aspettativa",
+    "maxDrawdown": "Drawdown",
+    "tooltip": "Questo grafico radar mostra 5 metriche essenziali normalizzate da 0 a 100. Più grande è la superficie, migliore è la tua prestazione. 50 = obiettivo minimo, 75+ = prestazione eccellente.",
+    "scoreTooltip": "Punteggio globale calcolato come media delle 5 metriche normalizzate. Ogni metrica è valutata su una scala da 0 a 100 basata su benchmark realistici di trading. Più alto è il punteggio, migliore è la tua prestazione globale.",
+    "metrics": "Metriche",
+    "scale": "Scala",
+    "value": "Valore",
+    "score": "Punteggio",
+    "excellent": "Eccellente",
+    "good": "Buono",
+    "average": "Medio",
+    "needsImprovement": "Da migliorare",
+    "winRateDesc": "% di operazioni vincenti",
+    "profitFactorDesc": "Guadagni / Perdite",
+    "winLossRatioDesc": "Guadagno medio / Perdita media",
+    "recoveryFactorDesc": "Profitto / Drawdown max",
+    "maxDrawdownDesc": "Perdita massima"
+  },
+  "equityCurve": {
+    "title": "Curva del Capitale",
+    "equity": "Capitale",
+    "initialCapital": "Capitale Iniziale",
+    "dailyPnl": "PnL giornaliero",
+    "cumulativePnl": "PnL cumulativo",
+    "yAxis": "Capitale",
+    "tooltip": "Questo grafico mostra l'evoluzione del tuo capitale nel tempo. La curva verde rappresenta il tuo capitale attuale (capitale iniziale + PnL cumulativo). La linea tratteggiata grigia indica il tuo capitale iniziale come riferimento. Questo ti permette di visualizzare la crescita o il declino del tuo capitale nel tempo."
+  },
   "common": {
-    "trade": "trade",
-    "trades": "trades",
+    "trade": "operazione",
+    "trades": "operazioni",
     "hour": "{{hour}}h"
   },
   "days": {

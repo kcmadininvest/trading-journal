@@ -1131,84 +1131,8 @@ const AnalyticsPage: React.FC = () => {
     };
   }, [trades, statisticsData, t]);
 
-  // Graphique radar avec les métriques de performance
-  const radarChartData = useMemo(() => {
-    if (!statisticsData) return null;
-
-    // Fonction de normalisation pour chaque métrique (0-100)
-    const normalize = (value: number, min: number, max: number, inverse: boolean = false): number => {
-      if (max === min) return 50; // Valeur par défaut si pas de variation
-      const normalized = ((value - min) / (max - min)) * 100;
-      return inverse ? 100 - normalized : normalized;
-    };
-
-    // Définir les plages de normalisation pour chaque métrique
-    const metrics = {
-      // Profit Factor: 0-5 (1.0 = seuil de rentabilité, 2.0+ = excellent)
-      profitFactor: Math.min(100, Math.max(0, normalize(statisticsData.profit_factor, 0, 3, false))),
-      
-      // Win Rate: 0-100% (50% = seuil, 60%+ = bon)
-      winRate: statisticsData.win_rate || 0,
-      
-      // Recovery Factor (recovery_ratio): 0-10 (1.0 = seuil, 2.0+ = bon)
-      recoveryFactor: Math.min(100, Math.max(0, normalize(statisticsData.recovery_ratio || 0, 0, 5, false))),
-      
-      // Win/Loss Ratio: 0-5 (1.0 = seuil, 2.0+ = excellent)
-      winLossRatio: Math.min(100, Math.max(0, normalize(statisticsData.win_loss_ratio || 0, 0, 3, false))),
-      
-      // Expectancy: normalisé selon la valeur (positif = bon)
-      expectancy: Math.min(100, Math.max(0, normalize(statisticsData.expectancy || 0, -100, 500, false))),
-      
-      // Max Drawdown (inversé: plus bas = mieux, donc on inverse)
-      // 0% = parfait (100), 50% = mauvais (0)
-      maxDrawdown: Math.min(100, Math.max(0, normalize(statisticsData.max_drawdown_pct || 0, 0, 50, true))),
-    };
-
-    // Couleurs pour chaque métrique
-    const metricPointColors = [
-      '#3b82f6', // Bleu - Profit Factor
-      '#10b981', // Vert - Win Rate
-      '#f59e0b', // Orange - Recovery Factor
-      '#8b5cf6', // Violet - Win/Loss Ratio
-      '#ec4899', // Rose - Expectancy
-      '#ef4444', // Rouge - Max Drawdown
-    ];
-
-    return {
-      labels: [
-        t('analytics:radar.profitFactor', { defaultValue: 'Profit Factor' }),
-        t('analytics:radar.winRate', { defaultValue: 'Win Rate' }),
-        t('analytics:radar.recoveryFactor', { defaultValue: 'Recovery Factor' }),
-        t('analytics:radar.winLossRatio', { defaultValue: 'Win/Loss Ratio' }),
-        t('analytics:radar.expectancy', { defaultValue: 'Expectancy' }),
-        t('analytics:radar.maxDrawdown', { defaultValue: 'Max Drawdown' }),
-      ],
-      datasets: [
-        {
-          label: t('analytics:radar.performance', { defaultValue: 'Performance' }),
-          data: [
-            metrics.profitFactor,
-            metrics.winRate,
-            metrics.recoveryFactor,
-            metrics.winLossRatio,
-            metrics.expectancy,
-            metrics.maxDrawdown,
-          ],
-          backgroundColor: 'transparent', // Le dégradé sera dessiné par le plugin
-          borderColor: isDark ? '#60a5fa' : '#1e40af', // Bleu plus foncé en mode clair pour meilleure visibilité
-          borderWidth: 2, // Épaisseur uniforme
-          pointBackgroundColor: metricPointColors, // Couleurs spécifiques pour chaque point
-          pointBorderColor: '#ffffff',
-          pointBorderWidth: 2, // Bordure plus épaisse pour les points
-          pointHoverBackgroundColor: metricPointColors, // Garder les mêmes couleurs au survol
-          pointHoverBorderColor: '#ffffff',
-          pointHoverBorderWidth: 3,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-        },
-      ],
-    };
-  }, [statisticsData, isDark, t]);
+  // Le graphique radar gère maintenant sa propre normalisation en interne
+  // Pas besoin de calculer radarChartData ici
 
   // Fonction pour obtenir la couleur de la heatmap (améliorée avec support dark mode)
   const getHeatmapColor = (value: number, maxAbs: number): string => {
@@ -1392,7 +1316,7 @@ const AnalyticsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <RadarChart
-              data={radarChartData}
+              data={null}
               statisticsData={statisticsData}
               currencySymbol={currencySymbol}
               createRadarAlternatingZonesPlugin={createRadarAlternatingZonesPlugin}

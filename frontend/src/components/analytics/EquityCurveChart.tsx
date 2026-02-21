@@ -121,6 +121,9 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
           },
           maxRotation: 45,
           minRotation: 0,
+          autoSkip: true,
+          maxTicksLimit: 12,
+          padding: 2,
         },
         border: {
           color: chartColors.border,
@@ -185,7 +188,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div style={{ height: '320px', position: 'relative' }}>
+      <div style={{ height: '360px', position: 'relative' }}>
         <ChartLine
           data={{
             labels: data.labels,
