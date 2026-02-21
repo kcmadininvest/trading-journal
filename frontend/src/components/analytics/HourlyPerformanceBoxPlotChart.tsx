@@ -165,7 +165,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
           color: chartColors.border,
         },
         title: {
-          display: true,
+          display: false,
           text: t('analytics:charts.hourlyPerformanceBoxPlot.xAxis'),
           color: chartColors.text,
           font: {
@@ -194,7 +194,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
           display: false,
         },
         title: {
-          display: true,
+          display: false,
           text: t('analytics:charts.hourlyPerformanceBoxPlot.yAxis'),
           color: chartColors.text,
           font: {
