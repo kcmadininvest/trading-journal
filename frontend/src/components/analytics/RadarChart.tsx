@@ -261,109 +261,111 @@ export const RadarChart: React.FC<RadarChartProps> = ({
       </div>
       
       {/* Graphique et légende */}
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_13rem] xl:grid-cols-[minmax(0,1fr)_14rem] gap-4 lg:gap-5 items-center">
         {/* Graphique radar */}
-        <div className="flex-1" style={{ height: '300px', position: 'relative' }}>
-          <ChartRadar
-            data={optimizedData}
-            plugins={[createRadarAlternatingZonesPlugin(isDark), createRadarGradientPlugin(isDark)]}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              layout: {
-                padding: {
-                  top: -20,
-                  right: -20,
-                  bottom: 0,
-                  left: -20,
-                },
-              },
-              plugins: {
-                datalabels: {
-                  display: false,
-                },
-                legend: {
-                  display: false,
-                },
-                tooltip: {
-                  backgroundColor: chartColors.tooltipBg,
-                  titleColor: chartColors.tooltipTitle,
-                  bodyColor: chartColors.tooltipBody,
-                  borderColor: chartColors.tooltipBorder,
-                  borderWidth: 1,
-                  padding: 14,
-                  titleFont: {
-                    size: 14,
-                    weight: 600,
-                  },
-                  bodyFont: {
-                    size: 13,
-                    weight: 500,
-                  },
-                  callbacks: {
-                    title: (context: any) => {
-                      return context[0].label;
-                    },
-                    label: (context: any) => {
-                      const index = context.dataIndex;
-                      const metric = metricInfo[index];
-                      const normalizedValue = context.parsed.r;
-                      const realValue = formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2);
-                      
-                      return [
-                        `${t('analytics:radar.value', { defaultValue: 'Valeur' })}: ${realValue}${metric.unit}`,
-                        `${t('analytics:radar.score', { defaultValue: 'Score' })}: ${formatNumber(normalizedValue, 0)}/100`,
-                        `${metric.description}`,
-                      ];
-                    },
+        <div className="min-w-0" style={{ height: '300px', position: 'relative' }}>
+          <div className="h-full w-full lg:scale-110 lg:-translate-y-3 origin-center">
+            <ChartRadar
+              data={optimizedData}
+              plugins={[createRadarAlternatingZonesPlugin(isDark), createRadarGradientPlugin(isDark)]}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: {
+                  padding: {
+                    top: 6,
+                    right: 8,
+                    bottom: 4,
+                    left: 8,
                   },
                 },
-              },
-              scales: {
-                r: {
-                  beginAtZero: true,
-                  max: 100,
-                  min: 0,
-                  ticks: {
-                    display: true,
-                    stepSize: 25,
-                    color: chartColors.textSecondary,
-                    font: {
-                      size: 10,
-                      weight: 500,
-                    },
-                    backdropColor: 'transparent',
-                    callback: function(value) {
-                      return value === 0 ? '' : value;
-                    },
+                plugins: {
+                  datalabels: {
+                    display: false,
                   },
-                  grid: {
-                    color: isDark ? 'rgba(55, 65, 81, 0.5)' : 'rgba(156, 163, 175, 0.4)',
-                    lineWidth: 1.5,
+                  legend: {
+                    display: false,
                   },
-                  pointLabels: {
-                    display: true,
-                    color: chartColors.text,
-                    font: {
-                      size: 13,
+                  tooltip: {
+                    backgroundColor: chartColors.tooltipBg,
+                    titleColor: chartColors.tooltipTitle,
+                    bodyColor: chartColors.tooltipBody,
+                    borderColor: chartColors.tooltipBorder,
+                    borderWidth: 1,
+                    padding: 14,
+                    titleFont: {
+                      size: 14,
                       weight: 600,
                     },
-                    padding: 2,
-                  },
-                  angleLines: {
-                    color: isDark ? 'rgba(55, 65, 81, 0.5)' : 'rgba(156, 163, 175, 0.4)',
-                    lineWidth: 1.5,
+                    bodyFont: {
+                      size: 13,
+                      weight: 500,
+                    },
+                    callbacks: {
+                      title: (context: any) => {
+                        return context[0].label;
+                      },
+                      label: (context: any) => {
+                        const index = context.dataIndex;
+                        const metric = metricInfo[index];
+                        const normalizedValue = context.parsed.r;
+                        const realValue = formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2);
+
+                        return [
+                          `${t('analytics:radar.value', { defaultValue: 'Valeur' })}: ${realValue}${metric.unit}`,
+                          `${t('analytics:radar.score', { defaultValue: 'Score' })}: ${formatNumber(normalizedValue, 0)}/100`,
+                          `${metric.description}`,
+                        ];
+                      },
+                    },
                   },
                 },
-              },
-            }}
-          />
+                scales: {
+                  r: {
+                    beginAtZero: true,
+                    max: 100,
+                    min: 0,
+                    ticks: {
+                      display: true,
+                      stepSize: 25,
+                      color: chartColors.textSecondary,
+                      font: {
+                        size: 9,
+                        weight: 500,
+                      },
+                      backdropColor: 'transparent',
+                      callback: function(value) {
+                        return value === 0 ? '' : value;
+                      },
+                    },
+                    grid: {
+                      color: isDark ? 'rgba(55, 65, 81, 0.5)' : 'rgba(156, 163, 175, 0.4)',
+                      lineWidth: 1.5,
+                    },
+                    pointLabels: {
+                      display: true,
+                      color: chartColors.text,
+                      font: {
+                        size: 12,
+                        weight: 600,
+                      },
+                      padding: 0,
+                    },
+                    angleLines: {
+                      color: isDark ? 'rgba(55, 65, 81, 0.5)' : 'rgba(156, 163, 175, 0.4)',
+                      lineWidth: 1.5,
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
         </div>
 
         {/* Légende détaillée */}
-        <div className="lg:w-56 flex-shrink-0">
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+        <div className="lg:w-52 xl:w-56 flex-shrink-0">
+          <div className="space-y-2.5">
+            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               {t('analytics:radar.metrics', { defaultValue: 'Métriques' })}
             </h4>
             {metricInfo.map((metric, index) => (
@@ -382,7 +384,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                         {formatNumber(metric.value || 0, metric.unit === '%' ? 1 : 2)}{metric.unit}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <p className="text-[11px] leading-tight text-gray-500 dark:text-gray-400 mt-0.5">
                       {metric.description}
                     </p>
                   </div>
