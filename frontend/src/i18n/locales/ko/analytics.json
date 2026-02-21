@@ -66,13 +66,18 @@
     "hour": "{{hour}}h"
   },
   "days": {
-    "monday": "Lun",
-    "tuesday": "Mar",
-    "wednesday": "Mer",
-    "thursday": "Jeu",
-    "friday": "Ven",
-    "saturday": "Sam",
-    "sunday": "Dim"
+    "monday": "월",
+    "tuesday": "화",
+    "wednesday": "수",
+    "thursday": "목",
+    "friday": "금",
+    "saturday": "토",
+    "sunday": "일"
+  },
+  "tabs": {
+    "overview": "개요",
+    "riskCapital": "리스크 및 자본",
+    "timeAnalysis": "시간 분석",
+    "patterns": "상관관계 및 패턴"
   }
 }
-

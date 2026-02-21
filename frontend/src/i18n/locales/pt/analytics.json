@@ -66,13 +66,18 @@
     "hour": "{{hour}}h"
   },
   "days": {
-    "monday": "Lun",
-    "tuesday": "Mar",
-    "wednesday": "Mer",
-    "thursday": "Jeu",
-    "friday": "Ven",
-    "saturday": "Sam",
-    "sunday": "Dim"
+    "monday": "Seg",
+    "tuesday": "Ter",
+    "wednesday": "Qua",
+    "thursday": "Qui",
+    "friday": "Sex",
+    "saturday": "Sáb",
+    "sunday": "Dom"
+  },
+  "tabs": {
+    "overview": "Visão Geral",
+    "riskCapital": "Risco e Capital",
+    "timeAnalysis": "Análise Temporal",
+    "patterns": "Correlações e Padrões"
   }
 }
-

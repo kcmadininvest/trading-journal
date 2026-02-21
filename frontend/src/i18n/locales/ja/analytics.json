@@ -61,18 +61,23 @@
     }
   },
   "common": {
-    "trade": "trade",
-    "trades": "trades",
-    "hour": "{{hour}}h"
+    "trade": "取引",
+    "trades": "取引",
+    "hour": "{{hour}}時間"
   },
   "days": {
-    "monday": "Lun",
-    "tuesday": "Mar",
-    "wednesday": "Mer",
-    "thursday": "Jeu",
-    "friday": "Ven",
-    "saturday": "Sam",
-    "sunday": "Dim"
+    "monday": "月",
+    "tuesday": "火",
+    "wednesday": "水",
+    "thursday": "木",
+    "friday": "金",
+    "saturday": "土",
+    "sunday": "日"
+  },
+  "tabs": {
+    "overview": "概要",
+    "riskCapital": "リスクと資本",
+    "timeAnalysis": "時間分析",
+    "patterns": "相関とパターン"
   }
 }
-

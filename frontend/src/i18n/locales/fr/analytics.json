@@ -142,6 +142,12 @@
     "friday": "Ven",
     "saturday": "Sam",
     "sunday": "Dim"
+  },
+  "tabs": {
+    "overview": "Vue d'ensemble",
+    "riskCapital": "Risque & Capital",
+    "timeAnalysis": "Analyse Temporelle",
+    "patterns": "Corrélations & Patterns"
   }
 }
 

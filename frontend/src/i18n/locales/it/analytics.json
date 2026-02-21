@@ -69,10 +69,15 @@
     "monday": "Lun",
     "tuesday": "Mar",
     "wednesday": "Mer",
-    "thursday": "Jeu",
+    "thursday": "Gio",
     "friday": "Ven",
-    "saturday": "Sam",
-    "sunday": "Dim"
+    "saturday": "Sab",
+    "sunday": "Dom"
+  },
+  "tabs": {
+    "overview": "Panoramica",
+    "riskCapital": "Rischio e Capitale",
+    "timeAnalysis": "Analisi Temporale",
+    "patterns": "Correlazioni e Modelli"
   }
 }
-

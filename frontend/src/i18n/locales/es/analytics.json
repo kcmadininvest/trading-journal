@@ -142,5 +142,11 @@
     "friday": "Vie",
     "saturday": "Sáb",
     "sunday": "Dom"
+  },
+  "tabs": {
+    "overview": "Resumen",
+    "riskCapital": "Riesgo y Capital",
+    "timeAnalysis": "Análisis Temporal",
+    "patterns": "Correlaciones y Patrones"
   }
 }

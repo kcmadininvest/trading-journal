@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import clsx from 'clsx';
 import { useWindowWidth } from '../hooks/useWindowWidth';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
@@ -1255,6 +1256,56 @@ const AnalyticsPage: React.FC = () => {
     return isDark ? '#4b5563' : '#f3f4f6'; // Gris adapté au thème pour zéro
   };
 
+  // État pour l'onglet actif avec mémorisation dans localStorage
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    return localStorage.getItem('analytics-active-tab') || 'overview';
+  });
+
+  // Mémoriser l'onglet actif dans localStorage
+  useEffect(() => {
+    localStorage.setItem('analytics-active-tab', activeTab);
+  }, [activeTab]);
+
+  // Définition des onglets avec icônes SVG
+  const tabs = [
+    { 
+      id: 'overview', 
+      label: t('analytics:tabs.overview'), 
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      )
+    },
+    { 
+      id: 'riskCapital', 
+      label: t('analytics:tabs.riskCapital'), 
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    },
+    { 
+      id: 'timeAnalysis', 
+      label: t('analytics:tabs.timeAnalysis'), 
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )
+    },
+    { 
+      id: 'patterns', 
+      label: t('analytics:tabs.patterns'), 
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+        </svg>
+      )
+    },
+  ];
+
   // Afficher le skeleton pendant le chargement initial pour une expérience uniforme
   if (accountLoading || isLoading || statisticsLoading) {
     return <AnalyticsPageSkeleton />;
@@ -1305,98 +1356,140 @@ const AnalyticsPage: React.FC = () => {
         />
       )}
 
-      {/* Graphiques de performance : Radar et Equity Curve */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <RadarChart
-          data={radarChartData}
-          statisticsData={statisticsData}
-          currencySymbol={currencySymbol}
-          createRadarAlternatingZonesPlugin={createRadarAlternatingZonesPlugin}
-          createRadarGradientPlugin={createRadarGradientPlugin}
-          chartColors={chartColors}
-        />
-        <EquityCurveChart
-          data={equityCurveData}
-          riskRewardData={riskRewardData}
-          currencySymbol={currencySymbol}
-          chartColors={chartColors}
-        />
+      {/* Onglets de navigation */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={clsx(
+                  'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 flex items-center gap-2',
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                )}
+                aria-current={activeTab === tab.id ? 'page' : undefined}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
       </div>
 
-      {/* Grille de graphiques - 2 par ligne */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <DrawdownChart
-          data={drawdownData}
-          currencySymbol={currencySymbol}
-          chartColors={chartColors}
-          tradesCount={trades.length}
-        />
-        <MonthlyPerformanceChart
-          data={monthlyPerformanceData}
-          currencySymbol={currencySymbol}
-          chartColors={chartColors}
-        />
-      </div>
-
-      {/* Grille de graphiques - 2 par ligne */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <TradingVolumeChart
-          data={tradingVolumeData}
-          chartColors={chartColors}
-        />
-        <TradesDistributionChart
-          data={tradesDistributionData}
-          chartColors={chartColors}
-        />
-      </div>
-
+      {/* Contenu des onglets */}
       {error && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <p className="text-red-800 dark:text-red-300">{error}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <HourlyPerformanceBoxPlotChart
-            data={hourlyPerformanceScatter}
-            currencySymbol={currencySymbol}
-            chartColors={chartColors}
-          />
-          
-          <CorrelationChart
-            data={correlationData}
-            currencySymbol={currencySymbol}
-            chartColors={chartColors}
-          />
+      {/* Onglet Vue d'ensemble */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <RadarChart
+              data={radarChartData}
+              statisticsData={statisticsData}
+              currencySymbol={currencySymbol}
+              createRadarAlternatingZonesPlugin={createRadarAlternatingZonesPlugin}
+              createRadarGradientPlugin={createRadarGradientPlugin}
+              chartColors={chartColors}
+            />
+            <EquityCurveChart
+              data={equityCurveData}
+              riskRewardData={riskRewardData}
+              currencySymbol={currencySymbol}
+              chartColors={chartColors}
+            />
+            <MonthlyPerformanceChart
+              data={monthlyPerformanceData}
+              currencySymbol={currencySymbol}
+              chartColors={chartColors}
+            />
+            <TradesDistributionChart
+              data={tradesDistributionData}
+              chartColors={chartColors}
+            />
+          </div>
+        </div>
+      )}
 
-          <HourlyPerformanceBarsChart
-            data={hourlyPerformanceBars}
-            currencySymbol={currencySymbol}
-            chartColors={chartColors}
-            windowWidth={windowWidth}
-          />
-
-          <HeatmapChart
-            data={heatmapData}
-            currencySymbol={currencySymbol}
-            getHeatmapColor={getHeatmapColor}
-          />
-
-          {gainsVsLossesDistribution && (
-            <GainsVsLossesChart
-              data={gainsVsLossesDistribution}
+      {/* Onglet Risque & Capital */}
+      {activeTab === 'riskCapital' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <DrawdownChart
+              data={drawdownData}
+              currencySymbol={currencySymbol}
+              chartColors={chartColors}
+              tradesCount={trades.length}
+            />
+            {gainsVsLossesDistribution && (
+              <GainsVsLossesChart
+                data={gainsVsLossesDistribution}
+                chartColors={chartColors}
+                windowWidth={windowWidth}
+              />
+            )}
+            <PnlDistributionChart
+              data={pnlDistribution}
+              currencySymbol={currencySymbol}
               chartColors={chartColors}
               windowWidth={windowWidth}
             />
-          )}
-
-          <PnlDistributionChart
-            data={pnlDistribution}
-            currencySymbol={currencySymbol}
-            chartColors={chartColors}
-            windowWidth={windowWidth}
-          />
+          </div>
         </div>
+      )}
+
+      {/* Onglet Analyse Temporelle */}
+      {activeTab === 'timeAnalysis' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <HourlyPerformanceBoxPlotChart
+              data={hourlyPerformanceScatter}
+              currencySymbol={currencySymbol}
+              chartColors={chartColors}
+            />
+            <HourlyPerformanceBarsChart
+              data={hourlyPerformanceBars}
+              currencySymbol={currencySymbol}
+              chartColors={chartColors}
+              windowWidth={windowWidth}
+            />
+            <HeatmapChart
+              data={heatmapData}
+              currencySymbol={currencySymbol}
+              getHeatmapColor={getHeatmapColor}
+            />
+            <TradingVolumeChart
+              data={tradingVolumeData}
+              chartColors={chartColors}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Onglet Corrélations & Patterns */}
+      {activeTab === 'patterns' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CorrelationChart
+              data={correlationData}
+              currencySymbol={currencySymbol}
+              chartColors={chartColors}
+            />
+            <HeatmapChart
+              data={heatmapData}
+              currencySymbol={currencySymbol}
+              getHeatmapColor={getHeatmapColor}
+            />
+          </div>
+        </div>
+      )}
 
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
     </div>
