@@ -132,7 +132,7 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
     
     # Récupérer les tags distants avant de vérifier les modifications
     info "🔄 Récupération des tags distants..."
-    git fetch origin --tags --quiet 2>/dev/null || warn "Impossible de récupérer les tags distants"
+    git fetch origin --tags --force --quiet 2>/dev/null || warn "Impossible de récupérer les tags distants"
     
     # Sauvegarder les modifications locales si elles existent (en excluant les fichiers générés)
     # Note: Le template index.html est marqué assume-unchanged et sera mis à jour plus tard dans le script
@@ -174,7 +174,7 @@ if [ -d ".git" ] || git rev-parse --git-dir > /dev/null 2>&1; then
     
     # Récupérer les tags distants et déterminer le tag à déployer
     info "🔄 Récupération des tags distants..."
-    git fetch origin --tags 2>/dev/null || warn "Impossible de récupérer les tags distants"
+    git fetch origin --tags --force 2>/dev/null || warn "Impossible de récupérer les tags distants"
     git fetch origin main 2>/dev/null || warn "Impossible de récupérer depuis origin/main"
     
     # Détecter le dernier tag (par version)
