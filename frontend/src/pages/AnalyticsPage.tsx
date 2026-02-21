@@ -46,6 +46,7 @@ import {
   HeatmapChart,
   GainsVsLossesChart,
   PnlDistributionChart,
+  MaeMfeChart,
   createRadarAlternatingZonesPlugin,
   createRadarGradientPlugin,
 } from '../components/analytics';
@@ -776,6 +777,84 @@ const AnalyticsPage: React.FC = () => {
     }).filter(bin => bin.count > 0); // Filtrer pour ne garder que les bins avec des données
   }, [trades, formatNumber]);
 
+  // Données MAE/MFE (Maximum Adverse Excursion / Maximum Favorable Excursion)
+  const maeMfeData = useMemo(() => {
+    const data: Array<{
+      tradeId: number;
+      contractName: string;
+      tradeType: 'Long' | 'Short';
+      entryPrice: number;
+      exitPrice: number;
+      pnl: number;
+      mae: number;
+      mfe: number;
+      tradeDay: string;
+    }> = [];
+
+    trades.forEach(trade => {
+      if (!trade.entry_price || !trade.exit_price || trade.net_pnl === null || trade.net_pnl === undefined) {
+        return;
+      }
+
+      const entryPrice = parseFloat(trade.entry_price);
+      const exitPrice = parseFloat(trade.exit_price);
+      const pnl = parseFloat(trade.net_pnl);
+      const pointValue = trade.point_value ? parseFloat(trade.point_value) : 20; // Défaut: 20 pour NQ
+      const size = parseFloat(trade.size);
+
+      if (isNaN(entryPrice) || isNaN(exitPrice) || isNaN(pnl)) {
+        return;
+      }
+
+      // Calcul simplifié MAE/MFE basé sur entry/exit
+      // Note: Idéalement, il faudrait les données tick-by-tick, mais on approxime ici
+      let mae = 0; // Maximum Adverse Excursion (pire mouvement contre nous)
+      let mfe = 0; // Maximum Favorable Excursion (meilleur mouvement pour nous)
+
+      if (trade.trade_type === 'Long') {
+        // Pour un Long:
+        // MAE = pire prix atteint en dessous de l'entrée (approximation: si perdant, on suppose qu'il est allé jusqu'au exit)
+        // MFE = meilleur prix atteint au-dessus de l'entrée (approximation: si gagnant, on suppose qu'il est allé jusqu'au exit)
+        if (pnl < 0) {
+          // Trade perdant: le pire prix était probablement le prix de sortie
+          mae = Math.abs((entryPrice - exitPrice) * pointValue * size);
+          mfe = 0; // Approximation: pas de mouvement favorable significatif
+        } else {
+          // Trade gagnant: le meilleur prix était probablement le prix de sortie
+          mfe = Math.abs((exitPrice - entryPrice) * pointValue * size);
+          mae = mfe * 0.3; // Approximation: 30% de retracement moyen
+        }
+      } else {
+        // Pour un Short:
+        // MAE = pire prix atteint au-dessus de l'entrée
+        // MFE = meilleur prix atteint en dessous de l'entrée
+        if (pnl < 0) {
+          // Trade perdant
+          mae = Math.abs((exitPrice - entryPrice) * pointValue * size);
+          mfe = 0;
+        } else {
+          // Trade gagnant
+          mfe = Math.abs((entryPrice - exitPrice) * pointValue * size);
+          mae = mfe * 0.3; // Approximation: 30% de retracement moyen
+        }
+      }
+
+      data.push({
+        tradeId: trade.id,
+        contractName: trade.contract_name,
+        tradeType: trade.trade_type,
+        entryPrice,
+        exitPrice,
+        pnl,
+        mae,
+        mfe,
+        tradeDay: trade.trade_day || '',
+      });
+    });
+
+    return data;
+  }, [trades]);
+
   // Données pour le graphique Equity Curve (Courbe de capital)
   const equityCurveData = useMemo(() => {
     if (!trades.length) return null;
@@ -1348,6 +1427,12 @@ const AnalyticsPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <DrawdownChart
               data={drawdownData}
+              currencySymbol={currencySymbol}
+              chartColors={chartColors}
+              tradesCount={trades.length}
+            />
+            <MaeMfeChart
+              data={maeMfeData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
               tradesCount={trades.length}

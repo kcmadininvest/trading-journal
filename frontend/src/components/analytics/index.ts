@@ -11,4 +11,5 @@ export { HourlyPerformanceBarsChart } from './HourlyPerformanceBarsChart';
 export { HeatmapChart } from './HeatmapChart';
 export { GainsVsLossesChart } from './GainsVsLossesChart';
 export { PnlDistributionChart } from './PnlDistributionChart';
+export { MaeMfeChart } from './MaeMfeChart';
 export { createRadarAlternatingZonesPlugin, createRadarGradientPlugin } from './radarChartPlugins';

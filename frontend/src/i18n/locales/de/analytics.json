@@ -80,6 +80,19 @@
       "percentage": "Prozentsatz",
       "tooltip": "Dieses Diagramm vergleicht die Verteilung Ihrer Gewinne und Verluste getrennt. Das linke Histogramm zeigt die Verteilung der gewinnbringenden Trades nach Wertebereichen, und das rechte zeigt die Verteilung der verlustbringenden Trades. Dies hilft, Muster zu identifizieren und die Verteilung von Gewinnen und Verlusten zu vergleichen, um Ihre Strategie zu optimieren."
     },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "Analyse der Maximum Adverse Excursion (schlechteste Bewegung gegen Sie) vs Maximum Favorable Excursion (beste Bewegung zu Ihren Gunsten). Punkte oben links zeigen gut verwaltete Trades (niedriger MAE, hoher MFE).",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "P/L",
+      "date": "Datum",
+      "xAxis": "MAE - Maximum Adverse Excursion",
+      "yAxis": "MFE - Maximum Favorable Excursion",
+      "winningTrades": "Gewinnende Trades",
+      "losingTrades": "Verlierende Trades",
+      "noData": "Keine MAE/MFE-Daten für diesen Zeitraum verfügbar"
+    },
     "monthlyPerformance": {
       "title": "Monatliche/Jährliche Leistung",
       "pnl": "PnL",

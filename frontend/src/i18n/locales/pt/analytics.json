@@ -76,10 +76,23 @@
       "title": "Distribuição de Ganhos vs Perdas",
       "gains": "Ganhos",
       "losses": "Perdas",
-      "range": "Faixa",
-      "count": "Contagem",
+      "range": "Intervalo",
+      "count": "Número",
       "percentage": "Porcentagem",
-      "tooltip": "Este gráfico compara a distribuição dos seus ganhos e perdas separadamente. O histograma à esquerda mostra a distribuição das operações vencedoras por faixas de valores, e o da direita mostra a distribuição das operações perdedoras. Isso ajuda a identificar padrões e comparar a distribuição de ganhos e perdas para otimizar sua estratégia."
+      "tooltip": "Este gráfico compara a distribuição de seus ganhos e perdas separadamente. O histograma da esquerda mostra a distribuição das operações vencedoras por faixas de valores, e o da direita mostra a distribuição das operações perdedoras. Isso ajuda a identificar padrões e comparar a distribuição de ganhos e perdas para otimizar sua estratégia."
+    },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "Análise da Excursão Adversa Máxima (pior movimento contra você) vs Excursão Favorável Máxima (melhor movimento a seu favor). Pontos no canto superior esquerdo indicam operações bem gerenciadas (MAE baixo, MFE alto).",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "P/L",
+      "date": "Data",
+      "xAxis": "MAE - Excursão Adversa Máxima",
+      "yAxis": "MFE - Excursão Favorável Máxima",
+      "winningTrades": "Operações vencedoras",
+      "losingTrades": "Operações perdedoras",
+      "noData": "Nenhum dado MAE/MFE disponível para este período"
     },
     "monthlyPerformance": {
       "title": "Desempenho Mensal/Anual",

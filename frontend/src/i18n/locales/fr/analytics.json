@@ -80,6 +80,19 @@
       "percentage": "Pourcentage",
       "tooltip": "Ce graphique compare la distribution de vos gains et de vos pertes séparément. L'histogramme de gauche montre la répartition des trades gagnants par plages de valeurs, et celui de droite montre la répartition des trades perdants. Cela permet d'identifier les patterns et de comparer la distribution des gains et des pertes pour optimiser votre stratégie."
     },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "Analyse du Maximum Adverse Excursion (pire mouvement contre vous) vs Maximum Favorable Excursion (meilleur mouvement pour vous). Les points en haut à gauche indiquent des trades bien gérés (faible MAE, fort MFE).",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "P/L",
+      "date": "Date",
+      "xAxis": "MAE - Maximum Adverse Excursion",
+      "yAxis": "MFE - Maximum Favorable Excursion",
+      "winningTrades": "Trades gagnants",
+      "losingTrades": "Trades perdants",
+      "noData": "Aucune donnée MAE/MFE disponible pour cette période"
+    },
     "monthlyPerformance": {
       "title": "Performance Mensuelle/Annuelle",
       "pnl": "PnL",

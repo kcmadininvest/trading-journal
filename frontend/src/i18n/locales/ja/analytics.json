@@ -26,6 +26,28 @@
       "whiskersDescription": "ひげ：正常値の範囲",
       "outliersDescription": "点：例外的な値（青=利益、ピンク=損失）"
     },
+    "gainsVsLosses": {
+      "title": "利益と損失の分布",
+      "gains": "利益",
+      "losses": "損失",
+      "range": "範囲",
+      "count": "数",
+      "percentage": "パーセンテージ",
+      "tooltip": "このチャートは、利益と損失の分布を別々に比較します。左のヒストグラムは勝ちトレードの値の範囲ごとの分布を示し、右のヒストグラムは負けトレードの分布を示します。これにより、パターンを特定し、利益と損失の分布を比較して戦略を最適化できます。"
+    },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "最大不利エクスカーション（あなたに不利な最悪の動き）と最大有利エクスカーション（あなたに有利な最良の動き）の分析。左上のポイントは、よく管理されたトレード（低MAE、高MFE）を示します。",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "損益",
+      "date": "日付",
+      "xAxis": "MAE - 最大不利エクスカーション",
+      "yAxis": "MFE - 最大有利エクスカーション",
+      "winningTrades": "勝ちトレード",
+      "losingTrades": "負けトレード",
+      "noData": "この期間のMAE/MFEデータはありません"
+    },
     "correlation": {
       "title": "Corrélation PnL vs Nombre de Trades",
       "label": "Corrélation",

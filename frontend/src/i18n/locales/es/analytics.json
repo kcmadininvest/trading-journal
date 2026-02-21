@@ -80,6 +80,19 @@
       "percentage": "Porcentaje",
       "tooltip": "Este gráfico compara la distribución de tus ganancias y pérdidas por separado. El histograma de la izquierda muestra la distribución de las operaciones ganadoras por rangos de valores, y el de la derecha muestra la distribución de las operaciones perdedoras. Esto ayuda a identificar patrones y comparar la distribución de ganancias y pérdidas para optimizar tu estrategia."
     },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "Análisis de la Excursión Adversa Máxima (peor movimiento en tu contra) vs Excursión Favorable Máxima (mejor movimiento a tu favor). Los puntos en la parte superior izquierda indican operaciones bien gestionadas (MAE bajo, MFE alto).",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "P/L",
+      "date": "Fecha",
+      "xAxis": "MAE - Excursión Adversa Máxima",
+      "yAxis": "MFE - Excursión Favorable Máxima",
+      "winningTrades": "Operaciones ganadoras",
+      "losingTrades": "Operaciones perdedoras",
+      "noData": "No hay datos MAE/MFE disponibles para este período"
+    },
     "monthlyPerformance": {
       "title": "Rendimiento Mensual/Anual",
       "pnl": "PnL",

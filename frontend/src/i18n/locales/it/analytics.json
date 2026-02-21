@@ -77,9 +77,22 @@
       "gains": "Guadagni",
       "losses": "Perdite",
       "range": "Intervallo",
-      "count": "Conteggio",
+      "count": "Numero",
       "percentage": "Percentuale",
-      "tooltip": "Questo grafico confronta la distribuzione dei tuoi guadagni e delle tue perdite separatamente. L'istogramma a sinistra mostra la distribuzione delle operazioni vincenti per intervalli di valori, e quello a destra mostra la distribuzione delle operazioni perdenti. Questo aiuta a identificare i pattern e confrontare la distribuzione di guadagni e perdite per ottimizzare la tua strategia."
+      "tooltip": "Questo grafico confronta la distribuzione dei tuoi guadagni e delle tue perdite separatamente. L'istogramma di sinistra mostra la distribuzione delle operazioni vincenti per intervalli di valori, e quello di destra mostra la distribuzione delle operazioni perdenti. Questo aiuta a identificare i pattern e confrontare la distribuzione di guadagni e perdite per ottimizzare la tua strategia."
+    },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "Analisi della Massima Escursione Avversa (peggior movimento contro di te) vs Massima Escursione Favorevole (miglior movimento a tuo favore). I punti in alto a sinistra indicano operazioni ben gestite (MAE basso, MFE alto).",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "P/L",
+      "date": "Data",
+      "xAxis": "MAE - Massima Escursione Avversa",
+      "yAxis": "MFE - Massima Escursione Favorevole",
+      "winningTrades": "Operazioni vincenti",
+      "losingTrades": "Operazioni perdenti",
+      "noData": "Nessun dato MAE/MFE disponibile per questo periodo"
     },
     "monthlyPerformance": {
       "title": "Prestazione Mensile/Annuale",

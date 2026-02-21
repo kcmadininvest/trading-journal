@@ -26,6 +26,28 @@
       "whiskersDescription": "수염: 정상 값의 범위",
       "outliersDescription": "점: 예외적인 값 (파란색 = 이익, 분홍색 = 손실)"
     },
+    "gainsVsLosses": {
+      "title": "이익 대 손실 분포",
+      "gains": "이익",
+      "losses": "손실",
+      "range": "범위",
+      "count": "수",
+      "percentage": "백분율",
+      "tooltip": "이 차트는 이익과 손실의 분포를 별도로 비교합니다. 왼쪽 히스토그램은 값 범위별 수익 거래의 분포를 보여주고, 오른쪽은 손실 거래의 분포를 보여줍니다. 이를 통해 패턴을 식별하고 이익과 손실의 분포를 비교하여 전략을 최적화할 수 있습니다."
+    },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "최대 불리 익스커션(당신에게 불리한 최악의 움직임) 대 최대 유리 익스커션(당신에게 유리한 최선의 움직임) 분석. 왼쪽 상단의 포인트는 잘 관리된 거래(낮은 MAE, 높은 MFE)를 나타냅니다.",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "손익",
+      "date": "날짜",
+      "xAxis": "MAE - 최대 불리 익스커션",
+      "yAxis": "MFE - 최대 유리 익스커션",
+      "winningTrades": "수익 거래",
+      "losingTrades": "손실 거래",
+      "noData": "이 기간에 대한 MAE/MFE 데이터가 없습니다"
+    },
     "correlation": {
       "title": "Corrélation PnL vs Nombre de Trades",
       "label": "Corrélation",

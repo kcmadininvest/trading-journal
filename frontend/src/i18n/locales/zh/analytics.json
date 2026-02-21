@@ -58,6 +58,19 @@
       "yAxis": "Pourcentage de trades",
       "range": "P&L: de {{start}} à {{end}}",
       "onTotal": "sur {{total}} total"
+    },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "最大不利偏移（对您不利的最差走势）与最大有利偏移（对您有利的最佳走势）分析。左上角的点表示管理良好的交易（低MAE，高MFE）。",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "盈亏",
+      "date": "日期",
+      "xAxis": "MAE - 最大不利偏移",
+      "yAxis": "MFE - 最大有利偏移",
+      "winningTrades": "盈利交易",
+      "losingTrades": "亏损交易",
+      "noData": "此期间没有MAE/MFE数据"
     }
   },
   "common": {

@@ -80,6 +80,19 @@
       "percentage": "Percentage",
       "tooltip": "This chart compares the distribution of your gains and losses separately. The left histogram shows the distribution of winning trades by value ranges, and the right one shows the distribution of losing trades. This helps identify patterns and compare the distribution of gains and losses to optimize your strategy."
     },
+    "maeMfe": {
+      "title": "MAE vs MFE",
+      "tooltip": "Analysis of Maximum Adverse Excursion (worst move against you) vs Maximum Favorable Excursion (best move in your favor). Points in the upper left indicate well-managed trades (low MAE, high MFE).",
+      "mae": "MAE",
+      "mfe": "MFE",
+      "pnl": "P/L",
+      "date": "Date",
+      "xAxis": "MAE - Maximum Adverse Excursion",
+      "yAxis": "MFE - Maximum Favorable Excursion",
+      "winningTrades": "Winning Trades",
+      "losingTrades": "Losing Trades",
+      "noData": "No MAE/MFE data available for this period"
+    },
     "monthlyPerformance": {
       "title": "Monthly/Annual Performance",
       "pnl": "PnL",
