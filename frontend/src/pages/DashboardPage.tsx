@@ -1554,7 +1554,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         strokeWidth="8"
                         fill="none"
                         strokeDasharray={2 * Math.PI * 66}
-                        strokeDashoffset={2 * Math.PI * 66 * (1 - Math.min(tradingMetrics.avgWinningTrade / gaugeMaxValues.avgWinning, 1))}
+                        strokeDashoffset={2 * Math.PI * 66 * (1 - Math.min((tradingMetrics.avgWinningTrade / (gaugeObjectives?.avgWinning || 1)), 1))}
                         strokeLinecap="round"
                         className="transition-all duration-1000 ease-out"
                       />
@@ -1602,7 +1602,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         strokeWidth="8"
                         fill="none"
                         strokeDasharray={2 * Math.PI * 66}
-                        strokeDashoffset={2 * Math.PI * 66 * (1 - Math.min(Math.abs(tradingMetrics.avgLosingTrade) / gaugeMaxValues.avgLosing, 1))}
+                        strokeDashoffset={2 * Math.PI * 66 * (1 - Math.min((gaugeObjectives?.avgLosing || 1) / Math.abs(tradingMetrics.avgLosingTrade || 1), 1))}
                         strokeLinecap="round"
                         className="transition-all duration-1000 ease-out"
                       />
