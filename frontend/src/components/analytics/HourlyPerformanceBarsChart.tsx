@@ -154,7 +154,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
       <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-6 flex items-center">
         <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full mr-3"></div>
         {t('analytics:charts.hourlyPerformanceBars.title')}

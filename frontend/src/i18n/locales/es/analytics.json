@@ -17,6 +17,22 @@
       "xAxis": "Hora",
       "yAxis": "PnL"
     },
+    "hourlyPerformanceBoxPlot": {
+      "title": "Rendimiento por Hora (Distribución)",
+      "label": "Distribución de PnL",
+      "xAxis": "Hora",
+      "yAxis": "PnL",
+      "max": "Máximo",
+      "q3": "Q3 (75%)",
+      "median": "Mediana",
+      "q1": "Q1 (25%)",
+      "min": "Mínimo",
+      "trades": "Operaciones",
+      "boxDescription": "Caja: 50% central de operaciones (Q1 a Q3)",
+      "medianDescription": "Línea central: Mediana (valor medio)",
+      "whiskersDescription": "Bigotes: Rango de valores normales",
+      "outliersDescription": "Puntos: Valores excepcionales (azul = ganancias, rosa = pérdidas)"
+    },
     "correlation": {
       "title": "Correlación PnL vs Número de Operaciones",
       "label": "Correlación",

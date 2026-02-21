@@ -10,6 +10,22 @@
       "xAxis": "Heure",
       "yAxis": "PnL"
     },
+    "hourlyPerformanceBoxPlot": {
+      "title": "時間別パフォーマンス（分布）",
+      "label": "PnL分布",
+      "xAxis": "時間",
+      "yAxis": "PnL",
+      "max": "最大値",
+      "q3": "Q3 (75%)",
+      "median": "中央値",
+      "q1": "Q1 (25%)",
+      "min": "最小値",
+      "trades": "取引",
+      "boxDescription": "ボックス：中央50%の取引（Q1からQ3）",
+      "medianDescription": "中央線：中央値（中間値）",
+      "whiskersDescription": "ひげ：正常値の範囲",
+      "outliersDescription": "点：例外的な値（青=利益、ピンク=損失）"
+    },
     "correlation": {
       "title": "Corrélation PnL vs Nombre de Trades",
       "label": "Corrélation",

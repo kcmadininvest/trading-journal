@@ -276,7 +276,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
             {t('analytics:charts.gainsVsLosses.gains', { defaultValue: 'Gains' })} ({data.totalGains} {t('analytics:common.trades', { defaultValue: 'trades' })})
           </h4>
-          <div style={{ height: '280px', position: 'relative' }}>
+          <div style={{ height: '320px', position: 'relative' }}>
             <ChartBar
               data={{
                 labels: data.gains.map(b => b.rangeLabel),
@@ -301,7 +301,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
             {t('analytics:charts.gainsVsLosses.losses', { defaultValue: 'Pertes' })} ({data.totalLosses} {t('analytics:common.trades', { defaultValue: 'trades' })})
           </h4>
-          <div style={{ height: '280px', position: 'relative' }}>
+          <div style={{ height: '320px', position: 'relative' }}>
             <ChartBar
               data={{
                 labels: data.losses.map(b => b.rangeLabel),

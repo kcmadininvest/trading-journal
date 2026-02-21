@@ -39,7 +39,7 @@ import {
   MonthlyPerformanceChart,
   TradingVolumeChart,
   TradesDistributionChart,
-  HourlyPerformanceScatterChart,
+  HourlyPerformanceBoxPlotChart,
   CorrelationChart,
   HourlyPerformanceBarsChart,
   HeatmapChart,
@@ -1305,8 +1305,8 @@ const AnalyticsPage: React.FC = () => {
         />
       )}
 
-      {/* Graphiques de performance : Radar, Equity Curve et Drawdown */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      {/* Graphiques de performance : Radar et Equity Curve */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <RadarChart
           data={radarChartData}
           statisticsData={statisticsData}
@@ -1321,21 +1321,25 @@ const AnalyticsPage: React.FC = () => {
           currencySymbol={currencySymbol}
           chartColors={chartColors}
         />
+      </div>
+
+      {/* Grille de graphiques - 2 par ligne */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <DrawdownChart
           data={drawdownData}
           currencySymbol={currencySymbol}
           chartColors={chartColors}
           tradesCount={trades.length}
         />
-      </div>
-
-      {/* Grille de graphiques - 3 par ligne */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         <MonthlyPerformanceChart
           data={monthlyPerformanceData}
           currencySymbol={currencySymbol}
           chartColors={chartColors}
         />
+      </div>
+
+      {/* Grille de graphiques - 2 par ligne */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <TradingVolumeChart
           data={tradingVolumeData}
           chartColors={chartColors}
@@ -1353,7 +1357,7 @@ const AnalyticsPage: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <HourlyPerformanceScatterChart
+          <HourlyPerformanceBoxPlotChart
             data={hourlyPerformanceScatter}
             currencySymbol={currencySymbol}
             chartColors={chartColors}

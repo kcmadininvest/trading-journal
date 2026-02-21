@@ -10,6 +10,22 @@
       "xAxis": "Heure",
       "yAxis": "PnL"
     },
+    "hourlyPerformanceBoxPlot": {
+      "title": "시간별 성과 (분포)",
+      "label": "PnL 분포",
+      "xAxis": "시간",
+      "yAxis": "PnL",
+      "max": "최대값",
+      "q3": "Q3 (75%)",
+      "median": "중앙값",
+      "q1": "Q1 (25%)",
+      "min": "최소값",
+      "trades": "거래",
+      "boxDescription": "박스: 중앙 50% 거래 (Q1에서 Q3)",
+      "medianDescription": "중앙선: 중앙값 (중간값)",
+      "whiskersDescription": "수염: 정상 값의 범위",
+      "outliersDescription": "점: 예외적인 값 (파란색 = 이익, 분홍색 = 손실)"
+    },
     "correlation": {
       "title": "Corrélation PnL vs Nombre de Trades",
       "label": "Corrélation",

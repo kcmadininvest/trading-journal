@@ -56,7 +56,7 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
         </TooltipComponent>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        <div style={{ height: '280px', position: 'relative' }}>
+        <div style={{ height: '320px', position: 'relative' }}>
           <ChartDoughnut
             data={{
               labels: data.labels,

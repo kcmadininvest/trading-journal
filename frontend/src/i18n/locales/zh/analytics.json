@@ -10,6 +10,22 @@
       "xAxis": "Heure",
       "yAxis": "PnL"
     },
+    "hourlyPerformanceBoxPlot": {
+      "title": "按小时表现（分布）",
+      "label": "PnL分布",
+      "xAxis": "小时",
+      "yAxis": "PnL",
+      "max": "最大值",
+      "q3": "Q3 (75%)",
+      "median": "中位数",
+      "q1": "Q1 (25%)",
+      "min": "最小值",
+      "trades": "交易",
+      "boxDescription": "箱体：中间50%的交易（Q1到Q3）",
+      "medianDescription": "中线：中位数（中间值）",
+      "whiskersDescription": "须线：正常值范围",
+      "outliersDescription": "点：异常值（蓝色=盈利，粉色=亏损）"
+    },
     "correlation": {
       "title": "Corrélation PnL vs Nombre de Trades",
       "label": "Corrélation",

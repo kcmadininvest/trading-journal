@@ -17,6 +17,22 @@
       "xAxis": "Heure",
       "yAxis": "PnL"
     },
+    "hourlyPerformanceBoxPlot": {
+      "title": "Performance par heure (Distribution)",
+      "label": "Distribution des PnL",
+      "xAxis": "Heure",
+      "yAxis": "PnL",
+      "max": "Maximum",
+      "q3": "Q3 (75%)",
+      "median": "Médiane",
+      "q1": "Q1 (25%)",
+      "min": "Minimum",
+      "trades": "Trades",
+      "boxDescription": "Boîte : 50% des trades centraux (Q1 à Q3)",
+      "medianDescription": "Ligne centrale : Médiane (valeur du milieu)",
+      "whiskersDescription": "Moustaches : Étendue des valeurs normales",
+      "outliersDescription": "Points : Valeurs exceptionnelles (bleu = gains, rose = pertes)"
+    },
     "correlation": {
       "title": "Corrélation PnL vs Nombre de Trades",
       "label": "Corrélation",
