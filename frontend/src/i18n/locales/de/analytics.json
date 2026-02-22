@@ -41,6 +41,35 @@
       "regressionLine": "Regressionslinie",
       "rSquaredTooltip": "Der Bestimmtheitskoeffizient (R²) misst die Stärke der Korrelation zwischen der Anzahl der Trades und dem PnL. R² nahe 1 deutet auf eine starke Korrelation hin, R² nahe 0 auf eine schwache Korrelation. Die Regressionslinie zeigt den allgemeinen Trend."
     },
+    "featureCorrelationMatrix": {
+      "title": "Feature-Korrelationsmatrix",
+      "tooltip": "Misst die lineare Korrelation zwischen wichtigen Variablen (P/L, Größe, Dauer, Einstiegsstunde, Richtung). Werte nahe ±1 deuten auf starke Zusammenhänge hin.",
+      "features": {
+        "pnl": "Netto-P/L",
+        "size": "Positionsgröße",
+        "duration": "Dauer",
+        "hour": "Einstiegsstunde",
+        "direction": "Richtung"
+      },
+      "description": "Koeffizienten liegen zwischen -1 (starker negativer Zusammenhang) und +1 (starker positiver Zusammenhang). Werte nahe 0 bedeuten wenig oder keine lineare Korrelation."
+    },
+    "durationVsPnl": {
+      "title": "Trade-Dauer vs P/L",
+      "tooltip": "Visualisieren Sie, wie sich die Dauer jedes Trades auf den Netto-P/L auswirkt. Hilft dabei zu erkennen, ob kürzere oder längere Trades profitabler sind.",
+      "duration": "Dauer: {{value}}",
+      "pnl": "P/L: {{value}}",
+      "xAxis": "Trade-Dauer",
+      "yAxis": "Netto-P/L"
+    },
+    "sizeVsPnl": {
+      "title": "Positionsgröße vs P/L",
+      "tooltip": "Vergleichen Sie die Positionsgröße (und Exposition) mit dem Netto-P/L. Die Blasengröße spiegelt die Exposition wider und hebt die impactstärksten Trades hervor.",
+      "size": "Größe: {{value}}",
+      "pnl": "P/L: {{value}}",
+      "notional": "Exposition: {{value}}",
+      "xAxis": "Positionsgröße",
+      "yAxis": "Netto-P/L"
+    },
     "drawdown": {
       "title": "Täglicher Drawdown",
       "label": "Drawdown",

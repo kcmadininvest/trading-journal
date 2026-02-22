@@ -41,6 +41,35 @@
       "regressionLine": "Línea de regresión",
       "rSquaredTooltip": "El coeficiente de determinación (R²) mide la fuerza de la correlación entre el número de operaciones y el PnL. R² cercano a 1 indica una correlación fuerte, R² cercano a 0 indica una correlación débil. La línea de regresión muestra la tendencia general."
     },
+    "featureCorrelationMatrix": {
+      "title": "Matriz de correlación de variables",
+      "tooltip": "Mide la correlación lineal entre variables clave (P/L, tamaño, duración, hora de entrada, dirección). Valores cercanos a ±1 indican relaciones fuertes.",
+      "features": {
+        "pnl": "P/L neto",
+        "size": "Tamaño de posición",
+        "duration": "Duración",
+        "hour": "Hora de entrada",
+        "direction": "Dirección"
+      },
+      "description": "Los coeficientes van de -1 (relación inversa fuerte) a +1 (relación directa fuerte). Valores cercanos a 0 indican poca o ninguna correlación lineal."
+    },
+    "durationVsPnl": {
+      "title": "Duración de la operación vs P/L",
+      "tooltip": "Visualiza cómo la duración de cada operación impacta el P/L neto. Ayuda a identificar si las operaciones cortas o largas son más rentables.",
+      "duration": "Duración: {{value}}",
+      "pnl": "P/L: {{value}}",
+      "xAxis": "Duración de la operación",
+      "yAxis": "P/L neto"
+    },
+    "sizeVsPnl": {
+      "title": "Tamaño de posición vs P/L",
+      "tooltip": "Compara el tamaño de la posición (y la exposición) con el P/L neto. El tamaño de la burbuja refleja la exposición para resaltar las operaciones más impactantes.",
+      "size": "Tamaño: {{value}}",
+      "pnl": "P/L: {{value}}",
+      "notional": "Exposición: {{value}}",
+      "xAxis": "Tamaño de posición",
+      "yAxis": "P/L neto"
+    },
     "drawdown": {
       "title": "Drawdown Diario",
       "label": "Drawdown",

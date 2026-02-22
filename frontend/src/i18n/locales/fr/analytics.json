@@ -41,6 +41,35 @@
       "regressionLine": "Ligne de régression",
       "rSquaredTooltip": "Le coefficient de détermination (R²) mesure la force de la corrélation entre le nombre de trades et le PnL. R² proche de 1 indique une forte corrélation, R² proche de 0 indique une faible corrélation. La ligne de régression montre la tendance générale."
     },
+    "durationVsPnl": {
+      "title": "Durée du trade vs P/L",
+      "tooltip": "Visualisez l’impact de la durée de chaque trade sur le P/L net. Permet d’identifier si les trades courts ou longs sont les plus rentables.",
+      "duration": "Durée : {{value}}",
+      "pnl": "P/L : {{value}}",
+      "xAxis": "Durée du trade",
+      "yAxis": "P/L net"
+    },
+    "sizeVsPnl": {
+      "title": "Taille de position vs P/L",
+      "tooltip": "Comparez la taille (et l’exposition) des positions avec le P/L net. La taille de la bulle reflète l’exposition pour repérer les trades les plus impactants.",
+      "size": "Taille : {{value}}",
+      "pnl": "P/L : {{value}}",
+      "notional": "Exposition : {{value}}",
+      "xAxis": "Taille de position",
+      "yAxis": "P/L net"
+    },
+    "featureCorrelationMatrix": {
+      "title": "Matrice de corrélation des variables",
+      "tooltip": "Mesure la corrélation linéaire entre les variables clés (P/L, taille, durée, heure d’entrée, direction). Des valeurs proches de ±1 indiquent des relations fortes.",
+      "features": {
+        "pnl": "P/L net",
+        "size": "Taille de position",
+        "duration": "Durée",
+        "hour": "Heure d’entrée",
+        "direction": "Direction"
+      },
+      "description": "Les coefficients varient de -1 (corrélation inverse forte) à +1 (corrélation directe forte). Une valeur proche de 0 signifie peu ou pas de corrélation linéaire."
+    },
     "drawdown": {
       "title": "Drawdown par jour",
       "label": "Drawdown",

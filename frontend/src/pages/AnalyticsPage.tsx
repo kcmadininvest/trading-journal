@@ -12,6 +12,7 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  BubbleController,
   LineElement,
   PointElement,
   Title,
@@ -42,6 +43,9 @@ import {
   TradesDistributionChart,
   HourlyPerformanceBoxPlotChart,
   CorrelationChart,
+  TradeDurationPnlScatterChart,
+  PositionSizePnlBubbleChart,
+  FeatureCorrelationMatrixChart,
   HourlyPerformanceBarsChart,
   HeatmapChart,
   GainsVsLossesChart,
@@ -57,6 +61,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  BubbleController,
   LineElement,
   PointElement,
   Title,
@@ -312,6 +317,167 @@ const AnalyticsPage: React.FC = () => {
       timeSlotsWithData: Array.from(timeSlotsWithData).sort((a, b) => a - b),
     };
   }, [trades]);
+
+  const parseDurationToMinutes = useCallback((trade: TradeListItem): number | null => {
+    if (trade.entered_at && trade.exited_at) {
+      const entered = new Date(trade.entered_at).getTime();
+      const exited = new Date(trade.exited_at).getTime();
+      if (!isNaN(entered) && !isNaN(exited) && exited > entered) {
+        return (exited - entered) / 60000;
+      }
+    }
+
+    if (!trade.trade_duration) return null;
+
+    const duration = String(trade.trade_duration).trim();
+    if (!duration) return null;
+
+    const parts = duration.split(':').map((part) => Number(part));
+    if (parts.some((part) => Number.isNaN(part))) {
+      const asNumber = Number(duration);
+      return Number.isFinite(asNumber) && asNumber > 0 ? asNumber : null;
+    }
+
+    if (parts.length === 3) {
+      const [hours, minutes, seconds] = parts;
+      return hours * 60 + minutes + seconds / 60;
+    }
+
+    if (parts.length === 2) {
+      const [minutes, seconds] = parts;
+      return minutes + seconds / 60;
+    }
+
+    return null;
+  }, []);
+
+  const tradeDurationVsPnlData = useMemo(() => {
+    return trades
+      .map((trade) => {
+        if (trade.net_pnl === null || trade.net_pnl === undefined) return null;
+
+        const pnl = parseFloat(String(trade.net_pnl));
+        const durationMinutes = parseDurationToMinutes(trade);
+
+        if (!Number.isFinite(pnl) || !durationMinutes || durationMinutes <= 0) {
+          return null;
+        }
+
+        return {
+          durationMinutes,
+          pnl,
+        };
+      })
+      .filter((point): point is { durationMinutes: number; pnl: number } => point !== null);
+  }, [trades, parseDurationToMinutes]);
+
+  const positionSizeVsPnlData = useMemo(() => {
+    return trades
+      .map((trade) => {
+        if (trade.net_pnl === null || trade.net_pnl === undefined) return null;
+
+        const size = parseFloat(String(trade.size));
+        const pnl = parseFloat(String(trade.net_pnl));
+        const entryPrice = parseFloat(String(trade.entry_price));
+        const pointValue = trade.point_value ? parseFloat(String(trade.point_value)) : 1;
+
+        if (!Number.isFinite(size) || size <= 0 || !Number.isFinite(pnl)) {
+          return null;
+        }
+
+        const notionalBase = Number.isFinite(entryPrice) && entryPrice > 0 ? entryPrice : 1;
+        const notional = Math.abs(size * pointValue * notionalBase);
+
+        return {
+          size,
+          pnl,
+          notional: Number.isFinite(notional) && notional > 0 ? notional : Math.abs(size),
+        };
+      })
+      .filter((point): point is { size: number; pnl: number; notional: number } => point !== null);
+  }, [trades]);
+
+  const featureCorrelationMatrixData = useMemo(() => {
+    const rows = trades
+      .map((trade) => {
+        if (trade.net_pnl === null || trade.net_pnl === undefined || !trade.entered_at) return null;
+
+        const pnl = parseFloat(String(trade.net_pnl));
+        const size = parseFloat(String(trade.size));
+        const durationMinutes = parseDurationToMinutes(trade);
+        const enteredAt = new Date(trade.entered_at);
+
+        if (
+          !Number.isFinite(pnl) ||
+          !Number.isFinite(size) ||
+          !durationMinutes ||
+          isNaN(enteredAt.getTime())
+        ) {
+          return null;
+        }
+
+        return {
+          pnl,
+          size,
+          duration: durationMinutes,
+          entryHour: enteredAt.getHours(),
+          direction: trade.trade_type === 'Long' ? 1 : 0,
+        };
+      })
+      .filter((row): row is { pnl: number; size: number; duration: number; entryHour: number; direction: number } => row !== null);
+
+    if (rows.length < 2) {
+      return { labels: [], matrix: [] as number[][] };
+    }
+
+    const labels = [
+      t('analytics:charts.featureCorrelationMatrix.features.pnl'),
+      t('analytics:charts.featureCorrelationMatrix.features.size'),
+      t('analytics:charts.featureCorrelationMatrix.features.duration'),
+      t('analytics:charts.featureCorrelationMatrix.features.hour'),
+      t('analytics:charts.featureCorrelationMatrix.features.direction'),
+    ];
+
+    const vectors = [
+      rows.map((row) => row.pnl),
+      rows.map((row) => row.size),
+      rows.map((row) => row.duration),
+      rows.map((row) => row.entryHour),
+      rows.map((row) => row.direction),
+    ];
+
+    const pearsonCorrelation = (x: number[], y: number[]): number => {
+      if (x.length !== y.length || x.length < 2) return 0;
+
+      const meanX = x.reduce((sum, value) => sum + value, 0) / x.length;
+      const meanY = y.reduce((sum, value) => sum + value, 0) / y.length;
+
+      let numerator = 0;
+      let denominatorX = 0;
+      let denominatorY = 0;
+
+      for (let i = 0; i < x.length; i++) {
+        const diffX = x[i] - meanX;
+        const diffY = y[i] - meanY;
+        numerator += diffX * diffY;
+        denominatorX += diffX * diffX;
+        denominatorY += diffY * diffY;
+      }
+
+      const denominator = Math.sqrt(denominatorX * denominatorY);
+      if (denominator === 0) return 0;
+      return numerator / denominator;
+    };
+
+    const matrix = vectors.map((vectorX, rowIndex) =>
+      vectors.map((vectorY, colIndex) => {
+        if (rowIndex === colIndex) return 1;
+        return pearsonCorrelation(vectorX, vectorY);
+      })
+    );
+
+    return { labels, matrix };
+  }, [trades, t, parseDurationToMinutes]);
 
   // Performance par heure (barres)
   const hourlyPerformanceBars = useMemo(() => {
@@ -1491,10 +1657,20 @@ const AnalyticsPage: React.FC = () => {
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
-            <HeatmapChart
-              data={heatmapData}
+            <TradeDurationPnlScatterChart
+              data={tradeDurationVsPnlData}
               currencySymbol={currencySymbol}
-              getHeatmapColor={getHeatmapColor}
+              chartColors={chartColors}
+            />
+            <PositionSizePnlBubbleChart
+              data={positionSizeVsPnlData}
+              currencySymbol={currencySymbol}
+              chartColors={chartColors}
+            />
+            <FeatureCorrelationMatrixChart
+              data={featureCorrelationMatrixData}
+              chartColors={chartColors}
+              isDark={isDark}
             />
           </div>
         </div>

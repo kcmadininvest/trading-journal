@@ -41,6 +41,35 @@
       "regressionLine": "Regression line",
       "rSquaredTooltip": "The coefficient of determination (R²) measures the strength of the correlation between the number of trades and PnL. R² close to 1 indicates a strong correlation, R² close to 0 indicates a weak correlation. The regression line shows the general trend."
     },
+    "durationVsPnl": {
+      "title": "Trade Duration vs P/L",
+      "tooltip": "Visualize how the duration of each trade impacts the net P/L. Helps identify whether shorter or longer trades are more profitable.",
+      "duration": "Duration: {{value}}",
+      "pnl": "P/L: {{value}}",
+      "xAxis": "Trade duration",
+      "yAxis": "Net P/L"
+    },
+    "sizeVsPnl": {
+      "title": "Position Size vs P/L",
+      "tooltip": "Compare position size (and exposure) against net P/L. Bubble size reflects exposure to highlight which trades move the needle most.",
+      "size": "Size: {{value}}",
+      "pnl": "P/L: {{value}}",
+      "notional": "Exposure: {{value}}",
+      "xAxis": "Position size",
+      "yAxis": "Net P/L"
+    },
+    "featureCorrelationMatrix": {
+      "title": "Feature Correlation Matrix",
+      "tooltip": "Measures linear correlation between key variables (P/L, size, duration, entry hour, direction). Values close to ±1 indicate strong relationships.",
+      "features": {
+        "pnl": "Net P/L",
+        "size": "Position size",
+        "duration": "Duration",
+        "hour": "Entry hour",
+        "direction": "Direction"
+      },
+      "description": "Coefficient values range from -1 (strong inverse relationship) to +1 (strong direct relationship). Values near 0 indicate little or no linear correlation."
+    },
     "drawdown": {
       "title": "Daily Drawdown",
       "label": "Drawdown",
