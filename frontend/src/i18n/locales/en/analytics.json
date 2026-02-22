@@ -90,11 +90,17 @@
       "losses": "Losses",
       "neutral": "Neutral",
       "gains": "Gains",
-      "tooltip": "This heatmap shows your performance (PnL) by day of the week and by hour. Each cell represents the total PnL for a day/hour combination. Blue colors indicate gains, pink colors indicate losses. The more intense the color, the higher the value. Only hours with data are displayed, with one hour of context before and after."
+      "tooltip": "This heatmap shows your performance (PnL) by day of the week and by hour. Each cell represents the total PnL for a day/hour combination. Blue colors indicate gains, pink colors indicate losses. The more intense the color, the higher the value. Only hours with data are displayed, with one hour of context before and after.",
+      "summary": {
+        "bestSlot": "Best slot",
+        "worstSlot": "Worst slot",
+        "activeSlots": "Active slots"
+      }
     },
     "pnlDistribution": {
       "title": "PnL Distribution",
       "label": "Percentage of trades",
+      "xAxis": "P/L range",
       "yAxis": "Percentage of trades",
       "range": "P&L: from {{start}} to {{end}}",
       "onTotal": "of {{total}} total",

@@ -107,7 +107,7 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
           </div>
         )}
       </div>
-      <div style={{ height: '320px', position: 'relative' }}>
+      <div style={{ height: '350px', position: 'relative' }}>
         <Chart
           type="bar"
           data={{
@@ -157,14 +157,14 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
               },
               legend: {
                 display: data.movingAverage ? true : false,
-                position: 'bottom' as const,
+                position: 'top' as const,
                 labels: {
                   color: chartColors.textSecondary,
                   font: {
                     size: 11,
                   },
                   usePointStyle: true,
-                  padding: 12,
+                  padding: 8,
                 },
               },
               tooltip: {

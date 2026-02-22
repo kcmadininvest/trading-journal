@@ -129,15 +129,6 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
         border: {
           color: chartColors.border,
         },
-        title: {
-          display: true,
-          text: t('analytics:charts.pnlDistribution.xAxis'),
-          color: chartColors.text,
-          font: {
-            size: 13,
-            weight: 600,
-          },
-        },
       },
       y: {
         beginAtZero: true,
@@ -173,8 +164,8 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
-        <div className="flex items-center justify-center h-[450px]">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+        <div className="flex items-center justify-center py-16">
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
           </div>
@@ -184,7 +175,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
       <div className="flex items-center gap-2 mb-6">
         <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
@@ -201,7 +192,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div style={{ height: '320px', position: 'relative' }}>
+      <div style={{ height: '350px', position: 'relative' }}>
         <ChartBar
           data={{
             labels: data.map(d => formatCurrency(d.start, currencySymbol)),

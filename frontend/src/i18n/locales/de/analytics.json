@@ -90,11 +90,17 @@
       "losses": "Verluste",
       "neutral": "Neutral",
       "gains": "Gewinne",
-      "tooltip": "Diese Heatmap zeigt Ihre Leistung (PnL) nach Wochentag und Stunde. Jede Zelle stellt den Gesamt-PnL für eine Tag/Stunde-Kombination dar. Blaue Farben zeigen Gewinne, rosa Farben zeigen Verluste. Je intensiver die Farbe, desto höher der Wert. Es werden nur Stunden mit Daten angezeigt, mit einer Stunde Kontext davor und danach."
+      "tooltip": "Diese Heatmap zeigt Ihre Leistung (PnL) nach Wochentag und Stunde. Jede Zelle stellt den Gesamt-PnL für eine Tag/Stunde-Kombination dar. Blaue Farben zeigen Gewinne, rosa Farben zeigen Verluste. Je intensiver die Farbe, desto höher der Wert. Es werden nur Stunden mit Daten angezeigt, mit einer Stunde Kontext davor und danach.",
+      "summary": {
+        "bestSlot": "Bester Zeitraum",
+        "worstSlot": "Schlechtester Zeitraum",
+        "activeSlots": "Aktive Zeiträume"
+      }
     },
     "pnlDistribution": {
       "title": "PnL-Verteilung",
       "label": "Prozentsatz der Trades",
+      "xAxis": "P/L-Bereich",
       "yAxis": "Prozentsatz der Trades",
       "range": "P&L: von {{start}} bis {{end}}",
       "onTotal": "von {{total}} gesamt",

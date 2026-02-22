@@ -90,11 +90,17 @@
       "losses": "Pérdidas",
       "neutral": "Neutral",
       "gains": "Ganancias",
-      "tooltip": "Este mapa de calor muestra tu rendimiento (PnL) por día de la semana y por hora. Cada celda representa el PnL total para una combinación día/hora. Los colores azules indican ganancias, los colores rosas indican pérdidas. Cuanto más intenso es el color, mayor es el valor. Solo se muestran las horas con datos, con una hora de contexto antes y después."
+      "tooltip": "Este mapa de calor muestra tu rendimiento (PnL) por día de la semana y por hora. Cada celda representa el PnL total para una combinación día/hora. Los colores azules indican ganancias, los colores rosas indican pérdidas. Cuanto más intenso es el color, mayor es el valor. Solo se muestran las horas con datos, con una hora de contexto antes y después.",
+      "summary": {
+        "bestSlot": "Mejor franja",
+        "worstSlot": "Peor franja",
+        "activeSlots": "Franjas activas"
+      }
     },
     "pnlDistribution": {
       "title": "Distribución de PnL",
       "label": "Porcentaje de operaciones",
+      "xAxis": "Rango de P/L",
       "yAxis": "Porcentaje de operaciones",
       "range": "P&L: de {{start}} a {{end}}",
       "onTotal": "de {{total}} total",
