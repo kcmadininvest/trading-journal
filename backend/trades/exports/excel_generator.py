@@ -1,10 +1,30 @@
 from io import BytesIO
 from datetime import datetime
-from typing import Dict, Any, Optional
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.chart import LineChart, BarChart, PieChart, Reference
-from openpyxl.utils import get_column_letter
+from typing import Dict, Any, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.chart import LineChart, BarChart, PieChart, Reference
+    from openpyxl.utils import get_column_letter
+else:
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.chart import LineChart, BarChart, PieChart, Reference
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        Workbook = None  # type: ignore
+        Font = None  # type: ignore
+        PatternFill = None  # type: ignore
+        Alignment = None  # type: ignore
+        Border = None  # type: ignore
+        Side = None  # type: ignore
+        LineChart = None  # type: ignore
+        BarChart = None  # type: ignore
+        PieChart = None  # type: ignore
+        Reference = None  # type: ignore
+        get_column_letter = None  # type: ignore
 
 
 class ExcelGenerator:
@@ -22,6 +42,9 @@ class ExcelGenerator:
             stats: Dictionnaire des statistiques calculées
             config: Configuration de l'export (sections à inclure)
         """
+        if Workbook is None:
+            raise ImportError("openpyxl is required for Excel export. Install it with: pip install openpyxl")
+        
         self.trading_account = trading_account
         self.stats = stats
         self.config = config

@@ -1842,3 +1842,44 @@ class ExportTemplate(models.Model):
                 is_default=True
             ).exclude(pk=self.pk).update(is_default=False)
         super().save(*args, **kwargs)
+
+
+# Import des modèles analytiques
+from .models_analytics import (
+    TradeContext,
+    TradeSetup,
+    SessionContext,
+    TradeExecution,
+)
+
+from .models_statistics import (
+    TradeProbabilityFactor,
+    TradeTag,
+    TradeTagAssignment,
+    TradeStatistics,
+    ConditionalProbability,
+)
+
+__all__ = [
+    'Currency',
+    'TradingAccount',
+    'AccountTransaction',
+    'AccountDailyMetrics',
+    'TopStepTrade',
+    'TopStepImportLog',
+    'TradeStrategy',
+    'PositionStrategy',
+    'TradingGoal',
+    'DayStrategyCompliance',
+    'ExportTemplate',
+    # Nouveaux modèles analytiques
+    'TradeContext',
+    'TradeSetup',
+    'SessionContext',
+    'TradeExecution',
+    'TradeProbabilityFactor',
+    'TradeTag',
+    'TradeTagAssignment',
+    'TradeStatistics',
+    'ConditionalProbability',
+]

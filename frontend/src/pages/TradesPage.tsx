@@ -587,6 +587,9 @@ const TradesPage: React.FC = () => {
           count: stats?.total_trades,
         }}
         onDelete={handleDeleteOne}
+        onAnalytics={(id) => {
+          window.location.hash = `trade-analytics/${id}`;
+        }}
         onRowClick={(trade) => {
           setEditingTradeId(trade.id);
           setShowCreateModal(true);
@@ -682,6 +685,7 @@ const TradesPage: React.FC = () => {
         }}
         selectedTradeIds={selectedIds}
       />
+
     </div>
   );
 };

@@ -13,6 +13,7 @@ import { Tooltip } from '../components/ui';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { getMonthNames } from '../utils/dateFormat';
 import { DateInput } from '../components/common/DateInput';
+import TradeAnalyticsModal from '../components/analytics/TradeAnalyticsModal';
 
 const DailyJournalPage: React.FC = () => {
   const { t, i18n } = useI18nTranslation();
@@ -32,6 +33,7 @@ const DailyJournalPage: React.FC = () => {
   const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(true);
   const [hoveredEntry, setHoveredEntry] = useState<DailyJournalGroupedEntry | null>(null);
   const [hoveredEntryContent, setHoveredEntryContent] = useState<string | null>(null);
+  const [analyticsTradeId, setAnalyticsTradeId] = useState<number | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const selectedYearRef = useRef<number | null>(null);
@@ -776,6 +778,9 @@ const DailyJournalPage: React.FC = () => {
                         setEditingEntry(null);
                         loadEntries();
                       }}
+                      onAnalytics={(tradeId) => {
+                        setAnalyticsTradeId(tradeId);
+                      }}
                     />
                   )}
                 </>
@@ -812,10 +817,25 @@ const DailyJournalPage: React.FC = () => {
                     setEditingEntry(null);
                     loadEntries();
                   }}
+                  onAnalytics={(tradeId) => {
+                    setAnalyticsTradeId(tradeId);
+                  }}
                 />
               )}
             </div>
           </div>
+        )}
+
+        {analyticsTradeId && (
+          <TradeAnalyticsModal
+            tradeId={analyticsTradeId}
+            onClose={() => {
+              setAnalyticsTradeId(null);
+            }}
+            onSuccess={() => {
+              loadEntries();
+            }}
+          />
         )}
       </div>
     </div>

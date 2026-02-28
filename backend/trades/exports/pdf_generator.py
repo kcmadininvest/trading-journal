@@ -3,12 +3,21 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from django.template.loader import render_to_string
 from django.conf import settings
-from weasyprint import HTML, CSS
+try:
+    from weasyprint import HTML, CSS
+except ImportError:
+    HTML = None
+    CSS = None
 import base64
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from matplotlib.figure import Figure
+except ImportError:
+    matplotlib = None
+    plt = None
+    Figure = None
 import io
 
 

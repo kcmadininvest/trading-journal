@@ -211,6 +211,268 @@
     "riskCapital": "Risque & Capital",
     "timeAnalysis": "Analyse Temporelle",
     "patterns": "Corrélations & Patterns"
+  },
+  "tradeAnalytics": {
+    "title": "Analyse du Trade",
+    "loading": "Chargement des données...",
+    "error": "Erreur lors du chargement",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "success": "Données enregistrées avec succès",
+    "requiredFields": "Champs obligatoires",
+    "requiredFieldsInfo": "Les champs marqués d'un * sont obligatoires pour passer à l'étape suivante.",
+    "tabs": {
+      "context": "Contexte",
+      "setup": "Setup",
+      "session": "Session",
+      "execution": "Exécution"
+    },
+    "context": {
+      "title": "Contexte de Marché",
+      "multiTimeframe": "Analyse Multi-Timeframe",
+      "atLeastOne": "au moins 1 requis",
+      "addTimeframe": "Ajouter un timeframe",
+      "technicalLevels": "Niveaux Techniques",
+      "marketStructure": "Structure de Marché",
+      "trend": "Tendance",
+      "trendAlignment": "Alignement des tendances",
+      "fibonacciLevel": "Niveau Fibonacci",
+      "atSupportResistance": "Au support/résistance",
+      "distanceFromKeyLevel": "Distance du niveau clé (points)",
+      "marketStructureType": "Structure de marché",
+      "rangePosition": "Position dans le range",
+      "volumeProfile": "Profil de volume",
+      "breakOfStructure": "Cassure de structure",
+      "withinPreviousDayRange": "Dans le range de la veille",
+      "atVolumeNode": "Au nœud de volume",
+      "volumeIndicators": "Volume et Indicateurs"
+    },
+    "setup": {
+      "title": "Configuration du Setup",
+      "category": "Catégorie",
+      "subcategory": "Sous-catégorie",
+      "quality": "Qualité",
+      "chartPattern": "Pattern chartiste",
+      "confluenceFactors": "Facteurs de confluence",
+      "confluencePlaceholder": "Ex: EMA 20, Support majeur, Volume élevé...",
+      "confluenceCount": "facteur(s) de confluence",
+      "confidence": "Niveau de confiance (1-10)",
+      "entryTiming": "Timing d'entrée"
+    },
+    "session": {
+      "title": "Contexte de Session",
+      "tradingSession": "Session de Trading",
+      "sessionLabel": "Session",
+      "sessionRequired": "La session de trading est obligatoire",
+      "dayOfWeek": "Jour de la Semaine",
+      "dayRequired": "Le jour de la semaine est obligatoire",
+      "timeSlot": "Créneau Horaire",
+      "firstTradeOfDay": "Premier trade du jour",
+      "lastTradeOfDay": "Dernier trade du jour",
+      "externalEvents": "Événements Externes",
+      "newsEvent": "Événement news",
+      "newsImpact": "Impact de la News",
+      "newsDescription": "Description de la News",
+      "newsDescriptionPlaceholder": "Ex: NFP, FOMC, CPI...",
+      "traderState": "État du Trader",
+      "physicalState": "État Physique",
+      "mentalState": "État Mental",
+      "emotionalState": "État Émotionnel",
+      "personalContext": "Contexte Personnel",
+      "hoursOfSleep": "Heures de Sommeil",
+      "caffeineConsumed": "Caféine consommée",
+      "distractionsPresent": "Distractions présentes"
+    },
+    "execution": {
+      "title": "Exécution du Trade",
+      "planRespect": "Respect du Plan de Trading",
+      "followedTradingPlan": "Plan de trading respecté",
+      "entryAsPlanned": "Entrée selon le plan ?",
+      "exitAsPlanned": "Sortie selon le plan ?",
+      "positionSizeAsPlanned": "Taille de position selon le plan ?",
+      "tradeManagement": "Gestion du Trade",
+      "movedStopLoss": "Stop Loss déplacé",
+      "stopLossDirection": "Direction du déplacement",
+      "partialExitTaken": "Sortie partielle effectuée",
+      "partialExitPercentage": "Pourcentage de sortie partielle",
+      "exitAndExecution": "Sortie et Exécution",
+      "exitReason": "Raison de Sortie",
+      "slippage": "Slippage (points)",
+      "executionErrors": "Erreurs d'Exécution",
+      "errorPlaceholder": "Ex: Entrée trop tôt, SL trop large, FOMO...",
+      "errorsCount": "erreur(s) identifiée(s)",
+      "postTradeAnalysis": "Analyse Post-Trade",
+      "wouldTakeAgain": "Reprendriez-vous ce trade ?",
+      "lessonLearned": "Leçon Apprise",
+      "lessonPlaceholder": "Qu'avez-vous appris de ce trade ? Que feriez-vous différemment ?"
+    },
+    "saveAndFinish": "Enregistrer et Terminer"
+  },
+  "dashboard": {
+    "title": "Analyse Statistique des Trades",
+    "subtitle": "Découvrez vos meilleurs setups, identifiez les patterns perdants et détectez les biais comportementaux",
+    "loading": "Chargement des analyses...",
+    "error": "Erreur lors du chargement des analyses",
+    "globalStats": {
+      "title": "Statistiques Globales",
+      "totalTrades": "Total Trades",
+      "winRate": "Win Rate",
+      "expectancy": "Expectancy",
+      "profitFactor": "Profit Factor"
+    },
+    "bestSetups": {
+      "title": "Meilleurs Setups",
+      "noData": "Pas assez de données (minimum 30 trades par setup)",
+      "setup": "Setup",
+      "quality": "Qualité",
+      "sample": "Échantillon",
+      "winRate": "Win Rate",
+      "expectancy": "Expectancy",
+      "totalPnL": "PnL Total"
+    },
+    "worstPatterns": {
+      "title": "Patterns à Éviter",
+      "noData": "Aucun pattern perdant récurrent identifié",
+      "occurrence": "occurrence",
+      "avgPnL": "PnL moyen"
+    },
+    "biases": {
+      "title": "Biais Comportementaux Détectés",
+      "noData": "Aucun biais comportemental significatif détecté",
+      "recommendation": "Recommandation",
+      "types": {
+        "overtrading": "Overtrading",
+        "stopLossWidening": "Élargissement du Stop Loss",
+        "revengeTrading": "Revenge Trading"
+      },
+      "descriptions": {
+        "overtrading": "Moyenne de {{count}} trades les jours actifs",
+        "stopLossWidening": "{{count}} trades avec SL élargi"
+      },
+      "recommendations": {
+        "limitTrades": "Limiter le nombre de trades par jour",
+        "respectStopLoss": "Respecter le stop loss initial"
+      }
+    },
+    "trendAnalysis": {
+      "title": "Performance par Tendance",
+      "trades": "Trades",
+      "winRate": "Win Rate",
+      "expectancy": "Expectancy"
+    },
+    "sessionAnalysis": {
+      "title": "Performance par Session",
+      "trades": "Trades",
+      "winRate": "Win Rate",
+      "expectancy": "Expectancy"
+    }
+  },
+  "trends": {
+    "bullish": "Haussier",
+    "bearish": "Baissier",
+    "ranging": "Range",
+    "unclear": "Incertain",
+    "neutral": "Neutre"
+  },
+  "marketStructure": {
+    "higherHighs": "Plus hauts plus hauts",
+    "lowerLows": "Plus bas plus bas",
+    "consolidation": "Consolidation"
+  },
+  "rangePosition": {
+    "topThird": "Tiers supérieur",
+    "middleThird": "Tiers médian",
+    "bottomThird": "Tiers inférieur"
+  },
+  "volumeProfile": {
+    "high": "Élevé",
+    "medium": "Moyen",
+    "low": "Faible"
+  },
+  "setupCategory": {
+    "pullback": "Pullback",
+    "breakout": "Breakout",
+    "reversal": "Retournement",
+    "continuation": "Continuation",
+    "rangeBound": "Range",
+    "newsDriven": "News",
+    "scalp": "Scalp",
+    "other": "Autre"
+  },
+  "chartPattern": {
+    "doubleTop": "Double sommet",
+    "doubleBottom": "Double creux",
+    "headShoulders": "Tête et épaules",
+    "triangle": "Triangle",
+    "flag": "Drapeau",
+    "wedge": "Biseau",
+    "channel": "Canal"
+  },
+  "setupQuality": {
+    "A": "A - Excellent",
+    "B": "B - Bon",
+    "C": "C - Moyen",
+    "D": "D - Faible",
+    "F": "F - Très faible"
+  },
+  "entryTiming": {
+    "early": "Précoce",
+    "optimal": "Optimal",
+    "late": "Tardif",
+    "missed": "Manqué"
+  },
+  "physicalState": {
+    "optimal": "Optimal",
+    "rested": "Reposé",
+    "tired": "Fatigué",
+    "sick": "Malade"
+  },
+  "mentalState": {
+    "focused": "Concentré",
+    "confident": "Confiant",
+    "distracted": "Distrait",
+    "stressed": "Stressé"
+  },
+  "emotionalState": {
+    "calm": "Calme",
+    "excited": "Excité",
+    "anxious": "Anxieux",
+    "frustrated": "Frustré"
+  },
+  "exitReason": {
+    "takeProfitHit": "Take Profit atteint",
+    "stopLossHit": "Stop Loss touché",
+    "manualExit": "Sortie manuelle",
+    "timeBased": "Basé sur le temps",
+    "targetReached": "Objectif atteint",
+    "setupInvalidated": "Setup invalidé",
+    "emotional": "Émotionnel",
+    "newsEvent": "Événement news"
+  },
+  "tradingSession": {
+    "asian": "Asian",
+    "london": "London",
+    "newYork": "New York",
+    "overlapLondonNY": "London/NY Overlap",
+    "afterHours": "After Hours"
+  },
+  "dayOfWeek": {
+    "monday": "Lundi",
+    "tuesday": "Mardi",
+    "wednesday": "Mercredi",
+    "thursday": "Jeudi",
+    "friday": "Vendredi"
+  },
+  "newsImpact": {
+    "low": "Faible",
+    "medium": "Moyen",
+    "high": "Élevé"
+  },
+  "stopLossDirection": {
+    "tighter": "Plus serré",
+    "wider": "Plus large"
   }
 }
 

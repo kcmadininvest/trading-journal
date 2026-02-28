@@ -3,9 +3,18 @@ Utilitaire pour gérer les jours fériés et demi-journées des marchés boursie
 """
 from datetime import date, datetime, timedelta
 from typing import List, Dict, Any, Optional
-import pandas_market_calendars as mcal
 import pandas as pd
-import exchange_calendars as xcals
+
+# Import conditionnel pour gérer l'incompatibilité avec Python 3.9
+try:
+    import pandas_market_calendars as mcal
+    import exchange_calendars as xcals
+    CALENDARS_AVAILABLE = True
+except (TypeError, ImportError):
+    # pandas_market_calendars n'est pas compatible avec Python 3.9 (union types)
+    CALENDARS_AVAILABLE = False
+    mcal = None
+    xcals = None
 
 
 class MarketHolidaysService:
@@ -24,6 +33,9 @@ class MarketHolidaysService:
         Returns:
             Liste de dictionnaires avec date et nom du jour férié
         """
+        if not CALENDARS_AVAILABLE:
+            return []
+        
         try:
             calendar = mcal.get_calendar(market)
             schedule = calendar.schedule(start_date=start_date, end_date=end_date)

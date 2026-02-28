@@ -211,5 +211,267 @@
     "riskCapital": "Riesgo y Capital",
     "timeAnalysis": "Análisis Temporal",
     "patterns": "Correlaciones y Patrones"
+  },
+  "tradeAnalytics": {
+    "title": "Análisis de la Operación",
+    "loading": "Cargando datos...",
+    "error": "Error al cargar",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "success": "Datos guardados con éxito",
+    "requiredFields": "Campos obligatorios",
+    "requiredFieldsInfo": "Los campos marcados con * son obligatorios para pasar al siguiente paso.",
+    "tabs": {
+      "context": "Contexto",
+      "setup": "Setup",
+      "session": "Sesión",
+      "execution": "Ejecución"
+    },
+    "context": {
+      "title": "Contexto de Mercado",
+      "multiTimeframe": "Análisis Multi-Temporalidad",
+      "atLeastOne": "al menos 1 requerido",
+      "addTimeframe": "Agregar un timeframe",
+      "technicalLevels": "Niveles Técnicos",
+      "marketStructure": "Estructura de Mercado",
+      "trend": "Tendencia",
+      "trendAlignment": "Alineación de tendencias",
+      "fibonacciLevel": "Nivel Fibonacci",
+      "atSupportResistance": "En soporte/resistencia",
+      "distanceFromKeyLevel": "Distancia del nivel clave (puntos)",
+      "marketStructureType": "Estructura de mercado",
+      "rangePosition": "Posición en el rango",
+      "volumeProfile": "Perfil de volumen",
+      "breakOfStructure": "Ruptura de estructura",
+      "withinPreviousDayRange": "Dentro del rango del día anterior",
+      "atVolumeNode": "En nodo de volumen",
+      "volumeIndicators": "Volumen e Indicadores"
+    },
+    "setup": {
+      "title": "Configuración del Setup",
+      "category": "Categoría",
+      "subcategory": "Subcategoría",
+      "quality": "Calidad",
+      "chartPattern": "Patrón gráfico",
+      "confluenceFactors": "Factores de confluencia",
+      "confluencePlaceholder": "Ej: EMA 20, Soporte mayor, Volumen alto...",
+      "confluenceCount": "factor(es) de confluencia",
+      "confidence": "Nivel de confianza (1-10)",
+      "entryTiming": "Timing de entrada"
+    },
+    "session": {
+      "title": "Contexto de Sesión",
+      "tradingSession": "Sesión de Trading",
+      "sessionLabel": "Sesión",
+      "sessionRequired": "La sesión de trading es obligatoria",
+      "dayOfWeek": "Día de la Semana",
+      "dayRequired": "El día de la semana es obligatorio",
+      "timeSlot": "Franja Horaria",
+      "firstTradeOfDay": "Primera operación del día",
+      "lastTradeOfDay": "Última operación del día",
+      "externalEvents": "Eventos Externos",
+      "newsEvent": "Evento de noticias",
+      "newsImpact": "Impacto de la noticia",
+      "newsDescription": "Descripción de la noticia",
+      "newsDescriptionPlaceholder": "Ej: NFP, FOMC, CPI...",
+      "traderState": "Estado del Trader",
+      "physicalState": "Estado Físico",
+      "mentalState": "Estado Mental",
+      "emotionalState": "Estado Emocional",
+      "personalContext": "Contexto Personal",
+      "hoursOfSleep": "Horas de Sueño",
+      "caffeineConsumed": "Cafeína consumida",
+      "distractionsPresent": "Distracciones presentes"
+    },
+    "execution": {
+      "title": "Ejecución de la Operación",
+      "planRespect": "Respeto del Plan de Trading",
+      "followedTradingPlan": "Plan de trading seguido",
+      "entryAsPlanned": "¿Entrada según lo planeado?",
+      "exitAsPlanned": "¿Salida según lo planeado?",
+      "positionSizeAsPlanned": "¿Tamaño de posición según lo planeado?",
+      "tradeManagement": "Gestión de la Operación",
+      "movedStopLoss": "Stop Loss movido",
+      "stopLossDirection": "Dirección del movimiento",
+      "partialExitTaken": "Salida parcial realizada",
+      "partialExitPercentage": "Porcentaje de salida parcial",
+      "exitAndExecution": "Salida y Ejecución",
+      "exitReason": "Razón de Salida",
+      "slippage": "Deslizamiento (puntos)",
+      "executionErrors": "Errores de Ejecución",
+      "errorPlaceholder": "Ej: Entrada demasiado temprano, SL demasiado amplio, FOMO...",
+      "errorsCount": "error(es) identificado(s)",
+      "postTradeAnalysis": "Análisis Post-Operación",
+      "wouldTakeAgain": "¿Tomaría esta operación de nuevo?",
+      "lessonLearned": "Lección Aprendida",
+      "lessonPlaceholder": "¿Qué aprendió de esta operación? ¿Qué haría diferente?"
+    },
+    "saveAndFinish": "Guardar y Finalizar"
+  },
+  "dashboard": {
+    "title": "Análisis Estadístico de Operaciones",
+    "subtitle": "Descubra sus mejores setups, identifique patrones perdedores y detecte sesgos conductuales",
+    "loading": "Cargando análisis...",
+    "error": "Error al cargar análisis",
+    "globalStats": {
+      "title": "Estadísticas Globales",
+      "totalTrades": "Total Operaciones",
+      "winRate": "Tasa de Éxito",
+      "expectancy": "Expectativa",
+      "profitFactor": "Factor de Beneficio"
+    },
+    "bestSetups": {
+      "title": "Mejores Setups",
+      "noData": "Datos insuficientes (mínimo 30 operaciones por setup)",
+      "setup": "Setup",
+      "quality": "Calidad",
+      "sample": "Muestra",
+      "winRate": "Tasa de Éxito",
+      "expectancy": "Expectativa",
+      "totalPnL": "PnL Total"
+    },
+    "worstPatterns": {
+      "title": "Patrones a Evitar",
+      "noData": "Ningún patrón perdedor recurrente identificado",
+      "occurrence": "ocurrencia",
+      "avgPnL": "PnL promedio"
+    },
+    "biases": {
+      "title": "Sesgos Conductuales Detectados",
+      "noData": "Ningún sesgo conductual significativo detectado",
+      "recommendation": "Recomendación",
+      "types": {
+        "overtrading": "Overtrading",
+        "stopLossWidening": "Ampliación del Stop Loss",
+        "revengeTrading": "Revenge Trading"
+      },
+      "descriptions": {
+        "overtrading": "Promedio de {{count}} operaciones en días activos",
+        "stopLossWidening": "{{count}} operaciones con SL ampliado"
+      },
+      "recommendations": {
+        "limitTrades": "Limitar el número de operaciones por día",
+        "respectStopLoss": "Respetar el stop loss inicial"
+      }
+    },
+    "trendAnalysis": {
+      "title": "Rendimiento por Tendencia",
+      "trades": "Operaciones",
+      "winRate": "Tasa de Éxito",
+      "expectancy": "Expectativa"
+    },
+    "sessionAnalysis": {
+      "title": "Rendimiento por Sesión",
+      "trades": "Operaciones",
+      "winRate": "Tasa de Éxito",
+      "expectancy": "Expectativa"
+    }
+  },
+  "trends": {
+    "bullish": "Alcista",
+    "bearish": "Bajista",
+    "ranging": "Rango",
+    "unclear": "Incierto",
+    "neutral": "Neutral"
+  },
+  "marketStructure": {
+    "higherHighs": "Máximos más altos",
+    "lowerLows": "Mínimos más bajos",
+    "consolidation": "Consolidación"
+  },
+  "rangePosition": {
+    "topThird": "Tercio superior",
+    "middleThird": "Tercio medio",
+    "bottomThird": "Tercio inferior"
+  },
+  "volumeProfile": {
+    "high": "Alto",
+    "medium": "Medio",
+    "low": "Bajo"
+  },
+  "setupCategory": {
+    "pullback": "Pullback",
+    "breakout": "Breakout",
+    "reversal": "Reversión",
+    "continuation": "Continuación",
+    "rangeBound": "Rango",
+    "newsDriven": "Noticias",
+    "scalp": "Scalp",
+    "other": "Otro"
+  },
+  "chartPattern": {
+    "doubleTop": "Doble techo",
+    "doubleBottom": "Doble suelo",
+    "headShoulders": "Hombro-Cabeza-Hombro",
+    "triangle": "Triángulo",
+    "flag": "Bandera",
+    "wedge": "Cuña",
+    "channel": "Canal"
+  },
+  "setupQuality": {
+    "A": "A - Excelente",
+    "B": "B - Bueno",
+    "C": "C - Promedio",
+    "D": "D - Pobre",
+    "F": "F - Muy pobre"
+  },
+  "entryTiming": {
+    "early": "Temprano",
+    "optimal": "Óptimo",
+    "late": "Tardío",
+    "missed": "Perdido"
+  },
+  "physicalState": {
+    "optimal": "Óptimo",
+    "rested": "Descansado",
+    "tired": "Cansado",
+    "sick": "Enfermo"
+  },
+  "mentalState": {
+    "focused": "Concentrado",
+    "confident": "Confiado",
+    "distracted": "Distraído",
+    "stressed": "Estresado"
+  },
+  "emotionalState": {
+    "calm": "Tranquilo",
+    "excited": "Emocionado",
+    "anxious": "Ansioso",
+    "frustrated": "Frustrado"
+  },
+  "exitReason": {
+    "takeProfitHit": "Take Profit alcanzado",
+    "stopLossHit": "Stop Loss tocado",
+    "manualExit": "Salida manual",
+    "timeBased": "Basado en tiempo",
+    "targetReached": "Objetivo alcanzado",
+    "setupInvalidated": "Setup invalidado",
+    "emotional": "Emocional",
+    "newsEvent": "Evento de noticias"
+  },
+  "tradingSession": {
+    "asian": "Asiática",
+    "london": "Londres",
+    "newYork": "Nueva York",
+    "overlapLondonNY": "Solapamiento Londres/NY",
+    "afterHours": "Fuera de horario"
+  },
+  "dayOfWeek": {
+    "monday": "Lunes",
+    "tuesday": "Martes",
+    "wednesday": "Miércoles",
+    "thursday": "Jueves",
+    "friday": "Viernes"
+  },
+  "newsImpact": {
+    "low": "Bajo",
+    "medium": "Medio",
+    "high": "Alto"
+  },
+  "stopLossDirection": {
+    "tighter": "Más ajustado",
+    "wider": "Más amplio"
   }
 }

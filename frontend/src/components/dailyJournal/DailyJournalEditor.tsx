@@ -8,6 +8,8 @@ import { getFullMediaUrl } from '../../utils/mediaUrl';
 import { DeleteConfirmModal } from '../ui';
 import { ImageUploader } from './ImageUploader';
 import { JournalEditorToolbar } from './JournalEditorToolbar';
+import { DailyTrades } from './DailyTrades';
+import { ComplianceScreenshots } from './ComplianceScreenshots';
 
 interface DailyJournalEditorProps {
   date: string;
@@ -16,6 +18,7 @@ interface DailyJournalEditorProps {
   initialEntry?: DailyJournalEntry | null;
   onSaved?: (entry: DailyJournalEntry) => void;
   onDeleted?: () => void;
+  onAnalytics?: (tradeId: number) => void;
   compact?: boolean;
 }
 
@@ -26,6 +29,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   initialEntry = null,
   onSaved,
   onDeleted,
+  onAnalytics,
   compact = false,
 }) => {
   const { t } = useI18nTranslation();
@@ -412,6 +416,16 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
         </div>
       )}
 
+      {onAnalytics && (
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50">
+          <DailyTrades
+            date={date}
+            tradingAccountId={tradingAccountId}
+            onAnalytics={onAnalytics}
+          />
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-3">
         <JournalEditorToolbar onAction={handleToolbarAction} onInsertText={handleInsertText} disabled={isLoading || isSaving} />
         <button
@@ -507,6 +521,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
             <span className="text-xs text-gray-500">{t('dailyJournal.uploading', { defaultValue: 'Upload en cours...' })}</span>
           )}
         </div>
+        <ComplianceScreenshots date={date} tradingAccountId={tradingAccountId} />
         <ImageUploader onFilesSelected={handleUploadFiles} disabled={isUploading} />
         {sortedImages.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
