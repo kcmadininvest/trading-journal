@@ -135,6 +135,7 @@
   },
   "hideAll": "모두 숨기기",
   "hidden": "숨김",
-  "visible": "표시"
+  "visible": "표시",
+  "badgeInDays": "{{badgeName}} {{days}}일 후"
 }
 

@@ -35,6 +35,8 @@ interface ModernStatCardProps {
 
   value: string | number | React.ReactNode
 
+  valueSubtext?: string
+
   icon?: React.ReactNode
 
   trend?: 'up' | 'down' | 'neutral'
@@ -64,6 +66,8 @@ function ModernStatCard({
   label, 
 
   value, 
+
+  valueSubtext,
 
   icon, 
 
@@ -380,19 +384,27 @@ function ModernStatCard({
             {/* Espace équivalent à la barre de progression pour aligner les métriques secondaires */}
             {progressValue === undefined && progressMax === undefined && subMetrics && subMetrics.length > 0 && (
               <div className="mb-2">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400 opacity-0">
-                    {/* Espace invisible pour correspondre à la hauteur du label */}
-                    &nbsp;
-                  </span>
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 opacity-0">
-                    {/* Espace invisible pour correspondre à la hauteur du pourcentage */}
-                    &nbsp;
-                  </span>
-                </div>
-                <div className="w-full h-2">
-                  {/* Espace invisible pour correspondre à la hauteur de la barre */}
-                </div>
+                {valueSubtext ? (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {valueSubtext}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-gray-600 dark:text-gray-400 opacity-0">
+                        {/* Espace invisible pour correspondre à la hauteur du label */}
+                        &nbsp;
+                      </span>
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 opacity-0">
+                        {/* Espace invisible pour correspondre à la hauteur du pourcentage */}
+                        &nbsp;
+                      </span>
+                    </div>
+                    <div className="w-full h-2">
+                      {/* Espace invisible pour correspondre à la hauteur de la barre */}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

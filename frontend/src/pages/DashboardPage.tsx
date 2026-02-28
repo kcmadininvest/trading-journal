@@ -11,13 +11,13 @@ import { useDashboardData } from '../hooks/useDashboardData';
 import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
-import { StrategyStreakCard } from '../components/strategy/StrategyStreakCard';
 import ModernStatCard from '../components/common/ModernStatCard';
 import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
+import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
@@ -242,7 +242,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   // Use compliance stats from consolidated endpoint
   const complianceStats = useMemo(() => dashboardData?.compliance_stats || null, [dashboardData]);
-  const complianceLoading = dashboardLoading;
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
   const [marketHolidays, setMarketHolidays] = useState<MarketHoliday[]>([]);
@@ -1438,28 +1437,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         </div>
       )}
 
-      {/* Strategy Respect Streak banner */}
-      {(complianceStats || complianceLoading) && (
-        <div className="mb-6">
-          {complianceStats ? (
-            <StrategyStreakCard
-              key={`streak-${complianceStats.current_streak}-${complianceStats.current_streak_start}`}
-              currentStreak={complianceStats.current_streak}
-              streakStartDate={complianceStats.current_streak_start}
-              nextBadge={complianceStats.next_badge}
-            />
-          ) : (
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 sm:p-5 shadow-sm">
-              <div className="animate-pulse">
-                <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-48 mb-2"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-64 mb-3"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-56"></div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Graphiques */}
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
@@ -1637,7 +1614,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 label={t('dashboard:totalPnL')}
                 value={
                   <div className="flex flex-col w-full gap-1.5">
-                    <span className="break-words">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
+                    <span className="text-2xl font-semibold break-words">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
                     <div className="flex flex-col gap-1">
                       <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
                         <span className="inline-flex items-center justify-between gap-2 cursor-help">
@@ -1685,8 +1662,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                       {formatNumber(additionalStats.profitFactor, 2)}
                     </div>
-                    <div className="flex-1 flex items-center py-6">
-                      <div className="w-full">
+                    <div className="flex-1 flex items-center">
+                      <div className="w-full py-6">
                         <MetricGauge
                           label=""
                           value={additionalStats.profitFactor}
@@ -1727,8 +1704,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                         {formatNumber(wlRatio, 2)}
                       </div>
-                      <div className="flex-1 flex items-center py-6">
-                        <div className="w-full">
+                      <div className="flex-1 flex items-center">
+                        <div className="w-full py-6">
                           <MetricGauge
                             label=""
                             value={wlRatio}
@@ -1774,13 +1751,35 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       // Sinon utiliser additionalStats (seulement les jours avec trades)
                       const streakDays = complianceStats?.current_streak ?? 0;
                       const notRespectedDays = additionalStats.currentConsecutiveDaysNotRespected;
+                      const nextBadge = complianceStats?.next_badge;
                       
                       if (streakDays > 0) {
-                        return `${streakDays} ${t('dashboard:days')}`;
+                        return (
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <span>{streakDays} {t('dashboard:days')}</span>
+                            {nextBadge && (
+                              <span className="text-xs px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 whitespace-nowrap">
+                                {t('dashboard:badgeInDays', { 
+                                  badgeName: t(`strategy:badges.labels.${nextBadge.id ?? ''}`, { defaultValue: nextBadge.name }),
+                                  days: Math.max(0, nextBadge.days - streakDays)
+                                })}
+                              </span>
+                            )}
+                          </div>
+                        );
                       } else if (notRespectedDays > 0) {
                         return `${notRespectedDays} ${t('dashboard:days')}`;
                       }
                       return `0 ${t('dashboard:days')}`;
+                    })()}
+                    valueSubtext={(() => {
+                      const streakDays = complianceStats?.current_streak ?? 0;
+                      const streakStartDate = complianceStats?.current_streak_start;
+                      
+                      if (streakDays > 0 && streakStartDate) {
+                        return `${t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} ${formatDate(streakStartDate, preferences.date_format, false)}`;
+                      }
+                      return undefined;
                     })()}
                     variant={(() => {
                       const streakDays = complianceStats?.current_streak ?? 0;

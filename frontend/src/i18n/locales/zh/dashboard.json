@@ -137,6 +137,7 @@
   },
   "hideAll": "全部隐藏",
   "hidden": "隐藏",
-  "visible": "可见"
+  "visible": "可见",
+  "badgeInDays": "{{badgeName}} {{days}}天后"
 }
 

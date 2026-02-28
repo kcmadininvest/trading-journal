@@ -149,5 +149,6 @@
   "privacyControls": "Datenschutzeinstellungen",
   "hideAll": "Alles ausblenden",
   "hidden": "Versteckt",
-  "visible": "Sichtbar"
+  "visible": "Sichtbar",
+  "badgeInDays": "{{badgeName}} in {{days}} Tagen"
 }

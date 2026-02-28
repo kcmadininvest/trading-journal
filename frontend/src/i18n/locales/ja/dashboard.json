@@ -137,6 +137,7 @@
   },
   "hideAll": "すべて非表示",
   "hidden": "非表示",
-  "visible": "表示"
+  "visible": "表示",
+  "badgeInDays": "{{badgeName}} まであと{{days}}日"
 }
 

@@ -137,6 +137,7 @@
   },
   "hideAll": "Ocultar tudo",
   "hidden": "Oculto",
-  "visible": "Visível"
+  "visible": "Visível",
+  "badgeInDays": "{{badgeName}} em {{days}} dias"
 }
 

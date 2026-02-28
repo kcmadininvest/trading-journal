@@ -149,6 +149,7 @@
   "privacyControls": "Contrôles de Confidentialité",
   "hideAll": "Tout masquer",
   "hidden": "Masqué",
-  "visible": "Visible"
+  "visible": "Visible",
+  "badgeInDays": "{{badgeName}} dans {{days}} jours"
 }
 
