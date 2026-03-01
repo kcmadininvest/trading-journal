@@ -128,7 +128,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   }, []);
 
   const getArrowClasses = () => {
-    const baseClasses = 'absolute w-2 h-2 bg-white/70 backdrop-blur-sm border border-gray-200 transform rotate-45';
+    const baseClasses = 'absolute w-2 h-2 bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 transform rotate-45';
     
     switch (position) {
       case 'top':
@@ -167,7 +167,7 @@ const Tooltip: React.FC<TooltipProps> = ({
         createPortal(
           <div
             ref={tooltipRef}
-            className="fixed z-50 px-3 py-2 text-sm font-normal text-gray-900 bg-white/70 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg pointer-events-none max-w-xs break-words transition-opacity duration-150"
+            className="fixed z-50 px-3 py-2 text-sm font-normal text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg pointer-events-none max-w-xs break-words transition-opacity duration-150"
             style={{
               top: `${tooltipPosition.top}px`,
               left: `${tooltipPosition.left}px`,
