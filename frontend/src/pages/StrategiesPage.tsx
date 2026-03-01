@@ -462,8 +462,8 @@ const StrategiesPage: React.FC = () => {
               
               {/* All accounts combined */}
               <RespectRateCard
-                title={t('strategies:totalRespectRate')}
-                subtitle={`(${t('strategies:allAccountsCombined', { defaultValue: 'All accounts combined' })})`}
+                title={t('strategies:combinedAccountRespectRate')}
+                subtitle=""
                 percentage={allTimeRespect}
                 tradesCount={statistics?.all_time?.respected_count || 0}
                 totalTrades={statistics?.all_time?.total_trades || 0}
@@ -501,8 +501,8 @@ const StrategiesPage: React.FC = () => {
               
               {/* All accounts combined */}
               <RespectRateCard
-                title={t('strategies:totalRespectRate')}
-                subtitle={`(${t('strategies:allAccountsCombined', { defaultValue: 'All accounts combined' })})`}
+                title={t('strategies:combinedAccountRespectRate')}
+                subtitle=""
                 percentage={periodRespect}
                 tradesCount={statistics?.period?.respected_count || 0}
                 totalTrades={statistics?.period?.total_trades || 0}
