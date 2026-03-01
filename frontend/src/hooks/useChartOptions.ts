@@ -207,8 +207,7 @@ export const useChartOptions = ({
           },
         },
         grid: {
-          color: chartColors.grid,
-          lineWidth: 1,
+          display: false,
         },
         border: {
           color: chartColors.border,
@@ -435,8 +434,7 @@ export const useChartOptions = ({
             },
           },
           grid: {
-            color: chartColors.grid,
-            lineWidth: 1,
+            display: false,
           },
           border: {
             color: chartColors.border,
@@ -714,9 +712,7 @@ export const useChartOptions = ({
             minRotation: 45,
           },
           grid: {
-            color: 'rgba(148, 163, 184, 0.1)',
-            lineWidth: 1,
-            drawBorder: false,
+            display: false,
           },
           border: {
             color: chartColors.border,
@@ -881,8 +877,7 @@ export const useChartOptions = ({
           },
         },
         grid: {
-          color: chartColors.grid,
-          lineWidth: 1,
+          display: false,
         },
         border: {
           color: chartColors.border,

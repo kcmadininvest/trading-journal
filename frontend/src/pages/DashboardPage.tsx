@@ -1304,7 +1304,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           {/* Market Holidays - Desktop only */}
           {(holidaysLoading || marketHolidays.length > 0) && (
-            <div className="hidden 2xl:flex items-end">
+            <div className="hidden 2xl:flex items-end flex-grow justify-center">
               <div className="flex items-center gap-3 px-4 py-2 bg-blue-900/20 dark:bg-blue-900/20 rounded-lg border border-blue-800/50 dark:border-blue-800/50">
                 {holidaysLoading ? (
                   <>
