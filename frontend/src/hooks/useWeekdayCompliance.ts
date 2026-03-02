@@ -112,17 +112,6 @@ export const useWeekdayCompliance = ({
           borderWidth: 0,
           borderRadius: 0,
         },
-        {
-          type: 'line' as const,
-          label: t('strategies:average'),
-          data: dayStats.map(() => avgRate),
-          borderColor: '#f59e0b',
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          borderDash: [5, 5],
-          pointRadius: 0,
-          pointHoverRadius: 4,
-        },
       ],
     };
 

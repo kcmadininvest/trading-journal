@@ -6,6 +6,7 @@ import { TradesTable } from '../components/trades/TradesTable';
 import { TradeModal } from '../components/trades/TradeModal';
 import { CreateTradeModal } from '../components/trades/CreateTradeModal';
 import { BulkStrategyAssignModal } from '../components/trades/BulkStrategyAssignModal';
+import TradeAnalyticsModal from '../components/analytics/TradeAnalyticsModal';
 
 import PaginationControls from '../components/ui/PaginationControls';
 import { DeleteConfirmModal } from '../components/ui';
@@ -60,6 +61,7 @@ const TradesPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTradeId, setEditingTradeId] = useState<number | null>(null);
   const [showBulkStrategyModal, setShowBulkStrategyModal] = useState(false);
+  const [analyticsTradeId, setAnalyticsTradeId] = useState<number | null>(null);
 
   useEffect(() => {
     if (preferencesLoading) {
@@ -588,7 +590,7 @@ const TradesPage: React.FC = () => {
         }}
         onDelete={handleDeleteOne}
         onAnalytics={(id) => {
-          window.location.hash = `trade-analytics/${id}`;
+          setAnalyticsTradeId(id);
         }}
         onRowClick={(trade) => {
           setEditingTradeId(trade.id);
@@ -685,6 +687,17 @@ const TradesPage: React.FC = () => {
         }}
         selectedTradeIds={selectedIds}
       />
+
+      {analyticsTradeId && (
+        <TradeAnalyticsModal
+          tradeId={analyticsTradeId}
+          onClose={() => setAnalyticsTradeId(null)}
+          onSuccess={() => {
+            // Recharger la liste après modification
+            load();
+          }}
+        />
+      )}
 
     </div>
   );

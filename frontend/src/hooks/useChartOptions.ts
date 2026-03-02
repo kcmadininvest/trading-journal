@@ -582,7 +582,16 @@ export const useChartOptions = ({
         },
         datalabels: {
           display: function(context: any) {
-            return context.dataset.type !== 'line';
+            // Ne pas afficher les labels sur les lignes
+            if (context.dataset.type === 'line') {
+              return false;
+            }
+            // Masquer les labels si trop de points de données (barres trop étroites)
+            const dataLength = context.chart.data.labels?.length || 0;
+            if (dataLength > 15) {
+              return false;
+            }
+            return true;
           },
           color: function(context: any) {
             const value = context.dataset.data[context.dataIndex];
@@ -743,13 +752,7 @@ export const useChartOptions = ({
     indexAxis: 'x' as const,
     plugins: {
       legend: {
-        display: true,
-        position: 'top' as const,
-        labels: {
-          color: chartColors.text,
-          usePointStyle: true,
-          padding: 16,
-        },
+        display: false,
       },
       datalabels: {
         display: function(context: any) {
@@ -763,9 +766,8 @@ export const useChartOptions = ({
         formatter: function(value: number) {
           return formatNumberRef.current(value, 1) + '%';
         },
-        anchor: 'end' as const,
-        align: 'start' as const,
-        offset: -6,
+        anchor: 'center' as const,
+        align: 'center' as const,
         clamp: true,
       },
       tooltip: {

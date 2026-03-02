@@ -155,7 +155,14 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
           </div>
 
           {activeTab === 'journal' ? (
-            <DailyJournalEditor date={date} tradingAccountId={tradingAccount} />
+            <DailyJournalEditor 
+              date={date} 
+              tradingAccountId={tradingAccount}
+              onSaved={() => {
+                // Fermer la modale après la sauvegarde
+                onClose();
+              }}
+            />
           ) : (
             <>
               {isLoading ? (
