@@ -339,6 +339,29 @@ class TradeSetup(models.Model):
         verbose_name='Timing d\'entrée'
     )
     
+    # Analyse du setup (pour détection des biais comportementaux)
+    entry_in_range_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0')), MaxValueValidator(Decimal('100'))],
+        verbose_name='Position d\'entrée dans le range du jour (%)',
+        help_text='0% = bas du range, 100% = haut du range'
+    )
+    missed_better_entry = models.BooleanField(
+        default=False,
+        verbose_name='Meilleure entrée ratée',
+        help_text='Avez-vous raté une meilleure entrée avant ?'
+    )
+    planned_hold_duration = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        verbose_name='Durée prévue en position (minutes)',
+        help_text='Combien de temps prévoyiez-vous de rester en position ?'
+    )
+    
     # Métadonnées
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
@@ -404,11 +427,20 @@ class SessionContext(models.Model):
         ('confident', 'Confident'),
     ]
     
-    EMOTIONAL_STATE_CHOICES = [
-        ('calm', 'Calm'),
-        ('anxious', 'Anxious'),
-        ('excited', 'Excited'),
-        ('frustrated', 'Frustrated'),
+    PREVIOUS_TRADE_RESULT_CHOICES = [
+        ('win', 'Win'),
+        ('loss', 'Loss'),
+        ('breakeven', 'Breakeven'),
+        ('first_trade_of_session', 'First Trade of Session'),
+    ]
+    
+    TRADE_MOTIVATION_CHOICES = [
+        ('setup_signal', 'Setup Signal'),
+        ('fomo', 'FOMO'),
+        ('revenge', 'Revenge'),
+        ('boredom', 'Boredom'),
+        ('recovery_attempt', 'Recovery Attempt'),
+        ('planned', 'Planned'),
     ]
     
     # Relations
@@ -432,21 +464,13 @@ class SessionContext(models.Model):
         help_text='Ex: 09:30-10:00'
     )
     
-    # Événements externes
-    news_event = models.BooleanField(
-        default=False,
-        verbose_name='Événement news'
-    )
-    news_impact = models.CharField(
-        max_length=10,
-        choices=NEWS_IMPACT_CHOICES,
-        default='none',
-        verbose_name='Impact de la news'
-    )
-    news_description = models.CharField(
-        max_length=200,
+    # Événements externes (format JSON pour gérer plusieurs événements)
+    news_events = models.JSONField(
+        null=True,
         blank=True,
-        verbose_name='Description de la news'
+        default=list,
+        verbose_name='Événements externes',
+        help_text='Liste d\'événements externes avec impact et description'
     )
     
     # Jour de la semaine
@@ -479,13 +503,6 @@ class SessionContext(models.Model):
         blank=True,
         verbose_name='État mental'
     )
-    emotional_state = models.CharField(
-        max_length=15,
-        choices=EMOTIONAL_STATE_CHOICES,
-        null=True,
-        blank=True,
-        verbose_name='État émotionnel'
-    )
     
     # Contexte personnel
     hours_of_sleep = models.IntegerField(
@@ -494,13 +511,27 @@ class SessionContext(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(24)],
         verbose_name='Heures de sommeil'
     )
-    caffeine_consumed = models.BooleanField(
-        default=False,
-        verbose_name='Caféine consommée'
+    
+    # Contexte du trade (pour détection des biais comportementaux)
+    previous_trade_result = models.CharField(
+        max_length=25,
+        choices=PREVIOUS_TRADE_RESULT_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name='Résultat du trade précédent'
     )
-    distractions_present = models.BooleanField(
-        default=False,
-        verbose_name='Distractions présentes'
+    minutes_since_last_trade = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Minutes depuis le dernier trade',
+        help_text='Calculé automatiquement'
+    )
+    trade_motivation = models.CharField(
+        max_length=20,
+        choices=TRADE_MOTIVATION_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name='Motivation principale du trade'
     )
     
     # Métadonnées
@@ -542,6 +573,22 @@ class TradeExecution(models.Model):
         ('news_event', 'News Event'),
     ]
     
+    TIME_IN_POSITION_CHOICES = [
+        ('much_shorter', 'Much Shorter'),
+        ('shorter', 'Shorter'),
+        ('as_planned', 'As Planned'),
+        ('longer', 'Longer'),
+        ('much_longer', 'Much Longer'),
+    ]
+    
+    EXIT_EMOTIONAL_CONTEXT_CHOICES = [
+        ('neutral', 'Neutral'),
+        ('fear', 'Fear'),
+        ('greed', 'Greed'),
+        ('fomo', 'FOMO'),
+        ('discipline', 'Discipline'),
+    ]
+    
     # Relations
     trade = models.OneToOneField(
         'TopStepTrade',
@@ -557,15 +604,18 @@ class TradeExecution(models.Model):
         verbose_name='Plan de trading respecté'
     )
     entry_as_planned = models.BooleanField(
-        default=True,
+        null=True,
+        blank=True,
         verbose_name='Entrée comme prévu'
     )
     exit_as_planned = models.BooleanField(
-        default=True,
+        null=True,
+        blank=True,
         verbose_name='Sortie comme prévu'
     )
     position_size_as_planned = models.BooleanField(
-        default=True,
+        null=True,
+        blank=True,
         verbose_name='Taille de position comme prévu'
     )
     
@@ -625,6 +675,30 @@ class TradeExecution(models.Model):
     lesson_learned = models.TextField(
         blank=True,
         verbose_name='Leçon apprise'
+    )
+    
+    # Gestion réelle (pour détection des biais comportementaux)
+    time_in_position_vs_planned = models.CharField(
+        max_length=15,
+        choices=TIME_IN_POSITION_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name='Durée en position vs plan',
+        help_text='Êtes-vous sorti trop tôt/tard ?'
+    )
+    exit_emotional_context = models.CharField(
+        max_length=20,
+        choices=EXIT_EMOTIONAL_CONTEXT_CHOICES,
+        null=True,
+        blank=True,
+        default='neutral',
+        verbose_name='Contexte émotionnel de sortie',
+        help_text='État émotionnel lors de la sortie'
+    )
+    position_size_change_reason = models.TextField(
+        blank=True,
+        verbose_name='Raison du changement de taille',
+        help_text='Pourquoi avez-vous modifié la taille de position ?'
     )
     
     # Métadonnées

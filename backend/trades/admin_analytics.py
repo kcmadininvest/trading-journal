@@ -116,7 +116,7 @@ class SessionContextAdmin(admin.ModelAdmin):
         'trade',
         'trading_session',
         'day_of_week',
-        'news_event',
+        'has_news_events',
         'physical_state',
         'mental_state',
         'created_at',
@@ -124,14 +124,17 @@ class SessionContextAdmin(admin.ModelAdmin):
     list_filter = [
         'trading_session',
         'day_of_week',
-        'news_event',
-        'news_impact',
         'physical_state',
         'mental_state',
-        'emotional_state',
     ]
-    search_fields = ['trade__contract_name', 'news_description']
+    search_fields = ['trade__contract_name']
     readonly_fields = ['created_at', 'updated_at']
+    
+    def has_news_events(self, obj):
+        """Indique si des événements externes sont présents."""
+        return bool(obj.news_events and len(obj.news_events) > 0)
+    has_news_events.boolean = True
+    has_news_events.short_description = 'Événements'
     
     fieldsets = (
         ('Trade', {
@@ -141,13 +144,13 @@ class SessionContextAdmin(admin.ModelAdmin):
             'fields': ('trading_session', 'session_time_slot', 'day_of_week', 'is_first_trade_of_day', 'is_last_trade_of_day')
         }),
         ('Événements Externes', {
-            'fields': ('news_event', 'news_impact', 'news_description')
+            'fields': ('news_events',)
         }),
         ('État du Trader', {
-            'fields': ('physical_state', 'mental_state', 'emotional_state')
+            'fields': ('physical_state', 'mental_state')
         }),
         ('Contexte Personnel', {
-            'fields': ('hours_of_sleep', 'caffeine_consumed', 'distractions_present')
+            'fields': ('hours_of_sleep',)
         }),
         ('Métadonnées', {
             'fields': ('created_at', 'updated_at'),

@@ -22,6 +22,7 @@ urlpatterns = [
     
     # Préférences utilisateur
     path('preferences/', views.UserPreferencesView.as_view(), name='user_preferences'),
+    path('preferences/bias-thresholds/', views.BiasDetectionThresholdsView.as_view(), name='bias_thresholds'),
     
     # Gestion de session et déconnexion automatique
     path('session/info/', views.session_info, name='session_info'),

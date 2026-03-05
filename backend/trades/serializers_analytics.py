@@ -67,6 +67,9 @@ class TradeSetupSerializer(serializers.ModelSerializer):
             'setup_quality',
             'setup_confidence',
             'entry_timing',
+            'entry_in_range_percentage',
+            'missed_better_entry',
+            'planned_hold_duration',
             'created_at',
             'updated_at',
         ]
@@ -83,22 +86,20 @@ class SessionContextSerializer(serializers.ModelSerializer):
             'trade',
             'trading_session',
             'session_time_slot',
-            'news_event',
-            'news_impact',
-            'news_description',
+            'news_events',
             'day_of_week',
             'is_first_trade_of_day',
             'is_last_trade_of_day',
             'physical_state',
             'mental_state',
-            'emotional_state',
             'hours_of_sleep',
-            'caffeine_consumed',
-            'distractions_present',
+            'previous_trade_result',
+            'minutes_since_last_trade',
+            'trade_motivation',
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'minutes_since_last_trade', 'created_at', 'updated_at']
 
 
 class TradeExecutionSerializer(serializers.ModelSerializer):
@@ -122,6 +123,9 @@ class TradeExecutionSerializer(serializers.ModelSerializer):
             'slippage_points',
             'would_take_again',
             'lesson_learned',
+            'time_in_position_vs_planned',
+            'exit_emotional_context',
+            'position_size_change_reason',
             'created_at',
             'updated_at',
         ]
@@ -305,6 +309,7 @@ class NestedTradeSetupSerializer(serializers.ModelSerializer):
         fields = [
             'setup_category', 'setup_subcategory', 'chart_pattern',
             'confluence_factors', 'setup_quality', 'setup_confidence', 'entry_timing',
+            'entry_in_range_percentage', 'missed_better_entry', 'planned_hold_duration',
         ]
 
 
@@ -314,10 +319,9 @@ class NestedSessionContextSerializer(serializers.ModelSerializer):
     class Meta:
         model = SessionContext
         fields = [
-            'trading_session', 'session_time_slot', 'news_event', 'news_impact',
-            'news_description', 'day_of_week', 'is_first_trade_of_day',
-            'is_last_trade_of_day', 'physical_state', 'mental_state',
-            'emotional_state', 'hours_of_sleep', 'caffeine_consumed', 'distractions_present',
+            'trading_session', 'session_time_slot', 'news_events', 'day_of_week',
+            'is_first_trade_of_day', 'is_last_trade_of_day', 'physical_state',
+            'mental_state', 'hours_of_sleep', 'previous_trade_result', 'trade_motivation',
         ]
 
 
@@ -331,6 +335,7 @@ class NestedTradeExecutionSerializer(serializers.ModelSerializer):
             'position_size_as_planned', 'moved_stop_loss', 'stop_loss_direction',
             'partial_exit_taken', 'partial_exit_percentage', 'exit_reason',
             'execution_errors', 'slippage_points', 'would_take_again', 'lesson_learned',
+            'time_in_position_vs_planned', 'exit_emotional_context', 'position_size_change_reason',
         ]
 
 
@@ -340,11 +345,11 @@ class BulkTradeAnalyticsSerializer(serializers.Serializer):
     Permet de créer context, setup, session_context et execution en une seule requête.
     """
     
-    trade_id = serializers.IntegerField()
-    context = NestedTradeContextSerializer(required=False, allow_null=True)
-    setup = NestedTradeSetupSerializer(required=False, allow_null=True)
-    session_context = NestedSessionContextSerializer(required=False, allow_null=True)
-    execution = NestedTradeExecutionSerializer(required=False, allow_null=True)
+    trade_id: serializers.IntegerField = serializers.IntegerField()
+    context: NestedTradeContextSerializer = NestedTradeContextSerializer(required=False, allow_null=True)
+    setup: NestedTradeSetupSerializer = NestedTradeSetupSerializer(required=False, allow_null=True)
+    session_context: NestedSessionContextSerializer = NestedSessionContextSerializer(required=False, allow_null=True)
+    execution: NestedTradeExecutionSerializer = NestedTradeExecutionSerializer(required=False, allow_null=True)
     tag_ids = serializers.ListField(
         child=serializers.IntegerField(),
         required=False,

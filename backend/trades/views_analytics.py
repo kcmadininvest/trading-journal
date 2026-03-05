@@ -85,7 +85,44 @@ class SessionContextViewSet(viewsets.ModelViewSet):
         trade_id = self.request.data.get('trade')
         if not TopStepTrade.objects.filter(id=trade_id, user=self.request.user).exists():
             raise PermissionError("Ce trade ne vous appartient pas")
-        serializer.save()
+        
+        # Calculer minutes_since_last_trade automatiquement
+        current_trade = TopStepTrade.objects.get(id=trade_id)
+        if current_trade.entered_at:
+            # Trouver le trade précédent (par date d'entrée)
+            previous_trade = TopStepTrade.objects.filter(
+                user=self.request.user,
+                entered_at__lt=current_trade.entered_at
+            ).order_by('-entered_at').first()
+            
+            if previous_trade and previous_trade.entered_at:
+                time_diff = current_trade.entered_at - previous_trade.entered_at
+                minutes_since = int(time_diff.total_seconds() / 60)
+                serializer.save(minutes_since_last_trade=minutes_since)
+            else:
+                serializer.save(minutes_since_last_trade=None)
+        else:
+            serializer.save()
+    
+    def perform_update(self, serializer):
+        # Recalculer minutes_since_last_trade lors de la mise à jour
+        trade_id = serializer.instance.trade.id
+        current_trade = TopStepTrade.objects.get(id=trade_id)
+        
+        if current_trade.entered_at:
+            previous_trade = TopStepTrade.objects.filter(
+                user=self.request.user,
+                entered_at__lt=current_trade.entered_at
+            ).order_by('-entered_at').first()
+            
+            if previous_trade and previous_trade.entered_at:
+                time_diff = current_trade.entered_at - previous_trade.entered_at
+                minutes_since = int(time_diff.total_seconds() / 60)
+                serializer.save(minutes_since_last_trade=minutes_since)
+            else:
+                serializer.save(minutes_since_last_trade=None)
+        else:
+            serializer.save()
 
 
 class TradeExecutionViewSet(viewsets.ModelViewSet):

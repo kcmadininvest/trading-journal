@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   TradeContextFormData,
@@ -60,57 +60,55 @@ const TradeContextForm: React.FC<TradeContextFormProps> = ({
 
   // Timeframes disponibles
   const availableTimeframes = [
-    { value: 'trend_m1', label: 'M1 (1 minute)' },
-    { value: 'trend_m2', label: 'M2 (2 minutes)' },
-    { value: 'trend_m5', label: 'M5 (5 minutes)' },
-    { value: 'trend_m15', label: 'M15 (15 minutes)' },
-    { value: 'trend_m30', label: 'M30 (30 minutes)' },
-    { value: 'trend_h1', label: 'H1 (1 heure)' },
-    { value: 'trend_h4', label: 'H4 (4 heures)' },
-    { value: 'trend_daily', label: 'Daily (Journalier)' },
-    { value: 'trend_weekly', label: 'Weekly (Hebdomadaire)' },
+    { value: 'trend_m1', label: `M1 (1 ${t('analytics:timeframes.m1', { defaultValue: 'minute' })})` },
+    { value: 'trend_m2', label: `M2 (2 ${t('analytics:timeframes.m2', { defaultValue: 'minutes' })})` },
+    { value: 'trend_m5', label: `M5 (5 ${t('analytics:timeframes.m5', { defaultValue: 'minutes' })})` },
+    { value: 'trend_m15', label: `M15 (15 ${t('analytics:timeframes.m15', { defaultValue: 'minutes' })})` },
+    { value: 'trend_m30', label: `M30 (30 ${t('analytics:timeframes.m30', { defaultValue: 'minutes' })})` },
+    { value: 'trend_h1', label: `H1 (1 ${t('analytics:timeframes.h1', { defaultValue: 'heure' })})` },
+    { value: 'trend_h4', label: `H4 (4 ${t('analytics:timeframes.h4', { defaultValue: 'heures' })})` },
+    { value: 'trend_daily', label: `${t('analytics:timeframes.daily', { defaultValue: 'Daily' })}` },
+    { value: 'trend_weekly', label: `${t('analytics:timeframes.weekly', { defaultValue: 'Weekly' })}` },
   ];
 
-  // Timeframes actifs (ceux qui ont une valeur)
+  // Timeframe par défaut à afficher (1 seul)
+  const defaultTimeframes = ['trend_h1'];
+  
+  // Ordre logique des timeframes (du plus grand au plus petit)
+  const timeframeOrder = ['trend_weekly', 'trend_daily', 'trend_h4', 'trend_h1', 'trend_m30', 'trend_m15', 'trend_m5', 'trend_m2', 'trend_m1'];
+  
+  // Timeframes actifs (ceux qui sont affichés dans le formulaire)
   const [activeTimeframes, setActiveTimeframes] = useState<string[]>(() => {
     const active: string[] = [];
-    if (initialData.trend_m1) active.push('trend_m1');
-    if (initialData.trend_m2) active.push('trend_m2');
-    if (initialData.trend_m5) active.push('trend_m5');
-    if (initialData.trend_m15) active.push('trend_m15');
-    if (initialData.trend_m30) active.push('trend_m30');
-    if (initialData.trend_h1) active.push('trend_h1');
-    if (initialData.trend_h4) active.push('trend_h4');
-    if (initialData.trend_daily) active.push('trend_daily');
-    if (initialData.trend_weekly) active.push('trend_weekly');
-    return active.length > 0 ? active : ['trend_h1', 'trend_m15', 'trend_m5']; // Par défaut
+    // Vérifier si le timeframe a une valeur réelle (non undefined et non null)
+    if (initialData.trend_m1 !== undefined && initialData.trend_m1 !== null) active.push('trend_m1');
+    if (initialData.trend_m2 !== undefined && initialData.trend_m2 !== null) active.push('trend_m2');
+    if (initialData.trend_m5 !== undefined && initialData.trend_m5 !== null) active.push('trend_m5');
+    if (initialData.trend_m15 !== undefined && initialData.trend_m15 !== null) active.push('trend_m15');
+    if (initialData.trend_m30 !== undefined && initialData.trend_m30 !== null) active.push('trend_m30');
+    if (initialData.trend_h1 !== undefined && initialData.trend_h1 !== null) active.push('trend_h1');
+    if (initialData.trend_h4 !== undefined && initialData.trend_h4 !== null) active.push('trend_h4');
+    if (initialData.trend_daily !== undefined && initialData.trend_daily !== null) active.push('trend_daily');
+    if (initialData.trend_weekly !== undefined && initialData.trend_weekly !== null) active.push('trend_weekly');
+    
+    // Si aucun timeframe n'est défini, utiliser le timeframe par défaut
+    // Sinon, trier et retourner les timeframes qui ont des valeurs
+    if (active.length === 0) {
+      return defaultTimeframes;
+    }
+    
+    // Trier les timeframes selon l'ordre logique (du plus grand au plus petit)
+    return active.sort((a, b) => timeframeOrder.indexOf(a) - timeframeOrder.indexOf(b));
   });
 
-  // Mettre à jour activeTimeframes seulement au premier chargement
-  const [isInitialized, setIsInitialized] = useState(false);
-  
-  useEffect(() => {
-    // Ne mettre à jour que si on n'a pas encore initialisé ET qu'on a des données
-    if (!isInitialized && initialData && Object.keys(initialData).length > 0) {
-      const active: string[] = [];
-      if (initialData.trend_m1) active.push('trend_m1');
-      if (initialData.trend_m2) active.push('trend_m2');
-      if (initialData.trend_m5) active.push('trend_m5');
-      if (initialData.trend_m15) active.push('trend_m15');
-      if (initialData.trend_m30) active.push('trend_m30');
-      if (initialData.trend_h1) active.push('trend_h1');
-      if (initialData.trend_h4) active.push('trend_h4');
-      if (initialData.trend_daily) active.push('trend_daily');
-      if (initialData.trend_weekly) active.push('trend_weekly');
-      
-      if (active.length > 0) {
-        setActiveTimeframes(active);
-        setIsInitialized(true);
-      }
-    }
-  }, [initialData, isInitialized]);
-
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Fonction pour trier les timeframes selon l'ordre logique
+  const sortTimeframes = (timeframes: string[]): string[] => {
+    return timeframes.sort((a, b) => {
+      return timeframeOrder.indexOf(a) - timeframeOrder.indexOf(b);
+    });
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -142,9 +140,43 @@ const TradeContextForm: React.FC<TradeContextFormProps> = ({
     onChange?.(newData);
   };
 
+  const handleReset = () => {
+    if (window.confirm(t('analytics:tradeAnalytics.confirmReset', { defaultValue: 'Êtes-vous sûr de vouloir réinitialiser ce formulaire ?' }))) {
+      const resetData: TradeContextFormData = {
+        trend_m1: undefined,
+        trend_m2: undefined,
+        trend_m5: undefined,
+        trend_m15: undefined,
+        trend_m30: undefined,
+        trend_h1: undefined,
+        trend_h4: undefined,
+        trend_daily: undefined,
+        trend_weekly: undefined,
+        fibonacci_level: 'none',
+        at_support_resistance: false,
+        distance_from_key_level: undefined,
+        market_structure: undefined,
+        break_of_structure: false,
+        within_previous_day_range: false,
+        range_position: undefined,
+        atr_percentile: undefined,
+        volume_profile: undefined,
+        at_volume_node: false,
+        rsi_value: undefined,
+        macd_signal: undefined,
+      };
+      setFormData(resetData);
+      setActiveTimeframes(defaultTimeframes);
+      setErrors({});
+      onChange?.(resetData);
+    }
+  };
+
   const addTimeframe = (timeframe: string) => {
     if (!activeTimeframes.includes(timeframe)) {
-      setActiveTimeframes([...activeTimeframes, timeframe]);
+      // Ajouter et trier automatiquement les timeframes
+      const newTimeframes = sortTimeframes([...activeTimeframes, timeframe]);
+      setActiveTimeframes(newTimeframes);
       // Initialiser la valeur à undefined pour que le select soit vide
       // L'utilisateur devra sélectionner une valeur
       const newData = { ...formData, [timeframe]: undefined };
@@ -205,12 +237,15 @@ const TradeContextForm: React.FC<TradeContextFormProps> = ({
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {activeTimeframes.map(timeframe => {
+          {activeTimeframes.map((timeframe, index) => {
             const tf = availableTimeframes.find(t => t.value === timeframe);
             if (!tf) return null;
             
             return (
-              <div key={timeframe} className="relative">
+              <div
+                key={timeframe}
+                className="relative border-2 rounded-lg p-3 transition-all border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 bg-white dark:bg-gray-800"
+              >
                 <div className="flex justify-between items-center mb-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {tf.label}
@@ -221,7 +256,7 @@ const TradeContextForm: React.FC<TradeContextFormProps> = ({
                     className="px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:text-white hover:bg-red-600 dark:hover:bg-red-500 border border-red-600 dark:border-red-400 rounded transition-colors"
                     title={t('common:delete', { defaultValue: 'Supprimer' })}
                   >
-                    {t('common:delete', { defaultValue: 'Supprimer' })}
+                    ✕
                   </button>
                 </div>
                 <select
@@ -440,22 +475,31 @@ const TradeContextForm: React.FC<TradeContextFormProps> = ({
       </div>
 
       {/* Boutons d'action */}
-      <div className="flex justify-end space-x-3">
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className={buttonSecondaryClassName}
-          >
-            {t('analytics:tradeAnalytics.cancel')}
-          </button>
-        )}
+      <div className="flex justify-between">
         <button
-          type="submit"
-          className={buttonPrimaryClassName}
+          type="button"
+          onClick={handleReset}
+          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
         >
-          {t('common:next', { defaultValue: 'Suivant' })}
+          {t('analytics:tradeAnalytics.reset', { defaultValue: 'Réinitialiser' })}
         </button>
+        <div className="flex space-x-3">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className={buttonSecondaryClassName}
+            >
+              {t('analytics:tradeAnalytics.cancel')}
+            </button>
+          )}
+          <button
+            type="submit"
+            className={buttonPrimaryClassName}
+          >
+            {t('common:next', { defaultValue: 'Suivant' })}
+          </button>
+        </div>
       </div>
     </form>
   );

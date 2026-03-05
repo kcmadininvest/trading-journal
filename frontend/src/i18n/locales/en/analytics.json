@@ -220,6 +220,8 @@
     "saving": "Saving...",
     "cancel": "Cancel",
     "close": "Close",
+    "reset": "Reset",
+    "confirmReset": "Are you sure you want to reset this form?",
     "success": "Data saved successfully",
     "requiredFields": "Required Fields",
     "requiredFieldsInfo": "Fields marked with * are required to proceed to the next step.",
@@ -230,10 +232,12 @@
       "execution": "Execution"
     },
     "context": {
-      "title": "Market Context",
-      "multiTimeframe": "Multi-Timeframe Analysis",
+      "title": "Trade Context",
+      "multiTimeframe": "Multi-Timeframe Trends",
       "atLeastOne": "at least 1 required",
+      "atLeastOneTimeframe": "At least one timeframe must be selected and filled in",
       "addTimeframe": "Add a timeframe",
+      "noTimeframe": "No timeframe selected. Use the dropdown menu above to add timeframes.",
       "technicalLevels": "Technical Levels",
       "marketStructure": "Market Structure",
       "trend": "Trend",
@@ -259,7 +263,13 @@
       "confluencePlaceholder": "Ex: EMA 20, Major support, High volume...",
       "confluenceCount": "confluence factor(s)",
       "confidence": "Confidence level (1-10)",
-      "entryTiming": "Entry timing"
+      "entryTiming": "Entry timing",
+      "qualityTiming": "Quality and Timing",
+      "analysis": "Setup Analysis",
+      "entryInRange": "Entry position in range (%)",
+      "entryInRangeHelp": "0% = bottom of range, 100% = top of range",
+      "plannedHoldDuration": "Planned hold duration (min)",
+      "missedBetterEntry": "Missed better entry?"
     },
     "session": {
       "title": "Session Context",
@@ -272,18 +282,19 @@
       "firstTradeOfDay": "First trade of the day",
       "lastTradeOfDay": "Last trade of the day",
       "externalEvents": "External Events",
-      "newsEvent": "News event",
       "newsImpact": "News impact",
       "newsDescription": "News description",
       "newsDescriptionPlaceholder": "Ex: NFP, FOMC, CPI...",
       "traderState": "Trader State",
       "physicalState": "Physical State",
       "mentalState": "Mental State",
-      "emotionalState": "Emotional State",
       "personalContext": "Personal Context",
       "hoursOfSleep": "Hours of Sleep",
-      "caffeineConsumed": "Caffeine consumed",
-      "distractionsPresent": "Distractions present"
+      "tradeContext": "Trade Context",
+      "previousTradeResult": "Previous trade result",
+      "tradeMotivation": "Main trade motivation",
+      "minutesSinceLastTrade": "Minutes since last trade",
+      "calculatedAuto": "Calculated automatically"
     },
     "execution": {
       "title": "Trade Execution",
@@ -299,6 +310,7 @@
       "partialExitPercentage": "Partial exit percentage",
       "exitAndExecution": "Exit and Execution",
       "exitReason": "Exit Reason",
+      "exitEmotionalContext": "Exit Emotional Context",
       "slippage": "Slippage (points)",
       "executionErrors": "Execution Errors",
       "errorPlaceholder": "Ex: Entry too early, SL too wide, FOMO...",
@@ -306,7 +318,11 @@
       "postTradeAnalysis": "Post-Trade Analysis",
       "wouldTakeAgain": "Would you take this trade again?",
       "lessonLearned": "Lesson Learned",
-      "lessonPlaceholder": "What did you learn from this trade? What would you do differently?"
+      "lessonPlaceholder": "What did you learn from this trade? What would you do differently?",
+      "realManagement": "Actual Management",
+      "timeInPositionVsPlanned": "Time in position vs plan",
+      "positionSizeChangeReason": "Reason for size change",
+      "positionSizeChangeReasonPlaceholder": "Why did you modify the position size?"
     },
     "saveAndFinish": "Save and Finish"
   },
@@ -349,11 +365,20 @@
       },
       "descriptions": {
         "overtrading": "Average of {{count}} trades on active days",
+        "revengeTrading": "{{count}} revenge trades detected ({{quickCount}} within {{minutes}} min)",
+        "fomo": "{{count}} trades with FOMO signs (late entries, better entry missed)",
+        "lossAversion": "{{count}} losing trades held too long or with widened SL",
+        "prematureExit": "{{count}} winning trades cut too early",
         "stopLossWidening": "{{count}} trades with widened SL"
       },
       "recommendations": {
         "limitTrades": "Limit the number of trades per day",
-        "respectStopLoss": "Respect the initial stop loss"
+        "respectStopLoss": "Respect the initial stop loss",
+        "takePauseAfterLoss": "Take a break after a loss. Wait at least 30 minutes before the next trade.",
+        "waitForSetup": "Wait for the right setup. Don't chase the market.",
+        "cutLossesQuickly": "Respect the initial stop loss. Cut losses quickly.",
+        "letWinnersRun": "Let winners run. Respect take profit targets.",
+        "neverWidenSL": "Respect the initial stop loss. Never widen the SL."
       }
     },
     "trendAnalysis": {
@@ -369,60 +394,6 @@
       "expectancy": "Expectancy"
     }
   },
-  "trends": {
-    "bullish": "Bullish",
-    "bearish": "Bearish",
-    "ranging": "Ranging",
-    "unclear": "Unclear",
-    "neutral": "Neutral"
-  },
-  "marketStructure": {
-    "higherHighs": "Higher Highs",
-    "lowerLows": "Lower Lows",
-    "consolidation": "Consolidation"
-  },
-  "rangePosition": {
-    "topThird": "Top Third",
-    "middleThird": "Middle Third",
-    "bottomThird": "Bottom Third"
-  },
-  "volumeProfile": {
-    "high": "High",
-    "medium": "Medium",
-    "low": "Low"
-  },
-  "setupCategory": {
-    "pullback": "Pullback",
-    "breakout": "Breakout",
-    "reversal": "Reversal",
-    "continuation": "Continuation",
-    "rangeBound": "Range Bound",
-    "newsDriven": "News Driven",
-    "scalp": "Scalp",
-    "other": "Other"
-  },
-  "chartPattern": {
-    "doubleTop": "Double Top",
-    "doubleBottom": "Double Bottom",
-    "headShoulders": "Head & Shoulders",
-    "triangle": "Triangle",
-    "flag": "Flag",
-    "wedge": "Wedge",
-    "channel": "Channel"
-  },
-  "setupQuality": {
-    "A": "A - Excellent",
-    "B": "B - Good",
-    "C": "C - Average",
-    "D": "D - Poor",
-    "F": "F - Very Poor"
-  },
-  "entryTiming": {
-    "early": "Early",
-    "optimal": "Optimal",
-    "late": "Late",
-    "missed": "Missed"
-  },
   "physicalState": {
     "optimal": "Optimal",
     "rested": "Rested",
@@ -435,11 +406,12 @@
     "distracted": "Distracted",
     "stressed": "Stressed"
   },
-  "emotionalState": {
-    "calm": "Calm",
-    "excited": "Excited",
-    "anxious": "Anxious",
-    "frustrated": "Frustrated"
+  "exitEmotionalContext": {
+    "neutral": "Neutral/Discipline",
+    "fear": "Fear",
+    "greed": "Greed",
+    "fomo": "FOMO",
+    "discipline": "Strict Discipline"
   },
   "exitReason": {
     "takeProfitHit": "Take Profit Hit",
@@ -473,6 +445,149 @@
   "stopLossDirection": {
     "tighter": "Tighter",
     "wider": "Wider"
+  },
+  "timeInPosition": {
+    "muchShorter": "Much shorter",
+    "shorter": "Shorter",
+    "asPlanned": "As planned",
+    "longer": "Longer",
+    "muchLonger": "Much longer"
+  },
+  "setupCategory": {
+    "pullback": "Pullback",
+    "breakout": "Breakout",
+    "reversal": "Reversal",
+    "continuation": "Continuation",
+    "rangeBound": "Range Bound",
+    "newsDriven": "News Driven",
+    "scalp": "Scalp",
+    "other": "Other"
+  },
+  "chartPattern": {
+    "doubleTop": "Double Top",
+    "doubleBottom": "Double Bottom",
+    "headShoulders": "Head & Shoulders",
+    "triangle": "Triangle",
+    "flag": "Flag",
+    "wedge": "Wedge",
+    "channel": "Channel"
+  },
+  "setupQuality": {
+    "A": "A - Excellent",
+    "B": "B - Good",
+    "C": "C - Average",
+    "D": "D - Poor",
+    "F": "F - Very Poor"
+  },
+  "entryTiming": {
+    "early": "Early",
+    "optimal": "Optimal",
+    "late": "Late",
+    "missed": "Missed"
+  },
+  "trends": {
+    "bullish": "Bullish",
+    "bearish": "Bearish",
+    "ranging": "Ranging",
+    "unclear": "Unclear",
+    "neutral": "Neutral"
+  },
+  "marketStructure": {
+    "higherHighs": "Higher Highs",
+    "lowerLows": "Lower Lows",
+    "consolidation": "Consolidation"
+  },
+  "rangePosition": {
+    "topThird": "Top Third",
+    "middleThird": "Middle Third",
+    "bottomThird": "Bottom Third"
+  },
+  "volumeProfile": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "previousTradeResult": {
+    "win": "Win",
+    "loss": "Loss",
+    "breakeven": "Breakeven",
+    "firstTrade": "First trade of session"
+  },
+  "timeframes": {
+    "m1": "minute",
+    "m2": "minutes",
+    "m5": "minutes",
+    "m15": "minutes",
+    "m30": "minutes",
+    "h1": "hour",
+    "h4": "hours",
+    "daily": "Daily",
+    "weekly": "Weekly"
+  },
+  "tradeMotivation": {
+    "setupSignal": "Setup signal",
+    "fomo": "FOMO",
+    "revenge": "Revenge",
+    "boredom": "Boredom",
+    "recoveryAttempt": "Recovery attempt",
+    "planned": "Planned"
+  },
+  "biasRules": {
+    "title": "Detection Rules & Configuration",
+    "helpText": "Customize detection thresholds according to your trading style",
+    "save": "Save",
+    "reset": "Reset",
+    "saving": "Saving...",
+    "resetConfirm": "Reset all thresholds to default values?",
+    "biases": {
+      "overtrading": {
+        "title": "Overtrading",
+        "explanation": "Optimal day trading is between 3-5 trades per day. Beyond 10 trades often indicates overtrading which can reduce decision quality.",
+        "minDays": "Minimum days",
+        "minDaysDesc": "Number of days with overtrading to confirm the pattern",
+        "minTradesPerDay": "Trades per day",
+        "minTradesPerDayDesc": "Detection threshold (trades/day)",
+        "highSeverityThreshold": "HIGH severity",
+        "highSeverityThresholdDesc": "Threshold for high severity"
+      },
+      "revengeTrading": {
+        "title": "Revenge Trading",
+        "explanation": "Trading for revenge after a loss is one of the most destructive behaviors. Take a break after a loss to avoid emotional decisions.",
+        "minOccurrences": "Minimum occurrences",
+        "minOccurrencesDesc": "Minimum number to detect the pattern",
+        "quickTradeMinutes": "Quick delay (minutes)",
+        "quickTradeMinutesDesc": "Trade considered \"quick\" after a loss"
+      },
+      "fomo": {
+        "title": "FOMO (Fear Of Missing Out)",
+        "explanation": "Entering late into a move for fear of missing an opportunity often leads to entries at the worst moment. Patience and discipline are essential.",
+        "minOccurrences": "Minimum occurrences",
+        "minOccurrencesDesc": "Minimum number to detect the pattern",
+        "entryRangeThreshold": "Entry threshold (%)",
+        "entryRangeThresholdDesc": "Percentage of range considered late"
+      },
+      "lossAversion": {
+        "title": "Loss Aversion",
+        "explanation": "Holding losing positions too long hoping for a reversal is a classic bias. Respecting your stop loss is crucial.",
+        "minOccurrences": "Minimum occurrences",
+        "minOccurrencesDesc": "Minimum number to detect the pattern"
+      },
+      "prematureExit": {
+        "title": "Premature Exit",
+        "explanation": "Cutting winners too early for fear of losing gains prevents reaching profit targets. Letting winners run is essential.",
+        "minOccurrences": "Minimum occurrences",
+        "minOccurrencesDesc": "Minimum number to detect the pattern",
+        "rrThreshold": "R:R threshold",
+        "rrThresholdDesc": "Ratio of planned R:R considered premature (0.5 = 50%)"
+      },
+      "stopLossWidening": {
+        "title": "Stop Loss Widening",
+        "explanation": "Widening your stop loss after entry is one of the most dangerous behaviors. The initial stop loss must always be respected.",
+        "minOccurrences": "Minimum occurrences",
+        "minOccurrencesDesc": "Minimum number to detect the pattern"
+      }
+    },
+    "default": "default"
   }
 }
 

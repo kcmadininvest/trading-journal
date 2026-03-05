@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Trophy, AlertTriangle, Brain, TrendingUp, Clock } from 'lucide-react';
+import { BarChart3, Trophy, AlertTriangle, Brain, TrendingUp, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import analyticsService from '../../services/analyticsService';
 import { EdgeAnalysis, BestSetup, WorstPattern, BehavioralBias } from '../../types/analytics';
+import BiasDetectionRulesSection from './BiasDetectionRulesSection';
 
 const AnalyticsDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -19,18 +20,58 @@ const AnalyticsDashboard: React.FC = () => {
   };
 
   const translateBiasDescription = (bias: BehavioralBias): string => {
+    // Overtrading
     if (bias.bias === 'Overtrading') {
       const match = bias.description.match(/Moyenne de ([\d.]+) trades/);
       if (match) {
-        return t('analytics:dashboard.biases.descriptions.overtrading').replace('{{count}}', match[1]);
+        return t('analytics:dashboard.biases.descriptions.overtrading', { count: parseFloat(match[1]) });
       }
     }
+    
+    // Revenge Trading
+    if (bias.bias === 'Revenge Trading') {
+      const match = bias.description.match(/(\d+) trades de vengeance détectés \((\d+) dans les (\d+) min\)/);
+      if (match) {
+        return t('analytics:dashboard.biases.descriptions.revengeTrading', { 
+          count: parseInt(match[1], 10), 
+          quickCount: parseInt(match[2], 10),
+          minutes: parseInt(match[3], 10)
+        });
+      }
+    }
+    
+    // FOMO
+    if (bias.bias === 'FOMO') {
+      const match = bias.description.match(/(\d+) trades avec signes de FOMO/);
+      if (match) {
+        return t('analytics:dashboard.biases.descriptions.fomo', { count: parseInt(match[1], 10) });
+      }
+    }
+    
+    // Loss Aversion
+    if (bias.bias === 'Loss Aversion') {
+      const match = bias.description.match(/(\d+) trades perdants gardés trop longtemps/);
+      if (match) {
+        return t('analytics:dashboard.biases.descriptions.lossAversion', { count: parseInt(match[1], 10) });
+      }
+    }
+    
+    // Premature Exit
+    if (bias.bias === 'Premature Exit') {
+      const match = bias.description.match(/(\d+) trades gagnants coupés trop tôt/);
+      if (match) {
+        return t('analytics:dashboard.biases.descriptions.prematureExit', { count: parseInt(match[1], 10) });
+      }
+    }
+    
+    // Stop Loss Widening
     if (bias.bias === 'Stop Loss Widening') {
       const match = bias.description.match(/(\d+) trades avec SL/);
       if (match) {
-        return t('analytics:dashboard.biases.descriptions.stopLossWidening').replace('{{count}}', match[1]);
+        return t('analytics:dashboard.biases.descriptions.stopLossWidening', { count: parseInt(match[1], 10) });
       }
     }
+    
     return bias.description;
   };
 
@@ -38,6 +79,11 @@ const AnalyticsDashboard: React.FC = () => {
     const recommendationTranslations: { [key: string]: string } = {
       'Limiter le nombre de trades par jour': t('analytics:dashboard.biases.recommendations.limitTrades', { defaultValue: 'Limiter le nombre de trades par jour' }),
       'Respecter le stop loss initial': t('analytics:dashboard.biases.recommendations.respectStopLoss', { defaultValue: 'Respecter le stop loss initial' }),
+      'Prendre une pause après une perte. Attendre au moins 30 minutes avant le prochain trade.': t('analytics:dashboard.biases.recommendations.takePauseAfterLoss', { defaultValue: 'Prendre une pause après une perte. Attendre au moins 30 minutes avant le prochain trade.' }),
+      'Attendre le bon setup. Ne pas courir après le marché.': t('analytics:dashboard.biases.recommendations.waitForSetup', { defaultValue: 'Attendre le bon setup. Ne pas courir après le marché.' }),
+      'Respecter le stop loss initial. Couper les pertes rapidement.': t('analytics:dashboard.biases.recommendations.cutLossesQuickly', { defaultValue: 'Respecter le stop loss initial. Couper les pertes rapidement.' }),
+      'Laisser courir les gagnants. Respecter les objectifs de take profit.': t('analytics:dashboard.biases.recommendations.letWinnersRun', { defaultValue: 'Laisser courir les gagnants. Respecter les objectifs de take profit.' }),
+      'Respecter le stop loss initial. Ne jamais élargir le SL.': t('analytics:dashboard.biases.recommendations.neverWidenSL', { defaultValue: 'Respecter le stop loss initial. Ne jamais élargir le SL.' }),
     };
     return recommendationTranslations[bias.recommendation] || bias.recommendation;
   };
@@ -46,6 +92,7 @@ const AnalyticsDashboard: React.FC = () => {
   const [bestSetups, setBestSetups] = useState<BestSetup[]>([]);
   const [worstPatterns, setWorstPatterns] = useState<WorstPattern[]>([]);
   const [biases, setBiases] = useState<BehavioralBias[]>([]);
+  const [showRules, setShowRules] = useState(false);
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
@@ -229,31 +276,27 @@ const AnalyticsDashboard: React.FC = () => {
           {t('analytics:dashboard.biases.title', { defaultValue: 'Biais Comportementaux Détectés' })}
         </h2>
         {biases.length > 0 ? (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {biases.map((bias, index) => (
               <div key={index} className={`border rounded-lg p-4 ${
                 bias.severity === 'high' ? 'bg-red-50 border-red-300' :
                 bias.severity === 'medium' ? 'bg-yellow-50 border-yellow-300' :
                 'bg-blue-50 border-blue-300'
               }`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-lg">{translateBias(bias.bias)}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        bias.severity === 'high' ? 'bg-red-200 text-red-800' :
-                        bias.severity === 'medium' ? 'bg-yellow-200 text-yellow-800' :
-                        'bg-blue-200 text-blue-800'
-                      }`}>
-                        {bias.severity.toUpperCase()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-700 mt-2">{translateBiasDescription(bias)}</p>
-                    <div className="mt-3 bg-white bg-opacity-50 rounded p-3">
-                      <p className="text-sm font-medium text-gray-800">💡 {t('analytics:dashboard.biases.recommendation', { defaultValue: 'Recommandation' })}:</p>
-                      <p className="text-sm text-gray-700 mt-1">{translateBiasRecommendation(bias)}</p>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-base">{translateBias(bias.bias)}</h3>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    bias.severity === 'high' ? 'bg-red-200 text-red-800' :
+                    bias.severity === 'medium' ? 'bg-yellow-200 text-yellow-800' :
+                    'bg-blue-200 text-blue-800'
+                  }`}>
+                    {bias.severity.toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 mb-3">{translateBiasDescription(bias)}</p>
+                <div className="bg-white bg-opacity-50 rounded p-2">
+                  <p className="text-xs font-medium text-gray-800 mb-1">💡 {t('analytics:dashboard.biases.recommendation', { defaultValue: 'Recommandation' })}</p>
+                  <p className="text-xs text-gray-700">{translateBiasRecommendation(bias)}</p>
                 </div>
               </div>
             ))}
@@ -263,6 +306,23 @@ const AnalyticsDashboard: React.FC = () => {
             {t('analytics:dashboard.biases.noData', { defaultValue: 'Aucun biais comportemental significatif détecté' })}
           </p>
         )}
+
+        {/* Section Règles de Détection & Configuration */}
+        <div className="mt-6 border-t pt-4">
+          <button
+            onClick={() => setShowRules(!showRules)}
+            className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 font-medium"
+          >
+            {showRules ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+            ⚙️ {t('analytics:biasRules.title', { defaultValue: 'Règles de Détection & Configuration' })}
+          </button>
+
+          {showRules && (
+            <div className="mt-4">
+              <BiasDetectionRulesSection onThresholdsChange={loadAnalytics} />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Analyse par Tendance */}

@@ -39,6 +39,9 @@ const TradeSetupForm: React.FC<TradeSetupFormProps> = ({
     setup_quality: initialData.setup_quality || 'C',
     setup_confidence: initialData.setup_confidence,
     entry_timing: initialData.entry_timing,
+    entry_in_range_percentage: initialData.entry_in_range_percentage,
+    missed_better_entry: initialData.missed_better_entry || false,
+    planned_hold_duration: initialData.planned_hold_duration,
   });
 
   const [newConfluence, setNewConfluence] = useState('');
@@ -73,6 +76,26 @@ const TradeSetupForm: React.FC<TradeSetupFormProps> = ({
     };
     setFormData(newData);
     onChange?.(newData);
+  };
+
+  const handleReset = () => {
+    if (window.confirm(t('analytics:tradeAnalytics.confirmReset', { defaultValue: 'Êtes-vous sûr de vouloir réinitialiser ce formulaire ?' }))) {
+      const resetData: TradeSetupFormData = {
+        setup_category: 'pullback',
+        setup_subcategory: '',
+        chart_pattern: 'none',
+        confluence_factors: [],
+        setup_quality: 'C',
+        setup_confidence: undefined,
+        entry_timing: undefined,
+        entry_in_range_percentage: undefined,
+        missed_better_entry: false,
+        planned_hold_duration: undefined,
+      };
+      setFormData(resetData);
+      setNewConfluence('');
+      onChange?.(resetData);
+    }
   };
 
   return (
@@ -242,8 +265,68 @@ const TradeSetupForm: React.FC<TradeSetupFormProps> = ({
         </div>
       </div>
 
+      {/* Analyse du Setup (pour détection des biais) */}
+      <div className={sectionClassName}>
+        <h3 className={sectionTitleClassName}>{t('analytics:tradeAnalytics.setup.analysis', { defaultValue: 'Analyse du Setup' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className={labelClassName}>
+              {t('analytics:tradeAnalytics.setup.entryInRange', { defaultValue: 'Position d\'entrée dans le range (%)' })}
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              value={formData.entry_in_range_percentage || ''}
+              onChange={(e) => handleChange('entry_in_range_percentage', e.target.value ? parseFloat(e.target.value) : undefined)}
+              className={inputClassName}
+              placeholder="Ex: 75"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t('analytics:tradeAnalytics.setup.entryInRangeHelp', { defaultValue: '0% = bas du range, 100% = haut du range' })}
+            </p>
+          </div>
+
+          <div>
+            <label className={labelClassName}>
+              {t('analytics:tradeAnalytics.setup.plannedHoldDuration', { defaultValue: 'Durée prévue en position (min)' })}
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={formData.planned_hold_duration || ''}
+              onChange={(e) => handleChange('planned_hold_duration', e.target.value ? parseInt(e.target.value) : undefined)}
+              className={inputClassName}
+              placeholder="Ex: 15"
+            />
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="missed_better_entry"
+              checked={formData.missed_better_entry}
+              onChange={(e) => handleChange('missed_better_entry', e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="missed_better_entry" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+              {t('analytics:tradeAnalytics.setup.missedBetterEntry', { defaultValue: 'Meilleure entrée ratée ?' })}
+            </label>
+          </div>
+        </div>
+      </div>
+
       {/* Boutons d'action */}
-      <div className="flex justify-end space-x-3">
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={handleReset}
+          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+        >
+          {t('analytics:tradeAnalytics.reset', { defaultValue: 'Réinitialiser' })}
+        </button>
+        <div className="flex space-x-3">
         {onCancel && (
           <button
             type="button"
@@ -259,6 +342,7 @@ const TradeSetupForm: React.FC<TradeSetupFormProps> = ({
         >
           {t('common:next', { defaultValue: 'Suivant' })}
         </button>
+        </div>
       </div>
     </form>
   );

@@ -55,8 +55,6 @@ export type PhysicalState = 'rested' | 'tired' | 'sick' | 'optimal';
 
 export type MentalState = 'focused' | 'distracted' | 'stressed' | 'confident';
 
-export type EmotionalState = 'calm' | 'anxious' | 'excited' | 'frustrated';
-
 export type StopLossDirection = 'tighter' | 'wider' | 'none';
 
 export type ExitReason = 
@@ -68,6 +66,14 @@ export type ExitReason =
   | 'setup_invalidated' 
   | 'emotional' 
   | 'news_event';
+
+export type PreviousTradeResult = 'win' | 'loss' | 'breakeven' | 'first_trade_of_session';
+
+export type TradeMotivation = 'setup_signal' | 'fomo' | 'revenge' | 'boredom' | 'recovery_attempt' | 'planned';
+
+export type TimeInPosition = 'much_shorter' | 'shorter' | 'as_planned' | 'longer' | 'much_longer';
+
+export type ExitEmotionalContext = 'neutral' | 'fear' | 'greed' | 'fomo' | 'discipline';
 
 export type TagCategory = 'setup' | 'mistake' | 'market_condition' | 'strategy' | 'other';
 
@@ -126,10 +132,7 @@ export interface SessionContext {
   is_last_trade_of_day: boolean;
   physical_state: PhysicalState | null;
   mental_state: MentalState | null;
-  emotional_state: EmotionalState | null;
   hours_of_sleep: number | null;
-  caffeine_consumed: boolean;
-  distractions_present: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -361,23 +364,31 @@ export interface TradeSetupFormData {
   setup_quality: SetupQuality;
   setup_confidence?: number;
   entry_timing?: EntryTiming;
+  // Nouveaux champs pour biais comportementaux
+  entry_in_range_percentage?: number;
+  missed_better_entry?: boolean;
+  planned_hold_duration?: number;
+}
+
+export interface NewsEvent {
+  impact: NewsImpact;
+  description: string;
 }
 
 export interface SessionContextFormData {
   trading_session: TradingSession;
   session_time_slot?: string;
-  news_event?: boolean;
-  news_impact?: NewsImpact;
-  news_description?: string;
+  news_events?: NewsEvent[];
   day_of_week: DayOfWeek;
   is_first_trade_of_day?: boolean;
   is_last_trade_of_day?: boolean;
   physical_state?: PhysicalState;
   mental_state?: MentalState;
-  emotional_state?: EmotionalState;
   hours_of_sleep?: number;
-  caffeine_consumed?: boolean;
-  distractions_present?: boolean;
+  // Nouveaux champs pour biais comportementaux
+  previous_trade_result?: PreviousTradeResult;
+  minutes_since_last_trade?: number;
+  trade_motivation?: TradeMotivation;
 }
 
 export interface TradeExecutionFormData {
@@ -393,4 +404,54 @@ export interface TradeExecutionFormData {
   slippage_points?: number;
   would_take_again?: boolean;
   lesson_learned?: string;
+  // Nouveaux champs pour biais comportementaux
+  time_in_position_vs_planned?: TimeInPosition;
+  exit_emotional_context?: ExitEmotionalContext;
+  position_size_change_reason?: string;
+}
+
+// Types pour les seuils de détection des biais comportementaux
+
+export interface OvertradingThresholds {
+  min_days: number;
+  min_trades_per_day: number;
+  high_severity_threshold: number;
+}
+
+export interface RevengeTradingThresholds {
+  min_occurrences: number;
+  quick_trade_minutes: number;
+}
+
+export interface FomoThresholds {
+  min_occurrences: number;
+  entry_range_threshold: number;
+}
+
+export interface LossAversionThresholds {
+  min_occurrences: number;
+}
+
+export interface PrematureExitThresholds {
+  min_occurrences: number;
+  rr_threshold: number;
+}
+
+export interface StopLossWideningThresholds {
+  min_occurrences: number;
+}
+
+export interface BiasThresholds {
+  overtrading: OvertradingThresholds;
+  revenge_trading: RevengeTradingThresholds;
+  fomo: FomoThresholds;
+  loss_aversion: LossAversionThresholds;
+  premature_exit: PrematureExitThresholds;
+  stop_loss_widening: StopLossWideningThresholds;
+}
+
+export interface BiasThresholdsResponse {
+  thresholds: BiasThresholds;
+  defaults: BiasThresholds;
+  custom: Partial<BiasThresholds>;
 }

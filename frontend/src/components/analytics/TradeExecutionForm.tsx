@@ -42,6 +42,9 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
     slippage_points: initialData.slippage_points,
     would_take_again: initialData.would_take_again,
     lesson_learned: initialData.lesson_learned || '',
+    time_in_position_vs_planned: initialData.time_in_position_vs_planned,
+    exit_emotional_context: initialData.exit_emotional_context || 'neutral',
+    position_size_change_reason: initialData.position_size_change_reason || '',
   });
 
   const [newError, setNewError] = useState('');
@@ -72,6 +75,30 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
       execution_errors: formData.execution_errors?.filter((_, i) => i !== index) || [],
     };
     setFormData(newData);
+  };
+
+  const handleReset = () => {
+    if (window.confirm(t('analytics:tradeAnalytics.confirmReset', { defaultValue: 'Êtes-vous sûr de vouloir réinitialiser ce formulaire ?' }))) {
+      const resetData: TradeExecutionFormData = {
+        entry_as_planned: undefined,
+        exit_as_planned: undefined,
+        position_size_as_planned: undefined,
+        moved_stop_loss: false,
+        stop_loss_direction: 'none',
+        partial_exit_taken: false,
+        partial_exit_percentage: undefined,
+        exit_reason: undefined,
+        execution_errors: [],
+        slippage_points: undefined,
+        would_take_again: undefined,
+        lesson_learned: '',
+        time_in_position_vs_planned: undefined,
+        exit_emotional_context: 'neutral',
+        position_size_change_reason: '',
+      };
+      setFormData(resetData);
+      setNewError('');
+    }
   };
 
   return (
@@ -134,6 +161,23 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
 
           <div>
             <label className={labelClassName}>
+              {t('analytics:tradeAnalytics.execution.exitEmotionalContext', { defaultValue: 'Contexte émotionnel de sortie' })}
+            </label>
+            <select
+              value={formData.exit_emotional_context || 'neutral'}
+              onChange={(e) => handleChange('exit_emotional_context', e.target.value)}
+              className={selectClassName}
+            >
+              <option value="neutral">{t('analytics:exitEmotionalContext.neutral', { defaultValue: 'Neutre/Discipline' })}</option>
+              <option value="fear">{t('analytics:exitEmotionalContext.fear', { defaultValue: 'Peur' })}</option>
+              <option value="greed">{t('analytics:exitEmotionalContext.greed', { defaultValue: 'Avidité' })}</option>
+              <option value="fomo">{t('analytics:exitEmotionalContext.fomo', { defaultValue: 'FOMO' })}</option>
+              <option value="discipline">{t('analytics:exitEmotionalContext.discipline', { defaultValue: 'Discipline stricte' })}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClassName}>
               {t('analytics:tradeAnalytics.execution.positionSizeAsPlanned')}
             </label>
             <div className="space-y-2">
@@ -160,21 +204,38 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
         </div>
       </div>
 
-      {/* Gestion du Trade */}
+      {/* Gestion du Trade & Sortie */}
       <div className={sectionClassName}>
         <h3 className={sectionTitleClassName}>{t('analytics:tradeAnalytics.execution.tradeManagement')}</h3>
-        <div className="space-y-4">
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="moved_stop_loss"
-              checked={formData.moved_stop_loss}
-              onChange={(e) => handleChange('moved_stop_loss', e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="moved_stop_loss" className={checkboxLabelClassName}>
-              {t('analytics:tradeAnalytics.execution.movedStopLoss', { defaultValue: 'Stop Loss déplacé' })}
-            </label>
+        
+        {/* Checkboxes pour Stop Loss et Sortie Partielle */}
+        <div className="space-y-4 mb-4">
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="moved_stop_loss"
+                checked={formData.moved_stop_loss}
+                onChange={(e) => handleChange('moved_stop_loss', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="moved_stop_loss" className={checkboxLabelClassName}>
+                {t('analytics:tradeAnalytics.execution.movedStopLoss', { defaultValue: 'Stop Loss déplacé' })}
+              </label>
+            </div>
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="partial_exit_taken"
+                checked={formData.partial_exit_taken}
+                onChange={(e) => handleChange('partial_exit_taken', e.target.checked)}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="partial_exit_taken" className={checkboxLabelClassName}>
+                {t('analytics:tradeAnalytics.execution.partialExitTaken', { defaultValue: 'Sortie partielle effectuée' })}
+              </label>
+            </div>
           </div>
 
           {formData.moved_stop_loss && (
@@ -194,19 +255,6 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
             </div>
           )}
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="partial_exit_taken"
-              checked={formData.partial_exit_taken}
-              onChange={(e) => handleChange('partial_exit_taken', e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="partial_exit_taken" className={checkboxLabelClassName}>
-              {t('analytics:tradeAnalytics.execution.partialExitTaken', { defaultValue: 'Sortie partielle effectuée' })}
-            </label>
-          </div>
-
           {formData.partial_exit_taken && (
             <div className="pl-6">
               <label className={labelClassName}>
@@ -224,11 +272,8 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
             </div>
           )}
         </div>
-      </div>
 
-      {/* Sortie et Exécution */}
-      <div className={sectionClassName}>
-        <h3 className={sectionTitleClassName}>{t('analytics:tradeAnalytics.execution.exitAndExecution', { defaultValue: 'Sortie et Exécution' })}</h3>
+        {/* Raison de sortie et Slippage */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelClassName}>
@@ -264,6 +309,39 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
               placeholder="Ex: 2.5"
             />
           </div>
+
+          <div>
+            <label className={labelClassName}>
+              {t('analytics:tradeAnalytics.execution.timeInPositionVsPlanned', { defaultValue: 'Durée en position vs plan' })}
+            </label>
+            <select
+              value={formData.time_in_position_vs_planned || ''}
+              onChange={(e) => handleChange('time_in_position_vs_planned', e.target.value || undefined)}
+              className={selectClassName}
+            >
+              <option value="">-- {t('common:select', { defaultValue: 'Sélectionner' })} --</option>
+              <option value="much_shorter">{t('analytics:timeInPosition.muchShorter', { defaultValue: 'Beaucoup plus court' })}</option>
+              <option value="shorter">{t('analytics:timeInPosition.shorter', { defaultValue: 'Plus court' })}</option>
+              <option value="as_planned">{t('analytics:timeInPosition.asPlanned', { defaultValue: 'Comme prévu' })}</option>
+              <option value="longer">{t('analytics:timeInPosition.longer', { defaultValue: 'Plus long' })}</option>
+              <option value="much_longer">{t('analytics:timeInPosition.muchLonger', { defaultValue: 'Beaucoup plus long' })}</option>
+            </select>
+          </div>
+
+          {formData.position_size_as_planned === false && (
+            <div className="md:col-span-2">
+              <label className={labelClassName}>
+                {t('analytics:tradeAnalytics.execution.positionSizeChangeReason', { defaultValue: 'Raison du changement de taille' })}
+              </label>
+              <textarea
+                value={formData.position_size_change_reason}
+                onChange={(e) => handleChange('position_size_change_reason', e.target.value)}
+                rows={3}
+                className={textareaClassName}
+                placeholder={t('analytics:tradeAnalytics.execution.positionSizeChangeReasonPlaceholder', { defaultValue: 'Pourquoi avez-vous modifié la taille de position ?' })}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -362,7 +440,15 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
       </div>
 
       {/* Boutons d'action */}
-      <div className="flex justify-end space-x-3">
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={handleReset}
+          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+        >
+          {t('analytics:tradeAnalytics.reset', { defaultValue: 'Réinitialiser' })}
+        </button>
+        <div className="flex space-x-3">
         {onCancel && (
           <button
             type="button"
@@ -378,6 +464,7 @@ const TradeExecutionForm: React.FC<TradeExecutionFormProps> = ({
         >
           {t('analytics:tradeAnalytics.saveAndFinish', { defaultValue: 'Enregistrer et Terminer' })}
         </button>
+        </div>
       </div>
     </form>
   );

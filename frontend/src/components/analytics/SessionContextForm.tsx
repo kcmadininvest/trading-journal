@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   SessionContextFormData,
+  NewsEvent,
   TradingSession,
   NewsImpact,
   DayOfWeek,
   PhysicalState,
   MentalState,
-  EmotionalState,
 } from '../../types/analytics';
 import {
   selectClassName,
@@ -37,17 +37,15 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
     trading_session: initialData.trading_session || 'asian',
     day_of_week: initialData.day_of_week || 'monday',
     session_time_slot: initialData.session_time_slot || '',
-    news_event: initialData.news_event || false,
-    news_impact: initialData.news_impact || 'none',
-    news_description: initialData.news_description || '',
+    news_events: initialData.news_events || [],
     is_first_trade_of_day: initialData.is_first_trade_of_day || false,
     is_last_trade_of_day: initialData.is_last_trade_of_day || false,
     physical_state: initialData.physical_state,
     mental_state: initialData.mental_state,
-    emotional_state: initialData.emotional_state,
     hours_of_sleep: initialData.hours_of_sleep,
-    caffeine_consumed: initialData.caffeine_consumed || false,
-    distractions_present: initialData.distractions_present || false,
+    previous_trade_result: initialData.previous_trade_result,
+    minutes_since_last_trade: initialData.minutes_since_last_trade,
+    trade_motivation: initialData.trade_motivation,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -75,6 +73,57 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
 
   const handleChange = (field: keyof SessionContextFormData, value: any) => {
     const newData = { ...formData, [field]: value };
+    setFormData(newData);
+    onChange?.(newData);
+  };
+
+  const handleReset = () => {
+    if (window.confirm(t('analytics:tradeAnalytics.confirmReset', { defaultValue: 'Êtes-vous sûr de vouloir réinitialiser ce formulaire ?' }))) {
+      const resetData: SessionContextFormData = {
+        trading_session: 'asian',
+        day_of_week: 'monday',
+        session_time_slot: '',
+        news_events: [],
+        is_first_trade_of_day: false,
+        is_last_trade_of_day: false,
+        physical_state: undefined,
+        mental_state: undefined,
+        hours_of_sleep: undefined,
+        previous_trade_result: undefined,
+        minutes_since_last_trade: undefined,
+        trade_motivation: undefined,
+      };
+      setFormData(resetData);
+      onChange?.(resetData);
+    }
+  };
+
+  const addNewsEvent = () => {
+    const newEvent: NewsEvent = {
+      impact: 'none',
+      description: '',
+    };
+    const newData = {
+      ...formData,
+      news_events: [...(formData.news_events || []), newEvent],
+    };
+    setFormData(newData);
+    onChange?.(newData);
+  };
+
+  const removeNewsEvent = (index: number) => {
+    const newData = {
+      ...formData,
+      news_events: formData.news_events?.filter((_, i) => i !== index) || [],
+    };
+    setFormData(newData);
+    onChange?.(newData);
+  };
+
+  const updateNewsEvent = (index: number, field: keyof NewsEvent, value: any) => {
+    const newEvents = [...(formData.news_events || [])];
+    newEvents[index] = { ...newEvents[index], [field]: value };
+    const newData = { ...formData, news_events: newEvents };
     setFormData(newData);
     onChange?.(newData);
   };
@@ -170,60 +219,75 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
 
       {/* Événements Externes */}
       <div className={sectionClassName}>
-        <h3 className={sectionTitleClassName}>{t('analytics:tradeAnalytics.session.externalEvents', { defaultValue: 'Événements Externes' })}</h3>
-        <div className="space-y-4">
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="news_event"
-              checked={formData.news_event}
-              onChange={(e) => handleChange('news_event', e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="news_event" className={checkboxLabelClassName}>
-              {t('analytics:tradeAnalytics.session.newsEvent')}
-            </label>
-          </div>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className={sectionTitleClassName + " mb-0"}>{t('analytics:tradeAnalytics.session.externalEvents', { defaultValue: 'Événements Externes' })}</h3>
+          <button
+            type="button"
+            onClick={addNewsEvent}
+            className="px-3 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-white hover:bg-blue-600 dark:hover:bg-blue-500 border border-blue-600 dark:border-blue-400 rounded transition-colors"
+          >
+            + {t('analytics:tradeAnalytics.session.addNewsEvent', { defaultValue: 'Ajouter un événement' })}
+          </button>
+        </div>
 
-          {formData.news_event && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
-              <div>
-                <label className={labelClassName}>
-                  {t('analytics:tradeAnalytics.session.newsImpact')}
-                </label>
-                <select
-                  value={formData.news_impact}
-                  onChange={(e) => handleChange('news_impact', e.target.value as NewsImpact)}
-                  className={selectClassName}
-                >
-                  <option value="none">{t('common:none', { defaultValue: 'Aucun' })}</option>
-                  <option value="low">{t('analytics:newsImpact.low', { defaultValue: 'Low' })}</option>
-                  <option value="medium">{t('analytics:newsImpact.medium', { defaultValue: 'Medium' })}</option>
-                  <option value="high">{t('analytics:newsImpact.high', { defaultValue: 'High' })}</option>
-                </select>
-              </div>
+        <div className="space-y-3">
+          {formData.news_events && formData.news_events.length > 0 ? (
+            formData.news_events.map((event, index) => (
+              <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClassName}>
+                      {t('analytics:tradeAnalytics.session.newsImpact')}
+                    </label>
+                    <select
+                      value={event.impact}
+                      onChange={(e) => updateNewsEvent(index, 'impact', e.target.value as NewsImpact)}
+                      className={selectClassName}
+                    >
+                      <option value="none">{t('common:none', { defaultValue: 'Aucun' })}</option>
+                      <option value="low">{t('analytics:newsImpact.low', { defaultValue: 'Low' })}</option>
+                      <option value="medium">{t('analytics:newsImpact.medium', { defaultValue: 'Medium' })}</option>
+                      <option value="high">{t('analytics:newsImpact.high', { defaultValue: 'High' })}</option>
+                    </select>
+                  </div>
 
-              <div>
-                <label className={labelClassName}>
-                  {t('analytics:tradeAnalytics.session.newsDescription')}
-                </label>
-                <input
-                  type="text"
-                  value={formData.news_description}
-                  onChange={(e) => handleChange('news_description', e.target.value)}
-                  className={selectClassName}
-                  placeholder={t('analytics:tradeAnalytics.session.newsDescriptionPlaceholder', { defaultValue: 'Ex: NFP, FOMC, CPI...' })}
-                />
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className={labelClassName}>
+                        {t('analytics:tradeAnalytics.session.newsDescription')}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => removeNewsEvent(index)}
+                        className="px-2 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:text-white hover:bg-red-600 dark:hover:bg-red-500 border border-red-600 dark:border-red-400 rounded transition-colors"
+                        title={t('common:delete', { defaultValue: 'Supprimer' })}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={event.description}
+                      onChange={(e) => updateNewsEvent(index, 'description', e.target.value)}
+                      className={selectClassName}
+                      placeholder={t('analytics:tradeAnalytics.session.newsDescriptionPlaceholder', { defaultValue: 'Ex: NFP, FOMC, CPI...' })}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+              {t('analytics:tradeAnalytics.session.noNewsEvents', { defaultValue: 'Aucun événement externe. Cliquez sur "Ajouter un événement" pour en ajouter.' })}
+            </p>
           )}
         </div>
       </div>
 
-      {/* État du Trader */}
+      {/* État du Trader & Contexte Personnel */}
       <div className={sectionClassName}>
         <h3 className={sectionTitleClassName}>{t('analytics:tradeAnalytics.session.traderState', { defaultValue: 'État du Trader' })}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelClassName}>
               {t('analytics:tradeAnalytics.session.physicalState')}
@@ -260,29 +324,6 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
 
           <div>
             <label className={labelClassName}>
-              {t('analytics:tradeAnalytics.session.emotionalState')}
-            </label>
-            <select
-              value={formData.emotional_state || ''}
-              onChange={(e) => handleChange('emotional_state', e.target.value as EmotionalState || undefined)}
-              className={selectClassName}
-            >
-              <option value="">-- {t('common:select', { defaultValue: 'Sélectionner' })} --</option>
-              <option value="calm">{t('analytics:emotionalState.calm', { defaultValue: 'Calm' })}</option>
-              <option value="excited">{t('analytics:emotionalState.excited', { defaultValue: 'Excited' })}</option>
-              <option value="anxious">{t('analytics:emotionalState.anxious', { defaultValue: 'Anxious' })}</option>
-              <option value="frustrated">{t('analytics:emotionalState.frustrated', { defaultValue: 'Frustrated' })}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Contexte Personnel */}
-      <div className={sectionClassName}>
-        <h3 className={sectionTitleClassName}>{t('analytics:tradeAnalytics.session.personalContext', { defaultValue: 'Contexte Personnel' })}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className={labelClassName}>
               {t('analytics:tradeAnalytics.session.hoursOfSleep', { defaultValue: 'Heures de Sommeil' })}
             </label>
             <input
@@ -296,37 +337,76 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
               placeholder="Ex: 7.5"
             />
           </div>
+        </div>
+      </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="caffeine_consumed"
-              checked={formData.caffeine_consumed}
-              onChange={(e) => handleChange('caffeine_consumed', e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="caffeine_consumed" className={checkboxLabelClassName}>
-              {t('analytics:tradeAnalytics.session.caffeineConsumed', { defaultValue: 'Caféine consommée' })}
+      {/* Contexte du Trade */}
+      <div className={sectionClassName}>
+        <h3 className={sectionTitleClassName}>{t('analytics:tradeAnalytics.session.tradeContext', { defaultValue: 'Contexte du Trade' })}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClassName}>
+              {t('analytics:tradeAnalytics.session.previousTradeResult', { defaultValue: 'Résultat du trade précédent' })}
             </label>
+            <select
+              value={formData.previous_trade_result || ''}
+              onChange={(e) => handleChange('previous_trade_result', e.target.value || undefined)}
+              className={selectClassName}
+            >
+              <option value="">-- {t('common:select', { defaultValue: 'Sélectionner' })} --</option>
+              <option value="win">{t('analytics:previousTradeResult.win', { defaultValue: 'Gain' })}</option>
+              <option value="loss">{t('analytics:previousTradeResult.loss', { defaultValue: 'Perte' })}</option>
+              <option value="breakeven">{t('analytics:previousTradeResult.breakeven', { defaultValue: 'Breakeven' })}</option>
+              <option value="first_trade_of_session">{t('analytics:previousTradeResult.firstTrade', { defaultValue: 'Premier trade de la session' })}</option>
+            </select>
           </div>
 
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="distractions_present"
-              checked={formData.distractions_present}
-              onChange={(e) => handleChange('distractions_present', e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="distractions_present" className={checkboxLabelClassName}>
-              {t('analytics:tradeAnalytics.session.distractionsPresent', { defaultValue: 'Distractions présentes' })}
+          <div>
+            <label className={labelClassName}>
+              {t('analytics:tradeAnalytics.session.tradeMotivation', { defaultValue: 'Motivation principale du trade' })}
             </label>
+            <select
+              value={formData.trade_motivation || ''}
+              onChange={(e) => handleChange('trade_motivation', e.target.value || undefined)}
+              className={selectClassName}
+            >
+              <option value="">-- {t('common:select', { defaultValue: 'Sélectionner' })} --</option>
+              <option value="setup_signal">{t('analytics:tradeMotivation.setupSignal', { defaultValue: 'Signal de setup' })}</option>
+              <option value="fomo">{t('analytics:tradeMotivation.fomo', { defaultValue: 'FOMO' })}</option>
+              <option value="revenge">{t('analytics:tradeMotivation.revenge', { defaultValue: 'Revenge' })}</option>
+              <option value="boredom">{t('analytics:tradeMotivation.boredom', { defaultValue: 'Ennui' })}</option>
+              <option value="recovery_attempt">{t('analytics:tradeMotivation.recoveryAttempt', { defaultValue: 'Tentative de récupération' })}</option>
+              <option value="planned">{t('analytics:tradeMotivation.planned', { defaultValue: 'Planifié' })}</option>
+            </select>
           </div>
+
+          {formData.minutes_since_last_trade !== undefined && (
+            <div>
+              <label className={labelClassName}>
+                {t('analytics:tradeAnalytics.session.minutesSinceLastTrade', { defaultValue: 'Minutes depuis le dernier trade' })}
+              </label>
+              <input
+                type="number"
+                value={formData.minutes_since_last_trade || ''}
+                readOnly
+                className={`${selectClassName} bg-gray-100 dark:bg-gray-700 cursor-not-allowed`}
+                placeholder={t('analytics:tradeAnalytics.session.calculatedAuto', { defaultValue: 'Calculé automatiquement' })}
+              />
+            </div>
+          )}
         </div>
       </div>
 
       {/* Boutons d'action */}
-      <div className="flex justify-end space-x-3">
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={handleReset}
+          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+        >
+          {t('analytics:tradeAnalytics.reset', { defaultValue: 'Réinitialiser' })}
+        </button>
+        <div className="flex space-x-3">
         {onCancel && (
           <button
             type="button"
@@ -342,6 +422,7 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
         >
           {t('common:next', { defaultValue: 'Suivant' })}
         </button>
+        </div>
       </div>
     </form>
   );

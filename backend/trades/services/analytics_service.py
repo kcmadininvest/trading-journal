@@ -421,6 +421,63 @@ class PatternRecognitionService:
     def __init__(self, user: User):
         self.user = user
     
+    @staticmethod
+    def get_default_bias_thresholds() -> Dict[str, Any]:
+        """
+        Retourne les seuils par défaut pour la détection des biais.
+        
+        Returns:
+            Dictionnaire des seuils par défaut
+        """
+        return {
+            'overtrading': {
+                'min_days': 5,
+                'min_trades_per_day': 10,
+                'high_severity_threshold': 15
+            },
+            'revenge_trading': {
+                'min_occurrences': 5,
+                'quick_trade_minutes': 30
+            },
+            'fomo': {
+                'min_occurrences': 5,
+                'entry_range_threshold': 80
+            },
+            'loss_aversion': {
+                'min_occurrences': 5
+            },
+            'premature_exit': {
+                'min_occurrences': 5,
+                'rr_threshold': 0.5
+            },
+            'stop_loss_widening': {
+                'min_occurrences': 5
+            }
+        }
+    
+    def _get_thresholds(self, custom_thresholds: Optional[Dict] = None) -> Dict[str, Any]:
+        """
+        Fusionne les seuils personnalisés avec les seuils par défaut.
+        
+        Args:
+            custom_thresholds: Seuils personnalisés de l'utilisateur
+            
+        Returns:
+            Seuils à utiliser (personnalisés ou par défaut)
+        """
+        defaults = self.get_default_bias_thresholds()
+        
+        if not custom_thresholds:
+            return defaults
+        
+        # Fusionner les seuils personnalisés avec les défauts
+        merged = defaults.copy()
+        for bias_type, thresholds in custom_thresholds.items():
+            if bias_type in merged:
+                merged[bias_type].update(thresholds)
+        
+        return merged
+    
     def identify_recurring_patterns(self) -> List[Dict[str, Any]]:
         """
         Identifie les patterns qui se répètent.
@@ -519,52 +576,217 @@ class PatternRecognitionService:
         
         return results
     
-    def detect_behavioral_biases(self) -> List[Dict[str, Any]]:
+    def detect_behavioral_biases(self, custom_thresholds: Optional[Dict] = None) -> List[Dict[str, Any]]:
         """
         Détecte les biais comportementaux.
+        
+        Args:
+            custom_thresholds: Seuils personnalisés de l'utilisateur
         
         Returns:
             Liste de biais détectés
         """
         biases = []
         
+        # Obtenir les seuils à utiliser
+        thresholds = self._get_thresholds(custom_thresholds)
+        
+        # Vérifier qu'il y a suffisamment de données globales
+        total_trades = TopStepTrade.objects.filter(user=self.user).count()
+        
+        # Minimum 30 trades pour détecter des patterns significatifs
+        if total_trades < 30:
+            return biases
+        
         # Biais 1: Overtrading (trop de trades par jour)
         from django.db.models.functions import TruncDate
+        overtrading_thresholds = thresholds['overtrading']
         daily_trade_counts = (
             TopStepTrade.objects
             .filter(user=self.user)
             .annotate(date=TruncDate('entered_at'))
             .values('date')
             .annotate(count=Count('id'))
-            .filter(count__gte=10)  # Plus de 10 trades par jour
+            .filter(count__gte=overtrading_thresholds['min_trades_per_day'])
         )
         
-        if daily_trade_counts.exists():
+        # Vérifier qu'il y a au moins min_days jours avec min_trades_per_day+ trades pour confirmer le pattern
+        if daily_trade_counts.count() >= overtrading_thresholds['min_days']:
             avg_count = daily_trade_counts.aggregate(avg=Avg('count'))['avg']
             biases.append({
                 'bias': 'Overtrading',
                 'description': f'Moyenne de {avg_count:.1f} trades les jours actifs',
-                'severity': 'high' if avg_count > 15 else 'medium',
+                'severity': 'high' if avg_count > overtrading_thresholds['high_severity_threshold'] else 'medium',
                 'recommendation': 'Limiter le nombre de trades par jour',
             })
         
-        # Biais 2: Revenge trading (trades après une perte)
-        # TODO: Implémenter la logique de détection
+        # Biais 2: Revenge Trading (trades motivés par la vengeance après une perte)
+        revenge_thresholds = thresholds['revenge_trading']
+        revenge_trades = SessionContext.objects.filter(
+            trade__user=self.user,
+            previous_trade_result='loss',
+            trade_motivation__in=['revenge', 'recovery_attempt']
+        ).select_related('trade')
         
-        # Biais 3: Déplacement du stop loss
+        if revenge_trades.count() >= revenge_thresholds['min_occurrences']:
+            # Analyser les performances des revenge trades
+            revenge_pnl = revenge_trades.aggregate(
+                avg_pnl=Avg('trade__net_pnl'),
+                total_loss=Sum('trade__net_pnl', filter=Q(trade__net_pnl__lt=0))
+            )
+            
+            # Analyser le timing (trades rapides après une perte)
+            quick_revenge = revenge_trades.filter(minutes_since_last_trade__lt=revenge_thresholds['quick_trade_minutes']).count()
+            
+            severity = 'high' if revenge_pnl['avg_pnl'] and revenge_pnl['avg_pnl'] < 0 else 'medium'
+            
+            biases.append({
+                'bias': 'Revenge Trading',
+                'description': f'{revenge_trades.count()} trades de vengeance détectés ({quick_revenge} dans les {revenge_thresholds["quick_trade_minutes"]} min)',
+                'severity': severity,
+                'recommendation': 'Prendre une pause après une perte. Attendre au moins 30 minutes avant le prochain trade.',
+                'metrics': {
+                    'count': revenge_trades.count(),
+                    'avg_pnl': float(revenge_pnl['avg_pnl']) if revenge_pnl['avg_pnl'] else 0,
+                    'quick_trades': quick_revenge
+                }
+            })
+        
+        # Biais 3: FOMO (Fear Of Missing Out)
+        fomo_thresholds = thresholds['fomo']
+        fomo_trades = TradeSetup.objects.filter(
+            trade__user=self.user
+        ).filter(
+            Q(missed_better_entry=True) |
+            Q(entry_timing='late') |
+            Q(entry_in_range_percentage__gte=fomo_thresholds['entry_range_threshold'])
+        ).select_related('trade')
+        
+        # Filtrer aussi par motivation FOMO
+        fomo_motivated = SessionContext.objects.filter(
+            trade__user=self.user,
+            trade_motivation='fomo'
+        ).values_list('trade_id', flat=True)
+        
+        total_fomo = fomo_trades.count() + len(fomo_motivated)
+        
+        if total_fomo >= fomo_thresholds['min_occurrences']:
+            fomo_pnl = fomo_trades.aggregate(avg_pnl=Avg('trade__net_pnl'))
+            
+            biases.append({
+                'bias': 'FOMO',
+                'description': f'{total_fomo} trades avec signes de FOMO (entrées tardives, meilleure entrée ratée)',
+                'severity': 'medium',
+                'recommendation': 'Attendre le bon setup. Ne pas courir après le marché.',
+                'metrics': {
+                    'count': total_fomo,
+                    'late_entries': fomo_trades.filter(entry_timing='late').count(),
+                    'missed_better': fomo_trades.filter(missed_better_entry=True).count(),
+                    'avg_pnl': float(fomo_pnl['avg_pnl']) if fomo_pnl['avg_pnl'] else 0
+                }
+            })
+        
+        # Biais 4: Loss Aversion (garder les perdants trop longtemps)
+        loss_aversion_thresholds = thresholds['loss_aversion']
+        loss_aversion_trades = TradeExecution.objects.filter(
+            trade__user=self.user,
+            trade__net_pnl__lt=0,
+            time_in_position_vs_planned__in=['longer', 'much_longer']
+        ).select_related('trade')
+        
+        # Trades avec SL élargi sur des positions perdantes
+        widened_sl_losses = TradeExecution.objects.filter(
+            trade__user=self.user,
+            trade__net_pnl__lt=0,
+            moved_stop_loss=True,
+            stop_loss_direction='wider'
+        )
+        
+        total_loss_aversion = loss_aversion_trades.count() + widened_sl_losses.count()
+        
+        if total_loss_aversion >= loss_aversion_thresholds['min_occurrences']:
+            avg_loss = loss_aversion_trades.aggregate(avg=Avg('trade__net_pnl'))['avg']
+            
+            biases.append({
+                'bias': 'Loss Aversion',
+                'description': f'{total_loss_aversion} trades perdants gardés trop longtemps ou avec SL élargi',
+                'severity': 'high',
+                'recommendation': 'Respecter le stop loss initial. Couper les pertes rapidement.',
+                'metrics': {
+                    'count': total_loss_aversion,
+                    'held_too_long': loss_aversion_trades.count(),
+                    'widened_sl': widened_sl_losses.count(),
+                    'avg_loss': float(avg_loss) if avg_loss else 0
+                }
+            })
+        
+        # Biais 5: Premature Exit (couper les gagnants trop tôt)
+        premature_exit_thresholds = thresholds['premature_exit']
+        premature_exit_trades = TradeExecution.objects.filter(
+            trade__user=self.user,
+            trade__net_pnl__gt=0,
+            time_in_position_vs_planned__in=['shorter', 'much_shorter']
+        ).select_related('trade')
+        
+        # Trades sortis par peur/émotion alors qu'ils étaient gagnants
+        fear_exits = TradeExecution.objects.filter(
+            trade__user=self.user,
+            trade__net_pnl__gt=0,
+            exit_emotional_context='fear'
+        )
+        
+        # Trades avec R:R réalisé < R:R planifié
+        poor_rr_trades = TopStepTrade.objects.filter(
+            user=self.user,
+            net_pnl__gt=0,
+            actual_risk_reward_ratio__isnull=False,
+            planned_risk_reward_ratio__isnull=False,
+            actual_risk_reward_ratio__lt=F('planned_risk_reward_ratio') * premature_exit_thresholds['rr_threshold']
+        )
+        
+        total_premature = premature_exit_trades.count() + fear_exits.count() + poor_rr_trades.count()
+        
+        if total_premature >= premature_exit_thresholds['min_occurrences']:
+            # Calculer le manque à gagner potentiel
+            avg_rr_diff = poor_rr_trades.aggregate(
+                avg_planned=Avg('planned_risk_reward_ratio'),
+                avg_actual=Avg('actual_risk_reward_ratio')
+            )
+            
+            biases.append({
+                'bias': 'Premature Exit',
+                'description': f'{total_premature} trades gagnants coupés trop tôt',
+                'severity': 'high',
+                'recommendation': 'Laisser courir les gagnants. Respecter les objectifs de take profit.',
+                'metrics': {
+                    'count': total_premature,
+                    'held_too_short': premature_exit_trades.count(),
+                    'fear_exits': fear_exits.count(),
+                    'poor_rr': poor_rr_trades.count(),
+                    'avg_rr_planned': float(avg_rr_diff['avg_planned']) if avg_rr_diff['avg_planned'] else 0,
+                    'avg_rr_actual': float(avg_rr_diff['avg_actual']) if avg_rr_diff['avg_actual'] else 0
+                }
+            })
+        
+        # Biais 6: Déplacement du stop loss (Stop Loss Widening)
+        sl_widening_thresholds = thresholds['stop_loss_widening']
         moved_sl_trades = TradeExecution.objects.filter(
             trade__user=self.user,
             moved_stop_loss=True,
             stop_loss_direction='wider'
         )
         
-        if moved_sl_trades.count() > 5:
+        if moved_sl_trades.count() >= sl_widening_thresholds['min_occurrences']:
             avg_pnl = moved_sl_trades.aggregate(avg=Avg('trade__net_pnl'))['avg']
             biases.append({
                 'bias': 'Stop Loss Widening',
                 'description': f'{moved_sl_trades.count()} trades avec SL élargi',
-                'severity': 'high' if avg_pnl < 0 else 'medium',
-                'recommendation': 'Respecter le stop loss initial',
+                'severity': 'high' if avg_pnl and avg_pnl < 0 else 'medium',
+                'recommendation': 'Respecter le stop loss initial. Ne jamais élargir le SL.',
+                'metrics': {
+                    'count': moved_sl_trades.count(),
+                    'avg_pnl': float(avg_pnl) if avg_pnl else 0
+                }
             })
         
         return biases

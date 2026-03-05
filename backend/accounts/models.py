@@ -200,6 +200,14 @@ class UserPreferences(models.Model):
         help_text=str(_('Overrides de confidentialité par contexte de page (dashboard, statistics, trades, etc.)'))
     )
     
+    # Seuils de détection des biais comportementaux
+    bias_detection_thresholds = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name=_('Seuils de détection des biais'),
+        help_text=str(_('Seuils personnalisés pour la détection des biais comportementaux'))
+    )
+    
     # Métadonnées
     created_at = models.DateTimeField(
         auto_now_add=True,
