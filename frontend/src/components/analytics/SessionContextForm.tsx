@@ -40,12 +40,12 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
     news_events: initialData.news_events || [],
     is_first_trade_of_day: initialData.is_first_trade_of_day || false,
     is_last_trade_of_day: initialData.is_last_trade_of_day || false,
-    physical_state: initialData.physical_state,
-    mental_state: initialData.mental_state,
+    physical_state: initialData.physical_state || undefined,
+    mental_state: initialData.mental_state || undefined,
     hours_of_sleep: initialData.hours_of_sleep,
-    previous_trade_result: initialData.previous_trade_result,
+    previous_trade_result: initialData.previous_trade_result || undefined,
     minutes_since_last_trade: initialData.minutes_since_last_trade,
-    trade_motivation: initialData.trade_motivation,
+    trade_motivation: initialData.trade_motivation || undefined,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -58,6 +58,9 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
     }
     if (!formData.day_of_week) {
       newErrors.day_of_week = t('analytics:tradeAnalytics.session.dayRequired', { defaultValue: 'Le jour de la semaine est obligatoire' });
+    }
+    if (formData.is_first_trade_of_day && formData.is_last_trade_of_day) {
+      newErrors.trade_position = t('analytics:tradeAnalytics.session.cannotBeBothFirstAndLast', { defaultValue: 'Un trade ne peut pas être à la fois le premier et le dernier du jour' });
     }
 
     setErrors(newErrors);
@@ -72,7 +75,17 @@ const SessionContextForm: React.FC<SessionContextFormProps> = ({
   };
 
   const handleChange = (field: keyof SessionContextFormData, value: any) => {
-    const newData = { ...formData, [field]: value };
+    let newData = { ...formData, [field]: value };
+    
+    // Si on coche first_trade_of_day, décocher last_trade_of_day
+    if (field === 'is_first_trade_of_day' && value === true) {
+      newData.is_last_trade_of_day = false;
+    }
+    // Si on coche last_trade_of_day, décocher first_trade_of_day
+    if (field === 'is_last_trade_of_day' && value === true) {
+      newData.is_first_trade_of_day = false;
+    }
+    
     setFormData(newData);
     onChange?.(newData);
   };

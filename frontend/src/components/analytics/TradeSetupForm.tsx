@@ -37,11 +37,11 @@ const TradeSetupForm: React.FC<TradeSetupFormProps> = ({
     chart_pattern: initialData.chart_pattern || 'none',
     confluence_factors: initialData.confluence_factors || [],
     setup_quality: initialData.setup_quality || 'C',
-    setup_confidence: initialData.setup_confidence,
-    entry_timing: initialData.entry_timing,
+    setup_confidence: initialData.setup_confidence || undefined,
+    entry_timing: initialData.entry_timing || undefined,
     entry_in_range_percentage: initialData.entry_in_range_percentage,
     missed_better_entry: initialData.missed_better_entry || false,
-    planned_hold_duration: initialData.planned_hold_duration,
+    planned_hold_duration: initialData.planned_hold_duration || undefined,
   });
 
   const [newConfluence, setNewConfluence] = useState('');

@@ -47,15 +47,15 @@ const TradeContextForm: React.FC<TradeContextFormProps> = ({
     fibonacci_level: initialData.fibonacci_level || 'none',
     at_support_resistance: initialData.at_support_resistance || false,
     distance_from_key_level: initialData.distance_from_key_level,
-    market_structure: initialData.market_structure,
+    market_structure: initialData.market_structure || undefined,
     break_of_structure: initialData.break_of_structure || false,
     within_previous_day_range: initialData.within_previous_day_range || false,
-    range_position: initialData.range_position,
+    range_position: initialData.range_position || undefined,
     atr_percentile: initialData.atr_percentile,
-    volume_profile: initialData.volume_profile,
+    volume_profile: initialData.volume_profile || undefined,
     at_volume_node: initialData.at_volume_node || false,
     rsi_value: initialData.rsi_value,
-    macd_signal: initialData.macd_signal,
+    macd_signal: initialData.macd_signal || undefined,
   });
 
   // Timeframes disponibles
