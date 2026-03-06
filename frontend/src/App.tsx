@@ -8,8 +8,6 @@ import UserManagementPage from './pages/UserManagementPage';
 import TradesPage from './pages/TradesPage';
 import StatisticsPage from './pages/StatisticsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
-import TradeAnalyticsPage from './pages/TradeAnalyticsPage';
-import TradeAnalyticsDetailPage from './pages/TradeAnalyticsDetailPage';
 import TradingAccountsPage from './pages/TradingAccountsPage';
 import TransactionsPage from './pages/TransactionsPage';
 import SettingsPage from './pages/SettingsPage';
@@ -169,7 +167,7 @@ function App() {
     // Gérer la navigation par hash
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').trim();
-      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'trade-analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
+      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
       const page = currentPageRef.current;
       
       // Si on a un hash valide et qu'il est différent de la page actuelle
@@ -193,7 +191,7 @@ function App() {
     
     // Initialiser la page selon le hash actuel au premier rendu
     const currentHash = window.location.hash.replace('#', '').trim();
-    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'trade-analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
+    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
     const page = currentPageRef.current;
     
     if (currentHash && validPages.includes(currentHash)) {
@@ -307,12 +305,6 @@ function App() {
             return <PositionStrategiesPage />;
           case 'analytics':
             return <AnalyticsPage />;
-          case 'trade-analytics':
-            // Vérifier si c'est pour un trade spécifique
-            if (currentPage.startsWith('trade-analytics/')) {
-              return <TradeAnalyticsDetailPage />;
-            }
-            return <TradeAnalyticsPage />;
           case 'accounts':
             return <TradingAccountsPage />;
           case 'transactions':

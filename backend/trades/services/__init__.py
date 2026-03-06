@@ -1,7 +1,6 @@
 """
-Services package for trade analytics.
+Services package for trades.
 """
-from .analytics_service import TradeAnalysisService, PatternRecognitionService
 from .metrics_calculator import AccountMetricsCalculator
 
-__all__ = ['TradeAnalysisService', 'PatternRecognitionService', 'AccountMetricsCalculator']
+__all__ = ['AccountMetricsCalculator']

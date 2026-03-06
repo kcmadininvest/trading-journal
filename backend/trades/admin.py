@@ -414,5 +414,3 @@ class ExportTemplateAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-# Import des configurations admin pour les modèles analytiques
-from .admin_analytics import *  # noqa

@@ -19,11 +19,10 @@ interface TradesTableProps {
   onToggleAll?: (selected: boolean, visibleIds: number[]) => void;
   totals?: { pnl?: number; fees?: number; net_pnl?: number; count?: number };
   onDelete?: (id: number) => void;
-  onAnalytics?: (id: number) => void;
   onRowClick?: (trade: TradeListItem) => void; // Callback pour le clic sur une ligne
 }
 
-export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete, onAnalytics, onRowClick }) => {
+export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete, onRowClick }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -154,20 +153,6 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                       {trade.trade_type === 'Long' ? t('trades:long') : t('trades:short')}
                     </span>
                     <div className="flex gap-1">
-                      {onAnalytics && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAnalytics(trade.id);
-                          }}
-                          className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                          title="Analytics"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                          </svg>
-                        </button>
-                      )}
                       {onDelete && (
                         <button
                           onClick={(e) => {
@@ -559,20 +544,6 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-center">
                     <div className="flex justify-center gap-1">
-                      {onAnalytics && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onAnalytics(trade.id);
-                          }}
-                          className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                          title="Analytics"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                          </svg>
-                        </button>
-                      )}
                       {onDelete && (
                         <button
                           onClick={(e) => {

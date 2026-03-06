@@ -5,7 +5,6 @@ import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { DailyJournalEditor } from '../dailyJournal/DailyJournalEditor';
-import TradeAnalyticsModal from '../analytics/TradeAnalyticsModal';
 
 interface DayTradesModalProps {
   open: boolean;
@@ -28,7 +27,6 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'trades' | 'journal'>('trades');
-  const [analyticsTradeId, setAnalyticsTradeId] = useState<number | null>(null);
 
   const loadTrades = useCallback(async () => {
     setIsLoading(true);
@@ -259,17 +257,6 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                               {formatPnl(trade.net_pnl)}
                             </td>
                             <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{trade.duration_str || '—'}</td>
-                            <td className="px-4 py-3 text-center">
-                              <button
-                                onClick={() => setAnalyticsTradeId(trade.id)}
-                                className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
-                                title="Analytics"
-                              >
-                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                                </svg>
-                              </button>
-                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -325,17 +312,6 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Analytics Modal */}
-      {analyticsTradeId && (
-        <TradeAnalyticsModal
-          tradeId={analyticsTradeId}
-          onClose={() => setAnalyticsTradeId(null)}
-          onSuccess={() => {
-            loadTrades();
-          }}
-        />
-      )}
     </div>
   );
 };

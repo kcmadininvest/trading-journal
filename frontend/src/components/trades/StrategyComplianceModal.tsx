@@ -12,7 +12,6 @@ import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { openMediaUrl } from '../../utils/mediaUrl';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import TradeAnalyticsModal from '../analytics/TradeAnalyticsModal';
 
 interface StrategyComplianceModalProps {
   open: boolean;
@@ -71,7 +70,6 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteScreenshotModalOpen, setDeleteScreenshotModalOpen] = useState(false);
   const [screenshotToDelete, setScreenshotToDelete] = useState<{ url: string; type: 'day' | 'trade'; tradeId?: number } | null>(null);
-  const [analyticsTradeId, setAnalyticsTradeId] = useState<number | null>(null);
   const isInitialLoad = useRef(true);
   const serverDataRef = useRef<TradeWithStrategy[]>([]); // Garder une référence aux données du serveur
   const serverDayComplianceRef = useRef<DayStrategyCompliance | null>(null); // Garder une référence à la compliance du serveur
@@ -1174,15 +1172,6 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                         )}
                       </div>
                     </div>
-                    <button
-                      onClick={() => setAnalyticsTradeId(trade.id)}
-                      className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors flex-shrink-0"
-                      title="Analytics"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                      </svg>
-                    </button>
                   </div>
 
                   {/* Respect de la stratégie et Take Profit */}
@@ -1646,17 +1635,6 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         isLoading={isSaving}
         confirmButtonText={t('trades:strategyCompliance.removeScreenshot', { defaultValue: 'Supprimer' })}
       />
-
-      {/* Analytics Modal */}
-      {analyticsTradeId && (
-        <TradeAnalyticsModal
-          tradeId={analyticsTradeId}
-          onClose={() => setAnalyticsTradeId(null)}
-          onSuccess={() => {
-            loadData();
-          }}
-        />
-      )}
     </div>
   );
 };

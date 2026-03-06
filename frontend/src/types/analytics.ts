@@ -81,82 +81,6 @@ export type FactorType = 'boolean' | 'categorical' | 'numerical';
 
 // Interfaces pour les modèles
 
-export interface TradeContext {
-  id: number;
-  trade: number;
-  trend_m15: TrendType | null;
-  trend_m5: TrendType | null;
-  trend_h1: TrendType | null;
-  trend_alignment: boolean | null;
-  fibonacci_level: FibonacciLevel;
-  at_support_resistance: boolean;
-  distance_from_key_level: string | null;
-  market_structure: MarketStructure | null;
-  break_of_structure: boolean;
-  within_previous_day_range: boolean;
-  range_position: RangePosition | null;
-  atr_percentile: number | null;
-  volume_profile: VolumeProfile | null;
-  at_volume_node: boolean;
-  rsi_value: number | null;
-  macd_signal: MacdSignal | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TradeSetup {
-  id: number;
-  trade: number;
-  setup_category: SetupCategory;
-  setup_subcategory: string;
-  chart_pattern: ChartPattern;
-  confluence_factors: string[];
-  confluence_count: number;
-  setup_quality: SetupQuality;
-  setup_confidence: number | null;
-  entry_timing: EntryTiming | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SessionContext {
-  id: number;
-  trade: number;
-  trading_session: TradingSession;
-  session_time_slot: string;
-  news_event: boolean;
-  news_impact: NewsImpact;
-  news_description: string;
-  day_of_week: DayOfWeek;
-  is_first_trade_of_day: boolean;
-  is_last_trade_of_day: boolean;
-  physical_state: PhysicalState | null;
-  mental_state: MentalState | null;
-  hours_of_sleep: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TradeExecution {
-  id: number;
-  trade: number;
-  followed_trading_plan: boolean | null;
-  entry_as_planned: boolean;
-  exit_as_planned: boolean;
-  position_size_as_planned: boolean;
-  moved_stop_loss: boolean;
-  stop_loss_direction: StopLossDirection;
-  partial_exit_taken: boolean;
-  partial_exit_percentage: string | null;
-  exit_reason: ExitReason | null;
-  execution_errors: string[];
-  slippage_points: string | null;
-  would_take_again: boolean | null;
-  lesson_learned: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface TradeProbabilityFactor {
   id: number;
   factor_category: string;
@@ -239,15 +163,6 @@ export interface CompareConditionsRequest {
   condition_b: Record<string, any>;
 }
 
-export interface BulkCreateAnalyticsRequest {
-  trade_id: number;
-  context?: Partial<Omit<TradeContext, 'id' | 'trade' | 'created_at' | 'updated_at'>>;
-  setup?: Partial<Omit<TradeSetup, 'id' | 'trade' | 'created_at' | 'updated_at'>>;
-  session_context?: Partial<Omit<SessionContext, 'id' | 'trade' | 'created_at' | 'updated_at'>>;
-  execution?: Partial<Omit<TradeExecution, 'id' | 'trade' | 'created_at' | 'updated_at'>>;
-  tag_ids?: number[];
-}
-
 export interface BestSetup {
   setup_category: SetupCategory;
   setup_quality: SetupQuality;
@@ -328,86 +243,6 @@ export interface ConditionComparison {
     expectancy_diff: string;
     better_condition: 'A' | 'B';
   };
-}
-
-// Types pour les formulaires
-
-export interface TradeContextFormData {
-  trend_m1?: TrendType;
-  trend_m2?: TrendType;
-  trend_m5?: TrendType;
-  trend_m15?: TrendType;
-  trend_m30?: TrendType;
-  trend_h1?: TrendType;
-  trend_h4?: TrendType;
-  trend_daily?: TrendType;
-  trend_weekly?: TrendType;
-  fibonacci_level?: FibonacciLevel;
-  at_support_resistance?: boolean;
-  distance_from_key_level?: number;
-  market_structure?: MarketStructure;
-  break_of_structure?: boolean;
-  within_previous_day_range?: boolean;
-  range_position?: RangePosition;
-  atr_percentile?: number;
-  volume_profile?: VolumeProfile;
-  at_volume_node?: boolean;
-  rsi_value?: number;
-  macd_signal?: MacdSignal;
-}
-
-export interface TradeSetupFormData {
-  setup_category: SetupCategory;
-  setup_subcategory?: string;
-  chart_pattern?: ChartPattern;
-  confluence_factors?: string[];
-  setup_quality: SetupQuality;
-  setup_confidence?: number;
-  entry_timing?: EntryTiming;
-  // Nouveaux champs pour biais comportementaux
-  entry_in_range_percentage?: number;
-  missed_better_entry?: boolean;
-  planned_hold_duration?: number;
-}
-
-export interface NewsEvent {
-  impact: NewsImpact;
-  description: string;
-}
-
-export interface SessionContextFormData {
-  trading_session: TradingSession;
-  session_time_slot?: string;
-  news_events?: NewsEvent[];
-  day_of_week: DayOfWeek;
-  is_first_trade_of_day?: boolean;
-  is_last_trade_of_day?: boolean;
-  physical_state?: PhysicalState;
-  mental_state?: MentalState;
-  hours_of_sleep?: number;
-  // Nouveaux champs pour biais comportementaux
-  previous_trade_result?: PreviousTradeResult;
-  minutes_since_last_trade?: number;
-  trade_motivation?: TradeMotivation;
-}
-
-export interface TradeExecutionFormData {
-  entry_as_planned?: boolean;
-  exit_as_planned?: boolean;
-  position_size_as_planned?: boolean;
-  moved_stop_loss?: boolean;
-  stop_loss_direction?: StopLossDirection;
-  partial_exit_taken?: boolean;
-  partial_exit_percentage?: number;
-  exit_reason?: ExitReason;
-  execution_errors?: string[];
-  slippage_points?: number;
-  would_take_again?: boolean;
-  lesson_learned?: string;
-  // Nouveaux champs pour biais comportementaux
-  time_in_position_vs_planned?: TimeInPosition;
-  exit_emotional_context?: ExitEmotionalContext;
-  position_size_change_reason?: string;
 }
 
 // Types pour les seuils de détection des biais comportementaux

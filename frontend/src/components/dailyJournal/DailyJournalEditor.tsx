@@ -8,7 +8,6 @@ import { getFullMediaUrl } from '../../utils/mediaUrl';
 import { DeleteConfirmModal } from '../ui';
 import { ImageUploader } from './ImageUploader';
 import { JournalEditorToolbar } from './JournalEditorToolbar';
-import { DailyTrades } from './DailyTrades';
 import { ComplianceScreenshots } from './ComplianceScreenshots';
 
 interface DailyJournalEditorProps {
@@ -18,7 +17,6 @@ interface DailyJournalEditorProps {
   initialEntry?: DailyJournalEntry | null;
   onSaved?: (entry: DailyJournalEntry) => void;
   onDeleted?: () => void;
-  onAnalytics?: (tradeId: number) => void;
   compact?: boolean;
 }
 
@@ -29,7 +27,6 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   initialEntry = null,
   onSaved,
   onDeleted,
-  onAnalytics,
   compact = false,
 }) => {
   const { t } = useI18nTranslation();
@@ -413,16 +410,6 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
       {message && (
         <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
           {message}
-        </div>
-      )}
-
-      {onAnalytics && (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50">
-          <DailyTrades
-            date={date}
-            tradingAccountId={tradingAccountId}
-            onAnalytics={onAnalytics}
-          />
         </div>
       )}
 

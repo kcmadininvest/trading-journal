@@ -17,10 +17,5 @@ export { PnlDistributionChart } from './PnlDistributionChart';
 export { MaeMfeChart } from './MaeMfeChart';
 export { createRadarAlternatingZonesPlugin, createRadarGradientPlugin } from './radarChartPlugins';
 
-// Nouveaux composants analytics
-export { default as TradeContextForm } from './TradeContextForm';
-export { default as TradeSetupForm } from './TradeSetupForm';
-export { default as SessionContextForm } from './SessionContextForm';
-export { default as TradeExecutionForm } from './TradeExecutionForm';
-export { default as TradeAnalyticsModal } from './TradeAnalyticsModal';
+// Dashboard analytics
 export { default as AnalyticsDashboard } from './AnalyticsDashboard';

@@ -22,5 +22,4 @@ urlpatterns = [
     path('', include(router.urls)),
     path('dashboard-summary/', views.dashboard_summary, name='dashboard-summary'),
     path('market-holidays/', views.market_holidays, name='market-holidays'),
-    path('analytics/', include('trades.urls_analytics')),
 ]

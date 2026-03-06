@@ -3,18 +3,12 @@
  */
 import { getApiBaseUrl } from '../utils/apiConfig';
 import {
-  TradeContext,
-  TradeSetup,
-  SessionContext,
-  TradeExecution,
   TradeTag,
-  TradeTagAssignment,
   TradeStatistics,
   ConditionalProbability,
   CalculateStatisticsRequest,
   ConditionalProbabilityRequest,
   CompareConditionsRequest,
-  BulkCreateAnalyticsRequest,
   BestSetup,
   WorstPattern,
   RecurringPattern,
@@ -69,190 +63,6 @@ class AnalyticsService {
       }
     }
     return res;
-  }
-
-  // TradeContext CRUD
-  async listContexts(): Promise<TradeContext[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/contexts/`);
-    if (!res.ok) throw new Error('Erreur lors du chargement des contextes');
-    return res.json();
-  }
-
-  async getContext(id: number): Promise<TradeContext> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/contexts/${id}/`);
-    if (!res.ok) throw new Error('Erreur lors de la récupération du contexte');
-    return res.json();
-  }
-
-  async createContext(data: Partial<TradeContext>): Promise<TradeContext> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/contexts/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la création du contexte');
-    }
-    return res.json();
-  }
-
-  async updateContext(id: number, data: Partial<TradeContext>): Promise<TradeContext> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/contexts/${id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la mise à jour du contexte');
-    }
-    return res.json();
-  }
-
-  async deleteContext(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/contexts/${id}/`, {
-      method: 'DELETE',
-    });
-    if (!res.ok) throw new Error('Erreur lors de la suppression du contexte');
-  }
-
-  // TradeSetup CRUD
-  async listSetups(): Promise<TradeSetup[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/setups/`);
-    if (!res.ok) throw new Error('Erreur lors du chargement des setups');
-    return res.json();
-  }
-
-  async getSetup(id: number): Promise<TradeSetup> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/setups/${id}/`);
-    if (!res.ok) throw new Error('Erreur lors de la récupération du setup');
-    return res.json();
-  }
-
-  async createSetup(data: Partial<TradeSetup>): Promise<TradeSetup> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/setups/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la création du setup');
-    }
-    return res.json();
-  }
-
-  async updateSetup(id: number, data: Partial<TradeSetup>): Promise<TradeSetup> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/setups/${id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la mise à jour du setup');
-    }
-    return res.json();
-  }
-
-  async deleteSetup(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/setups/${id}/`, {
-      method: 'DELETE',
-    });
-    if (!res.ok) throw new Error('Erreur lors de la suppression du setup');
-  }
-
-  // SessionContext CRUD
-  async listSessionContexts(): Promise<SessionContext[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/session-contexts/`);
-    if (!res.ok) throw new Error('Erreur lors du chargement des contextes de session');
-    return res.json();
-  }
-
-  async getSessionContext(id: number): Promise<SessionContext> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/session-contexts/${id}/`);
-    if (!res.ok) throw new Error('Erreur lors de la récupération du contexte de session');
-    return res.json();
-  }
-
-  async createSessionContext(data: Partial<SessionContext>): Promise<SessionContext> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/session-contexts/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la création du contexte de session');
-    }
-    return res.json();
-  }
-
-  async updateSessionContext(id: number, data: Partial<SessionContext>): Promise<SessionContext> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/session-contexts/${id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la mise à jour du contexte de session');
-    }
-    return res.json();
-  }
-
-  async deleteSessionContext(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/session-contexts/${id}/`, {
-      method: 'DELETE',
-    });
-    if (!res.ok) throw new Error('Erreur lors de la suppression du contexte de session');
-  }
-
-  // TradeExecution CRUD
-  async listExecutions(): Promise<TradeExecution[]> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/executions/`);
-    if (!res.ok) throw new Error('Erreur lors du chargement des exécutions');
-    return res.json();
-  }
-
-  async getExecution(id: number): Promise<TradeExecution> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/executions/${id}/`);
-    if (!res.ok) throw new Error('Erreur lors de la récupération de l\'exécution');
-    return res.json();
-  }
-
-  async createExecution(data: Partial<TradeExecution>): Promise<TradeExecution> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/executions/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la création de l\'exécution');
-    }
-    return res.json();
-  }
-
-  async updateExecution(id: number, data: Partial<TradeExecution>): Promise<TradeExecution> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/executions/${id}/`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la mise à jour de l\'exécution');
-    }
-    return res.json();
-  }
-
-  async deleteExecution(id: number): Promise<void> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/executions/${id}/`, {
-      method: 'DELETE',
-    });
-    if (!res.ok) throw new Error('Erreur lors de la suppression de l\'exécution');
   }
 
   // TradeTag CRUD
@@ -375,43 +185,6 @@ class AnalyticsService {
     if (!res.ok) throw new Error('Erreur lors de la récupération des biais comportementaux');
     const data = await res.json();
     return data.biases;
-  }
-
-  async getTradeAnalytics(tradeId: number): Promise<{
-    context: TradeContext | null;
-    setup: TradeSetup | null;
-    session_context: SessionContext | null;
-    execution: TradeExecution | null;
-    tags: TradeTag[];
-  }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/analytics/get_trade_analytics/?trade_id=${tradeId}`);
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors du chargement des données analytiques');
-    }
-    return res.json();
-  }
-
-  async bulkCreateAnalytics(request: BulkCreateAnalyticsRequest): Promise<{
-    message: string;
-    created: {
-      context?: TradeContext;
-      setup?: TradeSetup;
-      session_context?: SessionContext;
-      execution?: TradeExecution;
-      tags?: TradeTagAssignment[];
-    };
-  }> {
-    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/analytics/analytics/bulk_create_analytics/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || 'Erreur lors de la création en masse des données analytiques');
-    }
-    return res.json();
   }
 
   // Statistiques et probabilités (lecture seule)

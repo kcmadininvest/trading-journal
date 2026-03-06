@@ -1844,14 +1844,6 @@ class ExportTemplate(models.Model):
         super().save(*args, **kwargs)
 
 
-# Import des modèles analytiques
-from .models_analytics import (
-    TradeContext,
-    TradeSetup,
-    SessionContext,
-    TradeExecution,
-)
-
 from .models_statistics import (
     TradeProbabilityFactor,
     TradeTag,
@@ -1872,11 +1864,6 @@ __all__ = [
     'TradingGoal',
     'DayStrategyCompliance',
     'ExportTemplate',
-    # Nouveaux modèles analytiques
-    'TradeContext',
-    'TradeSetup',
-    'SessionContext',
-    'TradeExecution',
     'TradeProbabilityFactor',
     'TradeTag',
     'TradeTagAssignment',
