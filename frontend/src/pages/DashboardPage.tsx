@@ -1793,16 +1793,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     }
                     subMetrics={[
                       {
-                        label: (() => {
-                          const streakDays = complianceStats?.current_streak ?? 0;
-                          return streakDays > 0 ? t('dashboard:currentRespectDays') : t('dashboard:currentNotRespectDays');
-                        })(),
-                        value: (() => {
-                          const streakDays = complianceStats?.current_streak ?? 0;
-                          return `${streakDays > 0 ? streakDays : additionalStats.currentConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`;
-                        })()
-                      },
-                      {
                         label: additionalStats.currentConsecutiveTradesRespected > 0 ? t('dashboard:currentRespectTrades') : t('dashboard:currentNotRespectTrades'),
                         value: `${additionalStats.currentConsecutiveTradesRespected > 0 ? additionalStats.currentConsecutiveTradesRespected : additionalStats.currentConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
                       }

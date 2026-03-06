@@ -82,7 +82,9 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
   const maxYValue = useMemo(() => {
     if (bins.length === 0) return undefined;
     const maxValue = Math.max(...bins.map(bin => bin.successful + bin.unsuccessful));
-    return Math.ceil(maxValue * 1.10);
+    const withPadding = maxValue * 1.10;
+    // Arrondir au multiple de 5 supérieur pour un affichage plus esthétique
+    return Math.ceil(withPadding / 5) * 5;
   }, [bins]);
 
   // Configuration du graphique
