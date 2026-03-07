@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, Trophy, AlertTriangle, Brain, TrendingUp, Clock, ChevronDown, ChevronRight } from 'lucide-react';
+import { BarChart3, Trophy, AlertTriangle, Brain, TrendingUp, Clock } from 'lucide-react';
 import analyticsService from '../../services/analyticsService';
 import { EdgeAnalysis, BestSetup, WorstPattern, BehavioralBias } from '../../types/analytics';
-import BiasDetectionRulesSection from './BiasDetectionRulesSection';
 
 const AnalyticsDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -92,7 +91,6 @@ const AnalyticsDashboard: React.FC = () => {
   const [bestSetups, setBestSetups] = useState<BestSetup[]>([]);
   const [worstPatterns, setWorstPatterns] = useState<WorstPattern[]>([]);
   const [biases, setBiases] = useState<BehavioralBias[]>([]);
-  const [showRules, setShowRules] = useState(false);
 
   const loadAnalytics = useCallback(async () => {
     setLoading(true);
@@ -307,22 +305,6 @@ const AnalyticsDashboard: React.FC = () => {
           </p>
         )}
 
-        {/* Section Règles de Détection & Configuration */}
-        <div className="mt-6 border-t pt-4">
-          <button
-            onClick={() => setShowRules(!showRules)}
-            className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 font-medium"
-          >
-            {showRules ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-            ⚙️ {t('analytics:biasRules.title', { defaultValue: 'Règles de Détection & Configuration' })}
-          </button>
-
-          {showRules && (
-            <div className="mt-4">
-              <BiasDetectionRulesSection onThresholdsChange={loadAnalytics} />
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Analyse par Tendance */}

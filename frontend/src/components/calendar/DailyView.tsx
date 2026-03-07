@@ -676,6 +676,7 @@ const DailyView: React.FC<DailyViewProps> = ({
           onClose={handleCloseTradesModal}
           tradingAccount={tradingAccount}
           onStrategyClick={handleStrategyClickFromTrades}
+          onJournalSaved={onDataRefresh}
         />
       )}
 

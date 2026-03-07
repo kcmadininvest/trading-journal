@@ -12,6 +12,7 @@ interface DayTradesModalProps {
   onClose: () => void;
   tradingAccount?: number;
   onStrategyClick?: (date: string) => void;
+  onJournalSaved?: () => void;
 }
 
 export const DayTradesModal: React.FC<DayTradesModalProps> = ({
@@ -20,6 +21,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   onClose,
   tradingAccount,
   onStrategyClick,
+  onJournalSaved,
 }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
@@ -157,6 +159,10 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
               date={date} 
               tradingAccountId={tradingAccount}
               onSaved={() => {
+                // Notify parent to refresh calendar data
+                if (onJournalSaved) {
+                  onJournalSaved();
+                }
                 // Fermer la modale après la sauvegarde
                 onClose();
               }}
