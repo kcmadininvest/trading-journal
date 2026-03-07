@@ -558,8 +558,8 @@ const PositionStrategiesPage: React.FC = () => {
   const handleDetachChecklist = () => {
     if (!selectedStrategy) return;
     
-    const width = 450;
-    const height = 700;
+    const width = 800;
+    const height = 950;
     const left = window.screenX + window.outerWidth - width - 30;
     const top = window.screenY + 50;
     
@@ -1331,8 +1331,8 @@ const PositionStrategiesPage: React.FC = () => {
                                 <Tooltip content={t('positionStrategies:detachTooltip', { defaultValue: 'Détacher dans une fenêtre flottante' })} position="top">
                                   <button
                                     onClick={() => {
-                                      const width = 450;
-                                      const height = 700;
+                                      const width = 800;
+                                      const height = 950;
                                       const left = window.screenX + window.outerWidth - width - 30;
                                       const top = window.screenY + 50;
                                       window.open(
@@ -1488,8 +1488,8 @@ const PositionStrategiesPage: React.FC = () => {
                     <Tooltip content={t('positionStrategies:detachTooltip', { defaultValue: 'Détacher dans une fenêtre flottante' })} position="top">
                       <button
                         onClick={() => {
-                          const width = 450;
-                          const height = 700;
+                          const width = 800;
+                          const height = 950;
                           const left = window.screenX + window.outerWidth - width - 30;
                           const top = window.screenY + 50;
                           window.open(
