@@ -19,7 +19,7 @@ type CalculatorMode = 'percentage' | 'fixed' | 'riskReward' | 'breakeven' | 'mar
 
 const PositionCalculator: React.FC = () => {
   const { t } = useTranslation();
-  const [mode, setMode] = useState<CalculatorMode>('percentage');
+  const [mode, setMode] = useState<CalculatorMode>('fixed');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
