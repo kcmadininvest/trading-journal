@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 from .exports.views import ExportTemplateViewSet, PortfolioExportViewSet
+from . import calculator_views
 
 app_name = 'trades'
 
@@ -22,4 +23,10 @@ urlpatterns = [
     path('', include(router.urls)),
     path('dashboard-summary/', views.dashboard_summary, name='dashboard-summary'),
     path('market-holidays/', views.market_holidays, name='market-holidays'),
+    path('calculator/position-size/', calculator_views.calculate_position_size, name='calculate-position-size'),
+    path('calculator/fixed-risk/', calculator_views.calculate_fixed_risk, name='calculate-fixed-risk'),
+    path('calculator/risk-reward/', calculator_views.calculate_risk_reward, name='calculate-risk-reward'),
+    path('calculator/breakeven/', calculator_views.calculate_breakeven, name='calculate-breakeven'),
+    path('calculator/margin/', calculator_views.calculate_margin, name='calculate-margin'),
+    path('calculator/forex-lot-size/', calculator_views.calculate_forex_lot_size, name='calculate-forex-lot-size'),
 ]

@@ -1,0 +1,81 @@
+{
+  "title": "Positionsgrößen-Rechner",
+  "detach": "Ablösen",
+  "detachTooltip": "In schwebendes Fenster ablösen",
+  "modeTitle": "Berechnungsmodus",
+  "modes": {
+    "fixed": "Fester Betrag",
+    "percentage": "Risiko %",
+    "riskReward": "R/R-Verhältnis",
+    "breakeven": "Gewinnschwelle",
+    "margin": "Marge",
+    "forexLotSize": "Forex-Lots"
+  },
+  "fields": {
+    "accountBalance": "Kontostand ($)",
+    "riskPercentage": "Risikoprozentsatz (%)",
+    "riskAmount": "Risikobetrag ($)",
+    "entryPrice": "Einstiegspreis",
+    "stopLossPrice": "Stop-Loss-Preis",
+    "takeProfitPrice": "Take-Profit-Preis",
+    "positionSize": "Positionsgröße (Kontrakte)",
+    "tickValue": "Tick-Wert (optional)",
+    "tickSize": "Tick-Größe (optional)",
+    "commissionPerContract": "Provision pro Kontrakt ($)",
+    "leverage": "Hebel",
+    "instrumentType": "Instrumententyp",
+    "contractSize": "Kontraktgröße (optional)",
+    "pipValue": "Pip-Wert (optional)",
+    "accountCurrency": "Kontowährung",
+    "pairQuoteCurrency": "Paar-Quotierungswährung"
+  },
+  "instrumentTypes": {
+    "futures": "Futures",
+    "forex": "Forex",
+    "stocks": "Aktien"
+  },
+  "results": {
+    "calculationResults": "Berechnungsergebnisse",
+    "riskRewardAnalysis": "Risiko/Ertrag-Analyse",
+    "breakevenAnalysis": "Gewinnschwellen-Analyse",
+    "marginRequirements": "Margin-Anforderungen",
+    "forexLotSize": "Forex-Lot-Größe",
+    "positionSize": "Positionsgröße",
+    "riskAmount": "Risikobetrag",
+    "riskPerUnit": "Risiko pro Einheit",
+    "positionValue": "Positionswert",
+    "stopLossDistance": "Stop-Loss-Abstand",
+    "rewardAmount": "Ertragsbetrag",
+    "riskRewardRatio": "Risiko/Ertrag-Verhältnis",
+    "totalCommission": "Gesamtprovision",
+    "ticksToBreakeven": "Ticks bis Gewinnschwelle",
+    "breakevenLong": "Gewinnschwelle (Long)",
+    "breakevenShort": "Gewinnschwelle (Short)",
+    "requiredMargin": "Erforderliche Marge",
+    "marginPercentage": "Marge %",
+    "buyingPower": "Kaufkraft",
+    "standardLots": "Standard-Lots",
+    "miniLots": "Mini-Lots",
+    "microLots": "Mikro-Lots",
+    "units": "Einheiten",
+    "stopLossPips": "Stop Loss (Pips)",
+    "pipValue": "Pip-Wert",
+    "contractsShares": "Kontrakte/Aktien"
+  },
+  "buttons": {
+    "calculate": "Berechnen",
+    "calculating": "Berechnung läuft..."
+  },
+  "errors": {
+    "accountBalanceRequired": "Kontostand ist erforderlich und muss größer als 0 sein",
+    "riskPercentageRequired": "Risikoprozentsatz ist erforderlich und muss größer als 0 sein",
+    "riskAmountRequired": "Risikobetrag ist erforderlich und muss größer als 0 sein",
+    "entryPriceRequired": "Einstiegspreis ist erforderlich und muss größer als 0 sein",
+    "stopLossPriceRequired": "Stop-Loss-Preis ist erforderlich",
+    "takeProfitPriceRequired": "Take-Profit-Preis ist erforderlich",
+    "positionSizeRequired": "Positionsgröße ist erforderlich und muss größer als 0 sein",
+    "tickSizeRequired": "Tick-Größe ist erforderlich und muss größer als 0 sein",
+    "leverageRequired": "Hebel ist erforderlich und muss größer als 0 sein",
+    "calculationFailed": "Berechnung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben."
+  }
+}

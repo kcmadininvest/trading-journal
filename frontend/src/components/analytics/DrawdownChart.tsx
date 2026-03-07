@@ -84,6 +84,9 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
                   display: false,
                 },
                 tooltip: {
+                  enabled: true,
+                  mode: 'index',
+                  intersect: false,
                   backgroundColor: chartColors.tooltipBg,
                   titleColor: chartColors.tooltipTitle,
                   bodyColor: chartColors.tooltipBody,

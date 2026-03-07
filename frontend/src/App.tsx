@@ -19,6 +19,8 @@ import LegalNoticePage from './pages/LegalNoticePage';
 import AboutPage from './pages/AboutPage';
 import FeaturesPage from './pages/FeaturesPage';
 import DailyJournalPage from './pages/DailyJournalPage';
+import CalculatorPage from './pages/CalculatorPage';
+import CalculatorPopup from './pages/CalculatorPopup';
 import OrganizationSchema from './components/SEO/OrganizationSchema';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
@@ -167,7 +169,7 @@ function App() {
     // Gérer la navigation par hash
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '').trim();
-      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
+      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'calculator', 'legal-notice'];
       const page = currentPageRef.current;
       
       // Si on a un hash valide et qu'il est différent de la page actuelle
@@ -191,7 +193,7 @@ function App() {
     
     // Initialiser la page selon le hash actuel au premier rendu
     const currentHash = window.location.hash.replace('#', '').trim();
-    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'legal-notice'];
+    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'calculator', 'legal-notice'];
     const page = currentPageRef.current;
     
     if (currentHash && validPages.includes(currentHash)) {
@@ -311,6 +313,8 @@ function App() {
             return <TransactionsPage />;
           case 'goals':
             return <GoalsPage />;
+          case 'calculator':
+            return <CalculatorPage />;
           case 'users':
             return <UserManagementPage />;
           case 'settings':
@@ -418,10 +422,13 @@ function App() {
   );
 }
 
-// Wrapper pour gérer la route spéciale /strategy-checklist sans Layout
+// Wrapper pour gérer les routes spéciales sans Layout
 function AppRouter() {
   if (window.location.pathname === '/strategy-checklist') {
     return <StrategyChecklistPopup />;
+  }
+  if (window.location.pathname === '/calculator-popup') {
+    return <CalculatorPopup />;
   }
   return <App />;
 }

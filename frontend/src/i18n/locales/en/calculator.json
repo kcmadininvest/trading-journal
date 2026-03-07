@@ -1,0 +1,81 @@
+{
+  "title": "Position Size Calculator",
+  "detach": "Detach",
+  "detachTooltip": "Detach to floating window",
+  "modeTitle": "Calculator Mode",
+  "modes": {
+    "fixed": "Fixed Amount",
+    "percentage": "Risk %",
+    "riskReward": "R/R Ratio",
+    "breakeven": "Breakeven",
+    "margin": "Margin",
+    "forexLotSize": "Forex Lots"
+  },
+  "fields": {
+    "accountBalance": "Account Balance ($)",
+    "riskPercentage": "Risk Percentage (%)",
+    "riskAmount": "Risk Amount ($)",
+    "entryPrice": "Entry Price",
+    "stopLossPrice": "Stop Loss Price",
+    "takeProfitPrice": "Take Profit Price",
+    "positionSize": "Position Size (contracts)",
+    "tickValue": "Tick Value (optional)",
+    "tickSize": "Tick Size (optional)",
+    "commissionPerContract": "Commission Per Contract ($)",
+    "leverage": "Leverage",
+    "instrumentType": "Instrument Type",
+    "contractSize": "Contract Size (optional)",
+    "pipValue": "Pip Value (optional)",
+    "accountCurrency": "Account Currency",
+    "pairQuoteCurrency": "Pair Quote Currency"
+  },
+  "instrumentTypes": {
+    "futures": "Futures",
+    "forex": "Forex",
+    "stocks": "Stocks"
+  },
+  "results": {
+    "calculationResults": "Calculation Results",
+    "riskRewardAnalysis": "Risk/Reward Analysis",
+    "breakevenAnalysis": "Breakeven Analysis",
+    "marginRequirements": "Margin Requirements",
+    "forexLotSize": "Forex Lot Size",
+    "positionSize": "Position Size",
+    "riskAmount": "Risk Amount",
+    "riskPerUnit": "Risk Per Unit",
+    "positionValue": "Position Value",
+    "stopLossDistance": "Stop Loss Distance",
+    "rewardAmount": "Reward Amount",
+    "riskRewardRatio": "Risk/Reward Ratio",
+    "totalCommission": "Total Commission",
+    "ticksToBreakeven": "Ticks to Breakeven",
+    "breakevenLong": "Breakeven (Long)",
+    "breakevenShort": "Breakeven (Short)",
+    "requiredMargin": "Required Margin",
+    "marginPercentage": "Margin %",
+    "buyingPower": "Buying Power",
+    "standardLots": "Standard Lots",
+    "miniLots": "Mini Lots",
+    "microLots": "Micro Lots",
+    "units": "Units",
+    "stopLossPips": "Stop Loss (pips)",
+    "pipValue": "Pip Value",
+    "contractsShares": "contracts/shares"
+  },
+  "buttons": {
+    "calculate": "Calculate",
+    "calculating": "Calculating..."
+  },
+  "errors": {
+    "accountBalanceRequired": "Account balance is required and must be greater than 0",
+    "riskPercentageRequired": "Risk percentage is required and must be greater than 0",
+    "riskAmountRequired": "Risk amount is required and must be greater than 0",
+    "entryPriceRequired": "Entry price is required and must be greater than 0",
+    "stopLossPriceRequired": "Stop loss price is required",
+    "takeProfitPriceRequired": "Take profit price is required",
+    "positionSizeRequired": "Position size is required and must be greater than 0",
+    "tickSizeRequired": "Tick size is required and must be greater than 0",
+    "leverageRequired": "Leverage is required and must be greater than 0",
+    "calculationFailed": "Calculation failed. Please check your inputs."
+  }
+}

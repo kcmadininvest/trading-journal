@@ -167,6 +167,11 @@ import enContact from './locales/en/contact.json';
 import esContact from './locales/es/contact.json';
 import deContact from './locales/de/contact.json';
 
+import frCalculator from './locales/fr/calculator.json';
+import enCalculator from './locales/en/calculator.json';
+import esCalculator from './locales/es/calculator.json';
+import deCalculator from './locales/de/calculator.json';
+
 // Custom detector qui utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 const customNavigatorLanguagesDetector = {
   name: 'customNavigatorLanguages',
@@ -232,6 +237,7 @@ const resources = {
     about: frAbout,
     features: frFeatures,
     contact: frContact,
+    calculator: frCalculator,
   },
   en: {
     common: enCommon,
@@ -255,6 +261,7 @@ const resources = {
     about: enAbout,
     features: enFeatures,
     contact: enContact,
+    calculator: enCalculator,
   },
   es: {
     common: esCommon,
@@ -278,6 +285,7 @@ const resources = {
     about: esAbout,
     features: esFeatures,
     contact: esContact,
+    calculator: esCalculator,
   },
   de: {
     common: deCommon,
@@ -301,6 +309,7 @@ const resources = {
     about: deAbout,
     features: deFeatures,
     contact: deContact,
+    calculator: deCalculator,
   },
   it: {
     common: itCommon,
@@ -425,7 +434,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

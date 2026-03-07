@@ -1,0 +1,81 @@
+{
+  "title": "Calculateur de Position",
+  "detach": "Détacher",
+  "detachTooltip": "Détacher dans une fenêtre flottante",
+  "modeTitle": "Mode de Calcul",
+  "modes": {
+    "fixed": "Montant Fixe",
+    "percentage": "Risque %",
+    "riskReward": "Ratio R/R",
+    "breakeven": "Point Mort",
+    "margin": "Marge",
+    "forexLotSize": "Lots Forex"
+  },
+  "fields": {
+    "accountBalance": "Solde du Compte ($)",
+    "riskPercentage": "Pourcentage de Risque (%)",
+    "riskAmount": "Montant de Risque ($)",
+    "entryPrice": "Prix d'Entrée",
+    "stopLossPrice": "Prix de Stop Loss",
+    "takeProfitPrice": "Prix de Take Profit",
+    "positionSize": "Taille de Position (contrats)",
+    "tickValue": "Valeur du Point (optionnel)",
+    "tickSize": "Taille de Tick (optionnel)",
+    "commissionPerContract": "Commission par Contrat ($)",
+    "leverage": "Effet de Levier",
+    "instrumentType": "Type d'Instrument",
+    "contractSize": "Taille du Contrat (optionnel)",
+    "pipValue": "Valeur du Pip (optionnel)",
+    "accountCurrency": "Devise du Compte",
+    "pairQuoteCurrency": "Devise de Cotation"
+  },
+  "instrumentTypes": {
+    "futures": "Futures",
+    "forex": "Forex",
+    "stocks": "Actions"
+  },
+  "results": {
+    "calculationResults": "Résultats du Calcul",
+    "riskRewardAnalysis": "Analyse Risque/Récompense",
+    "breakevenAnalysis": "Analyse du Point Mort",
+    "marginRequirements": "Exigences de Marge",
+    "forexLotSize": "Taille de Lot Forex",
+    "positionSize": "Taille de Position",
+    "riskAmount": "Montant de Risque",
+    "riskPerUnit": "Risque par Unité",
+    "positionValue": "Valeur de Position",
+    "stopLossDistance": "Distance Stop Loss",
+    "rewardAmount": "Montant de Récompense",
+    "riskRewardRatio": "Ratio Risque/Récompense",
+    "totalCommission": "Commission Totale",
+    "ticksToBreakeven": "Ticks jusqu'au Point Mort",
+    "breakevenLong": "Point Mort (Long)",
+    "breakevenShort": "Point Mort (Short)",
+    "requiredMargin": "Marge Requise",
+    "marginPercentage": "Pourcentage de Marge",
+    "buyingPower": "Pouvoir d'Achat",
+    "standardLots": "Lots Standard",
+    "miniLots": "Lots Mini",
+    "microLots": "Lots Micro",
+    "units": "Unités",
+    "stopLossPips": "Stop Loss (pips)",
+    "pipValue": "Valeur du Pip",
+    "contractsShares": "contrats/actions"
+  },
+  "buttons": {
+    "calculate": "Calculer",
+    "calculating": "Calcul en cours..."
+  },
+  "errors": {
+    "accountBalanceRequired": "Le solde du compte est requis et doit être supérieur à 0",
+    "riskPercentageRequired": "Le pourcentage de risque est requis et doit être supérieur à 0",
+    "riskAmountRequired": "Le montant de risque est requis et doit être supérieur à 0",
+    "entryPriceRequired": "Le prix d'entrée est requis et doit être supérieur à 0",
+    "stopLossPriceRequired": "Le prix de stop loss est requis",
+    "takeProfitPriceRequired": "Le prix de take profit est requis",
+    "positionSizeRequired": "La taille de position est requise et doit être supérieure à 0",
+    "tickSizeRequired": "La taille de tick est requise et doit être supérieure à 0",
+    "leverageRequired": "Le levier est requis et doit être supérieur à 0",
+    "calculationFailed": "Le calcul a échoué. Veuillez vérifier vos entrées."
+  }
+}
