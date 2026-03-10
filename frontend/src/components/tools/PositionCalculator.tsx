@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Calculator, TrendingUp, AlertCircle, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calculator, TrendingUp, AlertCircle, DollarSign, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import Tooltip from '../ui/Tooltip';
 import calculatorApi, {
   PositionSizeRequest,
   FixedRiskRequest,
@@ -28,6 +29,9 @@ const PositionCalculator: React.FC = () => {
   const [riskAmount, setRiskAmount] = useState<string>('500');
   const [entryPrice, setEntryPrice] = useState<string>('');
   const [stopLossPrice, setStopLossPrice] = useState<string>('');
+  const [stopLossInputMode, setStopLossInputMode] = useState<'price' | 'points'>('price');
+  const [stopLossDistance, setStopLossDistance] = useState<string>('');
+  const [tradeDirection, setTradeDirection] = useState<'long' | 'short'>('long');
   const [takeProfitPrice, setTakeProfitPrice] = useState<string>('');
   const [positionSize, setPositionSize] = useState<string>('');
   const [tickValue, setTickValue] = useState<string>('');
@@ -41,6 +45,22 @@ const PositionCalculator: React.FC = () => {
   const [pairQuoteCurrency, setPairQuoteCurrency] = useState<string>('USD');
 
   const [result, setResult] = useState<PositionSizeResponse | RiskRewardResponse | BreakevenResponse | MarginResponse | ForexLotSizeResponse | null>(null);
+
+  // Calculate stop loss price automatically when in Points mode
+  // Note: "distance" represents the direct price distance, not number of ticks
+  useEffect(() => {
+    if (stopLossInputMode === 'points' && entryPrice && stopLossDistance) {
+      const entry = parseFloat(entryPrice);
+      const distance = parseFloat(stopLossDistance);
+      
+      if (!isNaN(entry) && !isNaN(distance)) {
+        const calculatedSL = tradeDirection === 'long' 
+          ? entry - distance 
+          : entry + distance;
+        setStopLossPrice(calculatedSL.toFixed(2));
+      }
+    }
+  }, [stopLossInputMode, entryPrice, stopLossDistance, tradeDirection]);
 
   const handleCalculate = async () => {
     setLoading(true);
@@ -65,10 +85,23 @@ const PositionCalculator: React.FC = () => {
           setLoading(false);
           return;
         }
-        if (!stopLossPrice) {
-          setError(t('calculator:errors.stopLossPriceRequired'));
-          setLoading(false);
-          return;
+        if (stopLossInputMode === 'points') {
+          if (!stopLossDistance || parseFloat(stopLossDistance) <= 0) {
+            setError(t('calculator:errors.distanceRequired'));
+            setLoading(false);
+            return;
+          }
+          if (!tickSize || parseFloat(tickSize) <= 0) {
+            setError(t('calculator:errors.tickSizeRequiredForPoints'));
+            setLoading(false);
+            return;
+          }
+        } else {
+          if (!stopLossPrice) {
+            setError(t('calculator:errors.stopLossPriceRequired'));
+            setLoading(false);
+            return;
+          }
         }
       } else if (mode === 'fixed') {
         if (!riskAmount || parseFloat(riskAmount) <= 0) {
@@ -81,10 +114,23 @@ const PositionCalculator: React.FC = () => {
           setLoading(false);
           return;
         }
-        if (!stopLossPrice) {
-          setError(t('calculator:errors.stopLossPriceRequired'));
-          setLoading(false);
-          return;
+        if (stopLossInputMode === 'points') {
+          if (!stopLossDistance || parseFloat(stopLossDistance) <= 0) {
+            setError(t('calculator:errors.distanceRequired'));
+            setLoading(false);
+            return;
+          }
+          if (!tickSize || parseFloat(tickSize) <= 0) {
+            setError(t('calculator:errors.tickSizeRequiredForPoints'));
+            setLoading(false);
+            return;
+          }
+        } else {
+          if (!stopLossPrice) {
+            setError(t('calculator:errors.stopLossPriceRequired'));
+            setLoading(false);
+            return;
+          }
         }
       } else if (mode === 'riskReward') {
         if (!positionSize || parseFloat(positionSize) <= 0) {
@@ -97,10 +143,23 @@ const PositionCalculator: React.FC = () => {
           setLoading(false);
           return;
         }
-        if (!stopLossPrice) {
-          setError(t('calculator:errors.stopLossPriceRequired'));
-          setLoading(false);
-          return;
+        if (stopLossInputMode === 'points') {
+          if (!stopLossDistance || parseFloat(stopLossDistance) <= 0) {
+            setError(t('calculator:errors.distanceRequired'));
+            setLoading(false);
+            return;
+          }
+          if (!tickSize || parseFloat(tickSize) <= 0) {
+            setError(t('calculator:errors.tickSizeRequiredForPoints'));
+            setLoading(false);
+            return;
+          }
+        } else {
+          if (!stopLossPrice) {
+            setError(t('calculator:errors.stopLossPriceRequired'));
+            setLoading(false);
+            return;
+          }
         }
         if (!takeProfitPrice) {
           setError(t('calculator:errors.takeProfitPriceRequired'));
@@ -155,10 +214,23 @@ const PositionCalculator: React.FC = () => {
           setLoading(false);
           return;
         }
-        if (!stopLossPrice) {
-          setError(t('calculator:errors.stopLossPriceRequired'));
-          setLoading(false);
-          return;
+        if (stopLossInputMode === 'points') {
+          if (!stopLossDistance || parseFloat(stopLossDistance) <= 0) {
+            setError(t('calculator:errors.distanceRequired'));
+            setLoading(false);
+            return;
+          }
+          if (!tickSize || parseFloat(tickSize) <= 0) {
+            setError(t('calculator:errors.tickSizeRequiredForPoints'));
+            setLoading(false);
+            return;
+          }
+        } else {
+          if (!stopLossPrice) {
+            setError(t('calculator:errors.stopLossPriceRequired'));
+            setLoading(false);
+            return;
+          }
         }
       }
 
@@ -632,19 +704,115 @@ const PositionCalculator: React.FC = () => {
           </div>
 
           {mode !== 'breakeven' && mode !== 'margin' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('calculator:fields.stopLossPrice')}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={stopLossPrice}
-                onChange={(e) => setStopLossPrice(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                placeholder={mode === 'forexLotSize' ? '1.1830' : '4490.00'}
-              />
-            </div>
+            <>
+              {/* Stop Loss Input Mode Toggle */}
+              <div className="col-span-full">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('calculator:fields.stopLossInputMode')}
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStopLossInputMode('price')}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      stopLossInputMode === 'price'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {t('calculator:fields.priceMode')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStopLossInputMode('points')}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                      stopLossInputMode === 'points'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {t('calculator:fields.pointsMode')}
+                  </button>
+                </div>
+              </div>
+
+              {/* Price Mode */}
+              {stopLossInputMode === 'price' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('calculator:fields.stopLossPrice')}
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={stopLossPrice}
+                    onChange={(e) => setStopLossPrice(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder={mode === 'forexLotSize' ? '1.1830' : '4490.00'}
+                  />
+                </div>
+              )}
+
+              {/* Points Mode */}
+              {stopLossInputMode === 'points' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      {t('calculator:fields.tradeDirection')}
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTradeDirection('long')}
+                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          tradeDirection === 'long'
+                            ? 'bg-green-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('calculator:fields.long')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTradeDirection('short')}
+                        className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors ${
+                          tradeDirection === 'short'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {t('calculator:fields.short')}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <span className="flex items-center gap-1">
+                        {t('calculator:fields.distance')}
+                        <Tooltip content={t('calculator:fields.distanceTooltip')} position="top">
+                          <Info className="w-4 h-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-help" />
+                        </Tooltip>
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={stopLossDistance}
+                      onChange={(e) => setStopLossDistance(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="10"
+                    />
+                  </div>
+                  {stopLossPrice && (
+                    <div className="col-span-full">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('calculator:fields.calculatedStopLoss')}: <span className="font-semibold text-blue-600 dark:text-blue-400">{stopLossPrice}</span>
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
           )}
 
           {mode === 'margin' && (

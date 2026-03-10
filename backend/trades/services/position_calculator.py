@@ -291,7 +291,7 @@ class PositionCalculator:
         
         # Calculate stop loss distance in pips
         # For most pairs, 1 pip = 0.0001, for JPY pairs 1 pip = 0.01
-        pip_size = Decimal('0.01') if 'JPY' in pair_quote_currency else Decimal('0.0001')
+        pip_size = Decimal('0.01') if pair_quote_currency == 'JPY' else Decimal('0.0001')
         stop_loss_pips = abs(entry_price - stop_loss_price) / pip_size
         
         # Calculate pip value if not provided
