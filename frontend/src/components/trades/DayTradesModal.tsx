@@ -230,7 +230,6 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                           <th className="px-4 py-3 text-right font-semibold text-gray-700 dark:text-gray-300">{t('trades:dayTradesModal.exitPrice')}</th>
                           <th className="px-4 py-3 text-right font-semibold text-gray-700 dark:text-gray-300">{t('trades:pnl')}</th>
                           <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">{t('trades:duration')}</th>
-                          <th className="px-4 py-3 text-center font-semibold text-gray-700 dark:text-gray-300">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
