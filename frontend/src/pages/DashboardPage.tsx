@@ -1309,29 +1309,32 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 {holidaysLoading ? (
                   <>
                     {/* Skeleton loader */}
-                    <div className="flex items-start gap-2 animate-pulse">
-                      <div className="w-4 h-4 bg-gray-400/30 dark:bg-gray-600/30 rounded mt-0.5"></div>
+                    <div className="flex items-start animate-pulse">
                       <div className="flex flex-col gap-0.5">
-                        <div className="h-3 w-16 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                        <div className="h-3 w-24 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-3 w-16 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                          <div className="h-3 w-24 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                        </div>
                         <div className="h-2.5 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
                       </div>
                     </div>
                     <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
-                    <div className="flex items-start gap-2 animate-pulse">
-                      <div className="w-4 h-4 bg-gray-400/30 dark:bg-gray-600/30 rounded mt-0.5"></div>
+                    <div className="flex items-start animate-pulse">
                       <div className="flex flex-col gap-0.5">
-                        <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                        <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                          <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                        </div>
                         <div className="h-2.5 w-16 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
                       </div>
                     </div>
                     <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
-                    <div className="flex items-start gap-2 animate-pulse">
-                      <div className="w-4 h-4 bg-gray-400/30 dark:bg-gray-600/30 rounded mt-0.5"></div>
+                    <div className="flex items-start animate-pulse">
                       <div className="flex flex-col gap-0.5">
-                        <div className="h-3 w-14 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                        <div className="h-3 w-28 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-3 w-14 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                          <div className="h-3 w-28 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                        </div>
                         <div className="h-2.5 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
                       </div>
                     </div>
@@ -1345,18 +1348,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     {index > 0 && (
                       <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
                     )}
-                    <div className={`flex items-start gap-2 ${isToday ? 'animate-pulse' : ''}`}>
-                      <div className="flex-shrink-0 mt-0.5">
-                        {holiday.type === 'holiday' ? (
-                          <svg className={`w-4 h-4 ${isToday ? 'text-red-500 animate-pulse' : 'text-red-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        ) : (
-                          <svg className={`w-4 h-4 ${isToday ? 'text-yellow-500 animate-pulse' : 'text-yellow-400'}`} fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
+                    <div className={`flex items-start ${isToday ? 'animate-pulse' : ''}`}>
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-1.5">
                           <span className={`text-[10px] font-semibold uppercase tracking-wide ${
@@ -1370,7 +1362,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               ? isToday ? 'text-red-700 dark:text-red-300' : 'text-red-600 dark:text-red-400'
                               : isToday ? 'text-rose-700 dark:text-rose-300' : 'text-rose-600 dark:text-rose-400'
                           }`}>
-                            {holiday.market === 'XNYS' ? 'NYSE' : holiday.market === 'XPAR' ? 'Euronext' : holiday.market === 'XLON' ? 'LSE' : 'Tokyo SE'}
+                            {holiday.market}
                             {' '}
                             <img
                               src={`https://flagcdn.com/16x12/${holiday.market === 'XNYS' ? 'us' : holiday.market === 'XPAR' ? 'fr' : holiday.market === 'XLON' ? 'gb' : 'jp'}.png`}
@@ -1381,12 +1373,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               className="inline-block align-middle"
                             />
                           </span>
+                          <span className={`text-xs font-medium leading-tight ${
+                            isToday ? 'text-gray-950 dark:text-white font-bold' : 'text-gray-900 dark:text-white'
+                          }`}>
+                            {holiday.name}
+                          </span>
                         </div>
-                        <span className={`text-xs font-medium leading-tight ${
-                          isToday ? 'text-gray-950 dark:text-white font-bold' : 'text-gray-900 dark:text-white'
-                        }`}>
-                          {holiday.name}
-                        </span>
                         <span className={`text-[11px] ${
                           isToday ? 'text-gray-700 dark:text-gray-300 font-semibold' : 'text-gray-500 dark:text-gray-400'
                         }`}>

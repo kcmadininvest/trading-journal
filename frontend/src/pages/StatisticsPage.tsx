@@ -526,30 +526,22 @@ function StatisticsPage() {
                       <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.losingTrades', { defaultValue: 'Perdants' })}</span>
                       <span className="text-sm sm:text-base font-semibold text-pink-500 dark:text-pink-400">{statisticsData.losing_trades}</span>
                     </div>
-                    <div className="flex items-center justify-center gap-4 pl-1">
-                      {/* Gauche : label BE + total */}
-                      <div className="flex flex-col items-center">
-                        <div className="flex items-center gap-0.5">
-                          <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.breakEven', { defaultValue: 'Breakeven' })}</span>
-                          <Tooltip
-                            content={t('statistics:tradesAnalysis.breakEvenInlineExplanation', {
-                              defaultValue: 'Les BE à PnL > 0 restent comptés dans les gagnants. Seuls les BE stricts (PnL = 0) sont exclus du total.',
-                            })}
-                            position="bottom"
-                            offset={{ x: -60 }}
-                          >
-                            <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 cursor-help flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                            </svg>
-                          </Tooltip>
-                        </div>
-                        <span className="text-sm sm:text-base font-semibold text-gray-600 dark:text-gray-300">{statisticsData.break_even_trades || 0}</span>
+                    <div className="flex flex-col items-center px-1">
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.breakEven', { defaultValue: 'Breakeven' })}</span>
+                        <Tooltip
+                          content={t('statistics:tradesAnalysis.breakEvenInlineExplanation', {
+                            defaultValue: 'Les BE à PnL > 0 restent comptés dans les gagnants. Seuls les BE stricts (PnL = 0) sont exclus du total.',
+                          }) + ` | = 0 : ${statisticsData.break_even_zero_trades ?? 0}`}
+                          position="bottom"
+                          offset={{ x: -60 }}
+                        >
+                          <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 cursor-help flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                          </svg>
+                        </Tooltip>
                       </div>
-                      {/* Droite : détail = 0 / > 0 */}
-                      <div className="flex flex-col text-xs sm:text-sm text-gray-400 dark:text-gray-500 leading-tight">
-                        <span>= 0 : <span className="font-semibold text-gray-600 dark:text-gray-300">{statisticsData.break_even_zero_trades ?? 0}</span></span>
-                        <span>&gt; 0 : <span className="font-semibold text-gray-600 dark:text-gray-300">{statisticsData.break_even_positive_trades ?? 0}</span></span>
-                      </div>
+                      <span className="text-sm sm:text-base font-semibold text-gray-600 dark:text-gray-300">{statisticsData.break_even_positive_trades ?? 0}</span>
                     </div>
                   </div>
                 </div>

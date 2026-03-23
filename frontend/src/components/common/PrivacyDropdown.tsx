@@ -97,16 +97,6 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
     }
   };
 
-  // Icône pour l'état de l'option
-  const getStateIcon = (optionKey: string) => {
-    const isHidden = getOptionState(optionKey);
-    
-    if (isHidden) {
-      return <span title={t('dashboard:hidden', { defaultValue: 'Masqué' })}>☑️</span>;
-    } else {
-      return <span title={t('dashboard:visible', { defaultValue: 'Visible' })}>☐</span>;
-    }
-  };
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
@@ -127,17 +117,11 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             )}
           </svg>
-          <span className="text-sm font-medium whitespace-nowrap">
-            {t('dashboard:streamerMode', { defaultValue: 'Streamer Mode' })}
-          </span>
           {activeOverridesCount > 0 && (
             <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400">
               {activeOverridesCount}
             </span>
           )}
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
         </button>
       </Tooltip>
 
@@ -151,17 +135,21 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
             {/* Options */}
             <div className="space-y-2 mb-4">
               {availableOptions.map((option) => (
-                <button
+                <label
                   key={option.key}
-                  onClick={() => handleToggleOption(option.key)}
-                  disabled={isSaving}
-                  className="w-full flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left disabled:opacity-50"
+                  className="w-full flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 >
-                  <span className="text-lg">{getStateIcon(option.key)}</span>
+                  <input
+                    type="checkbox"
+                    checked={getOptionState(option.key)}
+                    onChange={() => handleToggleOption(option.key)}
+                    disabled={isSaving}
+                    className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 cursor-pointer disabled:opacity-50"
+                  />
                   <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">
                     {t(option.label)}
                   </span>
-                </button>
+                </label>
               ))}
             </div>
 
