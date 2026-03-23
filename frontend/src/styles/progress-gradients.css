@@ -41,3 +41,142 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
 }
+
+/* Couleurs pour la matrice de corrélation - CSP compliant */
+/* Corrélation positive (bleu) - mode clair */
+.correlation-pos-very-low { background-color: #dbeafe; }
+.correlation-pos-low { background-color: #93c5fd; }
+.correlation-pos-medium { background-color: #60a5fa; }
+.correlation-pos-high { background-color: #3b82f6; }
+.correlation-pos-very-high { background-color: #2563eb; }
+
+/* Corrélation positive (bleu) - mode sombre */
+.dark .correlation-pos-very-low { background-color: #1e3a8a; }
+.dark .correlation-pos-low { background-color: #1e40af; }
+.dark .correlation-pos-medium { background-color: #2563eb; }
+.dark .correlation-pos-high { background-color: #3b82f6; }
+.dark .correlation-pos-very-high { background-color: #60a5fa; }
+
+/* Corrélation négative (rose) - mode clair */
+.correlation-neg-very-low { background-color: #fce7f3; }
+.correlation-neg-low { background-color: #f9a8d4; }
+.correlation-neg-medium { background-color: #f472b6; }
+.correlation-neg-high { background-color: #ec4899; }
+.correlation-neg-very-high { background-color: #db2777; }
+
+/* Corrélation négative (rose) - mode sombre */
+.dark .correlation-neg-very-low { background-color: #831843; }
+.dark .correlation-neg-low { background-color: #9f1239; }
+.dark .correlation-neg-medium { background-color: #be185d; }
+.dark .correlation-neg-high { background-color: #db2777; }
+.dark .correlation-neg-very-high { background-color: #ec4899; }
+
+/* Corrélation neutre (gris) */
+.correlation-neutral { background-color: #e5e7eb; }
+.dark .correlation-neutral { background-color: #4b5563; }
+
+/* Couleurs de texte pour les cellules de corrélation */
+.correlation-text-light { color: #1f2937; }
+.correlation-text-dark { color: #ffffff; }
+
+/* Gradients de fond pour MetricGauge - CSP compliant avec nuances douces */
+/* Utilisation de gradients avec transitions douces entre les zones */
+
+/* Profit Factor: red (0) -> orange (1.0) -> green (2.0) avec transitions douces */
+.gauge-bg-profit-factor {
+  background: linear-gradient(to right, 
+    rgb(251 207 232) 0%, 
+    rgb(252 217 242) 28%, 
+    rgb(254 215 170) 33.33%, 
+    rgb(254 225 190) 60%, 
+    rgb(191 219 254) 66.67%, 
+    rgb(191 219 254) 100%);
+}
+
+/* Win Rate: red (0) -> orange (40%) -> green (50%) avec transitions douces */
+.gauge-bg-win-rate {
+  background: linear-gradient(to right, 
+    rgb(251 207 232) 0%, 
+    rgb(252 217 242) 35%, 
+    rgb(254 215 170) 40%, 
+    rgb(254 225 190) 47%, 
+    rgb(191 219 254) 50%, 
+    rgb(191 219 254) 100%);
+}
+
+/* Sharpe Ratio: red (0) -> orange (0.5) -> green (1.0) avec transitions douces */
+.gauge-bg-sharpe-ratio {
+  background: linear-gradient(to right, 
+    rgb(251 207 232) 0%, 
+    rgb(252 217 242) 14%, 
+    rgb(254 215 170) 16.67%, 
+    rgb(254 225 190) 30%, 
+    rgb(191 219 254) 33.33%, 
+    rgb(191 219 254) 100%);
+}
+
+/* Trade Efficiency: red (0) -> orange (30%) -> green (50%) avec transitions douces */
+.gauge-bg-trade-efficiency {
+  background: linear-gradient(to right, 
+    rgb(251 207 232) 0%, 
+    rgb(252 217 242) 25%, 
+    rgb(254 215 170) 30%, 
+    rgb(254 225 190) 47%, 
+    rgb(191 219 254) 50%, 
+    rgb(191 219 254) 100%);
+}
+
+/* Fees Ratio (inverted): green (0) -> orange (10%) -> red (20%) avec transitions douces */
+.gauge-bg-fees-ratio {
+  background: linear-gradient(to right, 
+    rgb(191 219 254) 0%, 
+    rgb(220 235 254) 28%, 
+    rgb(254 215 170) 33.33%, 
+    rgb(252 217 200) 60%, 
+    rgb(251 207 232) 66.67%, 
+    rgb(251 207 232) 100%);
+}
+
+/* Win/Loss Ratio: red (0) -> orange (1.0) -> green (1.5) avec transitions douces */
+.gauge-bg-win-loss-ratio {
+  background: linear-gradient(to right, 
+    rgb(251 207 232) 0%, 
+    rgb(252 217 242) 28%, 
+    rgb(254 215 170) 33.33%, 
+    rgb(254 225 190) 47%, 
+    rgb(191 219 254) 50%, 
+    rgb(191 219 254) 100%);
+}
+
+/* Recovery Ratio: red (0) -> orange (1.0) -> green (1.5) avec transitions douces */
+.gauge-bg-recovery-ratio {
+  background: linear-gradient(to right, 
+    rgb(251 207 232) 0%, 
+    rgb(252 217 242) 28%, 
+    rgb(254 215 170) 33.33%, 
+    rgb(254 225 190) 47%, 
+    rgb(191 219 254) 50%, 
+    rgb(191 219 254) 100%);
+}
+
+/* Plan Respect Rate: red (0) -> orange (50%) -> green (70%) avec transitions douces */
+.gauge-bg-plan-respect-rate {
+  background: linear-gradient(to right, 
+    rgb(251 207 232) 0%, 
+    rgb(252 217 242) 45%, 
+    rgb(254 215 170) 50%, 
+    rgb(254 225 190) 67%, 
+    rgb(191 219 254) 70%, 
+    rgb(191 219 254) 100%);
+}
+
+/* Gradient générique par défaut (3 zones égales) avec transitions douces */
+.gauge-bg-default {
+  background: linear-gradient(to right, 
+    rgb(251 207 232) 0%, 
+    rgb(252 217 242) 28%, 
+    rgb(254 215 170) 33.33%, 
+    rgb(254 225 190) 60%, 
+    rgb(191 219 254) 66.67%, 
+    rgb(191 219 254) 100%);
+}

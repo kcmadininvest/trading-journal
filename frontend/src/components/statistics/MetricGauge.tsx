@@ -77,61 +77,58 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
     lg: 'h-4',
   };
 
-  // Calculer les zones de couleur pour l'arrière-plan
-  const getBackgroundGradient = (): string => {
-    const sortedThresholds = [...thresholds].sort((a, b) => a.value - b.value);
-    const gradientStops: string[] = [];
-
-    sortedThresholds.forEach((threshold, index) => {
-      const thresholdPercentage = ((threshold.value - min) / (max - min)) * 100;
-      
-      if (index === 0) {
-        // Première zone commence à 0%
-        const color = threshold.color === 'red' ? 'rgb(251 207 232)' : 
-                     threshold.color === 'orange' ? 'rgb(254 215 170)' : 
-                     'rgb(191 219 254)';
-        
-        gradientStops.push(`${color} 0%`);
-        gradientStops.push(`${color} ${thresholdPercentage}%`);
-      } else {
-        const color = threshold.color === 'red' ? 'rgb(251 207 232)' : 
-                     threshold.color === 'orange' ? 'rgb(254 215 170)' : 
-                     'rgb(191 219 254)';
-        
-        gradientStops.push(`${color} ${thresholdPercentage}%`);
+  // Déterminer la classe de gradient en fonction du label ou de la configuration
+  const getGaugeBackgroundClass = (): string => {
+    const labelLower = label.toLowerCase();
+    
+    // Détecter par label si disponible
+    if (labelLower.includes('profit factor')) return 'gauge-bg-profit-factor';
+    if (labelLower.includes('win rate') || labelLower.includes('taux de réussite')) return 'gauge-bg-win-rate';
+    if (labelLower.includes('sharpe')) return 'gauge-bg-sharpe-ratio';
+    if (labelLower.includes('efficiency') || labelLower.includes('efficacité')) return 'gauge-bg-trade-efficiency';
+    if (labelLower.includes('fees') || labelLower.includes('frais')) return 'gauge-bg-fees-ratio';
+    if (labelLower.includes('win/loss') || labelLower.includes('gain/perte')) return 'gauge-bg-win-loss-ratio';
+    if (labelLower.includes('recovery') || labelLower.includes('récupération')) return 'gauge-bg-recovery-ratio';
+    if (labelLower.includes('plan') || labelLower.includes('respect')) return 'gauge-bg-plan-respect-rate';
+    
+    // Si label vide, détecter par configuration (min, max, thresholds)
+    if (!label || label === '') {
+      // Profit Factor: min=0, max=3, thresholds=[0, 1.0, 2.0]
+      if (min === 0 && max === 3 && thresholds.length === 3) {
+        const sortedThresholds = [...thresholds].sort((a, b) => a.value - b.value);
+        if (sortedThresholds[0].value === 0 && sortedThresholds[1].value === 1.0 && sortedThresholds[2].value === 2.0) {
+          return 'gauge-bg-profit-factor';
+        }
+        // Win/Loss Ratio: min=0, max=3, thresholds=[0, 1.0, 1.5]
+        if (sortedThresholds[0].value === 0 && sortedThresholds[1].value === 1.0 && sortedThresholds[2].value === 1.5) {
+          return 'gauge-bg-win-loss-ratio';
+        }
       }
-    });
-
-    // Dernière zone jusqu'à 100%
-    const lastColor = sortedThresholds[sortedThresholds.length - 1];
-    const color = lastColor.color === 'red' ? 'rgb(251 207 232)' : 
-                 lastColor.color === 'orange' ? 'rgb(254 215 170)' : 
-                 'rgb(191 219 254)';
-    gradientStops.push(`${color} 100%`);
-
-    return `linear-gradient(to right, ${gradientStops.join(', ')})`;
+      // Win Rate: min=0, max=100, thresholds=[0, 40, 50]
+      if (min === 0 && max === 100 && thresholds.length === 3) {
+        const sortedThresholds = [...thresholds].sort((a, b) => a.value - b.value);
+        if (sortedThresholds[0].value === 0 && sortedThresholds[1].value === 40 && sortedThresholds[2].value === 50) {
+          return 'gauge-bg-win-rate';
+        }
+      }
+    }
+    
+    return 'gauge-bg-default';
   };
 
   const displayValue = formatValue ? formatValue(value) : `${value.toFixed(2)}${unit}`;
 
   const barContent = (
     <div className="relative">
-      {/* Arrière-plan avec zones de couleur */}
-      <div
-        className={`w-full ${sizeClasses[size]} rounded-full overflow-hidden`}
-        style={{ background: getBackgroundGradient() }}
-      >
-        {/* Barre de progression */}
+      <div className={`w-full ${sizeClasses[size]} rounded-full overflow-hidden ${getGaugeBackgroundClass()}`}>
         <div
           className={`${sizeClasses[size]} ${colorClasses[currentColor]} rounded-full transition-all duration-700 ease-out relative`}
           style={{ width: `${percentage}%` }}
         >
-          {/* Indicateur de position */}
           <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 ${colorClasses[currentColor]} rounded-full shadow-lg`} />
         </div>
       </div>
 
-      {/* Marqueurs de seuils */}
       {thresholds.map((threshold, index) => {
         const thresholdPercentage = ((threshold.value - min) / (max - min)) * 100;
         if (thresholdPercentage <= 0 || thresholdPercentage >= 100) return null;

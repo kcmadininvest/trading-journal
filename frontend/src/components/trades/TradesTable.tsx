@@ -208,10 +208,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     {(() => {
                       const pts = calcPoints(trade);
                       return (
-                        <div
-                          className="font-semibold tabular-nums"
-                          style={pts == null ? undefined : { color: pts >= 0 ? '#05967c' : '#e11d48' }}
-                        >
+                        <div className={`font-semibold tabular-nums ${pts == null ? '' : pts >= 0 ? 'text-profit' : 'text-loss'}`}>
                           {pts == null ? '—' : (pts >= 0 ? '+' : '') + fmtNumber(String(pts), 2)}
                         </div>
                       );
@@ -262,12 +259,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   <div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:pnl')}</div>
                     <div
-                      className="font-semibold tabular-nums"
-                      style={
+                      className={`font-semibold tabular-nums ${
                         trade.pnl == null || isNaN(parseFloat(trade.pnl))
-                          ? undefined
-                          : { color: parseFloat(trade.pnl) >= 0 ? '#05967c' : '#e11d48' }
-                      }
+                          ? ''
+                          : parseFloat(trade.pnl) >= 0 ? 'text-profit' : 'text-loss'
+                      }`}
                     >
                       {fmtCurrency(trade.pnl)}
                     </div>
@@ -279,12 +275,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   <div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:netPnl')}</div>
                     <div
-                      className="font-semibold tabular-nums"
-                      style={
+                      className={`font-semibold tabular-nums ${
                         trade.net_pnl == null || isNaN(parseFloat(trade.net_pnl))
-                          ? undefined
-                          : { color: parseFloat(trade.net_pnl) >= 0 ? '#05967c' : '#e11d48' }
-                      }
+                          ? ''
+                          : parseFloat(trade.net_pnl) >= 0 ? 'text-profit' : 'text-loss'
+                      }`}
                     >
                       {fmtCurrency(trade.net_pnl)}
                     </div>
@@ -309,8 +304,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               <div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:pnl')}</div>
                 <div
-                  className="font-semibold tabular-nums"
-                  style={totals.pnl !== undefined ? { color: (totals.pnl ?? 0) >= 0 ? '#05967c' : '#e11d48' } : undefined}
+                  className={`font-semibold tabular-nums ${totals.pnl !== undefined ? ((totals.pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}
                 >
                   {totals.pnl !== undefined ? formatCurrencyWithSign(totals.pnl, '', preferences.number_format, 2) : '-'}
                 </div>
@@ -324,8 +318,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               <div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:netPnl')}</div>
                 <div
-                  className="font-semibold tabular-nums"
-                  style={totals.net_pnl !== undefined ? { color: (totals.net_pnl ?? 0) >= 0 ? '#05967c' : '#e11d48' } : undefined}
+                  className={`font-semibold tabular-nums ${totals.net_pnl !== undefined ? ((totals.net_pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}
                 >
                   {totals.net_pnl !== undefined ? formatCurrencyWithSign(totals.net_pnl, '', preferences.number_format, 2) : '-'}
                 </div>
@@ -475,12 +468,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtNumber(trade.entry_price, 2)}</td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtNumber(trade.exit_price, 2)}</td>
                   <td
-                    className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold"
-                    style={(() => {
+                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold ${(() => {
                       const pts = calcPoints(trade);
-                      if (pts == null) return undefined;
-                      return { color: pts >= 0 ? '#05967c' : '#e11d48' };
-                    })()}
+                      if (pts == null) return '';
+                      return pts >= 0 ? 'text-profit' : 'text-loss';
+                    })()}`}
                   >
                     {(() => {
                       const pts = calcPoints(trade);
@@ -489,23 +481,21 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     })()}
                   </td>
                   <td
-                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold`}
-                    style={
+                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold ${
                       trade.pnl == null || isNaN(parseFloat(trade.pnl))
-                        ? undefined
-                        : { color: parseFloat(trade.pnl) >= 0 ? '#05967c' : '#e11d48' }
-                    }
+                        ? ''
+                        : parseFloat(trade.pnl) >= 0 ? 'text-profit' : 'text-loss'
+                    }`}
                   >
                     {fmtCurrency(trade.pnl)}
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtCurrency(trade.fees)}</td>
                   <td
-                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold`}
-                    style={
+                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold ${
                       trade.net_pnl == null || isNaN(parseFloat(trade.net_pnl))
-                        ? undefined
-                        : { color: parseFloat(trade.net_pnl) >= 0 ? '#05967c' : '#e11d48' }
-                    }
+                        ? ''
+                        : parseFloat(trade.net_pnl) >= 0 ? 'text-profit' : 'text-loss'
+                    }`}
                   >
                     {fmtCurrency(trade.net_pnl)}
                   </td>
@@ -575,13 +565,13 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     {t('trades:totals')} {typeof totals.count === 'number' ? `(${totals.count} ${t('trades:trades')})` : ''}
                   </span>
                 </td>
-                <td className="px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold" style={totals.pnl !== undefined ? { color: (totals.pnl ?? 0) >= 0 ? '#05967c' : '#e11d48' } : undefined}>
+                <td className={`px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold ${totals.pnl !== undefined ? ((totals.pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}>
                   {totals.pnl !== undefined ? formatCurrencyWithSign(totals.pnl, '', preferences.number_format, 2) : ''}
                 </td>
                 <td className="px-2 sm:px-4 py-2 text-right text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                   {totals.fees !== undefined ? formatCurrencyWithSign(totals.fees, '', preferences.number_format, 2) : ''}
                 </td>
-                <td className="px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold" style={totals.net_pnl !== undefined ? { color: (totals.net_pnl ?? 0) >= 0 ? '#05967c' : '#e11d48' } : undefined}>
+                <td className={`px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold ${totals.net_pnl !== undefined ? ((totals.net_pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}>
                   {totals.net_pnl !== undefined ? formatCurrencyWithSign(totals.net_pnl, '', preferences.number_format, 2) : ''}
                 </td>
                 <td className="p-0"></td>

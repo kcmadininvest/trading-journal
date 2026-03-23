@@ -368,12 +368,8 @@ function ModernStatCard({
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden relative">
                   <div
                     className={`h-full rounded-full transition-all duration-500 relative overflow-hidden ${getProgressGradientClass(progressValue, progressMax, variant)}`}
-                    style={{ 
-                      '--progress-width': `${Math.min((progressValue / progressMax) * 100, 100)}%`,
-                      width: 'var(--progress-width)'
-                    } as React.CSSProperties}
+                    style={{ width: `${Math.min((progressValue / progressMax) * 100, 100)}%` }}
                   />
-                  {/* Effet de brillance animé pour encourager - positionné sur toute la largeur de la barre grise */}
                   {progressValue > 0 && progressValue < progressMax && (
                     <div className="absolute top-0 left-0 bottom-0 rounded-full pointer-events-none w-full h-full progress-shimmer" />
                   )}

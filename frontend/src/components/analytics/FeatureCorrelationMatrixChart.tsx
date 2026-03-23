@@ -18,41 +18,32 @@ export const FeatureCorrelationMatrixChart: React.FC<FeatureCorrelationMatrixCha
 }) => {
   const { t } = useTranslation();
 
-  const getCellColor = (value: number): string => {
+  const getCellColorClass = (value: number): string => {
     const clamped = Math.max(-1, Math.min(1, value));
     const intensity = Math.abs(clamped);
 
     if (clamped > 0) {
-      if (isDark) {
-        if (intensity < 0.2) return '#1e3a8a';
-        if (intensity < 0.4) return '#1e40af';
-        if (intensity < 0.6) return '#2563eb';
-        if (intensity < 0.8) return '#3b82f6';
-        return '#60a5fa';
-      }
-      if (intensity < 0.2) return '#dbeafe';
-      if (intensity < 0.4) return '#93c5fd';
-      if (intensity < 0.6) return '#60a5fa';
-      if (intensity < 0.8) return '#3b82f6';
-      return '#2563eb';
+      if (intensity < 0.2) return 'correlation-pos-very-low';
+      if (intensity < 0.4) return 'correlation-pos-low';
+      if (intensity < 0.6) return 'correlation-pos-medium';
+      if (intensity < 0.8) return 'correlation-pos-high';
+      return 'correlation-pos-very-high';
     }
 
     if (clamped < 0) {
-      if (isDark) {
-        if (intensity < 0.2) return '#831843';
-        if (intensity < 0.4) return '#9f1239';
-        if (intensity < 0.6) return '#be185d';
-        if (intensity < 0.8) return '#db2777';
-        return '#ec4899';
-      }
-      if (intensity < 0.2) return '#fce7f3';
-      if (intensity < 0.4) return '#f9a8d4';
-      if (intensity < 0.6) return '#f472b6';
-      if (intensity < 0.8) return '#ec4899';
-      return '#db2777';
+      if (intensity < 0.2) return 'correlation-neg-very-low';
+      if (intensity < 0.4) return 'correlation-neg-low';
+      if (intensity < 0.6) return 'correlation-neg-medium';
+      if (intensity < 0.8) return 'correlation-neg-high';
+      return 'correlation-neg-very-high';
     }
 
-    return isDark ? '#4b5563' : '#e5e7eb';
+    return 'correlation-neutral';
+  };
+
+  const getCellTextClass = (value: number): string => {
+    const intensity = Math.abs(value);
+    return (intensity >= 0.45 || isDark) ? 'correlation-text-dark' : 'correlation-text-light';
   };
 
   if (!data.labels.length || !data.matrix.length) {
@@ -91,24 +82,20 @@ export const FeatureCorrelationMatrixChart: React.FC<FeatureCorrelationMatrixCha
           <div className="grid" style={{ gridTemplateColumns: `150px repeat(${data.labels.length}, minmax(88px, 1fr))` }}>
             <div className="p-2"></div>
             {data.labels.map((label) => (
-              <div key={`col-${label}`} className="p-2 text-xs font-semibold text-center" style={{ color: chartColors.textSecondary }}>
+              <div key={`col-${label}`} className="p-2 text-xs font-semibold text-center text-chart-secondary">
                 {label}
               </div>
             ))}
 
             {data.labels.map((rowLabel, rowIndex) => (
               <React.Fragment key={`row-${rowLabel}`}>
-                <div className="p-2 text-sm font-semibold" style={{ color: chartColors.textSecondary }}>
+                <div className="p-2 text-sm font-semibold text-chart-secondary">
                   {rowLabel}
                 </div>
                 {data.matrix[rowIndex].map((value, colIndex) => (
                   <div
                     key={`${rowLabel}-${colIndex}`}
-                    className="m-1 rounded-md flex items-center justify-center h-12 text-xs font-semibold"
-                    style={{
-                      backgroundColor: getCellColor(value),
-                      color: Math.abs(value) >= 0.45 || isDark ? '#ffffff' : '#1f2937',
-                    }}
+                    className={`m-1 rounded-md flex items-center justify-center h-12 text-xs font-semibold ${getCellColorClass(value)} ${getCellTextClass(value)}`}
                     title={`${rowLabel} / ${data.labels[colIndex]}: ${value.toFixed(2)}`}
                   >
                     {value >= 0 ? '+' : ''}
