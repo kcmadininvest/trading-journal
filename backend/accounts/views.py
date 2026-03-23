@@ -93,8 +93,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                         try:
                             user = User.objects.get(email=email)
                             user_id = user.id
-                        except Exception:  # User.DoesNotExist ou autre exception
-                            pass
+                        except User.DoesNotExist:
+                            logger.debug("Utilisateur non trouvé pour l'email lors de la connexion")
+                        except Exception as e:
+                            logger.error(f"Erreur inattendue lors de la récupération de l'utilisateur: {str(e)}")
                 
                 if user_id:
                     try:
@@ -137,8 +139,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                             user_agent=user_agent,
                             success=False
                         )
-                    except Exception:  # User.DoesNotExist ou autre exception
-                        # Logger les tentatives avec des emails inexistants (possible reconnaissance)
+                    except User.DoesNotExist:
                         security_logger.warning(
                             f"Tentative de connexion avec email inexistant - Email: {email}, IP: {ip_address}"
                         )
@@ -390,7 +391,8 @@ class AccountActivationView(APIView):
                 'message': 'Token valide'
             }, status=status.HTTP_200_OK)
             
-        except Exception:  # EmailActivationToken.DoesNotExist
+        except EmailActivationToken.DoesNotExist:
+            logger.warning("Tentative de validation avec un token inexistant")
             return Response(
                 {'valid': False, 'error': 'Token d\'activation invalide'},
                 status=status.HTTP_200_OK
@@ -590,8 +592,10 @@ class LogoutView(APIView):
                                 UserModel = get_user_model()
                                 if UserModel:
                                     user = UserModel.objects.get(id=user_id)
-                            except Exception:
-                                pass
+                            except UserModel.DoesNotExist:
+                                logger.warning(f"Utilisateur {user_id} non trouvé lors du refresh token")
+                            except Exception as e:
+                                logger.error(f"Erreur lors de la récupération de l'utilisateur: {str(e)}")
                         
                         outstanding_token, created = OutstandingToken.objects.get_or_create(
                             jti=jti,
@@ -986,8 +990,10 @@ def session_info(request):
                         'is_expired': time_remaining <= 0,
                         'needs_refresh': time_remaining <= 600,  # Besoin de rafraîchir si moins de 10 minutes
                     })
-                except Exception:
-                    pass
+                except (KeyError, ValueError, TypeError) as e:
+                    logger.debug(f"Impossible de décoder le token d'accès: {str(e)}")
+                except Exception as e:
+                    logger.error(f"Erreur inattendue lors du décodage du token: {str(e)}")
         
         return Response({
             'error': 'Token non valide ou expiré'
@@ -1078,7 +1084,11 @@ class SystemStatsView(APIView):
             try:
                 total, used, free = shutil.disk_usage("/")
                 disk_usage = f"{used // (1024**3)} GB / {total // (1024**3)} GB"
-            except:
+            except OSError as e:
+                logger.warning(f"Impossible de récupérer l'utilisation disque: {str(e)}")
+                disk_usage = "N/A"
+            except Exception as e:
+                logger.error(f"Erreur inattendue lors de la récupération de l'utilisation disque: {str(e)}")
                 disk_usage = "N/A"
             
             # Dernière sauvegarde (à implémenter)
@@ -1092,7 +1102,11 @@ class SystemStatsView(APIView):
                     uptime_days = uptime_hours // 24
                     uptime_hours = uptime_hours % 24
                     system_uptime = f"{uptime_days}j {uptime_hours}h"
-            except:
+            except (OSError, IOError, ValueError) as e:
+                logger.warning(f"Impossible de récupérer l'uptime système: {str(e)}")
+                system_uptime = "N/A"
+            except Exception as e:
+                logger.error(f"Erreur inattendue lors de la récupération de l'uptime: {str(e)}")
                 system_uptime = "N/A"
             
             return Response({
@@ -1359,7 +1373,8 @@ class ActiveSessionsView(APIView):
                     token = OutstandingToken.objects.get(jti=jti, user=request.user)
                     BlacklistedToken.objects.get_or_create(token=token)
                     return Response({'message': 'Session déconnectée avec succès'})
-                except Exception:  # OutstandingToken.DoesNotExist
+                except OutstandingToken.DoesNotExist:
+                    logger.warning(f"Tentative de déconnexion d'une session inexistante: {jti}")
                     return Response(
                         {'error': 'Session non trouvée'}, 
                         status=status.HTTP_404_NOT_FOUND
@@ -1461,8 +1476,10 @@ class DataExportView(APIView):
             try:
                 preferences = UserPreferences.objects.get(user=user)
                 export_data['preferences'] = UserPreferencesSerializer(preferences).data
-            except Exception:  # UserPreferences.DoesNotExist
-                pass
+            except UserPreferences.DoesNotExist:
+                logger.debug(f"Aucune préférence trouvée pour l'utilisateur {user.id}")
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération des préférences pour export: {str(e)}")
             
             # Comptes de trading
             try:

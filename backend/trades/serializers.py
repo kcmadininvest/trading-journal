@@ -1,5 +1,9 @@
 from rest_framework import serializers
+from django.core.exceptions import ValidationError
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -362,30 +366,56 @@ class TradingMetricsSerializer(serializers.Serializer):
 class CSVUploadSerializer(serializers.Serializer):
     """
     Serializer pour l'upload de fichiers CSV avec validation stricte.
+    Conforme OWASP Top 10:2025 A03 (Supply Chain), A08 (Data Integrity), A10 (Exceptional Conditions).
     """
     file = serializers.FileField()
     
     def validate_file(self, value):
         """
         Valide le fichier uploadé avec des vérifications strictes :
-        - Extension de fichier
-        - Taille maximale
-        - Type MIME réel
-        - Magic bytes
-        - Contenu du fichier
-        - Protection contre les path traversal
+        - Extension de fichier (.csv uniquement)
+        - Taille maximale (5 MB)
+        - Type MIME réel (vérification magic bytes)
+        - Structure CSV (limites lignes/colonnes/cellules)
+        - Checksum SHA-256 pour intégrité
+        - Rate limiting (20 uploads/heure)
+        - Protection contre path traversal
         """
         from .file_validators import csv_file_validator
         
-        # Utiliser le validateur strict
+        request = self.context.get('request')
+        user_id = request.user.id if request and request.user.is_authenticated else None
+        
         try:
-            csv_file_validator.validate(value)
-        except Exception as e:
-            # Convertir les ValidationError Django en ValidationError DRF
+            validation_result = csv_file_validator.validate(
+                value, 
+                user_id=user_id,
+                verify_csv_structure=True
+            )
+            
+            self.context['file_metadata'] = validation_result
+            
+            logger.info(
+                f"Fichier CSV validé: {value.name}, "
+                f"checksum: {validation_result['checksum'][:16]}..."
+            )
+        
+        except ValidationError as e:
             if hasattr(e, 'message'):
                 raise serializers.ValidationError(str(e.message))
+            elif hasattr(e, 'messages'):
+                raise serializers.ValidationError(' '.join(e.messages))
             else:
                 raise serializers.ValidationError(str(e))
+        
+        except Exception as e:
+            logger.error(
+                f"Erreur inattendue lors de la validation du fichier CSV {value.name}: {str(e)}",
+                exc_info=True
+            )
+            raise serializers.ValidationError(
+                _("Erreur lors de la validation du fichier. Veuillez réessayer.")
+            )
         
         return value
 

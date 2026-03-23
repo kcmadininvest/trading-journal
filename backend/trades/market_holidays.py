@@ -58,7 +58,14 @@ class MarketHolidaysService:
                 })
             
             return holidays_with_names
-        except Exception:
+        except ImportError as e:
+            logger.error(f"Impossible d'importer pandas_market_calendars: {str(e)}")
+            return []
+        except ValueError as e:
+            logger.warning(f"Calendrier de marché invalide pour {market_code}: {str(e)}")
+            return []
+        except Exception as e:
+            logger.error(f"Erreur inattendue lors de la récupération des jours fériés: {str(e)}", exc_info=True)
             return []
     
     @staticmethod
@@ -91,7 +98,10 @@ class MarketHolidaysService:
                             for rule_date, name in rule_dates:
                                 if rule_date.date() == holiday_date:
                                     return name
-                        except:
+                        except (AttributeError, ValueError, KeyError):
+                            continue
+                        except Exception as e:
+                            logger.debug(f"Erreur lors de la récupération du nom de règle: {str(e)}")
                             continue
                 
                 # Vérifier les jours fériés ad-hoc
@@ -102,7 +112,11 @@ class MarketHolidaysService:
             
             # Fallback: déterminer le nom basé sur des patterns communs
             return MarketHolidaysService._guess_holiday_name(holiday_date)
-        except Exception:
+        except (AttributeError, ValueError) as e:
+            logger.warning(f"Erreur lors de la récupération du nom du jour férié: {str(e)}")
+            return MarketHolidaysService._guess_holiday_name(holiday_date)
+        except Exception as e:
+            logger.error(f"Erreur inattendue lors de la récupération du nom du jour férié: {str(e)}", exc_info=True)
             return MarketHolidaysService._guess_holiday_name(holiday_date)
     
     @staticmethod
@@ -184,7 +198,14 @@ class MarketHolidaysService:
             if early_closes is not None and len(early_closes) > 0:
                 return sorted([d.date() for d in early_closes.index])
             return []
-        except Exception:
+        except ImportError as e:
+            logger.error(f"Impossible d'importer pandas_market_calendars: {str(e)}")
+            return []
+        except ValueError as e:
+            logger.warning(f"Calendrier de marché invalide pour {market}: {str(e)}")
+            return []
+        except Exception as e:
+            logger.error(f"Erreur inattendue lors de la récupération des early closes: {str(e)}", exc_info=True)
             return []
     
     @staticmethod

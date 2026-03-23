@@ -886,8 +886,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     
                     pnl_before_period = trades_before_period.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
                     period_start_capital = initial_capital + pnl_before_period
-                except Exception:
-                    # En cas d'erreur, utiliser le capital initial
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Erreur lors du calcul du capital de début de période: {str(e)}")
+                    period_start_capital = initial_capital
+                except Exception as e:
+                    logger.error(f"Erreur inattendue lors du calcul du capital: {str(e)}", exc_info=True)
                     period_start_capital = initial_capital
         
         # Max drawdown de la période (avec filtres de date)
@@ -4416,7 +4419,11 @@ def dashboard_summary(request):
     user_timezone = getattr(getattr(request.user, 'preferences', None), 'timezone', None)
     try:
         user_tz = pytz.timezone(user_timezone) if user_timezone else pytz.timezone('Europe/Paris')
-    except Exception:
+    except pytz.exceptions.UnknownTimeZoneError:
+        logger.warning(f"Timezone inconnue: {user_timezone}, utilisation de Europe/Paris par défaut")
+        user_tz = pytz.timezone('Europe/Paris')
+    except Exception as e:
+        logger.error(f"Erreur lors de la configuration de la timezone: {str(e)}")
         user_tz = pytz.timezone('Europe/Paris')
 
     if start_date:

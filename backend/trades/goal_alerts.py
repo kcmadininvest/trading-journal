@@ -3,6 +3,7 @@ Service pour envoyer des alertes par email concernant les objectifs de trading.
 """
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.template import TemplateDoesNotExist
 from django.conf import settings
 from django.utils.html import strip_tags
 from django.utils import timezone
@@ -37,8 +38,12 @@ def send_goal_achieved_email(goal, language: str = None) -> bool:
                     language = goal.user.preferences.language
                 else:
                     language = 'fr'  # Par défaut
-            except Exception:
-                language = 'fr'  # Par défaut si erreur
+            except AttributeError:
+                logger.debug("Préférences non disponibles pour l'utilisateur")
+                language = 'fr'
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération de la langue: {str(e)}")
+                language = 'fr'
         
         # Construire l'URL vers les objectifs
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
@@ -88,8 +93,8 @@ def send_goal_achieved_email(goal, language: str = None) -> bool:
         # Rendre les templates HTML et texte
         try:
             html_content = render_to_string(template_path, context)
-        except Exception:
-            # Si le template n'existe pas, utiliser un template simple
+        except TemplateDoesNotExist:
+            logger.warning(f"Template email non trouvé: {template_path}, utilisation du template par défaut")
             html_content = f"""
             <html>
             <body>
@@ -101,6 +106,9 @@ def send_goal_achieved_email(goal, language: str = None) -> bool:
             </body>
             </html>
             """
+        except Exception as e:
+            logger.error(f"Erreur lors du rendu du template email: {str(e)}", exc_info=True)
+            html_content = f"<html><body><p>Objectif atteint: {goal_type_labels.get(goal.goal_type, goal.goal_type)}</p></body></html>"
         
         text_content = strip_tags(html_content)
         
@@ -145,8 +153,12 @@ def send_goal_danger_email(goal, language: str = None) -> bool:
                     language = goal.user.preferences.language
                 else:
                     language = 'fr'  # Par défaut
-            except Exception:
-                language = 'fr'  # Par défaut si erreur
+            except AttributeError:
+                logger.debug("Préférences non disponibles pour l'utilisateur")
+                language = 'fr'
+            except Exception as e:
+                logger.error(f"Erreur lors de la récupération de la langue: {str(e)}")
+                language = 'fr'
         
         # Construire l'URL vers les objectifs
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
@@ -200,8 +212,8 @@ def send_goal_danger_email(goal, language: str = None) -> bool:
         # Rendre les templates HTML et texte
         try:
             html_content = render_to_string(template_path, context)
-        except Exception:
-            # Si le template n'existe pas, utiliser un template simple
+        except TemplateDoesNotExist:
+            logger.warning(f"Template email non trouvé: {template_path}, utilisation du template par défaut")
             html_content = f"""
             <html>
             <body>
@@ -214,6 +226,9 @@ def send_goal_danger_email(goal, language: str = None) -> bool:
             </body>
             </html>
             """
+        except Exception as e:
+            logger.error(f"Erreur lors du rendu du template email: {str(e)}", exc_info=True)
+            html_content = f"<html><body><p>Objectif en danger: {goal_type_labels.get(goal.goal_type, goal.goal_type)}</p></body></html>"
         
         text_content = strip_tags(html_content)
         
