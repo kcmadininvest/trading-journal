@@ -1,0 +1,153 @@
+---
+description: Règles de versionnement et de création des tags Git suivant Semantic Versioning
+alwaysApply: true
+---
+
+# Git Tag Versioning
+
+Ce projet utilise **Semantic Versioning (SemVer)** pour tous les tags Git.
+
+## Format des Tags
+
+Format: `vMAJOR.MINOR.PATCH`
+
+Exemples: `v3.5.0`, `v3.5.1`, `v4.0.0`
+
+## Règles de Versionnement
+
+### MAJOR (vX.0.0)
+Incrémenter quand il y a des **changements incompatibles** (breaking changes):
+- Changements d'API incompatibles
+- Suppression de fonctionnalités
+- Refonte majeure de l'architecture
+- Migration de base de données non rétrocompatible
+
+### MINOR (v3.X.0)
+Incrémenter pour les **nouvelles fonctionnalités** rétrocompatibles:
+- Ajout de nouvelles features
+- Amélioration significative de l'UI/UX
+- Nouveaux composants ou modules
+- Nouvelles API endpoints
+
+### PATCH (v3.5.X)
+Incrémenter pour les **corrections de bugs** et améliorations mineures:
+- Corrections de bugs
+- Améliorations de performance
+- Corrections de sécurité mineures
+- Corrections de typos ou traductions
+
+## Processus de Création de Tag
+
+### 1. Vérifier le dernier tag
+```bash
+git tag -l | sort -V | tail -5
+```
+
+### 2. Déterminer le prochain numéro
+- Analyser les changements depuis le dernier tag
+- Appliquer les règles SemVer ci-dessus
+- Incrémenter le bon niveau (MAJOR, MINOR ou PATCH)
+
+### 3. Créer le tag avec message descriptif
+```bash
+git tag -a v3.5.0 -m "feat: Description de la fonctionnalité
+
+Détails:
+- Point 1
+- Point 2
+- Point 3
+"
+```
+
+### 4. Pousser le tag
+```bash
+git push origin main
+git push origin v3.5.0
+```
+
+## Conventions de Message de Tag
+
+### Préfixes de type
+- `feat:` - Nouvelle fonctionnalité (MINOR)
+- `fix:` - Correction de bug (PATCH)
+- `security:` - Correction de sécurité (PATCH ou MINOR selon gravité)
+- `perf:` - Amélioration de performance (PATCH)
+- `refactor:` - Refactorisation sans changement fonctionnel (PATCH)
+- `breaking:` - Changement incompatible (MAJOR)
+
+### Structure du message
+```
+type: Titre court (50 caractères max)
+
+Description détaillée:
+- Point important 1
+- Point important 2
+- Point important 3
+
+[Optional] Breaking changes:
+- Changement 1
+- Changement 2
+```
+
+## Exemples Réels du Projet
+
+### Nouvelle fonctionnalité (MINOR)
+```bash
+# Dernier tag: v3.4.0
+# Nouveau tag: v3.5.0
+git tag -a v3.5.0 -m "feat: Ajout de l'indicateur DST NYSE
+
+Nouvelles fonctionnalités:
+- Affichage du changement d'heure DST
+- Calcul automatique des dates
+- Support multilingue (FR, EN, ES, DE)
+"
+```
+
+### Correction de bug (PATCH)
+```bash
+# Dernier tag: v3.5.0
+# Nouveau tag: v3.5.1
+git tag -a v3.5.1 -m "fix: Correction du scroll horizontal
+
+Corrections:
+- Fix overflow sur petits écrans
+- Alignement vertical des badges
+"
+```
+
+### Breaking change (MAJOR)
+```bash
+# Dernier tag: v3.5.1
+# Nouveau tag: v4.0.0
+git tag -a v4.0.0 -m "breaking: Migration vers React 19
+
+Breaking changes:
+- API Context modifiée
+- Hooks incompatibles avec React 18
+- Migration requise pour tous les composants
+"
+```
+
+## Checklist Avant de Créer un Tag
+
+- [ ] Vérifier le dernier tag existant
+- [ ] Déterminer le bon niveau de version (MAJOR/MINOR/PATCH)
+- [ ] Écrire un message de tag descriptif avec préfixe approprié
+- [ ] Créer le tag localement
+- [ ] Pousser le commit ET le tag vers origin
+- [ ] Vérifier que le tag apparaît sur GitHub
+
+## Erreurs à Éviter
+
+❌ **Mauvais**:
+```bash
+git tag v1.0.0-dst-indicator  # Pas de suffixe descriptif
+git tag latest                # Pas de numéro de version
+git tag v3.5                  # Manque le PATCH
+```
+
+✅ **Bon**:
+```bash
+git tag -a v3.5.0 -m "feat: Description claire"
+```
