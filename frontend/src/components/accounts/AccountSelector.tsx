@@ -218,6 +218,18 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
     }
   }, [options]);
 
+  // State pour stocker la position calculée du dropdown
+  const [dropdownTop, setDropdownTop] = useState<number | undefined>(undefined);
+  const [dropdownLeft, setDropdownLeft] = useState<number | undefined>(undefined);
+
+  // Réinitialiser les positions quand on ferme le dropdown
+  useEffect(() => {
+    if (!open) {
+      setDropdownTop(undefined);
+      setDropdownLeft(undefined);
+    }
+  }, [open]);
+
   // Calculer la largeur minimale (bouton) et la largeur nécessaire pour le contenu
   // + position et hauteur adaptative
   useEffect(() => {
@@ -227,6 +239,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
           const buttonWidth = buttonRef.current.offsetWidth;
           const buttonRect = buttonRef.current.getBoundingClientRect();
           setMinWidth(buttonWidth);
+          setDropdownLeft(buttonRect.left);
           
           // Calculer l'espace disponible au-dessus et en dessous du bouton
           const spaceBelow = window.innerHeight - buttonRect.bottom;
@@ -242,10 +255,12 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
             // Assez d'espace en dessous
             position = 'bottom';
             maxHeight = spaceBelow - marginSafety;
+            setDropdownTop(buttonRect.bottom + 4);
           } else if (spaceAbove >= minDropdownHeight + marginSafety) {
             // Pas assez d'espace en dessous, mais assez au-dessus
             position = 'top';
             maxHeight = spaceAbove - marginSafety;
+            setDropdownTop(buttonRect.top - 4);
           } else {
             // Utiliser l'espace le plus grand
             if (spaceBelow > spaceAbove) {
@@ -334,7 +349,7 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
           type="button"
           disabled={loading}
           onClick={() => setOpen(v => !v)}
-          className="flex-1 inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           style={{ minWidth: buttonMinWidth ? `${buttonMinWidth}px` : undefined }}
         >
           <span className="inline-flex items-center gap-2 min-w-0 flex-1">
@@ -368,16 +383,18 @@ export const AccountSelector: React.FC<AccountSelectorProps> = ({ value, onChang
             </svg>
           )}
         </button>
-        {open && (
+        {open && dropdownTop !== undefined && dropdownLeft !== undefined && (
           <div 
-            className="absolute z-50 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-auto"
+            className="fixed z-50 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-auto"
             style={{ 
-              width: dropdownWidth ? `${dropdownWidth}px` : '100%',
+              width: dropdownWidth ? `${dropdownWidth}px` : (minWidth ? `${minWidth}px` : '200px'),
               minWidth: buttonMinWidth ? `${buttonMinWidth}px` : (minWidth ? `${minWidth}px` : undefined),
               maxHeight: maxDropdownHeight ? `${maxDropdownHeight}px` : '288px',
-              ...(dropdownPosition === 'bottom' 
-                ? { top: '100%', marginTop: '4px' }
-                : { bottom: '100%', marginBottom: '4px' }
+              top: `${dropdownTop}px`,
+              left: `${dropdownLeft}px`,
+              ...(dropdownPosition === 'top'
+                ? { transform: 'translateY(-100%)' }
+                : {}
               )
             }}
           >

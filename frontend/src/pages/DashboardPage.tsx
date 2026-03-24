@@ -1281,7 +1281,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     <div className="px-4 sm:px-6 lg:px-8 py-6">
       {/* Filtres */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="lg:overflow-x-auto">
+        <div className="lg:overflow-x-auto lg:p-1 lg:-m-1">
           <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:min-w-max 2xl:min-w-0">
             {/* Compte de trading */}
           <div className="flex-shrink-0 max-w-sm">
