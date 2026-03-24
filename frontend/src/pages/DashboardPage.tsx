@@ -25,6 +25,7 @@ import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
 import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
+import { NYSEDSTIndicator } from '../components/common/NYSEDSTIndicator';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -1280,8 +1281,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     <div className="px-4 sm:px-6 lg:px-8 py-6">
       {/* Filtres */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-4">
-          {/* Compte de trading */}
+        <div className="lg:overflow-x-auto">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:min-w-max 2xl:min-w-0">
+            {/* Compte de trading */}
           <div className="flex-shrink-0 max-w-sm">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('dashboard:tradingAccount')}
@@ -1302,10 +1304,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             />
           </div>
 
-          {/* Market Holidays - Desktop only */}
-          {(holidaysLoading || marketHolidays.length > 0) && (
-            <div className="hidden 2xl:flex items-end flex-grow justify-center">
-              <div className="flex items-center gap-3 px-4 py-2 bg-blue-900/20 dark:bg-blue-900/20 rounded-lg border border-blue-800/50 dark:border-blue-800/50">
+          {/* Market Holidays & DST Change - Desktop only */}
+          <div className="hidden 2xl:flex items-end flex-shrink-0 justify-center">
+            <div className="flex items-center gap-3 px-4 py-2 bg-blue-900/20 dark:bg-blue-900/20 rounded-lg border border-blue-800/50 dark:border-blue-800/50">
+              {/* NYSE DST Indicator */}
+              <NYSEDSTIndicator />
+              
+              {/* Separator if there are holidays */}
+              {(holidaysLoading || marketHolidays.length > 0) && (
+                <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
+              )}
+              
+              {/* Market Holidays */}
+              {(holidaysLoading || marketHolidays.length > 0) && (
+                <>
                 {holidaysLoading ? (
                   <>
                     {/* Skeleton loader */}
@@ -1391,16 +1403,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 })}
                   </>
                 )}
-              </div>
+                </>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Privacy Dropdown */}
-          <div className="hidden 2xl:flex flex-shrink-0 ml-auto">
+          <div className="hidden 2xl:flex flex-shrink-0 ml-auto self-center">
             <PrivacyDropdown 
               pageContext={PAGE_CONTEXTS.DASHBOARD}
               availableOptions={PAGE_PRIVACY_OPTIONS[PAGE_CONTEXTS.DASHBOARD]}
             />
+          </div>
           </div>
         </div>
       </div>

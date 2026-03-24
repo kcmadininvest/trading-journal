@@ -155,5 +155,14 @@
     "closesAt": "Schließt um {{time}}",
     "hours": "{{open}} – {{close}}",
     "localTime": "Ortszeit: {{time}}"
+  },
+  "dstChange": {
+    "spring": "Sommerzeit",
+    "fall": "Winterzeit",
+    "in": "in",
+    "days": "Tagen",
+    "today": "Heute",
+    "tomorrow": "Morgen",
+    "tooltip": "NYSE Zeitumstellung: {{date}} um {{time}}"
   }
 }

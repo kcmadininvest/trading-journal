@@ -157,5 +157,14 @@
     "closesAt": "Ferme à {{time}}",
     "hours": "{{open}} – {{close}}",
     "localTime": "Heure locale : {{time}}"
+  },
+  "dstChange": {
+    "spring": "Heure d'été",
+    "fall": "Heure d'hiver",
+    "in": "dans",
+    "days": "jours",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "tooltip": "Changement d'heure NYSE : {{date}} à {{time}}"
   }
 }

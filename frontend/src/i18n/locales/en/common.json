@@ -158,5 +158,14 @@
     "closesAt": "Closes at {{time}}",
     "hours": "{{open}} – {{close}}",
     "localTime": "Local time: {{time}}"
+  },
+  "dstChange": {
+    "spring": "Daylight Saving Time",
+    "fall": "Standard Time",
+    "in": "in",
+    "days": "days",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "tooltip": "NYSE time change: {{date}} at {{time}}"
   }
 }
