@@ -1,10 +1,16 @@
 /**
- * Utilitaire pour calculer les dates de changement d'heure (DST) du NYSE
+ * Utilitaire pour calculer les dates de changement d'heure (DST) des marchés
  * 
  * Règles DST aux États-Unis (depuis 2007):
  * - Heure d'été (Spring Forward): 2ème dimanche de mars à 2h00 AM
  * - Heure d'hiver (Fall Back): 1er dimanche de novembre à 2h00 AM
+ * 
+ * Règles DST en Europe (Union Européenne):
+ * - Heure d'été (Spring Forward): Dernier dimanche de mars à 2h00 AM
+ * - Heure d'hiver (Fall Back): Dernier dimanche d'octobre à 3h00 AM
  */
+
+export type MarketRegion = 'US' | 'EU';
 
 export interface DSTEvent {
   date: Date;
@@ -12,6 +18,7 @@ export interface DSTEvent {
   daysUntil: number;
   isToday: boolean;
   isTomorrow: boolean;
+  region: MarketRegion;
 }
 
 /**
@@ -44,23 +51,72 @@ function getNthDayOfWeekInMonth(
 }
 
 /**
- * Calcule la date du changement d'heure de printemps (Spring Forward)
+ * Trouve le dernier jour de la semaine dans un mois donné
+ * @param year - Année
+ * @param month - Mois (0-11)
+ * @param dayOfWeek - Jour de la semaine (0 = Dimanche, 6 = Samedi)
+ * @returns Date du dernier jour trouvé
+ */
+function getLastDayOfWeekInMonth(
+  year: number,
+  month: number,
+  dayOfWeek: number,
+  hour: number = 2
+): Date {
+  // Commencer par le dernier jour du mois
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+  const lastDay = lastDayOfMonth.getDate();
+  
+  // Trouver le dernier dimanche en partant de la fin
+  for (let day = lastDay; day >= 1; day--) {
+    const date = new Date(year, month, day, hour, 0, 0, 0);
+    if (date.getDay() === dayOfWeek) {
+      return date;
+    }
+  }
+  
+  // Fallback (ne devrait jamais arriver)
+  return new Date(year, month, lastDay, hour, 0, 0, 0);
+}
+
+/**
+ * Calcule la date du changement d'heure de printemps (Spring Forward) - US
  * 2ème dimanche de mars à 2h00 AM
  * @param year - Année
  * @returns Date du changement d'heure
  */
-function getSpringDSTDate(year: number): Date {
+function getSpringDSTDateUS(year: number): Date {
   return getNthDayOfWeekInMonth(year, 2, 0, 2); // Mars (2), Dimanche (0), 2ème occurrence
 }
 
 /**
- * Calcule la date du changement d'heure d'automne (Fall Back)
+ * Calcule la date du changement d'heure d'automne (Fall Back) - US
  * 1er dimanche de novembre à 2h00 AM
  * @param year - Année
  * @returns Date du changement d'heure
  */
-function getFallDSTDate(year: number): Date {
+function getFallDSTDateUS(year: number): Date {
   return getNthDayOfWeekInMonth(year, 10, 0, 1); // Novembre (10), Dimanche (0), 1ère occurrence
+}
+
+/**
+ * Calcule la date du changement d'heure de printemps (Spring Forward) - EU
+ * Dernier dimanche de mars à 2h00 AM
+ * @param year - Année
+ * @returns Date du changement d'heure
+ */
+function getSpringDSTDateEU(year: number): Date {
+  return getLastDayOfWeekInMonth(year, 2, 0, 2); // Mars (2), Dimanche (0), à 2h00
+}
+
+/**
+ * Calcule la date du changement d'heure d'automne (Fall Back) - EU
+ * Dernier dimanche d'octobre à 3h00 AM
+ * @param year - Année
+ * @returns Date du changement d'heure
+ */
+function getFallDSTDateEU(year: number): Date {
+  return getLastDayOfWeekInMonth(year, 9, 0, 3); // Octobre (9), Dimanche (0), à 3h00
 }
 
 /**
@@ -76,17 +132,26 @@ function getDaysDifference(date1: Date, date2: Date): number {
 }
 
 /**
- * Obtient le prochain changement d'heure DST à venir
+ * Obtient le prochain changement d'heure DST à venir pour une région
+ * @param region - Région du marché ('US' pour NYSE, 'EU' pour Euronext)
  * @returns Événement DST ou null si aucun événement trouvé
  */
-export function getNextDSTChange(): DSTEvent | null {
+export function getNextDSTChange(region: MarketRegion = 'US'): DSTEvent | null {
   const now = new Date();
   const currentYear = now.getFullYear();
   
-  // Obtenir les dates DST pour l'année en cours et l'année suivante
-  const springThisYear = getSpringDSTDate(currentYear);
-  const fallThisYear = getFallDSTDate(currentYear);
-  const springNextYear = getSpringDSTDate(currentYear + 1);
+  // Obtenir les dates DST selon la région
+  let springThisYear: Date, fallThisYear: Date, springNextYear: Date;
+  
+  if (region === 'US') {
+    springThisYear = getSpringDSTDateUS(currentYear);
+    fallThisYear = getFallDSTDateUS(currentYear);
+    springNextYear = getSpringDSTDateUS(currentYear + 1);
+  } else {
+    springThisYear = getSpringDSTDateEU(currentYear);
+    fallThisYear = getFallDSTDateEU(currentYear);
+    springNextYear = getSpringDSTDateEU(currentYear + 1);
+  }
   
   // Créer une liste de tous les événements DST possibles
   const events: Array<{ date: Date; type: 'spring' | 'fall' }> = [
@@ -124,18 +189,28 @@ export function getNextDSTChange(): DSTEvent | null {
     daysUntil,
     isToday,
     isTomorrow,
+    region,
   };
 }
 
 /**
  * Vérifie si une date donnée est un jour de changement d'heure DST
  * @param date - Date à vérifier
+ * @param region - Région du marché ('US' ou 'EU')
  * @returns true si c'est un jour de changement d'heure
  */
-export function isDSTChangeDay(date: Date): boolean {
+export function isDSTChangeDay(date: Date, region: MarketRegion = 'US'): boolean {
   const year = date.getFullYear();
-  const springDST = getSpringDSTDate(year);
-  const fallDST = getFallDSTDate(year);
+  
+  let springDST: Date, fallDST: Date;
+  
+  if (region === 'US') {
+    springDST = getSpringDSTDateUS(year);
+    fallDST = getFallDSTDateUS(year);
+  } else {
+    springDST = getSpringDSTDateEU(year);
+    fallDST = getFallDSTDateEU(year);
+  }
   
   const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const springStart = new Date(springDST.getFullYear(), springDST.getMonth(), springDST.getDate());

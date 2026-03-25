@@ -26,6 +26,7 @@ import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
 import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import { NYSEDSTIndicator } from '../components/common/NYSEDSTIndicator';
+import { EuronextDSTIndicator } from '../components/common/EuronextDSTIndicator';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -1310,6 +1311,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               {/* NYSE DST Indicator */}
               <NYSEDSTIndicator />
               
+              {/* Separator */}
+              <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
+              
+              {/* Euronext Paris DST Indicator */}
+              <EuronextDSTIndicator />
+              
               {/* Separator if there are holidays */}
               {(holidaysLoading || marketHolidays.length > 0) && (
                 <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
@@ -1363,7 +1370,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     <div className={`flex items-start ${isToday ? 'animate-pulse' : ''}`}>
                       <div className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[10px] font-semibold uppercase tracking-wide ${
+                          <span className={`text-xs font-semibold uppercase tracking-wide ${
                             isToday ? 'animate-pulse font-extrabold' : ''
                           } ${
                             holiday.market === 'XNYS' 
@@ -1374,7 +1381,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               ? isToday ? 'text-red-700 dark:text-red-300' : 'text-red-600 dark:text-red-400'
                               : isToday ? 'text-rose-700 dark:text-rose-300' : 'text-rose-600 dark:text-rose-400'
                           }`}>
-                            {holiday.market}
+                            {holiday.market === 'XNYS' ? 'NYSE' : holiday.market}
                             {' '}
                             <img
                               src={`https://flagcdn.com/16x12/${holiday.market === 'XNYS' ? 'us' : holiday.market === 'XPAR' ? 'fr' : holiday.market === 'XLON' ? 'gb' : 'jp'}.png`}
@@ -1385,14 +1392,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               className="inline-block align-middle"
                             />
                           </span>
-                          <span className={`text-xs font-medium leading-tight ${
-                            isToday ? 'text-gray-950 dark:text-white font-bold' : 'text-gray-900 dark:text-white'
+                          <span className={`text-sm font-medium leading-tight ${
+                            isToday ? 'text-gray-950 dark:text-white font-semibold' : 'text-gray-900 dark:text-white'
                           }`}>
                             {holiday.name}
                           </span>
                         </div>
-                        <span className={`text-[11px] ${
-                          isToday ? 'text-gray-700 dark:text-gray-300 font-semibold' : 'text-gray-500 dark:text-gray-400'
+                        <span className={`text-xs ${
+                          isToday ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'
                         }`}>
                           {isToday ? t('calendar:today', { defaultValue: "Aujourd'hui" }) : new Date(holiday.date).toLocaleDateString(currentLanguage, { month: 'long', day: 'numeric' })}
                         </span>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { getTimezoneOffsetFromParis, MarketTimezone } from '../../utils/timezoneCalculator';
 
 interface Market {
   id: string;
@@ -94,6 +95,7 @@ interface MarketInfo {
   localDay: number;
   nextEventLabel: string;
   nextEventTime: string;
+  timezoneOffset: string;
 }
 
 function getMarketInfo(market: Market, now: Date): MarketInfo {
@@ -125,6 +127,11 @@ function getMarketInfo(market: Market, now: Date): MarketInfo {
     hour12: false,
   });
   const localTime = timeFormatter.format(now);
+
+  // Calculer le décalage horaire par rapport à Paris
+  const timezoneOffset = market.timezone !== 'Europe/Paris'
+    ? getTimezoneOffsetFromParis(market.timezone as MarketTimezone, now).formatted
+    : '';
 
   const currentMinutes = localHour * 60 + localMinute;
   const openMinutes = market.openHour * 60 + market.openMinute;
@@ -178,6 +185,7 @@ function getMarketInfo(market: Market, now: Date): MarketInfo {
     localDay,
     nextEventLabel,
     nextEventTime,
+    timezoneOffset,
   };
 }
 
@@ -250,7 +258,14 @@ const MarketBadge: React.FC<{ info: MarketInfo }> = ({ info }) => {
       >
         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${styles.dot}`} />
         <span className={`hidden sm:inline ${styles.text}`}>{info.market.flag}</span>
-        <span className={`font-semibold ${styles.text}`}>{info.market.shortName}</span>
+        <span className={`font-semibold ${styles.text}`}>
+          {info.market.shortName}
+          {info.timezoneOffset && (
+            <span className="ml-1 text-[11px] opacity-90 font-normal">
+              {info.timezoneOffset}
+            </span>
+          )}
+        </span>
         <span className={`hidden md:inline ${styles.text} opacity-80`}>{info.localTime}</span>
       </div>
 
