@@ -5,12 +5,14 @@ import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
+import { TabsFilter } from '../components/common/TabsFilter';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday } from '../services/calendar';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
+import { tradeStrategiesService } from '../services/tradeStrategies';
 import ModernStatCard from '../components/common/ModernStatCard';
 import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
 import Tooltip from '../components/ui/Tooltip';
@@ -27,6 +29,8 @@ import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
 import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import { NYSEDSTIndicator } from '../components/common/NYSEDSTIndicator';
 import { EuronextDSTIndicator } from '../components/common/EuronextDSTIndicator';
+import { LondonDSTIndicator } from '../components/common/LondonDSTIndicator';
+import { GlobalStatsIndicators } from '../components/dashboard/GlobalStatsIndicators';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -218,12 +222,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   });
   
   const windowWidth = useWindowWidth();
+  const shouldLoadGlobalStats = windowWidth >= 1536; // 2xl breakpoint
+  
   // Use consolidated dashboard data hook for optimized loading
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError, refetch } = useDashboardData({
     accountId,
     startDate: selectedPeriod?.start,
     endDate: selectedPeriod?.end,
     loading: accountLoading,
+  });
+
+  // Charger les données globales all-time seulement si l'écran est assez grand (optimisation)
+  const { data: globalDashboardData, isLoading: globalDashboardLoading } = useDashboardData({
+    accountId: null, // null = tous les comptes actifs
+    startDate: undefined, // undefined = toutes les périodes
+    endDate: undefined,
+    loading: accountLoading || !shouldLoadGlobalStats, // Skip si écran trop petit
   });
 
   // Extract data from consolidated response
@@ -242,8 +256,84 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const error = dashboardError;
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [globalStrategyStats, setGlobalStrategyStats] = useState<any>(null);
+  const [globalStatsLoading, setGlobalStatsLoading] = useState(false);
+  
   // Use compliance stats from consolidated endpoint
   const complianceStats = useMemo(() => dashboardData?.compliance_stats || null, [dashboardData]);
+  
+  // Charger les statistiques globales seulement si l'écran est assez grand (lazy loading)
+  useEffect(() => {
+    if (!shouldLoadGlobalStats || globalStatsLoading || globalStrategyStats) {
+      return; // Ne pas charger si déjà chargé ou si écran trop petit
+    }
+    
+    const loadGlobalStrategyStats = async () => {
+      setGlobalStatsLoading(true);
+      try {
+        const now = new Date();
+        
+        // Charger les 12 derniers mois avec données agrégées mensuellement
+        const twelveMonthsAgo = new Date();
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+        
+        const stats = await tradeStrategiesService.statistics({
+          start_date: twelveMonthsAgo.toISOString().split('T')[0],
+          end_date: now.toISOString().split('T')[0],
+          // Ne pas spécifier year/month pour obtenir des données agrégées par mois
+        });
+        
+        setGlobalStrategyStats(stats);
+      } catch (err) {
+        console.error('Erreur lors du chargement des statistiques globales de stratégie:', err);
+        setGlobalStrategyStats(null);
+      } finally {
+        setGlobalStatsLoading(false);
+      }
+    };
+    
+    loadGlobalStrategyStats();
+  }, [shouldLoadGlobalStats, globalStatsLoading, globalStrategyStats]);
+  
+  // Statistiques globales (tous comptes, toutes périodes confondues)
+  const globalStats = useMemo(() => {
+    if (!globalStrategyStats || !globalDashboardData) {
+      return null;
+    }
+    
+    // Utiliser le taux de discipline all-time (tous comptes, toutes périodes)
+    const disciplineRate = globalStrategyStats.all_time?.respect_percentage || 0;
+    
+    // PnL all-time (tous comptes, toutes périodes)
+    const totalPnL = globalDashboardData.daily_aggregates?.reduce((sum: number, day: any) => sum + (day.pnl || 0), 0) || 0;
+    
+    // Préparer les données pour les sparklines
+    // Discipline sparkline : données mensuelles des 12 derniers mois
+    const periodData = (globalStrategyStats.statistics?.period_data || [])
+      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+      .filter((item: any) => item.total > 0); // Seulement les mois avec trades
+    
+    const disciplineSparkline = periodData.map((item: any) => item.respect_percentage || 0);
+    
+    // PnL sparkline : utiliser les 30 derniers jours pour voir la tendance récente
+    const recentAggregates = (globalDashboardData.daily_aggregates || [])
+      .sort((a: any, b: any) => a.date.localeCompare(b.date))
+      .slice(-30);
+    
+    let cumulativePnL = 0;
+    const pnlSparkline = recentAggregates.map((day: any) => {
+      cumulativePnL += day.pnl || 0;
+      return cumulativePnL;
+    });
+    
+    return {
+      disciplineRate,
+      totalPnL,
+      disciplineSparkline,
+      pnlSparkline,
+    };
+  }, [globalDashboardData, globalStrategyStats]);
+  
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
   const [marketHolidays, setMarketHolidays] = useState<MarketHoliday[]>([]);
@@ -1280,150 +1370,193 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-6">
-      {/* Filtres */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="lg:overflow-x-auto lg:p-1 lg:-m-1">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-4 lg:min-w-max 2xl:min-w-0">
-            {/* Compte de trading */}
-          <div className="flex-shrink-0 max-w-sm">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('dashboard:tradingAccount')}
-            </label>
-            <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
-          </div>
-          
-          {/* Sélecteur de période moderne */}
-          <div className="flex-shrink-0">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('dashboard:period', { defaultValue: 'Période' })}
-            </label>
-            <PeriodSelector
-              value={selectedPeriod}
-              onChange={(period) => {
-                setSelectedPeriod(period);
-              }}
-            />
-          </div>
+      {/* Filtres avec système d'onglets */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-2 mb-6">
+        <TabsFilter
+          tabs={[
+            {
+              id: 'filters',
+              label: t('dashboard:filters'),
+              icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              ),
+              content: (
+                <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
+                  {/* Compte de trading avec Privacy Dropdown juste après */}
+                  <div className="flex items-center gap-2 w-full lg:w-auto">
+                    <div className="flex-1 min-w-0 max-w-full">
+                      <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
+                    </div>
+                    <div className="flex-shrink-0">
+                      <PrivacyDropdown 
+                        pageContext={PAGE_CONTEXTS.DASHBOARD}
+                        availableOptions={PAGE_PRIVACY_OPTIONS[PAGE_CONTEXTS.DASHBOARD]}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Sélecteur de période moderne */}
+                  <div className="w-full lg:w-auto lg:flex-shrink-0">
+                    <PeriodSelector
+                      value={selectedPeriod}
+                      onChange={(period) => {
+                        setSelectedPeriod(period);
+                      }}
+                    />
+                  </div>
 
-          {/* Market Holidays & DST Change - Desktop only */}
-          <div className="hidden 2xl:flex items-end flex-shrink-0 justify-center">
-            <div className="flex items-center gap-3 px-4 py-2 bg-blue-900/20 dark:bg-blue-900/20 rounded-lg border border-blue-800/50 dark:border-blue-800/50">
-              {/* NYSE DST Indicator */}
-              <NYSEDSTIndicator />
-              
-              {/* Separator */}
-              <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
-              
-              {/* Euronext Paris DST Indicator */}
-              <EuronextDSTIndicator />
-              
-              {/* Separator if there are holidays */}
-              {(holidaysLoading || marketHolidays.length > 0) && (
-                <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
-              )}
-              
-              {/* Market Holidays */}
-              {(holidaysLoading || marketHolidays.length > 0) && (
-                <>
-                {holidaysLoading ? (
-                  <>
-                    {/* Skeleton loader */}
-                    <div className="flex items-start animate-pulse">
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-3 w-16 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                          <div className="h-3 w-24 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                        </div>
-                        <div className="h-2.5 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                  {/* Indicateurs globaux - affichés uniquement sur très grands écrans, masqués sur mobile, tablette et tablette paysage */}
+                  <div className="hidden 2xl:flex 2xl:items-center 2xl:ml-auto">
+                    {(globalStatsLoading || globalDashboardLoading || !globalStats) ? (
+                      <div className="flex gap-2">
+                        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
+                        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
                       </div>
-                    </div>
-                    <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
-                    <div className="flex items-start animate-pulse">
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                          <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                        </div>
-                        <div className="h-2.5 w-16 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                      </div>
-                    </div>
-                    <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
-                    <div className="flex items-start animate-pulse">
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <div className="h-3 w-14 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                          <div className="h-3 w-28 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                        </div>
-                        <div className="h-2.5 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                {marketHolidays.map((holiday, index) => {
-                  const isToday = new Date(holiday.date).toDateString() === new Date().toDateString();
-                  return (
-                  <React.Fragment key={index}>
-                    {index > 0 && (
-                      <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
+                    ) : (
+                      <GlobalStatsIndicators
+                        disciplineRate={globalStats.disciplineRate}
+                        disciplineSparkline={globalStats.disciplineSparkline}
+                        totalPnL={globalStats.totalPnL}
+                        pnlSparkline={globalStats.pnlSparkline}
+                        currencySymbol={currencySymbol}
+                      />
                     )}
-                    <div className={`flex items-start ${isToday ? 'animate-pulse' : ''}`}>
-                      <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-xs font-semibold uppercase tracking-wide ${
-                            isToday ? 'animate-pulse font-extrabold' : ''
-                          } ${
-                            holiday.market === 'XNYS' 
-                              ? isToday ? 'text-blue-700 dark:text-blue-300' : 'text-blue-600 dark:text-blue-400' 
-                              : holiday.market === 'XPAR'
-                              ? isToday ? 'text-purple-700 dark:text-purple-300' : 'text-purple-600 dark:text-purple-400'
-                              : holiday.market === 'XLON'
-                              ? isToday ? 'text-red-700 dark:text-red-300' : 'text-red-600 dark:text-red-400'
-                              : isToday ? 'text-rose-700 dark:text-rose-300' : 'text-rose-600 dark:text-rose-400'
-                          }`}>
-                            {holiday.market === 'XNYS' ? 'NYSE' : holiday.market}
-                            {' '}
-                            <img
-                              src={`https://flagcdn.com/16x12/${holiday.market === 'XNYS' ? 'us' : holiday.market === 'XPAR' ? 'fr' : holiday.market === 'XLON' ? 'gb' : 'jp'}.png`}
-                              srcSet={`https://flagcdn.com/32x24/${holiday.market === 'XNYS' ? 'us' : holiday.market === 'XPAR' ? 'fr' : holiday.market === 'XLON' ? 'gb' : 'jp'}.png 2x`}
-                              width="16"
-                              height="12"
-                              alt={holiday.market === 'XNYS' ? 'US' : holiday.market === 'XPAR' ? 'FR' : holiday.market === 'XLON' ? 'GB' : 'JP'}
-                              className="inline-block align-middle"
-                            />
-                          </span>
-                          <span className={`text-sm font-medium leading-tight ${
-                            isToday ? 'text-gray-950 dark:text-white font-semibold' : 'text-gray-900 dark:text-white'
-                          }`}>
-                            {holiday.name}
-                          </span>
-                        </div>
-                        <span className={`text-xs ${
-                          isToday ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'
-                        }`}>
-                          {isToday ? t('calendar:today', { defaultValue: "Aujourd'hui" }) : new Date(holiday.date).toLocaleDateString(currentLanguage, { month: 'long', day: 'numeric' })}
-                        </span>
-                      </div>
+                  </div>
+                </div>
+              )
+            },
+            {
+              id: 'market',
+              label: t('dashboard:marketInfo'),
+              hideOnMobile: true,
+              icon: (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              ),
+              content: (
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-4">
+                  {/* DST Indicators Container */}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-2 bg-blue-900/20 dark:bg-blue-900/20 rounded-lg border border-blue-800/50 dark:border-blue-800/50 w-full sm:w-auto">
+                    {/* NYSE DST Indicator */}
+                    <NYSEDSTIndicator />
+                    
+                    {/* Separator - hidden on mobile */}
+                    <div className="hidden sm:block h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
+                    
+                    {/* Euronext Paris DST Indicator */}
+                    <EuronextDSTIndicator />
+                    
+                    {/* Separator - hidden on mobile */}
+                    <div className="hidden sm:block h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
+                    
+                    {/* London Stock Exchange DST Indicator */}
+                    <LondonDSTIndicator />
+                  </div>
+                  
+                  {/* Market Holidays Container */}
+                  {(holidaysLoading || marketHolidays.length > 0) && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-2 bg-blue-900/20 dark:bg-blue-900/20 rounded-lg border border-blue-800/50 dark:border-blue-800/50 w-full sm:w-auto">
+                    {(holidaysLoading || marketHolidays.length > 0) && (
+                      <>
+                      {holidaysLoading ? (
+                        <>
+                          {/* Skeleton loader */}
+                          <div className="flex items-start animate-pulse">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <div className="h-3 w-16 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                                <div className="h-3 w-24 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                              </div>
+                              <div className="h-2.5 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                            </div>
+                          </div>
+                          <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
+                          <div className="flex items-start animate-pulse">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                                <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                              </div>
+                              <div className="h-2.5 w-16 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                            </div>
+                          </div>
+                          <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
+                          <div className="flex items-start animate-pulse">
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <div className="h-3 w-14 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                                <div className="h-3 w-28 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                              </div>
+                              <div className="h-2.5 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                      {marketHolidays.map((holiday, index) => {
+                        const isToday = new Date(holiday.date).toDateString() === new Date().toDateString();
+                        return (
+                        <React.Fragment key={index}>
+                          {index > 0 && (
+                            <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
+                          )}
+                          <div className={`flex items-start ${isToday ? 'animate-pulse' : ''}`}>
+                            <div className="flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-xs font-semibold uppercase tracking-wide ${
+                                  isToday ? 'animate-pulse font-extrabold' : ''
+                                } ${
+                                  holiday.market === 'XNYS' 
+                                    ? isToday ? 'text-blue-700 dark:text-blue-300' : 'text-blue-600 dark:text-blue-400' 
+                                    : holiday.market === 'XPAR'
+                                    ? isToday ? 'text-purple-700 dark:text-purple-300' : 'text-purple-600 dark:text-purple-400'
+                                    : holiday.market === 'XLON'
+                                    ? isToday ? 'text-red-700 dark:text-red-300' : 'text-red-600 dark:text-red-400'
+                                    : isToday ? 'text-rose-700 dark:text-rose-300' : 'text-rose-600 dark:text-rose-400'
+                                }`}>
+                                  {holiday.market === 'XNYS' ? 'NYSE' : holiday.market}
+                                  {' '}
+                                  <img
+                                    src={`https://flagcdn.com/16x12/${holiday.market === 'XNYS' ? 'us' : holiday.market === 'XPAR' ? 'fr' : holiday.market === 'XLON' ? 'gb' : 'jp'}.png`}
+                                    srcSet={`https://flagcdn.com/32x24/${holiday.market === 'XNYS' ? 'us' : holiday.market === 'XPAR' ? 'fr' : holiday.market === 'XLON' ? 'gb' : 'jp'}.png 2x`}
+                                    width="16"
+                                    height="12"
+                                    alt={holiday.market === 'XNYS' ? 'US' : holiday.market === 'XPAR' ? 'FR' : holiday.market === 'XLON' ? 'GB' : 'JP'}
+                                    className="inline-block align-middle"
+                                  />
+                                </span>
+                                <span className={`text-sm font-medium leading-tight ${
+                                  isToday ? 'text-gray-950 dark:text-white font-semibold' : 'text-gray-900 dark:text-white'
+                                }`}>
+                                  {holiday.name}
+                                </span>
+                              </div>
+                              <span className={`text-xs ${
+                                isToday ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-500 dark:text-gray-400'
+                              }`}>
+                                {isToday ? t('calendar:today', { defaultValue: "Aujourd'hui" }) : new Date(holiday.date).toLocaleDateString(currentLanguage, { month: 'long', day: 'numeric' })}
+                              </span>
+                            </div>
+                          </div>
+                        </React.Fragment>
+                        );
+                      })}
+                        </>
+                      )}
+                      </>
+                    )}
                     </div>
-                  </React.Fragment>
-                  );
-                })}
-                  </>
-                )}
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Privacy Dropdown */}
-          <div className="hidden 2xl:flex flex-shrink-0 ml-auto self-center">
-            <PrivacyDropdown 
-              pageContext={PAGE_CONTEXTS.DASHBOARD}
-              availableOptions={PAGE_PRIVACY_OPTIONS[PAGE_CONTEXTS.DASHBOARD]}
-            />
-          </div>
-          </div>
-        </div>
+                  )}
+                </div>
+              )
+            }
+          ]}
+          defaultTab="filters"
+          storageKey="dashboard_active_tab"
+        />
       </div>
 
       {/* Soldes du compte */}

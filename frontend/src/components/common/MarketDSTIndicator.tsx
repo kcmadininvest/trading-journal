@@ -8,7 +8,7 @@ interface MarketDSTIndicatorProps {
   marketCode: string;
   marketName: string;
   flagCode: string;
-  color: 'blue' | 'purple';
+  color: 'blue' | 'purple' | 'red';
   showTimezoneOffset?: boolean;
   className?: string;
 }
@@ -88,25 +88,35 @@ export const MarketDSTIndicator: React.FC<MarketDSTIndicatorProps> = ({
   });
 
   // Couleurs selon le marché
-  const colorClasses = color === 'blue' 
-    ? {
-        badge: isVeryClose
-          ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700'
-          : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50',
-        icon: isVeryClose ? 'text-amber-700 dark:text-amber-300' : 'text-amber-600 dark:text-amber-400',
+  const getColorClasses = () => {
+    const baseClasses = {
+      badge: isVeryClose
+        ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700'
+        : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50',
+      icon: isVeryClose ? 'text-amber-700 dark:text-amber-300' : 'text-amber-600 dark:text-amber-400',
+      title: isVeryClose ? 'text-gray-950 dark:text-white font-bold' : 'text-gray-900 dark:text-white',
+      countdown: isVeryClose ? 'text-gray-700 dark:text-gray-300 font-semibold' : 'text-gray-500 dark:text-gray-400',
+    };
+
+    if (color === 'blue') {
+      return {
+        ...baseClasses,
         market: isVeryClose ? 'text-blue-700 dark:text-blue-300 font-extrabold' : 'text-blue-600 dark:text-blue-400',
-        title: isVeryClose ? 'text-gray-950 dark:text-white font-bold' : 'text-gray-900 dark:text-white',
-        countdown: isVeryClose ? 'text-gray-700 dark:text-gray-300 font-semibold' : 'text-gray-500 dark:text-gray-400',
-      }
-    : {
-        badge: isVeryClose
-          ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700'
-          : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50',
-        icon: isVeryClose ? 'text-amber-700 dark:text-amber-300' : 'text-amber-600 dark:text-amber-400',
-        market: isVeryClose ? 'text-purple-700 dark:text-purple-300 font-extrabold' : 'text-purple-600 dark:text-purple-400',
-        title: isVeryClose ? 'text-gray-950 dark:text-white font-bold' : 'text-gray-900 dark:text-white',
-        countdown: isVeryClose ? 'text-gray-700 dark:text-gray-300 font-semibold' : 'text-gray-500 dark:text-gray-400',
       };
+    } else if (color === 'purple') {
+      return {
+        ...baseClasses,
+        market: isVeryClose ? 'text-purple-700 dark:text-purple-300 font-extrabold' : 'text-purple-600 dark:text-purple-400',
+      };
+    } else {
+      return {
+        ...baseClasses,
+        market: isVeryClose ? 'text-red-700 dark:text-red-300 font-extrabold' : 'text-red-600 dark:text-red-400',
+      };
+    }
+  };
+
+  const colorClasses = getColorClasses();
 
   return (
     <div
@@ -160,12 +170,12 @@ export const MarketDSTIndicator: React.FC<MarketDSTIndicatorProps> = ({
             </div>
             {dstEvent.type === 'spring' && (
               <div className="text-amber-400 text-xs mt-1.5 border-t border-gray-700 pt-1.5">
-                ⏰ Les horloges avancent d'1 heure
+                ⏰ {t('common:dstChange.clocksForward', { defaultValue: 'Les horloges avancent d\'1 heure' })}
               </div>
             )}
             {dstEvent.type === 'fall' && (
               <div className="text-blue-400 text-xs mt-1.5 border-t border-gray-700 pt-1.5">
-                ⏰ Les horloges reculent d'1 heure
+                ⏰ {t('common:dstChange.clocksBackward', { defaultValue: 'Les horloges reculent d\'1 heure' })}
               </div>
             )}
           </div>

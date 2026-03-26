@@ -150,5 +150,11 @@
   "hideAll": "Alles ausblenden",
   "hidden": "Versteckt",
   "visible": "Sichtbar",
-  "badgeInDays": "{{badgeName}} in {{days}} Tagen"
+  "badgeInDays": "{{badgeName}} in {{days}} Tagen",
+  "filters": "Ansicht",
+  "marketInfo": "Marktinformationen",
+  "globalDiscipline": "Disziplin",
+  "globalPnL": "Globaler PnL",
+  "disciplineTooltip": "Strategiebefolgungsrate für den Zeitraum",
+  "pnlTooltip": "Gesamtleistung über alle Konten"
 }

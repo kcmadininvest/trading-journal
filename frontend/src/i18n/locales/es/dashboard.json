@@ -150,5 +150,11 @@
   "hideAll": "Ocultar todo",
   "hidden": "Oculto",
   "visible": "Visible",
-  "badgeInDays": "{{badgeName}} en {{days}} días"
+  "badgeInDays": "{{badgeName}} en {{days}} días",
+  "filters": "Vista",
+  "marketInfo": "Información del Mercado",
+  "globalDiscipline": "Disciplina",
+  "globalPnL": "PnL Global",
+  "disciplineTooltip": "Tasa de cumplimiento de la estrategia en el período",
+  "pnlTooltip": "Rendimiento total en todas las cuentas"
 }

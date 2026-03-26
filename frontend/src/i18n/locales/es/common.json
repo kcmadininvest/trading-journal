@@ -161,6 +161,8 @@
     "days": "días",
     "today": "Hoy",
     "tomorrow": "Mañana",
-    "tooltip": "Cambio de hora NYSE: {{date}} a las {{time}}"
+    "tooltip": "Cambio de hora NYSE: {{date}} a las {{time}}",
+    "clocksForward": "Los relojes avanzan 1 hora",
+    "clocksBackward": "Los relojes retroceden 1 hora"
   }
 }

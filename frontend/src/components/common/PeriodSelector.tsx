@@ -30,11 +30,11 @@ interface PeriodSelectorProps {
   className?: string;
 }
 
-// Boutons rapides visibles (pill buttons) — les plus courants pour le trading
-const QUICK_PRESETS: PeriodPreset[] = ['thisWeek', 'thisMonth', 'last3Months', 'last6Months', 'thisYear', 'rollingYear', 'allTime'];
+// Boutons rapides visibles (pill buttons) — les plus pertinents pour l'analyse de trading
+const QUICK_PRESETS: PeriodPreset[] = ['thisMonth', 'last3Months', 'thisYear', 'rollingYear', 'allTime'];
 
-// Presets dans le dropdown "Plus" — moins courants
-const MORE_PRESETS: PeriodPreset[] = ['today', 'lastWeek', 'lastMonth', 'lastYear'];
+// Presets dans le dropdown "Plus" — périodes moins utilisées au quotidien
+const MORE_PRESETS: PeriodPreset[] = ['today', 'thisWeek', 'lastWeek', 'lastMonth', 'last6Months', 'lastYear'];
 
 
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({

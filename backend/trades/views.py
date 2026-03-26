@@ -14,6 +14,9 @@ import pytz
 from decimal import Decimal
 from collections import defaultdict
 from typing import cast, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
 from daily_journal.models import DailyJournalEntry
@@ -4494,8 +4497,10 @@ def dashboard_summary(request):
     
     trades_data = TopStepTradeListSerializer(limited_trades, many=True).data
     
-    # 3. Strategy compliance stats (if account specified)
+    # 3. Strategy compliance stats and strategies
     compliance_stats = None
+    strategies_data = []
+    
     if trading_account_id:
         try:
             trading_account_id_int = int(trading_account_id)
@@ -4661,12 +4666,46 @@ def dashboard_summary(request):
         except (ValueError, TypeError):
             strategies_data = []
             pass
+    else:
+        # No specific account: load strategies for all active accounts
+        try:
+            from .serializers import TradeStrategySerializer
+            
+            # Get all strategies for user's active accounts
+            strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
+                user=request.user,
+                trade__trading_account__status='active'
+            ).select_related('trade')
+            
+            # Apply date filters if provided
+            if start_date:
+                try:
+                    start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+                    start_datetime = user_tz.localize(start_datetime)
+                    strategies_queryset = strategies_queryset.filter(trade__entered_at__gte=start_datetime)
+                except ValueError:
+                    pass
+            
+            if end_date:
+                try:
+                    end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+                    end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
+                    end_datetime = user_tz.localize(end_datetime)
+                    strategies_queryset = strategies_queryset.filter(trade__entered_at__lte=end_datetime)
+                except ValueError:
+                    pass
+            
+            strategies_data = TradeStrategySerializer(strategies_queryset, many=True).data
+            
+        except Exception as e:
+            logger.error(f"Erreur lors du chargement des stratégies globales: {str(e)}")
+            strategies_data = []
     
     # Build response
     response_data = {
         'daily_aggregates': daily_data,
         'trades': trades_data,
-        'strategies': strategies_data if trading_account_id else [],
+        'strategies': strategies_data,
         'compliance_stats': compliance_stats,
         'active_days': active_days_count,
         'count': len(daily_data)

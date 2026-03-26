@@ -238,6 +238,20 @@ html.font-size-large {
   animation: slide-out-right 0.3s ease-in;
 }
 
+/* Animation fade-in pour les transitions d'onglets */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-in;
+}
+
 /* Safe area pour mobile */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);

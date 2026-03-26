@@ -149,6 +149,12 @@
   "hideAll": "Hide All",
   "hidden": "Hidden",
   "visible": "Visible",
-  "badgeInDays": "{{badgeName}} in {{days}} days"
+  "badgeInDays": "{{badgeName}} in {{days}} days",
+  "filters": "View",
+  "marketInfo": "Market Info",
+  "globalDiscipline": "Discipline",
+  "globalPnL": "Global PnL",
+  "disciplineTooltip": "Strategy compliance rate for the period",
+  "pnlTooltip": "Total performance across all accounts"
 }
 

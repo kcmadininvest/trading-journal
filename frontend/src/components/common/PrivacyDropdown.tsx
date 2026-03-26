@@ -26,12 +26,40 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
 
   // Récupérer les overrides actuels pour ce contexte
   const currentOverrides = preferences.privacy_overrides?.[pageContext] || {};
   
   // Compter les overrides actifs
   const activeOverridesCount = countActiveOverrides(pageContext, preferences.privacy_overrides);
+
+  // Calculer la position du dropdown
+  useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      const dropdownWidth = 320; // w-80 = 320px
+      const viewportWidth = window.innerWidth;
+      
+      // Calculer la position left pour que le dropdown ne dépasse pas de l'écran
+      let left = rect.left;
+      if (left + dropdownWidth > viewportWidth - 16) {
+        // Si le dropdown dépasse à droite, l'aligner à droite du bouton
+        left = rect.right - dropdownWidth;
+      }
+      // S'assurer qu'il ne dépasse pas à gauche
+      if (left < 16) {
+        left = 16;
+      }
+      
+      setDropdownPosition({
+        top: rect.bottom + 8,
+        left: left
+      });
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [isOpen]);
 
   // Fermer le dropdown au clic extérieur
   useEffect(() => {
@@ -125,8 +153,14 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
         </button>
       </Tooltip>
 
-      {isOpen && (
-        <div className="fixed right-4 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50" style={{ top: dropdownRef.current ? dropdownRef.current.getBoundingClientRect().bottom + 8 : 'auto' }}>
+      {isOpen && dropdownPosition && (
+        <div 
+          className="fixed w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50" 
+          style={{ 
+            top: `${dropdownPosition.top}px`, 
+            left: `${dropdownPosition.left}px` 
+          }}
+        >
           <div className="p-4">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
               {t('dashboard:privacyControls', { defaultValue: 'Contrôles de Confidentialité' })}

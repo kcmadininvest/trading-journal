@@ -150,6 +150,12 @@
   "hideAll": "Tout masquer",
   "hidden": "Masqué",
   "visible": "Visible",
-  "badgeInDays": "{{badgeName}} dans {{days}} jours"
+  "badgeInDays": "{{badgeName}} dans {{days}} jours",
+  "filters": "Vue",
+  "marketInfo": "Informations Marché",
+  "globalDiscipline": "Discipline",
+  "globalPnL": "PnL Global",
+  "disciplineTooltip": "Taux de respect de la stratégie sur la période",
+  "pnlTooltip": "Performance totale tous comptes confondus"
 }
 
