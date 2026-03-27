@@ -264,17 +264,33 @@ function AccountBalanceChart({
           // Dataset pour le Maximum Loss Limit (MLL) - uniquement si des valeurs MLL sont présentes et non masqué
           ...(!hideMll && processedMllValues.some(mll => mll !== null && mll !== undefined) ? [{
             label: 'Maximum Loss Limit (MLL)',
-            data: processedMllValues.map((mll, index) => {
-              // Si le MLL n'est pas défini pour ce point, utiliser la dernière valeur définie
-              if (mll !== null && mll !== undefined) return mll;
-              // Chercher la dernière valeur définie avant ce point
-              for (let i = index - 1; i >= 0; i--) {
-                if (processedMllValues[i] !== null && processedMllValues[i] !== undefined) {
-                  return processedMllValues[i];
+            data: (() => {
+              // Appliquer un maximum cumulatif pour garantir que le MLL ne redescend jamais
+              let maxMllSeen: number | null = null;
+              return processedMllValues.map((mll, index) => {
+                // Si le MLL n'est pas défini pour ce point, utiliser la dernière valeur définie
+                let currentMll = mll;
+                if (currentMll === null || currentMll === undefined) {
+                  // Chercher la dernière valeur définie avant ce point
+                  for (let i = index - 1; i >= 0; i--) {
+                    if (processedMllValues[i] !== null && processedMllValues[i] !== undefined) {
+                      currentMll = processedMllValues[i];
+                      break;
+                    }
+                  }
                 }
-              }
-              return null;
-            }),
+                
+                // Appliquer le maximum cumulatif : le MLL ne peut jamais redescendre
+                if (currentMll !== null && currentMll !== undefined) {
+                  if (maxMllSeen === null || currentMll > maxMllSeen) {
+                    maxMllSeen = currentMll;
+                  }
+                  return maxMllSeen;
+                }
+                
+                return maxMllSeen;
+              });
+            })(),
             borderColor: '#ef4444', // Rouge pour le MLL
             backgroundColor: 'transparent',
             borderWidth: 2,

@@ -516,7 +516,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       : undefined;
     
     // Fonction pour calculer le MLL en fonction du solde
-    const calculateMll = (balance: number, date: string): number | undefined => {
+    // Utilise prioritairement les métriques backend si disponibles
+    const calculateMll = (balance: number, date: string, maxBalanceSeen: number): number | undefined => {
       if (mllInitial === undefined) return undefined;
       
       // Récupérer le MLL depuis les métriques quotidiennes pour cette date
@@ -527,20 +528,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         return metricDate === date;
       });
       
-      // Si le solde dépasse le capital initial, le MLL doit évoluer
-      // MLL = solde maximum atteint - MLL initial
-      // Pour simplifier, on utilise le solde actuel si disponible dans la métrique
-      if (dailyMetric) {
-        const accountBalanceHigh = parseFloat(dailyMetric.account_balance_high);
-        // Si le solde maximum dépasse le capital initial, le MLL évolue
-        if (accountBalanceHigh > initialCapital) {
-          // Le MLL évolue avec le solde maximum : MLL = solde maximum - MLL initial
-          return accountBalanceHigh - mllInitial;
-        }
-      } else if (balance > initialCapital) {
-        // Si pas de métrique mais que le solde actuel dépasse le capital initial
-        // Utiliser le solde actuel pour calculer le MLL
-        return balance - mllInitial;
+      // Priorité 1 : Utiliser le MLL calculé par le backend si disponible
+      if (dailyMetric && dailyMetric.maximum_loss_limit !== undefined) {
+        return parseFloat(String(dailyMetric.maximum_loss_limit));
+      }
+      
+      // Priorité 2 : Calculer le MLL en utilisant le solde maximum vu jusqu'à présent
+      // Utiliser maxBalanceSeen au lieu de balance pour garantir que le MLL ne redescend jamais
+      if (maxBalanceSeen > initialCapital) {
+        // Le MLL évolue avec le solde maximum : MLL = solde maximum - MLL initial
+        return maxBalanceSeen - mllInitial;
       }
       
       // Sinon, le MLL est fixe : MLL = capital initial - MLL initial
@@ -572,6 +569,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       let cumulativePnl = 0;
       let cumulativeTransactions = 0;
+      let maxBalanceSeen = initialCapital; // Suivre le solde maximum pour le calcul du MLL
       
       const result = sortedAllDates.map(date => {
         // Appliquer les transactions AVANT les trades du jour (logique : dépôts/retraits en début de journée)
@@ -588,8 +586,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         const dailyPnl = dailyAggregate?.pnl || 0;
         const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
         
-        // Calculer le MLL dynamiquement en fonction du solde
-        const mll = calculateMll(cumulative, date);
+        // Mettre à jour le solde maximum vu
+        maxBalanceSeen = Math.max(maxBalanceSeen, cumulative);
+        
+        // Calculer le MLL dynamiquement en fonction du solde maximum
+        const mll = calculateMll(cumulative, date, maxBalanceSeen);
 
         return {
           date: date,
@@ -649,6 +650,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
     let cumulativePnl = 0;
     let cumulativeTransactions = 0;
+    let maxBalanceSeen = initialCapital; // Suivre le solde maximum pour le calcul du MLL
     
     const result = sortedDates.map(date => {
       const dailyPnl = dailyPnlData[date] || 0;
@@ -664,8 +666,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
       
-      // Calculer le MLL dynamiquement en fonction du solde
-      const mll = calculateMll(cumulative, date);
+      // Mettre à jour le solde maximum vu
+      maxBalanceSeen = Math.max(maxBalanceSeen, cumulative);
+      
+      // Calculer le MLL dynamiquement en fonction du solde maximum
+      const mll = calculateMll(cumulative, date, maxBalanceSeen);
 
       return {
         date: date, // Format YYYY-MM-DD pour les filtres
