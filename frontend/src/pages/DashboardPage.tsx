@@ -1464,7 +1464,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       {holidaysLoading ? (
                         <>
                           {/* Skeleton loader */}
-                          <div className="flex items-start animate-pulse">
+                          <div className="flex items-center px-2 py-1 rounded-md border border-transparent animate-pulse">
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5">
                                 <div className="h-3 w-16 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
@@ -1474,7 +1474,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             </div>
                           </div>
                           <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
-                          <div className="flex items-start animate-pulse">
+                          <div className="flex items-center px-2 py-1 rounded-md border border-transparent animate-pulse">
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5">
                                 <div className="h-3 w-20 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
@@ -1484,7 +1484,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             </div>
                           </div>
                           <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
-                          <div className="flex items-start animate-pulse">
+                          <div className="flex items-center px-2 py-1 rounded-md border border-transparent animate-pulse">
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5">
                                 <div className="h-3 w-14 bg-gray-400/30 dark:bg-gray-600/30 rounded"></div>
@@ -1503,7 +1503,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           {index > 0 && (
                             <div className="h-10 w-px bg-blue-700/50 dark:bg-blue-700/50"></div>
                           )}
-                          <div className={`flex items-start ${isToday ? 'animate-pulse' : ''}`}>
+                          <div className={`flex items-center px-2 py-1 rounded-md border border-transparent ${isToday ? 'animate-pulse' : ''}`}>
                             <div className="flex flex-col gap-0.5">
                               <div className="flex items-center gap-1.5">
                                 <span className={`text-xs font-semibold uppercase tracking-wide ${

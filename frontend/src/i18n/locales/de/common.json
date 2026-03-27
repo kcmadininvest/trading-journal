@@ -163,7 +163,7 @@
     "days": "Tagen",
     "today": "Heute",
     "tomorrow": "Morgen",
-    "tooltip": "NYSE Zeitumstellung: {{date}} um {{time}}",
+    "tooltip": "{{market}} Zeitumstellung: {{date}} um {{time}}",
     "clocksForward": "Die Uhren werden 1 Stunde vorgestellt",
     "clocksBackward": "Die Uhren werden 1 Stunde zurückgestellt"
   }

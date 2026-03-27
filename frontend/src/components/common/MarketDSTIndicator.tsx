@@ -82,6 +82,7 @@ export const MarketDSTIndicator: React.FC<MarketDSTIndicatorProps> = ({
 
   // Tooltip message
   const tooltipMessage = t('common:dstChange.tooltip', {
+    market: marketName,
     date: formattedDate,
     time: formattedTime,
     defaultValue: `Changement d'heure ${marketName} : ${formattedDate} à ${formattedTime}`,
@@ -160,21 +161,21 @@ export const MarketDSTIndicator: React.FC<MarketDSTIndicatorProps> = ({
 
       {hovered && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 pointer-events-none">
-          <div className="w-2 h-2 bg-gray-900 border-t border-l border-gray-700 rotate-45 mx-auto -mb-1" />
-          <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl px-3 py-2.5 text-left min-w-[200px] max-w-[300px]">
-            <div className="font-semibold text-white text-xs mb-1">
+          <div className="w-2 h-2 bg-white dark:bg-gray-800 backdrop-blur-sm border-t border-l border-gray-200 dark:border-gray-700 rotate-45 mx-auto -mb-1" />
+          <div className="bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2.5 text-left min-w-[200px] max-w-[300px]">
+            <div className="font-semibold text-gray-900 dark:text-gray-100 text-xs mb-1">
               {marketName} - {typeLabel}
             </div>
-            <div className="text-gray-300 text-xs leading-relaxed">
+            <div className="text-gray-700 dark:text-gray-300 text-xs leading-relaxed">
               {tooltipMessage}
             </div>
             {dstEvent.type === 'spring' && (
-              <div className="text-amber-400 text-xs mt-1.5 border-t border-gray-700 pt-1.5">
+              <div className="text-amber-600 dark:text-amber-400 text-xs mt-1.5 border-t border-gray-200 dark:border-gray-700 pt-1.5">
                 ⏰ {t('common:dstChange.clocksForward', { defaultValue: 'Les horloges avancent d\'1 heure' })}
               </div>
             )}
             {dstEvent.type === 'fall' && (
-              <div className="text-blue-400 text-xs mt-1.5 border-t border-gray-700 pt-1.5">
+              <div className="text-blue-600 dark:text-blue-400 text-xs mt-1.5 border-t border-gray-200 dark:border-gray-700 pt-1.5">
                 ⏰ {t('common:dstChange.clocksBackward', { defaultValue: 'Les horloges reculent d\'1 heure' })}
               </div>
             )}

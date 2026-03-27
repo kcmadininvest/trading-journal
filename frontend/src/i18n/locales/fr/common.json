@@ -165,7 +165,7 @@
     "days": "jours",
     "today": "Aujourd'hui",
     "tomorrow": "Demain",
-    "tooltip": "Changement d'heure NYSE : {{date}} à {{time}}",
+    "tooltip": "Changement d'heure {{market}} : {{date}} à {{time}}",
     "clocksForward": "Les horloges avancent d'1 heure",
     "clocksBackward": "Les horloges reculent d'1 heure"
   }

@@ -166,7 +166,7 @@
     "days": "days",
     "today": "Today",
     "tomorrow": "Tomorrow",
-    "tooltip": "NYSE time change: {{date}} at {{time}}",
+    "tooltip": "{{market}} time change: {{date}} at {{time}}",
     "clocksForward": "Clocks move forward 1 hour",
     "clocksBackward": "Clocks move back 1 hour"
   }
