@@ -9,6 +9,8 @@ interface GlobalStatsIndicatorsProps {
   totalPnL: number;
   pnlTrend?: number;
   pnlSparkline?: number[];
+  winRate?: number;
+  winRateSparkline?: number[];
   currencySymbol: string;
   className?: string;
 }
@@ -20,6 +22,8 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   totalPnL,
   pnlTrend,
   pnlSparkline = [],
+  winRate,
+  winRateSparkline = [],
   currencySymbol,
   className = '',
 }) => {
@@ -35,6 +39,12 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
     if (pnl > 0) return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
     if (pnl < 0) return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
     return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800';
+  };
+
+  const getWinRateColor = (rate: number) => {
+    if (rate >= 60) return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
+    if (rate >= 45) return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
+    return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
   };
 
   const formatPnL = (value: number) => {
@@ -155,6 +165,34 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
           )}
         </div>
       </Tooltip>
+
+      {/* Carte Win Rate */}
+      {winRate !== undefined && (
+        <Tooltip content={t('dashboard:winRateTooltip', { defaultValue: 'Taux de réussite tous comptes confondus' })}>
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${getWinRateColor(winRate)}`}>
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <div className="text-xs font-medium opacity-75 whitespace-nowrap">
+                {t('dashboard:globalWinRate', { defaultValue: 'Win Rate' })}
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-lg font-bold leading-none">
+                  {winRate.toFixed(2)}%
+                </span>
+              </div>
+            </div>
+            {winRateSparkline && winRateSparkline.length > 0 && (
+              <div className="ml-auto opacity-60">
+                {renderSparkline(winRateSparkline, 'currentColor')}
+              </div>
+            )}
+          </div>
+        </Tooltip>
+      )}
     </div>
   );
 };

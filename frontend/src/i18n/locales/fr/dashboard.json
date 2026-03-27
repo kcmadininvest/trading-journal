@@ -155,7 +155,9 @@
   "marketInfo": "Informations Marché",
   "globalDiscipline": "Discipline",
   "globalPnL": "PnL Global",
+  "globalWinRate": "Win Rate",
   "disciplineTooltip": "Taux de respect de la stratégie sur la période",
-  "pnlTooltip": "Performance totale tous comptes confondus"
+  "pnlTooltip": "Performance totale tous comptes confondus",
+  "winRateTooltip": "Taux de réussite tous comptes confondus"
 }
 

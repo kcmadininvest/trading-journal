@@ -155,6 +155,8 @@
   "marketInfo": "Información del Mercado",
   "globalDiscipline": "Disciplina",
   "globalPnL": "PnL Global",
+  "globalWinRate": "Tasa de Aciertos",
   "disciplineTooltip": "Tasa de cumplimiento de la estrategia en el período",
-  "pnlTooltip": "Rendimiento total en todas las cuentas"
+  "pnlTooltip": "Rendimiento total en todas las cuentas",
+  "winRateTooltip": "Tasa de aciertos en todas las cuentas"
 }

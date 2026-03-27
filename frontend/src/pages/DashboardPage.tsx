@@ -326,11 +326,33 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       return cumulativePnL;
     });
     
+    // Win Rate all-time (tous comptes, toutes périodes)
+    const totalWinning = globalDashboardData.daily_aggregates?.reduce(
+      (sum: number, day: any) => sum + (day.winning_count || 0), 0
+    ) || 0;
+    const totalLosing = globalDashboardData.daily_aggregates?.reduce(
+      (sum: number, day: any) => sum + (day.losing_count || 0), 0
+    ) || 0;
+    const totalTrades = totalWinning + totalLosing;
+    const winRate = totalTrades > 0 ? (totalWinning / totalTrades) * 100 : 0;
+    
+    // Win Rate sparkline : 30 derniers jours (cumulatif)
+    let cumulativeWinning = 0;
+    let cumulativeLosing = 0;
+    const winRateSparkline = recentAggregates.map((day: any) => {
+      cumulativeWinning += day.winning_count || 0;
+      cumulativeLosing += day.losing_count || 0;
+      const total = cumulativeWinning + cumulativeLosing;
+      return total > 0 ? (cumulativeWinning / total) * 100 : 0;
+    });
+    
     return {
       disciplineRate,
       totalPnL,
       disciplineSparkline,
       pnlSparkline,
+      winRate,
+      winRateSparkline,
     };
   }, [globalDashboardData, globalStrategyStats]);
   
@@ -1413,6 +1435,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       <div className="flex gap-2">
                         <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
                         <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
+                        <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
                       </div>
                     ) : (
                       <GlobalStatsIndicators
@@ -1420,6 +1443,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         disciplineSparkline={globalStats.disciplineSparkline}
                         totalPnL={globalStats.totalPnL}
                         pnlSparkline={globalStats.pnlSparkline}
+                        winRate={globalStats.winRate}
+                        winRateSparkline={globalStats.winRateSparkline}
                         currencySymbol={currencySymbol}
                       />
                     )}

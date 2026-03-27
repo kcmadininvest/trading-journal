@@ -154,7 +154,9 @@
   "marketInfo": "Market Info",
   "globalDiscipline": "Discipline",
   "globalPnL": "Global PnL",
+  "globalWinRate": "Win Rate",
   "disciplineTooltip": "Strategy compliance rate for the period",
-  "pnlTooltip": "Total performance across all accounts"
+  "pnlTooltip": "Total performance across all accounts",
+  "winRateTooltip": "Win rate across all accounts"
 }
 
