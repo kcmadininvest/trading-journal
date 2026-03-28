@@ -282,32 +282,31 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       const pointValue = formData.point_value ? parseFloat(formData.point_value) : null;
 
       if (!isNaN(entryPrice) && !isNaN(exitPrice) && !isNaN(size) && entryPrice > 0 && exitPrice > 0 && size > 0) {
-        let priceDiff: number;
-        if (formData.trade_type === 'Long') {
-          // Long: gain si prix monte
-          priceDiff = exitPrice - entryPrice;
-        } else {
-          // Short: gain si prix baisse
-          priceDiff = entryPrice - exitPrice;
-        }
-
-        // Calculer le PnL brut
-        let grossPnl: number;
+        // Ne calculer le PnL que si point_value est fourni
+        // Sinon, garder le PnL existant (par exemple pour les trades importés)
         if (pointValue && !isNaN(pointValue) && pointValue > 0) {
-          // Calcul précis avec la valeur du point
-          grossPnl = priceDiff * pointValue * size;
-        } else {
-          // Approximation sans valeur du point
-          grossPnl = priceDiff * size;
+          let priceDiff: number;
+          if (formData.trade_type === 'Long') {
+            // Long: gain si prix monte
+            priceDiff = exitPrice - entryPrice;
+          } else {
+            // Short: gain si prix baisse
+            priceDiff = entryPrice - exitPrice;
+          }
+
+          // Calculer le PnL brut avec la valeur du point
+          const grossPnl = priceDiff * pointValue * size;
+
+          // Soustraire les frais et commissions pour obtenir le PnL net
+          const fees = parseFloat(formData.fees) || 0;
+          const commissions = parseFloat(formData.commissions) || 0;
+          const netPnl = grossPnl - fees - commissions;
+
+          // Mettre à jour le PnL
+          setFormData(prev => ({ ...prev, pnl: String(netPnl) }));
         }
-
-        // Soustraire les frais et commissions pour obtenir le PnL net
-        const fees = parseFloat(formData.fees) || 0;
-        const commissions = parseFloat(formData.commissions) || 0;
-        const netPnl = grossPnl - fees - commissions;
-
-        // Mettre à jour le PnL
-        setFormData(prev => ({ ...prev, pnl: String(netPnl) }));
+        // Si point_value est manquant, ne pas recalculer le PnL
+        // (garder le PnL importé ou saisi manuellement)
       } else if (!formData.entry_price || !formData.exit_price || !formData.size) {
         // Réinitialiser le PnL si les champs requis ne sont plus remplis
         setFormData(prev => ({ ...prev, pnl: '' }));

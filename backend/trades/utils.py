@@ -5,6 +5,7 @@ import csv
 from decimal import Decimal, InvalidOperation
 from django.db import transaction
 from .models import TopStepTrade, TopStepImportLog
+from .contract_utils.contract_specs import get_point_value_from_contract
 
 
 class TopStepCSVImporter:
@@ -338,12 +339,16 @@ class TopStepCSVImporter:
             if not self.trading_account:
                 raise ValueError("Aucun compte de trading par défaut trouvé pour cet utilisateur")
         
+        # Détecter automatiquement la valeur du point depuis le nom du contrat
+        contract_name = row['ContractName'].strip()
+        point_value = get_point_value_from_contract(contract_name)
+        
         # Créer le trade
         trade = TopStepTrade.objects.create(  # type: ignore
             user=self.user,
             trading_account=self.trading_account,
             topstep_id=topstep_id,
-            contract_name=row['ContractName'].strip(),
+            contract_name=contract_name,
             entered_at=entered_at,
             exited_at=exited_at,
             entry_price=entry_price,
@@ -355,6 +360,7 @@ class TopStepCSVImporter:
             trade_day=trade_day,
             trade_duration=trade_duration,
             commissions=commissions,
+            point_value=point_value,  # Valeur du point détectée automatiquement
             raw_data=dict(row)  # Sauvegarder les données brutes
         )
         
