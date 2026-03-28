@@ -171,6 +171,12 @@ const TradesPage: React.FC = () => {
       return;
     }
     
+    // Attendre que filters.trading_account soit synchronisé avec selectedAccountId
+    // pour éviter d'afficher furtivement tous les trades lors du rafraîchissement
+    if (filters.trading_account !== selectedAccountId) {
+      return;
+    }
+    
     // Passer explicitement page et pageSize pour garantir les bonnes valeurs au premier chargement
     load(page, pageSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,6 +185,12 @@ const TradesPage: React.FC = () => {
   useEffect(() => {
     // Attendre la fin de l'initialisation et que le compte soit chargé avant de charger les stats
     if (!hasInitialized || accountLoading) {
+      return;
+    }
+    
+    // Attendre que filters.trading_account soit synchronisé avec selectedAccountId
+    // pour éviter d'afficher furtivement les totaux de tous les comptes lors du rafraîchissement
+    if (filters.trading_account !== selectedAccountId) {
       return;
     }
     
@@ -274,11 +286,13 @@ const TradesPage: React.FC = () => {
       // Recharger stats
       try {
         const s = await tradesService.statistics({
+          trading_account: filters.trading_account !== null ? filters.trading_account : undefined,
           contract: filters.contract || undefined,
           type: filters.type || undefined,
           start_date: filters.start_date || undefined,
           end_date: filters.end_date || undefined,
           profitable: filters.profitable || undefined,
+          has_strategy: filters.has_strategy || undefined,
         });
         setStats(s);
       } catch {}
@@ -320,11 +334,13 @@ const TradesPage: React.FC = () => {
       // Recharger stats
       try {
         const s = await tradesService.statistics({
+          trading_account: filters.trading_account !== null ? filters.trading_account : undefined,
           contract: filters.contract || undefined,
           type: filters.type || undefined,
           start_date: filters.start_date || undefined,
           end_date: filters.end_date || undefined,
           profitable: filters.profitable || undefined,
+          has_strategy: filters.has_strategy || undefined,
         });
         setStats(s);
       } catch {}
@@ -651,9 +667,9 @@ const TradesPage: React.FC = () => {
       <ImportTradesModal open={showImport} onClose={(done) => {
         setShowImport(false);
         if (done) {
-          // recharger la liste et les stats seront rechargées via filtersKey
-          load();
+          // Recharger les stats et la liste
           reloadStats();
+          load();
         }
       }} />
       
@@ -665,9 +681,9 @@ const TradesPage: React.FC = () => {
           setEditingTradeId(null);
         }}
         onSave={() => {
-          // Recharger la liste et les stats
-          load();
+          // Recharger les stats et la liste
           reloadStats();
+          load();
         }}
         tradeId={editingTradeId}
       />

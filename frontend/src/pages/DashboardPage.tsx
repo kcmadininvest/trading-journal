@@ -534,14 +534,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       }
       
       // Priorité 2 : Calculer le MLL en utilisant le solde maximum vu jusqu'à présent
-      // Utiliser maxBalanceSeen au lieu de balance pour garantir que le MLL ne redescend jamais
-      if (maxBalanceSeen > initialCapital) {
-        // Le MLL évolue avec le solde maximum : MLL = solde maximum - MLL initial
-        return maxBalanceSeen - mllInitial;
-      }
-      
-      // Sinon, le MLL est fixe : MLL = capital initial - MLL initial
-      return initialCapital - mllInitial;
+      // MLL = max(solde maximum vu, capital initial) - limite de perte
+      // Le MLL ne redescend jamais car maxBalanceSeen est toujours croissant
+      // MAIS il est plafonné au capital initial (ne peut pas dépasser ce seuil)
+      const baseForMll = Math.max(maxBalanceSeen, initialCapital);
+      const calculatedMll = baseForMll - mllInitial;
+      // Plafonner au capital initial - le MLL ne doit jamais dépasser ce seuil
+      return Math.min(calculatedMll, initialCapital);
     };
 
     // Grouper les transactions par date (triées chronologiquement)
@@ -609,13 +608,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           return tDate < firstDate;
         }) || dailyAggregates.some(d => d.date < firstDate);
         
-        // Si pas de données avant, ajouter un point au capital initial
+        // Si pas de données avant, ajouter un point au capital initial UN JOUR AVANT le premier trade
         if (!hasDataBeforeFirst) {
           // Pour le point initial, le MLL est toujours fixe : capital initial - MLL initial
           const initialMll = mllInitial !== undefined ? initialCapital - mllInitial : undefined;
           
+          // Calculer la date du jour précédent
+          const dayBefore = new Date(firstDate);
+          dayBefore.setDate(dayBefore.getDate() - 1);
+          const dayBeforeStr = dayBefore.toISOString().split('T')[0];
+          
           return [{
-            date: firstDate,
+            date: dayBeforeStr,
             pnl: 0,
             cumulative: initialCapital,
             mll: initialMll,
@@ -689,13 +693,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         return tDate < firstDate;
       }) || tradesWithDates.some(t => t.date < firstDate);
       
-      // Si pas de données avant, ajouter un point au capital initial
+      // Si pas de données avant, ajouter un point au capital initial UN JOUR AVANT le premier trade
       if (!hasDataBeforeFirst) {
         // Pour le point initial, le MLL est toujours fixe : capital initial - MLL initial
         const initialMll = mllInitial !== undefined ? initialCapital - mllInitial : undefined;
         
+        // Calculer la date du jour précédent
+        const dayBefore = new Date(firstDate);
+        dayBefore.setDate(dayBefore.getDate() - 1);
+        const dayBeforeStr = dayBefore.toISOString().split('T')[0];
+        
         return [{
-          date: firstDate,
+          date: dayBeforeStr,
           pnl: 0,
           cumulative: initialCapital,
           mll: initialMll,

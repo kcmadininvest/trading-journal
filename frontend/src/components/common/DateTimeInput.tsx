@@ -258,78 +258,9 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
     }, 200);
   };
 
-  // Fonction pour formater automatiquement la saisie avec les séparateurs
-  const formatInputWithSeparators = (input: string): string => {
-    // Extraire uniquement les chiffres
-    const digitsOnly = input.replace(/\D/g, '');
-    
-    if (digitsOnly.length === 0) return '';
-    
-    let formatted = '';
-    let digitIndex = 0;
-    
-    // Format de date selon les préférences
-    if (preferences.date_format === 'US') {
-      // Format US: MM/DD/YYYY HH:mm
-      // MM (2 chiffres)
-      if (digitIndex < digitsOnly.length) {
-        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
-        digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
-        if (digitIndex < digitsOnly.length && digitsOnly.length > 2) formatted += '/';
-      }
-      // DD (2 chiffres)
-      if (digitIndex < digitsOnly.length) {
-        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
-        digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
-        if (digitIndex < digitsOnly.length && digitsOnly.length > 4) formatted += '/';
-      }
-      // YYYY (4 chiffres)
-      if (digitIndex < digitsOnly.length) {
-        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 4, digitsOnly.length));
-        digitIndex = Math.min(digitIndex + 4, digitsOnly.length);
-        if (digitIndex < digitsOnly.length && digitsOnly.length > 8) formatted += ' ';
-      }
-    } else {
-      // Format EU: DD/MM/YYYY HH:mm
-      // DD (2 chiffres)
-      if (digitIndex < digitsOnly.length) {
-        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
-        digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
-        if (digitIndex < digitsOnly.length && digitsOnly.length > 2) formatted += '/';
-      }
-      // MM (2 chiffres)
-      if (digitIndex < digitsOnly.length) {
-        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
-        digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
-        if (digitIndex < digitsOnly.length && digitsOnly.length > 4) formatted += '/';
-      }
-      // YYYY (4 chiffres)
-      if (digitIndex < digitsOnly.length) {
-        formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 4, digitsOnly.length));
-        digitIndex = Math.min(digitIndex + 4, digitsOnly.length);
-        if (digitIndex < digitsOnly.length && digitsOnly.length > 8) formatted += ' ';
-      }
-    }
-    
-    // HH (2 chiffres)
-    if (digitIndex < digitsOnly.length) {
-      formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
-      digitIndex = Math.min(digitIndex + 2, digitsOnly.length);
-      if (digitIndex < digitsOnly.length && digitsOnly.length > 10) formatted += ':';
-    }
-    
-    // mm (2 chiffres)
-    if (digitIndex < digitsOnly.length) {
-      formatted += digitsOnly.substring(digitIndex, Math.min(digitIndex + 2, digitsOnly.length));
-    }
-    
-    return formatted;
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    const formatted = formatInputWithSeparators(inputValue);
-    setDisplayValue(formatted);
+    // Permettre la saisie libre, la validation se fera au blur
+    setDisplayValue(e.target.value);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

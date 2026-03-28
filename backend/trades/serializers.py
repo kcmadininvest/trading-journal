@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
 import logging
 
@@ -140,6 +141,7 @@ class TopStepTradeSerializer(serializers.ModelSerializer):
             'entry_price',
             'exit_price',
             'size',
+            'point_value',
             'fees',
             'commissions',
             'pnl',

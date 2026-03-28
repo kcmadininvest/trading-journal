@@ -5,12 +5,11 @@ import { AccountSelector } from '../accounts/AccountSelector';
 import { positionStrategiesService, PositionStrategy } from '../../services/positionStrategies';
 import { CustomSelect } from '../common/CustomSelect';
 import { NumberInput } from '../common/NumberInput';
-import { DateTimeInput } from '../common/DateTimeInput';
+import { SimpleDateTimeInput } from '../common/SimpleDateTimeInput';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../../contexts/TradingAccountContext';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber } from '../../utils/numberFormat';
-import { formatDate } from '../../utils/dateFormat';
 
 interface CreateTradeModalProps {
   isOpen: boolean;
@@ -33,6 +32,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   const [strategies, setStrategies] = useState<PositionStrategy[]>([]);
   const [loadingStrategies, setLoadingStrategies] = useState(false);
   const [isPnlManuallyEdited, setIsPnlManuallyEdited] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const [formData, setFormData] = useState({
     trading_account: null as number | null,
@@ -138,8 +138,9 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             planned_stop_loss: trade.planned_stop_loss || '',
             planned_take_profit: trade.planned_take_profit || '',
           });
-          // Si le PnL existe déjà, considérer qu'il a été édité manuellement
-          setIsPnlManuallyEdited(!!trade.pnl);
+          // En mode édition, permettre le recalcul automatique du PnL
+          // L'utilisateur peut toujours éditer manuellement le PnL s'il le souhaite
+          setIsPnlManuallyEdited(false);
         } catch (err: any) {
           const errorMessage = err.message || t('trades:createModal.errors.loadError', { defaultValue: 'Erreur lors du chargement du trade' });
           setError(errorMessage);
@@ -173,24 +174,6 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   const feesPlaceholder = useMemo(() => formatNumber(0, 4, preferences.number_format), [preferences.number_format]);
   const sizePlaceholder = useMemo(() => formatNumber(1, 4, preferences.number_format), [preferences.number_format]);
   const pointValuePlaceholder = useMemo(() => formatNumber(20, 2, preferences.number_format), [preferences.number_format]);
-  
-  // Format de date/heure pour l'aide
-  const dateTimeFormatExample = useMemo(() => {
-    if (preferencesLoading) {
-      // Retourner un format par défaut pendant le chargement
-      return 'DD/MM/YYYY HH:MM';
-    }
-    const now = new Date();
-    // S'assurer que date_format est bien défini (par défaut 'EU' si non défini)
-    const dateFormat = preferences.date_format || 'EU';
-    
-    // Utiliser le timezone de l'utilisateur pour formater correctement
-    const formattedDate = formatDate(now, dateFormat as 'EU' | 'US', false, preferences.timezone);
-    const formattedTime = formatDate(now, dateFormat as 'EU' | 'US', true, preferences.timezone);
-    // Extraire l'heure de la date formatée avec heure
-    const timePart = formattedTime.split(' ')[1] || '00:00';
-    return `${formattedDate} ${timePart}`;
-  }, [preferences.date_format, preferences.timezone, preferencesLoading]);
 
   // Initialiser avec le compte sélectionné dans le contexte (seulement en mode création)
   useEffect(() => {
@@ -201,7 +184,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
 
   // Réinitialiser le formulaire quand la modale s'ouvre (seulement si création, pas édition)
   useEffect(() => {
-    if (isOpen && !tradeId && !preferencesLoading) {
+    if (isOpen && !tradeId && !preferencesLoading && !hasInitialized) {
       // Obtenir la date/heure actuelle dans le timezone de l'utilisateur
       const now = new Date();
       
@@ -261,8 +244,16 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       });
       setError(null);
       setIsPnlManuallyEdited(false);
+      setHasInitialized(true);
     }
-  }, [isOpen, selectedAccountId, tradeId, preferences.timezone, preferencesLoading]);
+  }, [isOpen, selectedAccountId, tradeId, preferences.timezone, preferencesLoading, hasInitialized]);
+
+  // Réinitialiser hasInitialized quand la modale se ferme
+  useEffect(() => {
+    if (!isOpen) {
+      setHasInitialized(false);
+    }
+  }, [isOpen]);
 
   // Empêcher le scroll du body quand la modale est ouverte
   useEffect(() => {
@@ -300,18 +291,23 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
           priceDiff = entryPrice - exitPrice;
         }
 
-        // Calculer le PnL
-        let calculatedPnl: number;
+        // Calculer le PnL brut
+        let grossPnl: number;
         if (pointValue && !isNaN(pointValue) && pointValue > 0) {
           // Calcul précis avec la valeur du point
-          calculatedPnl = priceDiff * pointValue * size;
+          grossPnl = priceDiff * pointValue * size;
         } else {
           // Approximation sans valeur du point
-          calculatedPnl = priceDiff * size;
+          grossPnl = priceDiff * size;
         }
 
+        // Soustraire les frais et commissions pour obtenir le PnL net
+        const fees = parseFloat(formData.fees) || 0;
+        const commissions = parseFloat(formData.commissions) || 0;
+        const netPnl = grossPnl - fees - commissions;
+
         // Mettre à jour le PnL
-        setFormData(prev => ({ ...prev, pnl: String(calculatedPnl) }));
+        setFormData(prev => ({ ...prev, pnl: String(netPnl) }));
       } else if (!formData.entry_price || !formData.exit_price || !formData.size) {
         // Réinitialiser le PnL si les champs requis ne sont plus remplis
         setFormData(prev => ({ ...prev, pnl: '' }));
@@ -320,7 +316,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       // Réinitialiser le PnL si les champs requis ne sont plus remplis
       setFormData(prev => ({ ...prev, pnl: '' }));
     }
-  }, [formData.entry_price, formData.exit_price, formData.size, formData.trade_type, formData.point_value, isPnlManuallyEdited]);
+  }, [formData.entry_price, formData.exit_price, formData.size, formData.trade_type, formData.point_value, formData.fees, formData.commissions, isPnlManuallyEdited]);
 
   // Calculer automatiquement le R:R prévu si les prix sont fournis
   const calculatedPlannedRR = useMemo(() => {
@@ -380,7 +376,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       const payload: any = {
         contract_name: formData.contract_name.trim(),
         trade_type: formData.trade_type,
-        entered_at: new Date(formData.entered_at).toISOString(),
+        entered_at: formData.entered_at ? `${formData.entered_at}:00` : null,
         entry_price: formData.entry_price,
         size: formData.size,
         fees: formData.fees || '0',
@@ -392,7 +388,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
         payload.trading_account = formData.trading_account;
       }
       if (formData.exited_at && formData.exited_at.trim() !== '') {
-        payload.exited_at = new Date(formData.exited_at).toISOString();
+        payload.exited_at = `${formData.exited_at}:00`;
       }
       if (formData.exit_price) {
         payload.exit_price = formData.exit_price;
@@ -551,33 +547,25 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
                   {t('trades:createModal.entryDate', { defaultValue: 'Date/Heure d\'entrée' })}{' '}
                   <span className="text-red-500">*</span>
                 </label>
-                <DateTimeInput
+                <SimpleDateTimeInput
                   value={formData.entered_at}
                   onChange={(value) => setFormData(prev => ({ ...prev, entered_at: value }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                   disabled={isLoading}
-                  title={t('trades:createModal.dateTimeFormat', { defaultValue: `Format: ${dateTimeFormatExample}`, dateTimeFormatExample })}
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Format: {dateTimeFormatExample}
-                </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('trades:createModal.exitDate', { defaultValue: 'Date/Heure de sortie' })}
                   <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
                 </label>
-                <DateTimeInput
+                <SimpleDateTimeInput
                   value={formData.exited_at || ''}
                   onChange={(value) => setFormData(prev => ({ ...prev, exited_at: value || '' }))}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isLoading}
-                  title={t('trades:createModal.dateTimeFormat', { defaultValue: `Format: ${dateTimeFormatExample}`, dateTimeFormatExample })}
                 />
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Format: {dateTimeFormatExample}
-                </p>
               </div>
             </div>
 

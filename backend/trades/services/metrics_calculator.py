@@ -62,24 +62,18 @@ class AccountMetricsCalculator:
         # Calculer le solde de fin de journée
         account_balance = initial_capital + cumulative_pnl
         
-        # Récupérer la dernière métrique avant cette date (si existe)
-        metrics_manager = getattr(AccountDailyMetrics, 'objects')
-        previous_metrics = metrics_manager.filter(
-            trading_account=trading_account,
-            date__lt=target_date
-        ).order_by('-date').first()
+        # Calculer le solde maximum atteint en parcourant tous les trades chronologiquement
+        # Le solde maximum doit représenter le plus haut niveau atteint à n'importe quel moment
+        # pas seulement le solde de fin de journée
+        account_balance_high = initial_capital
+        running_balance = initial_capital
         
-        # Calculer le solde maximum atteint
-        # Le solde maximum commence toujours au capital initial, puis évolue avec les gains
-        if previous_metrics:
-            # Utiliser le maximum entre le high précédent et le solde actuel
-            previous_high = self._to_decimal(previous_metrics.account_balance_high)
-            account_balance_high = max(previous_high, account_balance)
-        else:
-            # Première métrique : le solde maximum commence au capital initial
-            # Il évolue ensuite avec le solde réel si celui-ci est supérieur
-            # Pour le calcul du MLL, on commence toujours au capital initial
-            account_balance_high = max(initial_capital, account_balance)
+        for trade in trades:
+            trade_pnl = self._to_decimal(trade.net_pnl) if trade.net_pnl else Decimal('0')
+            running_balance += trade_pnl
+            # Mettre à jour le maximum si le solde actuel est plus élevé
+            if running_balance > account_balance_high:
+                account_balance_high = running_balance
         
         # S'assurer que le solde maximum est toujours >= capital initial
         account_balance_high = max(account_balance_high, initial_capital)
@@ -87,23 +81,15 @@ class AccountMetricsCalculator:
         # Calculer le MLL
         mll_initial_decimal = self._to_decimal(mll_initial)
         
-        # Le MLL commence toujours à initial_capital - mll_initial et reste fixe
-        # jusqu'à ce que le solde dépasse le capital initial de manière persistante
-        if previous_metrics:
-            # Il y a des métriques précédentes
-            # Vérifier si le solde maximum dépasse le capital initial
-            if account_balance_high > initial_capital:
-                # Le solde maximum dépasse le capital initial, le MLL doit évoluer
-                mll_is_locked = False
-                account_balance_high_for_mll = account_balance_high
-                maximum_loss_limit = account_balance_high_for_mll - mll_initial_decimal
-            else:
-                # Le solde maximum n'a pas dépassé le capital initial, MLL reste verrouillé
-                mll_is_locked = True
-                maximum_loss_limit = initial_capital - mll_initial_decimal
+        # Le MLL évolue dès que le solde maximum dépasse le capital initial
+        if account_balance_high > initial_capital:
+            # Le solde maximum dépasse le capital initial, le MLL doit évoluer
+            # MAIS il est plafonné au capital initial (ne peut pas dépasser ce seuil)
+            mll_is_locked = True  # Verrouillé au capital initial
+            calculated_mll = account_balance_high - mll_initial_decimal
+            maximum_loss_limit = min(calculated_mll, initial_capital)
         else:
-            # Première métrique : le MLL commence toujours fixé à initial_capital - mll_initial
-            # même si le solde du premier jour dépasse le capital initial
+            # Le solde maximum n'a pas dépassé le capital initial, MLL reste fixé
             mll_is_locked = True
             maximum_loss_limit = initial_capital - mll_initial_decimal
         

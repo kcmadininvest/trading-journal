@@ -1,11 +1,12 @@
 """
-Signaux Django pour la gestion automatique des fichiers media.
+Signaux Django pour la gestion automatique des fichiers media et des métriques.
 """
 
-from django.db.models.signals import pre_delete, pre_save
+from django.db.models.signals import pre_delete, pre_save, post_save, post_delete
 from django.dispatch import receiver
-from .models import TradeStrategy, DayStrategyCompliance
+from .models import TradeStrategy, DayStrategyCompliance, TopStepTrade
 from .image_processor import image_processor
+from .services.metrics_calculator import AccountMetricsCalculator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -95,3 +96,64 @@ def delete_old_day_compliance_screenshot(sender, instance, **kwargs):
         pass
     except Exception as e:
         logger.error(f"Erreur lors de la suppression automatique de l'ancien screenshot de DayStrategyCompliance {instance.id}: {e}")
+
+
+@receiver(post_save, sender=TopStepTrade)
+def recalculate_metrics_after_trade_save(sender, instance, created, **kwargs):
+    """
+    Recalcule automatiquement les métriques MLL après l'ajout ou la modification d'un trade.
+    """
+    if not instance.trading_account or not instance.trade_day:
+        return
+    
+    # Vérifier si le MLL est activé pour ce compte
+    if not instance.trading_account.mll_enabled:
+        return
+    
+    try:
+        calculator = AccountMetricsCalculator()
+        # Recalculer les métriques à partir de la date du trade modifié
+        calculator.recalculate_metrics_from_date(instance.trading_account, instance.trade_day)
+        
+        action = "créé" if created else "modifié"
+        logger.info(f"Métriques MLL recalculées automatiquement après {action} du trade {instance.id} pour le compte {instance.trading_account.name}")
+    except Exception as e:
+        logger.error(f"Erreur lors du recalcul automatique des métriques après sauvegarde du trade {instance.id}: {e}")
+
+
+@receiver(post_delete, sender=TopStepTrade)
+def recalculate_metrics_after_trade_delete(sender, instance, **kwargs):
+    """
+    Recalcule automatiquement les métriques MLL après la suppression d'un trade.
+    Supprime aussi les métriques des dates qui n'ont plus de trades.
+    """
+    if not instance.trading_account or not instance.trade_day:
+        return
+    
+    # Vérifier si le MLL est activé pour ce compte
+    if not instance.trading_account.mll_enabled:
+        return
+    
+    try:
+        from .models import AccountDailyMetrics
+        
+        # Vérifier s'il reste des trades pour cette date
+        remaining_trades = TopStepTrade.objects.filter(
+            trading_account=instance.trading_account,
+            trade_day=instance.trade_day
+        ).exists()
+        
+        if not remaining_trades:
+            # Plus de trades pour cette date, supprimer la métrique
+            AccountDailyMetrics.objects.filter(
+                trading_account=instance.trading_account,
+                date=instance.trade_day
+            ).delete()
+            logger.info(f"Métrique MLL supprimée pour la date {instance.trade_day} (plus de trades) pour le compte {instance.trading_account.name}")
+        else:
+            # Il reste des trades, recalculer les métriques
+            calculator = AccountMetricsCalculator()
+            calculator.recalculate_metrics_from_date(instance.trading_account, instance.trade_day)
+            logger.info(f"Métriques MLL recalculées automatiquement après suppression du trade {instance.id} pour le compte {instance.trading_account.name}")
+    except Exception as e:
+        logger.error(f"Erreur lors du recalcul automatique des métriques après suppression du trade {instance.id}: {e}")

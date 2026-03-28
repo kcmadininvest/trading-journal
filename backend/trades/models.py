@@ -647,11 +647,11 @@ class TopStepTrade(models.Model):
         Calcule automatiquement le PnL, la durée, le PnL net, le pourcentage et les R:R avant sauvegarde.
         """
         # Calculer la durée si entered_at et exited_at sont présents
-        if self.entered_at and self.exited_at and not self.trade_duration:
+        if self.entered_at and self.exited_at:
             self.trade_duration = self.exited_at - self.entered_at  # type: ignore
         
-        # Calculer le trade_day à partir de entered_at si non défini
-        if self.entered_at and not self.trade_day:
+        # Calculer le trade_day à partir de entered_at (recalculer à chaque fois pour gérer les modifications)
+        if self.entered_at:
             self.trade_day = self.entered_at.date()  # type: ignore
         
         # Calculer le R:R prévu si stop loss et take profit sont fournis
@@ -703,7 +703,8 @@ class TopStepTrade(models.Model):
             # Si exit_price ou stop_loss manquent, R:R réel = None
             self.actual_risk_reward_ratio = None  # type: ignore
         
-        # Calculer le PnL automatiquement si non fourni mais que les prix et la taille sont disponibles
+        # Calculer automatiquement le PnL uniquement s'il n'est pas déjà défini
+        # Cela permet de préserver les valeurs PnL importées depuis CSV (qui incluent la point_value correcte)
         if self.pnl is None and self.entry_price and self.exit_price and self.size and self.trade_type:
             if self.trade_type == 'Long':
                 # Long: gain si prix monte
