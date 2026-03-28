@@ -28,6 +28,8 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
     description: '',
     maximum_loss_limit: undefined,
     mll_enabled: true,
+    profit_target: undefined,
+    profit_target_enabled: false,
     broker_account_id: '',
   });
   const [saving, setSaving] = useState(false);
@@ -60,6 +62,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
   useEffect(() => {
     if (account) {
       const mllValue = account.maximum_loss_limit ? (typeof account.maximum_loss_limit === 'string' ? parseFloat(account.maximum_loss_limit) : account.maximum_loss_limit) : undefined;
+      const profitTargetValue = account.profit_target ? (typeof account.profit_target === 'string' ? parseFloat(account.profit_target) : account.profit_target) : undefined;
       setForm({
         name: account.name,
         account_type: account.account_type,
@@ -67,6 +70,8 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
         initial_capital: account.initial_capital,
         maximum_loss_limit: mllValue,
         mll_enabled: account.mll_enabled !== undefined ? account.mll_enabled : true,
+        profit_target: profitTargetValue,
+        profit_target_enabled: account.profit_target_enabled !== undefined ? account.profit_target_enabled : false,
         status: account.status,
         description: account.description || '',
         broker_account_id: account.broker_account_id || '',
@@ -81,6 +86,8 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
         description: '',
         maximum_loss_limit: undefined,
         mll_enabled: true,
+        profit_target: undefined,
+        profit_target_enabled: false,
         broker_account_id: '',
       });
     }
@@ -139,7 +146,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
+        className="bg-white dark:bg-gray-800 w-full max-w-4xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -337,6 +344,44 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                 />
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                   {t('accounts:form.maximumLossLimitDescription', { defaultValue: 'Limite de perte maximale (saisie manuelle)' })}
+                </p>
+              </div>
+            )}
+
+            <label htmlFor="profit_target_enabled" className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
+              <input
+                type="checkbox"
+                id="profit_target_enabled"
+                checked={(form as any).profit_target_enabled === true}
+                onChange={(e) => setForm(prev => ({ ...prev, profit_target_enabled: e.target.checked } as any))}
+                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 cursor-pointer flex-shrink-0"
+              />
+              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('accounts:form.enableProfitTarget', { defaultValue: 'Activer l\'objectif de profit' })}
+              </span>
+            </label>
+            {(form as any).profit_target_enabled === true && (
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                  {t('accounts:form.profitTarget', { defaultValue: 'Objectif de profit' })}
+                  <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
+                </label>
+                <NumberInput
+                  value={(() => {
+                    const pt = (form as any).profit_target;
+                    if (pt === null || pt === undefined) return '';
+                    const numValue = typeof pt === 'string' ? parseFloat(pt) : pt;
+                    return isNaN(numValue) ? '' : numValue;
+                  })()}
+                  onChange={(value) => setForm(prev => ({ ...prev, profit_target: value ? parseFloat(value) : null } as any))}
+                  className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-base px-2 sm:px-3 py-1.5 sm:py-2"
+                  placeholder={t('accounts:form.profitTargetPlaceholder', { defaultValue: 'Saisir l\'objectif de profit' })}
+                  min={0}
+                  step="0.01"
+                  digits={2}
+                />
+                <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                  {t('accounts:form.profitTargetDescription', { defaultValue: 'Objectif de profit à atteindre (saisie manuelle)' })}
                 </p>
               </div>
             )}

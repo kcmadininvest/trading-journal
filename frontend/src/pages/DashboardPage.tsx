@@ -2198,6 +2198,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   formatCurrency={formatCurrency}
                   initialCapital={selectedAccount?.initial_capital ? parseFloat(String(selectedAccount.initial_capital)) : 0}
                   hideMll={privacySettings.hideMll}
+                  hideProfitTarget={selectedAccount?.profit_target_enabled !== true}
+                  profitTarget={selectedAccount?.profit_target_enabled === true && selectedAccount?.profit_target 
+                    ? (selectedAccount?.initial_capital ? parseFloat(String(selectedAccount.initial_capital)) : 0) + parseFloat(String(selectedAccount.profit_target))
+                    : 0}
                   hideProfitLoss={privacySettings.hideProfitLoss}
                 />
               </div>

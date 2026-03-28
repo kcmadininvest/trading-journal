@@ -78,7 +78,11 @@
     "enableMLL": "Maximum Loss Limit (MLL) aktivieren",
     "maximumLossLimit": "Maximum Loss Limit (MLL)",
     "maximumLossLimitPlaceholder": "MLL eingeben",
-    "maximumLossLimitDescription": "Maximale Verlustgrenze (manuelle Eingabe)"
+    "maximumLossLimitDescription": "Maximale Verlustgrenze (manuelle Eingabe)",
+    "enableProfitTarget": "Gewinnziel aktivieren",
+    "profitTarget": "Gewinnziel",
+    "profitTargetPlaceholder": "Gewinnziel eingeben",
+    "profitTargetDescription": "Zu erreichendes Gewinnziel (manuelle Eingabe)"
   },
   "defaultCurrencyName": "US-Dollar",
   "onboarding": {

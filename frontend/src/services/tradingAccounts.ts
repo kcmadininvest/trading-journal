@@ -11,6 +11,8 @@ export interface TradingAccount {
   initial_capital?: string | number;
   maximum_loss_limit?: string | number;
   mll_enabled?: boolean;
+  profit_target?: string | number;
+  profit_target_enabled?: boolean;
   status: 'active' | 'inactive' | 'archived';
   broker_config?: Record<string, any>;
   description?: string;

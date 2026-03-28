@@ -78,7 +78,11 @@
     "enableMLL": "Enable Maximum Loss Limit (MLL)",
     "maximumLossLimit": "Maximum Loss Limit (MLL)",
     "maximumLossLimitPlaceholder": "Enter MLL",
-    "maximumLossLimitDescription": "Maximum loss limit (manual entry)"
+    "maximumLossLimitDescription": "Maximum loss limit (manual entry)",
+    "enableProfitTarget": "Enable Profit Target",
+    "profitTarget": "Profit Target",
+    "profitTargetPlaceholder": "Enter profit target",
+    "profitTargetDescription": "Profit target to achieve (manual entry)"
   },
   "defaultCurrencyName": "US Dollar",
   "onboarding": {

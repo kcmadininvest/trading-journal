@@ -33,6 +33,7 @@ interface BalanceDataPoint {
   pnl: number;
   cumulative: number;
   mll?: number; // Maximum Loss Limit (optionnel)
+  profitTarget?: number; // Profit Target (optionnel)
 }
 
 interface AccountBalanceChartProps {
@@ -41,6 +42,8 @@ interface AccountBalanceChartProps {
   formatCurrency?: (value: number, currencySymbol?: string) => string;
   initialCapital?: number; // Capital initial pour la ligne de référence
   hideMll?: boolean; // Masquer la ligne MLL
+  hideProfitTarget?: boolean; // Masquer la ligne Profit Target
+  profitTarget?: number; // Objectif de profit
   hideProfitLoss?: boolean; // Masquer les valeurs de profit/perte (mode streamer)
 }
 
@@ -50,6 +53,8 @@ function AccountBalanceChart({
   formatCurrency: formatCurrencyProp,
   initialCapital = 0,
   hideMll = false,
+  hideProfitTarget = false,
+  profitTarget = 0,
   hideProfitLoss = false
 }: AccountBalanceChartProps) {
   const { t } = useI18nTranslation();
@@ -303,12 +308,26 @@ function AccountBalanceChart({
             // Utiliser cubicInterpolationMode pour une courbe plus naturelle qui ne "baisse" pas avant de monter
             cubicInterpolationMode: 'monotone' as const,
           }] : []),
+          // Dataset pour le Profit Target - uniquement si activé et valeur définie
+          ...(!hideProfitTarget && profitTarget > 0 ? [{
+            label: 'Objectif de profit',
+            data: processedLabels.map(() => profitTarget),
+            borderColor: '#10b981', // Vert pour le profit target
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [5, 5], // Ligne en pointillés
+            fill: false,
+            pointRadius: 0,
+            tension: 0,
+            spanGaps: true,
+            order: 2, // Placer derrière le MLL et le solde
+          }] : []),
         ],
       },
       chartLabels: processedLabels,
       pnlMapping: processedPnlMapping,
     };
-  }, [data, preferences.timezone, initialCapital, hideMll]);
+  }, [data, preferences.timezone, initialCapital, hideMll, hideProfitTarget, profitTarget]);
 
   // Options du graphique
   const options = useMemo(() => {

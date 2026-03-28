@@ -111,6 +111,21 @@ class TradingAccount(models.Model):
         help_text='Activer l\'affichage du Maximum Loss Limit'
     )
     
+    profit_target = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Objectif de profit',
+        help_text='Objectif de profit à atteindre (saisie manuelle)'
+    )
+    
+    profit_target_enabled = models.BooleanField(
+        default=False,
+        verbose_name='Activer l\'objectif de profit',
+        help_text='Activer l\'affichage de l\'objectif de profit'
+    )
+    
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
