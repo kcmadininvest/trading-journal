@@ -8,6 +8,7 @@ import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector
 import { TabsFilter } from '../components/common/TabsFilter';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday } from '../services/calendar';
+import { getNextDSTChange } from '../utils/dstCalculator';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
@@ -501,6 +502,34 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
     loadHolidays();
   }, []);
+
+  // Détecter si un événement de marché est imminent (dans les prochaines 48 heures)
+  const hasUpcomingEvent = useMemo(() => {
+    // Vérifier les jours fériés
+    let hasUpcomingHoliday = false;
+    if (!holidaysLoading && marketHolidays.length > 0) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const twoDaysFromNow = new Date(now);
+      twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
+      
+      hasUpcomingHoliday = marketHolidays.some(holiday => {
+        const holidayDate = new Date(holiday.date);
+        holidayDate.setHours(0, 0, 0, 0);
+        return holidayDate >= now && holidayDate <= twoDaysFromNow;
+      });
+    }
+    
+    // Vérifier les changements d'heure DST pour les 3 régions principales
+    const dstEventUS = getNextDSTChange('US');
+    const dstEventEU = getNextDSTChange('EU');
+    
+    const hasUpcomingDST = 
+      (dstEventUS && dstEventUS.daysUntil <= 2) ||
+      (dstEventEU && dstEventEU.daysUntil <= 2);
+    
+    return hasUpcomingHoliday || hasUpcomingDST;
+  }, [marketHolidays, holidaysLoading]);
 
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative, mll }
   // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
@@ -1468,10 +1497,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             },
             {
               id: 'market',
-              label: t('dashboard:marketInfo'),
+              label: (
+                <span className="flex items-center gap-2">
+                  <span className={hasUpcomingEvent ? 'text-amber-600 dark:text-amber-400 font-semibold' : ''}>
+                    {t('dashboard:marketInfo')}
+                  </span>
+                  {hasUpcomingEvent && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                    </span>
+                  )}
+                </span>
+              ),
               hideOnMobile: true,
               icon: (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={`w-4 h-4 ${hasUpcomingEvent ? 'text-amber-600 dark:text-amber-400' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               ),
