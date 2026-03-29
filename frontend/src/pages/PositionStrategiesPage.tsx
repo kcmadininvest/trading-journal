@@ -309,8 +309,8 @@ const PositionStrategiesPage: React.FC = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [versions, setVersions] = useState<PositionStrategyVersion[]>([]);
   const [previousVersion, setPreviousVersion] = useState<PositionStrategy | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'archived'>('active');
-  const [pendingFilterStatus, setPendingFilterStatus] = useState<'all' | 'active' | 'draft' | 'archived' | null>(null);
+  const [filterStatus, setFilterStatus] = useState<'active' | 'draft' | 'archived'>('active');
+  const [pendingFilterStatus, setPendingFilterStatus] = useState<'active' | 'draft' | 'archived' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [strategyToDelete, setStrategyToDelete] = useState<PositionStrategy | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -431,14 +431,13 @@ const PositionStrategiesPage: React.FC = () => {
     setError(null);
     try {
       const filters: any = {};
-      if (filterStatus !== 'all') {
-        filters.status = filterStatus;
-      }
+      // Toujours filtrer par status (plus de 'all')
+      filters.status = filterStatus;
       if (searchQuery) {
         filters.search = searchQuery;
       }
-      // Inclure les archivées uniquement si on filtre "all"
-      if (filterStatus === 'all') {
+      // Inclure les archivées uniquement si on filtre sur 'archived'
+      if (filterStatus === 'archived') {
         filters.include_archived = true;
       }
       const data = await positionStrategiesService.list(filters);
@@ -979,7 +978,6 @@ const PositionStrategiesPage: React.FC = () => {
   const activeCount = counts.active;
   const draftCount = counts.draft;
   const archivedCount = counts.archived;
-  const totalCount = counts.total;
 
   // Les stratégies sont déjà filtrées par le backend, pas besoin de re-filtrer
   // On garde juste la validation du tableau
@@ -1132,24 +1130,7 @@ const PositionStrategiesPage: React.FC = () => {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <div className="flex flex-wrap gap-2 flex-1 min-w-0">
-                <button
-                  onClick={() => setPendingFilterStatus('all')}
-                  className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
-                    filterStatus === 'all'
-                      ? 'bg-gray-600 text-white'
-                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {t('positionStrategies:all', { defaultValue: 'Toutes' })}
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    filterStatus === 'all'
-                      ? 'bg-gray-500 text-white'
-                      : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                  }`}>
-                    {totalCount}
-                  </span>
-                </button>
-                <button
+                                <button
                   onClick={() => setPendingFilterStatus('active')}
                   className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
                     filterStatus === 'active'
