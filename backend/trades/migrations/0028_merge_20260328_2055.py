@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('trades', '0026_tradetag_tradestatistics_tradeprobabilityfactor_and_more'),
+        ('trades', '0026_add_profit_target_to_trading_account'),
         ('trades', '0027_tradetag_tradestatistics_tradeprobabilityfactor_and_more'),
     ]
 
