@@ -51,6 +51,11 @@
   "resetChecklist": "Tout décocher",
   "strategyChecklist": "Checklist",
   "rulesFollowed": "{{checked}} / {{total}} règles suivies",
-  "allRulesFollowed": "Toutes les règles sont respectées !"
+  "allRulesFollowed": "Toutes les règles sont respectées !",
+  "exampleScreenshot": "Capture d'écran d'exemple",
+  "exampleScreenshotDescription": "Ajoutez une image pour illustrer cette stratégie (JPG, PNG, WebP - 5MB max)",
+  "noExampleImage": "Aucun exemple visuel",
+  "exampleVisual": "Exemple visuel",
+  "enlargeImage": "Agrandir l'image"
 }
 

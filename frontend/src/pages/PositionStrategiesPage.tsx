@@ -6,6 +6,8 @@ import { usePreferences } from '../hooks/usePreferences';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import { Tooltip } from '../components/ui';
 import { downloadStrategyPdf, printStrategy } from '../utils/pdfGenerator';
+import { ImageUpload } from '../components/ui/ImageUpload';
+import { screenshotsService } from '../services/screenshots';
 import {
   DndContext,
   closestCenter,
@@ -319,7 +321,7 @@ const PositionStrategiesPage: React.FC = () => {
   const [activeSectionIndex, setActiveSectionIndex] = useState<number | null>(null);
   const [activeRuleIndex, setActiveRuleIndex] = useState<{ sectionIndex: number; ruleIndex: number } | null>(null);
   const [expandedArchivedGroups, setExpandedArchivedGroups] = useState<Set<number>>(new Set());
-  const [menuPosition, setMenuPosition] = useState<{ top: number; right: number; positionAbove?: boolean } | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number; positionAbove?: boolean } | null>(null);
   const menuButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
   const menuDropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -344,6 +346,8 @@ const PositionStrategiesPage: React.FC = () => {
       sections: [{ title: '', rules: [''] }] as Array<{ title: string; rules: string[] }>
     },
     version_notes: '',
+    example_screenshot: '',
+    example_screenshot_thumbnail: '',
   });
 
   // Fermer le menu quand on clique en dehors
@@ -468,6 +472,8 @@ const PositionStrategiesPage: React.FC = () => {
         sections: [{ title: '', rules: [''] }]
       },
       version_notes: '',
+      example_screenshot: '',
+      example_screenshot_thumbnail: '',
     });
     setShowModal(true);
   };
@@ -709,7 +715,7 @@ const PositionStrategiesPage: React.FC = () => {
       }) || ['']
     })) || [{ title: '', rules: [''] }];
     
-    setFormData({
+    const newFormData = {
       title: strategy.title,
       description: strategy.description || '',
       status: strategy.status,
@@ -717,7 +723,11 @@ const PositionStrategiesPage: React.FC = () => {
         sections: normalizedSections
       },
       version_notes: '',
-    });
+      example_screenshot: strategy.example_screenshot || '',
+      example_screenshot_thumbnail: strategy.example_screenshot_thumbnail || '',
+    };
+    
+    setFormData(newFormData);
     setShowModal(true);
   };
 
@@ -725,15 +735,17 @@ const PositionStrategiesPage: React.FC = () => {
   const handleSave = async () => {
     try {
       setIsLoading(true);
+      
       if (selectedStrategy) {
         // Mise à jour
-        await positionStrategiesService.update(selectedStrategy.id, {
+        const updateData = {
           ...formData,
           create_new_version: selectedStrategy.status !== 'draft',
-        });
+        };
+        const result = await positionStrategiesService.update(selectedStrategy.id, updateData);
       } else {
         // Création
-        await positionStrategiesService.create(formData);
+        const result = await positionStrategiesService.create(formData);
       }
       setShowModal(false);
       setStatusDropdownOpen(false);
@@ -1080,9 +1092,21 @@ const PositionStrategiesPage: React.FC = () => {
       top = Math.min(bottomPosition, maxTop);
     }
     
+    // Calculer left en s'assurant que le menu reste visible à l'écran
+    const menuWidth = 192; // w-48 = 12rem = 192px
+    let left = rect.left + window.scrollX;
+    
+    // Si le menu dépasse à droite, l'aligner à droite du bouton
+    if (left + menuWidth > window.innerWidth) {
+      left = rect.right + window.scrollX - menuWidth;
+    }
+    
+    // S'assurer qu'on ne dépasse pas à gauche
+    left = Math.max(10, left);
+    
     return {
       top,
-      right: window.innerWidth - rect.right + window.scrollX,
+      left,
       positionAbove: shouldPositionAbove,
     };
   };
@@ -1368,7 +1392,7 @@ const PositionStrategiesPage: React.FC = () => {
                                   <div 
                                     ref={menuDropdownRef}
                                     className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-[9999]"
-                                    style={{ top: `${menuPosition.top}px`, right: `${menuPosition.right}px` }}
+                                    style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
                                   >
                                     <button
                                       onClick={() => {
@@ -1416,37 +1440,87 @@ const PositionStrategiesPage: React.FC = () => {
             {filteredStrategies.map((strategy) => (
               <div
                 key={strategy.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden flex flex-col"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                      {strategy.title}
-                    </h3>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(strategy.status)}`}>
-                        {strategy.status === 'active' ? t('positionStrategies:active', { defaultValue: 'Active' }) :
-                         strategy.status === 'draft' ? t('positionStrategies:draft', { defaultValue: 'Brouillon' }) :
-                         t('positionStrategies:archived', { defaultValue: 'Archivée' })}
-                      </span>
-                      {strategy.is_current && (
-                        <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
-                          v{strategy.version}
-                        </span>
-                      )}
-                    </div>
+                {/* Miniature de la stratégie */}
+                {strategy.example_screenshot && strategy.example_screenshot !== '' && (
+                  <div 
+                    className="w-full bg-gray-50 dark:bg-gray-800 cursor-pointer overflow-hidden p-6"
+                    onClick={() => handleView(strategy)}
+                  >
+                    <img
+                      src={strategy.example_screenshot.startsWith('http') ? strategy.example_screenshot : `${process.env.REACT_APP_API_URL?.replace(/\/api\/?$/, '')}${strategy.example_screenshot}`}
+                      alt={strategy.title}
+                      className="w-full h-auto object-contain hover:scale-105 transition-transform duration-200"
+                    />
                   </div>
-                </div>
-
-                {strategy.description && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                    {strategy.description}
-                  </p>
                 )}
 
-                <div className="text-xs text-gray-500 dark:text-gray-500 mb-4">
-                  {t('positionStrategies:createdAt', { defaultValue: 'Créé le' })} {formatDate(strategy.created_at, preferences.date_format, false, preferences.timezone)}
-                </div>
+                <div className="p-4 sm:p-6 flex-grow flex flex-col">
+                  <div className="flex-grow">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                        {strategy.title}
+                      </h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(strategy.status)}`}>
+                          {strategy.status === 'active' ? t('positionStrategies:active', { defaultValue: 'Active' }) :
+                           strategy.status === 'draft' ? t('positionStrategies:draft', { defaultValue: 'Brouillon' }) :
+                           t('positionStrategies:archived', { defaultValue: 'Archivée' })}
+                        </span>
+                        {strategy.is_current && (
+                          <span className="px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                            v{strategy.version}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  {strategy.description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                      {strategy.description}
+                    </p>
+                  )}
+
+                  {/* Aperçu du contenu pour les cartes sans images */}
+                  {(!strategy.example_screenshot || strategy.example_screenshot === '') && (
+                    <div className="mb-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-4">
+                      <div className="space-y-3">
+                        {strategy.strategy_content?.sections?.slice(0, 2).map((section, idx) => (
+                          <div key={idx}>
+                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-2">
+                              <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {section.title}
+                            </h4>
+                            <ul className="space-y-1">
+                              {section.rules?.slice(0, 2).map((rule, ruleIdx) => (
+                                <li key={ruleIdx} className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1 pl-6">
+                                  • {rule}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                        {strategy.strategy_content?.sections && strategy.strategy_content.sections.length > 2 && (
+                          <p className="text-xs text-gray-500 dark:text-gray-500 italic pt-2">
+                            +{strategy.strategy_content.sections.length - 2} {strategy.strategy_content.sections.length - 2 === 1 ? 'autre section' : 'autres sections'}...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-gray-500 dark:text-gray-500 mb-4">
+                      {t('positionStrategies:createdAt', { defaultValue: 'Créé le' })} {formatDate(strategy.created_at, preferences.date_format, false, preferences.timezone)}
+                    </div>
+                  </div>
 
                 {/* Menu d'actions moderne */}
                 <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
@@ -1525,7 +1599,7 @@ const PositionStrategiesPage: React.FC = () => {
                       <div 
                         ref={menuDropdownRef}
                         className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-[9999]"
-                        style={{ top: `${menuPosition.top}px`, right: `${menuPosition.right}px` }}
+                        style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
                       >
                         {strategy.status === 'draft' && (
                           <button
@@ -1612,6 +1686,7 @@ const PositionStrategiesPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+                </div>
               </div>
             ))}
           </div>
@@ -1693,6 +1768,29 @@ const PositionStrategiesPage: React.FC = () => {
                     className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
                   />
                 </div>
+
+                <ImageUpload
+                  value={formData.example_screenshot}
+                  thumbnailUrl={formData.example_screenshot_thumbnail}
+                  onUpload={(urls) => {
+                    setFormData({ 
+                      ...formData, 
+                      example_screenshot: urls.original,
+                      example_screenshot_thumbnail: urls.thumbnail
+                    });
+                  }}
+                  onRemove={() => {
+                    setFormData({ 
+                      ...formData, 
+                      example_screenshot: '',
+                      example_screenshot_thumbnail: ''
+                    });
+                  }}
+                  label={t('positionStrategies:exampleScreenshot', { defaultValue: 'Capture d\'écran d\'exemple' })}
+                  description={t('positionStrategies:exampleScreenshotDescription', { defaultValue: 'Ajoutez une image pour illustrer cette stratégie (JPG, PNG, WebP - 5MB max)' })}
+                  uploadFunction={(file) => screenshotsService.uploadStrategyScreenshot(file)}
+                  deleteFunction={(url) => screenshotsService.deleteStrategyScreenshot(url)}
+                />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -2203,6 +2301,45 @@ const PositionStrategiesPage: React.FC = () => {
                     </div>
                   );
                 })()}
+
+                {/* Image d'exemple */}
+                {selectedStrategy.example_screenshot && (
+                  <div className="mb-4 sm:mb-6">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {t('positionStrategies:exampleVisual', { defaultValue: 'Exemple visuel' })}
+                    </h3>
+                    <div className="relative group max-w-2xl mx-auto">
+                      <div className="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                        <img
+                          src={selectedStrategy.example_screenshot.startsWith('http') ? selectedStrategy.example_screenshot : `${process.env.REACT_APP_API_URL?.replace(/\/api\/?$/, '')}${selectedStrategy.example_screenshot}`}
+                          alt={selectedStrategy.title}
+                          className="w-full h-auto"
+                        />
+                        {/* Overlay au hover avec bouton d'agrandissement */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const url = selectedStrategy.example_screenshot!.startsWith('http') 
+                                ? selectedStrategy.example_screenshot! 
+                                : `${process.env.REACT_APP_API_URL?.replace(/\/api\/?$/, '')}${selectedStrategy.example_screenshot}`;
+                              window.open(url, '_blank', 'noopener,noreferrer');
+                            }}
+                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                            </svg>
+                            {t('positionStrategies:enlargeImage', { defaultValue: 'Agrandir l\'image' })}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Sections et règles */}
                 <div className="space-y-4 sm:space-y-6">

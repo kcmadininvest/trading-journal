@@ -1143,6 +1143,19 @@ class PositionStrategy(models.Model):
         help_text='Indique si c\'est la version actuelle'
     )
     
+    # Screenshot d'exemple
+    example_screenshot = models.URLField(
+        blank=True,
+        verbose_name='Capture d\'écran d\'exemple',
+        help_text='URL de la capture d\'écran illustrant la stratégie'
+    )
+    
+    example_screenshot_thumbnail = models.URLField(
+        blank=True,
+        verbose_name='Miniature de la capture d\'écran',
+        help_text='URL de la miniature de la capture d\'écran'
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -1283,7 +1296,9 @@ class PositionStrategy(models.Model):
             version_notes=version_notes,
             status=self.status,
             version=new_version,
-            is_current=True  # La nouvelle version est actuelle
+            is_current=True,  # La nouvelle version est actuelle
+            example_screenshot=self.example_screenshot,
+            example_screenshot_thumbnail=self.example_screenshot_thumbnail
         )
         
         # Préserver created_at de la version originale en faisant un update

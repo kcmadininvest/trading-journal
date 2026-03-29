@@ -19,6 +19,8 @@ export interface PositionStrategy {
   is_current: boolean;
   is_latest_version: boolean;
   version_count: number;
+  example_screenshot?: string;
+  example_screenshot_thumbnail?: string;
   created_at: string;
   updated_at: string;
 }
@@ -142,6 +144,8 @@ class PositionStrategiesService {
       }>;
     };
     version_notes?: string;
+    example_screenshot?: string;
+    example_screenshot_thumbnail?: string;
   }): Promise<PositionStrategy> {
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/`, {
       method: 'POST',
@@ -170,6 +174,8 @@ class PositionStrategiesService {
       };
       version_notes?: string;
       create_new_version?: boolean;
+      example_screenshot?: string;
+      example_screenshot_thumbnail?: string;
     }
   ): Promise<PositionStrategy> {
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/${id}/`, {
@@ -179,7 +185,8 @@ class PositionStrategiesService {
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ detail: res.statusText }));
-      throw new Error(error.detail || `Failed to update position strategy: ${res.statusText}`);
+      console.error('❌ [API ERROR] Response:', error);
+      throw new Error(error.detail || JSON.stringify(error) || `Failed to update position strategy: ${res.statusText}`);
     }
 
     return res.json();

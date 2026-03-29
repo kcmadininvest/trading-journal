@@ -16,7 +16,7 @@ from collections import defaultdict
 from typing import cast, Any
 import logging
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
 from daily_journal.models import DailyJournalEntry
@@ -917,8 +917,6 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         try:
             max_runup, max_runup_pct, trough_capital = calculate_max_runup(trades, period_start_capital)
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur calcul max_runup période: {e}")
             max_runup, max_runup_pct, trough_capital = (0.0, 0.0, 0.0)
         
@@ -926,8 +924,6 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         try:
             max_runup_global, max_runup_global_pct, trough_capital_global = calculate_max_runup(global_trades, initial_capital)
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Erreur calcul max_runup global: {e}")
             max_runup_global, max_runup_global_pct, trough_capital_global = (0.0, 0.0, 0.0)
         
@@ -1314,8 +1310,6 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         Upload et import d'un fichier CSV TopStep.
         """
         from django.contrib.auth.models import User
-        import logging
-        logger = logging.getLogger(__name__)
         
         # Log de la requête
         logger.info(f"=== DEBUT UPLOAD CSV ===")
@@ -3956,6 +3950,21 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
         """Associe automatiquement l'utilisateur connecté à la stratégie."""
         serializer.save(user=self.request.user)
     
+    def update(self, request, *args, **kwargs):
+        """Override update pour utiliser le bon serializer pour la réponse."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+        
+        # Utiliser PositionStrategySerializer pour la réponse
+        response_serializer = PositionStrategySerializer(serializer.instance)
+        return Response(response_serializer.data)
+    
     def perform_update(self, serializer):
         """Gère la mise à jour avec création de nouvelle version si nécessaire."""
         current_strategy = self.get_object()
@@ -3969,20 +3978,32 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             current_strategy.is_current and 
             current_strategy.status != 'draft'):
             
-            # Créer une nouvelle version
+            # Mettre à jour les champs de la stratégie actuelle AVANT de créer la nouvelle version
+            # pour que create_new_version() copie les bonnes valeurs
+            for field, value in serializer.validated_data.items():
+                if field not in ['strategy_content', 'version_notes', 'is_current', 'create_new_version']:
+                    setattr(current_strategy, field, value)
+            
+            # Créer une nouvelle version (qui copiera les champs mis à jour)
             new_strategy = current_strategy.create_new_version(
                 new_content=serializer.validated_data.get('strategy_content', current_strategy.strategy_content),
                 version_notes=serializer.validated_data.get('version_notes', '')
             )
-            # Mettre à jour les autres champs (sauf is_current qui doit rester True)
-            update_fields = []
-            for field, value in serializer.validated_data.items():
-                if field not in ['strategy_content', 'version_notes', 'is_current']:
-                    setattr(new_strategy, field, value)
-                    update_fields.append(field)
             
-            # Sauvegarder uniquement les champs modifiés, en préservant is_current=True
-            if update_fields:
+            # Mettre à jour explicitement les champs example_screenshot sur la nouvelle version
+            # car create_new_version() copie depuis self qui n'a pas été sauvegardé
+            if 'example_screenshot' in serializer.validated_data:
+                new_strategy.example_screenshot = serializer.validated_data['example_screenshot']
+            if 'example_screenshot_thumbnail' in serializer.validated_data:
+                new_strategy.example_screenshot_thumbnail = serializer.validated_data['example_screenshot_thumbnail']
+            
+            # Sauvegarder les champs mis à jour
+            if 'example_screenshot' in serializer.validated_data or 'example_screenshot_thumbnail' in serializer.validated_data:
+                update_fields = []
+                if 'example_screenshot' in serializer.validated_data:
+                    update_fields.append('example_screenshot')
+                if 'example_screenshot_thumbnail' in serializer.validated_data:
+                    update_fields.append('example_screenshot_thumbnail')
                 new_strategy.save(update_fields=update_fields)
             
             # Retourner la nouvelle stratégie au lieu de l'ancienne
@@ -4281,6 +4302,98 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             read_mode_data['sections'].append(section_data)
         
         return Response(read_mode_data)
+    
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser])
+    def upload_screenshot(self, request):
+        """
+        Upload un screenshot d'exemple pour une stratégie.
+        Retourne les URLs de l'image originale et de la miniature.
+        """
+        from rest_framework.parsers import MultiPartParser
+        from .serializers import ScreenshotUploadSerializer
+        from .image_processor import image_processor
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        # Valider le fichier
+        serializer = ScreenshotUploadSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            file = serializer.validated_data['file']
+            user_id = request.user.id
+            
+            # Traiter l'image (compression + miniature)
+            original_url, thumbnail_url = image_processor.process_screenshot(file, user_id)
+            
+            logger.info(
+                f"Screenshot de stratégie uploadé avec succès pour l'utilisateur {user_id}: "
+                f"original={original_url}, thumbnail={thumbnail_url}"
+            )
+            
+            return Response({
+                'original_url': original_url,
+                'thumbnail_url': thumbnail_url,
+                'message': 'Screenshot uploadé avec succès'
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'upload du screenshot de stratégie : {e}")
+            return Response({
+                'error': 'Erreur lors du traitement de l\'image',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def delete_screenshot(self, request):
+        """
+        Supprime un screenshot d'exemple et sa miniature du serveur.
+        Seul le propriétaire peut supprimer ses fichiers.
+        """
+        from .image_processor import image_processor
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        screenshot_url = request.data.get('screenshot_url')
+        if not screenshot_url:
+            return Response({
+                'error': 'URL du screenshot requise'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Vérifier que l'URL appartient bien à l'utilisateur
+        # En vérifiant que le chemin contient l'ID de l'utilisateur
+        user_id = request.user.id
+        if f'/screenshots/{user_id}/' not in screenshot_url:
+            logger.warning(
+                f"Tentative de suppression d'un screenshot de stratégie non autorisé par l'utilisateur {user_id}: {screenshot_url}"
+            )
+            return Response({
+                'error': 'Vous n\'êtes pas autorisé à supprimer ce fichier'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            # Supprimer le fichier et sa miniature
+            success = image_processor.delete_screenshot(screenshot_url)
+            
+            if success:
+                logger.info(f"Screenshot de stratégie supprimé avec succès par l'utilisateur {user_id}: {screenshot_url}")
+                return Response({
+                    'message': 'Screenshot supprimé avec succès'
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'Fichier non trouvé ou déjà supprimé'
+                }, status=status.HTTP_404_NOT_FOUND)
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression du screenshot de stratégie : {e}")
+            return Response({
+                'error': 'Erreur lors de la suppression du fichier',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class TradingGoalViewSet(viewsets.ModelViewSet):

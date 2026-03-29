@@ -586,6 +586,8 @@ class PositionStrategySerializer(serializers.ModelSerializer):
             'is_current',
             'is_latest_version',
             'version_count',
+            'example_screenshot',
+            'example_screenshot_thumbnail',
             'created_at',
             'updated_at'
         ]
@@ -693,7 +695,9 @@ class PositionStrategyCreateSerializer(serializers.ModelSerializer):
             'description',
             'status',
             'strategy_content',
-            'version_notes'
+            'version_notes',
+            'example_screenshot',
+            'example_screenshot_thumbnail'
         ]
     
     def validate_strategy_content(self, value):
@@ -734,6 +738,9 @@ class PositionStrategyUpdateSerializer(serializers.ModelSerializer):
     Serializer pour la mise à jour des stratégies (crée une nouvelle version).
     """
     create_new_version = serializers.BooleanField(default=True, write_only=True)
+    example_screenshot = serializers.CharField(required=False, allow_blank=True)
+    example_screenshot_thumbnail = serializers.CharField(required=False, allow_blank=True)
+    strategy_content = serializers.JSONField(required=False)
     
     class Meta:
         model = PositionStrategy
@@ -743,7 +750,9 @@ class PositionStrategyUpdateSerializer(serializers.ModelSerializer):
             'status',
             'strategy_content',
             'version_notes',
-            'create_new_version'
+            'create_new_version',
+            'example_screenshot',
+            'example_screenshot_thumbnail'
         ]
     
     def validate_strategy_content(self, value):

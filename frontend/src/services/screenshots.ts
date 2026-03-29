@@ -150,6 +150,60 @@ class ScreenshotsService {
   }
 
   /**
+   * Upload un screenshot pour une stratégie de position
+   * @param file - Le fichier image à uploader
+   * @returns Les URLs de l'image originale et de la miniature
+   */
+  async uploadStrategyScreenshot(file: File): Promise<ScreenshotUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/position-strategies/upload_screenshot/`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.detail || 'Erreur lors de l\'upload du screenshot'
+      );
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Supprime un screenshot pour une stratégie de position
+   * @param screenshotUrl - L'URL du screenshot à supprimer
+   * @returns Message de confirmation
+   */
+  async deleteStrategyScreenshot(screenshotUrl: string): Promise<{ message: string }> {
+    const response = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/position-strategies/delete_screenshot/`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ screenshot_url: screenshotUrl }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || errorData.detail || 'Erreur lors de la suppression du screenshot'
+      );
+    }
+
+    return await response.json();
+  }
+
+  /**
    * Valide un fichier avant l'upload
    * @param file - Le fichier à valider
    * @returns true si le fichier est valide, sinon lance une erreur

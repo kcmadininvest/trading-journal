@@ -4,7 +4,7 @@ Signaux Django pour la gestion automatique des fichiers media et des métriques.
 
 from django.db.models.signals import pre_delete, pre_save, post_save, post_delete
 from django.dispatch import receiver
-from .models import TradeStrategy, DayStrategyCompliance, TopStepTrade
+from .models import TradeStrategy, DayStrategyCompliance, PositionStrategy, TopStepTrade
 from .image_processor import image_processor
 from .services.metrics_calculator import AccountMetricsCalculator
 import logging
@@ -96,6 +96,73 @@ def delete_old_day_compliance_screenshot(sender, instance, **kwargs):
         pass
     except Exception as e:
         logger.error(f"Erreur lors de la suppression automatique de l'ancien screenshot de DayStrategyCompliance {instance.id}: {e}")
+
+
+@receiver(pre_delete, sender=PositionStrategy)
+def delete_position_strategy_screenshot(sender, instance, **kwargs):
+    """
+    Supprime automatiquement les screenshots quand une PositionStrategy est supprimée.
+    Vérifie d'abord que le fichier n'est pas utilisé par d'autres versions.
+    """
+    if instance.example_screenshot and instance.example_screenshot.startswith('/media/'):
+        try:
+            # Vérifier si d'autres versions utilisent le même screenshot
+            # Exclure l'instance actuelle de la recherche
+            other_versions_using_screenshot = PositionStrategy.objects.filter(
+                example_screenshot=instance.example_screenshot
+            ).exclude(id=instance.id).exists()
+            
+            if other_versions_using_screenshot:
+                logger.info(f"Screenshot non supprimé car utilisé par d'autres versions de PositionStrategy {instance.id}: {instance.example_screenshot}")
+                return
+            
+            # Aucune autre version n'utilise ce screenshot, on peut le supprimer
+            success = image_processor.delete_screenshot(instance.example_screenshot)
+            if success:
+                logger.info(f"Screenshot supprimé automatiquement lors de la suppression de PositionStrategy {instance.id}")
+            else:
+                logger.warning(f"Screenshot non trouvé lors de la suppression de PositionStrategy {instance.id}: {instance.example_screenshot}")
+        except Exception as e:
+            logger.error(f"Erreur lors de la suppression automatique du screenshot de PositionStrategy {instance.id}: {e}")
+
+
+@receiver(pre_save, sender=PositionStrategy)
+def delete_old_position_strategy_screenshot(sender, instance, **kwargs):
+    """
+    Supprime les anciens screenshots quand les URLs sont modifiées.
+    Vérifie d'abord que le fichier n'est pas utilisé par d'autres versions.
+    """
+    if not instance.pk:
+        # Nouvelle instance, pas d'ancien screenshot à supprimer
+        return
+    
+    try:
+        old_instance = PositionStrategy.objects.get(pk=instance.pk)
+        old_screenshot = old_instance.example_screenshot
+        new_screenshot = instance.example_screenshot
+        
+        # Si l'URL a changé et que l'ancienne URL était un fichier uploadé
+        if old_screenshot and old_screenshot != new_screenshot and old_screenshot.startswith('/media/'):
+            # Vérifier si d'autres versions utilisent le même screenshot
+            # Exclure l'instance actuelle de la recherche
+            other_versions_using_screenshot = PositionStrategy.objects.filter(
+                example_screenshot=old_screenshot
+            ).exclude(id=instance.id).exists()
+            
+            if other_versions_using_screenshot:
+                logger.info(f"Ancien screenshot non supprimé car utilisé par d'autres versions de PositionStrategy {instance.id}: {old_screenshot}")
+                return
+            
+            # Aucune autre version n'utilise ce screenshot, on peut le supprimer
+            success = image_processor.delete_screenshot(old_screenshot)
+            if success:
+                logger.info(f"Ancien screenshot supprimé automatiquement lors de la modification de PositionStrategy {instance.id}")
+            else:
+                logger.warning(f"Ancien screenshot non trouvé lors de la modification de PositionStrategy {instance.id}: {old_screenshot}")
+    except PositionStrategy.DoesNotExist:
+        pass
+    except Exception as e:
+        logger.error(f"Erreur lors de la suppression automatique de l'ancien screenshot de PositionStrategy {instance.id}: {e}")
 
 
 @receiver(post_save, sender=TopStepTrade)
