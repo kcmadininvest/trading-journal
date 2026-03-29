@@ -1175,6 +1175,7 @@ class PositionStrategy(models.Model):
             models.Index(fields=['user', '-created_at']),
             models.Index(fields=['user', 'is_current']),
             models.Index(fields=['parent_strategy']),
+            models.Index(fields=['user', 'status', '-created_at']),  # Optimisation pour filtres par status (archived, active, draft)
         ]
     
     def __str__(self):

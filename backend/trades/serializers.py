@@ -612,9 +612,17 @@ class PositionStrategySerializer(serializers.ModelSerializer):
             return 1
     
     def get_created_at(self, obj):
-        """Retourne la date de création du parent via parent_strategy_id."""
+        """Retourne la date de création du parent via l'annotation parent_created_at."""
+        # Utiliser l'annotation si disponible (optimisation - évite N+1 queries)
+        if hasattr(obj, 'parent_created_at'):
+            return obj.parent_created_at
+        
+        # Fallback si l'annotation n'est pas disponible (cas edge: retrieve, etc.)
         if obj.parent_strategy_id:
-            # Récupérer la date de création du parent
+            # Utiliser select_related si disponible
+            if obj.parent_strategy:
+                return obj.parent_strategy.created_at
+            # Dernier recours: requête directe
             try:
                 parent = PositionStrategy.objects.get(id=obj.parent_strategy_id)
                 return parent.created_at

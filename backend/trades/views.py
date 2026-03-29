@@ -3922,6 +3922,16 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             annotated_version_count=models.Count('versions', distinct=True) + 1
         )
         
+        # Optimisation: Annoter parent_created_at pour éviter N+1 queries dans get_created_at()
+        # Si parent_strategy existe, utiliser sa created_at, sinon utiliser la sienne
+        queryset = queryset.annotate(
+            parent_created_at=models.Case(
+                models.When(parent_strategy__isnull=False, then=models.F('parent_strategy__created_at')),
+                default=models.F('created_at'),
+                output_field=models.DateTimeField()
+            )
+        )
+        
         # Filtres optionnels
         status = self.request.query_params.get('status', None)
         is_current = self.request.query_params.get('is_current', None)
