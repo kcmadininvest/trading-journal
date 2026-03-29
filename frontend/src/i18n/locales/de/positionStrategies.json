@@ -51,6 +51,11 @@
   "resetChecklist": "Alle abwählen",
   "strategyChecklist": "Checkliste",
   "rulesFollowed": "{{checked}} / {{total}} Regeln befolgt",
-  "allRulesFollowed": "Alle Regeln werden eingehalten!"
+  "allRulesFollowed": "Alle Regeln werden eingehalten!",
+  "exampleScreenshot": "Beispiel-Screenshot",
+  "exampleScreenshotDescription": "Fügen Sie ein Bild hinzu, um diese Strategie zu veranschaulichen (JPG, PNG, WebP - max. 5MB)",
+  "noExampleImage": "Kein visuelles Beispiel",
+  "exampleVisual": "Visuelles Beispiel",
+  "enlargeImage": "Bild vergrößern"
 }
 

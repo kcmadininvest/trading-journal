@@ -51,6 +51,11 @@
   "resetChecklist": "Desmarcar todo",
   "strategyChecklist": "Checklist",
   "rulesFollowed": "{{checked}} / {{total}} reglas seguidas",
-  "allRulesFollowed": "¡Todas las reglas se cumplen!"
+  "allRulesFollowed": "¡Todas las reglas se cumplen!",
+  "exampleScreenshot": "Captura de pantalla de ejemplo",
+  "exampleScreenshotDescription": "Añade una imagen para ilustrar esta estrategia (JPG, PNG, WebP - máx. 5MB)",
+  "noExampleImage": "Sin ejemplo visual",
+  "exampleVisual": "Ejemplo visual",
+  "enlargeImage": "Ampliar imagen"
 }
 
