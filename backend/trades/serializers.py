@@ -594,11 +594,16 @@ class PositionStrategySerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'version', 'parent_strategy']
     
     def get_version_count(self, obj):
-        """Retourne le nombre total de versions."""
+        """Retourne le nombre total de versions (utilise l'annotation si disponible)."""
+        # Utiliser l'annotation si elle existe (optimisation)
+        if hasattr(obj, 'annotated_version_count'):
+            return obj.annotated_version_count
+        
+        # Fallback : calcul manuel si l'annotation n'est pas disponible
         try:
             if obj.parent_strategy:
-                return obj.parent_strategy.versions.count()
-            return obj.versions.count()
+                return obj.parent_strategy.versions.count() + 1
+            return obj.versions.count() + 1
         except Exception as e:
             # En cas d'erreur (relation cassée, etc.), retourner 1 par défaut
             import logging

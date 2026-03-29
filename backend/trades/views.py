@@ -3908,11 +3908,19 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        """Retourne uniquement les stratégies de l'utilisateur connecté."""
+        """Retourne uniquement les stratégies de l'utilisateur connecté avec optimisations."""
         if not self.request.user.is_authenticated:
             return PositionStrategy.objects.none()  # type: ignore
         
-        queryset = PositionStrategy.objects.filter(user=self.request.user)  # type: ignore
+        # Optimisation: select_related pour éviter les N+1 queries
+        queryset = PositionStrategy.objects.filter(user=self.request.user)\
+            .select_related('user', 'parent_strategy')  # type: ignore
+        
+        # Optimisation: Annoter avec version_count pour éviter les requêtes supplémentaires
+        # Compter les versions enfants + 1 pour inclure la stratégie elle-même
+        queryset = queryset.annotate(
+            annotated_version_count=models.Count('versions', distinct=True) + 1
+        )
         
         # Filtres optionnels
         status = self.request.query_params.get('status', None)
@@ -3925,7 +3933,6 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(status=status)
         elif not include_archived:
             # Par défaut, exclure les stratégies archivées sauf si explicitement demandé
-            print(f"DEBUG: Excluding archived strategies. include_archived={include_archived}")
             queryset = queryset.exclude(status='archived')
         
         if is_current is not None:
@@ -4152,6 +4159,36 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except PositionStrategy.DoesNotExist:  # type: ignore
             return Response({'error': 'Version non trouvée'}, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=False, methods=['get'])
+    def counts(self, request):
+        """Retourne les compteurs par statut de manière optimisée."""
+        # Pour active et draft : compter uniquement les versions actuelles (is_current=True)
+        # Pour archived : compter toutes les versions car elles peuvent avoir is_current=False
+        queryset_current = PositionStrategy.objects.filter(
+            user=request.user,
+            is_current=True
+        )  # type: ignore
+        
+        queryset_all = PositionStrategy.objects.filter(
+            user=request.user
+        )  # type: ignore
+        
+        # Compter active et draft parmi les versions actuelles
+        active_count = queryset_current.filter(status='active').count()
+        draft_count = queryset_current.filter(status='draft').count()
+        
+        # Compter archived parmi toutes les versions (car is_current peut être False)
+        archived_count = queryset_all.filter(status='archived').count()
+        
+        counts = {
+            'total': active_count + draft_count + archived_count,
+            'active': active_count,
+            'draft': draft_count,
+            'archived': archived_count
+        }
+        
+        return Response(counts)
     
     @action(detail=True, methods=['get'])
     def print_view(self, request, pk=None):

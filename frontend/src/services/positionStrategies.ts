@@ -235,6 +235,16 @@ class PositionStrategiesService {
 
     return res.json();
   }
+
+  async getCounts(): Promise<{ total: number; active: number; draft: number; archived: number }> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/position-strategies/counts/`);
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch strategy counts: ${res.statusText}`);
+    }
+
+    return res.json();
+  }
 }
 
 export const positionStrategiesService = new PositionStrategiesService();

@@ -299,8 +299,9 @@ const PositionStrategiesPage: React.FC = () => {
   const { preferences } = usePreferences();
 
   const [strategies, setStrategies] = useState<PositionStrategy[]>([]);
-  const [allStrategies, setAllStrategies] = useState<PositionStrategy[]>([]); // Toutes les stratégies pour les compteurs
+  const [counts, setCounts] = useState({ total: 0, active: 0, draft: 0, archived: 0 }); // Toutes les stratégies pour les compteurs
   const [isLoading, setIsLoading] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedStrategy, setSelectedStrategy] = useState<PositionStrategy | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -309,6 +310,7 @@ const PositionStrategiesPage: React.FC = () => {
   const [versions, setVersions] = useState<PositionStrategyVersion[]>([]);
   const [previousVersion, setPreviousVersion] = useState<PositionStrategy | null>(null);
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'archived'>('active');
+  const [pendingFilterStatus, setPendingFilterStatus] = useState<'all' | 'active' | 'draft' | 'archived' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [strategyToDelete, setStrategyToDelete] = useState<PositionStrategy | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -412,22 +414,19 @@ const PositionStrategiesPage: React.FC = () => {
     }
   }, [showModal, formData]);
 
-  // Charger toutes les stratégies pour les compteurs (sans filtre de statut)
-  const loadAllStrategies = React.useCallback(async () => {
+  // Charger les compteurs de stratégies de manière optimisée
+  const loadCounts = async () => {
     try {
-      const filters: any = {
-        include_archived: true, // Inclure toutes les stratégies pour les compteurs
-      };
-      const data = await positionStrategiesService.list(filters);
-      setAllStrategies(data);
+      const data = await positionStrategiesService.getCounts();
+      setCounts(data);
     } catch (err: any) {
-      console.error('Failed to load all strategies for counts:', err);
-      setAllStrategies([]);
+      console.error('Failed to load strategy counts:', err);
+      setCounts({ total: 0, active: 0, draft: 0, archived: 0 });
     }
-  }, []);
+  };
 
   // Charger les stratégies filtrées pour l'affichage
-  const loadStrategies = React.useCallback(async () => {
+  const loadStrategies = async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -446,19 +445,31 @@ const PositionStrategiesPage: React.FC = () => {
       setStrategies(data);
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des stratégies');
-      setStrategies([]); // S'assurer que strategies reste un tableau même en cas d'erreur
+      setStrategies([]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Gérer le changement de filtre avec transition
+  useEffect(() => {
+    if (pendingFilterStatus !== null) {
+      setIsTransitioning(true);
+      setIsLoading(true);
+      // Changer le filterStatus après avoir activé la transition
+      setFilterStatus(pendingFilterStatus);
+      setPendingFilterStatus(null);
+    }
+  }, [pendingFilterStatus]);
+
+  // Charger les données quand filterStatus ou searchQuery change
+  useEffect(() => {
+    Promise.all([loadStrategies(), loadCounts()]).finally(() => {
+      setIsTransitioning(false);
+      setIsLoading(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterStatus, searchQuery]);
-
-  useEffect(() => {
-    loadAllStrategies();
-  }, [loadAllStrategies]);
-
-  useEffect(() => {
-    loadStrategies();
-  }, [loadStrategies]);
 
   // Ouvrir le modal de création
   const handleCreate = () => {
@@ -742,15 +753,14 @@ const PositionStrategiesPage: React.FC = () => {
           ...formData,
           create_new_version: selectedStrategy.status !== 'draft',
         };
-        const result = await positionStrategiesService.update(selectedStrategy.id, updateData);
+        await positionStrategiesService.update(selectedStrategy.id, updateData);
       } else {
         // Création
-        const result = await positionStrategiesService.create(formData);
+        await positionStrategiesService.create(formData);
       }
       setShowModal(false);
       setStatusDropdownOpen(false);
-      await loadAllStrategies(); // Recharger toutes les stratégies pour les compteurs
-      loadStrategies();
+      await Promise.all([loadStrategies(), loadCounts()]);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la sauvegarde');
     } finally {
@@ -772,8 +782,7 @@ const PositionStrategiesPage: React.FC = () => {
     try {
       await positionStrategiesService.delete(strategyToDelete.id);
       setStrategyToDelete(null);
-      await loadAllStrategies(); // Recharger toutes les stratégies pour les compteurs
-      loadStrategies();
+      await Promise.all([loadStrategies(), loadCounts()]);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la suppression');
     } finally {
@@ -788,8 +797,7 @@ const PositionStrategiesPage: React.FC = () => {
         status: 'active',
         create_new_version: false,
       });
-      await loadAllStrategies(); // Recharger toutes les stratégies pour les compteurs
-      loadStrategies();
+      await Promise.all([loadStrategies(), loadCounts()]);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'activation');
     }
@@ -802,8 +810,7 @@ const PositionStrategiesPage: React.FC = () => {
         status: strategy.status === 'archived' ? 'active' : 'archived',
         create_new_version: false,
       });
-      await loadAllStrategies(); // Recharger toutes les stratégies pour les compteurs
-      loadStrategies();
+      await Promise.all([loadStrategies(), loadCounts()]);
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'archivage');
     }
@@ -836,8 +843,7 @@ const PositionStrategiesPage: React.FC = () => {
       // Utiliser l'ID de la stratégie directement - le backend gère le parent automatiquement
       await positionStrategiesService.restoreVersion(selectedStrategy.id, versionId);
       setShowVersionsModal(false);
-      await loadAllStrategies(); // Recharger toutes les stratégies pour les compteurs
-      loadStrategies();
+      await Promise.all([loadStrategies(), loadCounts()]);
     } catch (err: any) {
       console.error('Error restoring version:', err);
       setError(err.message || 'Erreur lors de la restauration');
@@ -969,33 +975,19 @@ const PositionStrategiesPage: React.FC = () => {
     });
   };
 
-  // Calculer les compteurs pour chaque statut depuis toutes les stratégies (comme GoalsPage)
-  const activeStrategies = useMemo(() => allStrategies.filter(s => s.status === 'active'), [allStrategies]);
-  const draftStrategies = useMemo(() => allStrategies.filter(s => s.status === 'draft'), [allStrategies]);
-  const archivedStrategies = useMemo(() => allStrategies.filter(s => s.status === 'archived'), [allStrategies]);
-  
-  // Utiliser les compteurs depuis toutes les stratégies (pas seulement celles filtrées)
-  const activeCount = activeStrategies.length;
-  const draftCount = draftStrategies.length;
-  const archivedCount = archivedStrategies.length;
-  const totalCount = allStrategies.length;
+  // Utiliser directement les compteurs de l'API (pas besoin de recalculer)
+  const activeCount = counts.active;
+  const draftCount = counts.draft;
+  const archivedCount = counts.archived;
+  const totalCount = counts.total;
 
-  // Filtrer les stratégies
+  // Les stratégies sont déjà filtrées par le backend, pas besoin de re-filtrer
+  // On garde juste la validation du tableau
   const filteredStrategies = useMemo(() => {
-    if (!Array.isArray(strategies)) {
-      return [];
-    }
-    return strategies.filter(strategy => {
-      if (filterStatus !== 'all' && strategy.status !== filterStatus) return false;
-      if (searchQuery && !strategy.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !strategy.description.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      return true;
-    });
-  }, [strategies, filterStatus, searchQuery]);
+    return Array.isArray(strategies) ? strategies : [];
+  }, [strategies]);
 
-  // Grouper les stratégies archivées par stratégie parente
+  // Grouper les stratégies archivées par stratégie parente (optimisé)
   const groupedArchivedStrategies = useMemo(() => {
     if (filterStatus !== 'archived') {
       return null;
@@ -1007,24 +999,11 @@ const PositionStrategiesPage: React.FC = () => {
       strategies: PositionStrategy[];
     }>();
 
-    // D'abord, identifier tous les IDs de groupes possibles
-    // (stratégies qui sont des parents ou qui ont un parent)
-    const groupIds = new Set<number>();
+    // Regrouper les stratégies en une seule boucle
     filteredStrategies.forEach(strategy => {
-      if (strategy.parent_strategy) {
-        groupIds.add(strategy.parent_strategy);
-      } else {
-        groupIds.add(strategy.id);
-      }
-    });
-
-    // Ensuite, regrouper les stratégies
-    filteredStrategies.forEach(strategy => {
-      // Identifier le groupe : utiliser parent_strategy si existe, sinon l'ID de la stratégie elle-même
       const groupId = strategy.parent_strategy || strategy.id;
       
       if (!groups.has(groupId)) {
-        // Utiliser le titre de la première stratégie du groupe
         groups.set(groupId, {
           groupId,
           title: strategy.title,
@@ -1035,17 +1014,16 @@ const PositionStrategiesPage: React.FC = () => {
       groups.get(groupId)!.strategies.push(strategy);
     });
 
-    // Trier les stratégies dans chaque groupe par version (décroissant)
-    // et mettre à jour le titre avec celui de la version la plus récente
-    groups.forEach(group => {
+    // Trier et mettre à jour les titres
+    const result = Array.from(groups.values());
+    result.forEach(group => {
+      // Trier par version décroissante
       group.strategies.sort((a, b) => b.version - a.version);
       // Utiliser le titre de la version la plus récente
-      if (group.strategies.length > 0) {
-        group.title = group.strategies[0].title;
-      }
+      group.title = group.strategies[0].title;
     });
 
-    return Array.from(groups.values());
+    return result;
   }, [filteredStrategies, filterStatus]);
 
   // Toggle l'expansion d'un groupe d'archives
@@ -1155,7 +1133,7 @@ const PositionStrategiesPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <div className="flex flex-wrap gap-2 flex-1 min-w-0">
                 <button
-                  onClick={() => setFilterStatus('all')}
+                  onClick={() => setPendingFilterStatus('all')}
                   className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
                     filterStatus === 'all'
                       ? 'bg-gray-600 text-white'
@@ -1172,7 +1150,7 @@ const PositionStrategiesPage: React.FC = () => {
                   </span>
                 </button>
                 <button
-                  onClick={() => setFilterStatus('active')}
+                  onClick={() => setPendingFilterStatus('active')}
                   className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
                     filterStatus === 'active'
                       ? 'bg-blue-600 text-white'
@@ -1189,7 +1167,7 @@ const PositionStrategiesPage: React.FC = () => {
                   </span>
                 </button>
                 <button
-                  onClick={() => setFilterStatus('draft')}
+                  onClick={() => setPendingFilterStatus('draft')}
                   className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
                     filterStatus === 'draft'
                       ? 'bg-yellow-600 text-white'
@@ -1206,7 +1184,7 @@ const PositionStrategiesPage: React.FC = () => {
                   </span>
                 </button>
                 <button
-                  onClick={() => setFilterStatus('archived')}
+                  onClick={() => setPendingFilterStatus('archived')}
                   className={`flex-1 min-w-[calc(50%-0.25rem)] sm:min-w-0 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base rounded-lg font-medium transition-colors flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap ${
                     filterStatus === 'archived'
                       ? 'bg-gray-600 text-white'
@@ -1242,7 +1220,7 @@ const PositionStrategiesPage: React.FC = () => {
         )}
 
         {/* Liste des stratégies */}
-        {isLoading ? (
+        {isLoading || isTransitioning ? (
           <div className="flex items-center justify-center h-48 sm:h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-3 sm:mb-4"></div>
