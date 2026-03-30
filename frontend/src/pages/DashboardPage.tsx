@@ -2282,13 +2282,26 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         }
                       },
                       datalabels: {
-                        display: !privacySettings.hideProfitLoss && windowWidth >= 640, // Masquer en mode streamer et sur mobile
-                        anchor: 'center' as const,
-                        align: 'center' as const,
-                        color: function(context: any) {
-                          // Blanc sur fond bleu (positif) ou rose (négatif)
-                          return '#ffffff';
+                        display: function(context: any) {
+                          // Ne pas afficher si privacy activé ou sur mobile
+                          if (privacySettings.hideProfitLoss || windowWidth < 640) {
+                            return false;
+                          }
+                          // Ne pas afficher si la valeur est 0
+                          const value = context.dataset.data[context.dataIndex];
+                          return value !== 0 && Math.abs(value) >= 0.01;
                         },
+                        anchor: function(context: any) {
+                          const value = context.dataset.data[context.dataIndex];
+                          // Positionner au-dessus si positif, en dessous si négatif
+                          return value >= 0 ? 'end' : 'start';
+                        } as any,
+                        align: function(context: any) {
+                          const value = context.dataset.data[context.dataIndex];
+                          // Aligner au-dessus si positif, en dessous si négatif
+                          return value >= 0 ? 'top' : 'bottom';
+                        } as any,
+                        color: isDark ? '#d1d5db' : '#374151',
                         font: {
                           weight: 700, // Plus gras pour meilleure lisibilité
                           size: windowWidth < 640 ? 11 : 13,
@@ -2319,7 +2332,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           display: false
                         },
                         ticks: {
-                            color: chartColors.textSecondary,
+                          color: chartColors.textSecondary,
                           font: {
                             size: 12
                           }
