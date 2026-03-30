@@ -1672,7 +1672,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-6 mt-3">
+        <div className="flex flex-col gap-6 mt-3 mb-6">
           {/* Bloc Trader Performance + stat cards (pleine largeur) */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
           {/* Graphique 1: Métriques de trading (jauges circulaires) */}

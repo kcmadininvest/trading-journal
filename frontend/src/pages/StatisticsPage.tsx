@@ -352,7 +352,7 @@ function StatisticsPage() {
   };
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 pb-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="w-full">
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">

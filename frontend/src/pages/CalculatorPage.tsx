@@ -20,7 +20,7 @@ const CalculatorPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 pb-6">
       <div className="max-w-6xl mx-auto px-6 mb-4">
         <button
           onClick={handleDetach}

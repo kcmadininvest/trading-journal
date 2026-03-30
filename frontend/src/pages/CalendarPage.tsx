@@ -142,7 +142,7 @@ const CalendarPage: React.FC = () => {
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-full">
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 pb-6">
         {/* Sélecteur de compte */}
         <div className="mb-6">
           <AccountSelector

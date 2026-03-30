@@ -45,7 +45,7 @@ const TransactionsPage: React.FC = () => {
   };
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 pb-6">
       {/* Filtres et actions */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">

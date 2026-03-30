@@ -257,7 +257,7 @@ const DailyJournalPage: React.FC = () => {
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-full">
-      <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 pb-6 space-y-6">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
           <div className="hidden md:block space-y-4">
             <div className="flex flex-col lg:flex-row lg:items-end gap-4">

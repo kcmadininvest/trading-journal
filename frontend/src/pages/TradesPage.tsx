@@ -466,7 +466,7 @@ const TradesPage: React.FC = () => {
   const paginationEndIndex = total === 0 ? 0 : Math.min(page * safePageSize, total);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 py-4 sm:py-6 md:py-8">
+    <div className="bg-gray-50 dark:bg-gray-900 py-4 sm:py-6 md:py-8 pb-6">
       <div className="px-3 sm:px-4 md:px-6 lg:px-8">
         {/* Sélecteur de compte et boutons d'action */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
