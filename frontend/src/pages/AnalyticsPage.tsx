@@ -1481,7 +1481,7 @@ const AnalyticsPage: React.FC = () => {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div className="px-4 sm:px-6 lg:px-8 pt-8 pb-12 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Filtres */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
