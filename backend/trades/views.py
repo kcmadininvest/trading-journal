@@ -52,6 +52,7 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
     ViewSet pour gérer les comptes de trading.
     """
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = None  # Désactiver la pagination - un utilisateur a rarement plus de 10-20 comptes
     
     def get_serializer_class(self):  # type: ignore
         if self.action == 'list':
