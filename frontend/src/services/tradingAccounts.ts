@@ -147,6 +147,22 @@ class TradingAccountsService {
     if (!res.ok) throw new Error('Erreur lors du chargement des métriques');
     return res.json();
   }
+
+  async archive(id: number): Promise<TradingAccount> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/archive/`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Erreur lors de l\'archivage du compte');
+    return res.json();
+  }
+
+  async unarchive(id: number): Promise<TradingAccount> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/unarchive/`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Erreur lors de la désarchivage du compte');
+    return res.json();
+  }
 }
 
 export interface AccountDailyMetric {

@@ -24,8 +24,9 @@
     "actions": "Acciones"
   },
   "status": {
-    "active": "Activa",
-    "inactive": "Inactiva"
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "archived": "Archivado"
   },
   "accountTypes": {
     "topstep": "TopStep",
@@ -38,14 +39,17 @@
     "setDefault": "Establecer esta cuenta como predeterminada",
     "edit": "Editar esta cuenta",
     "delete": "Eliminar esta cuenta y todos sus datos",
-    "default": "Predeterminada",
+    "default": "Predeterminado",
     "editLabel": "Editar",
     "disable": "Desactivar",
     "enable": "Activar",
-    "deleteLabel": "Eliminar"
+    "deleteLabel": "Eliminar",
+    "archive": "Archivar",
+    "unarchive": "Desarchivar"
   },
-  "deleteTitle": "Eliminar Cuenta",
+  "deleteTitle": "Eliminar cuenta",
   "deleteConfirm": "¿Eliminar permanentemente la cuenta \"{{name}}\" y todos sus datos (operaciones asociadas)?\n\nEsta acción es irreversible.",
+  "confirmArchive": "¿Está seguro de que desea archivar esta cuenta? Ya no será visible de forma predeterminada.",
   "form": {
     "editTitle": "Editar Cuenta",
     "newTitle": "Nueva Cuenta",
@@ -63,7 +67,7 @@
     "initialCapitalPlaceholder": "50000.00",
     "initialCapitalDescription": "Capital inicial de la cuenta",
     "status": "Estado",
-    "statusDescription": "Elige si la cuenta está activa o inactiva.",
+    "statusDescription": "Activo: cuenta en uso | Inactivo: cuenta en pausa | Archivado: cuenta cerrada permanentemente",
     "description": "Descripción",
     "descriptionPlaceholder": "Notas o detalles para distinguir esta cuenta",
     "setAsDefault": "Establecer como cuenta predeterminada",

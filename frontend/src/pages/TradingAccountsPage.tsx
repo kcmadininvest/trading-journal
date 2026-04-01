@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import PaginationControls from '../components/ui/PaginationControls';
@@ -27,7 +27,7 @@ const TradingAccountsPage: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [filters, setFilters] = useState({
     account_type: '' as '' | 'topstep' | 'ibkr' | 'ninjatrader' | 'tradovate' | 'other',
-    status: '' as '' | 'active' | 'inactive',
+    status: '' as '' | 'active' | 'inactive' | 'archived',
     search: '',
   });
 
@@ -204,10 +204,12 @@ const TradingAccountsPage: React.FC = () => {
     return `${symbol}${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await tradingAccountsService.list({ include_inactive: true, include_archived: true });
+      // Inclure les archivés seulement si le filtre est activé
+      const includeArchived = filters.status === 'archived' || filters.status === '';
+      const list = await tradingAccountsService.list({ include_inactive: true, include_archived: includeArchived });
       const arr = Array.isArray(list) ? list : (list as any)?.results ?? [];
       setAllAccounts(arr);
     } catch {
@@ -215,10 +217,13 @@ const TradingAccountsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.status]);
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  useEffect(() => {
     (async () => {
       try {
         const cs = await currenciesService.list();
@@ -272,6 +277,30 @@ const TradingAccountsPage: React.FC = () => {
       const updated = await tradingAccountsService.update(acc.id, { status: nextStatus });
       setAllAccounts(prev => prev.map(a => (a.id === acc.id ? updated : a)));
     } catch {}
+  };
+
+  const handleArchive = async (acc: TradingAccount) => {
+    if (!window.confirm(t('accounts:confirmArchive', { 
+      defaultValue: 'Êtes-vous sûr de vouloir archiver ce compte ? Il ne sera plus visible par défaut.' 
+    }))) {
+      return;
+    }
+    
+    try {
+      await tradingAccountsService.archive(acc.id);
+      await load();
+    } catch (error) {
+      console.error('Erreur lors de l\'archivage:', error);
+    }
+  };
+
+  const handleUnarchive = async (acc: TradingAccount) => {
+    try {
+      await tradingAccountsService.unarchive(acc.id);
+      await load();
+    } catch (error) {
+      console.error('Erreur lors de la désarchivage:', error);
+    }
   };
 
   const handleDelete = async (acc: TradingAccount) => {
@@ -435,15 +464,33 @@ const TradingAccountsPage: React.FC = () => {
                             </button>
                           </Tooltip>
                         )}
-                        <Tooltip content={acc.status === 'active' ? t('accounts:actions.disable') : t('accounts:actions.enable')} position="top">
+                        {acc.status !== 'archived' && (
+                          <Tooltip content={acc.status === 'active' ? t('accounts:actions.disable') : t('accounts:actions.enable')} position="top">
+                            <button
+                              onClick={() => handleToggleStatus(acc)}
+                              className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            >
+                              {acc.status === 'active' ? (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" /></svg>
+                              ) : (
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                              )}
+                            </button>
+                          </Tooltip>
+                        )}
+                        <Tooltip content={acc.status === 'archived' ? t('accounts:actions.unarchive') : t('accounts:actions.archive')} position="top">
                           <button
-                            onClick={() => handleToggleStatus(acc)}
-                            className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            onClick={() => acc.status === 'archived' ? handleUnarchive(acc) : handleArchive(acc)}
+                            className="p-2 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
                           >
-                            {acc.status === 'active' ? (
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" /></svg>
+                            {acc.status === 'archived' ? (
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                              </svg>
                             ) : (
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
+                              </svg>
                             )}
                           </button>
                         </Tooltip>
@@ -590,15 +637,33 @@ const TradingAccountsPage: React.FC = () => {
                                   </button>
                                 </Tooltip>
                               )}
-                              <Tooltip content={acc.status === 'active' ? t('accounts:actions.disable') : t('accounts:actions.enable')} position="top">
+                              {acc.status !== 'archived' && (
+                                <Tooltip content={acc.status === 'active' ? t('accounts:actions.disable') : t('accounts:actions.enable')} position="top">
+                                  <button
+                                    onClick={() => handleToggleStatus(acc)}
+                                    className="p-1.5 sm:p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                  >
+                                    {acc.status === 'active' ? (
+                                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" /></svg>
+                                    ) : (
+                                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                                    )}
+                                  </button>
+                                </Tooltip>
+                              )}
+                              <Tooltip content={acc.status === 'archived' ? t('accounts:actions.unarchive') : t('accounts:actions.archive')} position="top">
                                 <button
-                                  onClick={() => handleToggleStatus(acc)}
-                                  className="p-1.5 sm:p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                  onClick={() => acc.status === 'archived' ? handleUnarchive(acc) : handleArchive(acc)}
+                                  className="p-1.5 sm:p-2 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
                                 >
-                                  {acc.status === 'active' ? (
-                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" /></svg>
+                                  {acc.status === 'archived' ? (
+                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                    </svg>
                                   ) : (
-                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
+                                    </svg>
                                   )}
                                 </button>
                               </Tooltip>

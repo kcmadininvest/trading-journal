@@ -63,7 +63,17 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
         """Retourne uniquement les comptes de l'utilisateur connecté."""
         if not self.request.user.is_authenticated:
             return TradingAccount.objects.none()  # type: ignore
-        return TradingAccount.objects.filter(user=self.request.user)  # type: ignore
+        
+        queryset = TradingAccount.objects.filter(user=self.request.user)  # type: ignore
+        
+        # Pour les opérations de détail (retrieve, update, delete), inclure les archivés
+        # Pour la liste, exclure les archivés sauf si explicitement demandé
+        if self.action == 'list':
+            include_archived = self.request.query_params.get('include_archived', 'false').lower() == 'true'
+            if not include_archived:
+                queryset = queryset.exclude(status='archived')
+        
+        return queryset
     
     def perform_create(self, serializer):
         """Associe automatiquement le compte à l'utilisateur connecté."""
@@ -121,6 +131,58 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {'error': f'Erreur lors de la définition du compte par défaut: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def archive(self, request, pk=None):
+        """
+        Archive un compte de trading.
+        Un compte archivé ne peut plus être le compte par défaut.
+        """
+        try:
+            account = self.get_object()
+            
+            # Si c'était le compte par défaut, en sélectionner un autre
+            if account.is_default:
+                # Trouver un autre compte actif pour le définir par défaut
+                next_default = TradingAccount.objects.filter(  # type: ignore
+                    user=request.user,
+                    status='active'
+                ).exclude(pk=account.pk).order_by('created_at').first()
+                
+                if next_default:
+                    next_default.is_default = True
+                    next_default.save(update_fields=['is_default'])
+            
+            # Archiver le compte
+            account.status = 'archived'
+            account.is_default = False
+            account.save(update_fields=['status', 'is_default'])
+            
+            serializer = self.get_serializer(account)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de l\'archivage du compte: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def unarchive(self, request, pk=None):
+        """
+        Désarchive un compte de trading (le repasse en actif).
+        """
+        try:
+            account = self.get_object()
+            account.status = 'active'
+            account.save(update_fields=['status'])
+            
+            serializer = self.get_serializer(account)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la désarchivage du compte: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
@@ -2721,23 +2783,28 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # Filtrer par compte si spécifié
         if trading_account_id:
             queryset = queryset.filter(trade__trading_account_id=trading_account_id)
+        else:
+            # Exclure les comptes archivés des stats globales
+            queryset = queryset.exclude(trade__trading_account__status='archived')
         
         # Statistiques globales (toutes périodes et tous comptes)
         # Pour all_time : compter TOUS les trades de l'utilisateur (pas seulement ceux avec stratégie)
-        all_time_trades_queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
-        all_time_strategies_queryset = TradeStrategy.objects.filter(user=self.request.user)  # type: ignore
+        # IMPORTANT: Toujours exclure les comptes archivés des stats all_time (tous comptes)
+        all_time_trades_queryset = TopStepTrade.objects.filter(user=self.request.user).exclude(trading_account__status='archived')  # type: ignore
+        all_time_strategies_queryset = TradeStrategy.objects.filter(user=self.request.user).exclude(trade__trading_account__status='archived')  # type: ignore
         
         # Pour la période sélectionnée (tous comptes) : compter TOUS les trades de l'utilisateur pour la période
+        # IMPORTANT: Toujours exclure les comptes archivés des stats period (tous comptes)
         period_trades_queryset = TopStepTrade.objects.filter(  # type: ignore
             user=self.request.user,
             trade_day__gte=start_date.strftime('%Y-%m-%d'),
             trade_day__lt=end_date.strftime('%Y-%m-%d')
-        )
+        ).exclude(trading_account__status='archived')
         period_strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
             user=self.request.user,
             trade__trade_day__gte=start_date.strftime('%Y-%m-%d'),
             trade__trade_day__lt=end_date.strftime('%Y-%m-%d')
-        )
+        ).exclude(trade__trading_account__status='archived')
         
         # Pour le compte : compter TOUS les trades du compte (toutes périodes, pas seulement la période sélectionnée)
         account_trades_queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
@@ -2745,6 +2812,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         if trading_account_id:
             account_trades_queryset = account_trades_queryset.filter(trading_account_id=trading_account_id)
             account_strategies_queryset = account_strategies_queryset.filter(trade__trading_account_id=trading_account_id)
+        else:
+            # Exclure les comptes archivés des stats globales
+            account_trades_queryset = account_trades_queryset.exclude(trading_account__status='archived')
+            account_strategies_queryset = account_strategies_queryset.exclude(trade__trading_account__status='archived')
         
         # Pour le compte et la période sélectionnée : compter TOUS les trades du compte pour la période
         account_period_trades_queryset = TopStepTrade.objects.filter(  # type: ignore
@@ -2760,6 +2831,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         if trading_account_id:
             account_period_trades_queryset = account_period_trades_queryset.filter(trading_account_id=trading_account_id)
             account_period_strategies_queryset = account_period_strategies_queryset.filter(trade__trading_account_id=trading_account_id)
+        else:
+            # Exclure les comptes archivés des stats globales
+            account_period_trades_queryset = account_period_trades_queryset.exclude(trading_account__status='archived')
+            account_period_strategies_queryset = account_period_strategies_queryset.exclude(trade__trading_account__status='archived')
         
         # Récupérer les compliances pour les jours sans trades
         # IMPORTANT: Exclure les compliances pour les jours qui ont des trades (pour éviter le double comptage)
@@ -2769,6 +2844,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         ).exclude(strategy_respected__isnull=True)
         if trading_account_id:
             all_time_day_compliances_queryset = all_time_day_compliances_queryset.filter(trading_account_id=trading_account_id)
+        else:
+            # Exclure les comptes archivés des stats globales
+            all_time_day_compliances_queryset = all_time_day_compliances_queryset.exclude(trading_account__status='archived')
         
         # Exclure les compliances pour les jours qui ont des trades
         # Récupérer toutes les dates avec des trades pour cet utilisateur/compte
@@ -2788,6 +2866,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         ).exclude(strategy_respected__isnull=True)
         if trading_account_id:
             period_day_compliances_queryset = period_day_compliances_queryset.filter(trading_account_id=trading_account_id)
+        else:
+            # Exclure les comptes archivés des stats globales
+            period_day_compliances_queryset = period_day_compliances_queryset.exclude(trading_account__status='archived')
         
         # Exclure les compliances pour les jours qui ont des trades dans la période
         period_trades_dates = set(account_period_trades_queryset.values_list('trade_day', flat=True))
@@ -2808,9 +2889,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         # Ajouter les compliances pour all_time (toutes périodes, tous comptes)
         # IMPORTANT: Exclure les compliances pour les jours qui ont des trades
+        # IMPORTANT: Toujours exclure les comptes archivés des stats all_time (tous comptes)
         all_time_all_day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
             user=self.request.user
-        ).exclude(strategy_respected__isnull=True)
+        ).exclude(strategy_respected__isnull=True).exclude(trading_account__status='archived')
         
         # Exclure les compliances pour les jours qui ont des trades (tous comptes)
         all_time_trades_dates = set(all_time_trades_queryset.values_list('trade_day', flat=True))
@@ -2902,11 +2984,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         # Ajouter les compliances pour les jours sans trades (période sélectionnée, tous comptes)
         # IMPORTANT: Exclure les compliances pour les jours qui ont des trades
+        # IMPORTANT: Toujours exclure les comptes archivés des stats period (tous comptes)
         all_period_day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
             user=self.request.user,
             date__gte=start_date.date(),
             date__lt=end_date.date()
-        ).exclude(strategy_respected__isnull=True)
+        ).exclude(strategy_respected__isnull=True).exclude(trading_account__status='archived')
         
         # Exclure les compliances pour les jours qui ont des trades dans la période (tous comptes)
         period_all_trades_dates = set(period_trades_queryset.values_list('trade_day', flat=True))
@@ -3407,6 +3490,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         )
         if trading_account_id:
             trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
+        else:
+            # Exclure les comptes archivés des stats globales
+            trades_queryset = trades_queryset.exclude(trading_account__status='archived')
         
         # Appliquer les filtres de période
         if start_date:
@@ -3425,6 +3511,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         if trading_account_id:
             strategies_queryset = strategies_queryset.filter(trade__trading_account_id=trading_account_id)
+        else:
+            # Exclure les comptes archivés des stats globales
+            strategies_queryset = strategies_queryset.exclude(trade__trading_account__status='archived')
         
         # Appliquer les filtres de période aux stratégies
         if start_date:
@@ -3445,6 +3534,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             day_compliances_queryset = day_compliances_queryset.filter(
                 trading_account_id=trading_account_id
             )
+        else:
+            # Exclure les comptes archivés des stats globales
+            day_compliances_queryset = day_compliances_queryset.exclude(trading_account__status='archived')
         
         # Appliquer les filtres de période aux compliances
         if start_date:
@@ -3770,6 +3862,9 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(strategy_respected=strategy_respected.lower() == 'true')  # type: ignore
         if trading_account_id:
             queryset = queryset.filter(trading_account_id=trading_account_id)
+        else:
+            # Exclure les comptes archivés des stats globales
+            queryset = queryset.exclude(trading_account__status='archived')
         
         return queryset.order_by('-date', '-created_at')
 
@@ -4576,7 +4671,14 @@ def dashboard_summary(request):
     trades_queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
     
     if trading_account_id:
+        # Compte spécifique sélectionné
         trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
+    else:
+        # "Tous les comptes" → exclure les comptes archivés
+        active_accounts = TradingAccount.objects.filter(  # type: ignore
+            user=request.user
+        ).exclude(status='archived').values_list('id', flat=True)
+        trades_queryset = trades_queryset.filter(trading_account_id__in=active_accounts)
     
     # Apply date filters
     # Use user preference timezone if available, fallback to Paris
@@ -4641,6 +4743,10 @@ def dashboard_summary(request):
 
     if trading_account_id:
         day_compliance_filter = day_compliance_filter.filter(trading_account_id=trading_account_id)
+    else:
+        # Exclure les comptes archivés pour les stats globales
+        day_compliance_filter = day_compliance_filter.filter(trading_account_id__in=active_accounts)
+    
     if start_date_obj:
         day_compliance_filter = day_compliance_filter.filter(date__gte=start_date_obj)
     if end_date_obj:

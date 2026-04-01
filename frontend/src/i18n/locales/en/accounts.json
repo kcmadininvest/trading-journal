@@ -25,7 +25,8 @@
   },
   "status": {
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "archived": "Archived"
   },
   "accountTypes": {
     "topstep": "TopStep",
@@ -42,10 +43,13 @@
     "editLabel": "Edit",
     "disable": "Disable",
     "enable": "Enable",
-    "deleteLabel": "Delete"
+    "deleteLabel": "Delete",
+    "archive": "Archive",
+    "unarchive": "Unarchive"
   },
   "deleteTitle": "Delete Account",
   "deleteConfirm": "Permanently delete account \"{{name}}\" and all its data (associated trades)?\n\nThis action is irreversible.",
+  "confirmArchive": "Are you sure you want to archive this account? It will no longer be visible by default.",
   "form": {
     "editTitle": "Edit Account",
     "newTitle": "New Account",
@@ -63,7 +67,7 @@
     "initialCapitalPlaceholder": "50000.00",
     "initialCapitalDescription": "Starting capital of the account",
     "status": "Status",
-    "statusDescription": "Choose whether the account is active or inactive.",
+    "statusDescription": "Active: account in use | Inactive: account on pause | Archived: permanently closed account",
     "description": "Description",
     "descriptionPlaceholder": "Notes or details to distinguish this account",
     "setAsDefault": "Set as default account",

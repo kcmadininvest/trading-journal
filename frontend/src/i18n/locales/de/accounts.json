@@ -25,7 +25,8 @@
   },
   "status": {
     "active": "Aktiv",
-    "inactive": "Inaktiv"
+    "inactive": "Inaktiv",
+    "archived": "Archiviert"
   },
   "accountTypes": {
     "topstep": "TopStep",
@@ -42,10 +43,13 @@
     "editLabel": "Bearbeiten",
     "disable": "Deaktivieren",
     "enable": "Aktivieren",
-    "deleteLabel": "Löschen"
+    "deleteLabel": "Löschen",
+    "archive": "Archivieren",
+    "unarchive": "Dearchivieren"
   },
   "deleteTitle": "Konto löschen",
   "deleteConfirm": "Konto \"{{name}}\" und alle seine Daten (zugehörige Trades) dauerhaft löschen?\n\nDiese Aktion ist unwiderruflich.",
+  "confirmArchive": "Sind Sie sicher, dass Sie dieses Konto archivieren möchten? Es wird standardmäßig nicht mehr sichtbar sein.",
   "form": {
     "editTitle": "Konto bearbeiten",
     "newTitle": "Neues Konto",
@@ -63,7 +67,7 @@
     "initialCapitalPlaceholder": "50000.00",
     "initialCapitalDescription": "Anfangskapital des Kontos",
     "status": "Status",
-    "statusDescription": "Wählen Sie, ob das Konto aktiv oder inaktiv ist.",
+    "statusDescription": "Aktiv: Konto in Verwendung | Inaktiv: Konto pausiert | Archiviert: dauerhaft geschlossenes Konto",
     "description": "Beschreibung",
     "descriptionPlaceholder": "Notizen oder Details zur Unterscheidung dieses Kontos",
     "setAsDefault": "Als Standardkonto festlegen",

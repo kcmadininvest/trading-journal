@@ -16,8 +16,9 @@
     "actions": "작업"
   },
   "status": {
-    "active": "Actif",
-    "inactive": "Inactif"
+    "active": "활성",
+    "inactive": "비활성",
+    "archived": "보관됨"
   },
   "accountTypes": {
     "topstep": "TopStep",
@@ -27,14 +28,16 @@
     "other": "Autre"
   },
   "actions": {
-    "setDefault": "Définir ce compte par défaut",
-    "edit": "Modifier ce compte",
-    "delete": "Supprimer ce compte et toutes ses données",
-    "default": "Défaut",
-    "editLabel": "Modifier",
-    "disable": "Désactiver",
-    "enable": "Activer",
-    "deleteLabel": "Supprimer"
+    "setDefault": "이 계정을 기본값으로 설정",
+    "edit": "이 계정 편집",
+    "delete": "이 계정과 모든 데이터 삭제",
+    "default": "기본값",
+    "editLabel": "편집",
+    "disable": "비활성화",
+    "enable": "활성화",
+    "deleteLabel": "삭제",
+    "archive": "보관",
+    "unarchive": "보관 해제"
   },
   "deleteConfirm": "Supprimer définitivement le compte \"{{name}}\" et toutes ses données (trades associés) ?\n\nCette action est irréversible.",
   "form": {
@@ -50,8 +53,8 @@
     "brokerIdPlaceholder": "Identifiant côté broker",
     "currency": "Devise",
     "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
-    "status": "Statut",
-    "statusDescription": "Choisissez si le compte est actif ou inactif.",
+    "status": "상태",
+    "statusDescription": "활성: 사용 중인 계정 | 비활성: 일시 중지된 계정 | 보관됨: 영구적으로 폐쇄된 계정",
     "description": "Description",
     "descriptionPlaceholder": "Notes ou détails pour distinguer ce compte",
     "setAsDefault": "Définir comme compte par défaut",

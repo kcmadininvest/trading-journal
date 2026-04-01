@@ -5,7 +5,7 @@ import { CustomSelect } from '../common/CustomSelect';
 interface AccountsFiltersProps {
   values: {
     account_type: '' | 'topstep' | 'ibkr' | 'ninjatrader' | 'tradovate' | 'other';
-    status: '' | 'active' | 'inactive';
+    status: '' | 'active' | 'inactive' | 'archived';
     search: string;
   };
   onChange: (next: Partial<AccountsFiltersProps['values']>) => void;
@@ -27,7 +27,8 @@ export const AccountsFilters: React.FC<AccountsFiltersProps> = ({ values, onChan
   const statusOptions = useMemo(() => [
     { value: '', label: t('accounts:filters.status', { defaultValue: 'Statut' }) },
     { value: 'active', label: t('accounts:status.active') },
-    { value: 'inactive', label: t('accounts:status.inactive') }
+    { value: 'inactive', label: t('accounts:status.inactive') },
+    { value: 'archived', label: t('accounts:status.archived') }
   ], [t]);
 
   return (

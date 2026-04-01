@@ -397,9 +397,13 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                   className="w-full inline-flex items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <span className={`inline-flex items-center rounded-md px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs ${
-                    (form.status || 'active') === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                    (form.status || 'active') === 'active' 
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                      : (form.status || 'active') === 'inactive'
+                      ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                   }`}>
-                    {(form.status || 'active') === 'active' ? t('accounts:status.active') : t('accounts:status.inactive')}
+                    {t(`accounts:status.${form.status || 'active'}`)}
                   </span>
                   <svg className={`h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${isStatusOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -408,7 +412,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                 {isStatusOpen && (
                   <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
                     <ul className="py-1 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                      {[{ value: 'active' }, { value: 'inactive' }].map(opt => (
+                      {[{ value: 'active' }, { value: 'inactive' }, { value: 'archived' }].map(opt => (
                         <li key={opt.value}>
                           <button
                             type="button"
@@ -417,7 +421,11 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                           >
                             <span>{t(`accounts:status.${opt.value}`)}</span>
                             <span className={`inline-flex items-center rounded-md px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs ${
-                              opt.value === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                              opt.value === 'active' 
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                                : opt.value === 'inactive'
+                                ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                             }`}>
                               {t(`accounts:status.${opt.value}`)}
                             </span>
