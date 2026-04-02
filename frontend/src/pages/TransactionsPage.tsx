@@ -3,6 +3,7 @@ import { AccountTransaction } from '../services/accountTransactions';
 import { TransactionFormModal } from '../components/transactions/TransactionFormModal';
 import { TransactionHistory } from '../components/transactions/TransactionHistory';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { toast } from 'react-hot-toast/headless';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -10,6 +11,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 const TransactionsPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
+  const hideAccountNumber = useAccountNumberVisibility();
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawalModal, setShowWithdrawalModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<AccountTransaction | null>(null);
@@ -59,6 +61,7 @@ const TransactionsPage: React.FC = () => {
               onChange={setSelectedAccountId}
               allowAllActive={true}
               hideLabel={true}
+              hideAccountNumber={hideAccountNumber}
             />
           </div>
 

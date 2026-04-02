@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { RespectRateCard } from '../components/common/RespectRateCard';
 import { PerformanceComparison } from '../components/strategy/PerformanceComparison';
@@ -70,6 +71,7 @@ const StrategiesPage: React.FC = () => {
   const privacySettings = usePrivacySettings('strategies');
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+  const hideAccountNumber = useAccountNumberVisibility();
   const { refreshCount } = useComplianceRefresh();
   const windowSize = useWindowSize();
   
@@ -394,7 +396,7 @@ const StrategiesPage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('strategies:tradingAccount')}
                 </label>
-                <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
+                <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={hideAccountNumber} />
               </div>
               
               {/* Sélecteur de période moderne */}

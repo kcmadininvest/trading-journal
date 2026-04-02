@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { tradesService } from '../../services/trades';
 import { AccountSelector } from '../accounts/AccountSelector';
+import { useAccountNumberVisibility } from '../../hooks/useAccountNumberVisibility';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -17,7 +18,8 @@ type ModalState = 'initial' | 'preview' | 'importing' | 'success';
 export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onClose }) => {
   const { preferences, refreshPreferences } = usePreferences();
   const { t } = useI18nTranslation();
-  const { selectedAccountId } = useTradingAccount();
+  const { selectedAccountId: contextAccountId } = useTradingAccount();
+  const hideAccountNumber = useAccountNumberVisibility();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [accountId, setAccountId] = useState<number | null | undefined>(undefined);
   const [state, setState] = useState<ModalState>('initial');
@@ -82,9 +84,9 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
       }
       // Initialiser le compte avec le compte sélectionné dans le contexte
       // Si un compte est sélectionné, l'utiliser, sinon laisser AccountSelector initialiser le compte par défaut
-      if (selectedAccountId !== null && selectedAccountId !== undefined) {
-        setAccountId(selectedAccountId);
-        previousAccountRef.current = selectedAccountId;
+      if (contextAccountId !== null && contextAccountId !== undefined) {
+        setAccountId(contextAccountId);
+        previousAccountRef.current = contextAccountId;
       } else {
         // Ne pas définir accountId pour permettre à AccountSelector d'initialiser le compte par défaut
         // On utilise undefined pour que AccountSelector détecte qu'aucune valeur n'a été fournie
@@ -95,7 +97,7 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
       previousFileRef.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, selectedAccountId, preferences.import_guide_collapsed]);
+  }, [open, contextAccountId, preferences.import_guide_collapsed]);
 
   // Réinitialiser l'aperçu si le fichier ou le compte change
   React.useEffect(() => {
@@ -394,11 +396,11 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
         {/* Content - Scrollable */}
         <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1">
           {/* Account Selector */}
-          <div>
+          <div className="inline-block">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
               {t('trades:importModal.tradingAccount')}
             </label>
-            <AccountSelector value={accountId} onChange={handleAccountChange} hideLabel />
+            <AccountSelector value={accountId} onChange={handleAccountChange} hideLabel hideAccountNumber={hideAccountNumber} />
           </div>
 
           {/* File Upload Area */}

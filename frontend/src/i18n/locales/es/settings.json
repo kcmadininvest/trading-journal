@@ -87,6 +87,7 @@
   "notifications": "Notificaciones",
   "emailGoalAlerts": "Alertas por email para objetivos",
   "emailGoalAlertsDescription": "Recibir emails cuando un objetivo se alcanza o está en peligro",
+  "hideAccountNumber": "Ocultar número de cuenta",
   "hideInitialBalance": "Ocultar saldo inicial",
   "hideCurrentBalance": "Ocultar saldo actual",
   "hideMll": "Ocultar MLL",

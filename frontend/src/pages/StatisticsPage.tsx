@@ -12,6 +12,7 @@ import { usePreferences } from '../hooks/usePreferences';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
+import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
 import { MetricGroup } from '../components/statistics/MetricGroup';
 import { MetricCardWithGauge } from '../components/statistics/MetricCardWithGauge';
@@ -26,6 +27,7 @@ function StatisticsPage() {
   const { t } = useI18nTranslation();
   const { preferences, loading: preferencesLoading } = usePreferences();
   const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
+  const hideAccountNumber = useAccountNumberVisibility();
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
@@ -369,6 +371,7 @@ function StatisticsPage() {
                     setSelectedAccountId(accountId);
                   }}
                   hideLabel
+                  hideAccountNumber={hideAccountNumber}
                 />
               </div>
               

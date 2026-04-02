@@ -1452,7 +1452,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   {/* Compte de trading avec Privacy Dropdown juste après */}
                   <div className="flex items-center gap-2 w-full lg:w-auto">
                     <div className="flex-1 min-w-0 max-w-full">
-                      <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
+                      <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={privacySettings.hideAccountNumber} />
                     </div>
                     <div className="flex-shrink-0">
                       <PrivacyDropdown 

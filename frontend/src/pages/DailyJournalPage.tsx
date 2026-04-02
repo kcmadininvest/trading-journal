@@ -9,6 +9,7 @@ import { DailyJournalCard } from '../components/dailyJournal/DailyJournalCard';
 import { usePreferences } from '../hooks/usePreferences';
 import { formatDateLong, LanguageType } from '../utils/dateFormat';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { Tooltip } from '../components/ui';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { getMonthNames } from '../utils/dateFormat';
@@ -18,6 +19,7 @@ const DailyJournalPage: React.FC = () => {
   const { t, i18n } = useI18nTranslation();
   const { preferences } = usePreferences();
   const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
+  const hideAccountNumber = useAccountNumberVisibility();
   const [groupedYears, setGroupedYears] = useState<DailyJournalGroupedYear[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -269,6 +271,7 @@ const DailyJournalPage: React.FC = () => {
                     onChange={setSelectedAccountId}
                     allowAllActive
                     hideLabel
+                    hideAccountNumber={hideAccountNumber}
                   />
                 </div>
               </div>
@@ -377,6 +380,7 @@ const DailyJournalPage: React.FC = () => {
                   onChange={setSelectedAccountId}
                   allowAllActive
                   hideLabel
+                  hideAccountNumber={hideAccountNumber}
                 />
               </div>
             </details>

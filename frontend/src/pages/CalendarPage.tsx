@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import MonthlyView from '../components/calendar/MonthlyView';
 import DailyView from '../components/calendar/DailyView';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import {
@@ -20,11 +21,12 @@ const CalendarPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const [viewType, setViewType] = useState<ViewType>('daily');
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { selectedAccountId: selectedAccount, setSelectedAccountId: setSelectedAccount, loading: accountLoading } = useTradingAccount();
+  const hideAccountNumber = useAccountNumberVisibility();
   const [selectedAccountData, setSelectedAccountData] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [showImport, setShowImport] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // État pour la vue quotidienne
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -144,10 +146,11 @@ const CalendarPage: React.FC = () => {
     <div className="bg-gray-50 dark:bg-gray-900 min-h-full pb-6">
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         {/* Sélecteur de compte */}
-        <div className="mb-6">
+        <div className="mb-6 inline-block">
           <AccountSelector
             value={selectedAccount}
             onChange={setSelectedAccount}
+            hideAccountNumber={hideAccountNumber}
           />
         </div>
 

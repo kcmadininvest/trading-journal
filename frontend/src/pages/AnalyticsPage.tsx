@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useWindowWidth } from '../hooks/useWindowWidth';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -77,6 +78,7 @@ const AnalyticsPage: React.FC = () => {
   const { preferences } = usePreferences();
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
+  const hideAccountNumber = useAccountNumberVisibility();
   const isDark = theme === 'dark';
   
   // Wrapper pour formatNumber avec préférences
@@ -1491,7 +1493,7 @@ const AnalyticsPage: React.FC = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('analytics:tradingAccount')}
               </label>
-              <AccountSelector value={accountId} onChange={setAccountId} hideLabel />
+              <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={hideAccountNumber} />
             </div>
             
             {/* Sélecteur de période moderne */}

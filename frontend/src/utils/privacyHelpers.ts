@@ -6,6 +6,7 @@ export const PRIVACY_OPTIONS = {
   HIDE_CURRENT_BALANCE: 'hide_current_balance',
   HIDE_MLL: 'hide_mll',
   HIDE_PROFIT_LOSS: 'hide_profit_loss',
+  HIDE_ACCOUNT_NUMBER: 'hide_account_number',
 } as const;
 
 // Constantes pour les contextes de page
@@ -25,15 +26,18 @@ export interface PrivacyOption {
 // Configuration des options disponibles par page
 export const PAGE_PRIVACY_OPTIONS: Record<string, PrivacyOption[]> = {
   [PAGE_CONTEXTS.DASHBOARD]: [
+    { key: PRIVACY_OPTIONS.HIDE_ACCOUNT_NUMBER, label: 'settings:hideAccountNumber' },
     { key: PRIVACY_OPTIONS.HIDE_INITIAL_BALANCE, label: 'settings:hideInitialBalance' },
     { key: PRIVACY_OPTIONS.HIDE_CURRENT_BALANCE, label: 'settings:hideCurrentBalance' },
     { key: PRIVACY_OPTIONS.HIDE_MLL, label: 'settings:hideMll' },
     { key: PRIVACY_OPTIONS.HIDE_PROFIT_LOSS, label: 'settings:hideProfitLoss' },
   ],
   [PAGE_CONTEXTS.STATISTICS]: [
+    { key: PRIVACY_OPTIONS.HIDE_ACCOUNT_NUMBER, label: 'settings:hideAccountNumber' },
     { key: PRIVACY_OPTIONS.HIDE_PROFIT_LOSS, label: 'settings:hideProfitLoss' },
   ],
   [PAGE_CONTEXTS.TRADES]: [
+    { key: PRIVACY_OPTIONS.HIDE_ACCOUNT_NUMBER, label: 'settings:hideAccountNumber' },
     { key: PRIVACY_OPTIONS.HIDE_PROFIT_LOSS, label: 'settings:hideProfitLoss' },
   ],
 };

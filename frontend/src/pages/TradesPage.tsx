@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { tradesService, TradeListItem } from '../services/trades';
 import { AccountSelector } from '../components/accounts/AccountSelector';
+import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { TradesFilters } from '../components/trades/TradesFilters';
 import { TradesTable } from '../components/trades/TradesTable';
 import { TradeModal } from '../components/trades/TradeModal';
@@ -29,6 +30,7 @@ const sanitizePageSize = (value: number | string | null | undefined) => {
 const TradesPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
+  const hideAccountNumber = useAccountNumberVisibility();
   const [items, setItems] = useState<TradeListItem[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -470,13 +472,14 @@ const TradesPage: React.FC = () => {
       <div className="px-3 sm:px-4 md:px-6 lg:px-8">
         {/* Sélecteur de compte et boutons d'action */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="flex-1 w-full sm:max-w-md">
+          <div className="inline-block w-full sm:w-auto">
             <AccountSelector
               value={selectedAccountId}
               onChange={(accountId) => {
                 setSelectedAccountId(accountId);
                 setFilters(prev => ({ ...prev, trading_account: accountId }));
               }}
+              hideAccountNumber={hideAccountNumber}
             />
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">

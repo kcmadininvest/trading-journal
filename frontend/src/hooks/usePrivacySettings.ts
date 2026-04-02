@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { usePreferences } from './usePreferences';
 
 export interface PrivacySettings {
+  hideAccountNumber: boolean;
   hideInitialBalance: boolean;
   hideCurrentBalance: boolean;
   hideMll: boolean;
@@ -22,6 +23,7 @@ export function usePrivacySettings(pageContext: string): PrivacySettings {
 
     // Retourner les valeurs avec false par défaut
     return {
+      hideAccountNumber: overrides.hide_account_number ?? false,
       hideInitialBalance: overrides.hide_initial_balance ?? false,
       hideCurrentBalance: overrides.hide_current_balance ?? false,
       hideMll: overrides.hide_mll ?? false,
