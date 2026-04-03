@@ -20,9 +20,10 @@ interface TradesTableProps {
   totals?: { pnl?: number; fees?: number; net_pnl?: number; count?: number };
   onDelete?: (id: number) => void;
   onRowClick?: (trade: TradeListItem) => void; // Callback pour le clic sur une ligne
+  hideAccountNumber?: boolean;
 }
 
-export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete, onRowClick }) => {
+export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete, onRowClick, hideAccountNumber = false }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -40,6 +41,25 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
   // Fonction pour formater la date avec les préférences
   const formatTradeDate = (dateStr: string) => {
     return formatDateTimeShort(dateStr, preferences.date_format, preferences.timezone);
+  };
+
+  // Fonction pour masquer le numéro de compte (7 premiers caractères visibles, le reste masqué)
+  const renderAccountName = (name: string | null): React.ReactNode => {
+    if (!name) return '-';
+    if (!hideAccountNumber || name.length <= 7) {
+      return name;
+    }
+    
+    const visiblePart = name.substring(0, 7);
+    const hiddenPart = name.substring(7);
+    const maskedPart = '•'.repeat(hiddenPart.length);
+    
+    return (
+      <>
+        <span>{visiblePart}</span>
+        <span className="text-gray-400 dark:text-gray-500 tracking-wider">{maskedPart}</span>
+      </>
+    );
   };
 
   // Fonction pour calculer les points gagnés/perdus
@@ -132,7 +152,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                         {formatTradeDate(trade.entered_at)}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {trade.trading_account_name || '-'}
+                        {renderAccountName(trade.trading_account_name)}
                       </div>
                     </div>
                   </div>
@@ -425,7 +445,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     </label>
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">{formatTradeDate(trade.entered_at)}</td>
-                  <td className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">{trade.trading_account_name || '-'}</td>
+                  <td className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">{renderAccountName(trade.trading_account_name)}</td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm">
                     <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
                       {trade.contract_name}

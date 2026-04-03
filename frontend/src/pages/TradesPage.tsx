@@ -610,6 +610,7 @@ const TradesPage: React.FC = () => {
           setEditingTradeId(trade.id);
           setShowCreateModal(true);
         }}
+        hideAccountNumber={hideAccountNumber}
         />
 
       {/* Totaux filtrés rendus dans le tfoot du tableau */}

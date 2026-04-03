@@ -271,10 +271,10 @@ const MarketBadge: React.FC<{ info: MarketInfo }> = ({ info }) => {
 
       {hovered && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 pointer-events-none">
-          <div className="w-2 h-2 bg-gray-900 border-t border-l border-gray-700 rotate-45 mx-auto -mb-1" />
-          <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-xl px-3 py-2.5 text-left min-w-[170px]">
-            <div className="font-semibold text-white text-xs mb-1">{info.market.name}</div>
-            <div className="text-gray-400 text-xs mb-1.5">
+          <div className="w-2 h-2 bg-white dark:bg-gray-800 backdrop-blur-sm border-t border-l border-gray-200 dark:border-gray-700 rotate-45 mx-auto -mb-1" />
+          <div className="bg-white dark:bg-gray-800 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg px-3 py-2.5 text-left min-w-[170px]">
+            <div className="font-semibold text-gray-900 dark:text-gray-100 text-xs mb-1">{info.market.name}</div>
+            <div className="text-gray-700 dark:text-gray-300 text-xs mb-1.5">
               {t('common:marketHours.hours', {
                 open: openStr,
                 close: closeStr,
@@ -285,9 +285,9 @@ const MarketBadge: React.FC<{ info: MarketInfo }> = ({ info }) => {
               {statusLabel}
             </div>
             {info.nextEventLabel && (
-              <div className="text-gray-400 text-xs mt-0.5">{nextLabel}</div>
+              <div className="text-gray-700 dark:text-gray-300 text-xs mt-0.5">{nextLabel}</div>
             )}
-            <div className="text-gray-600 text-xs mt-1.5 border-t border-gray-700 pt-1.5">
+            <div className="text-gray-600 dark:text-gray-400 text-xs mt-1.5 border-t border-gray-200 dark:border-gray-700 pt-1.5">
               {t('common:marketHours.localTime', { time: info.localTime, defaultValue: `Heure locale : ${info.localTime}` })}
             </div>
           </div>
