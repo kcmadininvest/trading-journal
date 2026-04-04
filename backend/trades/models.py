@@ -652,6 +652,9 @@ class TopStepTrade(models.Model):
             models.Index(fields=['user', 'trade_day']),
             # Optimisation StrategiesPage : filtres par user + compte + trade_day
             models.Index(fields=['user', 'trading_account', 'trade_day']),
+            # Optimisation filtre Position Strategy : utilisé sur Dashboard, Analytics, Statistics, Strategies, Trades
+            models.Index(fields=['position_strategy']),
+            models.Index(fields=['user', 'position_strategy']),
         ]
     
     def __str__(self):
