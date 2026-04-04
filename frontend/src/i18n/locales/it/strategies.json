@@ -79,6 +79,40 @@
     "charts": "Grafici"
   },
   "positionStrategy": "Strategia di Posizione",
-  "allStrategies": "Tutte le Strategie"
+  "allStrategies": "Tutte le Strategie",
+  "statsInsights": {
+    "tradingMetricsTitle": "Metriche di trading e affidabilità",
+    "tradingMetricsSubtitle": "Expectancy (PnL medio per trade), profit factor e riferimenti sulla dimensione del campione (euristiche comuni, non un test statistico formale).",
+    "expectancyPerTrade": "Expectancy / trade",
+    "profitFactor": "Profit factor",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "Trade valutati",
+    "lowSampleStrongRespected": "Strategia rispettata: {{count}} trade — campione molto piccolo (sotto {{minStrong}}); win rate, expectancy e profit factor sono molto incerti.",
+    "lowSampleStrongNotRespected": "Strategia non rispettata: {{count}} trade — campione molto piccolo (sotto {{minStrong}}); win rate, expectancy e profit factor sono molto incerti.",
+    "lowSampleModerateRespected": "Strategia rispettata: {{count}} trade — campione ancora limitato (sotto {{minModerate}}); le metriche diventano più affidabili con più dati.",
+    "lowSampleModerateNotRespected": "Strategia non rispettata: {{count}} trade — campione ancora limitato (sotto {{minModerate}}); le metriche diventano più affidabili con più dati.",
+    "expectancyComparisonUnreliable": "Il gap di expectancy non è mostrato finché ogni gruppo non ha almeno {{minBoth}} trade.",
+    "expectancyGapLabel": "Gap di expectancy",
+    "perTradeVsNot": "per trade (rispettata − non rispettata).",
+    "disciplineTitle": "Disciplina nel periodo",
+    "disciplineSubtitle": "Serie attuale, record e calendario giornaliero (ultimi 28 giorni della finestra).",
+    "currentStreak": "Serie attuale",
+    "bestStreak": "Migliore serie",
+    "streakDays": "g.",
+    "since": "Dal",
+    "heatmapTitle": "Disciplina per giorno (28 g.)",
+    "heatmapAria": "Calendario disciplina 28 giorni",
+    "heatmapState": {
+      "empty": "Nessuna valutazione",
+      "full": "100% rispettata",
+      "partial": "Parziale",
+      "none": "Non rispettata"
+    },
+    "legendFull": "100% rispettata",
+    "legendPartial": "Parziale",
+    "legendNone": "Non rispettata",
+    "legendEmpty": "Nessuna attività / valutazione"
+  }
 }
 

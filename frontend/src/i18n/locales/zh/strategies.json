@@ -79,6 +79,40 @@
     "charts": "图表"
   },
   "positionStrategy": "持仓策略",
-  "allStrategies": "所有策略"
+  "allStrategies": "所有策略",
+  "statsInsights": {
+    "tradingMetricsTitle": "交易指标与可靠性",
+    "tradingMetricsSubtitle": "期望值（每笔平均盈亏）、盈利因子与样本量参考（常见经验法则，非正式统计检验）。",
+    "expectancyPerTrade": "期望值 / 笔",
+    "profitFactor": "盈利因子",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "已评估笔数",
+    "lowSampleStrongRespected": "遵守策略：仅 {{count}} 笔 — 样本很小（少于 {{minStrong}} 笔）；胜率、期望值与盈利因子很不稳定。",
+    "lowSampleStrongNotRespected": "未遵守策略：仅 {{count}} 笔 — 样本很小（少于 {{minStrong}} 笔）；胜率、期望值与盈利因子很不稳定。",
+    "lowSampleModerateRespected": "遵守策略：{{count}} 笔 — 样本仍偏少（少于 {{minModerate}} 笔）；数据更多时指标更可靠。",
+    "lowSampleModerateNotRespected": "未遵守策略：{{count}} 笔 — 样本仍偏少（少于 {{minModerate}} 笔）；数据更多时指标更可靠。",
+    "expectancyComparisonUnreliable": "仅在两组都至少有 {{minBoth}} 笔时才显示期望值差距。",
+    "expectancyGapLabel": "期望值差距",
+    "perTradeVsNot": "每笔（遵守 − 未遵守）。",
+    "disciplineTitle": "区间内纪律",
+    "disciplineSubtitle": "当前连胜、最佳连胜与日历（所选窗口最近 28 天）。",
+    "currentStreak": "当前连胜",
+    "bestStreak": "最佳连胜",
+    "streakDays": "天",
+    "since": "自",
+    "heatmapTitle": "按日纪律（28 天）",
+    "heatmapAria": "28 天纪律日历",
+    "heatmapState": {
+      "empty": "无评估",
+      "full": "100% 遵守",
+      "partial": "部分遵守",
+      "none": "未遵守"
+    },
+    "legendFull": "100% 遵守",
+    "legendPartial": "部分",
+    "legendNone": "未遵守",
+    "legendEmpty": "无活动 / 评估"
+  }
 }
 

@@ -6,6 +6,8 @@ import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector
 import { RespectRateCard } from '../components/common/RespectRateCard';
 import { PerformanceComparison } from '../components/strategy/PerformanceComparison';
 import { StrategyBadges } from '../components/strategy/StrategyBadges';
+import { StrategyStatsTradingMetricsCard } from '../components/strategy/StrategyStatsTradingMetricsCard';
+import { StrategyStatsDisciplineOverviewCard } from '../components/strategy/StrategyStatsDisciplineOverviewCard';
 import { TabsFilter } from '../components/common/TabsFilter';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -565,22 +567,31 @@ const StrategiesPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Discipline & Stratégie */}
+                  {/* Discipline & Stratégie — grille 2×2 alignée (Impact, Badges, métriques, discipline) */}
                   {(complianceSectionData || complianceSectionLoading) && (
                     <div className="mb-4 sm:mb-6">
                       {complianceSectionData ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:items-stretch">
                           <PerformanceComparison
                             performanceComparison={complianceSectionData.performance_comparison}
                             currencySymbol={currencySymbol}
                             hideProfitLoss={privacySettings.hideProfitLoss}
                           />
                           <StrategyBadges badges={complianceSectionData.badges || []} />
+                          <StrategyStatsTradingMetricsCard
+                            performanceComparison={complianceSectionData.performance_comparison}
+                          />
+                          <StrategyStatsDisciplineOverviewCard
+                            compliance={complianceSectionData}
+                            periodEnd={selectedPeriod?.end ?? null}
+                          />
                         </div>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
-                          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
+                          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 min-h-80 animate-pulse" />
+                          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 min-h-80 animate-pulse" />
+                          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 min-h-80 animate-pulse" />
+                          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 min-h-80 animate-pulse" />
                         </div>
                       )}
                     </div>

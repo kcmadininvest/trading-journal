@@ -91,6 +91,40 @@
     "charts": "Charts"
   },
   "positionStrategy": "Position Strategy",
-  "allStrategies": "All Strategies"
+  "allStrategies": "All Strategies",
+  "statsInsights": {
+    "tradingMetricsTitle": "Trading metrics and reliability",
+    "tradingMetricsSubtitle": "Expectancy (average PnL per trade), profit factor, and sample-size guidelines (common heuristics, not a formal statistical test).",
+    "expectancyPerTrade": "Expectancy / trade",
+    "profitFactor": "Profit factor",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "Trades evaluated",
+    "lowSampleStrongRespected": "Strategy respected: {{count}} trade(s) — very small sample (under {{minStrong}}); win rate, expectancy, and profit factor are highly uncertain.",
+    "lowSampleStrongNotRespected": "Strategy not respected: {{count}} trade(s) — very small sample (under {{minStrong}}); win rate, expectancy, and profit factor are highly uncertain.",
+    "lowSampleModerateRespected": "Strategy respected: {{count}} trade(s) — still a limited sample (under {{minModerate}}); metrics become more reliable with more data.",
+    "lowSampleModerateNotRespected": "Strategy not respected: {{count}} trade(s) — still a limited sample (under {{minModerate}}); metrics become more reliable with more data.",
+    "expectancyComparisonUnreliable": "The expectancy gap is not shown until each group has at least {{minBoth}} trades.",
+    "expectancyGapLabel": "Expectancy gap",
+    "perTradeVsNot": "per trade (respected − not respected).",
+    "disciplineTitle": "Discipline for the period",
+    "disciplineSubtitle": "Current streak, best streak, and day-by-day view (last 28 days of the selected window).",
+    "currentStreak": "Current streak",
+    "bestStreak": "Best streak",
+    "streakDays": "d",
+    "since": "Since",
+    "heatmapTitle": "Discipline by day (28 d.)",
+    "heatmapAria": "28-day discipline calendar",
+    "heatmapState": {
+      "empty": "No evaluation",
+      "full": "100% respected",
+      "partial": "Partial respect",
+      "none": "Not respected"
+    },
+    "legendFull": "100% respected",
+    "legendPartial": "Partial",
+    "legendNone": "Not respected",
+    "legendEmpty": "No activity / evaluation"
+  }
 }
 

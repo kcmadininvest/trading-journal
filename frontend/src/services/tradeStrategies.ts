@@ -49,6 +49,10 @@ export interface StrategyComplianceStats {
       total_pnl: string;
       win_rate: number;
       winning_trades: number;
+      gross_wins?: string;
+      gross_losses?: string;
+      profit_factor?: number | null;
+      profit_factor_infinite?: boolean;
     };
     not_respected: {
       count: number;
@@ -56,6 +60,10 @@ export interface StrategyComplianceStats {
       total_pnl: string;
       win_rate: number;
       winning_trades: number;
+      gross_wins?: string;
+      gross_losses?: string;
+      profit_factor?: number | null;
+      profit_factor_infinite?: boolean;
     };
   };
   daily_compliance: DailyCompliance[];

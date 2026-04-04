@@ -79,6 +79,40 @@
     "charts": "차트"
   },
   "positionStrategy": "포지션 전략",
-  "allStrategies": "모든 전략"
+  "allStrategies": "모든 전략",
+  "statsInsights": {
+    "tradingMetricsTitle": "트레이딩 지표와 신뢰도",
+    "tradingMetricsSubtitle": "기대값(트레이드당 평균 PnL), 이익 팩터, 표본 크기 기준(일반적인 휴리스틱이며 공식 통계 검정은 아님).",
+    "expectancyPerTrade": "기대값 / 트레이드",
+    "profitFactor": "이익 팩터",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "평가된 트레이드",
+    "lowSampleStrongRespected": "전략 준수: {{count}}건 — 표본 매우 작음 ({{minStrong}} 미만). 승률·기대값·PF 불확실.",
+    "lowSampleStrongNotRespected": "전략 미준수: {{count}}건 — 표본 매우 작음 ({{minStrong}} 미만). 승률·기대값·PF 불확실.",
+    "lowSampleModerateRespected": "전략 준수: {{count}}건 — 아직 표본 제한적 ({{minModerate}} 미만). 데이터가 늘면 지표가 더 안정됩니다.",
+    "lowSampleModerateNotRespected": "전략 미준수: {{count}}건 — 아직 표본 제한적 ({{minModerate}} 미만). 데이터가 늘면 지표가 더 안정됩니다.",
+    "expectancyComparisonUnreliable": "각 그룹이 {{minBoth}}건 이상일 때까지 기대값 차이는 표시하지 않습니다.",
+    "expectancyGapLabel": "기대값 차이",
+    "perTradeVsNot": "트레이드당 (준수 − 미준수).",
+    "disciplineTitle": "기간 중 규율",
+    "disciplineSubtitle": "현재 연속, 최고 연속, 일별 보기(창의 최근 28일).",
+    "currentStreak": "현재 연속",
+    "bestStreak": "최고 연속",
+    "streakDays": "일",
+    "since": "시작",
+    "heatmapTitle": "일별 규율 (28일)",
+    "heatmapAria": "28일 규율 달력",
+    "heatmapState": {
+      "empty": "평가 없음",
+      "full": "100% 준수",
+      "partial": "부분 준수",
+      "none": "미준수"
+    },
+    "legendFull": "100% 준수",
+    "legendPartial": "부분",
+    "legendNone": "미준수",
+    "legendEmpty": "활동/평가 없음"
+  }
 }
 

@@ -89,6 +89,40 @@
     "charts": "Gráficos"
   },
   "positionStrategy": "Estratégia de Posição",
-  "allStrategies": "Todas as Estratégias"
+  "allStrategies": "Todas as Estratégias",
+  "statsInsights": {
+    "tradingMetricsTitle": "Métricas de trading e confiabilidade",
+    "tradingMetricsSubtitle": "Expectativa (PnL médio por trade), fator de lucro e referências de tamanho da amostra (heurísticas comuns, não um teste estatístico formal).",
+    "expectancyPerTrade": "Expectativa / trade",
+    "profitFactor": "Fator de lucro",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "Trades avaliados",
+    "lowSampleStrongRespected": "Estratégia respeitada: {{count}} trade(s) — amostra muito pequena (abaixo de {{minStrong}}); taxa de acerto, expectativa e fator de lucro são muito incertos.",
+    "lowSampleStrongNotRespected": "Estratégia não respeitada: {{count}} trade(s) — amostra muito pequena (abaixo de {{minStrong}}); taxa de acerto, expectativa e fator de lucro são muito incertos.",
+    "lowSampleModerateRespected": "Estratégia respeitada: {{count}} trade(s) — amostra ainda limitada (abaixo de {{minModerate}}); as métricas ficam mais confiáveis com mais dados.",
+    "lowSampleModerateNotRespected": "Estratégia não respeitada: {{count}} trade(s) — amostra ainda limitada (abaixo de {{minModerate}}); as métricas ficam mais confiáveis com mais dados.",
+    "expectancyComparisonUnreliable": "A diferença de expectativa não é exibida até que cada grupo tenha pelo menos {{minBoth}} trades.",
+    "expectancyGapLabel": "Diferença de expectativa",
+    "perTradeVsNot": "por trade (respeitada − não respeitada).",
+    "disciplineTitle": "Disciplina no período",
+    "disciplineSubtitle": "Sequência atual, recorde e calendário diário (últimos 28 dias da janela).",
+    "currentStreak": "Sequência atual",
+    "bestStreak": "Melhor sequência",
+    "streakDays": "d.",
+    "since": "Desde",
+    "heatmapTitle": "Disciplina por dia (28 d.)",
+    "heatmapAria": "Calendário de disciplina de 28 dias",
+    "heatmapState": {
+      "empty": "Sem avaliação",
+      "full": "100% respeitada",
+      "partial": "Parcial",
+      "none": "Não respeitada"
+    },
+    "legendFull": "100% respeitada",
+    "legendPartial": "Parcial",
+    "legendNone": "Não respeitada",
+    "legendEmpty": "Sem atividade / avaliação"
+  }
 }
 

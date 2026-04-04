@@ -79,6 +79,40 @@
     "charts": "グラフ"
   },
   "positionStrategy": "ポジション戦略",
-  "allStrategies": "すべての戦略"
+  "allStrategies": "すべての戦略",
+  "statsInsights": {
+    "tradingMetricsTitle": "トレード指標と信頼性",
+    "tradingMetricsSubtitle": "期待値（トレードあたり平均PnL）、プロフィットファクター、標本サイズの目安（一般的なヒューリスティックであり、正式な統計検定ではありません）。",
+    "expectancyPerTrade": "期待値 / トレード",
+    "profitFactor": "プロフィットファクター",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "評価済みトレード",
+    "lowSampleStrongRespected": "戦略遵守：{{count}}件のみ — 標本が非常に小さい（{{minStrong}}未満）。勝率・期待値・PFは不確実です。",
+    "lowSampleStrongNotRespected": "戦略未遵守：{{count}}件のみ — 標本が非常に小さい（{{minStrong}}未満）。勝率・期待値・PFは不確実です。",
+    "lowSampleModerateRespected": "戦略遵守：{{count}}件 — まだ標本が限定的（{{minModerate}}未満）。データが増えると指標はより安定します。",
+    "lowSampleModerateNotRespected": "戦略未遵守：{{count}}件 — まだ標本が限定的（{{minModerate}}未満）。データが増えると指標はより安定します。",
+    "expectancyComparisonUnreliable": "各グループが{{minBoth}}件以上になるまで、期待値の差は表示しません。",
+    "expectancyGapLabel": "期待値の差",
+    "perTradeVsNot": "1トレードあたり（遵守 − 未遵守）。",
+    "disciplineTitle": "期間中の規律",
+    "disciplineSubtitle": "現在の連続記録、最高記録、日別（表示期間の直近28日）。",
+    "currentStreak": "現在の連続",
+    "bestStreak": "最高連続",
+    "streakDays": "日",
+    "since": "開始",
+    "heatmapTitle": "日別の規律（28日）",
+    "heatmapAria": "28日間の規律カレンダー",
+    "heatmapState": {
+      "empty": "評価なし",
+      "full": "100% 遵守",
+      "partial": "一部遵守",
+      "none": "未遵守"
+    },
+    "legendFull": "100% 遵守",
+    "legendPartial": "一部",
+    "legendNone": "未遵守",
+    "legendEmpty": "活動・評価なし"
+  }
 }
 

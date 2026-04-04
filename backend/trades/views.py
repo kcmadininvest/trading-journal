@@ -2,8 +2,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField, Q
-from django.db.models.functions import TruncDate, Cast
+from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField, Q, Case, When, DecimalField
+from django.db.models.functions import TruncDate, Cast, Coalesce
 from django.db import models
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
@@ -3815,28 +3815,69 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         next_badge = next((b for b in badges if not b.get('earned', False) and not b.get('locked', False)), None)
         
         # Comparaison de performance via agrégation SQL
-        from django.db.models import Sum, Count, Q as PQ
-        
+        # F('trade__net_pnl') requis dans Case : un nom de champ seul peut ne pas résoudre la jointure trade__
         perf_qs = strategies_queryset.exclude(
             strategy_respected__isnull=True
         ).exclude(trade__net_pnl__isnull=True)
-        
+
+        _dec_out = DecimalField(max_digits=24, decimal_places=4)
         perf_stats = perf_qs.values('strategy_respected').annotate(
             count=Count('id'),
             total_pnl=Sum('trade__net_pnl'),
-            winning_trades=Count('id', filter=PQ(trade__net_pnl__gt=0)),
+            winning_trades=Count('id', filter=Q(trade__net_pnl__gt=0)),
+            gross_wins=Coalesce(
+                Sum(Case(
+                    When(trade__net_pnl__gt=0, then=F('trade__net_pnl')),
+                    default=Value(Decimal('0')),
+                    output_field=_dec_out,
+                )),
+                Value(Decimal('0')),
+                output_field=_dec_out,
+            ),
+            gross_losses=Coalesce(
+                Sum(Case(
+                    When(trade__net_pnl__lt=0, then=F('trade__net_pnl')),
+                    default=Value(Decimal('0')),
+                    output_field=_dec_out,
+                )),
+                Value(Decimal('0')),
+                output_field=_dec_out,
+            ),
         )
         
         performance_comparison = {
-            'respected': {'count': 0, 'total_pnl': Decimal('0'), 'winning_trades': 0},
-            'not_respected': {'count': 0, 'total_pnl': Decimal('0'), 'winning_trades': 0}
+            'respected': {
+                'count': 0,
+                'total_pnl': Decimal('0'),
+                'winning_trades': 0,
+                'gross_wins': Decimal('0'),
+                'gross_losses': Decimal('0'),
+            },
+            'not_respected': {
+                'count': 0,
+                'total_pnl': Decimal('0'),
+                'winning_trades': 0,
+                'gross_wins': Decimal('0'),
+                'gross_losses': Decimal('0'),
+            },
         }
+        def _as_decimal(v):
+            if v is None:
+                return Decimal('0')
+            if isinstance(v, Decimal):
+                return v
+            return Decimal(str(v))
+
         for row in perf_stats:
             key = 'respected' if row['strategy_respected'] else 'not_respected'
+            gw = _as_decimal(row.get('gross_wins'))
+            gl = _as_decimal(row.get('gross_losses'))
             performance_comparison[key] = {
                 'count': row['count'],
                 'total_pnl': row['total_pnl'] or Decimal('0'),
                 'winning_trades': row['winning_trades'],
+                'gross_wins': gw,
+                'gross_losses': gl,
             }
         
         # Calculer les moyennes et win rates
@@ -3849,6 +3890,27 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                             performance_comparison['respected']['count'] * 100) if performance_comparison['respected']['count'] > 0 else 0
         not_respected_win_rate = (performance_comparison['not_respected']['winning_trades'] / 
                                 performance_comparison['not_respected']['count'] * 100) if performance_comparison['not_respected']['count'] > 0 else 0
+
+        def _profit_factor_fields(gw: Decimal, gl: Decimal) -> dict:
+            gw = gw or Decimal('0')
+            gl = gl or Decimal('0')
+            if gl < 0:
+                return {
+                    'profit_factor': round(float(gw / abs(gl)), 2),
+                    'profit_factor_infinite': False,
+                }
+            if gw > 0:
+                return {'profit_factor': None, 'profit_factor_infinite': True}
+            return {'profit_factor': None, 'profit_factor_infinite': False}
+
+        pf_respected = _profit_factor_fields(
+            performance_comparison['respected']['gross_wins'],
+            performance_comparison['respected']['gross_losses'],
+        )
+        pf_not_respected = _profit_factor_fields(
+            performance_comparison['not_respected']['gross_wins'],
+            performance_comparison['not_respected']['gross_losses'],
+        )
         
         # Construire la réponse
         response_data = {
@@ -3870,14 +3932,22 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                     'avg_pnl': str(respected_avg_pnl),
                     'total_pnl': str(performance_comparison['respected']['total_pnl']),
                     'win_rate': round(respected_win_rate, 2),
-                    'winning_trades': performance_comparison['respected']['winning_trades']
+                    'winning_trades': performance_comparison['respected']['winning_trades'],
+                    'gross_wins': str(performance_comparison['respected']['gross_wins']),
+                    'gross_losses': str(performance_comparison['respected']['gross_losses']),
+                    'profit_factor': pf_respected['profit_factor'],
+                    'profit_factor_infinite': pf_respected['profit_factor_infinite'],
                 },
                 'not_respected': {
                     'count': performance_comparison['not_respected']['count'],
                     'avg_pnl': str(not_respected_avg_pnl),
                     'total_pnl': str(performance_comparison['not_respected']['total_pnl']),
                     'win_rate': round(not_respected_win_rate, 2),
-                    'winning_trades': performance_comparison['not_respected']['winning_trades']
+                    'winning_trades': performance_comparison['not_respected']['winning_trades'],
+                    'gross_wins': str(performance_comparison['not_respected']['gross_wins']),
+                    'gross_losses': str(performance_comparison['not_respected']['gross_losses']),
+                    'profit_factor': pf_not_respected['profit_factor'],
+                    'profit_factor_infinite': pf_not_respected['profit_factor_infinite'],
                 }
             },
             'daily_compliance': [

@@ -91,6 +91,40 @@
     "charts": "Graphiques"
   },
   "positionStrategy": "Stratégie de position",
-  "allStrategies": "Toutes les stratégies"
+  "allStrategies": "Toutes les stratégies",
+  "statsInsights": {
+    "tradingMetricsTitle": "Métriques trading et fiabilité",
+    "tradingMetricsSubtitle": "Expectancy (PnL moyen par trade), profit factor et repères sur la taille d'échantillon (heuristiques courantes, pas un test statistique formel).",
+    "expectancyPerTrade": "Expectancy / trade",
+    "profitFactor": "Profit factor",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "Trades évalués",
+    "lowSampleStrongRespected": "Stratégie respectée : {{count}} trade(s) — échantillon très restreint (moins de {{minStrong}}) ; win rate, expectancy et profit factor sont très incertains.",
+    "lowSampleStrongNotRespected": "Stratégie non respectée : {{count}} trade(s) — échantillon très restreint (moins de {{minStrong}}) ; win rate, expectancy et profit factor sont très incertains.",
+    "lowSampleModerateRespected": "Stratégie respectée : {{count}} trade(s) — échantillon encore limité (moins de {{minModerate}}) ; l’interprétation gagne en fiabilité avec davantage de données.",
+    "lowSampleModerateNotRespected": "Stratégie non respectée : {{count}} trade(s) — échantillon encore limité (moins de {{minModerate}}) ; l’interprétation gagne en fiabilité avec davantage de données.",
+    "expectancyComparisonUnreliable": "L’écart d’expectancy n’est pas affiché tant que chaque groupe n’a pas au moins {{minBoth}} trades.",
+    "expectancyGapLabel": "Écart d'expectancy",
+    "perTradeVsNot": "par trade (respecté − non respecté).",
+    "disciplineTitle": "Discipline sur la période",
+    "disciplineSubtitle": "Série actuelle, record et calendrier des journées (28 derniers jours de la fenêtre affichée).",
+    "currentStreak": "Série actuelle",
+    "bestStreak": "Meilleure série",
+    "streakDays": "j.",
+    "since": "Depuis le",
+    "heatmapTitle": "Discipline par journée (28 j.)",
+    "heatmapAria": "Calendrier de discipline sur 28 jours",
+    "heatmapState": {
+      "empty": "Sans évaluation",
+      "full": "100 % respect",
+      "partial": "Respect partiel",
+      "none": "Non respect"
+    },
+    "legendFull": "100 % respect",
+    "legendPartial": "Partiel",
+    "legendNone": "Non respect",
+    "legendEmpty": "Sans activité / évaluation"
+  }
 }
 

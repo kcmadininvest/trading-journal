@@ -91,5 +91,39 @@
     "charts": "Diagramme"
   },
   "positionStrategy": "Positionsstrategie",
-  "allStrategies": "Alle Strategien"
+  "allStrategies": "Alle Strategien",
+  "statsInsights": {
+    "tradingMetricsTitle": "Trading-Kennzahlen und Zuverlässigkeit",
+    "tradingMetricsSubtitle": "Expectancy (durchschn. PnL pro Trade), Profitfaktor und Richtwerte zur Stichprobengröße (gängige Heuristiken, kein formales statistisches Testverfahren).",
+    "expectancyPerTrade": "Expectancy / Trade",
+    "profitFactor": "Profitfaktor",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "Ausgewertete Trades",
+    "lowSampleStrongRespected": "Strategie eingehalten: {{count}} Trade(s) — sehr kleine Stichprobe (unter {{minStrong}}); Trefferquote, Expectancy und Profitfaktor sind sehr unsicher.",
+    "lowSampleStrongNotRespected": "Strategie nicht eingehalten: {{count}} Trade(s) — sehr kleine Stichprobe (unter {{minStrong}}); Trefferquote, Expectancy und Profitfaktor sind sehr unsicher.",
+    "lowSampleModerateRespected": "Strategie eingehalten: {{count}} Trade(s) — noch begrenzte Stichprobe (unter {{minModerate}}); Kennzahlen werden mit mehr Daten zuverlässiger.",
+    "lowSampleModerateNotRespected": "Strategie nicht eingehalten: {{count}} Trade(s) — noch begrenzte Stichprobe (unter {{minModerate}}); Kennzahlen werden mit mehr Daten zuverlässiger.",
+    "expectancyComparisonUnreliable": "Die Expectancy-Differenz wird erst angezeigt, wenn jede Gruppe mindestens {{minBoth}} Trades hat.",
+    "expectancyGapLabel": "Expectancy-Differenz",
+    "perTradeVsNot": "pro Trade (eingehalten − nicht eingehalten).",
+    "disciplineTitle": "Disziplin im Zeitraum",
+    "disciplineSubtitle": "Aktuelle Serie, Rekord und Tagesansicht (letzte 28 Tage des Fensters).",
+    "currentStreak": "Aktuelle Serie",
+    "bestStreak": "Beste Serie",
+    "streakDays": "T.",
+    "since": "Seit",
+    "heatmapTitle": "Disziplin pro Tag (28 T.)",
+    "heatmapAria": "28-Tage-Disziplin-Kalender",
+    "heatmapState": {
+      "empty": "Keine Bewertung",
+      "full": "100 % eingehalten",
+      "partial": "Teilweise",
+      "none": "Nicht eingehalten"
+    },
+    "legendFull": "100 % eingehalten",
+    "legendPartial": "Teilweise",
+    "legendNone": "Nicht eingehalten",
+    "legendEmpty": "Keine Aktivität / Bewertung"
+  }
 }

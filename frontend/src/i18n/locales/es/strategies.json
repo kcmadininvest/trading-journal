@@ -91,5 +91,39 @@
     "charts": "Gráficos"
   },
   "positionStrategy": "Estrategia de Posición",
-  "allStrategies": "Todas las Estrategias"
+  "allStrategies": "Todas las Estrategias",
+  "statsInsights": {
+    "tradingMetricsTitle": "Métricas de trading y fiabilidad",
+    "tradingMetricsSubtitle": "Expectativa (PnL medio por trade), factor de beneficio y referencias de tamaño de muestra (heurísticas habituales, no un contraste estadístico formal).",
+    "expectancyPerTrade": "Expectativa / trade",
+    "profitFactor": "Factor de beneficio",
+    "profitFactorNA": "—",
+    "profitFactorInfinite": "∞",
+    "tradesEvaluated": "Trades evaluados",
+    "lowSampleStrongRespected": "Estrategia respetada: {{count}} trade(s) — muestra muy pequeña (menos de {{minStrong}}); win rate, expectativa y factor de beneficio son muy inciertos.",
+    "lowSampleStrongNotRespected": "Estrategia no respetada: {{count}} trade(s) — muestra muy pequeña (menos de {{minStrong}}); win rate, expectativa y factor de beneficio son muy inciertos.",
+    "lowSampleModerateRespected": "Estrategia respetada: {{count}} trade(s) — muestra aún limitada (menos de {{minModerate}}); las métricas ganan fiabilidad con más datos.",
+    "lowSampleModerateNotRespected": "Estrategia no respetada: {{count}} trade(s) — muestra aún limitada (menos de {{minModerate}}); las métricas ganan fiabilidad con más datos.",
+    "expectancyComparisonUnreliable": "La brecha de expectativa no se muestra hasta que cada grupo tenga al menos {{minBoth}} trades.",
+    "expectancyGapLabel": "Brecha de expectativa",
+    "perTradeVsNot": "por trade (respetado − no respetado).",
+    "disciplineTitle": "Disciplina en el periodo",
+    "disciplineSubtitle": "Racha actual, récord y calendario diario (últimos 28 días de la ventana).",
+    "currentStreak": "Racha actual",
+    "bestStreak": "Mejor racha",
+    "streakDays": "d.",
+    "since": "Desde el",
+    "heatmapTitle": "Disciplina por día (28 d.)",
+    "heatmapAria": "Calendario de disciplina de 28 días",
+    "heatmapState": {
+      "empty": "Sin evaluación",
+      "full": "100 % respetado",
+      "partial": "Respeto parcial",
+      "none": "No respetado"
+    },
+    "legendFull": "100 % respetado",
+    "legendPartial": "Parcial",
+    "legendNone": "No respetado",
+    "legendEmpty": "Sin actividad / evaluación"
+  }
 }
