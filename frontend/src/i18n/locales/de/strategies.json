@@ -85,5 +85,9 @@
     "excitation": "Aufregung",
     "lassitude": "Erschöpfung",
     "fatigue": "Müdigkeit"
+  },
+  "tabs": {
+    "stats": "Statistiken",
+    "charts": "Diagramme"
   }
 }

@@ -83,6 +83,10 @@
     "respectByWeekday": "{{label}}: {{value}}% ({{basedOn}})",
     "basedOn": "com base em {{count}} {{dayLabel}}",
     "dayLabel": "{{day}}"
+  },
+  "tabs": {
+    "stats": "Estatísticas",
+    "charts": "Gráficos"
   }
 }
 

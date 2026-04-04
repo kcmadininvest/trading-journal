@@ -85,6 +85,10 @@
     "excitation": "Excitation",
     "lassitude": "Lassitude",
     "fatigue": "Fatigue"
+  },
+  "tabs": {
+    "stats": "Statistiques",
+    "charts": "Graphiques"
   }
 }
 

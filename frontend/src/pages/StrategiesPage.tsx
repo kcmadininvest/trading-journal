@@ -6,6 +6,7 @@ import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector
 import { RespectRateCard } from '../components/common/RespectRateCard';
 import { PerformanceComparison } from '../components/strategy/PerformanceComparison';
 import { StrategyBadges } from '../components/strategy/StrategyBadges';
+import { TabsFilter } from '../components/common/TabsFilter';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
@@ -437,204 +438,240 @@ const StrategiesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Indicateurs de respect */}
-        {statistics && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
-            {/* Colonne 1: All periods */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide px-1">
-                {t('strategies:allPeriods', { defaultValue: 'All periods' })}
-              </h3>
-              
-              {/* Account respect rate */}
-              <RespectRateCard
-                title={t('strategies:accountRespectRate')}
-                subtitle=""
-                percentage={accountRespect}
-                tradesCount={statistics?.statistics?.respected_count || 0}
-                totalTrades={statistics?.statistics?.total_trades || 0}
-                totalDays={statistics?.statistics?.total_days}
-                totalTradesInDays={statistics?.statistics?.total_trades_in_days}
-                tradesLabel={t('trades:trades')}
-                daysLabel={t('strategies:days', { defaultValue: 'jours' })}
-                ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
-                outOfLabel={t('strategies:outOf')}
-                gradientColors={accountRespectColor}
-              />
-              
-              {/* All accounts combined */}
-              <RespectRateCard
-                title={t('strategies:combinedAccountRespectRate')}
-                subtitle=""
-                percentage={allTimeRespect}
-                tradesCount={statistics?.all_time?.respected_count || 0}
-                totalTrades={statistics?.all_time?.total_trades || 0}
-                totalDays={statistics?.all_time?.total_days}
-                totalTradesInDays={statistics?.all_time?.total_trades_in_days}
-                tradesLabel={t('trades:trades')}
-                daysLabel={t('strategies:days', { defaultValue: 'jours' })}
-                ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
-                outOfLabel={t('strategies:outOf')}
-                gradientColors={allTimeRespectColor}
-              />
-            </div>
+        {/* Onglets pour organiser le contenu */}
+        <TabsFilter
+          tabs={[
+            {
+              id: 'stats',
+              label: t('strategies:tabs.stats'),
+              icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+                  />
+                </svg>
+              ),
+              content: (
+                <>
+                  {/* Indicateurs de respect */}
+                  {statistics && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                      {/* Colonne 1: All periods */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide px-1">
+                          {t('strategies:allPeriods', { defaultValue: 'All periods' })}
+                        </h3>
+                        
+                        {/* Account respect rate */}
+                        <RespectRateCard
+                          title={t('strategies:accountRespectRate')}
+                          subtitle=""
+                          percentage={accountRespect}
+                          tradesCount={statistics?.statistics?.respected_count || 0}
+                          totalTrades={statistics?.statistics?.total_trades || 0}
+                          totalDays={statistics?.statistics?.total_days}
+                          totalTradesInDays={statistics?.statistics?.total_trades_in_days}
+                          tradesLabel={t('trades:trades')}
+                          daysLabel={t('strategies:days', { defaultValue: 'jours' })}
+                          ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
+                          outOfLabel={t('strategies:outOf')}
+                          gradientColors={accountRespectColor}
+                        />
+                        
+                        {/* All accounts combined */}
+                        <RespectRateCard
+                          title={t('strategies:combinedAccountRespectRate')}
+                          subtitle=""
+                          percentage={allTimeRespect}
+                          tradesCount={statistics?.all_time?.respected_count || 0}
+                          totalTrades={statistics?.all_time?.total_trades || 0}
+                          totalDays={statistics?.all_time?.total_days}
+                          totalTradesInDays={statistics?.all_time?.total_trades_in_days}
+                          tradesLabel={t('trades:trades')}
+                          daysLabel={t('strategies:days', { defaultValue: 'jours' })}
+                          ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
+                          outOfLabel={t('strategies:outOf')}
+                          gradientColors={allTimeRespectColor}
+                        />
+                      </div>
 
-            {/* Colonne 2: Selected period */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide px-1">
-                {t('strategies:selectedPeriod', { defaultValue: 'Selected period' })}
-              </h3>
-              
-              {/* Account respect rate */}
-              <RespectRateCard
-                title={t('strategies:accountRespectRate')}
-                subtitle=""
-                percentage={accountPeriodRespect}
-                tradesCount={statistics?.statistics?.period?.respected_count || 0}
-                totalTrades={statistics?.statistics?.period?.total_trades || 0}
-                totalDays={statistics?.statistics?.period?.total_days}
-                totalTradesInDays={statistics?.statistics?.period?.total_trades_in_days}
-                tradesLabel={t('trades:trades')}
-                daysLabel={t('strategies:days', { defaultValue: 'jours' })}
-                ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
-                outOfLabel={t('strategies:outOf')}
-                gradientColors={accountPeriodRespectColor}
-              />
-              
-              {/* All accounts combined */}
-              <RespectRateCard
-                title={t('strategies:combinedAccountRespectRate')}
-                subtitle=""
-                percentage={periodRespect}
-                tradesCount={statistics?.period?.respected_count || 0}
-                totalTrades={statistics?.period?.total_trades || 0}
-                totalDays={statistics?.period?.total_days}
-                totalTradesInDays={statistics?.period?.total_trades_in_days}
-                tradesLabel={t('trades:trades')}
-                daysLabel={t('strategies:days', { defaultValue: 'jours' })}
-                ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
-                outOfLabel={t('strategies:outOf')}
-                gradientColors={periodRespectColor}
-              />
-            </div>
-          </div>
-        )}
+                      {/* Colonne 2: Selected period */}
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide px-1">
+                          {t('strategies:selectedPeriod', { defaultValue: 'Selected period' })}
+                        </h3>
+                        
+                        {/* Account respect rate */}
+                        <RespectRateCard
+                          title={t('strategies:accountRespectRate')}
+                          subtitle=""
+                          percentage={accountPeriodRespect}
+                          tradesCount={statistics?.statistics?.period?.respected_count || 0}
+                          totalTrades={statistics?.statistics?.period?.total_trades || 0}
+                          totalDays={statistics?.statistics?.period?.total_days}
+                          totalTradesInDays={statistics?.statistics?.period?.total_trades_in_days}
+                          tradesLabel={t('trades:trades')}
+                          daysLabel={t('strategies:days', { defaultValue: 'jours' })}
+                          ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
+                          outOfLabel={t('strategies:outOf')}
+                          gradientColors={accountPeriodRespectColor}
+                        />
+                        
+                        {/* All accounts combined */}
+                        <RespectRateCard
+                          title={t('strategies:combinedAccountRespectRate')}
+                          subtitle=""
+                          percentage={periodRespect}
+                          tradesCount={statistics?.period?.respected_count || 0}
+                          totalTrades={statistics?.period?.total_trades || 0}
+                          totalDays={statistics?.period?.total_days}
+                          totalTradesInDays={statistics?.period?.total_trades_in_days}
+                          tradesLabel={t('trades:trades')}
+                          daysLabel={t('strategies:days', { defaultValue: 'jours' })}
+                          ofWhichLabel={t('strategies:ofWhich', { defaultValue: 'dont' })}
+                          outOfLabel={t('strategies:outOf')}
+                          gradientColors={periodRespectColor}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-        {/* Discipline & Stratégie (hors bandeau) */}
-        {(complianceSectionData || complianceSectionLoading) && (
-          <div className="mb-4 sm:mb-6">
-            {complianceSectionData ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <PerformanceComparison
-                  performanceComparison={complianceSectionData.performance_comparison}
-                  currencySymbol={currencySymbol}
-                  hideProfitLoss={privacySettings.hideProfitLoss}
-                />
-                <StrategyBadges badges={complianceSectionData.badges || []} />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
-                <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
-              </div>
-            )}
-          </div>
-        )}
+                  {/* Discipline & Stratégie */}
+                  {(complianceSectionData || complianceSectionLoading) && (
+                    <div className="mb-4 sm:mb-6">
+                      {complianceSectionData ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                          <PerformanceComparison
+                            performanceComparison={complianceSectionData.performance_comparison}
+                            currencySymbol={currencySymbol}
+                            hideProfitLoss={privacySettings.hideProfitLoss}
+                          />
+                          <StrategyBadges badges={complianceSectionData.badges || []} />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
+                          <div className="bg-gray-100 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )
+            },
+            {
+              id: 'charts',
+              label: t('strategies:tabs.charts'),
+              icon: (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" 
+                  />
+                </svg>
+              ),
+              content: (
+                <>
+                  {/* Graphiques principaux */}
+                  {isLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                      <ChartSkeleton title={t('strategies:strategyRespectPercentage')} />
+                      <ChartSkeleton title={t('strategies:successRateByStrategyRespect')} />
+                      <ChartSkeleton title={t('strategies:winningSessionsDistribution')} />
+                      <ChartSkeleton title={t('strategies:dominantEmotionsDistribution')} />
+                    </div>
+                  ) : statistics ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                      {/* Graphique 1: Respect de la stratégie en % */}
+                      {respectChartData && (
+                        <ChartSection title={t('strategies:strategyRespectPercentage')} tooltip={t('strategies:strategyRespectPercentageTooltip')}>
+                          <LazyChart height="h-64 sm:h-72 md:h-80">
+                            <Bar data={respectChartData} options={respectChartOptions} />
+                          </LazyChart>
+                        </ChartSection>
+                      )}
 
-        {/* Graphiques (rendu progressif : chaque graphique s'affiche dès que ses données arrivent) */}
-        {isLoading && !statistics ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <ChartSkeleton title={t('strategies:strategyRespectPercentage')} />
-            <ChartSkeleton title={t('strategies:successRateByStrategyRespect')} />
-            <ChartSkeleton title={t('strategies:winningSessionsDistribution')} />
-            <ChartSkeleton title={t('strategies:dominantEmotionsDistribution')} />
-          </div>
-        ) : statistics ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            {/* Graphique 1: Respect de la stratégie en % */}
-            {respectChartData && (
-              <ChartSection title={t('strategies:strategyRespectPercentage')} tooltip={t('strategies:strategyRespectPercentageTooltip')}>
-                <LazyChart height="h-64 sm:h-72 md:h-80">
-                  <Bar data={respectChartData} options={respectChartOptions} />
-                </LazyChart>
-              </ChartSection>
-            )}
+                      {/* Graphique 2: Taux de réussite si respect de la stratégie */}
+                      {successRateData && (
+                        <ChartSection title={t('strategies:successRateByStrategyRespect')} tooltip={t('strategies:successRateByStrategyRespectTooltip')}>
+                          <LazyChart height="h-64 sm:h-72 md:h-80">
+                            <Bar data={successRateData} options={successRateOptions} />
+                          </LazyChart>
+                        </ChartSection>
+                      )}
 
-            {/* Graphique 2: Taux de réussite si respect de la stratégie */}
-            {successRateData && (
-              <ChartSection title={t('strategies:successRateByStrategyRespect')} tooltip={t('strategies:successRateByStrategyRespectTooltip')}>
-                <LazyChart height="h-64 sm:h-72 md:h-80">
-                  <Bar data={successRateData} options={successRateOptions} />
-                </LazyChart>
-              </ChartSection>
-            )}
+                      {/* Graphique 3: Distribution des sessions gagnantes */}
+                      {winningSessionsData && (
+                        <ChartSection title={t('strategies:winningSessionsDistribution')} tooltip={t('strategies:winningSessionsDistributionTooltip')}>
+                          <LazyChart height="h-64 sm:h-72 md:h-80">
+                            <Bar data={winningSessionsData} options={winningSessionsOptions} />
+                          </LazyChart>
+                        </ChartSection>
+                      )}
 
-            {/* Graphique 3: Distribution des sessions gagnantes */}
-            {winningSessionsData && (
-              <ChartSection title={t('strategies:winningSessionsDistribution')} tooltip={t('strategies:winningSessionsDistributionTooltip')}>
-                <LazyChart height="h-64 sm:h-72 md:h-80">
-                  <Bar data={winningSessionsData} options={winningSessionsOptions} />
-                </LazyChart>
-              </ChartSection>
-            )}
+                      {/* Graphique 4: Émotions dominantes */}
+                      {emotionsData && (
+                        <EmotionsChart
+                          data={emotionsData}
+                          options={emotionsOptions}
+                          formatNumber={formatNumber}
+                          t={t}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 text-center text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
+                      <p className="text-sm sm:text-base">{t('strategies:noDataForPeriod')}</p>
+                    </div>
+                  )}
 
-            {/* Graphique 4: Émotions dominantes */}
-            {emotionsData && (
-              <EmotionsChart
-                data={emotionsData}
-                options={emotionsOptions}
-                formatNumber={formatNumber}
-                t={t}
-              />
-            )}
-          </div>
-        ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 text-center text-gray-600 dark:text-gray-400">
-            <p className="text-sm sm:text-base">{t('strategies:noDataForPeriod')}</p>
-          </div>
-        )}
+                  {/* Graphiques de compliance et évolution */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    {(isLoading || complianceSectionLoading) ? (
+                      <>
+                        <ChartSkeleton 
+                          height="h-64 sm:h-80 md:h-96" 
+                          title={t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })} 
+                        />
+                        <ChartSkeleton 
+                          height="h-64 sm:h-80 md:h-96" 
+                          title={t('strategies:compliance.evolution')} 
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {/* Graphique: Compliance par jour de la semaine */}
+                        {weekdayComplianceData ? (
+                          <ChartSection 
+                            title={t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })}
+                            tooltip={t('strategies:complianceByWeekdayTooltip', { defaultValue: 'Taux de respect moyen pour chaque jour de la semaine. Les jours en bleu sont ceux où vous respectez le mieux votre stratégie, les jours en rose sont ceux à améliorer.' })}
+                          >
+                            <LazyChart height="h-64 sm:h-80 md:h-96">
+                              <MixedChart
+                                type="bar"
+                                data={weekdayComplianceData}
+                                options={weekdayComplianceOptions}
+                              />
+                            </LazyChart>
+                          </ChartSection>
+                        ) : null}
 
-        {/* Graphiques de compliance et évolution (rendu progressif) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mt-4 sm:mt-6">
-          {(isLoading && !complianceSectionData) ? (
-            <>
-              <ChartSkeleton 
-                height="h-64 sm:h-80 md:h-96" 
-                title={t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })} 
-              />
-              <ChartSkeleton 
-                height="h-64 sm:h-80 md:h-96" 
-                title={t('strategies:compliance.evolution')} 
-              />
-            </>
-          ) : (
-            <>
-              {/* Graphique: Compliance par jour de la semaine */}
-              {weekdayComplianceData ? (
-                <ChartSection 
-                  title={t('strategies:complianceByWeekday', { defaultValue: 'Respect de la stratégie par jour de la semaine' })}
-                  tooltip={t('strategies:complianceByWeekdayTooltip', { defaultValue: 'Taux de respect moyen pour chaque jour de la semaine. Les jours en bleu sont ceux où vous respectez le mieux votre stratégie, les jours en rose sont ceux à améliorer.' })}
-                >
-                  <LazyChart height="h-64 sm:h-80 md:h-96">
-                    <MixedChart
-                      type="bar"
-                      data={weekdayComplianceData}
-                      options={weekdayComplianceOptions}
-                    />
-                  </LazyChart>
-                </ChartSection>
-              ) : null}
-
-              {/* Graphique: Évolution du taux de respect */}
-              <EvolutionChart
-                data={evolutionData}
-                options={evolutionOptions}
-                selectedAccount={selectedAccount}
-                t={t}
-              />
-            </>
-          )}
-        </div>
+                        {/* Graphique: Évolution du taux de respect */}
+                        <EvolutionChart
+                          data={evolutionData}
+                          options={evolutionOptions}
+                          selectedAccount={selectedAccount}
+                          t={t}
+                        />
+                      </>
+                    )}
+                  </div>
+                </>
+              )
+            }
+          ]}
+          defaultTab="stats"
+          storageKey="strategies-active-tab"
+        />
       </div>
 
       <ImportTradesModal open={showImport} onClose={(done) => {

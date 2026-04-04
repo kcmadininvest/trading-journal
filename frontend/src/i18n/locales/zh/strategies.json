@@ -73,6 +73,10 @@
   },
   "averageRate": "平均值",
   "complianceEvolutionAllAccountsTooltip": "从单个策略和遵守计算的遵守率演变（每个策略或遵守计为一个单位）。蓝色曲线表示每日比率，而粉色虚线对应自开始以来的累积平均值。此计算与页面顶部显示的每日遵守率不同。",
-  "complianceEvolutionSelectedAccountTooltip": "从单个策略和遵守计算的遵守率演变（每个策略或遵守计为一个单位）。蓝色曲线表示每日比率，而粉色虚线对应自开始以来的累积平均值。此计算与页面顶部显示的每日遵守率不同。"
+  "complianceEvolutionSelectedAccountTooltip": "从单个策略和遵守计算的遵守率演变（每个策略或遵守计为一个单位）。蓝色曲线表示每日比率，而粉色虚线对应自开始以来的累积平均值。此计算与页面顶部显示的每日遵守率不同。",
+  "tabs": {
+    "stats": "统计",
+    "charts": "图表"
+  }
 }
 
