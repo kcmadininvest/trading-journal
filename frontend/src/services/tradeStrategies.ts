@@ -293,6 +293,7 @@ class TradeStrategiesService {
     start_date?: string;
     end_date?: string;
     tradingAccount?: number;
+    positionStrategy?: number;
   }): Promise<{
     period: {
       year: number;
@@ -350,6 +351,10 @@ class TradeStrategiesService {
       queryParams.append('trading_account', String(params.tradingAccount));
     }
     
+    if (params?.positionStrategy) {
+      queryParams.append('position_strategy', String(params.positionStrategy));
+    }
+    
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/statistics/?${queryParams}`
     );
@@ -370,6 +375,7 @@ class TradeStrategiesService {
       month?: number;
       start_date?: string;
       end_date?: string;
+      positionStrategy?: number;
     }
   ): Promise<StrategyComplianceStats> {
     const queryParams = new URLSearchParams();
@@ -388,6 +394,9 @@ class TradeStrategiesService {
       }
       if (filters.month) {
         queryParams.append('month', String(filters.month));
+      }
+      if (filters.positionStrategy) {
+        queryParams.append('position_strategy', String(filters.positionStrategy));
       }
     }
     const res = await this.fetchWithAuth(

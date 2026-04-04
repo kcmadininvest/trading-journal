@@ -425,6 +425,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         profitable = self.request.query_params.get('profitable', None)
         trade_day = self.request.query_params.get('trade_day', None)
         has_strategy = self.request.query_params.get('has_strategy', None)
+        position_strategy_id = self.request.query_params.get('position_strategy', None)
         
         if contract:
             queryset = queryset.filter(contract_name=contract)
@@ -435,6 +436,13 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(position_strategy__isnull=False)
             elif has_strategy.lower() == 'false':  # type: ignore
                 queryset = queryset.filter(position_strategy__isnull=True)
+        if position_strategy_id:
+            try:
+                position_strategy_id = int(position_strategy_id)
+                family_ids = _get_position_strategy_family_ids(self.request.user, position_strategy_id)
+                queryset = queryset.filter(position_strategy_id__in=family_ids)
+            except (ValueError, TypeError):
+                pass  # Ignorer les IDs invalides
         if start_date:
             # Convertir la date de début en datetime timezone-aware
             try:
@@ -2529,6 +2537,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
     serializer_class = TradeStrategySerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    
     def get_queryset(self):
         """Retourne uniquement les stratégies de l'utilisateur connecté."""
         if not self.request.user.is_authenticated:
@@ -2736,12 +2745,18 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         year = request.query_params.get('year')
         month = request.query_params.get('month')
         trading_account_id = request.query_params.get('trading_account')
+        position_strategy_id = request.query_params.get('position_strategy')
         # Convertir en int si fourni
         if trading_account_id:
             try:
                 trading_account_id = int(trading_account_id)
             except (ValueError, TypeError):
                 trading_account_id = None
+        if position_strategy_id:
+            try:
+                position_strategy_id = int(position_strategy_id)
+            except (ValueError, TypeError):
+                position_strategy_id = None
         
         # Déterminer la période (priorité à start_date/end_date)
         if start_date_param and end_date_param:
@@ -2787,11 +2802,23 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             # Exclure les comptes archivés des stats globales
             queryset = queryset.exclude(trade__trading_account__status='archived')
         
+        # Filtrer par stratégie de position si spécifié
+        # Récupérer la famille de stratégies (toutes les versions)
+        strategy_family_ids = None
+        if position_strategy_id:
+            strategy_family_ids = _get_position_strategy_family_ids(self.request.user, position_strategy_id)
+            queryset = queryset.filter(trade__position_strategy_id__in=strategy_family_ids)
+        
         # Statistiques globales (toutes périodes et tous comptes)
         # Pour all_time : compter TOUS les trades de l'utilisateur (pas seulement ceux avec stratégie)
         # IMPORTANT: Toujours exclure les comptes archivés des stats all_time (tous comptes)
         all_time_trades_queryset = TopStepTrade.objects.filter(user=self.request.user).exclude(trading_account__status='archived')  # type: ignore
         all_time_strategies_queryset = TradeStrategy.objects.filter(user=self.request.user).exclude(trade__trading_account__status='archived')  # type: ignore
+        
+        # Appliquer le filtre position_strategy à tous les querysets
+        if strategy_family_ids:
+            all_time_trades_queryset = all_time_trades_queryset.filter(position_strategy_id__in=strategy_family_ids)
+            all_time_strategies_queryset = all_time_strategies_queryset.filter(trade__position_strategy_id__in=strategy_family_ids)
         
         # Pour la période sélectionnée (tous comptes) : compter TOUS les trades de l'utilisateur pour la période
         # IMPORTANT: Toujours exclure les comptes archivés des stats period (tous comptes)
@@ -2806,6 +2833,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             trade__trade_day__lt=end_date.strftime('%Y-%m-%d')
         ).exclude(trade__trading_account__status='archived')
         
+        if strategy_family_ids:
+            period_trades_queryset = period_trades_queryset.filter(position_strategy_id__in=strategy_family_ids)
+            period_strategies_queryset = period_strategies_queryset.filter(trade__position_strategy_id__in=strategy_family_ids)
+        
         # Pour le compte : compter TOUS les trades du compte (toutes périodes, pas seulement la période sélectionnée)
         account_trades_queryset = TopStepTrade.objects.filter(user=self.request.user)  # type: ignore
         account_strategies_queryset = TradeStrategy.objects.filter(user=self.request.user)  # type: ignore
@@ -2816,6 +2847,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             # Exclure les comptes archivés des stats globales
             account_trades_queryset = account_trades_queryset.exclude(trading_account__status='archived')
             account_strategies_queryset = account_strategies_queryset.exclude(trade__trading_account__status='archived')
+        
+        if strategy_family_ids:
+            account_trades_queryset = account_trades_queryset.filter(position_strategy_id__in=strategy_family_ids)
+            account_strategies_queryset = account_strategies_queryset.filter(trade__position_strategy_id__in=strategy_family_ids)
         
         # Pour le compte et la période sélectionnée : compter TOUS les trades du compte pour la période
         account_period_trades_queryset = TopStepTrade.objects.filter(  # type: ignore
@@ -2835,6 +2870,10 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             # Exclure les comptes archivés des stats globales
             account_period_trades_queryset = account_period_trades_queryset.exclude(trading_account__status='archived')
             account_period_strategies_queryset = account_period_strategies_queryset.exclude(trade__trading_account__status='archived')
+        
+        if strategy_family_ids:
+            account_period_trades_queryset = account_period_trades_queryset.filter(position_strategy_id__in=strategy_family_ids)
+            account_period_strategies_queryset = account_period_strategies_queryset.filter(trade__position_strategy_id__in=strategy_family_ids)
         
         # Récupérer les compliances pour les jours sans trades
         # IMPORTANT: Exclure les compliances pour les jours qui ont des trades (pour éviter le double comptage)
@@ -3470,12 +3509,18 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         from datetime import timedelta
         
         trading_account_id = request.query_params.get('trading_account')
+        position_strategy_id = request.query_params.get('position_strategy')
         # Convertir en int si fourni
         if trading_account_id:
             try:
                 trading_account_id = int(trading_account_id)
             except (ValueError, TypeError):
                 trading_account_id = None
+        if position_strategy_id:
+            try:
+                position_strategy_id = int(position_strategy_id)
+            except (ValueError, TypeError):
+                position_strategy_id = None
         
         # Récupérer les paramètres de période
         start_date = request.query_params.get('start_date')
@@ -3493,6 +3538,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         else:
             # Exclure les comptes archivés des stats globales
             trades_queryset = trades_queryset.exclude(trading_account__status='archived')
+        
+        # Filtrer par stratégie de position si spécifié
+        # Inclure toutes les versions de la stratégie (même parent_strategy)
+        if position_strategy_id:
+            family_ids = _get_position_strategy_family_ids(self.request.user, position_strategy_id)
+            trades_queryset = trades_queryset.filter(position_strategy_id__in=family_ids)
         
         # Appliquer les filtres de période
         if start_date:
@@ -3514,6 +3565,12 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         else:
             # Exclure les comptes archivés des stats globales
             strategies_queryset = strategies_queryset.exclude(trade__trading_account__status='archived')
+        
+        # Filtrer par stratégie de position si spécifié
+        # Inclure toutes les versions de la stratégie (même parent_strategy)
+        if position_strategy_id:
+            family_ids = _get_position_strategy_family_ids(self.request.user, position_strategy_id)
+            strategies_queryset = strategies_queryset.filter(trade__position_strategy_id__in=family_ids)
         
         # Appliquer les filtres de période aux stratégies
         if start_date:
@@ -4652,6 +4709,38 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
         })
 
 
+def _get_position_strategy_family_ids(user, position_strategy_id):
+    """
+    Helper function pour récupérer tous les IDs d'une famille de stratégies.
+    Inclut la stratégie racine et toutes ses versions.
+    
+    Args:
+        user: L'utilisateur propriétaire
+        position_strategy_id: L'ID de la stratégie sélectionnée
+    
+    Returns:
+        Liste des IDs de la famille de stratégies
+    """
+    from .models import PositionStrategy
+    try:
+        selected_strategy = PositionStrategy.objects.get(
+            id=position_strategy_id,
+            user=user
+        )
+        # Trouver la stratégie racine
+        root_strategy_id = selected_strategy.parent_strategy_id or selected_strategy.id
+        # Récupérer tous les IDs de la famille (racine + toutes les versions)
+        family_ids = list(PositionStrategy.objects.filter(
+            user=user
+        ).filter(
+            models.Q(id=root_strategy_id) | models.Q(parent_strategy_id=root_strategy_id)
+        ).values_list('id', flat=True))
+        return family_ids
+    except PositionStrategy.DoesNotExist:
+        # Si la stratégie n'existe pas, retourner l'ID seul
+        return [position_strategy_id]
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def dashboard_summary(request):
@@ -4664,6 +4753,7 @@ def dashboard_summary(request):
     trading_account_id = request.GET.get('trading_account')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
+    position_strategy_id = request.GET.get('position_strategy')
     start_date_obj = None
     end_date_obj = None
     
@@ -4679,6 +4769,16 @@ def dashboard_summary(request):
             user=request.user
         ).exclude(status='archived').values_list('id', flat=True)
         trades_queryset = trades_queryset.filter(trading_account_id__in=active_accounts)
+    
+    # Filtrer par stratégie de position si spécifié
+    # Inclure toutes les versions de la stratégie (même parent_strategy)
+    if position_strategy_id:
+        try:
+            position_strategy_id = int(position_strategy_id)
+            family_ids = _get_position_strategy_family_ids(request.user, position_strategy_id)
+            trades_queryset = trades_queryset.filter(position_strategy_id__in=family_ids)
+        except (ValueError, TypeError):
+            pass  # Ignorer les IDs invalides
     
     # Apply date filters
     # Use user preference timezone if available, fallback to Paris

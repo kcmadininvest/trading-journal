@@ -77,6 +77,8 @@
   "tabs": {
     "stats": "Statistiche",
     "charts": "Grafici"
-  }
+  },
+  "positionStrategy": "Strategia di Posizione",
+  "allStrategies": "Tutte le Strategie"
 }
 

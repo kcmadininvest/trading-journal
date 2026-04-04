@@ -110,7 +110,8 @@ export function useStatistics(
   year?: number | null, 
   month?: number | null,
   startDate?: string | null,
-  endDate?: string | null
+  endDate?: string | null,
+  positionStrategy?: number | null
 ) {
   const [data, setData] = useState<StatisticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -128,7 +129,8 @@ export function useStatistics(
           startDate && endDate ? undefined : (year || undefined),
           startDate && endDate ? undefined : (month || undefined),
           startDate || undefined,
-          endDate || undefined
+          endDate || undefined,
+          positionStrategy || undefined
         );
         // S'assurer que toutes les propriétés requises sont présentes avec des valeurs par défaut
         setData({
@@ -158,7 +160,7 @@ export function useStatistics(
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId, year, month, startDate, endDate]);
+  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy]);
 
   return { data, isLoading, error };
 }
@@ -168,7 +170,8 @@ export function useAnalytics(
   year?: number | null, 
   month?: number | null,
   startDate?: string | null,
-  endDate?: string | null
+  endDate?: string | null,
+  positionStrategy?: number | null
 ) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,7 +189,8 @@ export function useAnalytics(
           startDate && endDate ? undefined : (year || undefined),
           startDate && endDate ? undefined : (month || undefined),
           startDate || undefined,
-          endDate || undefined
+          endDate || undefined,
+          positionStrategy || undefined
         );
         setData(result);
       } catch (err) {
@@ -201,7 +205,7 @@ export function useAnalytics(
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId, year, month, startDate, endDate]);
+  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy]);
 
   return { data, isLoading, error };
 }

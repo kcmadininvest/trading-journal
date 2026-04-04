@@ -122,11 +122,15 @@
     "optimisme": "낙관주의 / 희망"
   },
   "filters": {
-    "instrument": "Instrument",
-    "type": "Type",
-    "pnl": "PnL",
-    "winners": "Gagnants",
-    "losers": "Perdants"
+    "instrument": "상품",
+    "type": "유형",
+    "pnl": "손익",
+    "winners": "수익 거래",
+    "losers": "손실 거래",
+    "strategy": "전략",
+    "withStrategy": "전략 있음",
+    "withoutStrategy": "전략 없음",
+    "positionStrategy": "포지션 전략"
   },
   "dayTradesModal": {
     "title": "Trades du jour",

@@ -14,6 +14,8 @@ import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../s
 import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
 import { tradeStrategiesService } from '../services/tradeStrategies';
+import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
+import { CustomSelect } from '../components/common/CustomSelect';
 import ModernStatCard from '../components/common/ModernStatCard';
 import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
 import Tooltip from '../components/ui/Tooltip';
@@ -222,6 +224,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   });
   
+  // États pour le filtre Position Strategy
+  const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
+  const [positionStrategies, setPositionStrategies] = useState<PositionStrategy[]>([]);
+  const [loadingStrategies, setLoadingStrategies] = useState(false);
+  
   const windowWidth = useWindowWidth();
   const shouldLoadGlobalStats = windowWidth >= 1536; // 2xl breakpoint
   
@@ -231,6 +238,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     startDate: selectedPeriod?.start,
     endDate: selectedPeriod?.end,
     loading: accountLoading,
+    positionStrategy: selectedPositionStrategy,
   });
 
   // Charger les données globales all-time seulement si l'écran est assez grand (optimisation)
@@ -457,6 +465,29 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // allTradesForSequences is now the same as trades from useDashboardData
   const allTradesForSequences = useMemo(() => trades, [trades]);
   const allStrategiesForSequences = useMemo(() => strategies, [strategies]);
+
+  // Charger les stratégies de position pour le filtre
+  useEffect(() => {
+    const loadPositionStrategies = async () => {
+      setLoadingStrategies(true);
+      try {
+        const result = await positionStrategiesService.list();
+        setPositionStrategies(result);
+      } catch (err) {
+        console.error('Erreur lors du chargement des stratégies de position', err);
+        setPositionStrategies([]);
+      } finally {
+        setLoadingStrategies(false);
+      }
+    };
+
+    loadPositionStrategies();
+  }, []);
+
+  // Réinitialiser le filtre de stratégie lors du changement de compte
+  useEffect(() => {
+    setSelectedPositionStrategy(null);
+  }, [accountId]);
 
   // Charger les métriques quotidiennes (MLL)
   useEffect(() => {
@@ -1469,6 +1500,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       onChange={(period) => {
                         setSelectedPeriod(period);
                       }}
+                    />
+                  </div>
+
+                  {/* Sélecteur de stratégie de position */}
+                  <div className="w-full lg:flex-1 lg:max-w-sm">
+                    <CustomSelect
+                      value={selectedPositionStrategy || ''}
+                      onChange={(value) => setSelectedPositionStrategy(value ? Number(value) : null)}
+                      options={[
+                        { value: '', label: t('strategies:allStrategies') },
+                        ...positionStrategies.map(s => ({
+                          value: s.id,
+                          label: s.title
+                        }))
+                      ]}
+                      placeholder={t('strategies:positionStrategy')}
+                      disabled={loadingStrategies}
                     />
                   </div>
 

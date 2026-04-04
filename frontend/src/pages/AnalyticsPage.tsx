@@ -8,6 +8,8 @@ import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
+import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
+import { CustomSelect } from '../components/common/CustomSelect';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -35,6 +37,7 @@ import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useStatistics } from '../hooks/useStatistics';
 import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
+import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import {
   RadarChart,
   EquityCurveChart,
@@ -122,34 +125,22 @@ const AnalyticsPage: React.FC = () => {
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // États pour le filtre Position Strategy
+  const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
+  const [positionStrategies, setPositionStrategies] = useState<PositionStrategy[]>([]);
+  const [loadingStrategies, setLoadingStrategies] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   // accountId vient maintenant du contexte global
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const windowWidth = useWindowWidth();
 
-  const { summaryStartDate, summaryEndDate } = useMemo(() => {
-    if (selectedPeriod) {
-      return { summaryStartDate: selectedPeriod.start, summaryEndDate: selectedPeriod.end };
-    }
-    if (selectedYear) {
-      if (selectedMonth) {
-        const lastDay = new Date(selectedYear, selectedMonth, 0);
-        const year = lastDay.getFullYear();
-        const month = String(selectedMonth).padStart(2, '0');
-        const day = String(lastDay.getDate()).padStart(2, '0');
-        return {
-          summaryStartDate: `${selectedYear}-${month}-01`,
-          summaryEndDate: `${year}-${month}-${day}`,
-        };
-      }
-      return {
-        summaryStartDate: `${selectedYear}-01-01`,
-        summaryEndDate: `${selectedYear}-12-31`,
-      };
-    }
-    return { summaryStartDate: undefined, summaryEndDate: undefined };
-  }, [selectedPeriod, selectedYear, selectedMonth]);
+  const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+  });
 
   const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
     accountId,
@@ -237,6 +228,10 @@ const AnalyticsPage: React.FC = () => {
           filters.start_date = startDate;
           filters.end_date = endDate;
         }
+        
+        if (selectedPositionStrategy) {
+          filters.position_strategy = selectedPositionStrategy;
+        }
 
         const response = await tradesService.list(filters);
         
@@ -251,7 +246,30 @@ const AnalyticsPage: React.FC = () => {
     };
 
     loadTrades();
-  }, [accountId, selectedPeriod, selectedYear, selectedMonth, accountLoading, t]);
+  }, [accountId, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy, accountLoading, t]);
+
+  // Charger les stratégies de position pour le filtre
+  useEffect(() => {
+    const loadPositionStrategies = async () => {
+      setLoadingStrategies(true);
+      try {
+        const result = await positionStrategiesService.list();
+        setPositionStrategies(result);
+      } catch (err) {
+        console.error('Erreur lors du chargement des stratégies de position', err);
+        setPositionStrategies([]);
+      } finally {
+        setLoadingStrategies(false);
+      }
+    };
+
+    loadPositionStrategies();
+  }, []);
+
+  // Réinitialiser le filtre de stratégie lors du changement de compte
+  useEffect(() => {
+    setSelectedPositionStrategy(null);
+  }, [accountId]);
 
   // Charger tous les trades du compte pour calculer le solde (sans filtre de période)
   useEffect(() => {
@@ -1486,10 +1504,11 @@ const AnalyticsPage: React.FC = () => {
     <div className="px-4 sm:px-6 lg:px-8 pt-8 pb-12 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Filtres */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+        <div className="flex flex-col gap-4 lg:gap-0">
+          {/* Ligne 1: Compte + Période sur grands écrans */}
           <div className="flex flex-col lg:flex-row lg:items-end gap-4">
             {/* Compte de trading */}
-            <div className="flex-shrink-0 max-w-sm">
+            <div className="flex-shrink-0 lg:w-64">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('analytics:tradingAccount')}
               </label>
@@ -1497,7 +1516,7 @@ const AnalyticsPage: React.FC = () => {
             </div>
             
             {/* Sélecteur de période moderne */}
-            <div className="flex-shrink-0 lg:w-80">
+            <div className="flex-shrink-0 lg:flex-1 lg:max-w-md">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('analytics:period', { defaultValue: 'Période' })}
               </label>
@@ -1511,8 +1530,26 @@ const AnalyticsPage: React.FC = () => {
                 }}
               />
             </div>
-          </div>
 
+            {/* Sélecteur de stratégie de position */}
+            <div className="flex-shrink-0 lg:flex-1 lg:max-w-sm">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('strategies:positionStrategy')}
+              </label>
+              <CustomSelect
+                value={selectedPositionStrategy || ''}
+                onChange={(value) => setSelectedPositionStrategy(value ? Number(value) : null)}
+                options={[
+                  { value: '', label: t('strategies:allStrategies') },
+                  ...positionStrategies.map(s => ({
+                    value: s.id,
+                    label: s.title
+                  }))
+                ]}
+                disabled={loadingStrategies}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

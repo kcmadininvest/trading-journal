@@ -122,11 +122,15 @@
     "optimisme": "乐观主义 / 希望"
   },
   "filters": {
-    "instrument": "Instrument",
-    "type": "Type",
-    "pnl": "PnL",
-    "winners": "Gagnants",
-    "losers": "Perdants"
+    "instrument": "合约",
+    "type": "类型",
+    "pnl": "盈亏",
+    "winners": "盈利交易",
+    "losers": "亏损交易",
+    "strategy": "策略",
+    "withStrategy": "有策略",
+    "withoutStrategy": "无策略",
+    "positionStrategy": "持仓策略"
   },
   "dayTradesModal": {
     "title": "Trades du jour",

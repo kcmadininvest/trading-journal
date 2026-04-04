@@ -77,6 +77,8 @@
   "tabs": {
     "stats": "통계",
     "charts": "차트"
-  }
+  },
+  "positionStrategy": "포지션 전략",
+  "allStrategies": "모든 전략"
 }
 

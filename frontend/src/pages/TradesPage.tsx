@@ -46,6 +46,7 @@ const TradesPage: React.FC = () => {
     end_date: '',
     profitable: '' as '' | 'true' | 'false',
     has_strategy: '' as '' | 'true' | 'false',
+    position_strategy: '',
   });
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -81,6 +82,7 @@ const TradesPage: React.FC = () => {
       end_date: filters.end_date,
       profitable: filters.profitable,
       has_strategy: filters.has_strategy,
+      position_strategy: filters.position_strategy,
     });
   }, [
     filters.trading_account,
@@ -90,6 +92,7 @@ const TradesPage: React.FC = () => {
     filters.end_date,
     filters.profitable,
     filters.has_strategy,
+    filters.position_strategy,
   ]);
 
   // Utiliser useCallback pour garantir que load() utilise toujours les valeurs à jour
@@ -109,6 +112,7 @@ const TradesPage: React.FC = () => {
         end_date: currentFilters.end_date || undefined,
         profitable: currentFilters.profitable || undefined,
         has_strategy: currentFilters.has_strategy || undefined,
+        position_strategy: currentFilters.position_strategy ? Number(currentFilters.position_strategy) : undefined,
         page: currentPage,
         page_size: currentPageSize,
       });
@@ -123,7 +127,7 @@ const TradesPage: React.FC = () => {
 
   const reloadStats = async () => {
     try {
-      const { trading_account, contract, type, start_date, end_date, profitable } = filters;
+      const { trading_account, contract, type, start_date, end_date, profitable, position_strategy } = filters;
       const s = await tradesService.statistics({
         trading_account: trading_account ?? undefined,
         contract: contract || undefined,
@@ -132,6 +136,7 @@ const TradesPage: React.FC = () => {
         end_date: end_date || undefined,
         profitable: profitable || undefined,
         has_strategy: filters.has_strategy || undefined,
+        position_strategy: position_strategy ? Number(position_strategy) : undefined,
       });
       setStats(s);
     } catch {
@@ -197,7 +202,7 @@ const TradesPage: React.FC = () => {
     }
     
     // Capturer les valeurs de filters pour éviter les problèmes de closure
-    const { trading_account, contract, type, start_date, end_date, profitable, has_strategy } = filters;
+    const { trading_account, contract, type, start_date, end_date, profitable, has_strategy, position_strategy } = filters;
     const loadStats = async () => {
       try {
         // Passer trading_account même s'il est null (tous les comptes) - undefined sera ignoré par l'API
@@ -209,6 +214,7 @@ const TradesPage: React.FC = () => {
           end_date: end_date || undefined,
           profitable: profitable || undefined,
           has_strategy: has_strategy || undefined,
+          position_strategy: position_strategy ? Number(position_strategy) : undefined,
         });
         setStats(s);
       } catch (e) {
@@ -254,6 +260,7 @@ const TradesPage: React.FC = () => {
       end_date: '',
       profitable: '',
       has_strategy: '',
+      position_strategy: '',
     });
     setPage(1);
   };
@@ -295,6 +302,7 @@ const TradesPage: React.FC = () => {
           end_date: filters.end_date || undefined,
           profitable: filters.profitable || undefined,
           has_strategy: filters.has_strategy || undefined,
+          position_strategy: filters.position_strategy ? Number(filters.position_strategy) : undefined,
         });
         setStats(s);
       } catch {}
@@ -343,6 +351,7 @@ const TradesPage: React.FC = () => {
           end_date: filters.end_date || undefined,
           profitable: filters.profitable || undefined,
           has_strategy: filters.has_strategy || undefined,
+          position_strategy: filters.position_strategy ? Number(filters.position_strategy) : undefined,
         });
         setStats(s);
       } catch {}
@@ -379,6 +388,7 @@ const TradesPage: React.FC = () => {
           start_date: filters.start_date || undefined,
           end_date: filters.end_date || undefined,
           profitable: filters.profitable || undefined,
+          position_strategy: filters.position_strategy ? Number(filters.position_strategy) : undefined,
           page: currentPage,
           page_size: pageSizeForExport,
         });

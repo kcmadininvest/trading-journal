@@ -28,6 +28,7 @@ export interface DashboardFilters {
   trading_account?: number;
   start_date?: string;
   end_date?: string;
+  position_strategy?: number;
 }
 
 class DashboardService {
@@ -64,6 +65,9 @@ class DashboardService {
     }
     if (filters.end_date) {
       params.append('end_date', filters.end_date);
+    }
+    if (filters.position_strategy) {
+      params.append('position_strategy', filters.position_strategy.toString());
     }
 
     const url = `${this.baseUrl}/api/trades/dashboard-summary/?${params.toString()}`;

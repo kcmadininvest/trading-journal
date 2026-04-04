@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { CustomSelect } from '../common/CustomSelect';
 import { DateInput } from '../common/DateInput';
+import { positionStrategiesService, PositionStrategy } from '../../services/positionStrategies';
 
 interface TradesFiltersProps {
   values: {
@@ -11,6 +12,7 @@ interface TradesFiltersProps {
     end_date: string;
     profitable: '' | 'true' | 'false';
     has_strategy: '' | 'true' | 'false';
+    position_strategy: string;
   };
   instruments?: string[];
   onChange: (next: Partial<TradesFiltersProps['values']>) => void;
@@ -19,6 +21,22 @@ interface TradesFiltersProps {
 
 export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instruments = [], onChange, onReset }) => {
   const { t } = useI18nTranslation();
+  const [strategies, setStrategies] = useState<PositionStrategy[]>([]);
+  const [loadingStrategies, setLoadingStrategies] = useState(true);
+  
+  useEffect(() => {
+    const loadStrategies = async () => {
+      try {
+        const data = await positionStrategiesService.list({ status: 'active', is_current: true });
+        setStrategies(data);
+      } catch (error) {
+        console.error('Erreur chargement stratégies:', error);
+      } finally {
+        setLoadingStrategies(false);
+      }
+    };
+    loadStrategies();
+  }, []);
   
   const contractOptions = useMemo(() => [
     { value: '', label: t('trades:filters.instrument') },
@@ -42,10 +60,15 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
     { value: 'true', label: t('trades:filters.withStrategy', { defaultValue: 'Avec stratégie' }) },
     { value: 'false', label: t('trades:filters.withoutStrategy', { defaultValue: 'Sans stratégie' }) }
   ], [t]);
+  
+  const positionStrategyOptions = useMemo(() => [
+    { value: '', label: loadingStrategies ? t('common:loading') : t('trades:filters.positionStrategy', { defaultValue: 'Stratégie de position' }) },
+    ...strategies.map((s) => ({ value: String(s.id), label: s.title }))
+  ], [strategies, loadingStrategies, t]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-5 mb-4 sm:mb-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 items-end">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-3 items-end">
         <CustomSelect
           value={values.contract}
           onChange={(value) => onChange({ contract: value as string })}
@@ -75,6 +98,12 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
           value={values.has_strategy}
           onChange={(value) => onChange({ has_strategy: value as '' | 'true' | 'false' })}
           options={strategyOptions}
+        />
+        <CustomSelect
+          value={values.position_strategy}
+          onChange={(value) => onChange({ position_strategy: value as string })}
+          options={positionStrategyOptions}
+          disabled={loadingStrategies}
         />
         <div className="w-full flex items-end">
           <button

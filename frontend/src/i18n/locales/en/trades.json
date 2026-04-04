@@ -165,7 +165,8 @@
     "losers": "Losers",
     "strategy": "Strategy",
     "withStrategy": "With strategy",
-    "withoutStrategy": "Without strategy"
+    "withoutStrategy": "Without strategy",
+    "positionStrategy": "Position Strategy"
   },
   "dayTradesModal": {
     "title": "Day Trades",

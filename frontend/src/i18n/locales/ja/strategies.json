@@ -77,6 +77,8 @@
   "tabs": {
     "stats": "統計",
     "charts": "グラフ"
-  }
+  },
+  "positionStrategy": "ポジション戦略",
+  "allStrategies": "すべての戦略"
 }
 

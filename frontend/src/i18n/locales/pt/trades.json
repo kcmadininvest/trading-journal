@@ -122,11 +122,15 @@
     "optimisme": "Otimismo / Esperança"
   },
   "filters": {
-    "instrument": "Instrument",
-    "type": "Type",
+    "instrument": "Instrumento",
+    "type": "Tipo",
     "pnl": "PnL",
-    "winners": "Gagnants",
-    "losers": "Perdants"
+    "winners": "Vencedores",
+    "losers": "Perdedores",
+    "strategy": "Estratégia",
+    "withStrategy": "Com estratégia",
+    "withoutStrategy": "Sem estratégia",
+    "positionStrategy": "Estratégia de Posição"
   },
   "dayTradesModal": {
     "title": "Trades du jour",

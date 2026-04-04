@@ -52,6 +52,7 @@ export interface TradesFilters {
   end_date?: string;   // YYYY-MM-DD
   profitable?: 'true' | 'false';
   has_strategy?: 'true' | 'false';
+  position_strategy?: number; // ID de la stratégie de position
   trade_day?: string;  // YYYY-MM-DD
   page?: number;
   page_size?: number;
@@ -259,7 +260,8 @@ class TradesService {
     year?: number | null, 
     month?: number | null,
     startDate?: string | null,
-    endDate?: string | null
+    endDate?: string | null,
+    positionStrategy?: number | null
   ): Promise<{
     total_trades: number;
     winning_trades: number;
@@ -339,6 +341,10 @@ class TradesService {
       queryParams.append('end_date', calculatedEndDate);
     }
     
+    if (positionStrategy) {
+      queryParams.append('position_strategy', String(positionStrategy));
+    }
+    
     const qs = queryParams.toString();
     const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs ? `?${qs}` : ''}`;
     const res = await this.fetchWithAuth(url);
@@ -351,7 +357,8 @@ class TradesService {
     year?: number | null, 
     month?: number | null,
     startDate?: string | null,
-    endDate?: string | null
+    endDate?: string | null,
+    positionStrategy?: number | null
   ): Promise<{
     daily_stats: {
       avg_gain_per_day: number;
@@ -425,6 +432,10 @@ class TradesService {
       
       queryParams.append('start_date', calculatedStartDate);
       queryParams.append('end_date', calculatedEndDate);
+    }
+    
+    if (positionStrategy) {
+      queryParams.append('position_strategy', String(positionStrategy));
     }
     
     const qs = queryParams.toString();

@@ -6,9 +6,10 @@ interface DashboardDataParams {
   startDate?: string;
   endDate?: string;
   loading?: boolean;
+  positionStrategy?: number | null;
 }
 
-export function useDashboardData({ accountId, startDate, endDate, loading }: DashboardDataParams) {
+export function useDashboardData({ accountId, startDate, endDate, loading, positionStrategy }: DashboardDataParams) {
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function useDashboardData({ accountId, startDate, endDate, loading }: Das
       }
       if (startDate) filters.start_date = startDate;
       if (endDate) filters.end_date = endDate;
+      if (positionStrategy) filters.position_strategy = positionStrategy;
 
       const result = await dashboardService.getSummary(filters);
       setData(result);
@@ -45,7 +47,7 @@ export function useDashboardData({ accountId, startDate, endDate, loading }: Das
     } finally {
       setIsLoading(false);
     }
-  }, [accountId, startDate, endDate, loading]);
+  }, [accountId, startDate, endDate, loading, positionStrategy]);
 
   useEffect(() => {
     fetchData();

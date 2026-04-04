@@ -77,6 +77,8 @@
   "tabs": {
     "stats": "统计",
     "charts": "图表"
-  }
+  },
+  "positionStrategy": "持仓策略",
+  "allStrategies": "所有策略"
 }
 

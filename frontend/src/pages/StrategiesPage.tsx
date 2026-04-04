@@ -10,6 +10,7 @@ import { TabsFilter } from '../components/common/TabsFilter';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
+import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
@@ -49,6 +50,8 @@ import { MemoizedBar as Bar, MemoizedMixedChart as MixedChart } from '../compone
 import { EmotionsChart } from '../components/strategy/charts/EmotionsChart';
 import { EvolutionChart } from '../components/strategy/charts/EvolutionChart';
 import { useEvolutionData } from '../hooks/useEvolutionData';
+import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -140,6 +143,9 @@ const StrategiesPage: React.FC = () => {
   const [statistics, setStatistics] = useState<any>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
+  const [positionStrategies, setPositionStrategies] = useState<PositionStrategy[]>([]);
+  const [loadingStrategies, setLoadingStrategies] = useState(true);
   
   // Utiliser le hook optimisé pour charger les trades filtrés (allTrades n'est plus chargé)
   const { filteredTrades, reload: reloadTrades } = useStrategyTrades({
@@ -159,28 +165,11 @@ const StrategiesPage: React.FC = () => {
   const [dashboardSummary, setDashboardSummary] = useState<any>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
 
-  const { summaryStartDate, summaryEndDate } = useMemo(() => {
-    if (selectedPeriod) {
-      return { summaryStartDate: selectedPeriod.start, summaryEndDate: selectedPeriod.end };
-    }
-    if (selectedYear) {
-      if (selectedMonth) {
-        const lastDay = new Date(selectedYear, selectedMonth, 0);
-        const year = lastDay.getFullYear();
-        const month = String(selectedMonth).padStart(2, '0');
-        const day = String(lastDay.getDate()).padStart(2, '0');
-        return {
-          summaryStartDate: `${selectedYear}-${month}-01`,
-          summaryEndDate: `${year}-${month}-${day}`,
-        };
-      }
-      return {
-        summaryStartDate: `${selectedYear}-01-01`,
-        summaryEndDate: `${selectedYear}-12-31`,
-      };
-    }
-    return { summaryStartDate: undefined, summaryEndDate: undefined };
-  }, [selectedPeriod, selectedYear, selectedMonth]);
+  const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+  });
 
   // Générer les années disponibles (année en cours et 5 ans précédents)
 
@@ -204,6 +193,7 @@ const StrategiesPage: React.FC = () => {
         start_date?: string;
         end_date?: string;
         tradingAccount?: number;
+        positionStrategy?: number;
       } = {};
       
       // Utiliser la période sélectionnée (priorité) ou calculer depuis année/mois (rétrocompatibilité)
@@ -221,11 +211,16 @@ const StrategiesPage: React.FC = () => {
         params.tradingAccount = accountId;
       }
       
+      if (selectedPositionStrategy) {
+        params.positionStrategy = selectedPositionStrategy;
+      }
+      
       // Paralléliser TOUS les appels API y compris dashboard summary
       const dashboardFilters: any = {};
       if (accountId) dashboardFilters.trading_account = accountId;
       if (summaryStartDate) dashboardFilters.start_date = summaryStartDate;
       if (summaryEndDate) dashboardFilters.end_date = summaryEndDate;
+      if (selectedPositionStrategy) dashboardFilters.position_strategy = selectedPositionStrategy;
 
       const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, currenciesData, accountData, dashboardData] = 
         await Promise.all([
@@ -258,9 +253,24 @@ const StrategiesPage: React.FC = () => {
       setLoadingSelectedAccountCompliance(false);
       setSummaryLoading(false);
     }
-  }, [selectedPeriod, selectedYear, selectedMonth, accountId, summaryStartDate, summaryEndDate, t]);
+  }, [selectedPeriod, selectedYear, selectedMonth, accountId, summaryStartDate, summaryEndDate, selectedPositionStrategy, t]);
 
   // Charger toutes les données
+  // Charger les stratégies de position
+  useEffect(() => {
+    const loadStrategies = async () => {
+      try {
+        const data = await positionStrategiesService.list({ status: 'active', is_current: true });
+        setPositionStrategies(data);
+      } catch (error) {
+        console.error('Erreur chargement stratégies:', error);
+      } finally {
+        setLoadingStrategies(false);
+      }
+    };
+    loadStrategies();
+  }, []);
+
   useEffect(() => {
     // Attendre que le compte soit chargé avant de charger les données
     if (accountLoading) {
@@ -390,33 +400,52 @@ const StrategiesPage: React.FC = () => {
       <div className="mb-4 sm:mb-6">
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <div className="flex flex-col lg:flex-row lg:items-end gap-4">
-              {/* Compte de trading */}
-              <div className="flex-shrink-0 max-w-sm">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('strategies:tradingAccount')}
-                </label>
-                <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={hideAccountNumber} />
-              </div>
-              
-              {/* Sélecteur de période moderne */}
-              <div className="flex-shrink-0 lg:w-80">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('strategies:period', { defaultValue: 'Période' })}
-                </label>
-                <PeriodSelector
-                  value={selectedPeriod}
-                  onChange={(period) => {
-                    setSelectedPeriod(period);
-                    // Réinitialiser les anciens sélecteurs
-                    setSelectedYear(null);
-                    setSelectedMonth(null);
-                  }}
-                />
-              </div>
+          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+            {/* Compte de trading */}
+            <div className="flex-shrink-0 lg:w-64">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('strategies:tradingAccount')}
+              </label>
+              <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={hideAccountNumber} />
             </div>
-
+            
+            {/* Sélecteur de période moderne */}
+            <div className="flex-shrink-0 lg:flex-1 lg:max-w-md">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('strategies:period', { defaultValue: 'Période' })}
+              </label>
+              <PeriodSelector
+                value={selectedPeriod}
+                onChange={(period) => {
+                  setSelectedPeriod(period);
+                  // Réinitialiser les anciens sélecteurs
+                  setSelectedYear(null);
+                  setSelectedMonth(null);
+                }}
+              />
+            </div>
+            
+            {/* Sélecteur de stratégie de position */}
+            <div className="flex-shrink-0 lg:flex-1 lg:max-w-sm">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('strategies:positionStrategy', { defaultValue: 'Stratégie de position' })}
+              </label>
+              <CustomSelect
+                value={selectedPositionStrategy || ''}
+                onChange={(value) => setSelectedPositionStrategy(value ? Number(value) : null)}
+                disabled={loadingStrategies}
+                options={[
+                  { 
+                    value: '', 
+                    label: loadingStrategies ? t('common:loading') : t('strategies:allStrategies', { defaultValue: 'Toutes les stratégies' })
+                  },
+                  ...positionStrategies.map((strategy) => ({
+                    value: strategy.id,
+                    label: strategy.title
+                  }))
+                ]}
+              />
+            </div>
           </div>
         </div>
 

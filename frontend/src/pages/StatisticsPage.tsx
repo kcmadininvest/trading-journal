@@ -7,6 +7,8 @@ import { TradingAccount } from '../services/tradingAccounts';
 import { StatisticsPageSkeleton } from '../components/ui/StatisticsPageSkeleton';
 import { currenciesService, Currency } from '../services/currencies';
 import { tradesService, TradeListItem } from '../services/trades';
+import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
+import { CustomSelect } from '../components/common/CustomSelect';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
@@ -22,6 +24,7 @@ import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { ExportButton } from '../components/exports';
 import Tooltip from '../components/ui/Tooltip';
+import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
@@ -48,6 +51,11 @@ function StatisticsPage() {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   
+  // États pour le filtre Position Strategy
+  const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
+  const [positionStrategies, setPositionStrategies] = useState<PositionStrategy[]>([]);
+  const [loadingStrategies, setLoadingStrategies] = useState(false);
+  
   // Hooks pour les données
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts();
   // Passer undefined si le compte est en cours de chargement pour éviter de charger avec un mauvais accountId
@@ -56,44 +64,30 @@ function StatisticsPage() {
     selectedPeriod ? null : selectedYear, 
     selectedPeriod ? null : selectedMonth,
     selectedPeriod?.start || null,
-    selectedPeriod?.end || null
+    selectedPeriod?.end || null,
+    selectedPositionStrategy
   );
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(
     accountLoading ? undefined : selectedAccountId, 
     selectedPeriod ? null : selectedYear, 
     selectedPeriod ? null : selectedMonth,
     selectedPeriod?.start || null,
-    selectedPeriod?.end || null
+    selectedPeriod?.end || null,
+    selectedPositionStrategy
   );
 
-  const { summaryStartDate, summaryEndDate } = useMemo(() => {
-    if (selectedPeriod) {
-      return { summaryStartDate: selectedPeriod.start, summaryEndDate: selectedPeriod.end };
-    }
-    if (selectedYear) {
-      if (selectedMonth) {
-        const lastDay = new Date(selectedYear, selectedMonth, 0);
-        const year = lastDay.getFullYear();
-        const month = String(selectedMonth).padStart(2, '0');
-        const day = String(lastDay.getDate()).padStart(2, '0');
-        return {
-          summaryStartDate: `${selectedYear}-${month}-01`,
-          summaryEndDate: `${year}-${month}-${day}`,
-        };
-      }
-      return {
-        summaryStartDate: `${selectedYear}-01-01`,
-        summaryEndDate: `${selectedYear}-12-31`,
-      };
-    }
-    return { summaryStartDate: undefined, summaryEndDate: undefined };
-  }, [selectedPeriod, selectedYear, selectedMonth]);
+  const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+  });
 
   const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
     accountId: selectedAccountId,
     startDate: summaryStartDate,
     endDate: summaryEndDate,
     loading: accountLoading,
+    positionStrategy: selectedPositionStrategy,
   });
   
   // Fonction pour recharger les statistiques après un import
@@ -130,6 +124,29 @@ function StatisticsPage() {
     };
     loadCurrencies();
   }, []);
+
+  // Charger les stratégies de position pour le filtre
+  useEffect(() => {
+    const loadPositionStrategies = async () => {
+      setLoadingStrategies(true);
+      try {
+        const result = await positionStrategiesService.list();
+        setPositionStrategies(result);
+      } catch (err) {
+        console.error('Erreur lors du chargement des stratégies de position', err);
+        setPositionStrategies([]);
+      } finally {
+        setLoadingStrategies(false);
+      }
+    };
+
+    loadPositionStrategies();
+  }, []);
+
+  // Réinitialiser le filtre de stratégie lors du changement de compte
+  useEffect(() => {
+    setSelectedPositionStrategy(null);
+  }, [selectedAccountId]);
 
   // Obtenir le symbole de la devise du compte sélectionné
   const currencySymbol = useMemo(() => {
@@ -361,7 +378,7 @@ function StatisticsPage() {
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
             <div className="flex flex-col lg:flex-row lg:items-end gap-4 flex-1">
               {/* Compte de trading */}
-              <div className="flex-shrink-0 max-w-sm">
+              <div className="flex-shrink-0 lg:w-64">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('statistics:tradingAccount')}
                 </label>
@@ -376,7 +393,7 @@ function StatisticsPage() {
               </div>
               
               {/* Sélecteur de période moderne */}
-              <div className="flex-shrink-0 lg:w-80">
+              <div className="flex-shrink-0 lg:flex-1 lg:max-w-md">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('statistics:period', { defaultValue: 'Période' })}
                 </label>
@@ -388,6 +405,25 @@ function StatisticsPage() {
                     setSelectedYear(null);
                     setSelectedMonth(null);
                   }}
+                />
+              </div>
+
+              {/* Sélecteur de stratégie de position */}
+              <div className="flex-shrink-0 lg:flex-1 lg:max-w-sm">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('strategies:positionStrategy')}
+                </label>
+                <CustomSelect
+                  value={selectedPositionStrategy || ''}
+                  onChange={(value) => setSelectedPositionStrategy(value ? Number(value) : null)}
+                  options={[
+                    { value: '', label: t('strategies:allStrategies') },
+                    ...positionStrategies.map(s => ({
+                      value: s.id,
+                      label: s.title
+                    }))
+                  ]}
+                  disabled={loadingStrategies}
                 />
               </div>
             </div>

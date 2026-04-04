@@ -122,11 +122,15 @@
     "optimisme": "楽観主義 / 希望"
   },
   "filters": {
-    "instrument": "Instrument",
-    "type": "Type",
-    "pnl": "PnL",
-    "winners": "Gagnants",
-    "losers": "Perdants"
+    "instrument": "銘柄",
+    "type": "タイプ",
+    "pnl": "損益",
+    "winners": "勝ちトレード",
+    "losers": "負けトレード",
+    "strategy": "戦略",
+    "withStrategy": "戦略あり",
+    "withoutStrategy": "戦略なし",
+    "positionStrategy": "ポジション戦略"
   },
   "dayTradesModal": {
     "title": "Trades du jour",

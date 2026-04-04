@@ -89,6 +89,8 @@
   "tabs": {
     "stats": "Statistiques",
     "charts": "Graphiques"
-  }
+  },
+  "positionStrategy": "Stratégie de position",
+  "allStrategies": "Toutes les stratégies"
 }
 
