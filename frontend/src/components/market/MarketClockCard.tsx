@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getNextDSTChange, DSTEvent, MarketRegion } from '../../utils/dstCalculator';
-import { getTimezoneOffsetFromParis, MarketTimezone } from '../../utils/timezoneCalculator';
+import { getTimezoneOffsetFromUser } from '../../utils/timezoneCalculator';
 import { MarketHoliday } from '../../services/calendar';
 
 interface MarketClockCardProps {
@@ -14,6 +14,7 @@ interface MarketClockCardProps {
   holidays: MarketHoliday[];
   holidaysLoading: boolean;
   region: MarketRegion;
+  userTimezone: string;
 }
 
 export const MarketClockCard: React.FC<MarketClockCardProps> = ({
@@ -26,6 +27,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   holidays,
   holidaysLoading,
   region,
+  userTimezone,
 }) => {
   const { t } = useI18nTranslation();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -110,17 +112,9 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   }, [timezone, currentTime]);
 
   const timezoneOffset = useMemo(() => {
-    const timezoneMap: Record<string, MarketTimezone> = {
-      'NYSE': 'America/New_York',
-      'XPAR': 'Europe/Paris',
-      'XLON': 'Europe/London',
-      'XTKS': 'Asia/Tokyo',
-    };
-    const tz = timezoneMap[marketCode];
-    if (!tz || tz === 'Europe/Paris') return null;
-    
-    return getTimezoneOffsetFromParis(tz, currentTime);
-  }, [marketCode, currentTime]);
+    // Calculer le décalage par rapport au timezone de l'utilisateur
+    return getTimezoneOffsetFromUser(timezone, userTimezone, currentTime);
+  }, [timezone, userTimezone, currentTime]);
 
   const isDSTUrgent = dstEvent && dstEvent.daysUntil <= 2;
 

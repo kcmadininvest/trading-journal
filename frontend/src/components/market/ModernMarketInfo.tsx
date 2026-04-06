@@ -2,6 +2,7 @@ import React from 'react';
 import { MarketHoliday } from '../../services/calendar';
 import { MarketClockCard } from './MarketClockCard';
 import { MarketEventsTimeline } from './MarketEventsTimeline';
+import { usePreferences } from '../../hooks/usePreferences';
 
 interface ModernMarketInfoProps {
   marketHolidays: MarketHoliday[];
@@ -12,6 +13,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
   marketHolidays,
   holidaysLoading,
 }) => {
+  const { preferences } = usePreferences();
   return (
     <div className="flex flex-col 2xl:flex-row gap-4">
       {/* Section Horloges Mondiales */}
@@ -27,6 +29,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           holidays={marketHolidays.filter(h => h.market === 'XNYS')}
           holidaysLoading={holidaysLoading}
           region="US"
+          userTimezone={preferences.timezone}
         />
 
         {/* Euronext Paris */}
@@ -40,6 +43,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           holidays={marketHolidays.filter(h => h.market === 'XPAR')}
           holidaysLoading={holidaysLoading}
           region="EU"
+          userTimezone={preferences.timezone}
         />
 
         {/* London Stock Exchange */}
@@ -53,6 +57,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           holidays={marketHolidays.filter(h => h.market === 'XLON')}
           holidaysLoading={holidaysLoading}
           region="EU"
+          userTimezone={preferences.timezone}
         />
 
         {/* Tokyo Stock Exchange */}
@@ -66,6 +71,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           holidays={marketHolidays.filter(h => h.market === 'XTKS')}
           holidaysLoading={holidaysLoading}
           region="EU"
+          userTimezone={preferences.timezone}
         />
       </div>
 
