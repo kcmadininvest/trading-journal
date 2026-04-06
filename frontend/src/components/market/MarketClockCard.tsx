@@ -5,13 +5,14 @@ import { getTimezoneOffsetFromParis, MarketTimezone } from '../../utils/timezone
 import { MarketHoliday } from '../../services/calendar';
 
 interface MarketClockCardProps {
-  marketCode: 'NYSE' | 'XPAR' | 'XLON';
+  marketCode: 'NYSE' | 'XPAR' | 'XLON' | 'XTKS';
   marketName: string;
   flagCode: string;
   timezone: string;
   tradingHours: { open: string; close: string };
   color: 'blue' | 'purple' | 'red';
   holidays: MarketHoliday[];
+  holidaysLoading: boolean;
   region: MarketRegion;
 }
 
@@ -23,6 +24,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   tradingHours,
   color,
   holidays,
+  holidaysLoading,
   region,
 }) => {
   const { t } = useI18nTranslation();
@@ -50,26 +52,51 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   }, [region]);
 
   const isMarketOpen = useMemo(() => {
-    const now = new Date();
-    const marketTime = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+    // Ne pas calculer le statut tant que les jours fériés ne sont pas chargés
+    // pour éviter d'afficher "ouvert" avant de vérifier les holidays
+    if (holidaysLoading) return false;
     
-    const day = marketTime.getDay();
-    if (day === 0 || day === 6) return false;
+    const now = new Date();
+    
+    // Obtenir l'heure actuelle dans la timezone du marché
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      weekday: 'short',
+    });
+    
+    const parts = formatter.formatToParts(now);
+    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
+    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
+    const weekday = parts.find(p => p.type === 'weekday')?.value || '';
+    const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
+    const month = parseInt(parts.find(p => p.type === 'month')?.value || '0');
+    const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
+    
+    // Vérifier si c'est un weekend
+    if (weekday === 'Sat' || weekday === 'Sun') return false;
 
-    const todayStr = marketTime.toISOString().split('T')[0];
+    // Créer la date du jour dans la timezone du marché pour vérifier les jours fériés
+    const todayStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     const isHoliday = holidays.some(h => h.date === todayStr && h.market === marketCode);
     if (isHoliday) return false;
 
     const [openHour, openMinute] = tradingHours.open.split(':').map(Number);
     const [closeHour, closeMinute] = tradingHours.close.split(':').map(Number);
     
-    const currentMinutes = marketTime.getHours() * 60 + marketTime.getMinutes();
+    const currentMinutes = hour * 60 + minute;
     const openMinutes = openHour * 60 + openMinute;
     const closeMinutes = closeHour * 60 + closeMinute;
 
     return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTime, timezone, tradingHours, holidays, marketCode]);
+  }, [currentTime, timezone, tradingHours, holidays, holidaysLoading, marketCode]);
 
   const formattedTime = useMemo(() => {
     return new Date(currentTime.toLocaleString('en-US', { timeZone: timezone }))
@@ -87,6 +114,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
       'NYSE': 'America/New_York',
       'XPAR': 'Europe/Paris',
       'XLON': 'Europe/London',
+      'XTKS': 'Asia/Tokyo',
     };
     const tz = timezoneMap[marketCode];
     if (!tz || tz === 'Europe/Paris') return null;
@@ -119,6 +147,21 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
 
   const classes = colorClasses[color];
 
+  const getMarketLabel = (code: string) => {
+    switch (code) {
+      case 'NYSE':
+        return 'NYSE';
+      case 'XPAR':
+        return 'Euronext';
+      case 'XLON':
+        return 'London Stock Exchange';
+      case 'XTKS':
+        return 'Tokyo Stock Exchange';
+      default:
+        return code;
+    }
+  };
+
   return (
     <div className={`flex flex-col border rounded-lg overflow-hidden transition-all duration-300 hover:scale-102 hover:shadow-lg ${classes.border} ${classes.bg}`}>
       <div className={`flex items-center justify-between px-2 py-1 ${classes.header}`}>
@@ -132,7 +175,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
             className="inline-block"
           />
           <span className={`text-[10px] font-bold uppercase tracking-wide ${classes.text}`}>
-            {marketCode}
+            {getMarketLabel(marketCode)}
           </span>
         </div>
         <div className="flex items-center gap-1">

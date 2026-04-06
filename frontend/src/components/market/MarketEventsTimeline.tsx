@@ -102,11 +102,11 @@ export const MarketEventsTimeline: React.FC<MarketEventsTimelineProps> = ({
       case 'XNYS':
         return 'NYSE';
       case 'XPAR':
-        return 'XPAR';
+        return 'Euronext';
       case 'XLON':
-        return 'XLON';
+        return 'London Stock Exchange';
       case 'XTKS':
-        return 'XTKS';
+        return 'Tokyo Stock Exchange';
       default:
         return market;
     }
@@ -161,7 +161,7 @@ export const MarketEventsTimeline: React.FC<MarketEventsTimelineProps> = ({
             className={`flex-shrink-0 flex flex-col justify-between p-1.5 rounded-lg border transition-all duration-300 hover:scale-102 hover:shadow-md ${
               urgent ? `${colors.bg} ${colors.border} animate-pulse` : `bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700`
             }`}
-            style={{ minWidth: '140px', maxWidth: '160px', height: '72px' }}
+            style={{ minWidth: '200px', maxWidth: '220px', height: '72px' }}
           >
             <div className="flex items-start justify-between gap-1.5">
               <div className={`flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide ${colors.bg} ${colors.text} ${colors.border} border`}>
