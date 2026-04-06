@@ -317,7 +317,8 @@ class TopStepCSVImporter:
         entry_price = TopStepTrade.parse_us_decimal(row['EntryPrice'])
         exit_price = TopStepTrade.parse_us_decimal(row['ExitPrice'])
         fees = TopStepTrade.parse_us_decimal(row['Fees']) or Decimal('0')
-        pnl = TopStepTrade.parse_us_decimal(row['PnL'])
+        # Ne pas importer le PnL du CSV - il sera calculé automatiquement par le modèle
+        # avec la formule correcte incluant point_value
         size = TopStepTrade.parse_us_decimal(row['Size'])
         commissions = TopStepTrade.parse_us_decimal(row['Commissions']) or Decimal('0')
         
@@ -343,7 +344,7 @@ class TopStepCSVImporter:
         contract_name = row['ContractName'].strip()
         point_value = get_point_value_from_contract(contract_name)
         
-        # Créer le trade
+        # Créer le trade (pnl sera calculé automatiquement par le modèle)
         trade = TopStepTrade.objects.create(  # type: ignore
             user=self.user,
             trading_account=self.trading_account,
@@ -354,7 +355,6 @@ class TopStepCSVImporter:
             entry_price=entry_price,
             exit_price=exit_price,
             fees=fees,
-            pnl=pnl,
             size=size,
             trade_type=trade_type,
             trade_day=trade_day,
@@ -389,16 +389,35 @@ class TopStepCSVImporter:
         
         # Parser les nombres (format US avec point -> Decimal)
         fees = TopStepTrade.parse_us_decimal(row['Fees']) or Decimal('0')
-        pnl = TopStepTrade.parse_us_decimal(row['PnL'])
+        entry_price = TopStepTrade.parse_us_decimal(row['EntryPrice'])
+        exit_price = TopStepTrade.parse_us_decimal(row['ExitPrice'])
+        size = TopStepTrade.parse_us_decimal(row['Size'])
         
         # Valider le type de trade
         trade_type = row['Type'].strip()
         if trade_type not in ['Long', 'Short']:
             raise ValueError(f"Type de trade invalide: {trade_type} (ligne {row_num})")
         
+        # Calculer le PnL pour les totaux (même logique que le modèle)
+        contract_name = row['ContractName'].strip()
+        point_value = get_point_value_from_contract(contract_name)
+        
+        if entry_price and exit_price and size:
+            if trade_type == 'Long':
+                price_diff = exit_price - entry_price
+            else:  # Short
+                price_diff = entry_price - exit_price
+            
+            if point_value:
+                pnl = price_diff * Decimal(str(point_value)) * size
+            else:
+                pnl = price_diff * size
+        else:
+            pnl = Decimal('0')
+        
         # Retourner les valeurs pour calculer les totaux
         return {
-            'pnl': pnl or Decimal('0'),
+            'pnl': pnl,
             'fees': fees
         }
 
