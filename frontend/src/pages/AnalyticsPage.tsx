@@ -1506,7 +1506,7 @@ const AnalyticsPage: React.FC = () => {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col gap-4 lg:gap-0">
           {/* Ligne 1: Compte + Période sur grands écrans */}
-          <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+          <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
             {/* Compte de trading */}
             <div className="flex-shrink-0 lg:w-64">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -1515,8 +1515,8 @@ const AnalyticsPage: React.FC = () => {
               <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={hideAccountNumber} />
             </div>
             
-            {/* Sélecteur de période moderne */}
-            <div className="flex-shrink-0 lg:flex-1 lg:max-w-md">
+            {/* Sélecteur de période — comme Dashboard : largeur au contenu ; la stratégie prend le reste */}
+            <div className="w-full lg:w-auto lg:flex-shrink-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('analytics:period', { defaultValue: 'Période' })}
               </label>
@@ -1531,8 +1531,8 @@ const AnalyticsPage: React.FC = () => {
               />
             </div>
 
-            {/* Sélecteur de stratégie de position */}
-            <div className="flex-shrink-0 lg:flex-1 lg:max-w-sm">
+            {/* Sélecteur de stratégie — flex-1 + min-w-0 pour céder de la place à la période (dates perso.) */}
+            <div className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('strategies:positionStrategy')}
               </label>

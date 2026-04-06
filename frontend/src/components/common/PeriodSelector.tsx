@@ -364,9 +364,9 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   );
 
   return (
-    <div className={`${className}`}>
-      {/* Barre de boutons segmentés */}
-      <div className="flex items-center gap-1 flex-wrap sm:flex-nowrap">
+    <div className={className}>
+      {/* Barre de boutons segmentés — une ligne ; la largeur est gérée par le parent (ex. lg:w-auto + stratégie en flex-1) */}
+      <div className="flex flex-nowrap items-center gap-1">
         {/* Quick preset pills */}
         {QUICK_PRESETS.map((key) => (
           <Tooltip

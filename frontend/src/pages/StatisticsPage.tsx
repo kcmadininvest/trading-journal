@@ -376,7 +376,7 @@ function StatisticsPage() {
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <div className="flex flex-col lg:flex-row lg:items-end gap-4 flex-1">
+            <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4 flex-1">
               {/* Compte de trading */}
               <div className="flex-shrink-0 lg:w-64">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -392,8 +392,8 @@ function StatisticsPage() {
                 />
               </div>
               
-              {/* Sélecteur de période moderne */}
-              <div className="flex-shrink-0 lg:flex-1 lg:max-w-md">
+              {/* Sélecteur de période — largeur au contenu (aligné Dashboard / Analytics) */}
+              <div className="w-full lg:w-auto lg:flex-shrink-0">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('statistics:period', { defaultValue: 'Période' })}
                 </label>
@@ -408,8 +408,8 @@ function StatisticsPage() {
                 />
               </div>
 
-              {/* Sélecteur de stratégie de position */}
-              <div className="flex-shrink-0 lg:flex-1 lg:max-w-sm">
+              {/* Sélecteur de stratégie */}
+              <div className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {t('strategies:positionStrategy')}
                 </label>
