@@ -154,6 +154,7 @@ const SettingsPage: React.FC = () => {
     theme: 'light',
     font_size: 'medium',
     email_goal_alerts: true,
+    show_pre_market: false,
   });
 
   // Sécurité
@@ -905,6 +906,39 @@ const SettingsPage: React.FC = () => {
                       { value: 'large', label: t('settings:fontSizeLarge') },
                     ]}
                   />
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  {t('settings:showPreMarket')}
+                </label>
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <span className="text-sm text-gray-700 dark:text-gray-300 block">
+                        {t('settings:showPreMarket')}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('settings:showPreMarketDesc')}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPreferences({ ...preferences, show_pre_market: !preferences.show_pre_market })}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      preferences.show_pre_market ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        preferences.show_pre_market ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
             </div>

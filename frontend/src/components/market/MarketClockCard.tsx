@@ -3,6 +3,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getNextDSTChange, DSTEvent, MarketRegion } from '../../utils/dstCalculator';
 import { getTimezoneOffsetFromUser } from '../../utils/timezoneCalculator';
 import { MarketHoliday } from '../../services/calendar';
+import { getMarketStatus, MarketStatus } from '../../utils/marketHours';
 
 interface MarketClockCardProps {
   marketCode: 'NYSE' | 'XPAR' | 'XLON' | 'XTKS';
@@ -15,6 +16,7 @@ interface MarketClockCardProps {
   holidaysLoading: boolean;
   region: MarketRegion;
   userTimezone: string;
+  showPreMarket?: boolean;
 }
 
 export const MarketClockCard: React.FC<MarketClockCardProps> = ({
@@ -28,10 +30,12 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   holidaysLoading,
   region,
   userTimezone,
+  showPreMarket,
 }) => {
   const { t } = useI18nTranslation();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [dstEvent, setDstEvent] = useState<DSTEvent | null>(null);
+  const [marketStatus, setMarketStatus] = useState<MarketStatus>('closed');
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -53,14 +57,13 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
     return () => clearInterval(interval);
   }, [region]);
 
-  const isMarketOpen = useMemo(() => {
-    // Ne pas calculer le statut tant que les jours fériés ne sont pas chargés
-    // pour éviter d'afficher "ouvert" avant de vérifier les holidays
-    if (holidaysLoading) return false;
+  useEffect(() => {
+    if (holidaysLoading) {
+      setMarketStatus('closed');
+      return;
+    }
     
-    const now = new Date();
-    
-    // Obtenir l'heure actuelle dans la timezone du marché
+    const now = currentTime;
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
       year: 'numeric',
@@ -74,31 +77,18 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
     });
     
     const parts = formatter.formatToParts(now);
-    const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0');
-    const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0');
     const weekday = parts.find(p => p.type === 'weekday')?.value || '';
     const year = parseInt(parts.find(p => p.type === 'year')?.value || '0');
     const month = parseInt(parts.find(p => p.type === 'month')?.value || '0');
     const day = parseInt(parts.find(p => p.type === 'day')?.value || '0');
     
-    // Vérifier si c'est un weekend
-    if (weekday === 'Sat' || weekday === 'Sun') return false;
-
-    // Créer la date du jour dans la timezone du marché pour vérifier les jours fériés
+    const isWeekend = weekday === 'Sat' || weekday === 'Sun';
     const todayStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     const isHoliday = holidays.some(h => h.date === todayStr && h.market === marketCode);
-    if (isHoliday) return false;
-
-    const [openHour, openMinute] = tradingHours.open.split(':').map(Number);
-    const [closeHour, closeMinute] = tradingHours.close.split(':').map(Number);
     
-    const currentMinutes = hour * 60 + minute;
-    const openMinutes = openHour * 60 + openMinute;
-    const closeMinutes = closeHour * 60 + closeMinute;
-
-    return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTime, timezone, tradingHours, holidays, holidaysLoading, marketCode]);
+    const status = getMarketStatus(timezone, marketCode, now, isWeekend, isHoliday, showPreMarket || false);
+    setMarketStatus(status);
+  }, [currentTime, timezone, marketCode, holidays, holidaysLoading, showPreMarket]);
 
   const formattedTime = useMemo(() => {
     return new Date(currentTime.toLocaleString('en-US', { timeZone: timezone }))
@@ -173,14 +163,27 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-1">
-          <span className={`relative flex h-1.5 w-1.5 ${isMarketOpen ? '' : 'opacity-50'}`}>
-            {isMarketOpen && (
+          <span className={`relative flex h-1.5 w-1.5 ${marketStatus !== 'closed' ? '' : 'opacity-50'}`}>
+            {marketStatus === 'open' && (
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             )}
-            <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${isMarketOpen ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
+            {marketStatus === 'pre-market' && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            )}
+            <span className={`relative inline-flex rounded-full h-1.5 w-1.5 ${
+              marketStatus === 'open' ? 'bg-emerald-500' : 
+              marketStatus === 'pre-market' ? 'bg-amber-500' : 
+              'bg-gray-400'
+            }`}></span>
           </span>
-          <span className={`text-[9px] font-medium ${isMarketOpen ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
-            {isMarketOpen ? t('common:open', { defaultValue: 'Ouvert' }) : t('common:closed', { defaultValue: 'Fermé' })}
+          <span className={`text-[9px] font-medium ${
+            marketStatus === 'open' ? 'text-emerald-600 dark:text-emerald-400' : 
+            marketStatus === 'pre-market' ? 'text-amber-600 dark:text-amber-400' : 
+            'text-gray-500 dark:text-gray-400'
+          }`}>
+            {marketStatus === 'open' ? t('common:open', { defaultValue: 'Ouvert' }) : 
+             marketStatus === 'pre-market' ? t('common:marketHours.preMarket', { defaultValue: 'Pré-marché' }) : 
+             t('common:closed', { defaultValue: 'Fermé' })}
           </span>
         </div>
       </div>

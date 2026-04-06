@@ -396,7 +396,7 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
             'language', 'timezone', 'date_format', 'number_format',
             'theme', 'font_size', 'sidebar_collapsed', 'email_goal_alerts',
             'import_guide_collapsed', 'items_per_page', 'privacy_overrides',
-            'created_at', 'updated_at'
+            'show_pre_market', 'created_at', 'updated_at'
         )
         read_only_fields = ('created_at', 'updated_at')
 

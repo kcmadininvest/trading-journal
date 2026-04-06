@@ -54,6 +54,8 @@
   "fontSizeSmall": "Klein",
   "fontSizeMedium": "Mittel",
   "fontSizeLarge": "Groß",
+  "showPreMarket": "Vorbörse anzeigen",
+  "showPreMarketDesc": "Visuellen Indikator anzeigen, wenn Märkte in der Vorbörsenphase sind (reduzierte Liquidität)",
   "dataExport": "Datenexport",
   "dataExportDescription": "Laden Sie eine Kopie aller Ihrer Daten im JSON-Format herunter. Dies umfasst Ihr Profil, Einstellungen, Handelskonten, Trades, Strategien und Anmeldeverlauf.",
   "exportMyData": "Meine Daten exportieren",

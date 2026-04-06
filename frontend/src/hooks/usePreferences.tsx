@@ -87,6 +87,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     font_size: getInitialFontSize(),
     email_goal_alerts: true,
     items_per_page: DEFAULT_ITEMS_PER_PAGE,
+    show_pre_market: false,
   });
   const [loading, setLoading] = useState(true);
 
@@ -178,6 +179,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           font_size: defaultFontSize,
           items_per_page: DEFAULT_ITEMS_PER_PAGE,
           email_goal_alerts: true,
+          show_pre_market: false,
         });
         // Réinitialiser la taille de police au document
         const root = document.documentElement;
@@ -259,6 +261,7 @@ export const usePreferences = (): PreferencesContextType => {
           font_size: defaultFontSize,
           items_per_page: DEFAULT_ITEMS_PER_PAGE,
           email_goal_alerts: true,
+          show_pre_market: false,
         },
         loading: false,
         refreshPreferences: async () => {},

@@ -30,6 +30,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           holidaysLoading={holidaysLoading}
           region="US"
           userTimezone={preferences.timezone}
+          showPreMarket={preferences.show_pre_market}
         />
 
         {/* Euronext Paris */}
@@ -44,6 +45,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           holidaysLoading={holidaysLoading}
           region="EU"
           userTimezone={preferences.timezone}
+          showPreMarket={preferences.show_pre_market}
         />
 
         {/* London Stock Exchange */}
@@ -58,6 +60,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           holidaysLoading={holidaysLoading}
           region="EU"
           userTimezone={preferences.timezone}
+          showPreMarket={preferences.show_pre_market}
         />
 
         {/* Tokyo Stock Exchange */}
@@ -72,6 +75,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           holidaysLoading={holidaysLoading}
           region="EU"
           userTimezone={preferences.timezone}
+          showPreMarket={preferences.show_pre_market}
         />
       </div>
 

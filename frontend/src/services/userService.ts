@@ -57,6 +57,7 @@ export interface UserPreferences {
   items_per_page?: number;
   privacy_overrides?: PrivacyOverrides;
   import_guide_collapsed?: boolean;
+  show_pre_market?: boolean;
   created_at?: string;
   updated_at?: string;
 }

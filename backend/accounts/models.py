@@ -162,6 +162,11 @@ class UserPreferences(models.Model):
         default='medium',
         verbose_name=_('Taille de police')
     )
+    show_pre_market = models.BooleanField(
+        default=False,
+        verbose_name=_('Afficher le pré-marché'),
+        help_text=str(_('Afficher l\'indicateur de pré-marché sur les horloges de marché'))
+    )
     sidebar_collapsed = models.BooleanField(
         default=_SIDEBAR_COLLAPSED_DEFAULT,
         verbose_name=_('Sidebar repliée'),

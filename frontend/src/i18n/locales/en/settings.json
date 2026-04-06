@@ -54,6 +54,8 @@
   "fontSizeSmall": "Small",
   "fontSizeMedium": "Medium",
   "fontSizeLarge": "Large",
+  "showPreMarket": "Show Pre-Market",
+  "showPreMarketDesc": "Display a visual indicator when markets are in pre-market phase (reduced liquidity)",
   "dataExport": "Data Export",
   "dataExportDescription": "Download a copy of all your data in JSON format. This includes your profile, preferences, trading accounts, trades, strategies, and login history.",
   "exportMyData": "Export My Data",
