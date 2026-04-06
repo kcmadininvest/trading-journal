@@ -1,5 +1,5 @@
 import React from 'react';
-import { MarketHoliday } from '../../services/calendar';
+import { MarketHoliday, MarketTodaySnapshot } from '../../services/calendar';
 import { MarketClockCard } from './MarketClockCard';
 import { MarketEventsTimeline } from './MarketEventsTimeline';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -7,11 +7,13 @@ import { usePreferences } from '../../hooks/usePreferences';
 interface ModernMarketInfoProps {
   marketHolidays: MarketHoliday[];
   holidaysLoading: boolean;
+  marketTodayByCode?: Partial<Record<string, MarketTodaySnapshot>>;
 }
 
 export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
   marketHolidays,
   holidaysLoading,
+  marketTodayByCode = {},
 }) => {
   const { preferences } = usePreferences();
   return (
@@ -21,6 +23,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
         {/* NYSE */}
         <MarketClockCard
           marketCode="NYSE"
+          apiMarketCode="XNYS"
           marketName="New York Stock Exchange"
           flagCode="us"
           timezone="America/New_York"
@@ -28,6 +31,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           color="blue"
           holidays={marketHolidays.filter(h => h.market === 'XNYS')}
           holidaysLoading={holidaysLoading}
+          marketToday={marketTodayByCode.XNYS}
           region="US"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}
@@ -36,6 +40,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
         {/* Euronext Paris */}
         <MarketClockCard
           marketCode="XPAR"
+          apiMarketCode="XPAR"
           marketName="Euronext Paris"
           flagCode="fr"
           timezone="Europe/Paris"
@@ -43,6 +48,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           color="purple"
           holidays={marketHolidays.filter(h => h.market === 'XPAR')}
           holidaysLoading={holidaysLoading}
+          marketToday={marketTodayByCode.XPAR}
           region="EU"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}
@@ -51,6 +57,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
         {/* London Stock Exchange */}
         <MarketClockCard
           marketCode="XLON"
+          apiMarketCode="XLON"
           marketName="London Stock Exchange"
           flagCode="gb"
           timezone="Europe/London"
@@ -58,6 +65,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           color="red"
           holidays={marketHolidays.filter(h => h.market === 'XLON')}
           holidaysLoading={holidaysLoading}
+          marketToday={marketTodayByCode.XLON}
           region="EU"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}
@@ -66,6 +74,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
         {/* Tokyo Stock Exchange */}
         <MarketClockCard
           marketCode="XTKS"
+          apiMarketCode="XTKS"
           marketName="Tokyo Stock Exchange"
           flagCode="jp"
           timezone="Asia/Tokyo"
@@ -73,6 +82,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           color="blue"
           holidays={marketHolidays.filter(h => h.market === 'XTKS')}
           holidaysLoading={holidaysLoading}
+          marketToday={marketTodayByCode.XTKS}
           region="EU"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}

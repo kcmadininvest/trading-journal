@@ -29,13 +29,19 @@ export const MARKET_HOURS: Record<string, ExtendedTradingHours> = {
 
 export type MarketStatus = 'closed' | 'pre-market' | 'open';
 
+function parseHHMM(hhmm: string): { h: number; m: number } {
+  const parts = hhmm.trim().split(':').map((x) => parseInt(x, 10));
+  return { h: parts[0] || 0, m: parts[1] || 0 };
+}
+
 export function getMarketStatus(
   timezone: string,
   marketCode: string,
   currentTime: Date,
   isWeekend: boolean,
   isHoliday: boolean,
-  showPreMarket: boolean
+  showPreMarket: boolean,
+  regularCloseOverride?: string | null
 ): MarketStatus {
   if (isWeekend || isHoliday) return 'closed';
   
@@ -55,9 +61,13 @@ export function getMarketStatus(
   const currentMinutes = hour * 60 + minute;
   
   const [regularOpenH, regularOpenM] = hours.regular.open.split(':').map(Number);
-  const [regularCloseH, regularCloseM] = hours.regular.close.split(':').map(Number);
   const regularOpenMinutes = regularOpenH * 60 + regularOpenM;
-  const regularCloseMinutes = regularCloseH * 60 + regularCloseM;
+  const closeSource =
+    regularCloseOverride && /^\d{1,2}:\d{2}$/.test(regularCloseOverride.trim())
+      ? regularCloseOverride.trim()
+      : hours.regular.close;
+  const { h: rch, m: rcm } = parseHHMM(closeSource);
+  const regularCloseMinutes = rch * 60 + rcm;
   
   if (currentMinutes >= regularOpenMinutes && currentMinutes < regularCloseMinutes) {
     return 'open';

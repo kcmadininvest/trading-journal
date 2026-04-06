@@ -5192,13 +5192,34 @@ def dashboard_summary(request):
     return Response(response_data)
 
 
+def _market_holidays_today_response(request):
+    """Réponse JSON pour le statut jour férié « journée entière » (date locale par marché)."""
+    markets_param = request.GET.get('markets', 'XNYS,XPAR,XLON,XTKS')
+    markets = [m.strip() for m in markets_param.split(',') if m.strip()]
+    out = {}
+    for market_code in markets:
+        info = MarketHolidaysService.get_local_today_market_info(market_code)
+        out[market_code] = {
+            'date': info['date'],
+            'is_full_day_holiday': info['is_full_day_holiday'],
+            'is_early_close_day': info['is_early_close_day'],
+            'regular_session_close_local': info['regular_session_close_local'],
+        }
+    return Response({'markets': out})
+
+
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def market_holidays(request):
     """
     Retourne les prochains jours fériés et demi-journées des marchés boursiers (NYSE et Euronext).
     Endpoint public (pas besoin d'authentification).
+    Utiliser ?today=1 pour le même format que market_holidays_today (léger, même URL de base).
     """
+    today_flag = (request.GET.get('today') or '').strip().lower()
+    if today_flag in ('1', 'true', 'yes'):
+        return _market_holidays_today_response(request)
+
     count = request.GET.get('count', 1)
     try:
         count = int(count)
@@ -5217,3 +5238,14 @@ def market_holidays(request):
         'upcoming': upcoming,
         'count': len(upcoming)
     })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def market_holidays_today(request):
+    """
+    Pour chaque marché : date locale « aujourd'hui » et jour férié fermé toute la journée (calcul léger).
+    Endpoint public (pas besoin d'authentification).
+    Équivalent à GET market-holidays/?today=1
+    """
+    return _market_holidays_today_response(request)

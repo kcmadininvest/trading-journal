@@ -157,7 +157,8 @@
     "opensAt": "Opens at {{time}}",
     "closesAt": "Closes at {{time}}",
     "hours": "{{open}} – {{close}}",
-    "localTime": "Local time: {{time}}"
+    "localTime": "Local time: {{time}}",
+    "earlyClose": "Early close"
   },
   "dstChange": {
     "spring": "Daylight Saving Time",

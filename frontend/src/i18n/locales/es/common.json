@@ -152,7 +152,8 @@
     "opensAt": "Abre a las {{time}}",
     "closesAt": "Cierra a las {{time}}",
     "hours": "{{open}} – {{close}}",
-    "localTime": "Hora local: {{time}}"
+    "localTime": "Hora local: {{time}}",
+    "earlyClose": "Cierre anticipado"
   },
   "dstChange": {
     "spring": "Horario de verano",

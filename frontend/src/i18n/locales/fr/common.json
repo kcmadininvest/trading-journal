@@ -156,7 +156,8 @@
     "opensAt": "Ouvre à {{time}}",
     "closesAt": "Ferme à {{time}}",
     "hours": "{{open}} – {{close}}",
-    "localTime": "Heure locale : {{time}}"
+    "localTime": "Heure locale : {{time}}",
+    "earlyClose": "Fermeture anticipée"
   },
   "dstChange": {
     "spring": "Heure d'été",

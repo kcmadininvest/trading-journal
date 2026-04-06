@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, lazy } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy } from 'react';
 import { useWindowWidth } from '../hooks/useWindowWidth';
 import clsx from 'clsx';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
@@ -6,7 +6,7 @@ import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
 import { User } from '../services/auth';
-import { calendarService as marketCalendarService, MarketHoliday } from '../services/calendar';
+import { calendarService as marketCalendarService, MarketHoliday, MarketTodaySnapshot } from '../services/calendar';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
@@ -190,6 +190,14 @@ const categorizeDuration = (minutes: number): string => {
   return '60m+';
 };
 
+/** Fuseaux alignés sur le backend (market_holidays.MARKET_TIMEZONES) pour détecter le changement de jour calendaire. */
+const MARKET_CLOCK_TIMEZONES: Array<[string, string]> = [
+  ['XNYS', 'America/New_York'],
+  ['XPAR', 'Europe/Paris'],
+  ['XLON', 'Europe/London'],
+  ['XTKS', 'Asia/Tokyo'],
+];
+
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { preferences } = usePreferences();
   const { theme } = useTheme();
@@ -365,6 +373,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
   const [marketHolidays, setMarketHolidays] = useState<MarketHoliday[]>([]);
   const [holidaysLoading, setHolidaysLoading] = useState(true);
+  const [marketTodayByCode, setMarketTodayByCode] = useState<Partial<Record<string, MarketTodaySnapshot>>>({});
+  const lastMarketCalendarDatesRef = useRef<Record<string, string> | null>(null);
 
   // Récupérer la liste des devises
   useEffect(() => {
@@ -504,14 +514,34 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     loadDailyMetrics();
   }, [accountId, selectedAccount]);
 
-  // Charger les jours fériés des marchés (NYSE + Euronext + LSE) immédiatement
   useEffect(() => {
-    const loadHolidays = async () => {
+    const loadToday = async () => {
+      try {
+        const response = await marketCalendarService.getMarketHolidaysToday('XNYS,XPAR,XLON,XTKS');
+        const next: Partial<Record<string, MarketTodaySnapshot>> = {};
+        for (const code of Object.keys(response.markets)) {
+          const entry = response.markets[code];
+          if (entry && typeof entry.is_full_day_holiday === 'boolean') {
+            next[code] = {
+              isFullDayHoliday: entry.is_full_day_holiday,
+              isEarlyCloseDay: !!entry.is_early_close_day,
+              sessionCloseLocal:
+                entry.regular_session_close_local != null &&
+                entry.regular_session_close_local !== ''
+                  ? entry.regular_session_close_local
+                  : null,
+            };
+          }
+        }
+        setMarketTodayByCode(next);
+      } catch {
+      }
+    };
+
+    const reloadUpcomingHolidays = async () => {
       setHolidaysLoading(true);
       try {
         const response = await marketCalendarService.getMarketHolidays(1, 'XNYS,XPAR,XLON,XTKS');
-        // Filtrer pour inclure uniquement les jours fériés d'aujourd'hui ou futurs
-        // (pas les jours passés, mais garder celui d'aujourd'hui toute la journée)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const filteredHolidays = response.upcoming.filter(holiday => {
@@ -526,9 +556,49 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         setHolidaysLoading(false);
       }
     };
-    loadHolidays();
-  }, []);
 
+    const snapshotCalendarDates = (): Record<string, string> => {
+      const now = new Date();
+      const snap: Record<string, string> = {};
+      for (const [code, tz] of MARKET_CLOCK_TIMEZONES) {
+        snap[code] = new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).format(now);
+      }
+      return snap;
+    };
+
+    const checkCalendarRollAndMaybeReload = () => {
+      const next = snapshotCalendarDates();
+      const prev = lastMarketCalendarDatesRef.current;
+      lastMarketCalendarDatesRef.current = next;
+      if (prev && MARKET_CLOCK_TIMEZONES.some(([code]) => prev[code] !== next[code])) {
+        void loadToday();
+        void reloadUpcomingHolidays();
+      }
+    };
+
+    loadToday();
+    reloadUpcomingHolidays();
+    checkCalendarRollAndMaybeReload();
+
+    const intervalId = window.setInterval(checkCalendarRollAndMaybeReload, 60_000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkCalendarRollAndMaybeReload();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
 
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative, mll }
   // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
@@ -1439,6 +1509,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         <ModernMarketInfo 
           marketHolidays={marketHolidays}
           holidaysLoading={holidaysLoading}
+          marketTodayByCode={marketTodayByCode}
         />
       </div>
 

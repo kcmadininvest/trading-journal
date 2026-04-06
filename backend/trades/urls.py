@@ -23,6 +23,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('dashboard-summary/', views.dashboard_summary, name='dashboard-summary'),
     path('market-holidays/', views.market_holidays, name='market-holidays'),
+    path('market-holidays/today/', views.market_holidays_today, name='market-holidays-today'),
     path('calculator/position-size/', calculator_views.calculate_position_size, name='calculate-position-size'),
     path('calculator/fixed-risk/', calculator_views.calculate_fixed_risk, name='calculate-fixed-risk'),
     path('calculator/risk-reward/', calculator_views.calculate_risk_reward, name='calculate-risk-reward'),

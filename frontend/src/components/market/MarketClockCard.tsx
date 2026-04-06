@@ -2,11 +2,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getNextDSTChange, DSTEvent, MarketRegion } from '../../utils/dstCalculator';
 import { getTimezoneOffsetFromUser } from '../../utils/timezoneCalculator';
-import { MarketHoliday } from '../../services/calendar';
+import { MarketHoliday, MarketTodaySnapshot } from '../../services/calendar';
 import { getMarketStatus, MarketStatus } from '../../utils/marketHours';
+
+export type ApiMarketCode = 'XNYS' | 'XPAR' | 'XLON' | 'XTKS';
 
 interface MarketClockCardProps {
   marketCode: 'NYSE' | 'XPAR' | 'XLON' | 'XTKS';
+  apiMarketCode: ApiMarketCode;
   marketName: string;
   flagCode: string;
   timezone: string;
@@ -14,6 +17,7 @@ interface MarketClockCardProps {
   color: 'blue' | 'purple' | 'red';
   holidays: MarketHoliday[];
   holidaysLoading: boolean;
+  marketToday?: MarketTodaySnapshot;
   region: MarketRegion;
   userTimezone: string;
   showPreMarket?: boolean;
@@ -21,6 +25,7 @@ interface MarketClockCardProps {
 
 export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   marketCode,
+  apiMarketCode,
   marketName,
   flagCode,
   timezone,
@@ -28,6 +33,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   color,
   holidays,
   holidaysLoading,
+  marketToday,
   region,
   userTimezone,
   showPreMarket,
@@ -58,11 +64,6 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   }, [region]);
 
   useEffect(() => {
-    if (holidaysLoading) {
-      setMarketStatus('closed');
-      return;
-    }
-    
     const now = currentTime;
     const formatter = new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
@@ -84,11 +85,30 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
     
     const isWeekend = weekday === 'Sat' || weekday === 'Sun';
     const todayStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-    const isHoliday = holidays.some(h => h.date === todayStr && h.market === marketCode);
-    
-    const status = getMarketStatus(timezone, marketCode, now, isWeekend, isHoliday, showPreMarket || false);
+    const isHolidayFromList =
+      !holidaysLoading &&
+      holidays.some(
+        h => h.date === todayStr && h.market === apiMarketCode && h.type === 'holiday'
+      );
+    const holidayTodayFullDay = marketToday?.isFullDayHoliday;
+    const isHoliday =
+      holidayTodayFullDay !== undefined ? holidayTodayFullDay : isHolidayFromList;
+
+    const sessionCloseLocal = marketToday?.sessionCloseLocal;
+    const regularCloseOverride =
+      !isHoliday && sessionCloseLocal ? sessionCloseLocal : undefined;
+
+    const status = getMarketStatus(
+      timezone,
+      marketCode,
+      now,
+      isWeekend,
+      isHoliday,
+      showPreMarket || false,
+      regularCloseOverride
+    );
     setMarketStatus(status);
-  }, [currentTime, timezone, marketCode, holidays, holidaysLoading, showPreMarket]);
+  }, [currentTime, timezone, marketCode, apiMarketCode, holidays, holidaysLoading, marketToday, showPreMarket]);
 
   const formattedTime = useMemo(() => {
     return new Date(currentTime.toLocaleString('en-US', { timeZone: timezone }))
@@ -200,8 +220,13 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
               {formattedTime}
             </div>
             <div className="text-[10px] text-gray-500 dark:text-gray-400">
-              {tradingHours.open} - {tradingHours.close}
+              {tradingHours.open} - {marketToday?.sessionCloseLocal ?? tradingHours.close}
             </div>
+            {marketToday?.isEarlyCloseDay && !marketToday.isFullDayHoliday && (
+              <div className="text-[9px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                {t('common:marketHours.earlyClose', { defaultValue: 'Fermeture anticipée' })}
+              </div>
+            )}
           </div>
         </div>
         

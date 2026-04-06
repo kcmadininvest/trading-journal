@@ -154,7 +154,8 @@
     "opensAt": "Öffnet um {{time}}",
     "closesAt": "Schließt um {{time}}",
     "hours": "{{open}} – {{close}}",
-    "localTime": "Ortszeit: {{time}}"
+    "localTime": "Ortszeit: {{time}}",
+    "earlyClose": "Verkürzter Handelstag"
   },
   "dstChange": {
     "spring": "Sommerzeit",

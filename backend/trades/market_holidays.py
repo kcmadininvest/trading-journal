@@ -1,9 +1,21 @@
 """
 Utilitaire pour gérer les jours fériés et demi-journées des marchés boursiers (NYSE et Euronext).
 """
-from datetime import date, datetime, timedelta
+import logging
+from datetime import date, datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
+from zoneinfo import ZoneInfo
+
 import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+MARKET_TIMEZONES: Dict[str, str] = {
+    'XNYS': 'America/New_York',
+    'XPAR': 'Europe/Paris',
+    'XLON': 'Europe/London',
+    'XTKS': 'Asia/Tokyo',
+}
 
 # Import conditionnel pour gérer l'incompatibilité avec Python 3.9
 try:
@@ -62,7 +74,7 @@ class MarketHolidaysService:
             logger.error(f"Impossible d'importer pandas_market_calendars: {str(e)}")
             return []
         except ValueError as e:
-            logger.warning(f"Calendrier de marché invalide pour {market_code}: {str(e)}")
+            logger.warning(f"Calendrier de marché invalide pour {market}: {str(e)}")
             return []
         except Exception as e:
             logger.error(f"Erreur inattendue lors de la récupération des jours fériés: {str(e)}", exc_info=True)
@@ -207,7 +219,69 @@ class MarketHolidaysService:
         except Exception as e:
             logger.error(f"Erreur inattendue lors de la récupération des early closes: {str(e)}", exc_info=True)
             return []
-    
+
+    @staticmethod
+    def _session_close_local_hhmm(market_code: str, local_date: date, tz_name: str) -> Optional[str]:
+        """Heure de clôture de la séance (HH:MM) dans le fuseau du marché, d'après le schedule."""
+        if not CALENDARS_AVAILABLE:
+            return None
+        try:
+            calendar = mcal.get_calendar(market_code)
+            sched = calendar.schedule(start_date=local_date, end_date=local_date)
+            if sched is None or len(sched) == 0:
+                return None
+            mc = sched.iloc[0]['market_close']
+            tz = ZoneInfo(tz_name)
+            ts = pd.Timestamp(mc)
+            if ts.tzinfo is None:
+                ts = ts.tz_localize(tz)
+            else:
+                ts = ts.tz_convert(tz)
+            return ts.strftime('%H:%M')
+        except Exception as e:
+            logger.debug('_session_close_local_hhmm %s %s: %s', market_code, local_date, e)
+        return None
+
+    @staticmethod
+    def get_local_today_market_info(market_code: str) -> Dict[str, Any]:
+        """
+        Date locale du marché, jour férié journée entière, early close, heure de clôture session (HH:MM local).
+        """
+        tz_name = MARKET_TIMEZONES.get(market_code)
+        if not tz_name:
+            return {
+                'date': None,
+                'is_full_day_holiday': False,
+                'is_early_close_day': False,
+                'regular_session_close_local': None,
+            }
+        tz = ZoneInfo(tz_name)
+        local_date = datetime.now(timezone.utc).astimezone(tz).date()
+        iso = local_date.isoformat()
+        base: Dict[str, Any] = {
+            'date': iso,
+            'is_full_day_holiday': False,
+            'is_early_close_day': False,
+            'regular_session_close_local': None,
+        }
+        if not CALENDARS_AVAILABLE:
+            return base
+        try:
+            holidays = MarketHolidaysService.get_market_holidays(market_code, local_date, local_date)
+            is_full = len(holidays) > 0
+            base['is_full_day_holiday'] = is_full
+            if is_full:
+                return base
+            early_list = MarketHolidaysService.get_early_closes(market_code, local_date, local_date)
+            base['is_early_close_day'] = local_date in early_list
+            base['regular_session_close_local'] = MarketHolidaysService._session_close_local_hhmm(
+                market_code, local_date, tz_name
+            )
+            return base
+        except Exception as e:
+            logger.warning('get_local_today_market_info %s: %s', market_code, e)
+            return base
+
     @staticmethod
     def get_next_holidays(count: int = 2, markets: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """

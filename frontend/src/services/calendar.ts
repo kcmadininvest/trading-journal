@@ -54,6 +54,23 @@ export interface MarketHolidaysResponse {
   count: number;
 }
 
+export interface MarketHolidayTodayEntry {
+  date: string | null;
+  is_full_day_holiday: boolean;
+  is_early_close_day?: boolean;
+  regular_session_close_local?: string | null;
+}
+
+export interface MarketTodaySnapshot {
+  isFullDayHoliday: boolean;
+  isEarlyCloseDay: boolean;
+  sessionCloseLocal: string | null;
+}
+
+export interface MarketHolidaysTodayResponse {
+  markets: Record<string, MarketHolidayTodayEntry>;
+}
+
 class CalendarService {
   private readonly BASE_URL = getApiBaseUrl();
 
@@ -163,6 +180,16 @@ class CalendarService {
     });
     const res = await fetch(`${this.BASE_URL}/api/trades/market-holidays/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des jours fériés des marchés');
+    return res.json();
+  }
+
+  /**
+   * Jours fériés « journée entière » pour la date locale de chaque marché (endpoint public, léger).
+   */
+  async getMarketHolidaysToday(markets: string = 'XNYS,XPAR,XLON,XTKS'): Promise<MarketHolidaysTodayResponse> {
+    const params = new URLSearchParams({ markets, today: '1' });
+    const res = await fetch(`${this.BASE_URL}/api/trades/market-holidays/?${params}`);
+    if (!res.ok) throw new Error('Erreur lors du chargement du statut jour férié pour aujourd\'hui');
     return res.json();
   }
 }
