@@ -5,6 +5,7 @@ import { changeLanguage } from '../i18n/config';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { GroupedSelect } from '../components/common/GroupedSelect';
 import PaginationControls from '../components/ui/PaginationControls';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 
@@ -18,17 +19,113 @@ import { SessionCard } from '../components/settings/SessionCard';
 import { DangerZoneCard } from '../components/settings/DangerZoneCard';
 import { SettingsToast } from '../components/settings/SettingsToast';
 
-const TIMEZONES = [
-  'Europe/Paris',
-  'Europe/London',
-  'America/New_York',
-  'America/Chicago',
-  'America/Denver',
-  'America/Los_Angeles',
-  'Asia/Tokyo',
-  'Asia/Shanghai',
-  'Australia/Sydney',
-  'America/Sao_Paulo',
+const TIMEZONE_GROUPS = [
+  {
+    label: 'Europe',
+    options: [
+      { value: 'Europe/Paris', label: 'Paris' },
+      { value: 'Europe/London', label: 'London' },
+      { value: 'Europe/Berlin', label: 'Berlin' },
+      { value: 'Europe/Madrid', label: 'Madrid' },
+      { value: 'Europe/Rome', label: 'Rome' },
+      { value: 'Europe/Amsterdam', label: 'Amsterdam' },
+      { value: 'Europe/Brussels', label: 'Brussels' },
+      { value: 'Europe/Zurich', label: 'Zurich' },
+      { value: 'Europe/Vienna', label: 'Vienna' },
+      { value: 'Europe/Stockholm', label: 'Stockholm' },
+      { value: 'Europe/Oslo', label: 'Oslo' },
+      { value: 'Europe/Copenhagen', label: 'Copenhagen' },
+      { value: 'Europe/Helsinki', label: 'Helsinki' },
+      { value: 'Europe/Warsaw', label: 'Warsaw' },
+      { value: 'Europe/Prague', label: 'Prague' },
+      { value: 'Europe/Budapest', label: 'Budapest' },
+      { value: 'Europe/Athens', label: 'Athens' },
+      { value: 'Europe/Bucharest', label: 'Bucharest' },
+      { value: 'Europe/Sofia', label: 'Sofia' },
+      { value: 'Europe/Istanbul', label: 'Istanbul' },
+      { value: 'Europe/Moscow', label: 'Moscow' },
+    ],
+  },
+  {
+    label: 'Americas',
+    options: [
+      { value: 'America/New_York', label: 'New York (EST)' },
+      { value: 'America/Chicago', label: 'Chicago (CST)' },
+      { value: 'America/Denver', label: 'Denver (MST)' },
+      { value: 'America/Los_Angeles', label: 'Los Angeles (PST)' },
+      { value: 'America/Anchorage', label: 'Anchorage' },
+      { value: 'America/Toronto', label: 'Toronto' },
+      { value: 'America/Vancouver', label: 'Vancouver' },
+      { value: 'America/Montreal', label: 'Montreal' },
+      { value: 'America/Mexico_City', label: 'Mexico City' },
+      { value: 'America/Bogota', label: 'Bogota' },
+      { value: 'America/Lima', label: 'Lima' },
+      { value: 'America/Santiago', label: 'Santiago' },
+      { value: 'America/Buenos_Aires', label: 'Buenos Aires' },
+      { value: 'America/Sao_Paulo', label: 'São Paulo' },
+      { value: 'America/Caracas', label: 'Caracas' },
+      { value: 'America/Havana', label: 'Havana' },
+      { value: 'America/Panama', label: 'Panama' },
+    ],
+  },
+  {
+    label: 'Asia',
+    options: [
+      { value: 'Asia/Tokyo', label: 'Tokyo' },
+      { value: 'Asia/Shanghai', label: 'Shanghai' },
+      { value: 'Asia/Hong_Kong', label: 'Hong Kong' },
+      { value: 'Asia/Singapore', label: 'Singapore' },
+      { value: 'Asia/Seoul', label: 'Seoul' },
+      { value: 'Asia/Taipei', label: 'Taipei' },
+      { value: 'Asia/Bangkok', label: 'Bangkok' },
+      { value: 'Asia/Jakarta', label: 'Jakarta' },
+      { value: 'Asia/Manila', label: 'Manila' },
+      { value: 'Asia/Kuala_Lumpur', label: 'Kuala Lumpur' },
+      { value: 'Asia/Ho_Chi_Minh', label: 'Ho Chi Minh' },
+      { value: 'Asia/Kolkata', label: 'Kolkata' },
+      { value: 'Asia/Dubai', label: 'Dubai' },
+      { value: 'Asia/Riyadh', label: 'Riyadh' },
+      { value: 'Asia/Tel_Aviv', label: 'Tel Aviv' },
+      { value: 'Asia/Karachi', label: 'Karachi' },
+      { value: 'Asia/Dhaka', label: 'Dhaka' },
+      { value: 'Asia/Kathmandu', label: 'Kathmandu' },
+      { value: 'Asia/Colombo', label: 'Colombo' },
+    ],
+  },
+  {
+    label: 'Pacific',
+    options: [
+      { value: 'Australia/Sydney', label: 'Sydney' },
+      { value: 'Australia/Melbourne', label: 'Melbourne' },
+      { value: 'Australia/Brisbane', label: 'Brisbane' },
+      { value: 'Australia/Perth', label: 'Perth' },
+      { value: 'Australia/Adelaide', label: 'Adelaide' },
+      { value: 'Pacific/Auckland', label: 'Auckland' },
+      { value: 'Pacific/Fiji', label: 'Fiji' },
+      { value: 'Pacific/Honolulu', label: 'Honolulu' },
+      { value: 'Pacific/Guam', label: 'Guam' },
+    ],
+  },
+  {
+    label: 'Africa',
+    options: [
+      { value: 'Africa/Cairo', label: 'Cairo' },
+      { value: 'Africa/Johannesburg', label: 'Johannesburg' },
+      { value: 'Africa/Lagos', label: 'Lagos' },
+      { value: 'Africa/Nairobi', label: 'Nairobi' },
+      { value: 'Africa/Casablanca', label: 'Casablanca' },
+      { value: 'Africa/Algiers', label: 'Algiers' },
+      { value: 'Africa/Tunis', label: 'Tunis' },
+    ],
+  },
+  {
+    label: 'Atlantic',
+    options: [
+      { value: 'Atlantic/Reykjavik', label: 'Reykjavik' },
+      { value: 'Atlantic/Azores', label: 'Azores' },
+      { value: 'Atlantic/Cape_Verde', label: 'Cape Verde' },
+    ],
+  },
 ];
 
 const SettingsPage: React.FC = () => {
@@ -759,10 +856,10 @@ const SettingsPage: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('settings:timezone')}
                   </label>
-                  <CustomSelect
+                  <GroupedSelect
                     value={preferences.timezone}
                     onChange={(value) => setPreferences({ ...preferences, timezone: value as string })}
-                    options={TIMEZONES.map(tz => ({ value: tz, label: tz }))}
+                    groups={TIMEZONE_GROUPS}
                   />
                 </div>
               </div>

@@ -18,6 +18,24 @@ import logging
 
 logger: logging.Logger = logging.getLogger(__name__)
 
+
+def get_user_timezone(request):
+    """
+    Récupère le timezone de l'utilisateur depuis ses préférences.
+    Retourne un objet pytz.timezone.
+    Fallback sur Europe/Paris si non défini ou invalide.
+    """
+    user_timezone = getattr(getattr(request.user, 'preferences', None), 'timezone', None)
+    try:
+        return pytz.timezone(user_timezone) if user_timezone else pytz.timezone('Europe/Paris')
+    except pytz.exceptions.UnknownTimeZoneError:
+        logger.warning(f"Timezone inconnue: {user_timezone}, utilisation de Europe/Paris par défaut")
+        return pytz.timezone('Europe/Paris')
+    except Exception as e:
+        logger.error(f"Erreur lors de la configuration de la timezone: {str(e)}")
+        return pytz.timezone('Europe/Paris')
+
+
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
 from daily_journal.models import DailyJournalEntry
 from .market_holidays import MarketHolidaysService
@@ -447,9 +465,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             # Convertir la date de début en datetime timezone-aware
             try:
                 start_datetime = datetime.strptime(start_date, '%Y-%m-%d')  # type: ignore
-                # Ajouter le timezone Europe/Paris pour la date de début (00:00:00)
-                paris_tz = pytz.timezone('Europe/Paris')
-                start_datetime = paris_tz.localize(start_datetime)
+                # Utiliser le timezone de l'utilisateur
+                user_tz = get_user_timezone(self.request)
+                start_datetime = user_tz.localize(start_datetime)
                 queryset = queryset.filter(entered_at__gte=start_datetime)
             except ValueError:
                 pass  # Ignorer les dates mal formatées
@@ -458,9 +476,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             # Convertir la date de fin en datetime timezone-aware
             try:
                 end_datetime = datetime.strptime(end_date, '%Y-%m-%d')  # type: ignore
-                # Ajouter le timezone Europe/Paris pour la date de fin (23:59:59)
-                paris_tz = pytz.timezone('Europe/Paris')
-                end_datetime = paris_tz.localize(end_datetime.replace(hour=23, minute=59, second=59))
+                # Utiliser le timezone de l'utilisateur pour la date de fin (23:59:59)
+                user_tz = get_user_timezone(self.request)
+                end_datetime = user_tz.localize(end_datetime.replace(hour=23, minute=59, second=59))
                 queryset = queryset.filter(entered_at__lte=end_datetime)
             except ValueError:
                 pass  # Ignorer les dates mal formatées
@@ -922,8 +940,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 # Utiliser start_date si fourni
                 try:
                     start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
-                    paris_tz = pytz.timezone('Europe/Paris')
-                    start_datetime = paris_tz.localize(start_datetime)
+                    user_tz = get_user_timezone(request)
+                    start_datetime = user_tz.localize(start_datetime)
                 except ValueError:
                     pass
             elif year:
@@ -935,8 +953,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                         start_datetime = timezone.datetime(year_int, month_int, 1)
                     else:
                         start_datetime = timezone.datetime(year_int, 1, 1)
-                    paris_tz = pytz.timezone('Europe/Paris')
-                    start_datetime = paris_tz.localize(start_datetime)
+                    user_tz = get_user_timezone(request)
+                    start_datetime = user_tz.localize(start_datetime)
                 except (ValueError, TypeError):
                     pass
             else:
@@ -1110,10 +1128,12 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         # Cette série compte depuis le jour le plus récent jusqu'à trouver une perte
         current_winning_streak_days = 0
         if trades.exists():
+            # Utiliser le timezone de l'utilisateur pour les agrégations
+            user_tz = get_user_timezone(request)
             # Agréger les trades par jour
             daily_data = defaultdict(lambda: {'pnl': Decimal('0.0')})
             for trade in trades:
-                day_key = trade.entered_at.date()
+                day_key = trade.entered_at.astimezone(user_tz).date()
                 daily_data[day_key]['pnl'] += trade.net_pnl
             
             # Trier les jours par date (du plus récent au plus ancien)
@@ -1562,10 +1582,12 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         if not trades.exists():
             return Response([])
         
+        # Utiliser le timezone de l'utilisateur
+        user_tz = get_user_timezone(request)
         # Agréger les PnL par jour
         pnl_by_day = defaultdict(float)
         for trade in trades:
-            date = trade.entered_at.date()
+            date = trade.entered_at.astimezone(user_tz).date()
             pnl_by_day[date] += float(trade.net_pnl)
         
         # Ordonner les jours chronologiquement et calculer le cumul
@@ -1647,21 +1669,24 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         year = request.query_params.get('year')
         month = request.query_params.get('month')
         
+        # Utiliser le timezone de l'utilisateur
+        user_tz = get_user_timezone(request)
+        
         if not year or not month:
-            # Utiliser le mois courant par défaut
-            now = timezone.now()
+            # Utiliser le mois courant par défaut dans le timezone utilisateur
+            now = timezone.now().astimezone(user_tz)
             year = now.year
             month = now.month
         else:
             year = int(year)
             month = int(month)
         
-        # Filtrer les trades du mois spécifié
-        start_date = timezone.datetime(year, month, 1)
+        # Filtrer les trades du mois spécifié dans le timezone utilisateur
+        start_date = user_tz.localize(datetime(year, month, 1))
         if month == 12:
-            end_date = timezone.datetime(year + 1, 1, 1)
+            end_date = user_tz.localize(datetime(year + 1, 1, 1))
         else:
-            end_date = timezone.datetime(year, month + 1, 1)
+            end_date = user_tz.localize(datetime(year, month + 1, 1))
         
         month_trades = trades.filter(
             entered_at__gte=start_date,
@@ -1814,11 +1839,12 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         weekly_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
         
         # Calculer le premier jour du mois et son jour de la semaine
-        first_day = start_date.date()
+        first_day = start_date.astimezone(user_tz).date()
         first_weekday = first_day.weekday()  # 0 = Lundi, 6 = Dimanche
         
         for trade in month_trades:
-            trade_date = trade.entered_at.date()
+            # Convertir au timezone utilisateur avant d'extraire la date
+            trade_date = trade.entered_at.astimezone(user_tz).date()
             day_of_month = trade_date.day
             
             # Calculer dans quelle semaine du calendrier ce jour tombe
@@ -1879,16 +1905,19 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         # Récupérer le paramètre d'année
         year = request.query_params.get('year')
         
+        # Utiliser le timezone de l'utilisateur
+        user_tz = get_user_timezone(request)
+        
         if not year:
-            # Utiliser l'année courante par défaut
-            now = timezone.now()
+            # Utiliser l'année courante par défaut dans le timezone utilisateur
+            now = timezone.now().astimezone(user_tz)
             year = now.year
         else:
             year = int(year)
         
-        # Filtrer les trades de l'année spécifiée
-        start_date = timezone.datetime(year, 1, 1)
-        end_date = timezone.datetime(year + 1, 1, 1)
+        # Filtrer les trades de l'année spécifiée dans le timezone utilisateur
+        start_date = user_tz.localize(datetime(year, 1, 1))
+        end_date = user_tz.localize(datetime(year + 1, 1, 1))
         
         year_trades = trades.filter(
             entered_at__gte=start_date,
@@ -1898,7 +1927,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         # Agréger par mois
         monthly_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
         for trade in year_trades:
-            month = trade.entered_at.month
+            # Convertir au timezone utilisateur avant d'extraire le mois
+            month = trade.entered_at.astimezone(user_tz).month
             monthly_data[month]['pnl'] += float(trade.net_pnl)
             monthly_data[month]['trade_count'] += 1
         
@@ -1943,16 +1973,19 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         # Récupérer le paramètre d'année
         year = request.query_params.get('year')
         
+        # Utiliser le timezone de l'utilisateur
+        user_tz = get_user_timezone(request)
+        
         if not year:
-            # Utiliser l'année courante par défaut
-            now = timezone.now()
+            # Utiliser l'année courante par défaut dans le timezone utilisateur
+            now = timezone.now().astimezone(user_tz)
             year = now.year
         else:
             year = int(year)
         
-        # Filtrer les trades de l'année spécifiée
-        start_date = timezone.datetime(year, 1, 1)
-        end_date = timezone.datetime(year + 1, 1, 1)
+        # Filtrer les trades de l'année spécifiée dans le timezone utilisateur
+        start_date = user_tz.localize(datetime(year, 1, 1))
+        end_date = user_tz.localize(datetime(year + 1, 1, 1))
         
         year_trades = trades.filter(
             entered_at__gte=start_date,
@@ -1963,7 +1996,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         weekly_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0, 'saturday_date': None})
         
         # Trouver le premier dimanche de l'année (ou le 1er janvier s'il est dimanche)
-        first_day = start_date.date()
+        first_day = start_date.astimezone(user_tz).date()
         first_weekday = first_day.weekday()  # 0 = Lundi, 6 = Dimanche
         
         # Calculer le premier dimanche
@@ -1979,7 +2012,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             first_sunday = first_day - timedelta(days=days_to_subtract)
         
         for trade in year_trades:
-            trade_date = trade.entered_at.date()
+            # Convertir au timezone utilisateur avant d'extraire la date
+            trade_date = trade.entered_at.astimezone(user_tz).date()
             
             # Calculer le samedi de la semaine pour ce trade
             days_from_first_sunday = (trade_date - first_sunday).days
@@ -2159,10 +2193,12 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'monthly_performance': []
             })
 
+        # Utiliser le timezone de l'utilisateur
+        user_tz = get_user_timezone(request)
         # Agréger par jour
         daily_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0, 'trades': []})  # type: ignore
         for trade in trades:
-            day_key = trade.entered_at.date()
+            day_key = trade.entered_at.astimezone(user_tz).date()
             daily_data[day_key]['pnl'] += float(trade.net_pnl)  # type: ignore
             daily_data[day_key]['trade_count'] += 1  # type: ignore
             daily_data[day_key]['trades'].append(trade)  # type: ignore
@@ -2405,10 +2441,12 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             })
 
         # Agréger par jour
+        # Utiliser le timezone de l'utilisateur
+        user_tz = get_user_timezone(request)
         daily_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
         
         for trade in trades:
-            date = trade.entered_at.date()
+            date = trade.entered_at.astimezone(user_tz).date()
             daily_data[date]['pnl'] += float(trade.net_pnl)
             daily_data[date]['trade_count'] += 1
 
@@ -2457,10 +2495,12 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         peak_pnl = 0
         drawdown_data = []
         
+        # Utiliser le timezone de l'utilisateur
+        user_tz = get_user_timezone(request)
         # Grouper par date
         daily_data = {}
         for trade in trades:
-            date_str = trade.entered_at.date().isoformat()
+            date_str = trade.entered_at.astimezone(user_tz).date().isoformat()
             if date_str not in daily_data:
                 daily_data[date_str] = {'pnl': 0, 'trades': 0}
             daily_data[date_str]['pnl'] += trade.net_pnl
@@ -3739,8 +3779,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # (les compliances sont déjà comptées dans 'with_strategy', 'respected' et 'not_respected')
         overall_compliance_rate = (total_respected / total_trades_with_strategy * 100) if total_trades_with_strategy > 0 else 0
         
-        # Calculer les taux pour différentes périodes
-        now = timezone.now().date()
+        # Calculer les taux pour différentes périodes dans le timezone utilisateur
+        user_tz = get_user_timezone(request)
+        now = timezone.now().astimezone(user_tz).date()
         last_7_days = (now - timedelta(days=7)).isoformat()
         last_30_days = (now - timedelta(days=30)).isoformat()
         last_90_days = (now - timedelta(days=90)).isoformat()

@@ -64,9 +64,23 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return (supportedLangs.includes(currentLang as any) ? currentLang : 'en') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
   };
 
+  // Détecter automatiquement le timezone du navigateur
+  const getInitialTimezone = (): string => {
+    try {
+      const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      // Vérifier que le timezone détecté est valide
+      if (detectedTimezone) {
+        return detectedTimezone;
+      }
+    } catch {
+      // Ignorer les erreurs de détection
+    }
+    return 'Europe/Paris'; // Fallback
+  };
+
   const [preferences, setPreferences] = useState<UserPreferences>({
     language: getInitialLanguage(), // Utiliser la langue détectée au lieu de 'fr'
-    timezone: 'Europe/Paris',
+    timezone: getInitialTimezone(), // Détecter automatiquement le timezone
     date_format: 'EU',
     number_format: 'comma',
     theme: getInitialTheme(),
@@ -157,7 +171,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const defaultLang = (supportedLangs.includes(detectedLang as any) ? detectedLang : 'en') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
         setPreferences({
           language: defaultLang, // Utiliser la langue détectée au lieu de 'fr'
-          timezone: 'Europe/Paris',
+          timezone: getInitialTimezone(), // Détecter automatiquement le timezone
           date_format: 'EU',
           number_format: 'comma',
           theme: getInitialTheme(),
@@ -223,10 +237,22 @@ export const usePreferences = (): PreferencesContextType => {
       const detectedLang = i18n.language?.split('-')[0] || 'en';
       const supportedLangs: Array<'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh'> = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
       const defaultLang = (supportedLangs.includes(detectedLang as any) ? detectedLang : 'en') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
+      // Détecter automatiquement le timezone
+      const getDefaultTimezone = (): string => {
+        try {
+          const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (detectedTimezone) {
+            return detectedTimezone;
+          }
+        } catch {
+          // Ignorer les erreurs
+        }
+        return 'Europe/Paris';
+      };
       return {
         preferences: {
           language: defaultLang, // Utiliser la langue détectée au lieu de 'fr'
-          timezone: 'Europe/Paris',
+          timezone: getDefaultTimezone(), // Détecter automatiquement le timezone
           date_format: 'EU',
           number_format: 'comma',
           theme: 'light',
