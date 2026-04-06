@@ -721,8 +721,8 @@ class TopStepTrade(models.Model):
             # Si exit_price ou stop_loss manquent, R:R réel = None
             self.actual_risk_reward_ratio = None  # type: ignore
         
-        # Calculer automatiquement le PnL uniquement s'il n'est pas déjà défini
-        # Cela permet de préserver les valeurs PnL importées depuis CSV (qui incluent la point_value correcte)
+        # Calculer automatiquement le PnL brut uniquement s'il n'est pas déjà défini
+        # (import CSV TopStep, création via formulaire : le brut est dérivé des prix, point_value et taille)
         if self.pnl is None and self.entry_price and self.exit_price and self.size and self.trade_type:
             if self.trade_type == 'Long':
                 # Long: gain si prix monte
