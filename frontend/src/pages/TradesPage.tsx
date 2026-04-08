@@ -9,6 +9,8 @@ import { CreateTradeModal } from '../components/trades/CreateTradeModal';
 import { BulkStrategyAssignModal } from '../components/trades/BulkStrategyAssignModal';
 
 import PaginationControls from '../components/ui/PaginationControls';
+import { TradesPageSkeleton } from '../components/ui/TradesPageSkeleton';
+import { PageShell } from '../components/layout';
 import { DeleteConfirmModal } from '../components/ui';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -63,6 +65,8 @@ const TradesPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTradeId, setEditingTradeId] = useState<number | null>(null);
   const [showBulkStrategyModal, setShowBulkStrategyModal] = useState(false);
+  /** Passe à true après la première fin de `load()` (succès ou erreur). État — pas un ref — pour forcer le re-render. */
+  const [listReady, setListReady] = useState(false);
 
   useEffect(() => {
     if (preferencesLoading) {
@@ -122,6 +126,7 @@ const TradesPage: React.FC = () => {
       console.error('[TradesPage] load() error', e);
     } finally {
       setIsLoading(false);
+      setListReady(true);
     }
   }, [page, pageSize, filters]);
 
@@ -187,7 +192,7 @@ const TradesPage: React.FC = () => {
     // Passer explicitement page et pageSize pour garantir les bonnes valeurs au premier chargement
     load(page, pageSize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasInitialized, accountLoading, page, pageSize, filtersKey]);
+  }, [hasInitialized, accountLoading, preferencesLoading, page, pageSize, filtersKey]);
 
   useEffect(() => {
     // Attendre la fin de l'initialisation et que le compte soit chargé avant de charger les stats
@@ -477,9 +482,18 @@ const TradesPage: React.FC = () => {
   const paginationStartIndex = total === 0 ? 0 : (page - 1) * safePageSize + 1;
   const paginationEndIndex = total === 0 ? 0 : Math.min(page * safePageSize, total);
 
+  // Ordre réel du chargement : (1) compte courant API + préférences user (2) sync
+  // filters.trading_account → selectedAccountId (effet dédié) (3) premier `load()`.
+  // Squelette tant que (1) ou (3) pas terminé. PageShell fluid + Layout (main flex-1) : footer en bas sans min-h-screen.
+  const showPageSkeleton =
+    accountLoading || preferencesLoading || !listReady;
+
+  if (showPageSkeleton) {
+    return <TradesPageSkeleton />;
+  }
+
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 py-4 sm:py-6 md:py-8 pb-6">
-      <div className="px-3 sm:px-4 md:px-6 lg:px-8">
+    <PageShell variant="fluid">
         {/* Sélecteur de compte et boutons d'action */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="inline-block w-full sm:w-auto">
@@ -625,20 +639,23 @@ const TradesPage: React.FC = () => {
 
       {/* Totaux filtrés rendus dans le tfoot du tableau */}
 
-        <PaginationControls
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={total}
-          itemsPerPage={safePageSize}
-          startIndex={paginationStartIndex}
-          endIndex={paginationEndIndex}
-          onPageChange={(p) => {
-            setPage(p);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          onPageSizeChange={handlePageSizeChange}
-          pageSizeOptions={TRADES_PAGE_SIZE_OPTIONS}
-        />
+        <div className="mt-4 sm:mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={total}
+            itemsPerPage={safePageSize}
+            startIndex={paginationStartIndex}
+            endIndex={paginationEndIndex}
+            onPageChange={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onPageSizeChange={handlePageSizeChange}
+            pageSizeOptions={TRADES_PAGE_SIZE_OPTIONS}
+            className="border-t-0"
+          />
+        </div>
 
         {selectedId && (
           <TradeModal
@@ -651,7 +668,6 @@ const TradesPage: React.FC = () => {
         )}
 
         {/* Modale de création temporairement supprimée */}
-      </div>
       
       {/* Modal de suppression d'un trade */}
       <DeleteConfirmModal
@@ -713,7 +729,7 @@ const TradesPage: React.FC = () => {
         selectedTradeIds={selectedIds}
       />
 
-    </div>
+    </PageShell>
   );
 };
 

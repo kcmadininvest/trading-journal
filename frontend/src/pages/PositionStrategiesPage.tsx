@@ -4,6 +4,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { formatDate } from '../utils/dateFormat';
 import { usePreferences } from '../hooks/usePreferences';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
+import { PageShell } from '../components/layout';
 import { Tooltip } from '../components/ui';
 import { downloadStrategyPdf, printStrategy } from '../utils/pdfGenerator';
 import { ImageUpload } from '../components/ui/ImageUpload';
@@ -1114,7 +1115,7 @@ const PositionStrategiesPage: React.FC = () => {
   };
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 pb-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <PageShell>
       <div className="w-full">
         {/* Filtres et recherche */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
@@ -2525,7 +2526,7 @@ const PositionStrategiesPage: React.FC = () => {
         />
 
       </div>
-    </div>
+    </PageShell>
   );
 };
 

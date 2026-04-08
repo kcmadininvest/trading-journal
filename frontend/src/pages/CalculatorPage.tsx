@@ -2,6 +2,7 @@ import React from 'react';
 import { ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import PositionCalculator from '../components/tools/PositionCalculator';
+import { PageShell } from '../components/layout';
 
 const CalculatorPage: React.FC = () => {
   const { t } = useTranslation();
@@ -20,8 +21,8 @@ const CalculatorPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 pb-6">
-      <div className="max-w-6xl mx-auto px-6 mb-4">
+    <PageShell className="max-w-6xl mx-auto">
+      <div className="mb-4">
         <button
           onClick={handleDetach}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
@@ -34,7 +35,7 @@ const CalculatorPage: React.FC = () => {
         </button>
       </div>
       <PositionCalculator />
-    </div>
+    </PageShell>
   );
 };
 

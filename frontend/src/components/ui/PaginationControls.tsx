@@ -48,8 +48,8 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   const showPageSelector = showPageSizeSelector && onPageSizeChange;
 
   return (
-    <div className={`bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-t border-gray-200 dark:border-gray-700 px-6 py-6 ${className}`}>
-      <div className="flex flex-col lg:flex-row lg:flex-wrap items-center lg:items-center justify-center lg:justify-between gap-4 lg:gap-6 w-full">
+    <div className={`bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border-t border-gray-200 dark:border-gray-700 px-4 py-3 sm:px-5 sm:py-4 ${className}`}>
+      <div className="flex flex-col lg:flex-row lg:flex-wrap items-center lg:items-center justify-center lg:justify-between gap-3 lg:gap-4 w-full">
         {/* Informations de pagination */}
         {showPaginationInfo && (
           <div className="w-full lg:w-auto">

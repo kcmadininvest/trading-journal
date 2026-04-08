@@ -14,6 +14,7 @@ import {
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { PageShell } from '../components/layout';
 
 type ViewType = 'daily' | 'monthly';
 
@@ -143,8 +144,7 @@ const CalendarPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-full pb-6">
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
+    <PageShell>
         {/* Sélecteur de compte */}
         <div className="mb-6 inline-block">
           <AccountSelector
@@ -196,7 +196,6 @@ const CalendarPage: React.FC = () => {
             currencySymbol={currencySymbol}
           />
         ) : null}
-      </div>
       <ImportTradesModal 
         open={showImport} 
         onClose={(done) => {
@@ -211,7 +210,7 @@ const CalendarPage: React.FC = () => {
           }
         }} 
       />
-    </div>
+    </PageShell>
   );
 };
 

@@ -87,7 +87,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
       {/* Vue cartes pour mobile */}
       <div className="block md:hidden">
         {/* Header avec sélection pour mobile */}

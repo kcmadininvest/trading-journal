@@ -8,6 +8,7 @@ import { usePagination } from '../hooks';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { usePreferences } from '../hooks/usePreferences';
+import { PageShell } from '../components/layout';
 
 const DEFAULT_ITEMS_PER_PAGE = 20;
 
@@ -263,8 +264,7 @@ const UserManagementPage: React.FC = () => {
   }
 
   return (
-        <div className="bg-gray-50 dark:bg-gray-900 py-4 sm:py-6 md:py-8 pb-6">
-          <div className="px-3 sm:px-4 md:px-6 lg:px-8">
+    <PageShell>
             {/* Statistiques */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-5 md:p-6">
@@ -444,8 +444,7 @@ const UserManagementPage: React.FC = () => {
           isLoading={bulkDeleteLoading}
           confirmButtonText={t('users:delete', { defaultValue: 'Delete' })}
         />
-      </div>
-    </div>
+    </PageShell>
   );
 };
 

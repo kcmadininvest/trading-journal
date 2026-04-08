@@ -1,4 +1,5 @@
 import React from 'react';
+import { PAGE_SETTINGS_CONTENT_PADDING } from '../layout/pageLayout';
 
 interface SettingsLayoutProps {
   sidebar: React.ReactNode;
@@ -12,20 +13,20 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
   header,
 }) => {
   return (
-    <div className="h-full flex flex-col -my-6 2xl:pt-8">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Header avec messages/notifications */}
       {header && <div className="flex-shrink-0">{header}</div>}
 
       {/* Contenu principal avec sidebar */}
-      <div className="flex-1 flex overflow-hidden lg:gap-8">
+      <div className="flex min-h-0 flex-1 overflow-hidden lg:gap-8">
         {/* Sidebar */}
-        <div className="flex-shrink-0 hidden lg:block">
+        <div className="hidden flex-shrink-0 lg:block">
           {sidebar}
         </div>
 
-        {/* Contenu scrollable */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-          <div className="max-w-3xl mx-auto p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8">
+        {/* Contenu scrollable — padding aligné sur pageLayout (zone réglages) */}
+        <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+          <div className={`mx-auto max-w-3xl ${PAGE_SETTINGS_CONTENT_PADDING}`}>
             {children}
           </div>
         </div>

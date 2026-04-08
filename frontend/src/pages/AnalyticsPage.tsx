@@ -37,6 +37,7 @@ import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useStatistics } from '../hooks/useStatistics';
 import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
+import { PageShell } from '../components/layout';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import {
   RadarChart,
@@ -1501,7 +1502,7 @@ const AnalyticsPage: React.FC = () => {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 pt-8 pb-12 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <PageShell>
       {/* Filtres */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col gap-4 lg:gap-0">
@@ -1716,7 +1717,7 @@ const AnalyticsPage: React.FC = () => {
       )}
 
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
-    </div>
+    </PageShell>
   );
 };
 

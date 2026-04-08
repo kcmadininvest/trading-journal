@@ -8,6 +8,7 @@ import { AccountsFilters } from '../components/accounts/AccountsFilters';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import userService from '../services/userService';
+import { PageShell } from '../components/layout';
 
 const DEFAULT_ITEMS_PER_PAGE = 20;
 
@@ -346,7 +347,7 @@ const TradingAccountsPage: React.FC = () => {
   };
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8 pb-6">
+    <PageShell>
       {/* Filtres */}
       <AccountsFilters
         values={filters}
@@ -733,7 +734,7 @@ const TradingAccountsPage: React.FC = () => {
         isLoading={deleteLoading}
         confirmButtonText={t('accounts:actions.deleteLabel', { defaultValue: 'Delete' })}
       />
-    </div>
+    </PageShell>
   );
 };
 

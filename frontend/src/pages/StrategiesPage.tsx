@@ -22,6 +22,7 @@ import { useStrategyCharts } from '../hooks/useStrategyCharts';
 import { useComplianceAggregation } from '../hooks/useComplianceAggregation';
 import { useWeekdayCompliance } from '../hooks/useWeekdayCompliance';
 import { useChartOptions } from '../hooks/useChartOptions';
+import { PageShell } from '../components/layout';
 import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { getMonthName } from '../utils/dateFormat';
@@ -398,8 +399,8 @@ const StrategiesPage: React.FC = () => {
   const periodRespectColor = useMemo(() => getRespectRateColor(periodRespect), [getRespectRateColor, periodRespect]);
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 pb-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="mb-4 sm:mb-6">
+    <PageShell>
+      <div className="flex flex-col">
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
           <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
@@ -483,10 +484,10 @@ const StrategiesPage: React.FC = () => {
                 </svg>
               ),
               content: (
-                <>
+                <div className="flex flex-col gap-4 sm:gap-6">
                   {/* Indicateurs de respect */}
                   {statistics && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       {/* Colonne 1: All periods */}
                       <div className="space-y-4">
                         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide px-1">
@@ -569,7 +570,7 @@ const StrategiesPage: React.FC = () => {
 
                   {/* Discipline & Stratégie — grille 2×2 alignée (Impact, Badges, métriques, discipline) */}
                   {(complianceSectionData || complianceSectionLoading) && (
-                    <div className="mb-4 sm:mb-6">
+                    <div>
                       {complianceSectionData ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:items-stretch">
                           <PerformanceComparison
@@ -596,7 +597,7 @@ const StrategiesPage: React.FC = () => {
                       )}
                     </div>
                   )}
-                </>
+                </div>
               )
             },
             {
@@ -610,17 +611,17 @@ const StrategiesPage: React.FC = () => {
                 </svg>
               ),
               content: (
-                <>
+                <div className="flex flex-col gap-4 sm:gap-6">
                   {/* Graphiques principaux */}
                   {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <ChartSkeleton title={t('strategies:strategyRespectPercentage')} />
                       <ChartSkeleton title={t('strategies:successRateByStrategyRespect')} />
                       <ChartSkeleton title={t('strategies:winningSessionsDistribution')} />
                       <ChartSkeleton title={t('strategies:dominantEmotionsDistribution')} />
                     </div>
                   ) : statistics ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       {/* Graphique 1: Respect de la stratégie en % */}
                       {respectChartData && (
                         <ChartSection title={t('strategies:strategyRespectPercentage')} tooltip={t('strategies:strategyRespectPercentageTooltip')}>
@@ -659,7 +660,7 @@ const StrategiesPage: React.FC = () => {
                       )}
                     </div>
                   ) : (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 text-center text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 text-center text-gray-600 dark:text-gray-400">
                       <p className="text-sm sm:text-base">{t('strategies:noDataForPeriod')}</p>
                     </div>
                   )}
@@ -705,7 +706,7 @@ const StrategiesPage: React.FC = () => {
                       </>
                     )}
                   </div>
-                </>
+                </div>
               )
             }
           ]}
@@ -723,7 +724,7 @@ const StrategiesPage: React.FC = () => {
           reloadTrades();
         }
       }} />
-    </div>
+    </PageShell>
   );
 };
 

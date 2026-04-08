@@ -25,6 +25,7 @@ import { useDashboardData } from '../hooks/useDashboardData';
 import { ExportButton } from '../components/exports';
 import Tooltip from '../components/ui/Tooltip';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
+import { PageShell } from '../components/layout';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
@@ -324,7 +325,7 @@ function StatisticsPage() {
   // Gestion des erreurs
   if (hasError) {
     return (
-      <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 bg-gray-50 dark:bg-gray-900">
+      <PageShell>
         <div className="text-center py-8 sm:py-12">
           <div className="text-sm sm:text-base lg:text-lg text-red-500 dark:text-red-400 mb-3 sm:mb-4">{t('statistics:errorLoadingData')}</div>
           <button 
@@ -334,7 +335,7 @@ function StatisticsPage() {
             {t('statistics:retry')}
           </button>
         </div>
-      </div>
+      </PageShell>
     );
   }
   
@@ -371,7 +372,7 @@ function StatisticsPage() {
   };
 
   return (
-    <div className="px-3 sm:px-4 md:px-6 py-4 sm:py-6 pb-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <PageShell>
       <div className="w-full">
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
@@ -1050,7 +1051,7 @@ function StatisticsPage() {
 
         {/* Section Risk/Reward Ratio */}
         {statisticsData && (
-          <div className="mb-6 sm:mb-8">
+          <div className="mb-0">
             <div className="mb-3 sm:mb-4">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
                 {t('statistics:riskReward.title', { defaultValue: 'Risk/Reward Ratio' })}
@@ -1155,7 +1156,7 @@ function StatisticsPage() {
           }
         }} 
       />
-    </div>
+    </PageShell>
   );
 }
 

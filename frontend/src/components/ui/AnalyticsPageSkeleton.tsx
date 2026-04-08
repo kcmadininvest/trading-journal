@@ -1,4 +1,5 @@
 import React from 'react';
+import { PageShell } from '../layout';
 
 const SkeletonPulse: React.FC<{ className?: string }> = ({ className = '' }) => (
   <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${className}`} />
@@ -16,7 +17,7 @@ const SkeletonChartCard: React.FC<{ height?: string }> = ({ height = 'h-[320px]'
 
 export const AnalyticsPageSkeleton: React.FC = () => {
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <PageShell>
       {/* Filtres skeleton */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
         <div className="flex flex-col lg:flex-row lg:items-end gap-4">
@@ -66,6 +67,6 @@ export const AnalyticsPageSkeleton: React.FC = () => {
         <SkeletonChartCard />
         <SkeletonChartCard />
       </div>
-    </div>
+    </PageShell>
   );
 };

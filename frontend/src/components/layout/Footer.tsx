@@ -51,9 +51,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const statusConfig = getStatusConfig();
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 bg-gray-50 dark:bg-gray-900 w-full border-t border-gray-200 dark:border-gray-700 z-20">
-      <div className="w-full px-4 sm:px-6 py-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+    <footer className="w-full shrink-0 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+      <div className="w-full px-4 sm:px-6 py-2 sm:py-2.5">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
           {/* Left: API Status & Version - Hidden on mobile */}
           <div className="hidden sm:flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-2" title={statusConfig.text}>

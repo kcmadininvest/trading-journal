@@ -30,6 +30,7 @@ import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
 import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import { ModernMarketInfo } from '../components/market/ModernMarketInfo';
 import { GlobalStatsIndicators } from '../components/dashboard/GlobalStatsIndicators';
+import { PageShell } from '../components/layout';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -1503,7 +1504,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-2 mb-12">
+    <PageShell>
       {/* Market Info - Toujours visible */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-4">
         <ModernMarketInfo 
@@ -1612,7 +1613,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-6 mt-3 mb-6">
+        <div className="mt-3 flex flex-col gap-6">
           {/* Bloc Trader Performance + stat cards (pleine largeur) */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
           {/* Graphique 1: Métriques de trading (jauges circulaires) */}
@@ -2490,7 +2491,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       )}
 
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
-    </div>
+    </PageShell>
   );
 };
 

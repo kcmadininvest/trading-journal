@@ -1,8 +1,9 @@
 import React from 'react';
+import { PageShell } from '../layout';
 
 export const StatisticsPageSkeleton: React.FC = () => {
   return (
-    <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <PageShell>
       <div className="w-full">
         {/* En-tête skeleton */}
         <div className="flex justify-between items-start mb-8">
@@ -39,7 +40,7 @@ export const StatisticsPageSkeleton: React.FC = () => {
         </div>
 
         {/* Plus de cards skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="flex items-center gap-3 mb-4">
@@ -58,7 +59,7 @@ export const StatisticsPageSkeleton: React.FC = () => {
           ))}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 

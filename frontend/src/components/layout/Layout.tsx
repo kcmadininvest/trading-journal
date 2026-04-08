@@ -19,8 +19,8 @@ const Layout: React.FC<LayoutProps> = ({
   children,
 }) => {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      {/* Header with integrated navigation */}
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
+      {/* Header fixed : le padding du main évite le chevauchement ; flex-1 sur main colle le footer en bas quand le contenu est court */}
       <Header
         currentUser={currentUser}
         currentPage={currentPage}
@@ -28,14 +28,11 @@ const Layout: React.FC<LayoutProps> = ({
         onLogout={onLogout}
       />
 
-      {/* Main content - full width */}
-      <main className="flex-1 bg-gray-50 dark:bg-gray-900 pt-16 sm:pt-20">
-        <div className="pt-6">
-          {children}
-        </div>
+      <main className="flex w-full flex-1 flex-col min-h-0 bg-gray-50 dark:bg-gray-900 pt-16 sm:pt-20">
+        {/* Espacement sous le header : géré par PageShell (pageLayout) */}
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       </main>
 
-      {/* Footer */}
       <Footer onNavigate={onNavigate} />
     </div>
   );
