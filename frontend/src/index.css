@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Padding vertical des pages (sous le header fixe / au-dessus du footer) — hors JIT Tailwind pour éviter toute classe absente du bundle */
+@layer components {
+  .layout-page-shell-y {
+    padding-top: 1.5rem;
+    padding-bottom: 1.5rem;
+  }
+}
+
 /* Import progress gradients for CSP compliance */
 @import './styles/progress-gradients.css';
 

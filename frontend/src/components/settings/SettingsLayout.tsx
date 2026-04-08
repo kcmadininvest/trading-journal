@@ -1,5 +1,4 @@
 import React from 'react';
-import { PAGE_SETTINGS_CONTENT_PADDING } from '../layout/pageLayout';
 
 interface SettingsLayoutProps {
   sidebar: React.ReactNode;
@@ -24,9 +23,9 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
           {sidebar}
         </div>
 
-        {/* Contenu scrollable — padding aligné sur pageLayout (zone réglages) */}
+        {/* Contenu scrollable — px / pt comme PageShell ; pb large sur mobile (barre d’onglets) */}
         <div className="min-h-0 flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
-          <div className={`mx-auto max-w-3xl ${PAGE_SETTINGS_CONTENT_PADDING}`}>
+          <div className="mx-auto max-w-3xl px-3 pt-6 pb-28 sm:px-4 md:px-6 lg:px-8 lg:pb-8">
             {children}
           </div>
         </div>
