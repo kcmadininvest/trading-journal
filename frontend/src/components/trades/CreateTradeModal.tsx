@@ -268,7 +268,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
     };
   }, [isOpen]);
 
-  // Calculer automatiquement le PnL si les prix d'entrée et de sortie sont fournis
+  // Calculer automatiquement le PnL brut (aligné sur l'API : le serveur déduit frais/commissions pour net_pnl)
   useEffect(() => {
     // Ne pas calculer si l'utilisateur a modifié manuellement le PnL
     if (isPnlManuallyEdited) {
@@ -294,16 +294,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             priceDiff = entryPrice - exitPrice;
           }
 
-          // Calculer le PnL brut avec la valeur du point
           const grossPnl = priceDiff * pointValue * size;
-
-          // Soustraire les frais et commissions pour obtenir le PnL net
-          const fees = parseFloat(formData.fees) || 0;
-          const commissions = parseFloat(formData.commissions) || 0;
-          const netPnl = grossPnl - fees - commissions;
-
-          // Mettre à jour le PnL
-          setFormData(prev => ({ ...prev, pnl: String(netPnl) }));
+          setFormData(prev => ({ ...prev, pnl: String(grossPnl) }));
         }
         // Si point_value est manquant, ne pas recalculer le PnL
         // (garder le PnL importé ou saisi manuellement)
@@ -315,7 +307,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       // Réinitialiser le PnL si les champs requis ne sont plus remplis
       setFormData(prev => ({ ...prev, pnl: '' }));
     }
-  }, [formData.entry_price, formData.exit_price, formData.size, formData.trade_type, formData.point_value, formData.fees, formData.commissions, isPnlManuallyEdited]);
+  }, [formData.entry_price, formData.exit_price, formData.size, formData.trade_type, formData.point_value, isPnlManuallyEdited]);
 
   // Calculer automatiquement le R:R prévu si les prix sont fournis
   const calculatedPlannedRR = useMemo(() => {
