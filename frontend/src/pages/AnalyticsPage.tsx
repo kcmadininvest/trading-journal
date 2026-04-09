@@ -1508,8 +1508,8 @@ const AnalyticsPage: React.FC = () => {
         <div className="flex flex-col gap-4 lg:gap-0">
           {/* Ligne 1: Compte + Période sur grands écrans */}
           <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
-            {/* Compte de trading */}
-            <div className="flex-shrink-0 lg:w-64">
+            {/* Compte de trading : largeur au contenu comme le Dashboard (évite lg:w-64 qui tronquait) */}
+            <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('analytics:tradingAccount')}
               </label>
