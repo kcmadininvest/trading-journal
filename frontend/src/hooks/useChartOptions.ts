@@ -19,7 +19,7 @@ interface UseChartOptionsParams {
   isDark: boolean;
   optimizedAnimation: { duration: number; easing: EasingFunction };
   formatNumber: (value: number, digits?: number) => string;
-  formatPeriod: (period: string) => string;
+  formatStrategyChartPeriod: (row: { period: string; date?: string }) => string;
   t: any;
   i18nLanguage: string;
   // Volatile data passed via refs to avoid invalidating useMemo
@@ -36,7 +36,7 @@ export const useChartOptions = ({
   isDark,
   optimizedAnimation,
   formatNumber,
-  formatPeriod,
+  formatStrategyChartPeriod,
   t,
   i18nLanguage,
   statistics,
@@ -65,8 +65,8 @@ export const useChartOptions = ({
   const formatNumberRef = useRef(formatNumber);
   formatNumberRef.current = formatNumber;
 
-  const formatPeriodRef = useRef(formatPeriod);
-  formatPeriodRef.current = formatPeriod;
+  const formatStrategyChartPeriodRef = useRef(formatStrategyChartPeriod);
+  formatStrategyChartPeriodRef.current = formatStrategyChartPeriod;
 
   const tRef = useRef(t);
   tRef.current = t;
@@ -128,8 +128,20 @@ export const useChartOptions = ({
         intersect: false,
         callbacks: {
           title: function(context: any) {
-            const period = statisticsRef.current?.statistics?.period_data?.[context[0].dataIndex]?.period || '';
-            return formatPeriodRef.current(period);
+            const idx = context[0].dataIndex;
+            // Le graphique discipline n'affiche qu'un sous-ensemble de period_data (périodes avec données) :
+            // l'index Chart.js correspond à enrichedData, pas à statistics.period_data.
+            const enrichedRow = (respectChartDataRef.current as any)?.enrichedData?.[idx];
+            if (enrichedRow) {
+              return formatStrategyChartPeriodRef.current({
+                period: enrichedRow.period,
+                date: enrichedRow.date,
+              });
+            }
+            const row = statisticsRef.current?.statistics?.period_data?.[idx];
+            return formatStrategyChartPeriodRef.current(
+              row ? { period: row.period, date: row.date } : { period: context[0].label || '' }
+            );
           },
           label: function(context: any) {
             const label = context.dataset.label || '';

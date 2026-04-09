@@ -25,7 +25,7 @@ import { useChartOptions } from '../hooks/useChartOptions';
 import { PageShell } from '../components/layout';
 import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { getMonthName } from '../utils/dateFormat';
+import { formatDate, getMonthName } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { useComplianceRefresh } from '../contexts/ComplianceRefreshContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
@@ -101,22 +101,25 @@ const StrategiesPage: React.FC = () => {
     return formatNumberUtil(value, digits, preferences.number_format);
   }, [preferences.number_format]);
 
-  // Fonction pour formater une période selon la langue de l'utilisateur
-  // La période peut être au format "YYYY-MM" (mois) ou "DD/MM" (jour)
-  const formatPeriod = useCallback((period: string): string => {
-    // Vérifier si c'est un format de mois (YYYY-MM)
-    const monthMatch = period.match(/^(\d{4})-(\d{2})$/);
-    if (monthMatch) {
-      const year = parseInt(monthMatch[1], 10);
-      const month = parseInt(monthMatch[2], 10);
-      const monthName = getMonthName(month, currentLanguage);
-      // Mettre la première lettre en majuscule
-      const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-      return `${capitalizedMonthName} ${year}`;
-    }
-    // Sinon, retourner tel quel (format jour DD/MM)
-    return period;
-  }, [currentLanguage]);
+  // Libellés du graphique discipline : mois localisés (YYYY-MM) ou jour selon date_format / timezone
+  const formatStrategyChartPeriod = useCallback(
+    (row: { period: string; date?: string }): string => {
+      const { period, date } = row;
+      const monthMatch = period.match(/^(\d{4})-(\d{2})$/);
+      if (monthMatch) {
+        const year = parseInt(monthMatch[1], 10);
+        const month = parseInt(monthMatch[2], 10);
+        const monthName = getMonthName(month, currentLanguage);
+        const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+        return `${capitalizedMonthName} ${year}`;
+      }
+      if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return formatDate(date, preferences.date_format, false, preferences.timezone);
+      }
+      return period;
+    },
+    [currentLanguage, preferences.date_format, preferences.timezone]
+  );
 
   // Helper function pour obtenir les couleurs des graphiques selon le thème
   const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
@@ -317,7 +320,7 @@ const StrategiesPage: React.FC = () => {
   const { respectChartData, successRateData, winningSessionsData, emotionsData } = useStrategyCharts({
     statistics,
     isLoading,
-    formatPeriod,
+    formatStrategyChartPeriod,
     formatNumber,
     getEmotionLabel,
     t,
@@ -359,7 +362,7 @@ const StrategiesPage: React.FC = () => {
     isDark,
     optimizedAnimation,
     formatNumber,
-    formatPeriod,
+    formatStrategyChartPeriod,
     t,
     i18nLanguage: i18n.language,
     statistics,

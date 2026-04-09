@@ -1,6 +1,9 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StrategyComplianceStats } from '../../services/tradeStrategies';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatDate } from '../../utils/dateFormat';
+import Tooltip from '../ui/Tooltip';
 
 const HEATMAP_DAYS = 28;
 
@@ -33,6 +36,7 @@ interface StrategyStatsDisciplineOverviewCardProps {
 export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDisciplineOverviewCardProps> = React.memo(
   ({ compliance, periodEnd }) => {
     const { t } = useTranslation();
+    const { preferences } = usePreferences();
 
     const byDate = useMemo(() => {
       const m = new Map<string, StrategyComplianceStats['daily_compliance'][0]>();
@@ -55,15 +59,27 @@ export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDiscipli
           else if ((row.respected || 0) === 0) state = 'none';
           else state = 'partial';
         }
-        return { key, state, label: key };
+        // T12:00:00 évite qu'une date ISO seule soit interprétée en UTC (décalage de jour selon le fuseau)
+        const displayDate = formatDate(`${key}T12:00:00`, preferences.date_format, false, preferences.timezone);
+        return { key, state, displayDate };
       });
-    }, [byDate, periodEnd]);
+    }, [byDate, periodEnd, preferences.date_format, preferences.timezone]);
 
     if (!compliance) {
       return null;
     }
 
     const { current_streak, best_streak, current_streak_start } = compliance;
+    const streakStartFormatted =
+      current_streak_start &&
+      formatDate(
+        /^\d{4}-\d{2}-\d{2}$/.test(current_streak_start)
+          ? `${current_streak_start}T12:00:00`
+          : current_streak_start,
+        preferences.date_format,
+        false,
+        preferences.timezone
+      );
 
     const cellClass = (state: (typeof cells)[0]['state']) => {
       switch (state) {
@@ -98,9 +114,9 @@ export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDiscipli
                 {t('strategies:statsInsights.streakDays')}
               </span>
             </div>
-            {current_streak_start && (
+            {streakStartFormatted && (
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {t('strategies:statsInsights.since')} {current_streak_start}
+                {t('strategies:statsInsights.since')} {streakStartFormatted}
               </div>
             )}
           </div>
@@ -127,11 +143,17 @@ export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDiscipli
             aria-label={t('strategies:statsInsights.heatmapAria')}
           >
             {cells.map((c) => (
-              <div
+              <Tooltip
                 key={c.key}
-                title={`${c.label}: ${t(`strategies:statsInsights.heatmapState.${c.state}`)}`}
-                className={`h-[26px] sm:h-[30px] w-full min-w-0 rounded-sm ${cellClass(c.state)}`}
-              />
+                content={`${c.displayDate}: ${t(`strategies:statsInsights.heatmapState.${c.state}`)}`}
+                position="top"
+                delay={200}
+                className="w-full min-w-0"
+              >
+                <div
+                  className={`h-[26px] sm:h-[30px] w-full min-w-0 rounded-sm ${cellClass(c.state)}`}
+                />
+              </Tooltip>
             ))}
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 text-xs text-gray-500 dark:text-gray-400">

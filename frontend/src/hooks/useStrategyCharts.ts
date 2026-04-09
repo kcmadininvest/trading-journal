@@ -4,7 +4,7 @@ import { generateChartColors } from '../utils/chartConfig';
 interface UseStrategyChartsParams {
   statistics: any;
   isLoading: boolean;
-  formatPeriod: (period: string) => string;
+  formatStrategyChartPeriod: (row: { period: string; date?: string }) => string;
   formatNumber: (value: number, digits?: number) => string;
   getEmotionLabel: (emotion: string) => string;
   t: any;
@@ -13,7 +13,7 @@ interface UseStrategyChartsParams {
 export const useStrategyCharts = ({
   statistics,
   isLoading,
-  formatPeriod,
+  formatStrategyChartPeriod,
   formatNumber,
   getEmotionLabel,
   t,
@@ -48,7 +48,9 @@ export const useStrategyCharts = ({
     });
     
     return {
-      labels: enrichedData.map((d: any) => formatPeriod(d.period)),
+      labels: enrichedData.map((d: any) =>
+        formatStrategyChartPeriod({ period: d.period, date: d.date })
+      ),
       datasets: [
         {
           label: t('strategies:respected'),
@@ -69,7 +71,7 @@ export const useStrategyCharts = ({
       ],
       enrichedData,
     };
-  }, [statistics?.statistics?.period_data, formatPeriod, t, isLoading]);
+  }, [statistics?.statistics?.period_data, formatStrategyChartPeriod, t, isLoading]);
 
   // Graphique: Taux de réussite selon respect de la stratégie
   const successRateData = useMemo(() => {
