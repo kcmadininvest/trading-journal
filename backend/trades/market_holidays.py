@@ -3,6 +3,7 @@ Utilitaire pour gérer les jours fériés et demi-journées des marchés boursie
 """
 import logging
 from datetime import date, datetime, timedelta, timezone
+from functools import lru_cache
 from typing import List, Dict, Any, Optional
 from zoneinfo import ZoneInfo
 
@@ -29,6 +30,14 @@ except (TypeError, ImportError):
     xcals = None
 
 
+@lru_cache(maxsize=16)
+def _get_cached_trading_calendar(market: str):
+    """Calendrier pandas_market_calendars mis en cache (instanciation lourde au premier usage)."""
+    if not CALENDARS_AVAILABLE or mcal is None:
+        raise RuntimeError('pandas_market_calendars indisponible')
+    return mcal.get_calendar(market)
+
+
 class MarketHolidaysService:
     """Service pour récupérer les jours fériés et demi-journées des marchés boursiers."""
     
@@ -49,15 +58,18 @@ class MarketHolidaysService:
             return []
         
         try:
-            calendar = mcal.get_calendar(market)
+            calendar = _get_cached_trading_calendar(market)
             schedule = calendar.schedule(start_date=start_date, end_date=end_date)
             
             # Obtenir tous les jours ouvrables du calendrier
             all_business_days = pd.date_range(start=start_date, end=end_date, freq='B')
             
             # Les jours fériés sont les jours ouvrables qui ne sont pas dans le schedule
+            # (même logique qu’avant : pas de set() sur index.date, types numpy/pandas variables selon versions)
             market_open_days = pd.to_datetime(schedule.index.date)
-            holiday_dates = [d.date() for d in all_business_days if d.date() not in market_open_days.date]
+            holiday_dates = [
+                d.date() for d in all_business_days if d.date() not in market_open_days.date
+            ]
             
             # Récupérer les noms des jours fériés depuis le calendrier
             holidays_with_names = []
@@ -204,7 +216,7 @@ class MarketHolidaysService:
             Liste des dates de demi-journées
         """
         try:
-            calendar = mcal.get_calendar(market)
+            calendar = _get_cached_trading_calendar(market)
             early_closes = calendar.early_closes(schedule=calendar.schedule(start_date=start_date, end_date=end_date))
             
             if early_closes is not None and len(early_closes) > 0:
@@ -226,7 +238,7 @@ class MarketHolidaysService:
         if not CALENDARS_AVAILABLE:
             return None
         try:
-            calendar = mcal.get_calendar(market_code)
+            calendar = _get_cached_trading_calendar(market_code)
             sched = calendar.schedule(start_date=local_date, end_date=local_date)
             if sched is None or len(sched) == 0:
                 return None
@@ -298,8 +310,14 @@ class MarketHolidaysService:
             markets = ['XNYS', 'XPAR']
         
         today = date.today()
-        # Chercher sur 2 ans pour être sûr de trouver assez d'événements
-        end_date = today + timedelta(days=730)
+        # Fenêtre adaptée au nombre d'événements demandés (évite 2 ans × N marchés à chaque requête)
+        if count <= 2:
+            search_days = 400
+        elif count <= 5:
+            search_days = 550
+        else:
+            search_days = 730
+        end_date = today + timedelta(days=search_days)
         
         market_names = {
             'XNYS': 'NYSE',

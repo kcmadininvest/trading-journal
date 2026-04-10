@@ -5208,6 +5208,42 @@ def _market_holidays_today_response(request):
     return Response({'markets': out})
 
 
+def _parse_market_holidays_count(request) -> int:
+    raw = request.GET.get('count', '1')
+    try:
+        count = int(raw)
+        if count < 1 or count > 10:
+            return 1
+        return count
+    except (ValueError, TypeError):
+        return 1
+
+
+def _market_holidays_bundle_response(request):
+    """
+    Une seule requête : statut « aujourd’hui » par marché + prochains jours fériés.
+    Évite deux allers-retours HTTP et réutilise les calendriers mis en cache côté serveur.
+    """
+    markets_param = request.GET.get('markets', 'XNYS,XPAR,XLON')
+    markets = [m.strip() for m in markets_param.split(',') if m.strip()]
+    count = _parse_market_holidays_count(request)
+    out_today = {}
+    for market_code in markets:
+        info = MarketHolidaysService.get_local_today_market_info(market_code)
+        out_today[market_code] = {
+            'date': info['date'],
+            'is_full_day_holiday': info['is_full_day_holiday'],
+            'is_early_close_day': info['is_early_close_day'],
+            'regular_session_close_local': info['regular_session_close_local'],
+        }
+    upcoming = MarketHolidaysService.get_next_holidays(count=count, markets=markets)
+    return Response({
+        'markets': out_today,
+        'upcoming': upcoming,
+        'count': len(upcoming),
+    })
+
+
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def market_holidays(request):
@@ -5215,18 +5251,17 @@ def market_holidays(request):
     Retourne les prochains jours fériés et demi-journées des marchés boursiers (NYSE et Euronext).
     Endpoint public (pas besoin d'authentification).
     Utiliser ?today=1 pour le même format que market_holidays_today (léger, même URL de base).
+    Utiliser ?bundle=1 pour combiner today + upcoming en une seule réponse (recommandé dashboard).
     """
     today_flag = (request.GET.get('today') or '').strip().lower()
     if today_flag in ('1', 'true', 'yes'):
         return _market_holidays_today_response(request)
 
-    count = request.GET.get('count', 1)
-    try:
-        count = int(count)
-        if count < 1 or count > 10:
-            count = 1
-    except (ValueError, TypeError):
-        count = 1
+    bundle_flag = (request.GET.get('bundle') or '').strip().lower()
+    if bundle_flag in ('1', 'true', 'yes'):
+        return _market_holidays_bundle_response(request)
+
+    count = _parse_market_holidays_count(request)
     
     # Récupérer les marchés demandés (par défaut: NYSE et Euronext Paris)
     markets_param = request.GET.get('markets', 'XNYS,XPAR')

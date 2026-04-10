@@ -2,6 +2,11 @@ import React from 'react';
 import { AccountIndicators } from '../../hooks/useAccountIndicators';
 import { AccountIndicatorsGrid } from './AccountIndicatorsGrid';
 
+export interface GlobalAllAccountsActivity {
+  totalPositions: number;
+  globalActiveDays: number;
+}
+
 interface AccountSummaryCardProps {
   indicators: AccountIndicators;
   currencySymbol?: string;
@@ -12,6 +17,8 @@ interface AccountSummaryCardProps {
   onNavigateToTransactions?: () => void;
   loading?: boolean;
   error?: string | null;
+  /** Cumul tous comptes — affiché dans Total trades sous <2000px (carte Activité du header masquée) */
+  globalAllAccountsActivity?: GlobalAllAccountsActivity | null;
 }
 
 export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(({
@@ -24,6 +31,7 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(
   onNavigateToTransactions,
   loading = false,
   error = null,
+  globalAllAccountsActivity = null,
 }) => {
   if (loading) {
     return (
@@ -53,6 +61,7 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(
       <AccountIndicatorsGrid
         indicators={indicators}
         currencySymbol={currencySymbol}
+        globalAllAccountsActivity={globalAllAccountsActivity}
         hideInitialBalance={hideInitialBalance}
         hideCurrentBalance={hideCurrentBalance}
         hideProfitLoss={hideProfitLoss}

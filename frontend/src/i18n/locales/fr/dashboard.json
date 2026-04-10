@@ -106,6 +106,11 @@
   "initialBalance": "Solde initial",
   "currentBalance": "Solde actuel",
   "period": "Période",
+  "periodGroups": {
+    "calendar": "Jours et mois",
+    "yearAndHistory": "Années et historique",
+    "custom": "Plage personnalisée"
+  },
   "periodPresets": {
     "today": "Aujourd'hui",
     "thisWeek": "Cette semaine",
@@ -158,6 +163,10 @@
   "globalWinRate": "Win Rate",
   "disciplineTooltip": "Taux de respect de la stratégie sur la période",
   "pnlTooltip": "Performance totale tous comptes confondus",
-  "winRateTooltip": "Taux de réussite tous comptes confondus"
+  "winRateTooltip": "Taux de réussite tous comptes confondus",
+  "globalActivity": "Activité",
+  "globalActivityTooltip": "Nombre total de positions (tous comptes) et jours actifs — mêmes règles que sous le solde actuel (jours avec au moins un trade ou suivi discipline).",
+  "globalPositionsLabel": "positions",
+  "allAccountsCumulative": "Tous comptes (cumul)"
 }
 

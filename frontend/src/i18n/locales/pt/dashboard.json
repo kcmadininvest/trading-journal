@@ -105,6 +105,11 @@
   "streamerMode": "Modo Streamer",
   "streamerModeTooltip": "Controles de privacidade",
   "privacyControls": "Controles de Privacidade",
+  "periodGroups": {
+    "calendar": "Dias e meses",
+    "yearAndHistory": "Anos e histórico",
+    "custom": "Intervalo personalizado"
+  },
   "periodPresets": {
     "today": "Hoje",
     "thisWeek": "Esta semana",
@@ -138,6 +143,10 @@
   "hideAll": "Ocultar tudo",
   "hidden": "Oculto",
   "visible": "Visível",
-  "badgeInDays": "{{badgeName}} em {{days}} dias"
+  "badgeInDays": "{{badgeName}} em {{days}} dias",
+  "activeDays": "Dias ativos",
+  "globalActivity": "Atividade",
+  "globalActivityTooltip": "Total de posições (todas as contas) e dias ativos — mesmas regras que sob o saldo atual (dias com pelo menos uma operação ou acompanhamento de disciplina).",
+  "globalPositionsLabel": "posições"
 }
 

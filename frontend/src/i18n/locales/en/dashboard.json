@@ -105,6 +105,11 @@
   "initialBalance": "Initial Balance",
   "currentBalance": "Current Balance",
   "period": "Period",
+  "periodGroups": {
+    "calendar": "Days and months",
+    "yearAndHistory": "Years and history",
+    "custom": "Custom range"
+  },
   "periodPresets": {
     "today": "Today",
     "thisWeek": "This week",
@@ -157,6 +162,10 @@
   "globalWinRate": "Win Rate",
   "disciplineTooltip": "Strategy compliance rate for the period",
   "pnlTooltip": "Total performance across all accounts",
-  "winRateTooltip": "Win rate across all accounts"
+  "winRateTooltip": "Win rate across all accounts",
+  "globalActivity": "Activity",
+  "globalActivityTooltip": "Total positions (all accounts) and active days — same rules as under current balance (days with at least one trade or discipline tracking).",
+  "globalPositionsLabel": "positions",
+  "allAccountsCumulative": "All accounts (all-time)"
 }
 

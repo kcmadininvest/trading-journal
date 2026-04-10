@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { DateInput } from './DateInput';
 import Tooltip from '../ui/Tooltip';
 
-export type PeriodPreset = 
+export type PeriodPreset =
   | 'today'
   | 'thisWeek'
   | 'lastWeek'
@@ -19,8 +19,8 @@ export type PeriodPreset =
   | 'custom';
 
 export interface PeriodRange {
-  start: string; // YYYY-MM-DD
-  end: string;   // YYYY-MM-DD
+  start: string;
+  end: string;
   preset?: PeriodPreset;
 }
 
@@ -30,12 +30,30 @@ interface PeriodSelectorProps {
   className?: string;
 }
 
-// Boutons rapides visibles (pill buttons) — les plus pertinents pour l'analyse de trading
-const QUICK_PRESETS: PeriodPreset[] = ['thisMonth', 'last3Months', 'thisYear', 'rollingYear', 'allTime'];
+/** Ordre logique : horizons courts → mois → années / historique ; personnalisé à part. */
+const PERIOD_MENU_GROUPS: ReadonlyArray<{
+  labelKey: string;
+  labelDefault: string;
+  presets: readonly PeriodPreset[];
+}> = [
+  {
+    labelKey: 'dashboard:periodGroups.calendar',
+    labelDefault: 'Jours et mois',
+    presets: ['today', 'thisWeek', 'lastWeek', 'thisMonth', 'lastMonth', 'last3Months', 'last6Months'],
+  },
+  {
+    labelKey: 'dashboard:periodGroups.yearAndHistory',
+    labelDefault: 'Années et historique',
+    presets: ['thisYear', 'rollingYear', 'lastYear', 'allTime'],
+  },
+];
 
-// Presets dans le dropdown "Plus" — périodes moins utilisées au quotidien
-const MORE_PRESETS: PeriodPreset[] = ['today', 'thisWeek', 'lastWeek', 'lastMonth', 'last6Months', 'lastYear'];
+const ALL_PRESET_KEYS: PeriodPreset[] = PERIOD_MENU_GROUPS.flatMap((g) => [...g.presets]);
 
+const pillTrigger =
+  'inline-flex w-full min-w-0 items-center gap-2 truncate rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:ring-offset-0 dark:focus:ring-blue-400/30';
+const pillTriggerStyle =
+  'border-gray-200 bg-white text-gray-900 hover:border-gray-300 hover:bg-gray-50/90 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-700/70';
 
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   value,
@@ -43,52 +61,35 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   className = '',
 }) => {
   const { t, i18n } = useI18nTranslation();
-  const moreButtonRef = useRef<HTMLButtonElement>(null);
-  const moreDropdownRef = useRef<HTMLDivElement>(null);
-  const [showMore, setShowMore] = useState(false);
-  const [morePosition, setMorePosition] = useState({ top: 0, left: 0 });
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
 
-  // Calculer les périodes prédéfinies
   const presets = useMemo(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // Cette semaine (lundi à aujourd'hui)
+
     const thisWeekStart = new Date(today);
     const dayOfWeek = today.getDay();
-    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Ajuster pour lundi
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
     thisWeekStart.setDate(diff);
-    
-    // Semaine dernière (lundi à dimanche)
+
     const lastWeekStart = new Date(thisWeekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
     const lastWeekEnd = new Date(lastWeekStart);
     lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
-    
-    // Ce mois
+
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    
-    // Mois dernier
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-    
-    // 3 derniers mois
     const last3MonthsStart = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    
-    // 6 derniers mois
     const last6MonthsStart = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-    
-    // Cette année
     const thisYearStart = new Date(now.getFullYear(), 0, 1);
-    
-    // Année dernière
     const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
     const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31);
-    
-    // Année glissante (12 derniers mois)
     const rollingYearStart = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
-
-    // Tout (depuis 2000-01-01)
     const allTimeStart = new Date(2000, 0, 1);
 
     const formatDate = (date: Date): string => {
@@ -161,59 +162,143 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   const [customStart, setCustomStart] = useState(value?.start || presets.today.start);
   const [customEnd, setCustomEnd] = useState(value?.end || presets.today.end);
 
-  // Labels complets pour le dropdown "Plus"
-  const fullLabels = useMemo(() => ({
-    today: t('dashboard:periodPresets.today', { defaultValue: "Aujourd'hui" }),
-    thisWeek: t('dashboard:periodPresets.thisWeek', { defaultValue: 'Cette semaine' }),
-    lastWeek: t('dashboard:periodPresets.lastWeek', { defaultValue: 'Semaine dernière' }),
-    thisMonth: t('dashboard:periodPresets.thisMonth', { defaultValue: 'Ce mois' }),
-    lastMonth: t('dashboard:periodPresets.lastMonth', { defaultValue: 'Mois dernier' }),
-    last3Months: t('dashboard:periodPresets.last3Months', { defaultValue: '3 derniers mois' }),
-    last6Months: t('dashboard:periodPresets.last6Months', { defaultValue: '6 derniers mois' }),
-    thisYear: t('dashboard:periodPresets.thisYear', { defaultValue: 'Cette année' }),
-    lastYear: t('dashboard:periodPresets.lastYear', { defaultValue: 'Année dernière' }),
-    rollingYear: t('dashboard:periodPresets.rollingYear', { defaultValue: 'Année glissante' }),
-    allTime: t('dashboard:periodPresets.allTime', { defaultValue: 'Depuis le début' }),
-    custom: t('dashboard:periodPresets.custom', { defaultValue: 'Personnalisé' }),
-  }), [t]);
+  const fullLabels = useMemo(
+    () => ({
+      today: t('dashboard:periodPresets.today', { defaultValue: "Aujourd'hui" }),
+      thisWeek: t('dashboard:periodPresets.thisWeek', { defaultValue: 'Cette semaine' }),
+      lastWeek: t('dashboard:periodPresets.lastWeek', { defaultValue: 'Semaine dernière' }),
+      thisMonth: t('dashboard:periodPresets.thisMonth', { defaultValue: 'Ce mois' }),
+      lastMonth: t('dashboard:periodPresets.lastMonth', { defaultValue: 'Mois dernier' }),
+      last3Months: t('dashboard:periodPresets.last3Months', { defaultValue: '3 derniers mois' }),
+      last6Months: t('dashboard:periodPresets.last6Months', { defaultValue: '6 derniers mois' }),
+      thisYear: t('dashboard:periodPresets.thisYear', { defaultValue: 'Cette année' }),
+      lastYear: t('dashboard:periodPresets.lastYear', { defaultValue: 'Année dernière' }),
+      rollingYear: t('dashboard:periodPresets.rollingYear', { defaultValue: 'Année glissante' }),
+      allTime: t('dashboard:periodPresets.allTime', { defaultValue: 'Depuis le début' }),
+      custom: t('dashboard:periodPresets.custom', { defaultValue: 'Personnalisé' }),
+    }),
+    [t]
+  );
 
-  // Labels courts pour les pill buttons
-  const shortLabels = useMemo(() => ({
-    thisWeek: t('dashboard:periodShort.1W', { defaultValue: '1S' }),
-    thisMonth: t('dashboard:periodShort.1M', { defaultValue: '1M' }),
-    last3Months: t('dashboard:periodShort.3M', { defaultValue: '3M' }),
-    last6Months: t('dashboard:periodShort.6M', { defaultValue: '6M' }),
-    thisYear: t('dashboard:periodShort.YTD', { defaultValue: 'YTD' }),
-    rollingYear: t('dashboard:periodShort.1Y', { defaultValue: '1A' }),
-    allTime: t('dashboard:periodShort.all', { defaultValue: 'Tout' }),
-  }), [t]);
-
-  // Trouver la clé de la période active
   const getActivePresetKey = useCallback((): string | null => {
     if (!value) return null;
-    
-    // Vérifier toutes les périodes prédéfinies
-    const allPresetKeys = [...QUICK_PRESETS, ...MORE_PRESETS];
-    for (const key of allPresetKeys) {
+    for (const key of ALL_PRESET_KEYS) {
       const preset = presets[key as keyof typeof presets];
       if (preset && value.start === preset.start && value.end === preset.end) {
         return key;
       }
     }
-    
-    // Si c'est une période personnalisée
     return 'custom';
   }, [value, presets]);
 
   const activePresetKey = getActivePresetKey();
 
-  // Vérifier si le preset actif est dans le dropdown "Plus"
-  const isMorePresetActive = activePresetKey !== null && MORE_PRESETS.includes(activePresetKey as PeriodPreset);
+  const formatCustomDateLabel = useCallback(() => {
+    if (!value) return '';
+    const locale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-US';
+    const startDate = new Date(value.start);
+    const endDate = new Date(value.end);
+    const fmt = (date: Date) => date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+    return `${fmt(startDate)} – ${fmt(endDate)}`;
+  }, [value, i18n.language]);
+
+  const displayLabel = useMemo(() => {
+    const periodFallback = t('dashboard:period', { defaultValue: 'Période' });
+    if (!value) return periodFallback;
+    const key = getActivePresetKey();
+    if (key === 'custom') return formatCustomDateLabel() || fullLabels.custom;
+    if (!key) return periodFallback;
+    return fullLabels[key as keyof typeof fullLabels];
+  }, [value, getActivePresetKey, formatCustomDateLabel, fullLabels, t]);
+
+  const tooltipLabel = useMemo(() => {
+    if (!value) return t('dashboard:period', { defaultValue: 'Période' });
+    const key = getActivePresetKey();
+    if (key === 'custom') return formatCustomDateLabel() || fullLabels.custom;
+    if (!key) return t('dashboard:period', { defaultValue: 'Période' });
+    return fullLabels[key as keyof typeof fullLabels];
+  }, [value, getActivePresetKey, formatCustomDateLabel, fullLabels, t]);
+
+  const updatePosition = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    let w = Math.max(rect.width, 220);
+    const temp = document.createElement('span');
+    temp.style.cssText =
+      'visibility:hidden;position:absolute;white-space:nowrap;font-size:' +
+      window.getComputedStyle(buttonRef.current).fontSize +
+      ';font-family:' +
+      window.getComputedStyle(buttonRef.current).fontFamily;
+    document.body.appendChild(temp);
+    ALL_PRESET_KEYS.forEach((key) => {
+      temp.textContent = fullLabels[key];
+      w = Math.max(w, temp.offsetWidth + 48);
+    });
+    PERIOD_MENU_GROUPS.forEach((g) => {
+      temp.textContent = t(g.labelKey, { defaultValue: g.labelDefault });
+      w = Math.max(w, temp.offsetWidth + 48);
+    });
+    temp.textContent = t('dashboard:periodGroups.custom', { defaultValue: 'Plage personnalisée' });
+    w = Math.max(w, temp.offsetWidth + 48);
+    temp.textContent = fullLabels.custom;
+    w = Math.max(w, temp.offsetWidth + 48);
+    document.body.removeChild(temp);
+    w = Math.min(Math.max(w, 220), 380);
+    // `fixed` = repère viewport : getBoundingClientRect() sans scrollX/Y
+    const margin = 8;
+    const vw = window.innerWidth;
+    const maxW = Math.min(w, vw - margin * 2);
+    let left = rect.left;
+    left = Math.max(margin, Math.min(left, vw - maxW - margin));
+    const top = rect.bottom + 4;
+    setMenuPos({
+      top,
+      left,
+      width: maxW,
+    });
+  }, [fullLabels, t]);
+
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(() => updatePosition(), 0);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      const el = e.target as Node;
+      if (rootRef.current?.contains(el) || menuRef.current?.contains(el)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
 
   const handlePresetChange = (presetKey: string) => {
+    setOpen(false);
     if (presetKey === 'custom') {
       setShowCustomModal(true);
-      if (value && (value.preset === 'custom' || (!value.preset && !Object.values(presets).some(p => p.start === value.start && p.end === value.end)))) {
+      if (
+        value &&
+        (value.preset === 'custom' ||
+          !Object.values(presets).some((p) => p.start === value.start && p.end === value.end))
+      ) {
         setCustomStart(value.start);
         setCustomEnd(value.end);
       } else {
@@ -228,10 +313,9 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         setCustomStart(today);
         setCustomEnd(today);
       }
-    } else {
-      onChange(presets[presetKey as keyof typeof presets]);
+      return;
     }
-    setShowMore(false);
+    onChange(presets[presetKey as keyof typeof presets]);
   };
 
   const handleCustomApply = () => {
@@ -247,14 +331,12 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
 
   const handleCustomCancel = () => {
     setShowCustomModal(false);
-    // Réinitialiser aux valeurs actuelles
     if (value) {
       setCustomStart(value.start);
       setCustomEnd(value.end);
     }
   };
 
-  // Empêcher le scroll du body quand la modale est ouverte
   useEffect(() => {
     if (showCustomModal) {
       document.body.style.overflow = 'hidden';
@@ -266,10 +348,9 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     };
   }, [showCustomModal]);
 
-  // Mettre à jour les dates personnalisées quand la valeur change
   useEffect(() => {
     if (value && (value.preset === 'custom' || !value.preset)) {
-      const isCustom = !Object.values(presets).some(p => p.start === value.start && p.end === value.end);
+      const isCustom = !Object.values(presets).some((p) => p.start === value.start && p.end === value.end);
       if (isCustom) {
         setCustomStart(value.start);
         setCustomEnd(value.end);
@@ -277,190 +358,122 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     }
   }, [value, presets]);
 
-  // Position du dropdown "Plus"
-  useEffect(() => {
-    if (showMore && moreButtonRef.current) {
-      const updatePosition = () => {
-        if (moreButtonRef.current) {
-          const rect = moreButtonRef.current.getBoundingClientRect();
-          setMorePosition({
-            top: rect.bottom + window.scrollY + 4,
-            left: rect.left + window.scrollX,
-          });
-        }
-      };
-      updatePosition();
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-      return () => {
-        window.removeEventListener('scroll', updatePosition, true);
-        window.removeEventListener('resize', updatePosition);
-      };
-    }
-  }, [showMore]);
-
-  // Fermer le dropdown "Plus" en cliquant à l'extérieur
-  useEffect(() => {
-    if (!showMore) return;
-    const onDocClick = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        moreButtonRef.current && !moreButtonRef.current.contains(target) &&
-        moreDropdownRef.current && !moreDropdownRef.current.contains(target)
-      ) {
-        setShowMore(false);
-      }
-    };
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, [showMore]);
-
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
       handleCustomCancel();
     }
   };
 
-  // Formater la date personnalisée pour l'affichage
-  const formatCustomDateLabel = () => {
-    if (!value) return '';
-    const locale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-US';
-    const startDate = new Date(value.start);
-    const endDate = new Date(value.end);
-    const fmt = (date: Date) => date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
-    return `${fmt(startDate)} – ${fmt(endDate)}`;
-  };
-
-  // Pill button classes — aligné sur la hauteur et le style du AccountSelector (px-3 py-2 text-sm rounded-md border-gray-300)
-  const pillBase = 'px-3 py-2 text-sm font-medium rounded-md transition-all duration-150 whitespace-nowrap border shadow-sm';
-  const pillActive = 'bg-blue-600 text-white border-blue-600';
-  const pillInactive = 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-500';
-
-  // Dropdown "Plus" content
-  const moreDropdownContent = showMore && (
-    <div
-      ref={moreDropdownRef}
-      className="fixed z-[9999] rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl py-1 min-w-[180px]"
-      style={{
-        top: `${morePosition.top}px`,
-        left: `${morePosition.left}px`,
-      }}
-    >
-      {MORE_PRESETS.map((key) => (
+  const menu =
+    open &&
+    typeof document !== 'undefined' &&
+    createPortal(
+      <div
+        ref={menuRef}
+        role="listbox"
+        aria-label={t('dashboard:period', { defaultValue: 'Période' })}
+        className="fixed z-[9999] max-h-[min(24rem,70vh)] overflow-auto rounded-lg border border-gray-200 bg-white py-1 shadow-xl dark:border-gray-700 dark:bg-gray-800"
+        style={{
+          top: menuPos.top,
+          left: menuPos.left,
+          width: menuPos.width,
+          minWidth: menuPos.width,
+        }}
+      >
+        {PERIOD_MENU_GROUPS.map((group, groupIndex) => (
+          <div key={group.labelKey}>
+            {groupIndex > 0 && (
+              <div
+                className="my-1 border-t border-gray-100 dark:border-gray-700"
+                role="separator"
+                aria-hidden
+              />
+            )}
+            <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {t(group.labelKey, { defaultValue: group.labelDefault })}
+            </div>
+            {group.presets.map((key) => (
+              <button
+                key={key}
+                type="button"
+                role="option"
+                aria-selected={activePresetKey === key}
+                onClick={() => handlePresetChange(key)}
+                className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors ${
+                  activePresetKey === key
+                    ? 'bg-blue-50/90 font-medium text-blue-900 dark:bg-blue-950/45 dark:text-blue-100'
+                    : 'text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                <span className="min-w-0 whitespace-normal break-words">{fullLabels[key]}</span>
+              </button>
+            ))}
+          </div>
+        ))}
+        <div className="my-1 border-t border-gray-100 dark:border-gray-700" role="separator" aria-hidden />
+        <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          {t('dashboard:periodGroups.custom', { defaultValue: 'Plage personnalisée' })}
+        </div>
         <button
-          key={key}
           type="button"
-          onClick={() => handlePresetChange(key)}
-          className={`w-full flex items-center px-3 py-2 text-sm transition-colors ${
-            activePresetKey === key
-              ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium'
-              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+          role="option"
+          aria-selected={activePresetKey === 'custom'}
+          onClick={() => handlePresetChange('custom')}
+          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+            activePresetKey === 'custom'
+              ? 'bg-blue-50/90 font-medium text-blue-900 dark:bg-blue-950/45 dark:text-blue-100'
+              : 'text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700'
           }`}
         >
-          {fullLabels[key as keyof typeof fullLabels]}
+          <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <span className="min-w-0 whitespace-normal break-words">{fullLabels.custom}</span>
         </button>
-      ))}
-    </div>
-  );
+      </div>,
+      document.body
+    );
 
   return (
-    <div className={className}>
-      {/* Barre de boutons segmentés — une ligne ; la largeur est gérée par le parent (ex. lg:w-auto + stratégie en flex-1) */}
-      <div className="flex flex-nowrap items-center gap-1">
-        {/* Quick preset pills */}
-        {QUICK_PRESETS.map((key) => (
-          <Tooltip
-            key={key}
-            content={fullLabels[key as keyof typeof fullLabels]}
-            position="top"
-            delay={200}
-          >
-            <button
-              type="button"
-              onClick={() => handlePresetChange(key)}
-              className={`${pillBase} ${activePresetKey === key ? pillActive : pillInactive}`}
-            >
-              {shortLabels[key as keyof typeof shortLabels]}
-            </button>
-          </Tooltip>
-        ))}
-
-        {/* Séparateur vertical */}
-        <div className="h-5 w-px bg-gray-200 dark:bg-gray-600 mx-0.5" />
-
-        {/* Bouton "Plus" avec dropdown */}
-        <div className="relative">
-          <Tooltip
-            content={t('dashboard:periodMore', { defaultValue: 'Plus de périodes' })}
-            position="top"
-            delay={200}
-          >
-            <button
-              ref={moreButtonRef}
-              type="button"
-              onClick={() => setShowMore(!showMore)}
-              className={`${pillBase} flex items-center gap-1 ${
-                isMorePresetActive ? pillActive : pillInactive
-              }`}
-            >
-              {isMorePresetActive ? fullLabels[activePresetKey as keyof typeof fullLabels] : (
-                <>
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
-                  </svg>
-                  <span className="hidden sm:inline">{t('dashboard:periodMore', { defaultValue: 'Plus' })}</span>
-                </>
-              )}
-              <svg className={`w-3 h-3 transition-transform ${showMore ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </Tooltip>
-        </div>
-
-        {/* Séparateur vertical */}
-        <div className="h-5 w-px bg-gray-200 dark:bg-gray-600 mx-0.5" />
-
-        {/* Bouton Personnalisé avec icône calendrier */}
-        <Tooltip
-          content={fullLabels.custom}
-          position="top"
-          delay={200}
+    <div ref={rootRef} className={`relative min-w-0 w-full max-w-full ${className}`.trim()}>
+      <Tooltip content={tooltipLabel} position="top" delay={250} className="w-full min-w-0">
+        <button
+          ref={buttonRef}
+          type="button"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          onClick={() => setOpen((o) => !o)}
+          className={`${pillTrigger} ${pillTriggerStyle}`}
         >
-          <button
-            type="button"
-            onClick={() => handlePresetChange('custom')}
-            className={`${pillBase} flex items-center gap-1 ${
-              activePresetKey === 'custom' ? pillActive : pillInactive
-            }`}
+          <span className="min-w-0 flex-1 truncate text-left">{displayLabel}</span>
+          <svg
+            className={`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform dark:text-gray-500 ${open ? 'rotate-180' : ''}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            {activePresetKey === 'custom' ? (
-              <span className="text-xs">{formatCustomDateLabel()}</span>
-            ) : (
-              <span className="hidden sm:inline">{fullLabels.custom}</span>
-            )}
-          </button>
-        </Tooltip>
-      </div>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </Tooltip>
+      {menu}
 
-      {/* Portal pour le dropdown "Plus" */}
-      {showMore && typeof document !== 'undefined' && createPortal(moreDropdownContent, document.body)}
-      
-      {/* Modale pour le sélecteur de période personnalisée */}
       {showCustomModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto"
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={handleBackdropClick}
         >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 my-auto"
+          <div
+            className="my-auto w-full max-w-md transform rounded-2xl border border-gray-100 bg-white shadow-2xl transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 dark:border-gray-700 dark:bg-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <div className="flex-shrink-0 border-b border-gray-200 px-6 py-4 dark:border-gray-700">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
                   {t('dashboard:periodModal.custom', { defaultValue: 'Période personnalisée' })}
@@ -468,49 +481,47 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 <button
                   type="button"
                   onClick={handleCustomCancel}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  className="text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-300"
                 >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
             </div>
 
-            {/* Body */}
             <div className="px-6 py-4">
               <div className="grid grid-cols-1 gap-4">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {t('dashboard:periodModal.startDate', { defaultValue: 'Date de début' })}
                   </label>
                   <DateInput
                     value={customStart}
                     onChange={setCustomStart}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                     max={customEnd || undefined}
                   />
                 </div>
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                     {t('dashboard:periodModal.endDate', { defaultValue: 'Date de fin' })}
                   </label>
                   <DateInput
                     value={customEnd}
                     onChange={setCustomEnd}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                     min={customStart || undefined}
                   />
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-2 justify-end flex-shrink-0">
+            <div className="flex flex-shrink-0 justify-end gap-2 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
               <button
                 type="button"
                 onClick={handleCustomCancel}
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors text-sm font-medium"
+                className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
               >
                 {t('dashboard:periodModal.cancel', { defaultValue: 'Annuler' })}
               </button>
@@ -518,7 +529,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 type="button"
                 onClick={handleCustomApply}
                 disabled={!customStart || !customEnd || customStart > customEnd}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t('dashboard:periodModal.apply', { defaultValue: 'Appliquer' })}
               </button>
@@ -526,7 +537,6 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
           </div>
         </div>
       )}
-      
     </div>
   );
 };

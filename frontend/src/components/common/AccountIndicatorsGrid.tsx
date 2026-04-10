@@ -5,6 +5,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { AccountIndicators } from '../../hooks/useAccountIndicators';
 import { maskValue } from '../../hooks/usePrivacySettings';
+import type { GlobalAllAccountsActivity } from './AccountSummaryCard';
 
 interface AccountIndicatorsGridProps {
   indicators: AccountIndicators;
@@ -14,6 +15,7 @@ interface AccountIndicatorsGridProps {
   hideInitialBalance?: boolean;
   hideCurrentBalance?: boolean;
   hideProfitLoss?: boolean;
+  globalAllAccountsActivity?: GlobalAllAccountsActivity | null;
 }
 
 export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
@@ -24,6 +26,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   hideInitialBalance = false,
   hideCurrentBalance = false,
   hideProfitLoss = false,
+  globalAllAccountsActivity = null,
 }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
@@ -45,10 +48,12 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   return (
     <div className={`${className}`}>
       {/* Grille responsive : toutes les cartes sur une ligne en grand écran */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 ${consistencyTarget ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}>
+      <div
+        className={`grid w-full min-w-0 grid-cols-1 md:grid-cols-2 ${consistencyTarget ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}
+      >
         {/* Solde initial et actuel regroupés */}
-        <div className="flex flex-col xl:flex-row xl:items-stretch gap-3 xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
-          <div className="flex flex-col gap-1 flex-1">
+        <div className="flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
@@ -63,7 +68,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
             </span>
           </div>
           <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
-          <div className="flex flex-col gap-1 flex-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -84,9 +89,9 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
         </div>
 
         {/* Variation et Total Trades regroupés */}
-        <div className="flex flex-col xl:flex-row xl:items-stretch gap-3 xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
+        <div className="flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
           {accountBalance.initial > 0 && (
-            <div className="flex flex-col gap-1 flex-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {variationValue >= 0 
@@ -123,35 +128,73 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
             <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
           )}
           {showTradesSection && (
-            <div className="flex flex-col gap-1 flex-1">
-              <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {totalTrades}
+            <div
+              className={
+                globalAllAccountsActivity
+                  ? 'flex min-w-0 flex-1 flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0'
+                  : 'flex min-w-0 flex-1 flex-col gap-1'
+              }
+            >
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
                 </span>
-                {hasActiveDays && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200/70 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-11 8h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}: <span className="font-semibold">{activeDays}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    {totalTrades}
                   </span>
-                )}
+                  {hasActiveDays && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200/70 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-11 8h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}: <span className="font-semibold">{activeDays}</span>
+                    </span>
+                  )}
+                </div>
               </div>
+              {globalAllAccountsActivity && (
+                <>
+                  <div
+                    aria-hidden
+                    className="mx-0 hidden min-h-0 w-px shrink-0 self-stretch bg-gray-200 dark:bg-gray-600 xl:mx-4 xl:block min-[2000px]:hidden"
+                  />
+                  <div className="hidden min-w-0 flex-1 flex-col gap-1 justify-center border-t border-gray-200 pt-3 dark:border-gray-600 max-[1999px]:flex xl:border-t-0 xl:pt-0 min-[2000px]:hidden">
+                    <span className="break-words text-[10px] font-medium uppercase leading-snug tracking-wider text-gray-500 dark:text-gray-400">
+                      {t('dashboard:allAccountsCumulative', { defaultValue: 'Tous comptes (cumul)' })}
+                    </span>
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm text-gray-800 dark:text-gray-200">
+                      <span className="text-lg font-bold tabular-nums leading-none">
+                        {globalAllAccountsActivity.totalPositions}
+                      </span>
+                      <span className="text-xs font-medium opacity-80">
+                        {t('dashboard:globalPositionsLabel', { defaultValue: 'positions' })}
+                      </span>
+                      <span className="select-none text-xs opacity-40" aria-hidden>
+                        ·
+                      </span>
+                      <span className="text-lg font-bold tabular-nums leading-none">
+                        {globalAllAccountsActivity.globalActiveDays}
+                      </span>
+                      <span className="text-xs font-medium opacity-80">
+                        {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
 
         {/* Meilleur jour et Pire jour regroupés */}
         {(bestAndWorstDays.bestDay || bestAndWorstDays.worstDay) && (
-          <div className="flex flex-col xl:flex-row xl:items-stretch xl:gap-0 gap-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
+          <div className="flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
             {bestAndWorstDays.bestDay && (
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-blue-600 dark:text-blue-300">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
@@ -172,7 +215,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
             )}
             {bestAndWorstDays.worstDay && (
-              <div className="flex flex-col gap-1 flex-1">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-pink-600 dark:text-pink-300">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -194,7 +237,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
 
         {/* Consistency Target (si applicable) */}
         {consistencyTarget && (
-          <div className={`flex flex-col gap-2 p-4 rounded-lg border transition-colors duration-150 ${
+          <div className={`flex h-full min-w-0 w-full flex-col gap-2 p-4 rounded-lg border transition-colors duration-150 ${
             consistencyTarget.isCompliant
               ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
               : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-900/30'

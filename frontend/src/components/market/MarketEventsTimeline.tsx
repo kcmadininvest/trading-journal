@@ -2,6 +2,18 @@ import React, { useMemo } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { MarketHoliday } from '../../services/calendar';
 
+/** Aujourd’hui en YYYY-MM-DD (fuseau local) — évite le décalage de new Date('YYYY-MM-DD') (UTC). */
+function localTodayYyyyMmDd(): string {
+  const n = new Date();
+  return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+}
+
+/** Minuit local pour une date API YYYY-MM-DD */
+function parseYmdLocal(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 interface MarketEventsTimelineProps {
   events: MarketHoliday[];
   maxEvents?: number;
@@ -17,25 +29,17 @@ export const MarketEventsTimeline: React.FC<MarketEventsTimelineProps> = ({
   const currentLanguage = i18n.language?.split('-')[0] || 'fr';
 
   const sortedEvents = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
+    const todayStr = localTodayYyyyMmDd();
     return events
-      .filter(event => {
-        const eventDate = new Date(event.date);
-        eventDate.setHours(0, 0, 0, 0);
-        return eventDate >= today;
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .filter((event) => event.date >= todayStr)
+      .sort((a, b) => a.date.localeCompare(b.date))
       .slice(0, maxEvents);
   }, [events, maxEvents]);
 
   const getRelativeDate = (dateStr: string): string => {
-    const eventDate = new Date(dateStr);
-    eventDate.setHours(0, 0, 0, 0);
+    const eventDate = parseYmdLocal(dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
     const diffTime = eventDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -51,11 +55,9 @@ export const MarketEventsTimeline: React.FC<MarketEventsTimelineProps> = ({
   };
 
   const isUrgent = (dateStr: string): boolean => {
-    const eventDate = new Date(dateStr);
-    eventDate.setHours(0, 0, 0, 0);
+    const eventDate = parseYmdLocal(dateStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
     const diffTime = eventDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     

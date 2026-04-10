@@ -11,6 +11,10 @@ interface GlobalStatsIndicatorsProps {
   pnlSparkline?: number[];
   winRate?: number;
   winRateSparkline?: number[];
+  totalPositions: number;
+  globalActiveDays: number;
+  /** Conservé pour compatibilité / HMR ; non affiché */
+  activitySparkline?: number[];
   currencySymbol: string;
   className?: string;
 }
@@ -24,6 +28,9 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   pnlSparkline = [],
   winRate,
   winRateSparkline = [],
+  totalPositions,
+  globalActiveDays,
+  activitySparkline = [],
   currencySymbol,
   className = '',
 }) => {
@@ -46,6 +53,10 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
     if (rate >= 45) return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
     return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
   };
+
+  /** Style neutre type discipline / win rate moyen (activité globale) */
+  const activityCardClasses =
+    'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800';
 
   const formatPnL = (value: number) => {
     const absValue = Math.abs(value);
@@ -193,6 +204,50 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
           </div>
         </Tooltip>
       )}
+
+      {/* Carte Activité : au-delà du Full HD (1920px) — min-[1920px] laissait l’indicateur visible en 1920×1080 */}
+      <div className="hidden min-[2000px]:block flex-shrink-0">
+        <Tooltip
+          content={t('dashboard:globalActivityTooltip', {
+            defaultValue:
+              'Total des positions (tous comptes) et jours actifs — mêmes règles que sous le solde actuel (jours avec au moins un trade ou suivi discipline).',
+          })}
+        >
+          <div
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${activityCardClasses}`}
+          >
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <div className="whitespace-nowrap text-xs font-medium opacity-75">
+                {t('dashboard:globalActivity', { defaultValue: 'Activité' })}
+              </div>
+              <div className="flex flex-nowrap items-baseline gap-x-1.5 whitespace-nowrap">
+                <span className="text-lg font-bold tabular-nums leading-none">{totalPositions}</span>
+                <span className="text-[11px] font-medium leading-none opacity-80">
+                  {t('dashboard:globalPositionsLabel', { defaultValue: 'positions' })}
+                </span>
+                <span className="select-none text-[11px] leading-none opacity-45" aria-hidden>
+                  ·
+                </span>
+                <span className="text-lg font-bold tabular-nums leading-none">{globalActiveDays}</span>
+                <span className="text-[11px] font-medium leading-none opacity-80">
+                  {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}
+                </span>
+              </div>
+            </div>
+            {/* Même emplacement que le sparkline des autres cartes (60×24) pour aligner les largeurs */}
+            <div className="ml-auto flex h-6 w-[60px] flex-shrink-0 items-center justify-end" aria-hidden />
+          </div>
+        </Tooltip>
+      </div>
     </div>
   );
 };

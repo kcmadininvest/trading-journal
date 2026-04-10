@@ -13,7 +13,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
-import { CustomSelect } from '../components/common/CustomSelect';
+import { PositionStrategyPillBar } from '../components/dashboard/PositionStrategyPillBar';
 import ModernStatCard from '../components/common/ModernStatCard';
 import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
 import Tooltip from '../components/ui/Tooltip';
@@ -246,12 +246,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     positionStrategy: selectedPositionStrategy,
   });
 
-  // Charger les données globales all-time seulement si l'écran est assez grand (optimisation)
+  // Données globales all-time (tous comptes) — chargées sur tous les écrans pour les stats dans la carte Total trades < 2000px
   const { data: globalDashboardData, isLoading: globalDashboardLoading } = useDashboardData({
-    accountId: null, // null = tous les comptes actifs
-    startDate: undefined, // undefined = toutes les périodes
+    accountId: null,
+    startDate: undefined,
     endDate: undefined,
-    loading: accountLoading || !shouldLoadGlobalStats, // Skip si écran trop petit
+    loading: accountLoading,
   });
 
   // Extract data from consolidated response
@@ -359,7 +359,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       const total = cumulativeWinning + cumulativeLosing;
       return total > 0 ? (cumulativeWinning / total) * 100 : 0;
     });
-    
+
+    // Positions totales (somme des trade_count) — même périmètre que le dashboard global
+    const totalPositions =
+      globalDashboardData.daily_aggregates?.reduce(
+        (sum: number, day: any) => sum + (day.trade_count || 0),
+        0
+      ) || 0;
+    // Jours actifs : champ API (jours avec trades + jours avec suivi discipline), comme sous le solde actuel
+    const globalActiveDays = globalDashboardData.active_days ?? 0;
+
     return {
       disciplineRate,
       totalPnL,
@@ -367,8 +376,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       pnlSparkline,
       winRate,
       winRateSparkline,
+      totalPositions,
+      globalActiveDays,
     };
   }, [globalDashboardData, globalStrategyStats]);
+
+  /** Cumul tous comptes / toute période — pour la carte Total trades quand la carte Activité du header est masquée */
+  const globalAllAccountsActivity = useMemo(() => {
+    if (!globalDashboardData) return null;
+    const totalPositions =
+      globalDashboardData.daily_aggregates?.reduce(
+        (sum: number, day: any) => sum + (day.trade_count || 0),
+        0
+      ) || 0;
+    const globalActiveDays = globalDashboardData.active_days ?? 0;
+    return { totalPositions, globalActiveDays };
+  }, [globalDashboardData]);
   
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
@@ -516,10 +539,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   }, [accountId, selectedAccount]);
 
   useEffect(() => {
-    const loadToday = async () => {
+    const loadMarketHolidaysBundle = async () => {
+      setHolidaysLoading(true);
       try {
-        // XTKS exclu : horloge Tokyo non affichée sur le dashboard.
-        const response = await marketCalendarService.getMarketHolidaysToday('XNYS,XPAR,XLON');
+        // Une seule requête (bundle) : statut du jour + prochains fériés — XTKS exclu (Tokyo non affiché).
+        const response = await marketCalendarService.getMarketHolidaysBundle(1, 'XNYS,XPAR,XLON');
         const next: Partial<Record<string, MarketTodaySnapshot>> = {};
         for (const code of Object.keys(response.markets)) {
           const entry = response.markets[code];
@@ -536,22 +560,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           }
         }
         setMarketTodayByCode(next);
-      } catch {
-      }
-    };
-
-    const reloadUpcomingHolidays = async () => {
-      setHolidaysLoading(true);
-      try {
-        // XTKS exclu : l’affichage des jours fériés de Tokyo n’est plus utilisé.
-        const response = await marketCalendarService.getMarketHolidays(1, 'XNYS,XPAR,XLON');
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const filteredHolidays = response.upcoming.filter(holiday => {
-          const holidayDate = new Date(holiday.date);
-          holidayDate.setHours(0, 0, 0, 0);
-          return holidayDate >= today;
-        });
+        // Comparer en YYYY-MM-DD (calendrier local) : new Date('2026-04-20') est en UTC et peut
+        // reculer d’un jour en fuseaux américains, ce qui filtrait tous les événements à tort.
+        const nowLocal = new Date();
+        const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth() + 1).padStart(2, '0')}-${String(nowLocal.getDate()).padStart(2, '0')}`;
+        const upcoming = response.upcoming ?? [];
+        const filteredHolidays = upcoming.filter((holiday) => holiday.date >= todayStr);
         setMarketHolidays(filteredHolidays);
       } catch {
         // Silently fail - not critical
@@ -579,13 +593,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       const prev = lastMarketCalendarDatesRef.current;
       lastMarketCalendarDatesRef.current = next;
       if (prev && MARKET_CLOCK_TIMEZONES.some(([code]) => prev[code] !== next[code])) {
-        void loadToday();
-        void reloadUpcomingHolidays();
+        void loadMarketHolidaysBundle();
       }
     };
 
-    loadToday();
-    reloadUpcomingHolidays();
+    void loadMarketHolidaysBundle();
     checkCalendarRollAndMaybeReload();
 
     const intervalId = window.setInterval(checkCalendarRollAndMaybeReload, 60_000);
@@ -1517,11 +1529,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       </div>
 
       {/* Filtres */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center gap-2.5">
-          {/* Compte de trading avec Privacy Dropdown juste après */}
-          <div className="flex items-center gap-2 w-full lg:w-auto">
-            <div className="flex-1 min-w-0 max-w-full">
+      <div className="min-w-0 bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-6">
+        {/* Colonne jusqu’à xl (incl. iPad Pro 1024) ; une seule ligne à partir de xl pour éviter un alignement « cassé » */}
+        <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:flex-wrap xl:items-center min-[1680px]:flex-nowrap">
+          {/* Compte : largeur au contenu (pas flex-1 / w-full — évite la barre vide entre badge et chevron) */}
+          <div className="flex min-w-0 w-max max-w-full items-center gap-2 xl:shrink-0">
+            <div className="min-w-0">
               <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={privacySettings.hideAccountNumber} />
             </div>
             <div className="flex-shrink-0">
@@ -1532,40 +1545,34 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             </div>
           </div>
           
-          {/* Sélecteur de période moderne */}
-          <div className="w-full lg:w-auto lg:flex-shrink-0">
-            <PeriodSelector
-              value={selectedPeriod}
-              onChange={(period) => {
-                setSelectedPeriod(period);
-              }}
-            />
+          {/* Période + stratégie : même largeur fixe (sm+), pastilles compactes — pas d’étirement sur toute la ligne */}
+          <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:gap-2.5 xl:min-w-0 xl:flex-1">
+            <div className="w-full min-w-0 sm:w-52">
+              <PeriodSelector
+                value={selectedPeriod}
+                onChange={(period) => {
+                  setSelectedPeriod(period);
+                }}
+              />
+            </div>
+            <div className="w-full min-w-0 sm:w-52">
+              <PositionStrategyPillBar
+                value={selectedPositionStrategy}
+                onChange={setSelectedPositionStrategy}
+                strategies={positionStrategies}
+                disabled={loadingStrategies}
+              />
+            </div>
           </div>
 
-          {/* Sélecteur de stratégie de position */}
-          <div className="w-full lg:flex-1 lg:max-w-sm">
-            <CustomSelect
-              value={selectedPositionStrategy || ''}
-              onChange={(value) => setSelectedPositionStrategy(value ? Number(value) : null)}
-              options={[
-                { value: '', label: t('strategies:allStrategies') },
-                ...positionStrategies.map(s => ({
-                  value: s.id,
-                  label: s.title
-                }))
-              ]}
-              placeholder={t('strategies:positionStrategy')}
-              disabled={loadingStrategies}
-            />
-          </div>
-
-          {/* Indicateurs globaux - affichés uniquement sur très grands écrans, masqués sur mobile, tablette et tablette paysage */}
-          <div className="hidden 2xl:flex 2xl:items-center 2xl:ml-auto">
+          {/* Indicateurs globaux — scroll horizontal local si la ligne 2xl reste trop étroite */}
+          <div className="hidden min-w-0 max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain pb-0.5 [-webkit-overflow-scrolling:touch] touch-pan-x 2xl:flex 2xl:flex-shrink-0 2xl:items-center 2xl:ml-auto">
             {(globalStatsLoading || globalDashboardLoading || !globalStats) ? (
               <div className="flex gap-2">
                 <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
                 <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
                 <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
+                <div className="hidden min-[2000px]:block h-12 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
               </div>
             ) : (
               <GlobalStatsIndicators
@@ -1575,6 +1582,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 pnlSparkline={globalStats.pnlSparkline}
                 winRate={globalStats.winRate}
                 winRateSparkline={globalStats.winRateSparkline}
+                totalPositions={globalStats.totalPositions}
+                globalActiveDays={globalStats.globalActiveDays}
                 currencySymbol={currencySymbol}
               />
             )}
@@ -1588,6 +1597,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           className="mb-6"
           indicators={indicators}
           currencySymbol={currencySymbol}
+          globalAllAccountsActivity={globalAllAccountsActivity}
           onNavigateToTransactions={() => {
             window.location.hash = 'transactions';
           }}

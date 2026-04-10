@@ -71,6 +71,13 @@ export interface MarketHolidaysTodayResponse {
   markets: Record<string, MarketHolidayTodayEntry>;
 }
 
+/** Réponse ?bundle=1 : statut du jour + prochains événements en une requête */
+export interface MarketHolidaysBundleResponse {
+  markets: Record<string, MarketHolidayTodayEntry>;
+  upcoming: MarketHoliday[];
+  count: number;
+}
+
 class CalendarService {
   private readonly BASE_URL = getApiBaseUrl();
 
@@ -190,6 +197,23 @@ class CalendarService {
     const params = new URLSearchParams({ markets, today: '1' });
     const res = await fetch(`${this.BASE_URL}/api/trades/market-holidays/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement du statut jour férié pour aujourd\'hui');
+    return res.json();
+  }
+
+  /**
+   * Statut « aujourd’hui » par marché + prochains jours fériés en une seule requête (moins de latence au chargement).
+   */
+  async getMarketHolidaysBundle(
+    count: number = 1,
+    markets: string = 'XNYS,XPAR,XLON'
+  ): Promise<MarketHolidaysBundleResponse> {
+    const params = new URLSearchParams({
+      bundle: '1',
+      count: String(count),
+      markets,
+    });
+    const res = await fetch(`${this.BASE_URL}/api/trades/market-holidays/?${params}`);
+    if (!res.ok) throw new Error('Erreur lors du chargement du bundle calendrier marchés');
     return res.json();
   }
 }

@@ -105,6 +105,11 @@
   "streamerMode": "ストリーマーモード",
   "streamerModeTooltip": "プライバシー設定",
   "privacyControls": "プライバシー設定",
+  "periodGroups": {
+    "calendar": "日・週・月",
+    "yearAndHistory": "年・全期間",
+    "custom": "期間を指定"
+  },
   "periodPresets": {
     "today": "今日",
     "thisWeek": "今週",
@@ -138,6 +143,10 @@
   "hideAll": "すべて非表示",
   "hidden": "非表示",
   "visible": "表示",
-  "badgeInDays": "{{badgeName}} まであと{{days}}日"
+  "badgeInDays": "{{badgeName}} まであと{{days}}日",
+  "activeDays": "アクティブ日数",
+  "globalActivity": "アクティビティ",
+  "globalActivityTooltip": "総ポジション数（全口座）とアクティブ日数 — 現在残高の下と同じルール（1件以上の取引または規律記録がある日）。",
+  "globalPositionsLabel": "ポジション"
 }
 

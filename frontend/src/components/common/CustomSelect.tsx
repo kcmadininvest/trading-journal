@@ -13,6 +13,8 @@ interface CustomSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  /** Largeur plafonnée + texte tronqué (barres de filtres denses) */
+  variant?: 'default' | 'compact';
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -22,6 +24,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholder,
   disabled = false,
   className = '',
+  variant = 'default',
 }) => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -145,9 +148,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     </div>
   );
 
+  const rootClass =
+    variant === 'compact'
+      ? `relative w-full min-w-0 max-w-[240px] ${className}`.trim()
+      : `relative ${className}`.trim();
+
   return (
     <>
-      <div ref={dropdownRef} className={`relative ${className}`}>
+      <div ref={dropdownRef} className={rootClass}>
         <button
           ref={buttonRef}
           type="button"

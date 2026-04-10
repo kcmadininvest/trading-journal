@@ -105,6 +105,11 @@
   "streamerMode": "直播模式",
   "streamerModeTooltip": "隐私控制",
   "privacyControls": "隐私控制",
+  "periodGroups": {
+    "calendar": "日、周、月",
+    "yearAndHistory": "年与历史",
+    "custom": "自定义区间"
+  },
   "periodPresets": {
     "today": "今天",
     "thisWeek": "本周",
@@ -138,6 +143,10 @@
   "hideAll": "全部隐藏",
   "hidden": "隐藏",
   "visible": "可见",
-  "badgeInDays": "{{badgeName}} {{days}}天后"
+  "badgeInDays": "{{badgeName}} {{days}}天后",
+  "activeDays": "活跃天数",
+  "globalActivity": "活动",
+  "globalActivityTooltip": "总持仓数（所有账户）与活跃天数 — 规则与当前余额下方相同（至少一笔交易或有纪律跟踪的日期）。",
+  "globalPositionsLabel": "笔仓位"
 }
 
