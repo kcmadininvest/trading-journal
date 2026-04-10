@@ -28,6 +28,29 @@ function buildCalendarDays(periodEnd: string | null): Date[] {
   return days;
 }
 
+/** 0 = dimanche … 6 = samedi (comme Date#getDay), selon le fuseau utilisateur. */
+function getWeekdayInTimezone(isoDateKey: string, timezone: string | undefined): number {
+  const date = new Date(`${isoDateKey}T12:00:00`);
+  if (!timezone) {
+    return date.getDay();
+  }
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'long',
+  });
+  const name = dtf.format(date);
+  const map: Record<string, number> = {
+    Sunday: 0,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+  };
+  return map[name] ?? date.getDay();
+}
+
 interface StrategyStatsDisciplineOverviewCardProps {
   compliance: StrategyComplianceStats | null | undefined;
   periodEnd: string | null | undefined;
@@ -47,9 +70,10 @@ export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDiscipli
       return m;
     }, [compliance]);
 
-    const cells = useMemo(() => {
+    const { heatmapRows } = useMemo(() => {
       const cal = buildCalendarDays(periodEnd ?? null);
-      return cal.map((d) => {
+      const tz = preferences.timezone;
+      const cells = cal.map((d) => {
         const key = toIsoDate(d);
         const row = byDate.get(key);
         const evaluated = row ? (row.respected || 0) + (row.not_respected || 0) : 0;
@@ -59,10 +83,33 @@ export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDiscipli
           else if ((row.respected || 0) === 0) state = 'none';
           else state = 'partial';
         }
+        const weekday = getWeekdayInTimezone(key, tz);
         // T12:00:00 évite qu'une date ISO seule soit interprétée en UTC (décalage de jour selon le fuseau)
-        const displayDate = formatDate(`${key}T12:00:00`, preferences.date_format, false, preferences.timezone);
-        return { key, state, displayDate };
+        const displayDate = formatDate(`${key}T12:00:00`, preferences.date_format, false, tz);
+        return { key, state, displayDate, weekday };
       });
+
+      const sat = cells.filter((c) => c.weekday === 6);
+      const sun = cells.filter((c) => c.weekday === 0);
+      const hideSaturday = sat.length > 0 && sat.every((c) => c.state === 'empty');
+      const hideSunday = sun.length > 0 && sun.every((c) => c.state === 'empty');
+
+      if (cells.length === 0) {
+        return { heatmapRows: [] };
+      }
+
+      const rows: (typeof cells)[] = [];
+      for (let w = 0; w < 4; w++) {
+        const chunk = cells.slice(w * 7, w * 7 + 7);
+        rows.push(
+          chunk.filter(
+            (c) =>
+              !(hideSaturday && c.weekday === 6) && !(hideSunday && c.weekday === 0)
+          )
+        );
+      }
+
+      return { heatmapRows: rows };
     }, [byDate, periodEnd, preferences.date_format, preferences.timezone]);
 
     if (!compliance) {
@@ -81,7 +128,7 @@ export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDiscipli
         preferences.timezone
       );
 
-    const cellClass = (state: (typeof cells)[0]['state']) => {
+    const cellClass = (state: 'empty' | 'full' | 'none' | 'partial') => {
       switch (state) {
         case 'full':
           return 'bg-emerald-500 dark:bg-emerald-600';
@@ -138,22 +185,32 @@ export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDiscipli
             {t('strategies:statsInsights.heatmapTitle')}
           </div>
           <div
-            className="grid w-full grid-cols-7 gap-1 sm:gap-1.5"
+            className="flex flex-col gap-1 sm:gap-1.5 w-full"
             role="img"
             aria-label={t('strategies:statsInsights.heatmapAria')}
           >
-            {cells.map((c) => (
-              <Tooltip
-                key={c.key}
-                content={`${c.displayDate}: ${t(`strategies:statsInsights.heatmapState.${c.state}`)}`}
-                position="top"
-                delay={200}
-                className="w-full min-w-0"
+            {heatmapRows.map((row, rowIdx) => (
+              <div
+                key={rowIdx}
+                className="grid w-full gap-1 sm:gap-1.5"
+                style={{
+                  gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`,
+                }}
               >
-                <div
-                  className={`h-[26px] sm:h-[30px] w-full min-w-0 rounded-sm ${cellClass(c.state)}`}
-                />
-              </Tooltip>
+                {row.map((c) => (
+                  <Tooltip
+                    key={c.key}
+                    content={`${c.displayDate}: ${t(`strategies:statsInsights.heatmapState.${c.state}`)}`}
+                    position="top"
+                    delay={200}
+                    className="w-full min-w-0"
+                  >
+                    <div
+                      className={`h-[26px] sm:h-[30px] w-full min-w-0 rounded-sm ${cellClass(c.state)}`}
+                    />
+                  </Tooltip>
+                ))}
+              </div>
             ))}
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-3 text-xs text-gray-500 dark:text-gray-400">
