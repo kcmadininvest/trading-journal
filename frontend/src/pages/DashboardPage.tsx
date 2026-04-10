@@ -196,7 +196,7 @@ const MARKET_CLOCK_TIMEZONES: Array<[string, string]> = [
   ['XNYS', 'America/New_York'],
   ['XPAR', 'Europe/Paris'],
   ['XLON', 'Europe/London'],
-  ['XTKS', 'Asia/Tokyo'],
+  // ['XTKS', 'Asia/Tokyo'], — horloge / calendrier Tokyo non affichés sur le dashboard
 ];
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
@@ -518,7 +518,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   useEffect(() => {
     const loadToday = async () => {
       try {
-        const response = await marketCalendarService.getMarketHolidaysToday('XNYS,XPAR,XLON,XTKS');
+        // XTKS exclu : horloge Tokyo non affichée sur le dashboard.
+        const response = await marketCalendarService.getMarketHolidaysToday('XNYS,XPAR,XLON');
         const next: Partial<Record<string, MarketTodaySnapshot>> = {};
         for (const code of Object.keys(response.markets)) {
           const entry = response.markets[code];
@@ -542,7 +543,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const reloadUpcomingHolidays = async () => {
       setHolidaysLoading(true);
       try {
-        const response = await marketCalendarService.getMarketHolidays(1, 'XNYS,XPAR,XLON,XTKS');
+        // XTKS exclu : l’affichage des jours fériés de Tokyo n’est plus utilisé.
+        const response = await marketCalendarService.getMarketHolidays(1, 'XNYS,XPAR,XLON');
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const filteredHolidays = response.upcoming.filter(holiday => {
@@ -1925,7 +1927,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           <div className="flex items-center justify-between w-full gap-2">
                             <span>{streakDays} {t('dashboard:days')}</span>
                             {nextBadge && (
-                              <span className="text-xs px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 whitespace-nowrap">
+                              <span className="hidden 2xl:inline-flex text-xs px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 whitespace-nowrap shrink-0">
                                 {t('dashboard:badgeInDays', { 
                                   badgeName: t(`strategy:badges.labels.${nextBadge.id ?? ''}`, { defaultValue: nextBadge.name }),
                                   days: Math.max(0, nextBadge.days - streakDays)

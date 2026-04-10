@@ -19,7 +19,7 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
   return (
     <div className="flex flex-col 2xl:flex-row gap-4">
       {/* Section Horloges Mondiales */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 2xl:flex 2xl:gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 2xl:flex 2xl:gap-3">
         {/* NYSE */}
         <MarketClockCard
           marketCode="NYSE"
@@ -71,7 +71,8 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           showPreMarket={preferences.show_pre_market}
         />
 
-        {/* Tokyo Stock Exchange */}
+        {/*
+        Tokyo Stock Exchange — affichage retiré (plus utile), comme les jours fériés Tokyo.
         <MarketClockCard
           marketCode="XTKS"
           apiMarketCode="XTKS"
@@ -80,13 +81,14 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           timezone="Asia/Tokyo"
           tradingHours={{ open: '09:00', close: '15:00' }}
           color="blue"
-          holidays={marketHolidays.filter(h => h.market === 'XTKS')}
-          holidaysLoading={holidaysLoading}
+          holidays={[]}
+          holidaysLoading={false}
           marketToday={marketTodayByCode.XTKS}
           region="EU"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}
         />
+        */}
       </div>
 
       {/* Section Timeline des Événements */}
