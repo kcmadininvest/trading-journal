@@ -3,7 +3,7 @@ import { MonthlyCalendarData, WeeklyCalendarData } from '../../services/calendar
 import { Tooltip } from '../ui';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
-import { getMonthNames } from '../../utils/dateFormat';
+import { getMonthNames, LanguageType } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface MonthlyViewProps {
@@ -30,8 +30,18 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
   currencySymbol = '',
 }) => {
   const { preferences } = usePreferences();
-  const { t } = useI18nTranslation();
-  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
+  const { t, i18n } = useI18nTranslation();
+
+  const resolvedLanguage = useMemo<LanguageType>(() => {
+    const lang = i18n.language?.split('-')[0];
+    const supported: LanguageType[] = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
+    if (lang && supported.includes(lang as LanguageType)) {
+      return lang as LanguageType;
+    }
+    return preferences.language;
+  }, [i18n.language, preferences.language]);
+
+  const monthNames = useMemo(() => getMonthNames(resolvedLanguage), [resolvedLanguage]);
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth() + 1;

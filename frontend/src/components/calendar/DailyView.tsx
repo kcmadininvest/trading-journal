@@ -6,7 +6,7 @@ import { StrategyComplianceModal } from '../trades/StrategyComplianceModal';
 import { DailyJournalModal } from '../dailyJournal/DailyJournalModal';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
-import { getMonthNames, getDayNames } from '../../utils/dateFormat';
+import { getMonthNames, getDayNames, LanguageType } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface DailyViewProps {
@@ -37,13 +37,23 @@ const DailyView: React.FC<DailyViewProps> = ({
   currencySymbol = '',
 }) => {
   const { preferences } = usePreferences();
-  const { t } = useI18nTranslation();
+  const { t, i18n } = useI18nTranslation();
   const [selectedDateForTrades, setSelectedDateForTrades] = useState<string | null>(null);
   const [selectedDateForStrategy, setSelectedDateForStrategy] = useState<string | null>(null);
   const [selectedDateForJournal, setSelectedDateForJournal] = useState<string | null>(null);
-  
-  const monthNames = useMemo(() => getMonthNames(preferences.language), [preferences.language]);
-  const dayNames = useMemo(() => getDayNames(preferences.language), [preferences.language]);
+
+  // Aligner mois/jours sur la langue UI (i18n), comme les clés t('calendar:…')
+  const resolvedLanguage = useMemo<LanguageType>(() => {
+    const lang = i18n.language?.split('-')[0];
+    const supported: LanguageType[] = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
+    if (lang && supported.includes(lang as LanguageType)) {
+      return lang as LanguageType;
+    }
+    return preferences.language;
+  }, [i18n.language, preferences.language]);
+
+  const monthNames = useMemo(() => getMonthNames(resolvedLanguage), [resolvedLanguage]);
+  const dayNames = useMemo(() => getDayNames(resolvedLanguage), [resolvedLanguage]);
 
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();

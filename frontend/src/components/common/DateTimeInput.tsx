@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
-import { formatDateTimeShort, getMonthNames, getDayNames } from '../../utils/dateFormat';
+import { formatDateTimeShort, getMonthNames, getDayNames, LanguageType } from '../../utils/dateFormat';
 
 interface DateTimeInputProps {
   value: string; // Format ISO (YYYY-MM-DDTHH:mm) ou vide
@@ -34,7 +34,7 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
   title,
 }) => {
   const { preferences } = usePreferences();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [displayValue, setDisplayValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
@@ -400,8 +400,17 @@ export const DateTimeInput: React.FC<DateTimeInputProps> = ({
     return days;
   }, [calendarMonth, calendarYear]);
 
-  const monthNames = getMonthNames(preferences.language as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh');
-  const dayNames = getDayNames(preferences.language as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh');
+  const calendarLanguage = useMemo<LanguageType>(() => {
+    const lang = i18n.language?.split('-')[0];
+    const supported: LanguageType[] = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
+    if (lang && supported.includes(lang as LanguageType)) {
+      return lang as LanguageType;
+    }
+    return preferences.language;
+  }, [i18n.language, preferences.language]);
+
+  const monthNames = getMonthNames(calendarLanguage);
+  const dayNames = getDayNames(calendarLanguage);
   // Prendre seulement les 3 premiers caractères pour l'affichage compact
   const shortDayNames = dayNames.map(name => name.substring(0, 3));
 

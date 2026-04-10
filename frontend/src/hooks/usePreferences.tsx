@@ -2,7 +2,7 @@
  * Hook pour accéder aux préférences utilisateur dans toute l'application
  */
 
-import { useState, useEffect, useContext, createContext } from 'react';
+import { useState, useEffect, useContext, createContext, useCallback } from 'react';
 import userService, { UserPreferences } from '../services/userService';
 import { changeLanguage } from '../i18n/config';
 import { authService } from '../services/auth';
@@ -12,6 +12,8 @@ interface PreferencesContextType {
   preferences: UserPreferences;
   loading: boolean;
   refreshPreferences: () => Promise<void>;
+  /** Fusion locale (sans GET) pour éviter un rechargement complet après une mise à jour déjà connue (ex. langue depuis le header). */
+  mergePreferences: (partial: Partial<UserPreferences>) => void;
 }
 
 const PreferencesContext = createContext<PreferencesContextType | null>(null);
@@ -129,7 +131,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         // BACKEND = SOURCE DE VÉRITÉ ABSOLUE
         // Toujours appliquer la langue du backend, sans condition
         // Le backend a déjà détecté la langue du navigateur lors de la première création
-        if (prefs.language) {
+        if (prefs.language && prefs.language !== i18n.language?.split('-')[0]) {
           changeLanguage(prefs.language);
         }
       }
@@ -147,6 +149,10 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setLoading(false);
     }
   };
+
+  const mergePreferences = useCallback((partial: Partial<UserPreferences>) => {
+    setPreferences((prev) => ({ ...prev, ...partial }));
+  }, []);
 
   useEffect(() => {
     refreshPreferences();
@@ -202,11 +208,15 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Écouter les changements de langue dans les préférences
   // Mais seulement si l'utilisateur est authentifié (pour respecter la détection du navigateur si non authentifié)
   useEffect(() => {
-    if (preferences.language && authService.isAuthenticated()) {
-      // Seulement changer la langue si l'utilisateur est authentifié
-      // Sinon, laisser i18n utiliser la langue détectée depuis navigator
-      changeLanguage(preferences.language);
+    if (!preferences.language || !authService.isAuthenticated()) {
+      return;
     }
+    const i18nCode = i18n.language?.split('-')[0];
+    // Évite un second chargement i18n quand la langue UI est déjà alignée (ex. après changement depuis le header)
+    if (preferences.language === i18nCode) {
+      return;
+    }
+    changeLanguage(preferences.language);
   }, [preferences.language]);
 
   // Écouter les changements de taille de police dans les préférences
@@ -224,7 +234,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [preferences.font_size]);
 
   return (
-    <PreferencesContext.Provider value={{ preferences, loading, refreshPreferences }}>
+    <PreferencesContext.Provider value={{ preferences, loading, refreshPreferences, mergePreferences }}>
       {children}
     </PreferencesContext.Provider>
   );
@@ -265,6 +275,7 @@ export const usePreferences = (): PreferencesContextType => {
         },
         loading: false,
         refreshPreferences: async () => {},
+        mergePreferences: () => {},
       };
   }
   return context;

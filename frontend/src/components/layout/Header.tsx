@@ -4,8 +4,9 @@ import { Tooltip } from '../ui';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { changeLanguage } from '../../i18n/config';
-import userService from '../../services/userService';
+import userService, { UserPreferences } from '../../services/userService';
 import { NavigationMenu } from '../navigation';
+import { usePreferences } from '../../hooks/usePreferences';
 
 interface HeaderProps {
   currentUser: User;
@@ -16,6 +17,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, onLogout }) => {
   const { t, i18n } = useI18nTranslation();
+  const { mergePreferences } = usePreferences();
   const { theme, setTheme } = useTheme();
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const languageDropdownRef = useRef<HTMLDivElement>(null);
@@ -53,6 +55,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
     if (authService.isAuthenticated()) {
       try {
         await userService.updatePreferences({ language: lang as any });
+        mergePreferences({ language: lang as UserPreferences['language'] });
       } catch {
         // Ne pas logger en production
       }
