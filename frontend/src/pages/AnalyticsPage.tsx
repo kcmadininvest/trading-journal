@@ -4,7 +4,7 @@ import { useWindowWidth } from '../hooks/useWindowWidth';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
-import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
+import { PeriodSelector } from '../components/common/PeriodSelector';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
@@ -32,6 +32,7 @@ import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -108,17 +109,8 @@ const AnalyticsPage: React.FC = () => {
     tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
   }), [isDark]);
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
-  // Utiliser un sélecteur de période moderne
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
-    // Par défaut: 3 derniers mois
-    const now = new Date();
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    return {
-      start: `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`,
-      end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
-      preset: 'last3Months',
-    };
-  });
+  const { selectedPeriod, setSelectedPeriod, selectedPositionStrategy, setSelectedPositionStrategy } =
+    usePersistedPeriodAndStrategyFilters(accountId);
   // Garder pour compatibilité
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -126,9 +118,7 @@ const AnalyticsPage: React.FC = () => {
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // États pour le filtre Position Strategy
-  const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
+
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
@@ -247,11 +237,6 @@ const AnalyticsPage: React.FC = () => {
 
     loadTrades();
   }, [accountId, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy, accountLoading, t]);
-
-  // Réinitialiser le filtre de stratégie lors du changement de compte
-  useEffect(() => {
-    setSelectedPositionStrategy(null);
-  }, [accountId]);
 
   // Charger tous les trades du compte pour calculer le solde (sans filtre de période)
   useEffect(() => {

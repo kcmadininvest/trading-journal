@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
-import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
+import { PeriodSelector } from '../components/common/PeriodSelector';
 import { RespectRateCard } from '../components/common/RespectRateCard';
 import { PerformanceComparison } from '../components/strategy/PerformanceComparison';
 import { StrategyBadges } from '../components/strategy/StrategyBadges';
@@ -28,6 +28,7 @@ import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { formatDate, getMonthName } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useComplianceRefresh } from '../contexts/ComplianceRefreshContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
@@ -78,6 +79,8 @@ const StrategiesPage: React.FC = () => {
   const privacySettings = usePrivacySettings('strategies');
   const isDark = theme === 'dark';
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+  const { selectedPeriod, setSelectedPeriod, selectedPositionStrategy, setSelectedPositionStrategy } =
+    usePersistedPeriodAndStrategyFilters(accountId);
   const hideAccountNumber = useAccountNumberVisibility();
   const { refreshCount } = useComplianceRefresh();
   const windowSize = useWindowSize();
@@ -130,17 +133,6 @@ const StrategiesPage: React.FC = () => {
     easing: 'easeInOutQuart' as const,
   }), []);
   const [showImport, setShowImport] = useState(false);
-  // Utiliser un sélecteur de période moderne
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
-    // Par défaut: 3 derniers mois
-    const now = new Date();
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    return {
-      start: `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`,
-      end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
-      preset: 'last3Months',
-    };
-  });
   // Garder pour compatibilité
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -149,7 +141,6 @@ const StrategiesPage: React.FC = () => {
   const [statistics, setStatistics] = useState<any>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   
   // Utiliser le hook optimisé pour charger les trades filtrés (allTrades n'est plus chargé)

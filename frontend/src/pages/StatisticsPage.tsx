@@ -11,8 +11,9 @@ import { PositionStrategyFilterField } from '../components/common/PositionStrate
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
-import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
+import { PeriodSelector } from '../components/common/PeriodSelector';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
@@ -31,29 +32,18 @@ function StatisticsPage() {
   const { t } = useI18nTranslation();
   const { preferences, loading: preferencesLoading } = usePreferences();
   const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
+  const { selectedPeriod, setSelectedPeriod, selectedPositionStrategy, setSelectedPositionStrategy } =
+    usePersistedPeriodAndStrategyFilters(selectedAccountId);
   const hideAccountNumber = useAccountNumberVisibility();
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
-  // Utiliser un sélecteur de période moderne
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
-    // Par défaut: 3 derniers mois
-    const now = new Date();
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    return {
-      start: `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`,
-      end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
-      preset: 'last3Months',
-    };
-  });
   // Garder pour compatibilité
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
-  
-  // États pour le filtre Position Strategy
-  const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
+
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   
   // Hooks pour les données
@@ -124,11 +114,6 @@ function StatisticsPage() {
     };
     loadCurrencies();
   }, []);
-
-  // Réinitialiser le filtre de stratégie lors du changement de compte
-  useEffect(() => {
-    setSelectedPositionStrategy(null);
-  }, [selectedAccountId]);
 
   // Obtenir le symbole de la devise du compte sélectionné
   const currencySymbol = useMemo(() => {

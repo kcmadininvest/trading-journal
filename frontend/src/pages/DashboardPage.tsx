@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
-import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
+import { PeriodSelector } from '../components/common/PeriodSelector';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday, MarketTodaySnapshot } from '../services/calendar';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -23,6 +23,7 @@ import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil 
 import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
@@ -207,7 +208,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
-  
+  const { selectedPeriod, setSelectedPeriod, selectedPositionStrategy, setSelectedPositionStrategy } =
+    usePersistedPeriodAndStrategyFilters(accountId);
+
   // Wrapper pour formatCurrency avec préférences
   const formatCurrency = (value: number, currencySymbol: string = ''): string => {
     return formatCurrencyUtil(value, currencySymbol, preferences.number_format, 2);
@@ -217,20 +220,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const formatNumber = (value: number, digits: number = 2): string => {
     return formatNumberUtil(value, digits, preferences.number_format);
   };
-  // Utiliser un sélecteur de période moderne au lieu de année/mois
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodRange | null>(() => {
-    // Par défaut: 3 derniers mois
-    const now = new Date();
-    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    return {
-      start: `${threeMonthsAgo.getFullYear()}-${String(threeMonthsAgo.getMonth() + 1).padStart(2, '0')}-01`,
-      end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
-      preset: 'last3Months',
-    };
-  });
-  
-  // États pour le filtre Position Strategy
-  const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   
   const windowWidth = useWindowWidth();
@@ -493,11 +482,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // allTradesForSequences is now the same as trades from useDashboardData
   const allTradesForSequences = useMemo(() => trades, [trades]);
   const allStrategiesForSequences = useMemo(() => strategies, [strategies]);
-
-  // Réinitialiser le filtre de stratégie lors du changement de compte
-  useEffect(() => {
-    setSelectedPositionStrategy(null);
-  }, [accountId]);
 
   // Charger les métriques quotidiennes (MLL)
   useEffect(() => {

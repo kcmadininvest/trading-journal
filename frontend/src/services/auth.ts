@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { clearTradingJournalFilterStorageKeys } from '../hooks/usePersistedPeriodAndStrategyFilters';
 
 export interface User {
   id: number;
@@ -57,6 +58,7 @@ class AuthService {
   }
 
   private clearStorage() {
+    clearTradingJournalFilterStorageKeys();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');

@@ -3,26 +3,13 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { DateInput } from './DateInput';
 import Tooltip from '../ui/Tooltip';
+import {
+  type PeriodPreset,
+  type PeriodRange,
+  computePeriodPresetRanges,
+} from '../../utils/periodPresetRanges';
 
-export type PeriodPreset =
-  | 'today'
-  | 'thisWeek'
-  | 'lastWeek'
-  | 'thisMonth'
-  | 'lastMonth'
-  | 'last3Months'
-  | 'last6Months'
-  | 'thisYear'
-  | 'lastYear'
-  | 'rollingYear'
-  | 'allTime'
-  | 'custom';
-
-export interface PeriodRange {
-  start: string;
-  end: string;
-  preset?: PeriodPreset;
-}
+export type { PeriodPreset, PeriodRange };
 
 interface PeriodSelectorProps {
   value: PeriodRange | null;
@@ -67,96 +54,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
 
-  const presets = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    const thisWeekStart = new Date(today);
-    const dayOfWeek = today.getDay();
-    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-    thisWeekStart.setDate(diff);
-
-    const lastWeekStart = new Date(thisWeekStart);
-    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-    const lastWeekEnd = new Date(lastWeekStart);
-    lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
-
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-    const last3MonthsStart = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-    const last6MonthsStart = new Date(now.getFullYear(), now.getMonth() - 6, 1);
-    const thisYearStart = new Date(now.getFullYear(), 0, 1);
-    const lastYearStart = new Date(now.getFullYear() - 1, 0, 1);
-    const lastYearEnd = new Date(now.getFullYear() - 1, 11, 31);
-    const rollingYearStart = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
-    const allTimeStart = new Date(2000, 0, 1);
-
-    const formatDate = (date: Date): string => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    return {
-      today: {
-        start: formatDate(today),
-        end: formatDate(today),
-        preset: 'today' as PeriodPreset,
-      },
-      thisWeek: {
-        start: formatDate(thisWeekStart),
-        end: formatDate(today),
-        preset: 'thisWeek' as PeriodPreset,
-      },
-      lastWeek: {
-        start: formatDate(lastWeekStart),
-        end: formatDate(lastWeekEnd),
-        preset: 'lastWeek' as PeriodPreset,
-      },
-      thisMonth: {
-        start: formatDate(thisMonthStart),
-        end: formatDate(today),
-        preset: 'thisMonth' as PeriodPreset,
-      },
-      lastMonth: {
-        start: formatDate(lastMonthStart),
-        end: formatDate(lastMonthEnd),
-        preset: 'lastMonth' as PeriodPreset,
-      },
-      last3Months: {
-        start: formatDate(last3MonthsStart),
-        end: formatDate(today),
-        preset: 'last3Months' as PeriodPreset,
-      },
-      last6Months: {
-        start: formatDate(last6MonthsStart),
-        end: formatDate(today),
-        preset: 'last6Months' as PeriodPreset,
-      },
-      thisYear: {
-        start: formatDate(thisYearStart),
-        end: formatDate(today),
-        preset: 'thisYear' as PeriodPreset,
-      },
-      lastYear: {
-        start: formatDate(lastYearStart),
-        end: formatDate(lastYearEnd),
-        preset: 'lastYear' as PeriodPreset,
-      },
-      rollingYear: {
-        start: formatDate(rollingYearStart),
-        end: formatDate(today),
-        preset: 'rollingYear' as PeriodPreset,
-      },
-      allTime: {
-        start: formatDate(allTimeStart),
-        end: formatDate(today),
-        preset: 'allTime' as PeriodPreset,
-      },
-    };
-  }, []);
+  const presets = computePeriodPresetRanges(new Date());
 
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customStart, setCustomStart] = useState(value?.start || presets.today.start);
@@ -302,14 +200,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
         setCustomStart(value.start);
         setCustomEnd(value.end);
       } else {
-        const now = new Date();
-        const formatDate = (date: Date): string => {
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-          return `${year}-${month}-${day}`;
-        };
-        const today = formatDate(now);
+        const today = computePeriodPresetRanges(new Date()).today.start;
         setCustomStart(today);
         setCustomEnd(today);
       }
