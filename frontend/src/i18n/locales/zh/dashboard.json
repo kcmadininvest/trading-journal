@@ -105,6 +105,7 @@
   "streamerMode": "直播模式",
   "streamerModeTooltip": "隐私控制",
   "privacyControls": "隐私控制",
+  "privacyControlsScopeHint": "在此隐藏账号或余额时，其他页面也会隐藏。仅仪表盘隐藏 MLL 与盈亏。",
   "periodGroups": {
     "calendar": "日、周、月",
     "yearAndHistory": "年与历史",

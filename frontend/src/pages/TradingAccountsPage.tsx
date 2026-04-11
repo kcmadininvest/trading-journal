@@ -7,6 +7,7 @@ import TradingAccountModal from '../components/accounts/TradingAccountModal';
 import { AccountsFilters } from '../components/accounts/AccountsFilters';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
+import { usePrivacySettings, maskValue } from '../hooks/usePrivacySettings';
 import userService from '../services/userService';
 import { PageShell } from '../components/layout';
 
@@ -20,6 +21,7 @@ const TradingAccountsPage: React.FC = () => {
   const [allAccounts, setAllAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const { preferences, loading: preferencesLoading } = usePreferences();
+  const privacySettings = usePrivacySettings('trading_accounts');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_ITEMS_PER_PAGE);
   const lastPrefPageSizeRef = useRef<number | null>(null);
@@ -183,6 +185,10 @@ const TradingAccountsPage: React.FC = () => {
 
   // Helper pour formater le capital initial
   const formatInitialCapital = (account: TradingAccount): string => {
+    if (privacySettings.hideInitialBalance) {
+      const symbol = getCurrencySymbol(account.currency);
+      return maskValue(null, symbol);
+    }
     if (!account.initial_capital) return '-';
     const value = typeof account.initial_capital === 'string' 
       ? parseFloat(account.initial_capital) 

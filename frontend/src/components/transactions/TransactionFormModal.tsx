@@ -4,6 +4,7 @@ import { tradingAccountsService, TradingAccount } from '../../services/tradingAc
 import { AccountSelector } from '../accounts/AccountSelector';
 import { DateInput } from '../common/DateInput';
 import { usePreferences } from '../../hooks/usePreferences';
+import { usePrivacySettings, maskValue } from '../../hooks/usePrivacySettings';
 import { formatCurrency } from '../../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
@@ -26,6 +27,7 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
 }) => {
   const { t } = useI18nTranslation();
   const { preferences } = usePreferences();
+  const privacySettings = usePrivacySettings('transactions');
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(defaultAccountId || null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [amount, setAmount] = useState('');
@@ -248,7 +250,9 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
               <p className="text-sm text-gray-700 dark:text-gray-300">
                 <span className="font-medium">{t('transactions:availableBalance', { defaultValue: 'Solde disponible' })}:</span>{' '}
                 <span className="font-semibold text-blue-600 dark:text-blue-400">
-                  {formatCurrency(currentBalance, currencySymbol, preferences.number_format, 2)}
+                  {privacySettings.hideCurrentBalance
+                    ? maskValue(null, currencySymbol || undefined)
+                    : formatCurrency(currentBalance, currencySymbol, preferences.number_format, 2)}
                 </span>
               </p>
             </div>
@@ -335,7 +339,9 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
                     ? 'text-green-600 dark:text-green-400'
                     : 'text-orange-600 dark:text-orange-400'
                 }`}>
-                  {formatCurrency(balanceAfterTransaction, currencySymbol, preferences.number_format, 2)}
+                  {privacySettings.hideCurrentBalance
+                    ? maskValue(null, currencySymbol || undefined)
+                    : formatCurrency(balanceAfterTransaction, currencySymbol, preferences.number_format, 2)}
                 </span>
               </p>
             </div>

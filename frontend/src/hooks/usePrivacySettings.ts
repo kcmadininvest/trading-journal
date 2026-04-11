@@ -20,12 +20,18 @@ export function usePrivacySettings(pageContext: string): PrivacySettings {
   return useMemo(() => {
     // Récupérer les overrides pour le contexte de page
     const overrides = preferences.privacy_overrides?.[pageContext] || {};
+    // Certains réglages ne sont exposés que sur le dashboard : les appliquer partout
+    const dashboardOverrides = preferences.privacy_overrides?.dashboard || {};
 
     // Retourner les valeurs avec false par défaut
     return {
       hideAccountNumber: overrides.hide_account_number ?? false,
-      hideInitialBalance: overrides.hide_initial_balance ?? false,
-      hideCurrentBalance: overrides.hide_current_balance ?? false,
+      hideInitialBalance:
+        Boolean(overrides.hide_initial_balance) ||
+        dashboardOverrides.hide_initial_balance === true,
+      hideCurrentBalance:
+        Boolean(overrides.hide_current_balance) ||
+        dashboardOverrides.hide_current_balance === true,
       hideMll: overrides.hide_mll ?? false,
       hideProfitLoss: overrides.hide_profit_loss ?? false,
     };

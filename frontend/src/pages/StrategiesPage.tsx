@@ -422,6 +422,8 @@ const StrategiesPage: React.FC = () => {
             className="mb-4 sm:mb-6"
             indicators={indicators} 
             currencySymbol={currencySymbol} 
+            hideInitialBalance={privacySettings.hideInitialBalance}
+            hideCurrentBalance={privacySettings.hideCurrentBalance}
             loading={isLoading || summaryLoading}
             error={error || null}
           />

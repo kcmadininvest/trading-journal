@@ -152,6 +152,7 @@
   "streamerMode": "Modo Streamer",
   "streamerModeTooltip": "Controles de privacidad",
   "privacyControls": "Controles de Privacidad",
+  "privacyControlsScopeHint": "Ocultar aquí el número de cuenta o los saldos también los oculta en otras páginas. Ocultar el MLL o las ganancias/pérdidas solo afecta al panel.",
   "hideAll": "Ocultar todo",
   "hidden": "Oculto",
   "visible": "Visible",

@@ -6,7 +6,8 @@ import {
   updatePrivacyOverrides, 
   resetPrivacyOverrides, 
   hideAllPrivacyOptions,
-  countActiveOverrides 
+  countActiveOverrides,
+  PAGE_CONTEXTS,
 } from '../../utils/privacyHelpers';
 import Tooltip from '../ui/Tooltip';
 
@@ -162,9 +163,17 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
           }}
         >
           <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
               {t('dashboard:privacyControls', { defaultValue: 'Contrôles de Confidentialité' })}
             </h3>
+            {pageContext === PAGE_CONTEXTS.DASHBOARD && (
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed text-justify">
+                {t('dashboard:privacyControlsScopeHint', {
+                  defaultValue:
+                    'Masquer le numéro de compte ou les soldes ici les masque aussi sur les autres pages. Masquer le MLL ou les profits/pertes ne concerne que le tableau de bord.',
+                })}
+              </p>
+            )}
             
             {/* Options */}
             <div className="space-y-2 mb-4">

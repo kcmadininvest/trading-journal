@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { accountTransactionsService, AccountTransaction } from '../../services/accountTransactions';
 import { usePreferences } from '../../hooks/usePreferences';
+import { usePrivacySettings, maskValue } from '../../hooks/usePrivacySettings';
 import { formatCurrency } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+
+function symbolForCurrencyCode(code: string): string {
+  if (code === 'USD') return '$';
+  if (code === 'EUR') return '€';
+  return code || '$';
+}
 
 interface TransactionHistoryProps {
   tradingAccountId?: number;
@@ -19,12 +26,14 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 }) => {
   const { t } = useI18nTranslation();
   const { preferences } = usePreferences();
+  const privacySettings = usePrivacySettings('transactions');
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [allTransactions, setAllTransactions] = useState<AccountTransaction[]>([]); // Toutes les transactions pour les compteurs
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'deposit' | 'withdrawal'>('all');
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+  const [balanceCurrencyCode, setBalanceCurrencyCode] = useState<string>('USD');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<AccountTransaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -57,9 +66,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         try {
           const balance = await accountTransactionsService.getBalance(tradingAccountId);
           setCurrentBalance(parseFloat(balance.current_balance));
+          setBalanceCurrencyCode(balance.currency || 'USD');
         } catch (err) {
           console.error('Erreur lors du chargement du solde:', err);
         }
+      } else {
+        setCurrentBalance(null);
+        setBalanceCurrencyCode('USD');
       }
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des transactions');
@@ -191,7 +204,14 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           <div className="text-sm">
             <span className="text-gray-600 dark:text-gray-400">{t('transactions:currentBalance', { defaultValue: 'Solde actuel' })}: </span>
             <span className="font-semibold text-gray-900 dark:text-gray-100">
-              {formatCurrency(currentBalance, '$', preferences.number_format, 2)}
+              {privacySettings.hideCurrentBalance
+                ? maskValue(null, symbolForCurrencyCode(balanceCurrencyCode))
+                : formatCurrency(
+                    currentBalance,
+                    symbolForCurrencyCode(balanceCurrencyCode),
+                    preferences.number_format,
+                    2
+                  )}
             </span>
           </div>
         )}

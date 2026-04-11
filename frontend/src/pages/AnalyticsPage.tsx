@@ -4,6 +4,7 @@ import { useWindowWidth } from '../hooks/useWindowWidth';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
+import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { PeriodSelector } from '../components/common/PeriodSelector';
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
@@ -84,6 +85,7 @@ const AnalyticsPage: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
   const hideAccountNumber = useAccountNumberVisibility();
+  const privacySettings = usePrivacySettings('analytics');
   const isDark = theme === 'dark';
   
   // Wrapper pour formatNumber avec préférences
@@ -1515,6 +1517,8 @@ const AnalyticsPage: React.FC = () => {
           className="mb-6"
           indicators={indicators} 
           currencySymbol={currencySymbol} 
+          hideInitialBalance={privacySettings.hideInitialBalance}
+          hideCurrentBalance={privacySettings.hideCurrentBalance}
           loading={isLoading || summaryLoading}
           error={error || summaryError}
         />

@@ -16,6 +16,7 @@ import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
+import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { MetricCard, MetricItem } from '../components/statistics/MetricCard';
 import { MetricGroup } from '../components/statistics/MetricGroup';
 import { MetricCardWithGauge } from '../components/statistics/MetricCardWithGauge';
@@ -35,6 +36,7 @@ function StatisticsPage() {
   const { selectedPeriod, setSelectedPeriod, selectedPositionStrategy, setSelectedPositionStrategy } =
     usePersistedPeriodAndStrategyFilters(selectedAccountId);
   const hideAccountNumber = useAccountNumberVisibility();
+  const privacySettings = usePrivacySettings('statistics');
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
@@ -402,6 +404,8 @@ function StatisticsPage() {
             className="mb-4 sm:mb-6"
             indicators={indicators} 
             currencySymbol={currencySymbol} 
+            hideInitialBalance={privacySettings.hideInitialBalance}
+            hideCurrentBalance={privacySettings.hideCurrentBalance}
             loading={isLoading || summaryLoading}
             error={hasError ? t('statistics:errorLoadingData') : summaryError}
           />

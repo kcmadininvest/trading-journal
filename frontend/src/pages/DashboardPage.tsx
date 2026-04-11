@@ -2170,6 +2170,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         display: false
                       },
                       tooltip: {
+                        enabled: !privacySettings.hideProfitLoss,
                         backgroundColor: chartColors.tooltipBg,
                         titleColor: chartColors.text,
                         bodyColor: chartColors.text,
@@ -2280,6 +2281,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           lineWidth: 1,
                         },
                         ticks: {
+                          display: !privacySettings.hideProfitLoss,
                           callback: function(value: any) {
                             return formatCurrency(value, currencySymbol);
                           },
@@ -2325,15 +2327,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           </span>
                         </div>
                       )}
-                      <div className="flex items-center gap-1">
-                        <span>{t('dashboard:bestDay')} :</span>
-                        <span className="font-medium text-blue-500">{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
-                      </div>
-                      {waterfallStats.worstDay < 0 && (
-                        <div className="flex items-center gap-1">
-                          <span>{t('dashboard:worstDay')} :</span>
-                          <span className="font-medium text-pink-500">{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
-                        </div>
+                      {!privacySettings.hideProfitLoss && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <span>{t('dashboard:bestDay')} :</span>
+                            <span className="font-medium text-blue-500">{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
+                          </div>
+                          {waterfallStats.worstDay < 0 && (
+                            <div className="flex items-center gap-1">
+                              <span>{t('dashboard:worstDay')} :</span>
+                              <span className="font-medium text-pink-500">{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
+                            </div>
+                          )}
+                        </>
                       )}
                       <div className="flex items-center gap-1">
                         <span>{t('dashboard:winningDays')} :</span>
@@ -2423,6 +2429,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             lineWidth: 1,
                           },
                           ticks: {
+                            display: !privacySettings.hideProfitLoss,
                             callback: function(value: any) {
                               return formatCurrency(value, currencySymbol);
                             },

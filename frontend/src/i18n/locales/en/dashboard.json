@@ -151,6 +151,7 @@
   "streamerMode": "Streamer Mode",
   "streamerModeTooltip": "Privacy Controls",
   "privacyControls": "Privacy Controls",
+  "privacyControlsScopeHint": "Hiding the account number or balances here also hides them on other pages. Hiding MLL or profit/loss applies only to the dashboard.",
   "hideAll": "Hide All",
   "hidden": "Hidden",
   "visible": "Visible",
