@@ -217,8 +217,12 @@ class MarketHolidaysService:
         """
         try:
             calendar = _get_cached_trading_calendar(market)
-            early_closes = calendar.early_closes(schedule=calendar.schedule(start_date=start_date, end_date=end_date))
-            
+            schedule = calendar.schedule(start_date=start_date, end_date=end_date)
+            # Schedule vide (ex. jour unique hors séance) : colonnes object, early_closes() plante sur .dt
+            if schedule is None or schedule.empty:
+                return []
+            early_closes = calendar.early_closes(schedule=schedule)
+
             if early_closes is not None and len(early_closes) > 0:
                 return sorted([d.date() for d in early_closes.index])
             return []

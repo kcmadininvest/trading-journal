@@ -279,7 +279,7 @@ const DailyView: React.FC<DailyViewProps> = ({
       </div>
 
       {/* Calendrier */}
-      <div className="md:bg-white md:dark:bg-gray-800 md:rounded-lg md:shadow-md md:overflow-hidden">
+      <div className="md:bg-white md:dark:bg-gray-800 md:rounded-lg md:shadow md:overflow-hidden md:border md:border-gray-200 md:dark:border-gray-700">
         {/* Vue grille pour desktop (md et plus) */}
         <div className="hidden md:block overflow-x-auto">
           {/* En-têtes des jours */}

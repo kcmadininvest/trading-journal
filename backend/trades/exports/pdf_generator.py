@@ -19,6 +19,36 @@ except ImportError:
     plt = None
     Figure = None
 import io
+from pathlib import Path
+
+_INTER_VARIABLE_FONT = Path(__file__).resolve().parent / 'fonts' / 'Inter-Variable.ttf'
+_MPL_INTER_REGISTERED = False
+
+
+def _inter_font_face_css() -> str:
+    if not _INTER_VARIABLE_FONT.is_file():
+        return ''
+    uri = _INTER_VARIABLE_FONT.resolve().as_uri()
+    return (
+        "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;"
+        f"src:url('{uri}') format('truetype');}}\n"
+    )
+
+
+def _ensure_matplotlib_uses_inter() -> None:
+    global _MPL_INTER_REGISTERED
+    if plt is None or _MPL_INTER_REGISTERED:
+        return
+    if not _INTER_VARIABLE_FONT.is_file():
+        return
+    try:
+        from matplotlib import font_manager
+        font_manager.fontManager.addfont(str(_INTER_VARIABLE_FONT.resolve()))
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['font.sans-serif'] = ['Inter', 'DejaVu Sans']
+        _MPL_INTER_REGISTERED = True
+    except Exception:
+        pass
 
 
 class PDFGenerator:
@@ -70,6 +100,7 @@ class PDFGenerator:
     
     def _generate_charts(self):
         """Génère tous les graphiques nécessaires."""
+        _ensure_matplotlib_uses_inter()
         sections = self.config.get('sections', {})
         charts = sections.get('charts', [])
         
@@ -282,10 +313,11 @@ class PDFGenerator:
     
     def _get_css(self) -> str:
         """Retourne le CSS pour le PDF."""
-        return """
+        return _inter_font_face_css() + """
         @page {
             size: A4;
             margin: 2cm;
+            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
             @bottom-right {
                 content: "Page " counter(page) " / " counter(pages);
                 font-size: 9pt;
@@ -294,7 +326,7 @@ class PDFGenerator:
         }
         
         body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
+            font-family: 'Inter', 'Helvetica', 'Arial', sans-serif;
             font-size: 10pt;
             line-height: 1.5;
             color: #1e293b;

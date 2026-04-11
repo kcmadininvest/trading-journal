@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
 /* Padding vertical des pages (sous le header fixe / au-dessus du footer) — hors JIT Tailwind pour éviter toute classe absente du bundle */
 @layer components {
   .layout-page-shell-y {

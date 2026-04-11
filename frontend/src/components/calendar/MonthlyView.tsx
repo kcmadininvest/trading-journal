@@ -175,7 +175,7 @@ const MonthlyView: React.FC<MonthlyViewProps> = ({
       </div>
 
       {/* Calendrier */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
         {/* Vue grille pour desktop (md et plus) */}
         <div className="hidden md:block overflow-x-auto">
           {/* En-têtes des colonnes */}

@@ -1,11 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { Chart } from 'chart.js';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { PreferencesProvider } from './hooks/usePreferences';
 import { TradingAccountProvider } from './contexts/TradingAccountContext';
 import './i18n/config'; // Initialiser i18n
+
+Chart.defaults.font.family = 'Inter, ui-sans-serif, system-ui, sans-serif';
 
 // Appliquer la taille de police depuis localStorage avant le premier rendu pour éviter le flash
 try {
