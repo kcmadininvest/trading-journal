@@ -1530,10 +1530,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       {/* Filtres */}
       <div className="min-w-0 bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-6">
-        {/* Colonne jusqu’à xl (incl. iPad Pro 1024) ; une seule ligne à partir de xl pour éviter un alignement « cassé » */}
-        <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:flex-wrap xl:items-center min-[1680px]:flex-nowrap">
+        {/* Colonne si largeur inférieure à 900px ; dès 900px : iPad paysage, Surface Pro 7 portrait (~912px avec mise à l’échelle Windows), etc. */}
+        <div className="flex min-w-0 flex-col gap-3 min-[900px]:flex-row min-[900px]:flex-wrap min-[900px]:items-center min-[1680px]:flex-nowrap">
           {/* Compte : largeur au contenu (pas flex-1 / w-full — évite la barre vide entre badge et chevron) */}
-          <div className="flex min-w-0 w-max max-w-full items-center gap-2 xl:shrink-0">
+          <div className="flex min-w-0 w-max max-w-full items-center gap-2 min-[900px]:shrink-0">
             <div className="min-w-0">
               <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={privacySettings.hideAccountNumber} />
             </div>
@@ -1546,7 +1546,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           </div>
           
           {/* Période + stratégie : même largeur fixe (sm+), pastilles compactes — pas d’étirement sur toute la ligne */}
-          <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:gap-2.5 xl:min-w-0 xl:flex-1">
+          <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:gap-2.5 min-[900px]:min-w-0 min-[900px]:flex-1 min-[900px]:items-center">
             <div className="w-full min-w-0 sm:w-52">
               <PeriodSelector
                 value={selectedPeriod}
