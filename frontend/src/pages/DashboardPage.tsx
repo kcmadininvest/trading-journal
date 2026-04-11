@@ -205,6 +205,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
   const privacySettings = usePrivacySettings('dashboard');
+  /** Évite de reconstruire le PnL (somme des barres) via tooltips / datalabels / axe Y */
+  const hideWeekdayChartMoneyValues =
+    privacySettings.hideProfitLoss || privacySettings.hideCurrentBalance;
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
   const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
@@ -1550,6 +1553,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 totalPositions={globalStats.totalPositions}
                 globalActiveDays={globalStats.globalActiveDays}
                 currencySymbol={currencySymbol}
+                hideCurrentBalance={privacySettings.hideCurrentBalance}
               />
             )}
           </div>
@@ -1787,16 +1791,34 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     </div>
                   </div>
                 }
-                variant={additionalStats.totalPnl >= 0 ? 'success' : 'danger'}
+                variant={
+                  privacySettings.hideCurrentBalance
+                    ? 'default'
+                    : additionalStats.totalPnl >= 0
+                      ? 'success'
+                      : 'danger'
+                }
                 size="small"
                 icon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 }
-                trend={additionalStats.totalPnl >= 0 ? 'up' : 'down'}
-                trendValue={additionalStats.totalPnl >= 0 ? t('dashboard:profitable') : t('dashboard:losing')}
-                hideValue={privacySettings.hideProfitLoss}
+                trend={
+                  privacySettings.hideCurrentBalance
+                    ? undefined
+                    : additionalStats.totalPnl >= 0
+                      ? 'up'
+                      : 'down'
+                }
+                trendValue={
+                  privacySettings.hideCurrentBalance
+                    ? undefined
+                    : additionalStats.totalPnl >= 0
+                      ? t('dashboard:profitable')
+                      : t('dashboard:losing')
+                }
+                hideValue={privacySettings.hideCurrentBalance}
               />
               
               <ModernStatCard
@@ -2170,7 +2192,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         display: false
                       },
                       tooltip: {
-                        enabled: !privacySettings.hideProfitLoss,
+                        enabled: !hideWeekdayChartMoneyValues,
                         backgroundColor: chartColors.tooltipBg,
                         titleColor: chartColors.text,
                         bodyColor: chartColors.text,
@@ -2203,7 +2225,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       datalabels: {
                         display: function(context: any) {
                           // Ne pas afficher si privacy activé ou sur mobile
-                          if (privacySettings.hideProfitLoss || windowWidth < 640) {
+                          if (hideWeekdayChartMoneyValues || windowWidth < 640) {
                             return false;
                           }
                           // Ne pas afficher si la valeur est 0
@@ -2281,7 +2303,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           lineWidth: 1,
                         },
                         ticks: {
-                          display: !privacySettings.hideProfitLoss,
+                          display: !hideWeekdayChartMoneyValues,
                           callback: function(value: any) {
                             return formatCurrency(value, currencySymbol);
                           },

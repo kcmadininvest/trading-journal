@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Tooltip from '../ui/Tooltip';
+import { maskValue } from '../../hooks/usePrivacySettings';
 
 interface GlobalStatsIndicatorsProps {
   disciplineRate: number;
@@ -16,6 +17,8 @@ interface GlobalStatsIndicatorsProps {
   /** Conservé pour compatibilité / HMR ; non affiché */
   activitySparkline?: number[];
   currencySymbol: string;
+  /** Masque le montant PnL global (aligné sur « masquer le solde actuel ») */
+  hideCurrentBalance?: boolean;
   className?: string;
 }
 
@@ -32,6 +35,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   globalActiveDays,
   activitySparkline = [],
   currencySymbol,
+  hideCurrentBalance = false,
   className = '',
 }) => {
   const { t } = useTranslation();
@@ -164,7 +168,13 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
         className="block h-full min-h-0"
         content={t('dashboard:pnlTooltip', { defaultValue: 'Performance totale tous comptes confondus' })}
       >
-        <div className={`${cardShell} ${getPnLColor(totalPnL)}`}>
+        <div
+          className={`${cardShell} ${
+            hideCurrentBalance
+              ? 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800'
+              : getPnLColor(totalPnL)
+          }`}
+        >
           <div className="flex-shrink-0">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -176,12 +186,12 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
             </div>
             <div className="flex items-center gap-1">
               <span className="text-lg font-bold leading-none whitespace-nowrap">
-                {formatPnL(totalPnL)}
+                {hideCurrentBalance ? maskValue(null, currencySymbol) : formatPnL(totalPnL)}
               </span>
-              {renderTrend(pnlTrend, totalPnL >= 0)}
+              {!hideCurrentBalance && renderTrend(pnlTrend, totalPnL >= 0)}
             </div>
           </div>
-          {renderSparklineSlot(pnlSparkline)}
+          {!hideCurrentBalance ? renderSparklineSlot(pnlSparkline) : <div className="ml-auto h-6 w-[60px] flex-shrink-0" aria-hidden />}
         </div>
       </Tooltip>
 
