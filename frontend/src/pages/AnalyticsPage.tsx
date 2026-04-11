@@ -8,8 +8,8 @@ import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector
 import { tradesService, TradeListItem } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
-import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
-import { CustomSelect } from '../components/common/CustomSelect';
+import { PositionStrategyFilterField } from '../components/common/PositionStrategyPillBar';
+import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -129,8 +129,7 @@ const AnalyticsPage: React.FC = () => {
   
   // États pour le filtre Position Strategy
   const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
-  const [positionStrategies, setPositionStrategies] = useState<PositionStrategy[]>([]);
-  const [loadingStrategies, setLoadingStrategies] = useState(false);
+  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   // accountId vient maintenant du contexte global
@@ -248,24 +247,6 @@ const AnalyticsPage: React.FC = () => {
 
     loadTrades();
   }, [accountId, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy, accountLoading, t]);
-
-  // Charger les stratégies de position pour le filtre
-  useEffect(() => {
-    const loadPositionStrategies = async () => {
-      setLoadingStrategies(true);
-      try {
-        const result = await positionStrategiesService.list();
-        setPositionStrategies(result);
-      } catch (err) {
-        console.error('Erreur lors du chargement des stratégies de position', err);
-        setPositionStrategies([]);
-      } finally {
-        setLoadingStrategies(false);
-      }
-    };
-
-    loadPositionStrategies();
-  }, []);
 
   // Réinitialiser le filtre de stratégie lors du changement de compte
   useEffect(() => {
@@ -1532,24 +1513,13 @@ const AnalyticsPage: React.FC = () => {
               />
             </div>
 
-            {/* Sélecteur de stratégie — flex-1 + min-w-0 pour céder de la place à la période (dates perso.) */}
-            <div className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('strategies:positionStrategy')}
-              </label>
-              <CustomSelect
-                value={selectedPositionStrategy || ''}
-                onChange={(value) => setSelectedPositionStrategy(value ? Number(value) : null)}
-                options={[
-                  { value: '', label: t('strategies:allStrategies') },
-                  ...positionStrategies.map(s => ({
-                    value: s.id,
-                    label: s.title
-                  }))
-                ]}
-                disabled={loadingStrategies}
-              />
-            </div>
+            <PositionStrategyFilterField
+              className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
+              value={selectedPositionStrategy}
+              onChange={setSelectedPositionStrategy}
+              strategies={positionStrategies}
+              loading={loadingStrategies}
+            />
           </div>
         </div>
       </div>

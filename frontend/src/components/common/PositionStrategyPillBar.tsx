@@ -58,7 +58,6 @@ export const PositionStrategyPillBar: React.FC<PositionStrategyPillBarProps> = (
     });
     document.body.removeChild(temp);
     w = Math.min(Math.max(w, 200), 360);
-    // `fixed` = repère viewport : utiliser getBoundingClientRect() sans scrollX/Y
     const margin = 8;
     const vw = window.innerWidth;
     const maxW = Math.min(w, vw - margin * 2);
@@ -191,6 +190,42 @@ export const PositionStrategyPillBar: React.FC<PositionStrategyPillBarProps> = (
         </button>
       </Tooltip>
       {menu}
+    </div>
+  );
+};
+
+export interface PositionStrategyFilterFieldProps {
+  value: number | null;
+  onChange: (strategyId: number | null) => void;
+  strategies: PositionStrategy[];
+  loading?: boolean;
+  /** Conteneur (largeur / flex), ex. w-full lg:min-w-0 lg:flex-1 lg:max-w-sm */
+  className?: string;
+  /** Libellé au-dessus ; défaut : strategies:positionStrategy */
+  label?: string;
+}
+
+/** Libellé + pill « Toutes les stratégies » aligné dashboard */
+export const PositionStrategyFilterField: React.FC<PositionStrategyFilterFieldProps> = ({
+  value,
+  onChange,
+  strategies,
+  loading = false,
+  className = '',
+  label,
+}) => {
+  const { t } = useTranslation('strategies');
+  return (
+    <div className={`w-full min-w-0 ${className}`.trim()}>
+      <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+        {label ?? t('positionStrategy')}
+      </label>
+      <PositionStrategyPillBar
+        value={value}
+        onChange={onChange}
+        strategies={strategies}
+        disabled={loading}
+      />
     </div>
   );
 };

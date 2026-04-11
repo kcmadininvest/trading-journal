@@ -12,8 +12,8 @@ import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../s
 import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
 import { tradeStrategiesService } from '../services/tradeStrategies';
-import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
-import { PositionStrategyPillBar } from '../components/dashboard/PositionStrategyPillBar';
+import { PositionStrategyPillBar } from '../components/common/PositionStrategyPillBar';
+import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import ModernStatCard from '../components/common/ModernStatCard';
 import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
 import Tooltip from '../components/ui/Tooltip';
@@ -231,8 +231,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   
   // États pour le filtre Position Strategy
   const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
-  const [positionStrategies, setPositionStrategies] = useState<PositionStrategy[]>([]);
-  const [loadingStrategies, setLoadingStrategies] = useState(false);
+  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   
   const windowWidth = useWindowWidth();
   const shouldLoadGlobalStats = windowWidth >= 1536; // 2xl breakpoint
@@ -494,24 +493,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // allTradesForSequences is now the same as trades from useDashboardData
   const allTradesForSequences = useMemo(() => trades, [trades]);
   const allStrategiesForSequences = useMemo(() => strategies, [strategies]);
-
-  // Charger les stratégies de position pour le filtre
-  useEffect(() => {
-    const loadPositionStrategies = async () => {
-      setLoadingStrategies(true);
-      try {
-        const result = await positionStrategiesService.list();
-        setPositionStrategies(result);
-      } catch (err) {
-        console.error('Erreur lors du chargement des stratégies de position', err);
-        setPositionStrategies([]);
-      } finally {
-        setLoadingStrategies(false);
-      }
-    };
-
-    loadPositionStrategies();
-  }, []);
 
   // Réinitialiser le filtre de stratégie lors du changement de compte
   useEffect(() => {

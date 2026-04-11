@@ -12,7 +12,8 @@ import { TabsFilter } from '../components/common/TabsFilter';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
-import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
+import { PositionStrategyFilterField } from '../components/common/PositionStrategyPillBar';
+import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
@@ -54,7 +55,6 @@ import { EmotionsChart } from '../components/strategy/charts/EmotionsChart';
 import { EvolutionChart } from '../components/strategy/charts/EvolutionChart';
 import { useEvolutionData } from '../hooks/useEvolutionData';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
-import { CustomSelect } from '../components/common/CustomSelect';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -150,8 +150,7 @@ const StrategiesPage: React.FC = () => {
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
-  const [positionStrategies, setPositionStrategies] = useState<PositionStrategy[]>([]);
-  const [loadingStrategies, setLoadingStrategies] = useState(true);
+  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   
   // Utiliser le hook optimisé pour charger les trades filtrés (allTrades n'est plus chargé)
   const { filteredTrades, reload: reloadTrades } = useStrategyTrades({
@@ -260,22 +259,6 @@ const StrategiesPage: React.FC = () => {
       setSummaryLoading(false);
     }
   }, [selectedPeriod, selectedYear, selectedMonth, accountId, summaryStartDate, summaryEndDate, selectedPositionStrategy, t]);
-
-  // Charger toutes les données
-  // Charger les stratégies de position
-  useEffect(() => {
-    const loadStrategies = async () => {
-      try {
-        const data = await positionStrategiesService.list({ status: 'active', is_current: true });
-        setPositionStrategies(data);
-      } catch (error) {
-        console.error('Erreur chargement stratégies:', error);
-      } finally {
-        setLoadingStrategies(false);
-      }
-    };
-    loadStrategies();
-  }, []);
 
   useEffect(() => {
     // Attendre que le compte soit chargé avant de charger les données
@@ -431,27 +414,14 @@ const StrategiesPage: React.FC = () => {
               />
             </div>
             
-            {/* Sélecteur de stratégie */}
-            <div className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('strategies:positionStrategy', { defaultValue: 'Stratégie de position' })}
-              </label>
-              <CustomSelect
-                value={selectedPositionStrategy || ''}
-                onChange={(value) => setSelectedPositionStrategy(value ? Number(value) : null)}
-                disabled={loadingStrategies}
-                options={[
-                  { 
-                    value: '', 
-                    label: loadingStrategies ? t('common:loading') : t('strategies:allStrategies', { defaultValue: 'Toutes les stratégies' })
-                  },
-                  ...positionStrategies.map((strategy) => ({
-                    value: strategy.id,
-                    label: strategy.title
-                  }))
-                ]}
-              />
-            </div>
+            <PositionStrategyFilterField
+              className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
+              label={t('strategies:positionStrategy', { defaultValue: 'Stratégie de position' })}
+              value={selectedPositionStrategy}
+              onChange={setSelectedPositionStrategy}
+              strategies={positionStrategies}
+              loading={loadingStrategies}
+            />
           </div>
         </div>
 

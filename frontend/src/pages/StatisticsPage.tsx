@@ -7,8 +7,8 @@ import { TradingAccount } from '../services/tradingAccounts';
 import { StatisticsPageSkeleton } from '../components/ui/StatisticsPageSkeleton';
 import { currenciesService, Currency } from '../services/currencies';
 import { tradesService, TradeListItem } from '../services/trades';
-import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
-import { CustomSelect } from '../components/common/CustomSelect';
+import { PositionStrategyFilterField } from '../components/common/PositionStrategyPillBar';
+import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import { PeriodSelector, PeriodRange } from '../components/common/PeriodSelector';
@@ -54,8 +54,7 @@ function StatisticsPage() {
   
   // États pour le filtre Position Strategy
   const [selectedPositionStrategy, setSelectedPositionStrategy] = useState<number | null>(null);
-  const [positionStrategies, setPositionStrategies] = useState<PositionStrategy[]>([]);
-  const [loadingStrategies, setLoadingStrategies] = useState(false);
+  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   
   // Hooks pour les données
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts();
@@ -124,24 +123,6 @@ function StatisticsPage() {
       }
     };
     loadCurrencies();
-  }, []);
-
-  // Charger les stratégies de position pour le filtre
-  useEffect(() => {
-    const loadPositionStrategies = async () => {
-      setLoadingStrategies(true);
-      try {
-        const result = await positionStrategiesService.list();
-        setPositionStrategies(result);
-      } catch (err) {
-        console.error('Erreur lors du chargement des stratégies de position', err);
-        setPositionStrategies([]);
-      } finally {
-        setLoadingStrategies(false);
-      }
-    };
-
-    loadPositionStrategies();
   }, []);
 
   // Réinitialiser le filtre de stratégie lors du changement de compte
@@ -409,24 +390,13 @@ function StatisticsPage() {
                 />
               </div>
 
-              {/* Sélecteur de stratégie */}
-              <div className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('strategies:positionStrategy')}
-                </label>
-                <CustomSelect
-                  value={selectedPositionStrategy || ''}
-                  onChange={(value) => setSelectedPositionStrategy(value ? Number(value) : null)}
-                  options={[
-                    { value: '', label: t('strategies:allStrategies') },
-                    ...positionStrategies.map(s => ({
-                      value: s.id,
-                      label: s.title
-                    }))
-                  ]}
-                  disabled={loadingStrategies}
-                />
-              </div>
+              <PositionStrategyFilterField
+                className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
+                value={selectedPositionStrategy}
+                onChange={setSelectedPositionStrategy}
+                strategies={positionStrategies}
+                loading={loadingStrategies}
+              />
             </div>
             
             {/* Bouton d'export */}
