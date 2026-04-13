@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
-from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField, Q, Case, When, DecimalField
+from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField, Q, Case, When, DecimalField, ExpressionWrapper
 from django.db.models.functions import TruncDate, Cast, Coalesce
 from django.db import models
 from django.utils import timezone
@@ -624,11 +624,16 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         losing_trades = trades.filter(net_pnl__lt=0).count()
         win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
         
-        # Agrégations
+        # Agrégations (total_fees = frais plateforme + commissions, aligné sur exports/stats_calculator)
+        _zero_money = Value(Decimal('0'), output_field=DecimalField(max_digits=20, decimal_places=9))
+        _effective_fees = ExpressionWrapper(
+            Coalesce(F('fees'), _zero_money) + Coalesce(F('commissions'), _zero_money),
+            output_field=DecimalField(max_digits=20, decimal_places=9),
+        )
         aggregates = trades.aggregate(
             total_pnl=Sum('net_pnl'),
             average_pnl=Avg('net_pnl'),
-            total_fees=Sum('fees'),
+            total_fees=Sum(_effective_fees),
             total_volume=Sum('size'),
             total_raw_pnl=Sum('pnl')
         )
@@ -683,7 +688,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         if total_trades > 0:
             pnl_per_trade = aggregates['total_pnl'] / total_trades
         
-        # 6. Ratio de Frais
+        # 6. Ratio de Frais (coût total frais+commissions vs P/L net en valeur absolue)
         # Le ratio représente le pourcentage des frais par rapport au P/L (en valeur absolue)
         # Cela permet d'avoir un ratio cohérent même quand le P/L est négatif
         fees_ratio = 0

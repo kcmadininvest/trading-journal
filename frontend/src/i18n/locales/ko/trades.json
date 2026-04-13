@@ -16,6 +16,8 @@
   "points": "포인트",
   "pnl": "PnL",
   "fees": "Frais",
+  "feesTotal": "총 비용",
+  "feesColumnTooltip": "수수료 + 커미션",
   "netPnl": "PnL Net",
   "duration": "Durée",
   "date": "Date",
@@ -201,7 +203,7 @@
           "description": "Prix de sortie (format US avec point décimal)"
         },
         "Fees": {
-          "description": "Frais (format US avec point décimal)"
+          "description": "플랫폼/거래소 수수료(Commissions 열과 별개). 미국식 소수점(점) 형식."
         },
         "PnL": {
           "description": "Profit/Perte (format US, négatif pour perte)"
@@ -220,7 +222,7 @@
           "description": "Durée du trade (HH:MM:SS.microseconds)"
         },
         "Commissions": {
-          "description": "Commissions (format US avec point décimal)"
+          "description": "브로커·체결 수수료. Fees + Commissions은 순손익에서 차감되는 총 비용. 미국식 소수점(점) 형식."
         }
       }
     },
@@ -231,7 +233,8 @@
       "errors": "Erreurs",
       "duplicates": "Doublons",
       "totalPnl": "PnL total",
-      "totalFees": "Frais totaux",
+      "totalFees": "총 비용",
+      "totalFeesTooltip": "수수료 + 커미션",
       "missingColumns": "Colonnes manquantes :",
       "detailedErrors": "Erreurs détaillées :",
       "line": "Ligne",

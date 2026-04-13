@@ -177,11 +177,12 @@ class TopStepCSVImporter:
                                 self.skipped_count += 1
                             else:  # Trade valide
                                 self.success_count += 1
-                                # Ajouter au total PnL et fees
+                                # Ajouter au total PnL et coût total (frais + commissions)
                                 pnl = result.get('pnl', Decimal('0'))
                                 fees = result.get('fees', Decimal('0'))
+                                commissions = result.get('commissions', Decimal('0'))
                                 self.total_pnl += pnl
-                                self.total_fees += fees
+                                self.total_fees += fees + commissions
                     except Exception as e:
                         error_msg = str(e)
                         if "déjà importé" in error_msg:
@@ -202,9 +203,9 @@ class TopStepCSVImporter:
                             result = self._import_row(row, row_num)
                             if result:  # Trade créé
                                 self.success_count += 1
-                                # Ajouter au total PnL et fees
+                                # Ajouter au total PnL et coût total (frais + commissions)
                                 self.total_pnl += result.pnl or Decimal('0')
-                                self.total_fees += result.fees or Decimal('0')
+                                self.total_fees += (result.fees or Decimal('0')) + (result.commissions or Decimal('0'))
                             else:  # Trade ignoré (doublon)
                                 self.skipped_count += 1
                         except Exception as e:
@@ -375,7 +376,7 @@ class TopStepCSVImporter:
             row_num: Numéro de la ligne (pour les erreurs)
         
         Returns:
-            dict: {'skip': True} si doublon, {'pnl': Decimal, 'fees': Decimal} si valide
+            dict: {'skip': True} si doublon, {'pnl', 'fees', 'commissions'} (Decimal) si valide
         """
         topstep_id = row['Id'].strip()
         
@@ -389,6 +390,7 @@ class TopStepCSVImporter:
         
         # Parser les nombres (format US avec point -> Decimal)
         fees = TopStepTrade.parse_us_decimal(row['Fees']) or Decimal('0')
+        commissions = TopStepTrade.parse_us_decimal(row.get('Commissions') or '') or Decimal('0')
         entry_price = TopStepTrade.parse_us_decimal(row['EntryPrice'])
         exit_price = TopStepTrade.parse_us_decimal(row['ExitPrice'])
         size = TopStepTrade.parse_us_decimal(row['Size'])
@@ -418,7 +420,8 @@ class TopStepCSVImporter:
         # Retourner les valeurs pour calculer les totaux
         return {
             'pnl': pnl,
-            'fees': fees
+            'fees': fees,
+            'commissions': commissions,
         }
 
 

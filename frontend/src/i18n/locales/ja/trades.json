@@ -16,6 +16,8 @@
   "points": "ポイント",
   "pnl": "PnL",
   "fees": "Frais",
+  "feesTotal": "総コスト",
+  "feesColumnTooltip": "手数料 + コミッション",
   "netPnl": "PnL Net",
   "duration": "Durée",
   "date": "Date",
@@ -201,7 +203,7 @@
           "description": "Prix de sortie (format US avec point décimal)"
         },
         "Fees": {
-          "description": "Frais (format US avec point décimal)"
+          "description": "プラットフォーム／取引所の手数料（Commissions列とは別）。米式・小数点はピリオド。"
         },
         "PnL": {
           "description": "Profit/Perte (format US, négatif pour perte)"
@@ -220,7 +222,7 @@
           "description": "Durée du trade (HH:MM:SS.microseconds)"
         },
         "Commissions": {
-          "description": "Commissions (format US avec point décimal)"
+          "description": "ブローカー等のコミッション。Fees + Commissions は純損益から差し引く総コスト。米式・小数点はピリオド。"
         }
       }
     },
@@ -231,7 +233,8 @@
       "errors": "Erreurs",
       "duplicates": "Doublons",
       "totalPnl": "PnL total",
-      "totalFees": "Frais totaux",
+      "totalFees": "総コスト",
+      "totalFeesTooltip": "手数料 + コミッション",
       "missingColumns": "Colonnes manquantes :",
       "detailedErrors": "Erreurs détaillées :",
       "line": "Ligne",

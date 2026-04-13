@@ -4,6 +4,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
 import { formatDateTimeShort } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import Tooltip from '../ui/Tooltip';
 
 interface TradesTableProps {
   items: TradeListItem[];
@@ -37,6 +38,26 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
   const fmtNumber = (v?: string | null, digits = 2) => {
     return formatNumber(v, digits, preferences.number_format);
   };
+
+  const totalFeesPlusCommissionsStr = (trade: TradeListItem): string => {
+    const fees = trade.fees ? parseFloat(trade.fees) : 0;
+    const commissions = trade.commissions ? parseFloat(trade.commissions) : 0;
+    const sum = fees + commissions;
+    return Number.isFinite(sum) ? String(sum) : '0';
+  };
+
+  // Aligné sur MetricItem (MetricCard) utilisé par la page Statistiques
+  const feesColumnHelpIcon = (
+    <Tooltip content={t('trades:feesColumnTooltip')}>
+      <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 cursor-help shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden>
+        <path
+          fillRule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </Tooltip>
+  );
   
   // Fonction pour formater la date avec les préférences
   const formatTradeDate = (dateStr: string) => {
@@ -289,8 +310,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:fees')}</div>
-                    <div className="font-medium text-gray-900 dark:text-gray-100 tabular-nums">{fmtCurrency(trade.fees)}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                      <span>{t('trades:feesTotal')}</span>
+                      {feesColumnHelpIcon}
+                    </div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100 tabular-nums">{fmtCurrency(totalFeesPlusCommissionsStr(trade))}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:netPnl')}</div>
@@ -330,7 +354,10 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:fees')}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-1">
+                  <span>{t('trades:feesTotal')}</span>
+                  {feesColumnHelpIcon}
+                </div>
                 <div className="font-medium text-gray-900 dark:text-gray-100 tabular-nums">
                   {totals.fees !== undefined ? formatNumber(totals.fees, 2, preferences.number_format) : '-'}
                 </div>
@@ -373,7 +400,12 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:exit')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:points', { defaultValue: 'Points' })}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:pnl')}</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:fees')}</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <div className="flex items-center justify-end gap-1 w-full">
+                  <span>{t('trades:feesTotal')}</span>
+                  {feesColumnHelpIcon}
+                </div>
+              </th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:netPnl')}</th>
               <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:duration')}</th>
               <th className="hidden xl:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:plannedRR', { defaultValue: 'R:R prévu' })}</th>
@@ -509,7 +541,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   >
                     {fmtCurrency(trade.pnl)}
                   </td>
-                  <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtCurrency(trade.fees)}</td>
+                  <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtCurrency(totalFeesPlusCommissionsStr(trade))}</td>
                   <td
                     className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold ${
                       trade.net_pnl == null || isNaN(parseFloat(trade.net_pnl))

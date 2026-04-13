@@ -16,6 +16,8 @@
   "points": "点数",
   "pnl": "PnL",
   "fees": "Frais",
+  "feesTotal": "总成本",
+  "feesColumnTooltip": "费用 + 佣金",
   "netPnl": "PnL Net",
   "duration": "Durée",
   "date": "Date",
@@ -201,7 +203,7 @@
           "description": "Prix de sortie (format US avec point décimal)"
         },
         "Fees": {
-          "description": "Frais (format US avec point décimal)"
+          "description": "平台/交易所费用（与 Commissions 列不同）。美式小数点格式。"
         },
         "PnL": {
           "description": "Profit/Perte (format US, négatif pour perte)"
@@ -220,7 +222,7 @@
           "description": "Durée du trade (HH:MM:SS.microseconds)"
         },
         "Commissions": {
-          "description": "Commissions (format US avec point décimal)"
+          "description": "经纪商或成交佣金。Fees + Commissions 为从净损益中扣除的总成本。美式小数点格式。"
         }
       }
     },
@@ -231,7 +233,8 @@
       "errors": "Erreurs",
       "duplicates": "Doublons",
       "totalPnl": "PnL total",
-      "totalFees": "Frais totaux",
+      "totalFees": "总成本",
+      "totalFeesTooltip": "费用 + 佣金",
       "missingColumns": "Colonnes manquantes :",
       "detailedErrors": "Erreurs détaillées :",
       "line": "Ligne",

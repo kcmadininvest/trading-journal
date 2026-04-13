@@ -17,6 +17,8 @@
   "points": "Punkte",
   "pnl": "PnL",
   "fees": "Gebühren",
+  "feesTotal": "Gesamtkosten",
+  "feesColumnTooltip": "Gebühren + Provisionen",
   "netPnl": "Netto-PnL",
   "duration": "Dauer",
   "strategyColumn": "Strategie",
@@ -236,7 +238,7 @@
           "description": "Austrittspreis (US-Format mit Dezimalpunkt)"
         },
         "Fees": {
-          "description": "Gebühren (US-Format mit Dezimalpunkt)"
+          "description": "Plattform-/Börsengebühren (getrennt von der Spalte Commissions). US-Format mit Dezimalpunkt."
         },
         "PnL": {
           "description": "Gewinn/Verlust (US-Format, negativ für Verlust)"
@@ -255,7 +257,7 @@
           "description": "Trade-Dauer (HH:MM:SS.Mikrosekunden)"
         },
         "Commissions": {
-          "description": "Provisionen (US-Format mit Dezimalpunkt)"
+          "description": "Broker-/Ausführungsprovisionen. Fees + Commissions entspricht den vom Netto-PnL abgezogenen Gesamtkosten. US-Format mit Dezimalpunkt."
         }
       }
     },
@@ -266,7 +268,8 @@
       "errors": "Fehler",
       "duplicates": "Duplikate",
       "totalPnl": "Gesamt-PnL",
-      "totalFees": "Gesamtgebühren",
+      "totalFees": "Gesamtkosten",
+      "totalFeesTooltip": "Gebühren + Provisionen",
       "missingColumns": "Fehlende Spalten:",
       "detailedErrors": "Detaillierte Fehler:",
       "line": "Zeile",

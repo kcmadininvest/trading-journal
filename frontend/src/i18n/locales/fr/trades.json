@@ -17,6 +17,8 @@
   "points": "Points",
   "pnl": "PnL",
   "fees": "Frais",
+  "feesTotal": "Coût total",
+  "feesColumnTooltip": "Frais + Commissions",
   "netPnl": "PnL Net",
   "duration": "Durée",
   "strategyColumn": "Stratégie",
@@ -237,7 +239,7 @@
           "description": "Prix de sortie (format US avec point décimal)"
         },
         "Fees": {
-          "description": "Frais (format US avec point décimal)"
+          "description": "Frais plateforme / bourse (distincts des commissions). Format US avec point décimal."
         },
         "PnL": {
           "description": "Profit/Perte (format US, négatif pour perte)"
@@ -256,7 +258,7 @@
           "description": "Durée du trade (HH:MM:SS.microseconds)"
         },
         "Commissions": {
-          "description": "Commissions (format US avec point décimal)"
+          "description": "Commissions broker ou d'exécution. La somme Fees + Commissions correspond au coût total déduit du PnL net. Format US avec point décimal."
         }
       }
     },
@@ -267,7 +269,8 @@
       "errors": "Erreurs",
       "duplicates": "Doublons",
       "totalPnl": "PnL total",
-      "totalFees": "Frais totaux",
+      "totalFees": "Coût total",
+      "totalFeesTooltip": "Frais + Commissions",
       "missingColumns": "Colonnes manquantes :",
       "detailedErrors": "Erreurs détaillées :",
       "line": "Ligne",
