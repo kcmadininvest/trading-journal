@@ -11,11 +11,13 @@ import { SkeletonGrid } from '../components/ui/SkeletonLoader';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { PageShell } from '../components/layout';
 
 const GoalsPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const { selectedAccountId } = useTradingAccount();
+  const hideAccountNumber = useAccountNumberVisibility();
   
   const [goals, setGoals] = useState<TradingGoal[]>([]);
   const [loading, setLoading] = useState(true); // Initialiser à true pour éviter le saut initial
@@ -43,9 +45,13 @@ const GoalsPage: React.FC = () => {
     }
     try {
       // Charger les goals et les statistiques en parallèle lors du chargement initial
+      const statsParams =
+        currentFilters.trading_account != null
+          ? { trading_account: currentFilters.trading_account }
+          : undefined;
       const [data, stats] = await Promise.all([
         goalsService.list(currentFilters),
-        isInitialLoadRef.current ? goalsService.getStatistics().catch(() => null) : Promise.resolve(null)
+        isInitialLoadRef.current ? goalsService.getStatistics(statsParams).catch(() => null) : Promise.resolve(null),
       ]);
       
       // Mettre à jour les statistiques si chargées
@@ -210,7 +216,9 @@ const GoalsPage: React.FC = () => {
     
     const loadStatistics = async () => {
       try {
-        const stats = await goalsService.getStatistics();
+        const statsParams =
+          filters.trading_account != null ? { trading_account: filters.trading_account } : undefined;
+        const stats = await goalsService.getStatistics(statsParams);
         // Ne mettre à jour que si les statistiques ont vraiment changé
         setStatistics(prevStats => {
           if (!prevStats) return stats;
@@ -232,7 +240,7 @@ const GoalsPage: React.FC = () => {
     // Debounce pour éviter les appels trop fréquents, mais seulement après le chargement initial
     const timeoutId = setTimeout(loadStatistics, isInitialLoadRef.current ? 0 : 300);
     return () => clearTimeout(timeoutId);
-  }, [goals, loading]); // Recharger quand les objectifs changent
+  }, [goals, loading, filters.trading_account]);
   
   useEffect(() => {
     const loadAccounts = async () => {
@@ -308,12 +316,14 @@ const GoalsPage: React.FC = () => {
       
       // Recharger les statistiques pour mettre à jour les compteurs
       try {
-        const stats = await goalsService.getStatistics();
+        const statsParams =
+          filters.trading_account != null ? { trading_account: filters.trading_account } : undefined;
+        const stats = await goalsService.getStatistics(statsParams);
         setStatistics(stats);
       } catch {
         // Ignorer les erreurs de statistiques
       }
-      
+
       // Mettre à jour directement l'objectif dans la liste locale
       setGoals(prevGoals => 
         prevGoals.map(g => g.id === goal.id ? { ...g, ...updatedGoal, status: 'cancelled' as const } : g)
@@ -335,12 +345,14 @@ const GoalsPage: React.FC = () => {
       
       // Recharger les statistiques pour mettre à jour les compteurs
       try {
-        const stats = await goalsService.getStatistics();
+        const statsParams =
+          filters.trading_account != null ? { trading_account: filters.trading_account } : undefined;
+        const stats = await goalsService.getStatistics(statsParams);
         setStatistics(stats);
       } catch {
         // Ignorer les erreurs de statistiques
       }
-      
+
       // Mettre à jour directement l'objectif dans la liste locale
       setGoals(prevGoals => 
         prevGoals.map(g => g.id === goal.id ? { ...g, ...updatedGoal, status: 'active' as const } : g)
@@ -381,13 +393,15 @@ const GoalsPage: React.FC = () => {
   const cancelledGoals = useMemo(() => goals.filter(g => g.status === 'cancelled'), [goals]);
   
   // Compteurs pour les filtres
-  const goalCounts = useMemo(() => ({
-    all: statistics?.total_goals ?? goals.length,
-    active: statistics?.active_goals ?? activeGoals.length,
-    achieved: statistics?.achieved_goals ?? achievedGoals.length,
-    failed: statistics?.failed_goals ?? failedGoals.length,
-    cancelled: statistics?.cancelled_goals ?? cancelledGoals.length,
-  }), [statistics, goals, activeGoals, achievedGoals, failedGoals, cancelledGoals]);
+  const goalCounts = useMemo(
+    () => ({
+      active: statistics?.active_goals ?? activeGoals.length,
+      achieved: statistics?.achieved_goals ?? achievedGoals.length,
+      failed: statistics?.failed_goals ?? failedGoals.length,
+      cancelled: statistics?.cancelled_goals ?? cancelledGoals.length,
+    }),
+    [statistics, activeGoals, achievedGoals, failedGoals, cancelledGoals]
+  );
 
   // Filtrer les objectifs selon les filtres actifs
   const filteredGoals = useMemo(() => {
@@ -412,9 +426,9 @@ const GoalsPage: React.FC = () => {
       <GoalFilters
         filters={filters}
         onFiltersChange={setFilters}
-        tradingAccounts={accounts}
         goalCounts={goalCounts}
         onCreateClick={handleCreateGoal}
+        hideAccountNumber={hideAccountNumber}
       />
       
       {error && (

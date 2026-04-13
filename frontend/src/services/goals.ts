@@ -211,8 +211,13 @@ class GoalsService {
     return res.json();
   }
 
-  async getStatistics(): Promise<GoalStatistics> {
-    const url = `${this.BASE_URL}/api/trades/goals/statistics/`;
+  async getStatistics(params?: { trading_account?: number }): Promise<GoalStatistics> {
+    const searchParams = new URLSearchParams();
+    if (params?.trading_account != null) {
+      searchParams.append('trading_account', String(params.trading_account));
+    }
+    const query = searchParams.toString();
+    const url = `${this.BASE_URL}/api/trades/goals/statistics/${query ? `?${query}` : ''}`;
     const res = await this.fetchWithAuth(url);
 
     if (!res.ok) {
