@@ -3,6 +3,9 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    @apply font-sans antialiased;
+  }
   body {
     @apply antialiased;
   }

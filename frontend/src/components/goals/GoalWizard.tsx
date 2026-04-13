@@ -300,7 +300,7 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4 font-sans"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isLoading) {
           onClose();
@@ -319,7 +319,7 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
                 {goal ? t('goals:editGoal') : t('goals:createGoal')}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {t(`goals:wizard.step${currentStep}Title`, { defaultValue: STEPS[currentStep - 1]?.title })}
+                {STEPS[currentStep - 1] ? t(STEPS[currentStep - 1].title) : ''}
               </p>
             </div>
             <button

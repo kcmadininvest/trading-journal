@@ -8,6 +8,12 @@ interface AccountSelectorProps {
   allowAllActive?: boolean;
   hideLabel?: boolean;
   hideAccountNumber?: boolean;
+  /**
+   * undefined : charge via list() comme avant.
+   * null : parent pas encore prêt (affichage chargement, pas d'init compte défaut).
+   * tableau : liste prête du parent (y compris []), pas d'appel list() au montage.
+   */
+  prefetchedAccounts?: TradingAccount[] | null;
 }
 
 // Cache pour les noms masqués pour éviter de recalculer à chaque rendu
@@ -39,7 +45,27 @@ const renderAccountName = (name: string, hide: boolean): React.ReactNode => {
   return result;
 };
 
-const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({ value, onChange, allowAllActive = true, hideLabel = false, hideAccountNumber = false }) => {
+function normalizeActiveAccountsSorted(list: TradingAccount[]): TradingAccount[] {
+  const activeAccounts = list.filter((a) => a.status === 'active');
+  activeAccounts.sort((a, b) => {
+    if (a.created_at && b.created_at) {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+    if (a.created_at) return -1;
+    if (b.created_at) return 1;
+    return 0;
+  });
+  return activeAccounts;
+}
+
+const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
+  value,
+  onChange,
+  allowAllActive = true,
+  hideLabel = false,
+  hideAccountNumber = false,
+  prefetchedAccounts,
+}) => {
   const { t } = useI18nTranslation();
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,25 +81,33 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({ value, onCha
   const isMountedRef = useRef(false);
 
   useEffect(() => {
+    if (prefetchedAccounts === null) {
+      setAccounts([]);
+      setLoading(true);
+      return;
+    }
+
+    if (prefetchedAccounts !== undefined) {
+      setAccounts(normalizeActiveAccountsSorted(prefetchedAccounts));
+      setLoading(false);
+
+      const handleLogin = async () => {
+        try {
+          const list = await tradingAccountsService.list();
+          setAccounts(normalizeActiveAccountsSorted(list));
+        } catch {
+          setAccounts([]);
+        }
+      };
+      window.addEventListener('user:login', handleLogin);
+      return () => window.removeEventListener('user:login', handleLogin);
+    }
+
     const load = async () => {
       setLoading(true);
       try {
         const list = await tradingAccountsService.list();
-        // Par défaut ne montrer que les actifs, triés par date de création (plus récent au plus ancien)
-        const activeAccounts = list.filter(a => a.status === 'active');
-        activeAccounts.sort((a, b) => {
-          // Si les deux ont une date de création, trier du plus récent au plus ancien
-          if (a.created_at && b.created_at) {
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          }
-          // Si seulement a a une date, le mettre en premier
-          if (a.created_at) return -1;
-          // Si seulement b a une date, le mettre en premier
-          if (b.created_at) return 1;
-          // Si aucun n'a de date, garder l'ordre original
-          return 0;
-        });
-        setAccounts(activeAccounts);
+        setAccounts(normalizeActiveAccountsSorted(list));
       } catch {
         setAccounts([]);
       } finally {
@@ -82,7 +116,6 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({ value, onCha
     };
     load();
 
-    // Recharger les comptes après une connexion pour s'assurer d'avoir la liste à jour
     const handleLogin = () => {
       load();
     };
@@ -92,7 +125,7 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({ value, onCha
     return () => {
       window.removeEventListener('user:login', handleLogin);
     };
-  }, []);
+  }, [prefetchedAccounts]);
 
   // Initialiser le compte par défaut si aucune valeur n'est fournie
   // Ne pas réinitialiser si value est explicitement null (choix "Tous les comptes")
@@ -108,26 +141,22 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({ value, onCha
         isMountedRef.current = true;
         return;
       }
-      
-      // Si aucun compte par défaut dans la liste, faire un appel API
-      // (peut arriver si les comptes ne sont pas encore chargés)
-      if (accounts.length === 0) {
-        const initDefault = async () => {
-          try {
-            const def = await tradingAccountsService.default();
-            if (def && def.status === 'active') {
-              onChange(def.id);
-            }
-          } catch {
-            // noop
-          } finally {
+
+      // Liste vide OU liste sans drapeau is_default : même source que le contexte global
+      const initDefault = async () => {
+        try {
+          const def = await tradingAccountsService.default();
+          if (def && def.status === 'active' && !isMountedRef.current) {
             isMountedRef.current = true;
+            onChange(def.id);
           }
-        };
-        initDefault();
-      } else {
-        isMountedRef.current = true;
-      }
+        } catch {
+          // noop
+        } finally {
+          isMountedRef.current = true;
+        }
+      };
+      initDefault();
     }
     // Ne pas réinitialiser après le premier montage - respecter le choix de l'utilisateur
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -398,12 +427,12 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({ value, onCha
 
 // Mémoïser le composant pour éviter les re-rendus inutiles
 export const AccountSelector = React.memo(AccountSelectorComponent, (prevProps, nextProps) => {
-  // Comparaison personnalisée pour optimiser les performances
   return (
     prevProps.value === nextProps.value &&
     prevProps.allowAllActive === nextProps.allowAllActive &&
     prevProps.hideLabel === nextProps.hideLabel &&
-    prevProps.hideAccountNumber === nextProps.hideAccountNumber
+    prevProps.hideAccountNumber === nextProps.hideAccountNumber &&
+    prevProps.prefetchedAccounts === nextProps.prefetchedAccounts
   );
 });
 

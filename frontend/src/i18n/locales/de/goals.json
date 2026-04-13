@@ -81,6 +81,29 @@
   "deleteConfirmMessage": "Sind Sie sicher, dass Sie dieses Ziel löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "delete": "Löschen",
   "goalAchievedNotification": "🎉 Ziel Erreicht: {{goalType}}",
-  "goalFailedNotification": "❌ Ziel Gescheitert: {{goalType}}"
+  "goalFailedNotification": "❌ Ziel Gescheitert: {{goalType}}",
+  "wizard": {
+    "step1": "Typ",
+    "step2": "Schwellen",
+    "step3": "Zeitraum",
+    "step4": "Optionen",
+    "step1Title": "Zieltyp und Richtung wählen",
+    "step2Title": "Ziel- und Warnschwellen festlegen",
+    "step3Title": "Zeitraum, Daten und Handelskonto",
+    "step4Title": "Priorität, Status und Notizen",
+    "pleaseComplete": "Bitte füllen Sie alle Pflichtfelder aus",
+    "direction": "Richtung",
+    "directionMinimumHint": "Das Ziel muss erreicht oder übertroffen werden",
+    "directionMaximumHint": "Das Ziel darf nicht überschritten werden",
+    "targetThreshold": "Zielschwelle",
+    "targetThresholdHint": "Wert zum Erreichen oder Nichtüberschreiten",
+    "warningThreshold": "Warnschwelle (optional)",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "warningThresholdMinimumHint": "Schwelle, unter der das Ziel gefährdet ist",
+    "warningThresholdMaximumHint": "Schwelle, über der das Ziel gefährdet ist",
+    "previous": "Zurück",
+    "next": "Weiter"
+  }
 }
 

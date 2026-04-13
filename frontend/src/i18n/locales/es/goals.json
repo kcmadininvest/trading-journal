@@ -81,6 +81,29 @@
   "deleteConfirmMessage": "¿Estás seguro de que quieres eliminar este objetivo? Esta acción es irreversible.",
   "delete": "Eliminar",
   "goalAchievedNotification": "🎉 Objetivo Alcanzado: {{goalType}}",
-  "goalFailedNotification": "❌ Objetivo Fallido: {{goalType}}"
+  "goalFailedNotification": "❌ Objetivo Fallido: {{goalType}}",
+  "wizard": {
+    "step1": "Tipo",
+    "step2": "Umbrales",
+    "step3": "Periodo",
+    "step4": "Opciones",
+    "step1Title": "Elija el tipo de objetivo y la dirección",
+    "step2Title": "Defina los umbrales objetivo y de alerta",
+    "step3Title": "Periodo, fechas y cuenta de trading",
+    "step4Title": "Prioridad, estado y notas",
+    "pleaseComplete": "Complete todos los campos obligatorios",
+    "direction": "Dirección",
+    "directionMinimumHint": "El objetivo debe alcanzarse o superarse",
+    "directionMaximumHint": "El objetivo no debe superarse",
+    "targetThreshold": "Umbral objetivo",
+    "targetThresholdHint": "Valor a alcanzar o no superar",
+    "warningThreshold": "Umbral de alerta (opcional)",
+    "enable": "Activar",
+    "disable": "Desactivar",
+    "warningThresholdMinimumHint": "Umbral por debajo del cual el objetivo está en riesgo",
+    "warningThresholdMaximumHint": "Umbral por encima del cual el objetivo está en riesgo",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  }
 }
 

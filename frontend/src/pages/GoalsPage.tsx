@@ -16,15 +16,32 @@ import { PageShell } from '../components/layout';
 
 const GoalsPage: React.FC = () => {
   const { t } = useI18nTranslation();
-  const { selectedAccountId } = useTradingAccount();
+  const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
   const hideAccountNumber = useAccountNumberVisibility();
-  
+
   const [goals, setGoals] = useState<TradingGoal[]>([]);
   const [loading, setLoading] = useState(true); // Initialiser à true pour éviter le saut initial
   const [error, setError] = useState<string | null>(null);
-  const [accounts, setAccounts] = useState<TradingAccount[]>([]);
+  const [accounts, setAccounts] = useState<TradingAccount[] | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [filters, setFilters] = useState<GoalsFilters>({ status: 'active' });
+  const handleTradingAccountChange = React.useCallback((accountId: number | null) => {
+    setSelectedAccountId(accountId);
+    setFilters((prev) => ({
+      ...prev,
+      trading_account: accountId ?? undefined,
+    }));
+  }, [setSelectedAccountId]);
+
+  // Alignement Trades / Dashboard : filtres API alignés sur le compte du contexte
+  useEffect(() => {
+    setFilters((prev) => {
+      const next = selectedAccountId ?? undefined;
+      if (prev.trading_account === next) return prev;
+      return { ...prev, trading_account: next };
+    });
+  }, [selectedAccountId]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<TradingGoal | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -33,7 +50,6 @@ const GoalsPage: React.FC = () => {
   const [statistics, setStatistics] = useState<GoalStatistics | null>(null);
   const previousGoalsStatusRef = React.useRef<Map<number, string>>(new Map());
   const notifiedGoalsRef = React.useRef<Set<number>>(new Set());
-  const isInitialLoadRef = React.useRef(true);
   const hasLoadedRef = React.useRef(false);
   const lastFiltersKeyRef = React.useRef<string>('');
   
@@ -51,12 +67,23 @@ const GoalsPage: React.FC = () => {
           : undefined;
       const [data, stats] = await Promise.all([
         goalsService.list(currentFilters),
-        isInitialLoadRef.current ? goalsService.getStatistics(statsParams).catch(() => null) : Promise.resolve(null),
+        goalsService.getStatistics(statsParams).catch(() => null),
       ]);
-      
-      // Mettre à jour les statistiques si chargées
+
       if (stats) {
-        setStatistics(stats);
+        setStatistics((prevStats) => {
+          if (!prevStats) return stats;
+          if (
+            prevStats.total_goals !== stats.total_goals ||
+            prevStats.active_goals !== stats.active_goals ||
+            prevStats.achieved_goals !== stats.achieved_goals ||
+            prevStats.failed_goals !== stats.failed_goals ||
+            prevStats.cancelled_goals !== stats.cancelled_goals
+          ) {
+            return stats;
+          }
+          return prevStats;
+        });
       }
       
       // S'assurer que data est toujours un tableau
@@ -169,30 +196,40 @@ const GoalsPage: React.FC = () => {
     } finally {
       if (showLoading) {
         setLoading(false);
-        // Marquer que le chargement initial est terminé
-        if (isInitialLoadRef.current) {
-          isInitialLoadRef.current = false;
-        }
       }
     }
   }, [filters, t]);
   
-  // Utiliser filters directement au lieu de loadGoals pour éviter les re-renders inutiles
   useEffect(() => {
-    const filtersKey = JSON.stringify(filters);
-    
-    // Éviter les appels multiples au montage (React StrictMode exécute les effets deux fois)
-    // Ne charger qu'une seule fois au montage, puis seulement quand filters change vraiment
-    if (!hasLoadedRef.current) {
-      hasLoadedRef.current = true;
-      lastFiltersKeyRef.current = filtersKey;
-      loadGoals(true, filters);
-    } else if (filtersKey !== lastFiltersKeyRef.current) {
-      lastFiltersKeyRef.current = filtersKey;
-      loadGoals(true, filters);
+    if (accountLoading) return;
+
+    const expectedAccount = selectedAccountId ?? undefined;
+    if (filters.trading_account !== expectedAccount) {
+      return;
     }
+
+    const filtersKey = JSON.stringify(filters);
+
+    const runLoad = () => {
+      if (!hasLoadedRef.current) {
+        hasLoadedRef.current = true;
+        lastFiltersKeyRef.current = filtersKey;
+        loadGoals(true, filters);
+      } else if (filtersKey !== lastFiltersKeyRef.current) {
+        lastFiltersKeyRef.current = filtersKey;
+        loadGoals(true, filters);
+      }
+    };
+
+    if (!hasLoadedRef.current) {
+      runLoad();
+      return;
+    }
+
+    const timeoutId = window.setTimeout(runLoad, 200);
+    return () => window.clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  }, [filters, accountLoading, selectedAccountId]);
 
   // Polling périodique pour détecter les changements de statut (toutes les 30 secondes)
   // Utiliser showLoading=false pour éviter le clignotement visuel
@@ -206,71 +243,37 @@ const GoalsPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [loadGoals, isModalOpen]);
 
-  // Charger les statistiques séparément pour avoir les compteurs corrects
-  // Utiliser un debounce pour éviter les rechargements trop fréquents
   useEffect(() => {
-    // Ne pas charger les statistiques lors du chargement initial pour éviter les sauts
-    if (isInitialLoadRef.current && loading) {
-      return;
-    }
-    
-    const loadStatistics = async () => {
+    let cancelled = false;
+    const load = async () => {
       try {
-        const statsParams =
-          filters.trading_account != null ? { trading_account: filters.trading_account } : undefined;
-        const stats = await goalsService.getStatistics(statsParams);
-        // Ne mettre à jour que si les statistiques ont vraiment changé
-        setStatistics(prevStats => {
-          if (!prevStats) return stats;
-          // Comparer les valeurs importantes
-          if (prevStats.total_goals !== stats.total_goals ||
-              prevStats.active_goals !== stats.active_goals ||
-              prevStats.achieved_goals !== stats.achieved_goals ||
-              prevStats.failed_goals !== stats.failed_goals ||
-              prevStats.cancelled_goals !== stats.cancelled_goals) {
-            return stats;
-          }
-          return prevStats; // Pas de changement, garder l'ancien
-        });
+        const [accData, currData] = await Promise.all([
+          tradingAccountsService.list(),
+          currenciesService.list(),
+        ]);
+        if (!cancelled) {
+          setAccounts(accData);
+          setCurrencies(currData);
+        }
       } catch {
-        // Ignorer les erreurs de statistiques, ce n'est pas critique
+        if (!cancelled) {
+          setAccounts([]);
+          setCurrencies([]);
+        }
       }
     };
-    
-    // Debounce pour éviter les appels trop fréquents, mais seulement après le chargement initial
-    const timeoutId = setTimeout(loadStatistics, isInitialLoadRef.current ? 0 : 300);
-    return () => clearTimeout(timeoutId);
-  }, [goals, loading, filters.trading_account]);
-  
-  useEffect(() => {
-    const loadAccounts = async () => {
-      try {
-        const data = await tradingAccountsService.list();
-        setAccounts(data);
-      } catch {
-        setAccounts([]);
-      }
+    load();
+    return () => {
+      cancelled = true;
     };
-    loadAccounts();
-  }, []);
-  
-  useEffect(() => {
-    const loadCurrencies = async () => {
-      try {
-        const data = await currenciesService.list();
-        setCurrencies(data);
-      } catch {
-        setCurrencies([]);
-      }
-    };
-    loadCurrencies();
   }, []);
   
   const getCurrencySymbol = (goal: TradingGoal): string => {
+    const accountsList = accounts ?? [];
     if (!goal.trading_account) {
       // Si pas de compte spécifique, utiliser le compte sélectionné ou USD par défaut
       if (selectedAccountId) {
-        const account = accounts.find(a => a.id === selectedAccountId);
+        const account = accountsList.find(a => a.id === selectedAccountId);
         if (account) {
           const currency = currencies.find(c => c.code === account.currency);
           return currency?.symbol || '';
@@ -279,7 +282,7 @@ const GoalsPage: React.FC = () => {
       return '';
     }
     
-    const account = accounts.find(a => a.id === goal.trading_account);
+    const account = accountsList.find(a => a.id === goal.trading_account);
     if (account) {
       const currency = currencies.find(c => c.code === account.currency);
       return currency?.symbol || '';
@@ -303,7 +306,7 @@ const GoalsPage: React.FC = () => {
   };
 
   const handleGoalSaved = () => {
-    loadGoals();
+    loadGoals(false);
   };
 
   const handleCancelGoal = async (goal: TradingGoal) => {
@@ -378,7 +381,7 @@ const GoalsPage: React.FC = () => {
       toast.success(t('goals:deleteSuccess', { defaultValue: 'Objectif supprimé avec succès' }));
       setDeleteModalOpen(false);
       setGoalToDelete(null);
-      loadGoals();
+      loadGoals(false);
     } catch (err: any) {
       toast.error(err.message || t('goals:deleteError', { defaultValue: 'Erreur lors de la suppression' }));
     } finally {
@@ -429,8 +432,12 @@ const GoalsPage: React.FC = () => {
         goalCounts={goalCounts}
         onCreateClick={handleCreateGoal}
         hideAccountNumber={hideAccountNumber}
+        tradingAccounts={accounts}
+        selectedAccountId={selectedAccountId}
+        onTradingAccountChange={handleTradingAccountChange}
+        accountLoading={accountLoading}
       />
-      
+
       {error && (
         <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <p className="text-sm sm:text-base text-red-800 dark:text-red-300 break-words">{error}</p>
@@ -480,7 +487,7 @@ const GoalsPage: React.FC = () => {
         onClose={handleModalClose}
         onSave={handleGoalSaved}
         goal={selectedGoal}
-        tradingAccounts={accounts}
+        tradingAccounts={accounts ?? []}
       />
 
       <DeleteConfirmModal

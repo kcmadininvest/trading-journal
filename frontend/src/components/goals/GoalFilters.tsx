@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GoalsFilters } from '../../services/goals';
+import type { TradingAccount } from '../../services/tradingAccounts';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { CustomSelect } from '../common/CustomSelect';
 import { AccountSelector } from '../accounts/AccountSelector';
@@ -15,6 +16,12 @@ interface GoalFiltersProps {
   };
   onCreateClick?: () => void;
   hideAccountNumber?: boolean;
+  /** Comptes du parent : null = chargement en cours, tableau = liste prête (évite list() côté sélecteur). */
+  tradingAccounts?: TradingAccount[] | null;
+  /** Même source que les autres pages (TradingAccountContext) — évite l’init locale divergente du sélecteur. */
+  selectedAccountId: number | null;
+  onTradingAccountChange: (accountId: number | null) => void;
+  accountLoading: boolean;
 }
 
 export const GoalFilters: React.FC<GoalFiltersProps> = ({
@@ -23,6 +30,10 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
   goalCounts,
   onCreateClick,
   hideAccountNumber = false,
+  tradingAccounts,
+  selectedAccountId,
+  onTradingAccountChange,
+  accountLoading,
 }) => {
   const { t } = useI18nTranslation();
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
@@ -107,18 +118,22 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
               {t('goals:filters.account', { defaultValue: 'Compte' })}
             </label>
-            <AccountSelector
-              value={filters.trading_account}
-              onChange={(accountId) =>
-                onFiltersChange({
-                  ...filters,
-                  trading_account: accountId ?? undefined,
-                })
-              }
-              allowAllActive
-              hideLabel
-              hideAccountNumber={hideAccountNumber}
-            />
+            {accountLoading ? (
+              <div
+                className="h-10 w-full max-w-md rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse"
+                aria-busy="true"
+                aria-label={t('goals:filters.account', { defaultValue: 'Compte' })}
+              />
+            ) : (
+              <AccountSelector
+                value={selectedAccountId}
+                onChange={onTradingAccountChange}
+                allowAllActive
+                hideLabel
+                hideAccountNumber={hideAccountNumber}
+                prefetchedAccounts={tradingAccounts}
+              />
+            )}
           </div>
 
           <div className="w-full min-w-0">

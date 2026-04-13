@@ -81,6 +81,29 @@
   "deleteConfirmMessage": "Are you sure you want to delete this goal? This action cannot be undone.",
   "delete": "Delete",
   "goalAchievedNotification": "🎉 Goal Achieved: {{goalType}}",
-  "goalFailedNotification": "❌ Goal Failed: {{goalType}}"
+  "goalFailedNotification": "❌ Goal Failed: {{goalType}}",
+  "wizard": {
+    "step1": "Type",
+    "step2": "Thresholds",
+    "step3": "Period",
+    "step4": "Options",
+    "step1Title": "Choose the goal type and direction",
+    "step2Title": "Set target and warning thresholds",
+    "step3Title": "Period, dates and trading account",
+    "step4Title": "Priority, status and notes",
+    "pleaseComplete": "Please fill in all required fields",
+    "direction": "Direction",
+    "directionMinimumHint": "The goal must be reached or exceeded",
+    "directionMaximumHint": "The goal must not be exceeded",
+    "targetThreshold": "Target threshold",
+    "targetThresholdHint": "Value to reach or not exceed",
+    "warningThreshold": "Warning threshold (optional)",
+    "enable": "Enable",
+    "disable": "Disable",
+    "warningThresholdMinimumHint": "Threshold below which the goal is at risk",
+    "warningThresholdMaximumHint": "Threshold above which the goal is at risk",
+    "previous": "Back",
+    "next": "Next"
+  }
 }
 
