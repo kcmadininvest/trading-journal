@@ -309,7 +309,8 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = AccountTransactionSerializer  # type: ignore
-    
+    pagination_class = None  # Liste complète côté client (filtres) ; évite COUNT + pages DRF
+
     def get_queryset(self):
         """Retourne uniquement les transactions de l'utilisateur connecté."""
         if not self.request.user.is_authenticated:
@@ -379,17 +380,28 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
         initial_capital = account.initial_capital or Decimal('0')
         
         # Calculer le PnL total des trades
-        trades = account.topstep_trades.all()
-        total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
-        
-        # Calculer le total des transactions (dépôts - retraits)
-        transactions = account.transactions.all()
-        total_deposits = transactions.filter(transaction_type='deposit').aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0')
-        total_withdrawals = transactions.filter(transaction_type='withdrawal').aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0')
+        total_pnl = account.topstep_trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+
+        # Dépôts et retraits en une seule requête SQL
+        amount_field = DecimalField(max_digits=15, decimal_places=2)
+        tx_agg = account.transactions.aggregate(
+            total_deposits=Sum(
+                Case(
+                    When(transaction_type='deposit', then=F('amount')),
+                    default=Value(Decimal('0')),
+                    output_field=amount_field,
+                )
+            ),
+            total_withdrawals=Sum(
+                Case(
+                    When(transaction_type='withdrawal', then=F('amount')),
+                    default=Value(Decimal('0')),
+                    output_field=amount_field,
+                )
+            ),
+        )
+        total_deposits = tx_agg['total_deposits'] or Decimal('0')
+        total_withdrawals = tx_agg['total_withdrawals'] or Decimal('0')
         net_transactions = total_deposits - total_withdrawals
         
         # Solde actuel = capital initial + PnL + transactions nettes

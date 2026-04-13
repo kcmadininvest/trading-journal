@@ -49,12 +49,16 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     if (selectedAccountId) {
       const loadAccount = async () => {
         try {
-          const account = await tradingAccountsService.get(selectedAccountId);
+          const [account, balance] = await Promise.all([
+            tradingAccountsService.get(selectedAccountId),
+            accountTransactionsService.getBalance(selectedAccountId).catch(() => null),
+          ]);
           setSelectedAccount(account);
-          
-          // Charger le solde actuel
-          const balance = await accountTransactionsService.getBalance(selectedAccountId);
-          setCurrentBalance(parseFloat(balance.current_balance));
+          if (balance) {
+            setCurrentBalance(parseFloat(balance.current_balance));
+          } else {
+            setCurrentBalance(null);
+          }
         } catch (err) {
           console.error('Erreur lors du chargement du compte:', err);
         }

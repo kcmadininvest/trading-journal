@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { accountTransactionsService, AccountTransaction } from '../../services/accountTransactions';
+import { accountTransactionsService, AccountTransaction, AccountBalance } from '../../services/accountTransactions';
 import { usePreferences } from '../../hooks/usePreferences';
 import { usePrivacySettings, maskValue } from '../../hooks/usePrivacySettings';
 import { formatCurrency } from '../../utils/numberFormat';
@@ -27,9 +27,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   const { t } = useI18nTranslation();
   const { preferences } = usePreferences();
   const privacySettings = usePrivacySettings('transactions');
-  const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
-  const [allTransactions, setAllTransactions] = useState<AccountTransaction[]>([]); // Toutes les transactions pour les compteurs
-  const [loading, setLoading] = useState(false);
+  const [allTransactions, setAllTransactions] = useState<AccountTransaction[]>([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(false);
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'deposit' | 'withdrawal'>('all');
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
@@ -39,52 +39,61 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const loadTransactions = async () => {
-    setLoading(true);
+    setListLoading(true);
     setError('');
-    try {
-      const params: any = {};
-      if (tradingAccountId) {
-        params.trading_account = tradingAccountId;
-      }
-      if (filterType !== 'all') {
-        params.transaction_type = filterType;
-      }
-      
-      const data = await accountTransactionsService.list(params);
-      setTransactions(data);
+    if (tradingAccountId) {
+      setBalanceLoading(true);
+    } else {
+      setBalanceLoading(false);
+      setCurrentBalance(null);
+      setBalanceCurrencyCode('USD');
+    }
 
-      // Charger toutes les transactions (sans filtre) pour les compteurs
-      const allParams: any = {};
-      if (tradingAccountId) {
-        allParams.trading_account = tradingAccountId;
-      }
-      const allData = await accountTransactionsService.list(allParams);
-      setAllTransactions(allData);
-
-      // Charger le solde actuel si un compte est sélectionné
-      if (tradingAccountId) {
-        try {
-          const balance = await accountTransactionsService.getBalance(tradingAccountId);
-          setCurrentBalance(parseFloat(balance.current_balance));
-          setBalanceCurrencyCode(balance.currency || 'USD');
-        } catch (err) {
+    const listParams: { trading_account?: number } = {};
+    if (tradingAccountId) {
+      listParams.trading_account = tradingAccountId;
+    }
+    const listPromise = accountTransactionsService.list(listParams);
+    const balancePromise: Promise<AccountBalance | null> = tradingAccountId
+      ? accountTransactionsService.getBalance(tradingAccountId).catch((err) => {
           console.error('Erreur lors du chargement du solde:', err);
-        }
-      } else {
-        setCurrentBalance(null);
-        setBalanceCurrencyCode('USD');
-      }
+          return null;
+        })
+      : Promise.resolve(null);
+
+    try {
+      const allData = await listPromise;
+      setAllTransactions(allData);
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des transactions');
     } finally {
-      setLoading(false);
+      setListLoading(false);
+    }
+
+    try {
+      const balance = await balancePromise;
+      if (balance) {
+        setCurrentBalance(parseFloat(balance.current_balance));
+        setBalanceCurrencyCode(balance.currency || 'USD');
+      } else if (tradingAccountId) {
+        setCurrentBalance(null);
+      }
+    } finally {
+      setBalanceLoading(false);
     }
   };
 
   useEffect(() => {
     loadTransactions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tradingAccountId, filterType]);
+  }, [tradingAccountId]);
+
+  const transactions = useMemo(() => {
+    if (filterType === 'all') {
+      return allTransactions;
+    }
+    return allTransactions.filter((t) => t.transaction_type === filterType);
+  }, [allTransactions, filterType]);
 
   // Calculer les compteurs
   const totalCount = useMemo(() => allTransactions.length, [allTransactions]);
@@ -134,7 +143,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     return '$';
   };
 
-  if (loading && transactions.length === 0) {
+  if (listLoading && allTransactions.length === 0) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-gray-500 dark:text-gray-400">{t('common:loading', { defaultValue: 'Chargement...' })}</div>
@@ -200,18 +209,26 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           </button>
         </div>
 
-        {currentBalance !== null && (
+        {tradingAccountId && (balanceLoading || currentBalance !== null) && (
           <div className="text-sm">
             <span className="text-gray-600 dark:text-gray-400">{t('transactions:currentBalance', { defaultValue: 'Solde actuel' })}: </span>
             <span className="font-semibold text-gray-900 dark:text-gray-100">
-              {privacySettings.hideCurrentBalance
-                ? maskValue(null, symbolForCurrencyCode(balanceCurrencyCode))
-                : formatCurrency(
+              {balanceLoading && currentBalance === null ? (
+                <span className="text-gray-500 dark:text-gray-400 font-normal">
+                  {t('common:loading', { defaultValue: 'Chargement...' })}
+                </span>
+              ) : currentBalance !== null ? (
+                privacySettings.hideCurrentBalance ? (
+                  maskValue(null, symbolForCurrencyCode(balanceCurrencyCode))
+                ) : (
+                  formatCurrency(
                     currentBalance,
                     symbolForCurrencyCode(balanceCurrencyCode),
                     preferences.number_format,
                     2
-                  )}
+                  )
+                )
+              ) : null}
             </span>
           </div>
         )}
