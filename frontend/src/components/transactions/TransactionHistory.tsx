@@ -13,6 +13,16 @@ function symbolForCurrencyCode(code: string): string {
   return code || '$';
 }
 
+function signedTransactionValue(t: AccountTransaction): number {
+  if (t.signed_amount !== undefined && t.signed_amount !== null && String(t.signed_amount) !== '') {
+    const v = parseFloat(String(t.signed_amount));
+    if (!Number.isNaN(v)) return v;
+  }
+  const raw = parseFloat(String(t.amount));
+  if (Number.isNaN(raw)) return 0;
+  return t.transaction_type === 'withdrawal' ? -raw : raw;
+}
+
 interface TransactionHistoryProps {
   tradingAccountId?: number;
   onEdit?: (transaction: AccountTransaction) => void;
@@ -105,6 +115,53 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     allTransactions.filter(t => t.transaction_type === 'withdrawal').length,
     [allTransactions]
   );
+
+  const tabTotal = useMemo(() => {
+    if (filterType === 'all') {
+      return allTransactions.reduce((sum, t) => sum + signedTransactionValue(t), 0);
+    }
+    if (filterType === 'deposit') {
+      return allTransactions
+        .filter((t) => t.transaction_type === 'deposit')
+        .reduce((sum, t) => {
+          const raw = parseFloat(String(t.amount));
+          return sum + (Number.isNaN(raw) ? 0 : raw);
+        }, 0);
+    }
+    return allTransactions
+      .filter((t) => t.transaction_type === 'withdrawal')
+      .reduce((sum, t) => {
+        const raw = parseFloat(String(t.amount));
+        return sum + (Number.isNaN(raw) ? 0 : raw);
+      }, 0);
+  }, [allTransactions, filterType]);
+
+  const balanceSymbol = symbolForCurrencyCode(balanceCurrencyCode);
+
+  const tabTotalLabelKey =
+    filterType === 'all'
+      ? 'transactions:tabTotalAll'
+      : filterType === 'deposit'
+        ? 'transactions:tabTotalDeposits'
+        : 'transactions:tabTotalWithdrawals';
+
+  const renderTabTotalFormatted = (): string => {
+    if (privacySettings.hideCurrentBalance) {
+      return maskValue(null, balanceSymbol);
+    }
+    const nf = preferences.number_format;
+    if (filterType === 'all') {
+      if (tabTotal > 0) return `+${formatCurrency(tabTotal, balanceSymbol, nf, 2)}`;
+      if (tabTotal < 0) return `-${formatCurrency(Math.abs(tabTotal), balanceSymbol, nf, 2)}`;
+      return formatCurrency(0, balanceSymbol, nf, 2);
+    }
+    if (filterType === 'deposit') {
+      if (tabTotal === 0) return formatCurrency(0, balanceSymbol, nf, 2);
+      return `+${formatCurrency(tabTotal, balanceSymbol, nf, 2)}`;
+    }
+    if (tabTotal === 0) return formatCurrency(0, balanceSymbol, nf, 2);
+    return `-${formatCurrency(tabTotal, balanceSymbol, nf, 2)}`;
+  };
 
   const handleDeleteClick = (transaction: AccountTransaction) => {
     setTransactionToDelete(transaction);
@@ -209,26 +266,43 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           </button>
         </div>
 
-        {tradingAccountId && (balanceLoading || currentBalance !== null) && (
-          <div className="text-sm">
-            <span className="text-gray-600 dark:text-gray-400">{t('transactions:currentBalance', { defaultValue: 'Solde actuel' })}: </span>
-            <span className="font-semibold text-gray-900 dark:text-gray-100">
-              {balanceLoading && currentBalance === null ? (
-                <span className="text-gray-500 dark:text-gray-400 font-normal">
-                  {t('common:loading', { defaultValue: 'Chargement...' })}
-                </span>
-              ) : currentBalance !== null ? (
-                privacySettings.hideCurrentBalance ? (
-                  maskValue(null, symbolForCurrencyCode(balanceCurrencyCode))
-                ) : (
-                  formatCurrency(
-                    currentBalance,
-                    symbolForCurrencyCode(balanceCurrencyCode),
-                    preferences.number_format,
-                    2
+        {tradingAccountId && (
+          <div className="text-sm flex flex-row flex-wrap items-baseline justify-end gap-x-4 gap-y-1">
+            <span className="whitespace-nowrap">
+              <span className="text-gray-600 dark:text-gray-400">
+                {t('transactions:currentBalance', { defaultValue: 'Solde actuel' })}
+                :{' '}
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">
+                {balanceLoading && currentBalance === null ? (
+                  <span className="text-gray-500 dark:text-gray-400 font-normal">
+                    {t('common:loading', { defaultValue: 'Chargement...' })}
+                  </span>
+                ) : currentBalance !== null ? (
+                  privacySettings.hideCurrentBalance ? (
+                    maskValue(null, balanceSymbol)
+                  ) : (
+                    formatCurrency(currentBalance, balanceSymbol, preferences.number_format, 2)
                   )
-                )
-              ) : null}
+                ) : null}
+              </span>
+            </span>
+            <span aria-hidden="true" className="hidden sm:inline text-gray-300 dark:text-gray-600 select-none">
+              ·
+            </span>
+            <span className="whitespace-nowrap">
+              <span className="text-gray-600 dark:text-gray-400">
+                {t(tabTotalLabelKey, {
+                  defaultValue:
+                    filterType === 'all'
+                      ? 'Total (toutes les opérations)'
+                      : filterType === 'deposit'
+                        ? 'Total des dépôts'
+                        : 'Total des retraits',
+                })}
+                :{' '}
+              </span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">{renderTabTotalFormatted()}</span>
             </span>
           </div>
         )}
