@@ -1,7 +1,7 @@
 """
 Services pour le calcul de progression des objectifs de trading.
 """
-from django.db.models import Sum, QuerySet
+from django.db.models import Sum, Avg, QuerySet
 from decimal import Decimal
 from typing import cast, TYPE_CHECKING
 
@@ -63,6 +63,16 @@ class GoalProgressCalculator:
             return self._calculate_pnl_goal(goal, trades)
         if goal.goal_type == 'withdrawal_amount':
             return self._calculate_withdrawal_amount_goal(goal)
+        if goal.goal_type == 'max_consecutive_losses':
+            return self._calculate_max_consecutive_losses_goal(goal, trades)
+        if goal.goal_type == 'daily_loss_limit_breaches':
+            return self._calculate_daily_loss_limit_breaches_goal(goal, trades)
+        if goal.goal_type == 'expectancy':
+            return self._calculate_expectancy_goal(goal, trades)
+        if goal.goal_type == 'avg_rr_actual':
+            return self._calculate_avg_rr_actual_goal(goal, trades)
+        if goal.goal_type == 'journal_completion_rate':
+            return self._calculate_journal_completion_rate_goal(goal, trades)
         if goal.goal_type == 'win_rate':
             return self._calculate_winrate_goal(goal, trades)
         if goal.goal_type == 'trades_count':
@@ -214,6 +224,184 @@ class GoalProgressCalculator:
 
         status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
 
+        return {
+            'current_value': current_value,
+            'percentage': percentage_float,
+            'status': status,
+            'remaining_days': goal.remaining_days,
+            'remaining_amount': remaining_amount,
+        }
+
+    def _calculate_max_consecutive_losses_goal(self, goal: TradingGoal, trades) -> dict:
+        """Calcule la progression pour un objectif de pertes consécutives maximales."""
+        ordered_trades = trades.order_by('trade_day', 'entered_at').values_list('net_pnl', flat=True)
+        current_streak = 0
+        max_streak = 0
+
+        for pnl in ordered_trades:
+            pnl_value = pnl or Decimal('0')
+            if pnl_value < 0:
+                current_streak += 1
+                max_streak = max(max_streak, current_streak)
+            else:
+                current_streak = 0
+
+        current_value = Decimal(str(max_streak))
+        target_value_decimal = self._get_target_value(goal)
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
+
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
+        return {
+            'current_value': current_value,
+            'percentage': percentage_float,
+            'status': status,
+            'remaining_days': goal.remaining_days,
+            'remaining_amount': remaining_amount,
+        }
+
+    def _calculate_daily_loss_limit_breaches_goal(self, goal: TradingGoal, trades) -> dict:
+        """Calcule la progression pour un objectif de dépassements de perte journalière."""
+        target_value_decimal = self._get_target_value(goal)
+        if target_value_decimal <= 0:
+            return {
+                'current_value': Decimal('0'),
+                'percentage': 0,
+                'status': 'active',
+                'remaining_days': goal.remaining_days,
+                'remaining_amount': Decimal('0'),
+            }
+
+        daily_pnl = trades.values('trade_day').annotate(daily_total=Sum('net_pnl'))
+        breach_threshold = -target_value_decimal
+        breaches = sum(
+            1 for day in daily_pnl
+            if day['daily_total'] is not None and Decimal(str(day['daily_total'])) < breach_threshold
+        )
+
+        current_value = Decimal(str(breaches))
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
+
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
+        return {
+            'current_value': current_value,
+            'percentage': percentage_float,
+            'status': status,
+            'remaining_days': goal.remaining_days,
+            'remaining_amount': remaining_amount,
+        }
+
+    def _calculate_expectancy_goal(self, goal: TradingGoal, trades) -> dict:
+        """Calcule la progression pour un objectif d'expectancy."""
+        total_trades = trades.count()
+        target_value_decimal = self._get_target_value(goal)
+
+        if total_trades == 0:
+            return {
+                'current_value': Decimal('0'),
+                'percentage': 0,
+                'status': 'active',
+                'remaining_days': goal.remaining_days,
+                'remaining_amount': target_value_decimal,
+            }
+
+        wins_qs = trades.filter(net_pnl__gt=0)
+        losses_qs = trades.filter(net_pnl__lt=0)
+        winning_count = wins_qs.count()
+        losing_count = losses_qs.count()
+
+        avg_win = wins_qs.aggregate(avg=Avg('net_pnl'))['avg'] or Decimal('0')
+        avg_loss = losses_qs.aggregate(avg=Avg('net_pnl'))['avg'] or Decimal('0')
+
+        win_rate = Decimal(str(winning_count)) / Decimal(str(total_trades))
+        loss_rate = Decimal(str(losing_count)) / Decimal(str(total_trades))
+
+        expectancy = (win_rate * Decimal(str(avg_win))) - (loss_rate * abs(Decimal(str(avg_loss))))
+        current_value = expectancy
+
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
+
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
+        return {
+            'current_value': current_value,
+            'percentage': percentage_float,
+            'status': status,
+            'remaining_days': goal.remaining_days,
+            'remaining_amount': remaining_amount,
+        }
+
+    def _calculate_avg_rr_actual_goal(self, goal: TradingGoal, trades) -> dict:
+        """Calcule la progression pour un objectif de R:R réel moyen."""
+        rr_avg = trades.filter(actual_risk_reward_ratio__isnull=False).aggregate(
+            avg=Avg('actual_risk_reward_ratio')
+        )['avg']
+        current_value = self._to_decimal(rr_avg)
+        target_value_decimal = self._get_target_value(goal)
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
+
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
+        return {
+            'current_value': current_value,
+            'percentage': percentage_float,
+            'status': status,
+            'remaining_days': goal.remaining_days,
+            'remaining_amount': remaining_amount,
+        }
+
+    def _calculate_journal_completion_rate_goal(self, goal: TradingGoal, trades) -> dict:
+        """Calcule la progression pour un objectif de complétion du journal de trades."""
+        total_trades = trades.count()
+        target_value_decimal = self._get_target_value(goal)
+
+        if total_trades == 0:
+            return {
+                'current_value': Decimal('0'),
+                'percentage': 0,
+                'status': 'active',
+                'remaining_days': goal.remaining_days,
+                'remaining_amount': target_value_decimal,
+            }
+
+        trade_ids = list(trades.values_list('id', flat=True))
+        reviewed_trade_ids = set(
+            TradeStrategy.objects.filter(user=goal.user, trade_id__in=trade_ids).values_list('trade_id', flat=True)
+        )
+
+        reviewed_trades = 0
+        for trade in trades.only('id', 'notes'):
+            has_notes = bool((trade.notes or '').strip())
+            has_strategy_review = trade.id in reviewed_trade_ids
+            if has_notes or has_strategy_review:
+                reviewed_trades += 1
+
+        completion_rate = (Decimal(str(reviewed_trades)) / Decimal(str(total_trades))) * Decimal('100')
+        current_value = completion_rate
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
+
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
         return {
             'current_value': current_value,
             'percentage': percentage_float,

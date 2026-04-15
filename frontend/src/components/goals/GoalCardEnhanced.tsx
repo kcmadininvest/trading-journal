@@ -121,11 +121,11 @@ export const GoalCardEnhanced: React.FC<GoalCardEnhancedProps> = ({
   const formatValue = (value: string | number, goalType: string) => {
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
 
-    if (goalType === 'pnl_total') {
+    if (goalType === 'pnl_total' || goalType === 'withdrawal_amount' || goalType === 'daily_loss_limit_breaches') {
       return formatCurrency(numValue, currencySymbol, preferences.number_format, 2);
-    } else if (goalType === 'win_rate' || goalType === 'strategy_respect' || goalType === 'max_drawdown') {
+    } else if (goalType === 'win_rate' || goalType === 'strategy_respect' || goalType === 'max_drawdown' || goalType === 'journal_completion_rate') {
       return `${formatNumber(numValue, 1, preferences.number_format)}%`;
-    } else if (goalType === 'profit_factor') {
+    } else if (goalType === 'profit_factor' || goalType === 'expectancy' || goalType === 'avg_rr_actual') {
       return formatNumber(numValue, 2, preferences.number_format);
     } else {
       return formatNumber(numValue, 0, preferences.number_format);
@@ -141,6 +141,38 @@ export const GoalCardEnhanced: React.FC<GoalCardEnhancedProps> = ({
       pnl_total: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      withdrawal_amount: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M3 7h12a2 2 0 012 2v6a2 2 0 01-2 2H3V7z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M7 12h3" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M14 12h7m0 0l-3-3m3 3l-3 3" />
+        </svg>
+      ),
+      max_consecutive_losses: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+        </svg>
+      ),
+      daily_loss_limit_breaches: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M6.938 4h10.124c1.54 0 2.502 1.667 1.732 3L13.732 17c-.77 1.333-2.694 1.333-3.464 0L5.206 7c-.77-1.333.192-3 1.732-3z" />
+        </svg>
+      ),
+      expectancy: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17l9.2-9.2M17 17h-4m4 0v-4" />
+        </svg>
+      ),
+      avg_rr_actual: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12h16M8 8l-4 4 4 4m8-8l4 4-4 4" />
+        </svg>
+      ),
+      journal_completion_rate: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m1-5H8a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2z" />
         </svg>
       ),
       win_rate: (

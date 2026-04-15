@@ -25,6 +25,11 @@
   "goalTypes": {
     "pnl_total": "Gesamt-PnL",
     "withdrawal_amount": "Auszahlungsbetrag",
+    "max_consecutive_losses": "Maximale Verlustserie",
+    "daily_loss_limit_breaches": "Überschreitungen Tagesverlustgrenze",
+    "expectancy": "Erwartungswert",
+    "avg_rr_actual": "Durchschnittliches reales R:R",
+    "journal_completion_rate": "Journal-Vervollständigungsrate",
     "win_rate": "Gewinnquote",
     "trades_count": "Anzahl der Trades",
     "profit_factor": "Profitfaktor",

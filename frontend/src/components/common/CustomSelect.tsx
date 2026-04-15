@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 interface SelectOption {
@@ -15,6 +15,8 @@ interface CustomSelectProps {
   className?: string;
   /** Largeur plafonnée + texte tronqué (barres de filtres denses) */
   variant?: 'default' | 'compact';
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -25,21 +27,43 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   disabled = false,
   className = '',
   variant = 'default',
+  searchable = false,
+  searchPlaceholder = 'Rechercher...',
 }) => {
   const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, minWidth: 0 });
 
   const currentOption = options.find(opt => opt.value === value) || options[0];
+  const normalizeText = (input: string) =>
+    input
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !searchTerm.trim()) return options;
+    const normalizedQuery = normalizeText(searchTerm);
+    return options.filter(opt => normalizeText(opt.label).includes(normalizedQuery));
+  }, [options, searchTerm, searchable]);
 
   const toggleDropdown = () => {
-    setOpen(prev => !prev);
+    setOpen(prev => {
+      const next = !prev;
+      if (!next) {
+        setSearchTerm('');
+      }
+      return next;
+    });
   };
 
   const handleSelect = (selectedValue: string | number | null) => {
     onChange(selectedValue);
+    setSearchTerm('');
     setOpen(false);
   };
 
@@ -101,6 +125,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   }, [open, options]);
 
   useEffect(() => {
+    if (open && searchable) {
+      window.setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 0);
+    }
+  }, [open, searchable]);
+
+  useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       const target = e.target as Node;
       if (open && 
@@ -131,7 +163,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       } as React.CSSProperties}
     >
       <ul className="py-1 text-sm sm:text-base text-gray-700 dark:text-gray-300">
-        {options.map((opt) => (
+        {searchable && (
+          <li className="px-2 py-1 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full px-2 py-1.5 text-sm rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </li>
+        )}
+        {filteredOptions.map((opt) => (
           <li key={opt.value ?? 'empty'}>
             <button
               type="button"
@@ -144,6 +188,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             </button>
           </li>
         ))}
+        {filteredOptions.length === 0 && (
+          <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+            No results
+          </li>
+        )}
       </ul>
     </div>
   );

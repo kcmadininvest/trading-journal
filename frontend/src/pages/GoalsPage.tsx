@@ -199,6 +199,17 @@ const GoalsPage: React.FC = () => {
       }
     }
   }, [filters, t]);
+
+  const handleFiltersChange = React.useCallback((nextFilters: GoalsFilters) => {
+    setFilters(nextFilters);
+
+    // Déclencher un refresh immédiat pour éviter l'attente du cycle/polling.
+    const nextKey = JSON.stringify(nextFilters);
+    if (hasLoadedRef.current && nextKey !== lastFiltersKeyRef.current) {
+      lastFiltersKeyRef.current = nextKey;
+      void loadGoals(false, nextFilters);
+    }
+  }, [loadGoals]);
   
   useEffect(() => {
     if (accountLoading) return;
@@ -410,7 +421,12 @@ const GoalsPage: React.FC = () => {
   const filteredGoals = useMemo(() => {
     let filtered = goals;
 
-    // Le filtrage par statut est déjà fait par l'API, mais on peut ajouter d'autres filtres côté client si nécessaire
+    // Appliquer aussi le filtrage statut côté client pour garantir la réactivité UI
+    // même si l'API ne renvoie pas toujours un sous-ensemble strictement filtré.
+    if (filters.status) {
+      filtered = filtered.filter(goal => goal.status === filters.status);
+    }
+
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(goal => {
@@ -428,7 +444,7 @@ const GoalsPage: React.FC = () => {
       {/* Filtres avancés */}
       <GoalFilters
         filters={filters}
-        onFiltersChange={setFilters}
+        onFiltersChange={handleFiltersChange}
         goalCounts={goalCounts}
         onCreateClick={handleCreateGoal}
         hideAccountNumber={hideAccountNumber}

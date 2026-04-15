@@ -897,6 +897,28 @@ class TradingGoalSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     'priority': 'La priorité doit être entre 1 et 5.'
                 })
+
+        goal_type = data.get('goal_type', self.instance.goal_type if self.instance else None)
+        if goal_type and final_target is not None:
+            if goal_type in ['journal_completion_rate']:
+                if final_target < 0 or final_target > 100:
+                    raise serializers.ValidationError({
+                        'threshold_target': 'Le taux de complétion du journal doit être entre 0 et 100.'
+                    })
+            if goal_type in ['expectancy', 'avg_rr_actual'] and final_target < 0:
+                raise serializers.ValidationError({
+                    'threshold_target': 'La valeur cible doit être positive ou nulle pour cet objectif.'
+                })
+            if goal_type in ['max_consecutive_losses', 'daily_loss_limit_breaches']:
+                # Les objectifs de compteurs doivent être des entiers non négatifs
+                if final_target < 0:
+                    raise serializers.ValidationError({
+                        'threshold_target': 'La valeur cible doit être positive ou nulle pour cet objectif.'
+                    })
+                if int(final_target) != float(final_target):
+                    raise serializers.ValidationError({
+                        'threshold_target': 'La valeur cible doit être un entier pour cet objectif.'
+                    })
         
         return data
     

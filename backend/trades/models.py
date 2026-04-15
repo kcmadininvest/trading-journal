@@ -1328,6 +1328,11 @@ class TradingGoal(models.Model):
     GOAL_TYPE_CHOICES = [
         ('pnl_total', 'PnL Total'),
         ('withdrawal_amount', 'Montant des Retraits'),
+        ('max_consecutive_losses', 'Pertes Consécutives Max'),
+        ('daily_loss_limit_breaches', 'Dépassements Limite Perte Journalière'),
+        ('expectancy', 'Expectancy'),
+        ('avg_rr_actual', 'R:R Réel Moyen'),
+        ('journal_completion_rate', 'Taux Complétion Journal'),
         ('win_rate', 'Taux de Réussite (Win Rate)'),
         ('trades_count', 'Nombre de Trades'),
         ('profit_factor', 'Profit Factor'),
@@ -1365,7 +1370,7 @@ class TradingGoal(models.Model):
     
     # Type d'objectif
     goal_type = models.CharField(
-        max_length=20,
+        max_length=40,
         choices=GOAL_TYPE_CHOICES,
         verbose_name='Type d\'objectif',
         help_text='Type de métrique à suivre'

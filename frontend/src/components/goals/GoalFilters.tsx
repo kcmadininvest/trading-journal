@@ -59,6 +59,11 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
     { value: '', label: t('goals:filters.allTypes', { defaultValue: 'Tous les types' }) },
     { value: 'pnl_total', label: t('goals:goalTypes.pnl_total') },
     { value: 'withdrawal_amount', label: t('goals:goalTypes.withdrawal_amount') },
+    { value: 'max_consecutive_losses', label: t('goals:goalTypes.max_consecutive_losses') },
+    { value: 'daily_loss_limit_breaches', label: t('goals:goalTypes.daily_loss_limit_breaches') },
+    { value: 'expectancy', label: t('goals:goalTypes.expectancy') },
+    { value: 'avg_rr_actual', label: t('goals:goalTypes.avg_rr_actual') },
+    { value: 'journal_completion_rate', label: t('goals:goalTypes.journal_completion_rate') },
     { value: 'win_rate', label: t('goals:goalTypes.win_rate') },
     { value: 'trades_count', label: t('goals:goalTypes.trades_count') },
     { value: 'profit_factor', label: t('goals:goalTypes.profit_factor') },
@@ -167,6 +172,8 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
                 value={filters.goal_type || ''}
                 onChange={(value) => onFiltersChange({ ...filters, goal_type: value ? String(value) : undefined })}
                 options={goalTypeOptions}
+                searchable
+                searchPlaceholder={t('goals:filters.searchTypePlaceholder', { defaultValue: "Rechercher un type d'objectif..." })}
               />
             </div>
             <div className="w-full min-w-0 sm:flex-1 sm:min-w-[140px] lg:min-w-0">

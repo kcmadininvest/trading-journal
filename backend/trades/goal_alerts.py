@@ -52,6 +52,12 @@ def send_goal_achieved_email(goal, language: str = None) -> bool:
         # Préparer le contexte pour les templates
         goal_type_labels = {
             'pnl_total': 'PnL Total',
+            'withdrawal_amount': 'Montant des Retraits',
+            'max_consecutive_losses': 'Pertes Consécutives Max',
+            'daily_loss_limit_breaches': 'Dépassements Limite Perte Journalière',
+            'expectancy': 'Expectancy',
+            'avg_rr_actual': 'R:R Réel Moyen',
+            'journal_completion_rate': 'Taux Complétion Journal',
             'win_rate': 'Taux de Réussite',
             'trades_count': 'Nombre de Trades',
             'profit_factor': 'Profit Factor',
@@ -167,6 +173,12 @@ def send_goal_danger_email(goal, language: str = None) -> bool:
         # Préparer le contexte pour les templates
         goal_type_labels = {
             'pnl_total': 'PnL Total',
+            'withdrawal_amount': 'Montant des Retraits',
+            'max_consecutive_losses': 'Pertes Consécutives Max',
+            'daily_loss_limit_breaches': 'Dépassements Limite Perte Journalière',
+            'expectancy': 'Expectancy',
+            'avg_rr_actual': 'R:R Réel Moyen',
+            'journal_completion_rate': 'Taux Complétion Journal',
             'win_rate': 'Taux de Réussite',
             'trades_count': 'Nombre de Trades',
             'profit_factor': 'Profit Factor',

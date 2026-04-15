@@ -23,6 +23,11 @@ interface GoalWizardProps {
 const GOAL_TYPES = [
   { value: 'pnl_total', label: 'goals:goalTypes.pnl_total' },
   { value: 'withdrawal_amount', label: 'goals:goalTypes.withdrawal_amount' },
+  { value: 'max_consecutive_losses', label: 'goals:goalTypes.max_consecutive_losses' },
+  { value: 'daily_loss_limit_breaches', label: 'goals:goalTypes.daily_loss_limit_breaches' },
+  { value: 'expectancy', label: 'goals:goalTypes.expectancy' },
+  { value: 'avg_rr_actual', label: 'goals:goalTypes.avg_rr_actual' },
+  { value: 'journal_completion_rate', label: 'goals:goalTypes.journal_completion_rate' },
   { value: 'win_rate', label: 'goals:goalTypes.win_rate' },
   { value: 'trades_count', label: 'goals:goalTypes.trades_count' },
   { value: 'profit_factor', label: 'goals:goalTypes.profit_factor' },
@@ -288,10 +293,12 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
 
   const getTargetValuePlaceholder = () => {
     const type = formData.goal_type;
-    if (type === 'win_rate' || type === 'strategy_respect' || type === 'max_drawdown') {
+    if (type === 'win_rate' || type === 'strategy_respect' || type === 'max_drawdown' || type === 'journal_completion_rate') {
       return formatNumber(70, 1, preferences.number_format) + '%';
-    } else if (type === 'pnl_total' || type === 'withdrawal_amount') {
+    } else if (type === 'pnl_total' || type === 'withdrawal_amount' || type === 'daily_loss_limit_breaches') {
       return formatCurrency(1000, '', preferences.number_format, 2);
+    } else if (type === 'expectancy' || type === 'avg_rr_actual') {
+      return formatNumber(1.5, 2, preferences.number_format);
     } else {
       return formatNumber(100, 0, preferences.number_format);
     }
@@ -413,6 +420,8 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
                   value={formData.goal_type}
                   onChange={(value) => setFormData({ ...formData, goal_type: value as TradingGoal['goal_type'] })}
                   options={goalTypeOptions}
+                  searchable
+                  searchPlaceholder={t('goals:filters.searchTypePlaceholder', { defaultValue: 'Rechercher un type d’objectif...' })}
                 />
               </div>
 
@@ -451,7 +460,9 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
                   digits={
                     formData.goal_type === 'win_rate' || formData.goal_type === 'strategy_respect' || formData.goal_type === 'max_drawdown'
                       ? 1
-                      : formData.goal_type === 'pnl_total' || formData.goal_type === 'withdrawal_amount'
+                      : formData.goal_type === 'journal_completion_rate'
+                      ? 1
+                      : formData.goal_type === 'pnl_total' || formData.goal_type === 'withdrawal_amount' || formData.goal_type === 'daily_loss_limit_breaches' || formData.goal_type === 'expectancy' || formData.goal_type === 'avg_rr_actual'
                       ? 2
                       : 0
                   }
@@ -491,7 +502,9 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
                       digits={
                         formData.goal_type === 'win_rate' || formData.goal_type === 'strategy_respect' || formData.goal_type === 'max_drawdown'
                           ? 1
-                          : formData.goal_type === 'pnl_total' || formData.goal_type === 'withdrawal_amount'
+                          : formData.goal_type === 'journal_completion_rate'
+                          ? 1
+                          : formData.goal_type === 'pnl_total' || formData.goal_type === 'withdrawal_amount' || formData.goal_type === 'daily_loss_limit_breaches' || formData.goal_type === 'expectancy' || formData.goal_type === 'avg_rr_actual'
                           ? 2
                           : 0
                       }
