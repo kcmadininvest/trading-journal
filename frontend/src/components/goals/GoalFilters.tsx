@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { GoalsFilters } from '../../services/goals';
 import type { TradingAccount } from '../../services/tradingAccounts';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -37,6 +37,22 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
 }) => {
   const { t } = useI18nTranslation();
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
+
+  const areFiltersEqual = useCallback((left: GoalsFilters, right: GoalsFilters) => {
+    return (
+      left.status === right.status &&
+      left.period_type === right.period_type &&
+      left.trading_account === right.trading_account &&
+      left.goal_type === right.goal_type &&
+      left.direction === right.direction &&
+      left.search === right.search
+    );
+  }, []);
+
+  const emitFiltersChange = useCallback((nextFilters: GoalsFilters) => {
+    if (areFiltersEqual(filters, nextFilters)) return;
+    onFiltersChange(nextFilters);
+  }, [areFiltersEqual, filters, onFiltersChange]);
 
   // Synchroniser searchQuery avec filters.search quand il change de l'extérieur
   useEffect(() => {
@@ -79,7 +95,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
   ], [t]);
 
   const handleStatusChange = (status: string) => {
-    onFiltersChange({
+    emitFiltersChange({
       ...filters,
       status,
     });
@@ -87,7 +103,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      onFiltersChange({
+      emitFiltersChange({
         ...filters,
         search: searchQuery || undefined,
       });
@@ -170,7 +186,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
               <CustomSelect
                 className="w-full"
                 value={filters.goal_type || ''}
-                onChange={(value) => onFiltersChange({ ...filters, goal_type: value ? String(value) : undefined })}
+                onChange={(value) => emitFiltersChange({ ...filters, goal_type: value ? String(value) : undefined })}
                 options={goalTypeOptions}
                 searchable
                 searchPlaceholder={t('goals:filters.searchTypePlaceholder', { defaultValue: "Rechercher un type d'objectif..." })}
@@ -183,7 +199,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
               <CustomSelect
                 className="w-full"
                 value={filters.direction || ''}
-                onChange={(value) => onFiltersChange({ ...filters, direction: value ? String(value) : undefined })}
+                onChange={(value) => emitFiltersChange({ ...filters, direction: value ? String(value) : undefined })}
                 options={directionOptions}
               />
             </div>

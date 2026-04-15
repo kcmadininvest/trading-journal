@@ -154,7 +154,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   const getMarketLabel = (code: string) => {
     switch (code) {
       case 'NYSE':
-        return 'NYSE';
+        return 'New York Stock Exchange';
       case 'XPAR':
         return 'Euronext';
       case 'XLON':

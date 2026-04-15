@@ -102,7 +102,7 @@ export const MarketEventsTimeline: React.FC<MarketEventsTimelineProps> = ({
   const getMarketLabel = (market: string) => {
     switch (market) {
       case 'XNYS':
-        return 'NYSE';
+        return 'New York Stock Exchange';
       case 'XPAR':
         return 'Euronext';
       case 'XLON':

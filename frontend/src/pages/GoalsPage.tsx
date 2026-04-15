@@ -27,10 +27,6 @@ const GoalsPage: React.FC = () => {
   const [filters, setFilters] = useState<GoalsFilters>({ status: 'active' });
   const handleTradingAccountChange = React.useCallback((accountId: number | null) => {
     setSelectedAccountId(accountId);
-    setFilters((prev) => ({
-      ...prev,
-      trading_account: accountId ?? undefined,
-    }));
   }, [setSelectedAccountId]);
 
   // Alignement Trades / Dashboard : filtres API alignés sur le compte du contexte
@@ -52,9 +48,17 @@ const GoalsPage: React.FC = () => {
   const notifiedGoalsRef = React.useRef<Set<number>>(new Set());
   const hasLoadedRef = React.useRef(false);
   const lastFiltersKeyRef = React.useRef<string>('');
+  const latestRequestIdRef = React.useRef(0);
+  const activeRequestsRef = React.useRef(0);
+  const isFetchingRef = React.useRef(false);
   
   const loadGoals = React.useCallback(async (showLoading = true, filtersToUse?: GoalsFilters) => {
     const currentFilters = filtersToUse || filters;
+    const requestId = latestRequestIdRef.current + 1;
+    latestRequestIdRef.current = requestId;
+    activeRequestsRef.current += 1;
+    isFetchingRef.current = true;
+
     if (showLoading) {
       setLoading(true);
       setError(null);
@@ -69,6 +73,11 @@ const GoalsPage: React.FC = () => {
         goalsService.list(currentFilters),
         goalsService.getStatistics(statsParams).catch(() => null),
       ]);
+
+      // Ignorer toute réponse obsolète arrivée après une requête plus récente.
+      if (requestId !== latestRequestIdRef.current) {
+        return;
+      }
 
       if (stats) {
         setStatistics((prevStats) => {
@@ -189,11 +198,20 @@ const GoalsPage: React.FC = () => {
         return hasChanged ? newGoals : prevGoals;
       });
     } catch (err: any) {
+      if (requestId !== latestRequestIdRef.current) {
+        return;
+      }
       if (showLoading) {
         setError(err.message || t('goals:errorLoading'));
         setGoals([]);
       }
     } finally {
+      activeRequestsRef.current = Math.max(0, activeRequestsRef.current - 1);
+      isFetchingRef.current = activeRequestsRef.current > 0;
+
+      if (requestId !== latestRequestIdRef.current) {
+        return;
+      }
       if (showLoading) {
         setLoading(false);
       }
@@ -202,14 +220,7 @@ const GoalsPage: React.FC = () => {
 
   const handleFiltersChange = React.useCallback((nextFilters: GoalsFilters) => {
     setFilters(nextFilters);
-
-    // Déclencher un refresh immédiat pour éviter l'attente du cycle/polling.
-    const nextKey = JSON.stringify(nextFilters);
-    if (hasLoadedRef.current && nextKey !== lastFiltersKeyRef.current) {
-      lastFiltersKeyRef.current = nextKey;
-      void loadGoals(false, nextFilters);
-    }
-  }, [loadGoals]);
+  }, []);
   
   useEffect(() => {
     if (accountLoading) return;
@@ -220,27 +231,14 @@ const GoalsPage: React.FC = () => {
     }
 
     const filtersKey = JSON.stringify(filters);
-
-    const runLoad = () => {
-      if (!hasLoadedRef.current) {
-        hasLoadedRef.current = true;
-        lastFiltersKeyRef.current = filtersKey;
-        loadGoals(true, filters);
-      } else if (filtersKey !== lastFiltersKeyRef.current) {
-        lastFiltersKeyRef.current = filtersKey;
-        loadGoals(true, filters);
-      }
-    };
-
-    if (!hasLoadedRef.current) {
-      runLoad();
+    if (hasLoadedRef.current && filtersKey === lastFiltersKeyRef.current) {
       return;
     }
 
-    const timeoutId = window.setTimeout(runLoad, 200);
-    return () => window.clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, accountLoading, selectedAccountId]);
+    hasLoadedRef.current = true;
+    lastFiltersKeyRef.current = filtersKey;
+    void loadGoals(true, filters);
+  }, [filters, accountLoading, selectedAccountId, loadGoals]);
 
   // Polling périodique pour détecter les changements de statut (toutes les 30 secondes)
   // Utiliser showLoading=false pour éviter le clignotement visuel
@@ -248,11 +246,12 @@ const GoalsPage: React.FC = () => {
     if (isModalOpen) return; // Ne pas poller si la modale est ouverte
     
     const interval = setInterval(() => {
-      loadGoals(false); // Ne pas afficher le loader lors du polling
+      if (isFetchingRef.current || !hasLoadedRef.current) return;
+      void loadGoals(false, filters); // Ne pas afficher le loader lors du polling
     }, 30000); // 30 secondes
 
     return () => clearInterval(interval);
-  }, [loadGoals, isModalOpen]);
+  }, [loadGoals, isModalOpen, filters]);
 
   useEffect(() => {
     let cancelled = false;
