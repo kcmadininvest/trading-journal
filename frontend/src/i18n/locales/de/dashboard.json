@@ -96,6 +96,7 @@
   "negativeBalance": "Negativer Saldo",
   "balance": "Saldo",
   "dayPnLShort": "Tages-PnL",
+  "netFlow": "Nettofluss",
   "numberOfTrades": "Anzahl der Trades",
   "tradingAccount": "Handelskonto",
   "currentSeries": "Aktuelle Serie",

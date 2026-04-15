@@ -4,7 +4,7 @@ export interface TradingGoal {
   id: number;
   user: number;
   user_username?: string;
-  goal_type: 'pnl_total' | 'win_rate' | 'trades_count' | 'profit_factor' | 'max_drawdown' | 'strategy_respect' | 'winning_days';
+  goal_type: 'pnl_total' | 'withdrawal_amount' | 'win_rate' | 'trades_count' | 'profit_factor' | 'max_drawdown' | 'strategy_respect' | 'winning_days';
   direction?: 'minimum' | 'maximum';
   period_type: 'monthly' | 'quarterly' | 'yearly' | 'custom';
   threshold_target?: string | number;

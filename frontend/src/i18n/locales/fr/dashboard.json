@@ -93,6 +93,7 @@
   "negativeBalance": "Solde négatif",
   "balance": "Solde",
   "dayPnLShort": "PnL jour",
+  "netFlow": "Flux net",
   "numberOfTrades": "Nombre de trades",
   "tradingAccount": "Compte de trading",
   "objectiveAchieved": "Objectif atteint !",

@@ -79,6 +79,7 @@
   "hideCurrentBalance": "Nascondi saldo attuale",
   "hideMll": "Nascondi MLL",
   "hideProfitLoss": "Nascondi profitti/perdite",
+  "hideConsistencyTarget": "Nascondi obiettivo di consistenza",
   "unsavedChanges": "Modifiche non salvate",
   "unsavedChangesDesc": "Hai modifiche non salvate",
   "profileInfoDesc": "Gestisci le tue informazioni personali",

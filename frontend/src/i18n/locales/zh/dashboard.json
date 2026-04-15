@@ -95,6 +95,7 @@
   "negativeBalance": "Solde négatif",
   "balance": "余额",
   "dayPnLShort": "每日盈亏",
+  "netFlow": "净流动",
   "numberOfTrades": "交易数量",
   "tradingAccount": "交易账户",
   "currentSeries": "当前系列",

@@ -94,6 +94,7 @@
   "hideCurrentBalance": "Hide current balance",
   "hideMll": "Hide MLL",
   "hideProfitLoss": "Hide profit/loss",
+  "hideConsistencyTarget": "Hide consistency target",
   "unsavedChanges": "Unsaved changes",
   "unsavedChangesDesc": "You have unsaved changes",
   "profileInfoDesc": "Manage your personal information",

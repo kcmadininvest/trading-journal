@@ -58,6 +58,7 @@ export const GoalFilters: React.FC<GoalFiltersProps> = ({
   const goalTypeOptions = useMemo(() => [
     { value: '', label: t('goals:filters.allTypes', { defaultValue: 'Tous les types' }) },
     { value: 'pnl_total', label: t('goals:goalTypes.pnl_total') },
+    { value: 'withdrawal_amount', label: t('goals:goalTypes.withdrawal_amount') },
     { value: 'win_rate', label: t('goals:goalTypes.win_rate') },
     { value: 'trades_count', label: t('goals:goalTypes.trades_count') },
     { value: 'profit_factor', label: t('goals:goalTypes.profit_factor') },

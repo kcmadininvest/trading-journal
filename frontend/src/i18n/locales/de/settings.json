@@ -94,6 +94,7 @@
   "hideCurrentBalance": "Aktuellen Saldo ausblenden",
   "hideMll": "MLL ausblenden",
   "hideProfitLoss": "Gewinn/Verlust ausblenden",
+  "hideConsistencyTarget": "Konsistenzziel ausblenden",
   "unsavedChanges": "Nicht gespeicherte Änderungen",
   "unsavedChangesDesc": "Sie haben nicht gespeicherte Änderungen",
   "profileInfoDesc": "Verwalten Sie Ihre persönlichen Informationen",

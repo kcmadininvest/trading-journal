@@ -79,6 +79,7 @@
   "hideCurrentBalance": "현재 잔액 숨기기",
   "hideMll": "MLL 숨기기",
   "hideProfitLoss": "손익 숨기기",
+  "hideConsistencyTarget": "일관성 목표 숨기기",
   "unsavedChanges": "저장되지 않은 변경 사항",
   "unsavedChangesDesc": "저장되지 않은 변경 사항이 있습니다",
   "profileInfoDesc": "개인 정보 관리",

@@ -79,6 +79,7 @@
   "hideCurrentBalance": "隐藏当前余额",
   "hideMll": "隐藏MLL",
   "hideProfitLoss": "隐藏盈亏",
+  "hideConsistencyTarget": "隐藏一致性目标",
   "unsavedChanges": "未保存的更改",
   "unsavedChangesDesc": "您有未保存的更改",
   "profileInfoDesc": "管理您的个人信息",

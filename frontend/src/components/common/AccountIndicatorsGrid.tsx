@@ -15,6 +15,7 @@ interface AccountIndicatorsGridProps {
   hideInitialBalance?: boolean;
   hideCurrentBalance?: boolean;
   hideProfitLoss?: boolean;
+  hideConsistencyTarget?: boolean;
   globalAllAccountsActivity?: GlobalAllAccountsActivity | null;
 }
 
@@ -26,6 +27,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   hideInitialBalance = false,
   hideCurrentBalance = false,
   hideProfitLoss = false,
+  hideConsistencyTarget = false,
   globalAllAccountsActivity = null,
 }) => {
   const { preferences } = usePreferences();
@@ -39,6 +41,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
 
   const hasActiveDays = useMemo(() => typeof activeDays === 'number' && activeDays >= 0, [activeDays]);
   const showTradesSection = useMemo(() => totalTrades > 0 || hasActiveDays, [totalTrades, hasActiveDays]);
+  const visibleConsistencyTarget = consistencyTarget && !hideConsistencyTarget;
 
   // Barre de progression pour le Consistency Target
   const progressPercentage = consistencyTarget
@@ -49,7 +52,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
     <div className={`${className}`}>
       {/* Grille responsive : toutes les cartes sur une ligne en grand écran */}
       <div
-        className={`grid w-full min-w-0 grid-cols-1 md:grid-cols-2 ${consistencyTarget ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}
+        className={`grid w-full min-w-0 grid-cols-1 md:grid-cols-2 ${visibleConsistencyTarget ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}
       >
         {/* Solde initial et actuel regroupés */}
         <div className="flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
@@ -236,7 +239,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
         )}
 
         {/* Consistency Target (si applicable) */}
-        {consistencyTarget && (
+        {visibleConsistencyTarget && (
           <div className={`flex h-full min-w-0 w-full flex-col gap-2 p-4 rounded-lg border transition-colors duration-150 ${
             consistencyTarget.isCompliant
               ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'

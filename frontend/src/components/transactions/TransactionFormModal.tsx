@@ -90,6 +90,13 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     }
   }, [transaction, isOpen]);
 
+  // En mode création, resynchroniser le compte par défaut à chaque ouverture
+  // pour éviter un état interne obsolète si le compte global a changé.
+  useEffect(() => {
+    if (!isOpen || transaction) return;
+    setSelectedAccountId(defaultAccountId || null);
+  }, [isOpen, transaction, defaultAccountId]);
+
   // Calculer le solde après transaction
   const balanceAfterTransaction = React.useMemo(() => {
     if (currentBalance === null || !amount) return null;

@@ -31,6 +31,7 @@ ChartJS.register(
 interface BalanceDataPoint {
   date: string; // Format YYYY-MM-DD
   pnl: number;
+  dailyNetTransactions?: number;
   cumulative: number;
   mll?: number; // Maximum Loss Limit (optionnel)
   profitTarget?: number; // Profit Target (optionnel)
@@ -92,7 +93,7 @@ function AccountBalanceChart({
   }), [isDark]);
 
   // Préparer les données du graphique
-  const { chartData, chartLabels, pnlMapping } = useMemo(() => {
+  const { chartData, chartLabels, pnlMapping, netTransactionsMapping } = useMemo(() => {
     if (data.length === 0) {
       return {
         chartData: {
@@ -101,6 +102,7 @@ function AccountBalanceChart({
         },
         chartLabels: [] as string[],
         pnlMapping: [] as number[],
+        netTransactionsMapping: [] as number[],
       };
     }
 
@@ -120,6 +122,7 @@ function AccountBalanceChart({
     const processedBalances: number[] = [];
     const processedMllValues: (number | null)[] = [];
     const processedPnlMapping: number[] = [];
+    const processedNetTransactionsMapping: number[] = [];
     const isIntermediatePoint: boolean[] = []; // Marquer les points intermédiaires pour les rendre invisibles
 
     balances.forEach((balance, index) => {
@@ -167,6 +170,7 @@ function AccountBalanceChart({
         }
         processedMllValues.push(mllForIntermediate ?? null);
         processedPnlMapping.push(0); // Pas de PnL pour le point intermédiaire
+        processedNetTransactionsMapping.push(0); // Pas de flux net pour le point intermédiaire
       }
       
       // Ajouter le point réel de la date
@@ -196,6 +200,7 @@ function AccountBalanceChart({
       }
       processedMllValues.push(mllForPoint ?? null);
       processedPnlMapping.push(data[index]?.pnl ?? 0);
+      processedNetTransactionsMapping.push(data[index]?.dailyNetTransactions ?? 0);
     });
 
     return {
@@ -326,6 +331,7 @@ function AccountBalanceChart({
       },
       chartLabels: processedLabels,
       pnlMapping: processedPnlMapping,
+      netTransactionsMapping: processedNetTransactionsMapping,
     };
   }, [data, preferences.timezone, initialCapital, hideMll, hideProfitTarget, profitTarget]);
 
@@ -430,9 +436,11 @@ function AccountBalanceChart({
             // Sinon, c'est le dataset principal (Solde)
             // Ne pas afficher le MLL ici car il est déjà affiché par le dataset MLL
             const pnl = pnlMapping[index] ?? 0;
+            const netFlow = netTransactionsMapping[index] ?? 0;
             const labels = [
               `${t('dashboard:balance')}: ${formatCurrency(value, currencySymbol)}`,
               `${t('dashboard:dayPnLShort')}: ${formatCurrency(pnl, currencySymbol)}`,
+              `${t('dashboard:netFlow', { defaultValue: 'Flux net' })}: ${formatCurrency(netFlow, currencySymbol)}`,
             ];
             
             return labels;
@@ -497,7 +505,7 @@ function AccountBalanceChart({
         duration: 0, // Désactiver l'animation pour éviter le tremblement après chargement
       },
     };
-  }, [chartData, chartLabels, pnlMapping, chartThemeColors, formatCurrency, currencySymbol, t, hideProfitLoss]);
+  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartThemeColors, formatCurrency, currencySymbol, t, hideProfitLoss]);
 
   if (data.length === 0) {
     return (

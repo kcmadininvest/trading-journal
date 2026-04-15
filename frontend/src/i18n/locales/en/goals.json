@@ -24,6 +24,7 @@
   },
   "goalTypes": {
     "pnl_total": "Total PnL",
+    "withdrawal_amount": "Withdrawal Amount",
     "win_rate": "Win Rate",
     "trades_count": "Number of Trades",
     "profit_factor": "Profit Factor",

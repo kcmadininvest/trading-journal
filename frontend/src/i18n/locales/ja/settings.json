@@ -79,6 +79,7 @@
   "hideCurrentBalance": "現在の残高を非表示",
   "hideMll": "MLLを非表示",
   "hideProfitLoss": "損益を非表示",
+  "hideConsistencyTarget": "コンシステンシー目標を非表示",
   "unsavedChanges": "未保存の変更",
   "unsavedChangesDesc": "保存されていない変更があります",
   "profileInfoDesc": "個人情報を管理",

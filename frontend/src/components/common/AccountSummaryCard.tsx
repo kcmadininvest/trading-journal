@@ -14,6 +14,7 @@ interface AccountSummaryCardProps {
   hideInitialBalance?: boolean;
   hideCurrentBalance?: boolean;
   hideProfitLoss?: boolean;
+  hideConsistencyTarget?: boolean;
   onNavigateToTransactions?: () => void;
   loading?: boolean;
   error?: string | null;
@@ -28,6 +29,7 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(
   hideInitialBalance,
   hideCurrentBalance,
   hideProfitLoss,
+  hideConsistencyTarget,
   onNavigateToTransactions,
   loading = false,
   error = null,
@@ -65,6 +67,7 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(
         hideInitialBalance={hideInitialBalance}
         hideCurrentBalance={hideCurrentBalance}
         hideProfitLoss={hideProfitLoss}
+        hideConsistencyTarget={hideConsistencyTarget}
         onNavigateToTransactions={onNavigateToTransactions}
       />
     </div>

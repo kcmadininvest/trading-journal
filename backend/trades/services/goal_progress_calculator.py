@@ -8,7 +8,7 @@ from typing import cast, TYPE_CHECKING
 if TYPE_CHECKING:
     from ..models import TradingAccount
 
-from ..models import TradingGoal, TopStepTrade, TradeStrategy
+from ..models import TradingGoal, TopStepTrade, TradeStrategy, AccountTransaction
 
 
 class GoalProgressCalculator:
@@ -61,6 +61,8 @@ class GoalProgressCalculator:
 
         if goal.goal_type == 'pnl_total':
             return self._calculate_pnl_goal(goal, trades)
+        if goal.goal_type == 'withdrawal_amount':
+            return self._calculate_withdrawal_amount_goal(goal)
         if goal.goal_type == 'win_rate':
             return self._calculate_winrate_goal(goal, trades)
         if goal.goal_type == 'trades_count':
@@ -148,6 +150,39 @@ class GoalProgressCalculator:
         win_rate = (winning_trades / total_trades) * 100
         current_value = Decimal(str(win_rate))
 
+        percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
+
+        if goal.direction == 'minimum':
+            remaining_amount = max(Decimal('0'), target_value_decimal - current_value)
+        else:
+            remaining_amount = max(Decimal('0'), current_value - target_value_decimal)
+
+        status = self._determine_status(goal, percentage_float, current_value, target_value_decimal)
+
+        return {
+            'current_value': current_value,
+            'percentage': percentage_float,
+            'status': status,
+            'remaining_days': goal.remaining_days,
+            'remaining_amount': remaining_amount,
+        }
+
+    def _calculate_withdrawal_amount_goal(self, goal: TradingGoal) -> dict:
+        """Calcule la progression pour un objectif de montant total des retraits."""
+        transactions = AccountTransaction.objects.filter(
+            user=goal.user,
+            transaction_type='withdrawal',
+            transaction_date__date__gte=goal.start_date,
+            transaction_date__date__lte=goal.end_date,
+        )
+
+        if goal.trading_account:
+            transactions = transactions.filter(trading_account=goal.trading_account)
+
+        total_withdrawals = transactions.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        current_value = self._to_decimal(total_withdrawals)
+
+        target_value_decimal = self._get_target_value(goal)
         percentage_float = self._calculate_percentage(goal, current_value, target_value_decimal)
 
         if goal.direction == 'minimum':

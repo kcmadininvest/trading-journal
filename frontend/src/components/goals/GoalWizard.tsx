@@ -22,6 +22,7 @@ interface GoalWizardProps {
 
 const GOAL_TYPES = [
   { value: 'pnl_total', label: 'goals:goalTypes.pnl_total' },
+  { value: 'withdrawal_amount', label: 'goals:goalTypes.withdrawal_amount' },
   { value: 'win_rate', label: 'goals:goalTypes.win_rate' },
   { value: 'trades_count', label: 'goals:goalTypes.trades_count' },
   { value: 'profit_factor', label: 'goals:goalTypes.profit_factor' },
@@ -289,7 +290,7 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
     const type = formData.goal_type;
     if (type === 'win_rate' || type === 'strategy_respect' || type === 'max_drawdown') {
       return formatNumber(70, 1, preferences.number_format) + '%';
-    } else if (type === 'pnl_total') {
+    } else if (type === 'pnl_total' || type === 'withdrawal_amount') {
       return formatCurrency(1000, '', preferences.number_format, 2);
     } else {
       return formatNumber(100, 0, preferences.number_format);
@@ -450,7 +451,7 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
                   digits={
                     formData.goal_type === 'win_rate' || formData.goal_type === 'strategy_respect' || formData.goal_type === 'max_drawdown'
                       ? 1
-                      : formData.goal_type === 'pnl_total'
+                      : formData.goal_type === 'pnl_total' || formData.goal_type === 'withdrawal_amount'
                       ? 2
                       : 0
                   }
@@ -490,7 +491,7 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
                       digits={
                         formData.goal_type === 'win_rate' || formData.goal_type === 'strategy_respect' || formData.goal_type === 'max_drawdown'
                           ? 1
-                          : formData.goal_type === 'pnl_total'
+                          : formData.goal_type === 'pnl_total' || formData.goal_type === 'withdrawal_amount'
                           ? 2
                           : 0
                       }

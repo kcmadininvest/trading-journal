@@ -95,6 +95,7 @@
   "negativeBalance": "Solde négatif",
   "balance": "残高",
   "dayPnLShort": "1日のPnL",
+  "netFlow": "純フロー",
   "numberOfTrades": "取引数",
   "tradingAccount": "取引口座",
   "currentSeries": "現在のシリーズ",

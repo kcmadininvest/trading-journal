@@ -1327,6 +1327,7 @@ class TradingGoal(models.Model):
     
     GOAL_TYPE_CHOICES = [
         ('pnl_total', 'PnL Total'),
+        ('withdrawal_amount', 'Montant des Retraits'),
         ('win_rate', 'Taux de Réussite (Win Rate)'),
         ('trades_count', 'Nombre de Trades'),
         ('profit_factor', 'Profit Factor'),

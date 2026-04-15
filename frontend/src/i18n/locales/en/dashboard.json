@@ -92,6 +92,7 @@
   "negativeBalance": "Negative Balance",
   "balance": "Balance",
   "dayPnLShort": "Day PnL",
+  "netFlow": "Net Flow",
   "numberOfTrades": "Number of trades",
   "tradingAccount": "Trading Account",
   "objectiveAchieved": "Objective achieved!",

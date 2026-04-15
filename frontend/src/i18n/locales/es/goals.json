@@ -24,6 +24,7 @@
   },
   "goalTypes": {
     "pnl_total": "PnL Total",
+    "withdrawal_amount": "Monto de retiros",
     "win_rate": "Tasa de Éxito",
     "trades_count": "Número de Operaciones",
     "profit_factor": "Factor de Beneficio",

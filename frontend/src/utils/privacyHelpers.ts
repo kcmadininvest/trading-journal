@@ -6,6 +6,7 @@ export const PRIVACY_OPTIONS = {
   HIDE_CURRENT_BALANCE: 'hide_current_balance',
   HIDE_MLL: 'hide_mll',
   HIDE_PROFIT_LOSS: 'hide_profit_loss',
+  HIDE_CONSISTENCY_TARGET: 'hide_consistency_target',
   HIDE_ACCOUNT_NUMBER: 'hide_account_number',
 } as const;
 
@@ -31,6 +32,7 @@ export const PAGE_PRIVACY_OPTIONS: Record<string, PrivacyOption[]> = {
     { key: PRIVACY_OPTIONS.HIDE_CURRENT_BALANCE, label: 'settings:hideCurrentBalance' },
     { key: PRIVACY_OPTIONS.HIDE_MLL, label: 'settings:hideMll' },
     { key: PRIVACY_OPTIONS.HIDE_PROFIT_LOSS, label: 'settings:hideProfitLoss' },
+    { key: PRIVACY_OPTIONS.HIDE_CONSISTENCY_TARGET, label: 'settings:hideConsistencyTarget' },
   ],
   [PAGE_CONTEXTS.STATISTICS]: [
     { key: PRIVACY_OPTIONS.HIDE_ACCOUNT_NUMBER, label: 'settings:hideAccountNumber' },

@@ -664,6 +664,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         }
 
         const dailyPnl = dailyAggregate?.pnl || 0;
+        const dailyNetTransactions = transactionsByDate[date] || 0;
         const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
         
         // Mettre à jour le solde maximum vu
@@ -675,6 +676,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         return {
           date: date,
           pnl: dailyPnl,
+          dailyNetTransactions,
           cumulative: cumulative,
           mll: mll,
         };
@@ -702,6 +704,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           return [{
             date: dayBeforeStr,
             pnl: 0,
+            dailyNetTransactions: 0,
             cumulative: initialCapital,
             mll: initialMll,
           }, ...result];
@@ -760,6 +763,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       return {
         date: date, // Format YYYY-MM-DD pour les filtres
         pnl: dailyPnl,
+        dailyNetTransactions: dailyTransaction,
         cumulative: cumulative,
         mll: mll,
       };
@@ -787,6 +791,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         return [{
           date: dayBeforeStr,
           pnl: 0,
+          dailyNetTransactions: 0,
           cumulative: initialCapital,
           mll: initialMll,
         }, ...result];
@@ -894,18 +899,41 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Préparer les données pour le graphique waterfall
   // Utiliser les données agrégées si disponibles
   const waterfallData = useMemo(() => {
+    const transactionsByDate: { [date: string]: number } = {};
+    transactions.forEach(transaction => {
+      const date = new Date(transaction.transaction_date).toISOString().split('T')[0];
+      const amount = parseFloat(String(transaction.amount));
+      if (Number.isNaN(amount)) return;
+      const signedAmount = transaction.transaction_type === 'deposit' ? amount : -amount;
+      transactionsByDate[date] = (transactionsByDate[date] || 0) + signedAmount;
+    });
+
     // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
     if (dailyAggregates.length > 0) {
-      const sortedDates = [...dailyAggregates].sort((a, b) => a.date.localeCompare(b.date));
+      const tradingPnlByDate: { [date: string]: number } = {};
+      dailyAggregates.forEach(item => {
+        tradingPnlByDate[item.date] = item.pnl;
+      });
+
+      const allDates = new Set<string>(Object.keys(tradingPnlByDate));
+      Object.keys(transactionsByDate).forEach(date => allDates.add(date));
+      const sortedDates = Array.from(allDates).sort();
       let cumulativeBalance = 0;
       
-      return sortedDates.map(item => {
-        cumulativeBalance += item.pnl;
+      return sortedDates.map(date => {
+        const pnlTrading = tradingPnlByDate[date] || 0;
+        const dailyNetTransactions = transactionsByDate[date] || 0;
+        const dailyTotalVariation = pnlTrading + dailyNetTransactions;
+        cumulativeBalance += dailyTotalVariation;
+
         return {
-          date: new Date(item.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
-          pnl: item.pnl,
+          date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
+          pnlTrading,
+          dailyNetTransactions,
+          dailyTotalVariation,
           cumulative: cumulativeBalance,
-          is_positive: item.pnl >= 0,
+          is_positive: dailyTotalVariation >= 0,
+          hasTradingData: Object.prototype.hasOwnProperty.call(tradingPnlByDate, date),
         };
       });
     }
@@ -926,20 +954,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       dailyData[trade.date] = (dailyData[trade.date] || 0) + trade.pnl;
     });
 
-    const sortedDates = Object.keys(dailyData).sort();
+    const allDates = new Set<string>(Object.keys(dailyData));
+    Object.keys(transactionsByDate).forEach(date => allDates.add(date));
+    const sortedDates = Array.from(allDates).sort();
     let cumulativeBalance = 0;
     
     return sortedDates.map(date => {
-      const dailyPnl = dailyData[date];
-      cumulativeBalance += dailyPnl;
+      const pnlTrading = dailyData[date] || 0;
+      const dailyNetTransactions = transactionsByDate[date] || 0;
+      const dailyTotalVariation = pnlTrading + dailyNetTransactions;
+      cumulativeBalance += dailyTotalVariation;
+
       return {
         date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
-        pnl: dailyPnl,
+        pnlTrading,
+        dailyNetTransactions,
+        dailyTotalVariation,
         cumulative: cumulativeBalance,
-        is_positive: dailyPnl >= 0,
+        is_positive: dailyTotalVariation >= 0,
+        hasTradingData: Object.prototype.hasOwnProperty.call(dailyData, date),
       };
     });
-  }, [dailyAggregates, trades, preferences.timezone]);
+  }, [dailyAggregates, trades, transactions, preferences.timezone]);
 
   // Préparer les données pour le graphique waterfall avec barres flottantes
   const waterfallChartData = useMemo(() => {
@@ -956,9 +992,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       return {
         start: previousCumulative,
         end: currentCumulative,
-        value: d.pnl,
-        isPositive: d.pnl >= 0,
-        cumulative: currentCumulative
+        value: d.dailyTotalVariation,
+        pnlTrading: d.pnlTrading,
+        dailyNetTransactions: d.dailyNetTransactions,
+        isPositive: d.dailyTotalVariation >= 0,
+        cumulative: currentCumulative,
       };
     });
 
@@ -992,12 +1030,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const waterfallStats = useMemo(() => {
     if (waterfallData.length === 0) return null;
 
-    const totalPnl = waterfallData[waterfallData.length - 1]?.cumulative || 0;
-    const bestDay = Math.max(...waterfallData.map(d => d.pnl));
-    const worstDay = Math.min(...waterfallData.map(d => d.pnl));
-    const positiveDays = waterfallData.filter(d => d.pnl > 0).length;
-    const negativeDays = waterfallData.filter(d => d.pnl < 0).length;
-    const winRate = waterfallData.length > 0 ? (positiveDays / waterfallData.length) * 100 : 0;
+    const tradingDays = waterfallData.filter(d => d.hasTradingData);
+    if (tradingDays.length === 0) {
+      return {
+        totalPnl: 0,
+        bestDay: 0,
+        worstDay: 0,
+        positiveDays: 0,
+        negativeDays: 0,
+        winRate: 0,
+        tradingDaysCount: 0,
+      };
+    }
+
+    const totalPnl = tradingDays.reduce((sum, d) => sum + d.pnlTrading, 0);
+    const bestDay = Math.max(...tradingDays.map(d => d.pnlTrading));
+    const worstDay = Math.min(...tradingDays.map(d => d.pnlTrading));
+    const positiveDays = tradingDays.filter(d => d.pnlTrading > 0).length;
+    const negativeDays = tradingDays.filter(d => d.pnlTrading < 0).length;
+    const winRate = tradingDays.length > 0 ? (positiveDays / tradingDays.length) * 100 : 0;
 
     return {
       totalPnl,
@@ -1005,7 +1056,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       worstDay,
       positiveDays,
       negativeDays,
-      winRate
+      winRate,
+      tradingDaysCount: tradingDays.length,
     };
   }, [waterfallData]);
 
@@ -1573,6 +1625,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           hideInitialBalance={privacySettings.hideInitialBalance}
           hideCurrentBalance={privacySettings.hideCurrentBalance}
           hideProfitLoss={privacySettings.hideProfitLoss}
+          hideConsistencyTarget={privacySettings.hideConsistencyTarget}
           loading={dashboardLoading}
           error={dashboardError}
         />
@@ -2365,7 +2418,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       )}
                       <div className="flex items-center gap-1">
                         <span>{t('dashboard:winningDays')} :</span>
-                        <span className="font-medium text-gray-700">{waterfallStats.positiveDays}/{waterfallData.length} ({formatNumber(waterfallStats.winRate, 1)}%)</span>
+                        <span className="font-medium text-gray-700">{waterfallStats.positiveDays}/{waterfallStats.tradingDaysCount} ({formatNumber(waterfallStats.winRate, 1)}%)</span>
                       </div>
                     </div>
                   )}
@@ -2402,7 +2455,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             label: function(context: any) {
                               const index = context.dataIndex;
                               const waterfallBarData = context.dataset._waterfallData[index];
-                              const pnl = waterfallBarData.value;
+                              const totalVariation = waterfallBarData.value;
+                              const pnlTrading = waterfallBarData.pnlTrading ?? 0;
+                              const dailyNetTransactions = waterfallBarData.dailyNetTransactions ?? 0;
                               const cumulative = waterfallBarData.cumulative;
                               const start = waterfallBarData.start;
                               
@@ -2416,7 +2471,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               }
                               
                               return [
-                                `${t('dashboard:dayPnL')}: ${formatCurrency(pnl, currencySymbol)}`,
+                                `${t('dashboard:variation')}: ${formatCurrency(totalVariation, currencySymbol)}`,
+                                `${t('dashboard:dayPnL')}: ${formatCurrency(pnlTrading, currencySymbol)}`,
+                                `${t('dashboard:netFlow', { defaultValue: 'Flux net' })}: ${formatCurrency(dailyNetTransactions, currencySymbol)}`,
                                 `${t('dashboard:cumulativeCapital')}: ${formatCurrency(cumulative, currencySymbol)}`,
                                 `${t('dashboard:variation')}: ${variationPercent >= 0 ? '+' : ''}${formatNumber(variationPercent, 2)}%`
                               ];

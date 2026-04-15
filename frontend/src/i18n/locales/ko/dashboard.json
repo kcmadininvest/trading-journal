@@ -93,6 +93,7 @@
   "negativeBalance": "Solde négatif",
   "balance": "잔액",
   "dayPnLShort": "일일 손익",
+  "netFlow": "순흐름",
   "numberOfTrades": "거래 수",
   "tradingAccount": "거래 계좌",
   "currentSeries": "현재 시리즈",

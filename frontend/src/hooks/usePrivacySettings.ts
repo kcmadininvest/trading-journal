@@ -7,6 +7,7 @@ export interface PrivacySettings {
   hideCurrentBalance: boolean;
   hideMll: boolean;
   hideProfitLoss: boolean;
+  hideConsistencyTarget: boolean;
 }
 
 /**
@@ -34,6 +35,7 @@ export function usePrivacySettings(pageContext: string): PrivacySettings {
         dashboardOverrides.hide_current_balance === true,
       hideMll: overrides.hide_mll ?? false,
       hideProfitLoss: overrides.hide_profit_loss ?? false,
+      hideConsistencyTarget: overrides.hide_consistency_target ?? false,
     };
   }, [preferences, pageContext]);
 }
