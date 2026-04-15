@@ -342,9 +342,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                               : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
                           }`}
                         >
-                          {transaction.transaction_type === 'deposit' 
-                            ? `📥 ${t('transactions:deposit', { defaultValue: 'Dépôt' })}` 
-                            : `📤 ${t('transactions:withdrawal', { defaultValue: 'Retrait' })}`}
+                          {transaction.transaction_type === 'deposit'
+                            ? t('transactions:deposit', { defaultValue: 'Dépôt' })
+                            : t('transactions:withdrawal', { defaultValue: 'Retrait' })}
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           {formatDateTime(transaction.transaction_date)}
@@ -449,9 +449,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                               : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400'
                           }`}
                         >
-                          {transaction.transaction_type === 'deposit' 
-                            ? `📥 ${t('transactions:deposit', { defaultValue: 'Dépôt' })}` 
-                            : `📤 ${t('transactions:withdrawal', { defaultValue: 'Retrait' })}`}
+                          {transaction.transaction_type === 'deposit'
+                            ? t('transactions:deposit', { defaultValue: 'Dépôt' })
+                            : t('transactions:withdrawal', { defaultValue: 'Retrait' })}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-700 dark:text-gray-300">
