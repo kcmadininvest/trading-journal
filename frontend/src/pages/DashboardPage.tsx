@@ -988,6 +988,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const waterfallBarData = waterfallData.map((d, index) => {
       const previousCumulative = index === 0 ? 0 : waterfallData[index - 1].cumulative;
       const currentCumulative = d.cumulative;
+      const hasNetFlow = Math.abs(d.dailyNetTransactions) > 0;
       
       return {
         start: previousCumulative,
@@ -995,6 +996,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         value: d.dailyTotalVariation,
         pnlTrading: d.pnlTrading,
         dailyNetTransactions: d.dailyNetTransactions,
+        hasNetFlow,
+        isNetFlowPositive: d.dailyNetTransactions > 0,
         isPositive: d.dailyTotalVariation >= 0,
         cumulative: currentCumulative,
       };
@@ -1009,12 +1012,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         {
           label: t('dashboard:capitalEvolution'),
           data: floatingBars,
-          backgroundColor: waterfallBarData.map(d => 
-            d.isPositive ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)'
-          ),
-          borderColor: waterfallBarData.map(d => 
-            d.isPositive ? '#3b82f6' : '#ec4899'
-          ),
+          // Les barres avec flux net utilisent une palette dédiée pour être identifiables immédiatement.
+          backgroundColor: waterfallBarData.map(d => {
+            if (d.hasNetFlow) {
+              return d.isNetFlowPositive ? 'rgba(167, 139, 250, 0.9)' : 'rgba(251, 191, 36, 0.9)';
+            }
+            return d.isPositive ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)';
+          }),
+          borderColor: waterfallBarData.map(d => {
+            if (d.hasNetFlow) {
+              return d.isNetFlowPositive ? '#A78BFA' : '#FBBF24';
+            }
+            return d.isPositive ? '#3b82f6' : '#ec4899';
+          }),
           borderWidth: 0,
           borderRadius: 0,
           borderSkipped: false,
@@ -2160,14 +2170,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 {/* Stats row */}
                 {!privacySettings.hideProfitLoss && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs sm:text-sm">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-gray-500 dark:text-gray-400">
-                        {performanceStats.totalReturn >= 0 ? t('dashboard:totalGain') : t('dashboard:totalLoss')} :
-                      </span>
-                      <span className={`font-bold ${performanceStats.totalReturn >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                        {formatCurrency(performanceStats.totalReturn, currencySymbol)}
-                      </span>
-                    </div>
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500 dark:text-gray-400">{t('dashboard:highest')} :</span>
                       <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
@@ -2394,14 +2396,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </div>
                   {waterfallStats && (
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                      {!privacySettings.hideProfitLoss && (
-                        <div className="flex items-center gap-1">
-                          <span>{t('dashboard:totalCapital')} :</span>
-                          <span className={`font-medium ${waterfallStats.totalPnl >= 0 ? 'text-blue-500' : 'text-pink-500'}`}>
-                            {formatCurrency(waterfallStats.totalPnl, currencySymbol)}
-                          </span>
-                        </div>
-                      )}
                       {!privacySettings.hideProfitLoss && (
                         <>
                           <div className="flex items-center gap-1">
