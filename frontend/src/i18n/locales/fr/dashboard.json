@@ -153,7 +153,7 @@
   "streamerMode": "Streamer Mode",
   "streamerModeTooltip": "Contrôles de confidentialité",
   "privacyControls": "Contrôles de Confidentialité",
-  "privacyControlsScopeHint": "Masquer le numéro de compte ou les soldes ici les masque aussi sur les autres pages. Masquer le MLL ou les profits/pertes ne concerne que le tableau de bord.",
+  "privacyControlsScopeHint": "Masquer le numéro de compte, les soldes ou le Consistency Target ici les masque aussi sur les autres pages. Masquer le MLL ou les profits/pertes ne concerne que le tableau de bord.",
   "hideAll": "Tout masquer",
   "hidden": "Masqué",
   "visible": "Visible",

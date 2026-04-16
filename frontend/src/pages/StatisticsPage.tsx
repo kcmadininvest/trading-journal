@@ -410,6 +410,7 @@ function StatisticsPage() {
             currencySymbol={currencySymbol} 
             hideInitialBalance={privacySettings.hideInitialBalance}
             hideCurrentBalance={privacySettings.hideCurrentBalance}
+            hideConsistencyTarget={privacySettings.hideConsistencyTarget}
             loading={isLoading || summaryLoading}
             error={hasError ? t('statistics:errorLoadingData') : summaryError}
           />

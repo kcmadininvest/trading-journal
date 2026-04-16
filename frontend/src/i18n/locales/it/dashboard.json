@@ -107,7 +107,7 @@
   "streamerMode": "Modalità Streamer",
   "streamerModeTooltip": "Controlli sulla privacy",
   "privacyControls": "Controlli sulla Privacy",
-  "privacyControlsScopeHint": "Nascondere qui numero conto o saldi li nasconde anche altrove. MLL e profitti/perdite valgono solo per la dashboard.",
+  "privacyControlsScopeHint": "Nascondere qui numero conto, saldi o obiettivo di consistenza li nasconde anche altrove. MLL e profitti/perdite valgono solo per la dashboard.",
   "periodGroups": {
     "calendar": "Giorni e mesi",
     "yearAndHistory": "Anni e storico",

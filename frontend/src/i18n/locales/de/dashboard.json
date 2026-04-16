@@ -153,7 +153,7 @@
   "streamerMode": "Streamer-Modus",
   "streamerModeTooltip": "Datenschutzeinstellungen",
   "privacyControls": "Datenschutzeinstellungen",
-  "privacyControlsScopeHint": "Wenn Sie hier Kontonummer oder Salden ausblenden, gilt das auch auf anderen Seiten. MLL und Gewinn/Verlust betreffen nur das Dashboard.",
+  "privacyControlsScopeHint": "Wenn Sie hier Kontonummer, Salden oder das Konsistenzziel ausblenden, gilt das auch auf anderen Seiten. MLL und Gewinn/Verlust betreffen nur das Dashboard.",
   "hideAll": "Alles ausblenden",
   "hidden": "Versteckt",
   "visible": "Sichtbar",

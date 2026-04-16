@@ -106,7 +106,7 @@
   "streamerMode": "Modo Streamer",
   "streamerModeTooltip": "Controles de privacidade",
   "privacyControls": "Controles de Privacidade",
-  "privacyControlsScopeHint": "Ocultar aqui o número da conta ou os saldos também os oculta noutras páginas. Ocultar MLL ou lucros/perdas aplica-se só ao painel.",
+  "privacyControlsScopeHint": "Ocultar aqui o número da conta, os saldos ou a meta de consistência também os oculta noutras páginas. Ocultar MLL ou lucros/perdas aplica-se só ao painel.",
   "periodGroups": {
     "calendar": "Dias e meses",
     "yearAndHistory": "Anos e histórico",

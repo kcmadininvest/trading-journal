@@ -35,7 +35,9 @@ export function usePrivacySettings(pageContext: string): PrivacySettings {
         dashboardOverrides.hide_current_balance === true,
       hideMll: overrides.hide_mll ?? false,
       hideProfitLoss: overrides.hide_profit_loss ?? false,
-      hideConsistencyTarget: overrides.hide_consistency_target ?? false,
+      hideConsistencyTarget:
+        Boolean(overrides.hide_consistency_target) ||
+        dashboardOverrides.hide_consistency_target === true,
     };
   }, [preferences, pageContext]);
 }

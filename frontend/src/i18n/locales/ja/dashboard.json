@@ -106,7 +106,7 @@
   "streamerMode": "ストリーマーモード",
   "streamerModeTooltip": "プライバシー設定",
   "privacyControls": "プライバシー設定",
-  "privacyControlsScopeHint": "口座番号や残高をここで非表示にすると、他の画面でも非表示になります。MLLと損益の非表示はダッシュボードのみです。",
+  "privacyControlsScopeHint": "口座番号、残高、一貫性目標をここで非表示にすると、他の画面でも非表示になります。MLLと損益の非表示はダッシュボードのみです。",
   "periodGroups": {
     "calendar": "日・週・月",
     "yearAndHistory": "年・全期間",

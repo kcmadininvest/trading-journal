@@ -104,7 +104,7 @@
   "streamerMode": "스트리머 모드",
   "streamerModeTooltip": "개인정보 보호 설정",
   "privacyControls": "개인정보 보호 설정",
-  "privacyControlsScopeHint": "여기서 계좌 번호나 잔액을 숨기면 다른 페이지에서도 숨겨집니다. MLL·손익 숨기기는 대시보드에만 적용됩니다.",
+  "privacyControlsScopeHint": "여기서 계좌 번호, 잔액 또는 일관성 목표를 숨기면 다른 페이지에서도 숨겨집니다. MLL·손익 숨기기는 대시보드에만 적용됩니다.",
   "periodGroups": {
     "calendar": "일·주·월",
     "yearAndHistory": "연도·전체 기간",

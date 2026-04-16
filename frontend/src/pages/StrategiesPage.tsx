@@ -424,6 +424,7 @@ const StrategiesPage: React.FC = () => {
             currencySymbol={currencySymbol} 
             hideInitialBalance={privacySettings.hideInitialBalance}
             hideCurrentBalance={privacySettings.hideCurrentBalance}
+            hideConsistencyTarget={privacySettings.hideConsistencyTarget}
             loading={isLoading || summaryLoading}
             error={error || null}
           />
