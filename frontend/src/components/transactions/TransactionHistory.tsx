@@ -116,51 +116,49 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     [allTransactions]
   );
 
-  const tabTotal = useMemo(() => {
-    if (filterType === 'all') {
-      return allTransactions.reduce((sum, t) => sum + signedTransactionValue(t), 0);
-    }
-    if (filterType === 'deposit') {
-      return allTransactions
+  const netAccountFlow = useMemo(
+    () => allTransactions.reduce((sum, t) => sum + signedTransactionValue(t), 0),
+    [allTransactions]
+  );
+
+  const totalDeposits = useMemo(
+    () =>
+      allTransactions
         .filter((t) => t.transaction_type === 'deposit')
         .reduce((sum, t) => {
           const raw = parseFloat(String(t.amount));
           return sum + (Number.isNaN(raw) ? 0 : raw);
-        }, 0);
-    }
-    return allTransactions
-      .filter((t) => t.transaction_type === 'withdrawal')
-      .reduce((sum, t) => {
-        const raw = parseFloat(String(t.amount));
-        return sum + (Number.isNaN(raw) ? 0 : raw);
-      }, 0);
-  }, [allTransactions, filterType]);
+        }, 0),
+    [allTransactions]
+  );
+
+  const totalWithdrawals = useMemo(
+    () =>
+      allTransactions
+        .filter((t) => t.transaction_type === 'withdrawal')
+        .reduce((sum, t) => {
+          const raw = parseFloat(String(t.amount));
+          return sum + (Number.isNaN(raw) ? 0 : raw);
+        }, 0),
+    [allTransactions]
+  );
 
   const balanceSymbol = symbolForCurrencyCode(balanceCurrencyCode);
 
-  const tabTotalLabelKey =
-    filterType === 'all'
-      ? 'transactions:tabTotalAll'
-      : filterType === 'deposit'
-        ? 'transactions:tabTotalDeposits'
-        : 'transactions:tabTotalWithdrawals';
-
-  const renderTabTotalFormatted = (): string => {
+  const renderAbsoluteAmount = (value: number): string => {
     if (privacySettings.hideCurrentBalance) {
       return maskValue(null, balanceSymbol);
     }
-    const nf = preferences.number_format;
-    if (filterType === 'all') {
-      if (tabTotal > 0) return `+${formatCurrency(tabTotal, balanceSymbol, nf, 2)}`;
-      if (tabTotal < 0) return `-${formatCurrency(Math.abs(tabTotal), balanceSymbol, nf, 2)}`;
-      return formatCurrency(0, balanceSymbol, nf, 2);
+    return formatCurrency(value, balanceSymbol, preferences.number_format, 2);
+  };
+
+  const renderNetFlowFormatted = (): string => {
+    if (privacySettings.hideCurrentBalance) {
+      return maskValue(null, balanceSymbol);
     }
-    if (filterType === 'deposit') {
-      if (tabTotal === 0) return formatCurrency(0, balanceSymbol, nf, 2);
-      return `+${formatCurrency(tabTotal, balanceSymbol, nf, 2)}`;
-    }
-    if (tabTotal === 0) return formatCurrency(0, balanceSymbol, nf, 2);
-    return `-${formatCurrency(tabTotal, balanceSymbol, nf, 2)}`;
+    if (netAccountFlow > 0) return `+${formatCurrency(netAccountFlow, balanceSymbol, preferences.number_format, 2)}`;
+    if (netAccountFlow < 0) return `-${formatCurrency(Math.abs(netAccountFlow), balanceSymbol, preferences.number_format, 2)}`;
+    return formatCurrency(0, balanceSymbol, preferences.number_format, 2);
   };
 
   const handleDeleteClick = (transaction: AccountTransaction) => {
@@ -267,13 +265,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         </div>
 
         {tradingAccountId && (
-          <div className="text-sm flex flex-row flex-wrap items-baseline justify-end gap-x-4 gap-y-1">
-            <span className="whitespace-nowrap">
-              <span className="text-gray-600 dark:text-gray-400">
+          <div className="grid w-full gap-2 sm:min-w-[26rem] sm:max-w-3xl sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-700/40">
+              <div className="text-xs text-gray-600 dark:text-gray-400">
                 {t('transactions:currentBalance', { defaultValue: 'Solde actuel' })}
-                :{' '}
-              </span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">
+              </div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 {balanceLoading && currentBalance === null ? (
                   <span className="text-gray-500 dark:text-gray-400 font-normal">
                     {t('common:loading', { defaultValue: 'Chargement...' })}
@@ -285,25 +282,40 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                     formatCurrency(currentBalance, balanceSymbol, preferences.number_format, 2)
                   )
                 ) : null}
-              </span>
-            </span>
-            <span aria-hidden="true" className="hidden sm:inline text-gray-300 dark:text-gray-600 select-none">
-              ·
-            </span>
-            <span className="whitespace-nowrap">
-              <span className="text-gray-600 dark:text-gray-400">
-                {t(tabTotalLabelKey, {
-                  defaultValue:
-                    filterType === 'all'
-                      ? 'Total (toutes les opérations)'
-                      : filterType === 'deposit'
-                        ? 'Total des dépôts'
-                        : 'Total des retraits',
-                })}
-                :{' '}
-              </span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{renderTabTotalFormatted()}</span>
-            </span>
+              </div>
+            </div>
+            <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                {t('transactions:netAccountImpact', { defaultValue: 'Impact net sur le compte' })}
+              </div>
+              <div
+                className={`text-sm font-semibold ${
+                  netAccountFlow > 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : netAccountFlow < 0
+                      ? 'text-orange-600 dark:text-orange-400'
+                      : 'text-gray-900 dark:text-gray-100'
+                }`}
+              >
+                {renderNetFlowFormatted()}
+              </div>
+            </div>
+            <div className="rounded-lg bg-green-50 px-3 py-2 dark:bg-green-900/20">
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                {t('transactions:totalDeposited', { defaultValue: 'Total déposé' })}
+              </div>
+              <div className="text-sm font-semibold text-green-600 dark:text-green-400">
+                {renderAbsoluteAmount(totalDeposits)}
+              </div>
+            </div>
+            <div className="rounded-lg bg-orange-50 px-3 py-2 dark:bg-orange-900/20">
+              <div className="text-xs text-gray-600 dark:text-gray-400">
+                {t('transactions:totalWithdrawn', { defaultValue: 'Total retiré' })}
+              </div>
+              <div className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                {renderAbsoluteAmount(totalWithdrawals)}
+              </div>
+            </div>
           </div>
         )}
       </div>
