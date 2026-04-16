@@ -703,10 +703,7 @@ const TradingAccountsPage: React.FC = () => {
                       setPage(p);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    onPageSizeChange={(size) => {
-                      setPageSize(size);
-                      setPage(1);
-                    }}
+                    onPageSizeChange={handlePageSizeChange}
                     pageSizeOptions={[5, 10, 25, 50, 100]}
                   />
                 </div>

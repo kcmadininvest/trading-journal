@@ -17,6 +17,15 @@ interface TransactionFormModalProps {
   transaction?: AccountTransaction | null;
 }
 
+/** Effet sur le solde de la transaction existante (pour édition : solde disponible = solde API − effet ancienne ligne). */
+function signedAmountForTransaction(
+  t: Pick<AccountTransaction, 'transaction_type' | 'amount'>
+): number {
+  const raw = parseFloat(String(t.amount));
+  if (Number.isNaN(raw)) return 0;
+  return t.transaction_type === 'withdrawal' ? -raw : raw;
+}
+
 export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
   isOpen,
   onClose,
@@ -97,18 +106,28 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
     setSelectedAccountId(defaultAccountId || null);
   }, [isOpen, transaction, defaultAccountId]);
 
+  /**
+   * Solde « avant application » de la ligne du formulaire : en édition sur le même compte,
+   * on retire l'effet de l'ancienne transaction pour valider et prévisualiser correctement.
+   */
+  const balanceBaselineForForm = React.useMemo(() => {
+    if (currentBalance === null) return null;
+    if (!transaction) return currentBalance;
+    if (transaction.trading_account !== selectedAccountId) return currentBalance;
+    return currentBalance - signedAmountForTransaction(transaction);
+  }, [currentBalance, transaction, selectedAccountId]);
+
   // Calculer le solde après transaction
   const balanceAfterTransaction = React.useMemo(() => {
-    if (currentBalance === null || !amount) return null;
+    if (balanceBaselineForForm === null || !amount) return null;
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum)) return null;
-    
+
     if (transactionType === 'deposit') {
-      return currentBalance + amountNum;
-    } else {
-      return currentBalance - amountNum;
+      return balanceBaselineForForm + amountNum;
     }
-  }, [currentBalance, amount, transactionType]);
+    return balanceBaselineForForm - amountNum;
+  }, [balanceBaselineForForm, amount, transactionType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,7 +143,11 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
       return;
     }
 
-    if (transactionType === 'withdrawal' && currentBalance !== null && parseFloat(amount) > currentBalance) {
+    if (
+      transactionType === 'withdrawal' &&
+      balanceBaselineForForm !== null &&
+      parseFloat(amount) > balanceBaselineForForm
+    ) {
       setError(t('transactions:withdrawalAmountError', { defaultValue: 'Le montant du retrait ne peut pas dépasser le solde disponible' }));
       return;
     }

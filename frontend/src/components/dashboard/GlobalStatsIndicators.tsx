@@ -19,6 +19,10 @@ interface GlobalStatsIndicatorsProps {
   currencySymbol: string;
   /** Masque le montant PnL global (aligné sur « masquer le solde actuel ») */
   hideCurrentBalance?: boolean;
+  /**
+   * En multi-devises, ne pas suffixer le PnL global d’un symbole unique (valeur trompeuse).
+   */
+  pnlCurrencyMode?: 'single' | 'mixed';
   className?: string;
 }
 
@@ -36,6 +40,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   activitySparkline = [],
   currencySymbol,
   hideCurrentBalance = false,
+  pnlCurrencyMode = 'single',
   className = '',
 }) => {
   const { t } = useTranslation();
@@ -68,7 +73,9 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(absValue);
-    return `${value >= 0 ? '+' : '-'}${formatted}${currencySymbol}`;
+    const suffix =
+      pnlCurrencyMode === 'mixed' || !currencySymbol ? '' : currencySymbol;
+    return `${value >= 0 ? '+' : '-'}${formatted}${suffix}`;
   };
 
   const renderTrend = (trend: number | undefined, isPositive: boolean) => {
@@ -166,7 +173,14 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
       {/* Carte PnL Global */}
       <Tooltip
         className="block h-full min-h-0"
-        content={t('dashboard:pnlTooltip', { defaultValue: 'Performance totale tous comptes confondus' })}
+        content={
+          pnlCurrencyMode === 'mixed'
+            ? t('dashboard:pnlTooltipMixedCurrency', {
+                defaultValue:
+                  'Somme des PnL de tous les comptes actifs (unités natives par compte — pas de conversion de devise).',
+              })
+            : t('dashboard:pnlTooltip', { defaultValue: 'Performance totale tous comptes confondus' })
+        }
       >
         <div
           className={`${cardShell} ${

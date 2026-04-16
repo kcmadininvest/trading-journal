@@ -263,6 +263,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [globalStrategyStats, setGlobalStrategyStats] = useState<any>(null);
   const [globalStatsLoading, setGlobalStatsLoading] = useState(false);
+  /** Devises des comptes actifs — pour ne pas afficher un symbole monétaire trompeur sur le PnL global */
+  const [activeAccountCurrencyCodes, setActiveAccountCurrencyCodes] = useState<string[]>([]);
   
   // Use compliance stats from consolidated endpoint
   const complianceStats = useMemo(() => dashboardData?.compliance_stats || null, [dashboardData]);
@@ -403,6 +405,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
     loadCurrencies();
   }, []);
+
+  // Devises distinctes des comptes actifs (PnL global = agrégat sans conversion)
+  useEffect(() => {
+    let cancelled = false;
+    const loadActiveCurrencies = async () => {
+      try {
+        const list = await tradingAccountsService.list({ include_archived: false });
+        if (cancelled) return;
+        const active = list.filter((a) => a.status === 'active');
+        const codes = Array.from(new Set(active.map((a) => a.currency).filter(Boolean))) as string[];
+        setActiveAccountCurrencyCodes(codes);
+      } catch {
+        if (!cancelled) setActiveAccountCurrencyCodes([]);
+      }
+    };
+    loadActiveCurrencies();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const globalPnlCurrencyMode = activeAccountCurrencyCodes.length > 1 ? 'mixed' : 'single';
 
   // Récupérer le compte sélectionné pour obtenir sa devise
   useEffect(() => {
@@ -858,10 +882,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const totalReturn = filteredBalanceData.reduce((sum, d) => sum + d.pnl, 0);
     const highestValue = Math.max(...filteredBalanceData.map(d => d.cumulative));
     const lowestValue = Math.min(...filteredBalanceData.map(d => d.cumulative));
-    // Selon les bonnes pratiques: la couleur reflète si la courbe passe au-dessus de 0
-    // Si la valeur maximale est >= 0 (courbe passe au-dessus de 0), couleur positive (bleu)
-    // Si toutes les valeurs sont < 0 (courbe toujours en dessous de 0), couleur négative (rose)
-    const isPositive = highestValue >= 0;
+    // Couleur alignée sur la performance de trading (somme des PnL), pas sur le solde cumulé incluant flux
+    const isPositive = totalReturn >= 0;
     
     return { totalReturn, isPositive, highestValue, lowestValue };
   }, [filteredBalanceData]);
@@ -1630,6 +1652,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 totalPositions={globalStats.totalPositions}
                 globalActiveDays={globalStats.globalActiveDays}
                 currencySymbol={currencySymbol}
+                pnlCurrencyMode={globalPnlCurrencyMode}
                 hideCurrentBalance={privacySettings.hideCurrentBalance}
               />
             )}

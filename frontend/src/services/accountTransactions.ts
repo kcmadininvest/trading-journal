@@ -20,6 +20,8 @@ export interface AccountBalance {
   trading_account_name: string;
   initial_capital: string;
   total_pnl: string;
+  /** Capital initial + PnL trades uniquement (sans dépôts/retraits) */
+  trading_equity?: string;
   total_deposits: string;
   total_withdrawals: string;
   net_transactions: string;

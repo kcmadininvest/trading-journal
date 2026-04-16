@@ -359,7 +359,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   {feesColumnHelpIcon}
                 </div>
                 <div className="font-medium text-gray-900 dark:text-gray-100 tabular-nums">
-                  {totals.fees !== undefined ? formatNumber(totals.fees, 2, preferences.number_format) : '-'}
+                  {totals.fees !== undefined ? formatCurrencyWithSign(totals.fees, '', preferences.number_format, 2) : '-'}
                 </div>
               </div>
               <div>

@@ -192,11 +192,8 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
            date.toTimeString().slice(0, 5);
   };
 
-  const getCurrencySymbol = (transaction: AccountTransaction) => {
-    // Essayer de récupérer la devise depuis le nom du compte ou utiliser USD par défaut
-    // Dans un vrai cas, on devrait avoir la devise dans les données
-    return '$';
-  };
+  /** Symbole aligné sur le solde API lorsqu'un compte est filtré ; sinon devise par défaut du bloc solde. */
+  const rowCurrencySymbol = tradingAccountId ? balanceSymbol : symbolForCurrencyCode(balanceCurrencyCode);
 
   if (listLoading && allTransactions.length === 0) {
     return (
@@ -336,7 +333,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           {/* Version mobile : cartes */}
           <div className="md:hidden space-y-3">
             {transactions.map((transaction) => {
-              const currencySymbol = getCurrencySymbol(transaction);
               const amount = parseFloat(transaction.amount.toString());
 
               return (
@@ -368,7 +364,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                           : 'text-orange-600 dark:text-orange-400'
                       }`}>
                         {transaction.transaction_type === 'deposit' ? '+' : '-'}
-                        {formatCurrency(amount, currencySymbol, preferences.number_format, 2)}
+                        {formatCurrency(amount, rowCurrencySymbol, preferences.number_format, 2)}
                       </div>
                     </div>
                     {(onEdit || onDelete) && (
@@ -442,7 +438,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
               </thead>
               <tbody>
                 {transactions.map((transaction) => {
-                  const currencySymbol = getCurrencySymbol(transaction);
                   const amount = parseFloat(transaction.amount.toString());
 
                   return (
@@ -475,7 +470,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                           : 'text-orange-600 dark:text-orange-400'
                       }`}>
                         {transaction.transaction_type === 'deposit' ? '+' : '-'}
-                        {formatCurrency(amount, currencySymbol, preferences.number_format, 2)}
+                        {formatCurrency(amount, rowCurrencySymbol, preferences.number_format, 2)}
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                         {transaction.description || '-'}

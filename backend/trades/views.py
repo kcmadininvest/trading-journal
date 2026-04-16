@@ -37,6 +37,7 @@ def get_user_timezone(request):
 
 
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
+from .account_balance import compute_trading_account_balance
 from daily_journal.models import DailyJournalEntry
 from .market_holidays import MarketHolidaysService
 from .serializers import (
@@ -376,42 +377,21 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        # Calculer le solde initial
-        initial_capital = account.initial_capital or Decimal('0')
-        
-        # Calculer le PnL total des trades
-        total_pnl = account.topstep_trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+        bal = compute_trading_account_balance(account)
+        initial_capital = bal['initial_capital']
+        total_pnl = bal['total_pnl']
+        trading_equity = bal['trading_equity']
+        total_deposits = bal['total_deposits']
+        total_withdrawals = bal['total_withdrawals']
+        net_transactions = bal['net_transactions']
+        current_balance = bal['current_balance']
 
-        # Dépôts et retraits en une seule requête SQL
-        amount_field = DecimalField(max_digits=15, decimal_places=2)
-        tx_agg = account.transactions.aggregate(
-            total_deposits=Sum(
-                Case(
-                    When(transaction_type='deposit', then=F('amount')),
-                    default=Value(Decimal('0')),
-                    output_field=amount_field,
-                )
-            ),
-            total_withdrawals=Sum(
-                Case(
-                    When(transaction_type='withdrawal', then=F('amount')),
-                    default=Value(Decimal('0')),
-                    output_field=amount_field,
-                )
-            ),
-        )
-        total_deposits = tx_agg['total_deposits'] or Decimal('0')
-        total_withdrawals = tx_agg['total_withdrawals'] or Decimal('0')
-        net_transactions = total_deposits - total_withdrawals
-        
-        # Solde actuel = capital initial + PnL + transactions nettes
-        current_balance = initial_capital + total_pnl + net_transactions
-        
         return Response({
             'trading_account_id': account.id,
             'trading_account_name': account.name,
             'initial_capital': str(initial_capital),
             'total_pnl': str(total_pnl),
+            'trading_equity': str(trading_equity),
             'total_deposits': str(total_deposits),
             'total_withdrawals': str(total_withdrawals),
             'net_transactions': str(net_transactions),

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from decimal import Decimal
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
 import logging
 
@@ -996,6 +997,31 @@ class AccountTransactionSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Le montant doit être positif.")
         return value
+
+    def validate(self, attrs):
+        """Empêche un retrait supérieur au solde disponible (cohérent avec l'édition en delta)."""
+        from .account_balance import compute_trading_account_balance
+
+        inst = self.instance
+        trading_account = attrs.get('trading_account', inst.trading_account if inst else None)
+        transaction_type = attrs.get('transaction_type', inst.transaction_type if inst else None)
+        amount = attrs.get('amount', inst.amount if inst else None)
+
+        if trading_account is None or transaction_type is None or amount is None:
+            return attrs
+
+        if transaction_type != 'withdrawal':
+            return attrs
+
+        amount_dec = amount if isinstance(amount, Decimal) else Decimal(str(amount))
+        exclude_id = inst.pk if inst else None
+        bal = compute_trading_account_balance(trading_account, exclude_transaction_id=exclude_id)
+        available = bal['current_balance']
+        if amount_dec > available:
+            raise serializers.ValidationError({
+                'amount': _("Le montant du retrait dépasse le solde disponible."),
+            })
+        return attrs
     
     def create(self, validated_data):
         """Assigne automatiquement l'utilisateur lors de la création."""

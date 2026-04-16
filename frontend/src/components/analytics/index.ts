@@ -16,6 +16,3 @@ export { GainsVsLossesChart } from './GainsVsLossesChart';
 export { PnlDistributionChart } from './PnlDistributionChart';
 export { MaeMfeChart } from './MaeMfeChart';
 export { createRadarAlternatingZonesPlugin, createRadarGradientPlugin } from './radarChartPlugins';
-
-// Dashboard analytics
-export { default as AnalyticsDashboard } from './AnalyticsDashboard';
