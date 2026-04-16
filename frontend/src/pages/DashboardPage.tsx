@@ -436,7 +436,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         return;
       }
       try {
-        const data = await accountTransactionsService.list({ trading_account: accountId });
+        const data = await accountTransactionsService.list({
+          trading_account: accountId,
+          start_date: selectedPeriod?.start,
+          end_date: selectedPeriod?.end,
+        });
         setTransactions(data);
       } catch (err) {
         console.error('Erreur lors du chargement des transactions', err);
@@ -453,7 +457,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     return () => {
       window.removeEventListener('account-transaction:updated', handleTransactionUpdate);
     };
-  }, [accountId]);
+  }, [accountId, selectedPeriod?.start, selectedPeriod?.end]);
+
+  const transactionsInSelectedPeriod = useMemo(() => {
+    if (!selectedPeriod?.start || !selectedPeriod?.end) {
+      return transactions;
+    }
+
+    return transactions.filter((transaction) => {
+      const transactionDate = transaction.transaction_date.split('T')[0];
+      return transactionDate >= selectedPeriod.start && transactionDate <= selectedPeriod.end;
+    });
+  }, [transactions, selectedPeriod]);
 
   // Compliance stats are now loaded from consolidated endpoint
   // Listen for compliance updates to refetch dashboard data
@@ -627,7 +642,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     // Grouper les transactions par date (triées chronologiquement)
     const transactionsByDate: { [date: string]: number } = {};
     // Trier les transactions par date pour garantir l'ordre chronologique
-    const sortedTransactions = [...transactions].sort((a, b) => 
+    const sortedTransactions = [...transactionsInSelectedPeriod].sort((a, b) => 
       new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
     );
     sortedTransactions.forEach(transaction => {
@@ -799,7 +814,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }
 
     return result;
-  }, [dailyAggregates, trades, transactions, selectedAccount, dailyMetrics]);
+  }, [dailyAggregates, trades, transactionsInSelectedPeriod, selectedAccount, dailyMetrics]);
 
   // États pour les filtres de date
   const { defaultStartDate, defaultEndDate } = useMemo(() => {
@@ -900,7 +915,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Utiliser les données agrégées si disponibles
   const waterfallData = useMemo(() => {
     const transactionsByDate: { [date: string]: number } = {};
-    transactions.forEach(transaction => {
+    transactionsInSelectedPeriod.forEach(transaction => {
       const date = new Date(transaction.transaction_date).toISOString().split('T')[0];
       const amount = parseFloat(String(transaction.amount));
       if (Number.isNaN(amount)) return;
@@ -975,7 +990,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         hasTradingData: Object.prototype.hasOwnProperty.call(dailyData, date),
       };
     });
-  }, [dailyAggregates, trades, transactions, preferences.timezone]);
+  }, [dailyAggregates, trades, transactionsInSelectedPeriod, preferences.timezone]);
 
   // Préparer les données pour le graphique waterfall avec barres flottantes
   const waterfallChartData = useMemo(() => {

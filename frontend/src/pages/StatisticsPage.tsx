@@ -204,6 +204,10 @@ function StatisticsPage() {
           params.start_date = startDate;
           params.end_date = endDate;
         }
+
+        if (selectedPositionStrategy) {
+          params.position_strategy = selectedPositionStrategy;
+        }
         
         const response = await tradesService.list(params);
         setFilteredTrades(response.results);
@@ -213,7 +217,7 @@ function StatisticsPage() {
       }
     };
     loadFilteredTrades();
-  }, [selectedAccountId, accountLoading, selectedPeriod, selectedYear, selectedMonth]);
+  }, [selectedAccountId, accountLoading, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy]);
 
   // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
   const indicators = useAccountIndicators({
