@@ -239,15 +239,24 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
     };
   }, [showCustomModal]);
 
+  // Synchroniser les champs « personnalisé » quand la période change côté parent — pas pendant
+  // l’édition du modal (sinon chaque rendu réinitialise la saisie). Ne pas dépendre de
+  // `presets` (nouvel objet à chaque rendu) sinon l’effet s’exécute en boucle et bloque
+  // toute nouvelle plage après la première validation.
   useEffect(() => {
-    if (value && (value.preset === 'custom' || !value.preset)) {
-      const isCustom = !Object.values(presets).some((p) => p.start === value.start && p.end === value.end);
-      if (isCustom) {
-        setCustomStart(value.start);
-        setCustomEnd(value.end);
-      }
-    }
-  }, [value, presets]);
+    if (showCustomModal) return;
+    if (!value) return;
+    if (value.preset !== 'custom' && value.preset) return;
+
+    const presetRanges = computePeriodPresetRanges(new Date());
+    const isCustom =
+      value.preset === 'custom' ||
+      !Object.values(presetRanges).some((p) => p.start === value.start && p.end === value.end);
+    if (!isCustom) return;
+
+    setCustomStart(value.start);
+    setCustomEnd(value.end);
+  }, [value, showCustomModal]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
