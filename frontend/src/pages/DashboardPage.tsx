@@ -2206,7 +2206,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </div>
                 </div>
                 {/* Stats row */}
-                {!privacySettings.hideProfitLoss && (
+                {!privacySettings.hideProfitLoss && !privacySettings.hideCurrentBalance && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs sm:text-sm">
                     <div className="flex items-center gap-1">
                       <span className="text-gray-500 dark:text-gray-400">{t('dashboard:highest')} :</span>

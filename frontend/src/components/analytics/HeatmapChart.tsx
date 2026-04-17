@@ -79,8 +79,8 @@ export const HeatmapChart: React.FC<HeatmapChartProps> = ({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex items-center gap-2 mb-6">
+    <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 flex flex-col">
+      <div className="flex items-center gap-2 mb-6 flex-shrink-0">
         <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full mr-3"></div>
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
           {t('analytics:charts.heatmap.title')}
@@ -96,7 +96,7 @@ export const HeatmapChart: React.FC<HeatmapChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div className="overflow-x-auto -mx-2 px-2">
+      <div className="overflow-x-auto -mx-2 px-2 flex-1">
         <div className="inline-block min-w-full">
           <div className="mb-2">
             <div className="flex ml-14">

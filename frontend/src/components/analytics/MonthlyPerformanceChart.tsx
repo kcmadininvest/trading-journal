@@ -26,14 +26,14 @@ export const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = (
 
   if (!data) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
-        <div className="flex items-center gap-2 mb-6">
+      <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px] flex flex-col">
+        <div className="flex items-center gap-2 mb-6 flex-shrink-0">
           <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></div>
           <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
             {t('analytics:charts.monthlyPerformance.title', { defaultValue: 'Performance Mensuelle/Annuelle' })}
           </h3>
         </div>
-        <div className="flex items-center justify-center h-[350px]">
+        <div className="flex items-center justify-center flex-1 min-h-[320px]">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
         </div>
       </div>
@@ -41,8 +41,8 @@ export const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = (
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
-      <div className="flex items-center gap-2 mb-6">
+    <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px] flex flex-col">
+      <div className="flex items-center gap-2 mb-6 flex-shrink-0">
         <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></div>
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
           {t('analytics:charts.monthlyPerformance.title', { defaultValue: 'Performance Mensuelle/Annuelle' })}
@@ -58,7 +58,7 @@ export const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = (
           </div>
         </TooltipComponent>
       </div>
-      <div style={{ height: '320px', position: 'relative' }}>
+      <div className="relative flex-1 min-h-[320px]">
         <ChartBar
           data={{
             labels: data.labels,
