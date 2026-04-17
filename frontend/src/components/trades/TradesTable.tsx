@@ -2,6 +2,7 @@ import React from 'react';
 import { TradeListItem } from '../../services/trades';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
+import { feesPlusCommissions } from '../../utils/tradeFees';
 import { formatDateTimeShort } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import Tooltip from '../ui/Tooltip';
@@ -39,12 +40,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
     return formatNumber(v, digits, preferences.number_format);
   };
 
-  const totalFeesPlusCommissionsStr = (trade: TradeListItem): string => {
-    const fees = trade.fees ? parseFloat(trade.fees) : 0;
-    const commissions = trade.commissions ? parseFloat(trade.commissions) : 0;
-    const sum = fees + commissions;
-    return Number.isFinite(sum) ? String(sum) : '0';
-  };
+  const totalFeesPlusCommissionsStr = (trade: TradeListItem): string => String(feesPlusCommissions(trade));
 
   // Aligné sur MetricItem (MetricCard) utilisé par la page Statistiques
   const feesColumnHelpIcon = (

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { tradesService, TradeListItem } from '../../services/trades';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
+import { feesPlusCommissions } from '../../utils/tradeFees';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { DailyJournalEditor } from '../dailyJournal/DailyJournalEditor';
@@ -287,7 +288,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:dayTradesModal.totalFees')}</p>
                         <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                           {formatNumber(
-                            trades.reduce((sum, t) => sum + parseFloat(t.fees || '0'), 0),
+                            trades.reduce((sum, t) => sum + feesPlusCommissions(t), 0),
                             2,
                             preferences.number_format
                           )}
