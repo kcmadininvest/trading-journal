@@ -62,6 +62,11 @@ from .serializers import (
     AccountDailyMetricsSerializer,
 )
 from .utils import TopStepCSVImporter
+from .compliance_streaks import (
+    compute_dashboard_next_badge,
+    compute_strategy_compliance_context,
+    get_position_strategy_family_ids,
+)
 
 
 
@@ -449,7 +454,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         if position_strategy_id:
             try:
                 position_strategy_id = int(position_strategy_id)
-                family_ids = _get_position_strategy_family_ids(self.request.user, position_strategy_id)
+                family_ids = get_position_strategy_family_ids(self.request.user, position_strategy_id)
                 queryset = queryset.filter(position_strategy_id__in=family_ids)
             except (ValueError, TypeError):
                 pass  # Ignorer les IDs invalides
@@ -2843,7 +2848,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # Récupérer la famille de stratégies (toutes les versions)
         strategy_family_ids = None
         if position_strategy_id:
-            strategy_family_ids = _get_position_strategy_family_ids(self.request.user, position_strategy_id)
+            strategy_family_ids = get_position_strategy_family_ids(self.request.user, position_strategy_id)
             queryset = queryset.filter(trade__position_strategy_id__in=strategy_family_ids)
         
         # Statistiques globales (toutes périodes et tous comptes)
@@ -3542,7 +3547,6 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         """
         Retourne les statistiques de respect de stratégie avec streaks et badges.
         """
-        from collections import defaultdict
         from datetime import timedelta
         
         trading_account_id = request.query_params.get('trading_account')
@@ -3565,212 +3569,23 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         year = request.query_params.get('year')
         month = request.query_params.get('month')
         
-        # Récupérer tous les trades du compte pour vérifier si tous ont une stratégie
-        from .models import TopStepTrade
-        trades_queryset = TopStepTrade.objects.filter(  # type: ignore
-            trading_account__user=self.request.user
+        ctx = compute_strategy_compliance_context(
+            self.request.user,
+            trading_account_id=trading_account_id,
+            position_strategy_id=position_strategy_id,
+            start_date=start_date,
+            end_date=end_date,
+            year=year,
+            month=month,
         )
-        if trading_account_id:
-            trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
-        else:
-            # Exclure les comptes archivés des stats globales
-            trades_queryset = trades_queryset.exclude(trading_account__status='archived')
-        
-        # Filtrer par stratégie de position si spécifié
-        # Inclure toutes les versions de la stratégie (même parent_strategy)
-        if position_strategy_id:
-            family_ids = _get_position_strategy_family_ids(self.request.user, position_strategy_id)
-            trades_queryset = trades_queryset.filter(position_strategy_id__in=family_ids)
-        
-        # Appliquer les filtres de période
-        if start_date:
-            trades_queryset = trades_queryset.filter(trade_day__gte=start_date)
-        if end_date:
-            trades_queryset = trades_queryset.filter(trade_day__lte=end_date)
-        if year:
-            trades_queryset = trades_queryset.filter(trade_day__year=int(year))
-        if month:
-            trades_queryset = trades_queryset.filter(trade_day__month=int(month))
-        
-        # Récupérer toutes les stratégies de l'utilisateur avec leurs trades
-        strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
-            user=self.request.user
-        ).select_related('trade')
-        
-        if trading_account_id:
-            strategies_queryset = strategies_queryset.filter(trade__trading_account_id=trading_account_id)
-        else:
-            # Exclure les comptes archivés des stats globales
-            strategies_queryset = strategies_queryset.exclude(trade__trading_account__status='archived')
-        
-        # Filtrer par stratégie de position si spécifié
-        # Inclure toutes les versions de la stratégie (même parent_strategy)
-        if position_strategy_id:
-            family_ids = _get_position_strategy_family_ids(self.request.user, position_strategy_id)
-            strategies_queryset = strategies_queryset.filter(trade__position_strategy_id__in=family_ids)
-        
-        # Appliquer les filtres de période aux stratégies
-        if start_date:
-            strategies_queryset = strategies_queryset.filter(trade__trade_day__gte=start_date)
-        if end_date:
-            strategies_queryset = strategies_queryset.filter(trade__trade_day__lte=end_date)
-        if year:
-            strategies_queryset = strategies_queryset.filter(trade__trade_day__year=int(year))
-        if month:
-            strategies_queryset = strategies_queryset.filter(trade__trade_day__month=int(month))
-        
-        # Récupérer toutes les compliances pour les jours sans trades
-        day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
-            user=self.request.user
-        )
-        
-        if trading_account_id:
-            day_compliances_queryset = day_compliances_queryset.filter(
-                trading_account_id=trading_account_id
-            )
-        else:
-            # Exclure les comptes archivés des stats globales
-            day_compliances_queryset = day_compliances_queryset.exclude(trading_account__status='archived')
-        
-        # Appliquer les filtres de période aux compliances
-        if start_date:
-            day_compliances_queryset = day_compliances_queryset.filter(date__gte=start_date)
-        if end_date:
-            day_compliances_queryset = day_compliances_queryset.filter(date__lte=end_date)
-        if year:
-            day_compliances_queryset = day_compliances_queryset.filter(date__year=int(year))
-        if month:
-            day_compliances_queryset = day_compliances_queryset.filter(date__month=int(month))
-        
-        # Créer un dictionnaire pour accéder rapidement aux stratégies par trade_id
-        strategies_dict = {strategy.trade_id: strategy for strategy in strategies_queryset}
-        
-        # Créer un dictionnaire pour accéder rapidement aux compliances par date
-        day_compliances_dict = {}
-        for compliance in day_compliances_queryset:
-            date_str = compliance.date.isoformat()
-            # Si plusieurs compliances pour la même date, prendre la plus récente
-            if date_str not in day_compliances_dict:
-                day_compliances_dict[date_str] = compliance
-            elif compliance.created_at > day_compliances_dict[date_str].created_at:
-                day_compliances_dict[date_str] = compliance
-        
-        # Agréger par jour de trading
-        daily_compliance = defaultdict(lambda: {'total': 0, 'with_strategy': 0, 'respected': 0, 'not_respected': 0, 'has_day_compliance': False})
-        all_dates = []
-        
-        # Traiter les trades
-        for trade in trades_queryset:
-            if trade.trade_day:
-                date_str = trade.trade_day.isoformat()
-                daily_compliance[date_str]['total'] += 1
-                strategy = strategies_dict.get(trade.id)
-                if strategy and strategy.strategy_respected is not None:
-                    daily_compliance[date_str]['with_strategy'] += 1
-                    if strategy.strategy_respected:
-                        daily_compliance[date_str]['respected'] += 1
-                    else:
-                        daily_compliance[date_str]['not_respected'] += 1
-                if date_str not in all_dates:
-                    all_dates.append(date_str)
-        
-        # Traiter les jours sans trades mais avec compliance
-        for date_str, compliance in day_compliances_dict.items():
-            # Ne traiter que si la date n'a pas de trades (ou si elle en a, on ajoute quand même la compliance)
-            if compliance.strategy_respected is not None:
-                # Si la date n'existe pas encore, l'ajouter
-                if date_str not in all_dates:
-                    all_dates.append(date_str)
-                
-                # Marquer qu'il y a une compliance pour ce jour
-                daily_compliance[date_str]['has_day_compliance'] = True
-                
-                # Si c'est un jour sans trades, compter la compliance comme une stratégie
-                if daily_compliance[date_str]['total'] == 0:
-                    daily_compliance[date_str]['with_strategy'] += 1
-                    if compliance.strategy_respected:
-                        daily_compliance[date_str]['respected'] += 1
-                    else:
-                        daily_compliance[date_str]['not_respected'] += 1
-                # Si c'est un jour avec trades, on ne compte pas la compliance séparément
-                # car elle est déjà prise en compte via les trades
-        
-        # Trier les dates (jours avec trades ET jours sans trades mais avec compliance)
-        # La consécutivité est basée sur les jours calendaires avec activité (trades ou compliance)
-        all_dates.sort()
-        
-        # Calculer le streak actuel et le meilleur streak
-        current_streak = 0
-        best_streak = 0
-        temp_streak = 0
-        streak_start_date = None
-        current_streak_start = None
-        
-        # Calculer le meilleur streak de tous les temps en parcourant toutes les dates dans l'ordre chronologique
-        # On compte les jours avec trades ET les jours sans trades mais avec compliance
-        # IMPORTANT: La consécutivité est basée sur les jours avec activité (trades ou compliance)
-        # Les jours sans activité (sans trades et sans compliance) ne cassent pas le streak
-        for date_str in all_dates:
-            data = daily_compliance[date_str]
-            # Un jour compte comme "respecté" si :
-            # 1. Il y a des trades : tous les trades ont une stratégie et tous respectent
-            # 2. Il n'y a pas de trades mais il y a une compliance : la compliance indique que la stratégie est respectée
-            is_respected = False
-            if data['total'] > 0:
-                # Jour avec trades : vérifier que tous les trades ont une stratégie et tous respectent
-                is_respected = data['with_strategy'] == data['total'] and data['not_respected'] == 0
-            elif data['has_day_compliance']:
-                # Jour sans trades mais avec compliance : vérifier que la compliance indique le respect
-                compliance = day_compliances_dict.get(date_str)
-                is_respected = compliance and compliance.strategy_respected is True
-            
-            if is_respected:
-                # Les jours avec activité sont considérés comme consécutifs même s'il y a des jours sans activité entre eux
-                temp_streak += 1
-                if temp_streak > best_streak:
-                    best_streak = temp_streak
-            else:
-                # Le streak est cassé (jour avec activité mais non respecté)
-                temp_streak = 0
-        
-        # Calculer le streak actuel en parcourant de la plus récente à la plus ancienne
-        # IMPORTANT: La consécutivité est basée sur les jours avec activité (trades ou compliance)
-        # Les jours sans activité (sans trades et sans compliance) ne cassent pas le streak
-        current_streak = 0
-        current_streak_start = None
-        for date_str in reversed(all_dates):
-            data = daily_compliance[date_str]
-            # Un jour compte comme "respecté" si :
-            # 1. Il y a des trades : tous les trades ont une stratégie et tous respectent
-            # 2. Il n'y a pas de trades mais il y a une compliance : la compliance indique que la stratégie est respectée
-            is_respected = False
-            if data['total'] > 0:
-                # Jour avec trades : vérifier que tous les trades ont une stratégie et tous respectent
-                is_respected = data['with_strategy'] == data['total'] and data['not_respected'] == 0
-            elif data['has_day_compliance']:
-                # Jour sans trades mais avec compliance : vérifier que la compliance indique le respect
-                # Pour un jour sans trades avec compliance, on a déjà compté la compliance dans 'respected' ou 'not_respected'
-                # Donc on peut simplement vérifier que respected > 0 et not_respected == 0
-                is_respected = data['respected'] > 0 and data['not_respected'] == 0
-                # Double vérification avec l'objet compliance pour plus de sécurité
-                compliance = day_compliances_dict.get(date_str)
-                if compliance:
-                    is_respected = is_respected and compliance.strategy_respected is True
-            
-            if is_respected:
-                # Les jours avec activité sont considérés comme consécutifs même s'il y a des jours sans activité entre eux
-                # On vérifie seulement que c'est un jour respecté avec activité
-                # current_streak_start doit être la date la plus ancienne du streak (on la met à jour à chaque fois)
-                current_streak_start = date_str
-                current_streak += 1
-            else:
-                # Le streak actuel est cassé (jour avec activité mais non respecté), on s'arrête
-                break
-        
-        # Calculer les taux de respect (trades avec stratégie + compliances pour jours sans trades)
-        total_trades_with_strategy = sum(d['with_strategy'] for d in daily_compliance.values())
-        total_respected = sum(d['respected'] for d in daily_compliance.values())
-        total_not_respected = sum(d['not_respected'] for d in daily_compliance.values())
+        daily_compliance = ctx['daily_compliance']
+        current_streak = ctx['current_streak']
+        best_streak = ctx['best_streak']
+        current_streak_start = ctx['current_streak_start']
+        total_trades_with_strategy = ctx['total_trades_with_strategy']
+        total_respected = ctx['total_respected']
+        total_not_respected = ctx['total_not_respected']
+        strategies_queryset = ctx['strategies_queryset']
         
         # Le total inclut les trades avec stratégie ET les compliances pour les jours sans trades
         # (les compliances sont déjà comptées dans 'with_strategy', 'respected' et 'not_respected')
@@ -4817,38 +4632,6 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
         })
 
 
-def _get_position_strategy_family_ids(user, position_strategy_id):
-    """
-    Helper function pour récupérer tous les IDs d'une famille de stratégies.
-    Inclut la stratégie racine et toutes ses versions.
-    
-    Args:
-        user: L'utilisateur propriétaire
-        position_strategy_id: L'ID de la stratégie sélectionnée
-    
-    Returns:
-        Liste des IDs de la famille de stratégies
-    """
-    from .models import PositionStrategy
-    try:
-        selected_strategy = PositionStrategy.objects.get(
-            id=position_strategy_id,
-            user=user
-        )
-        # Trouver la stratégie racine
-        root_strategy_id = selected_strategy.parent_strategy_id or selected_strategy.id
-        # Récupérer tous les IDs de la famille (racine + toutes les versions)
-        family_ids = list(PositionStrategy.objects.filter(
-            user=user
-        ).filter(
-            models.Q(id=root_strategy_id) | models.Q(parent_strategy_id=root_strategy_id)
-        ).values_list('id', flat=True))
-        return family_ids
-    except PositionStrategy.DoesNotExist:
-        # Si la stratégie n'existe pas, retourner l'ID seul
-        return [position_strategy_id]
-
-
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def dashboard_summary(request):
@@ -4883,7 +4666,7 @@ def dashboard_summary(request):
     if position_strategy_id:
         try:
             position_strategy_id = int(position_strategy_id)
-            family_ids = _get_position_strategy_family_ids(request.user, position_strategy_id)
+            family_ids = get_position_strategy_family_ids(request.user, position_strategy_id)
             trades_queryset = trades_queryset.filter(position_strategy_id__in=family_ids)
         except (ValueError, TypeError):
             pass  # Ignorer les IDs invalides
@@ -4972,209 +4755,45 @@ def dashboard_summary(request):
     
     trades_data = TopStepTradeListSerializer(limited_trades, many=True).data
     
-    # 3. Strategy compliance stats and strategies
+    # 3. Strategy compliance stats and strategies (même logique que strategy_compliance_stats)
     compliance_stats = None
     strategies_data = []
-    
-    if trading_account_id:
-        try:
-            trading_account_id_int = int(trading_account_id)
-            
-            # Get strategies with trade info in single query
-            strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
-                user=request.user,
-                trade__trading_account_id=trading_account_id_int
-            ).select_related('trade')
-            
-            day_compliances_queryset = DayStrategyCompliance.objects.filter(  # type: ignore
-                user=request.user,
-                trading_account_id=trading_account_id_int
-            )
-            
-            strategies_dict = {strategy.trade_id: strategy for strategy in strategies_queryset}
-            day_compliances_dict = {}
-            for compliance in day_compliances_queryset:
-                date_str = compliance.date.isoformat()
-                if date_str not in day_compliances_dict:
-                    day_compliances_dict[date_str] = compliance
-                elif compliance.created_at > day_compliances_dict[date_str].created_at:
-                    day_compliances_dict[date_str] = compliance
-            
-            # Calculate compliance stats
-            from collections import defaultdict
-            daily_compliance = defaultdict(lambda: {'total': 0, 'with_strategy': 0, 'respected': 0, 'not_respected': 0, 'has_day_compliance': False})
-            all_dates = []
-            
-            all_trades = TopStepTrade.objects.filter(  # type: ignore
-                trading_account__user=request.user,
-                trading_account_id=trading_account_id_int
-            )
-            
-            for trade in all_trades:
-                if trade.trade_day:
-                    date_str = trade.trade_day.isoformat()
-                    daily_compliance[date_str]['total'] += 1
-                    strategy = strategies_dict.get(trade.id)
-                    if strategy and strategy.strategy_respected is not None:
-                        daily_compliance[date_str]['with_strategy'] += 1
-                        if strategy.strategy_respected:
-                            daily_compliance[date_str]['respected'] += 1
-                        else:
-                            daily_compliance[date_str]['not_respected'] += 1
-                    if date_str not in all_dates:
-                        all_dates.append(date_str)
-            
-            for date_str, compliance in day_compliances_dict.items():
-                if compliance.strategy_respected is not None:
-                    if date_str not in all_dates:
-                        all_dates.append(date_str)
-                    daily_compliance[date_str]['has_day_compliance'] = True
-                    if daily_compliance[date_str]['total'] == 0:
-                        daily_compliance[date_str]['with_strategy'] += 1
-                        if compliance.strategy_respected:
-                            daily_compliance[date_str]['respected'] += 1
-                        else:
-                            daily_compliance[date_str]['not_respected'] += 1
-            
-            all_dates.sort()
-            
-            # Calculate streaks - UNIFIED LOGIC with strategy_compliance_stats
-            # Include days with respected trades OR days with DayCompliance = True
-            # Days without activity (no trades and no compliance) don't break the streak
-            current_streak = 0
-            best_streak = 0
-            current_streak_start = None
-            temp_streak = 0
-            temp_start = None
-            
-            all_dates.sort()
-            
-            # Calculate best streak (forward pass through all dates)
-            # Include days with respected trades OR days with DayCompliance = True
-            for date_str in all_dates:
-                day_data = daily_compliance[date_str]
-                
-                # A day is respected if:
-                # 1. Has trades: ALL trades have strategy AND ALL respect it
-                # 2. No trades but has DayCompliance: compliance indicates respect
-                is_respected = False
-                if day_data['total'] > 0:
-                    # Day with trades: all trades must have strategy and all must respect
-                    is_respected = day_data['with_strategy'] == day_data['total'] and day_data['not_respected'] == 0
-                elif day_data['has_day_compliance']:
-                    # Day without trades but with compliance: check compliance indicates respect
-                    is_respected = day_data['respected'] > 0 and day_data['not_respected'] == 0
-                    compliance = day_compliances_dict.get(date_str)
-                    if compliance:
-                        is_respected = is_respected and compliance.strategy_respected is True
-                
-                if is_respected:
-                    if temp_streak == 0:
-                        temp_start = date_str
-                    temp_streak += 1
-                    best_streak = max(best_streak, temp_streak)
-                else:
-                    # Streak is broken (day with activity but not respected)
-                    temp_streak = 0
-                    temp_start = None
-            
-            # Calculate current streak (reverse pass from most recent to oldest)
-            # Include days with respected trades OR days with DayCompliance = True
-            current_streak = 0
-            current_streak_start = None
-            for date_str in reversed(all_dates):
-                day_data = daily_compliance[date_str]
-                
-                # Same logic as best_streak calculation
-                is_respected = False
-                if day_data['total'] > 0:
-                    is_respected = day_data['with_strategy'] == day_data['total'] and day_data['not_respected'] == 0
-                elif day_data['has_day_compliance']:
-                    is_respected = day_data['respected'] > 0 and day_data['not_respected'] == 0
-                    compliance = day_compliances_dict.get(date_str)
-                    if compliance:
-                        is_respected = is_respected and compliance.strategy_respected is True
-                
-                if is_respected:
-                    # current_streak_start should be the oldest date of the streak
-                    current_streak_start = date_str
-                    current_streak += 1
-                else:
-                    # Current streak is broken, stop here
-                    break
-            
-            # Calculate next badge (aligned with original system)
-            badge_thresholds = [
-                {'id': 'beginner', 'name': 'Débutant discipliné', 'days': 3},
-                {'id': 'week', 'name': 'Semaine parfaite', 'days': 7},
-                {'id': 'two_weeks', 'name': 'Deux semaines exemplaires', 'days': 14},
-                {'id': 'month', 'name': 'Mois de discipline', 'days': 30},
-                {'id': 'two_months', 'name': 'Maître de la discipline', 'days': 60},
-                {'id': 'three_months', 'name': 'Légende de la stratégie', 'days': 90},
-                {'id': 'centurion', 'name': 'Centurion', 'days': 100},
-                {'id': 'year', 'name': 'Année parfaite', 'days': 365},
-            ]
-            
-            next_badge = None
-            for badge in badge_thresholds:
-                if current_streak < badge['days']:
-                    progress = (current_streak / badge['days']) * 100
-                    next_badge = {
-                        'id': badge['id'],
-                        'name': badge['name'],
-                        'days': badge['days'],
-                        'progress': progress
-                    }
-                    break
-            
-            compliance_stats = {
-                'current_streak': current_streak,
-                'best_streak': best_streak,
-                'current_streak_start': current_streak_start,
-                'next_badge': next_badge
-            }
-            
-            # Serialize strategies for frontend
-            from .serializers import TradeStrategySerializer
-            strategies_data = TradeStrategySerializer(strategies_queryset, many=True).data
-            
-        except (ValueError, TypeError):
-            strategies_data = []
-            pass
-    else:
-        # No specific account: load strategies for all active accounts
-        try:
-            from .serializers import TradeStrategySerializer
-            
-            # Get all strategies for user's active accounts
-            strategies_queryset = TradeStrategy.objects.filter(  # type: ignore
-                user=request.user,
-                trade__trading_account__status='active'
-            ).select_related('trade')
-            
-            # Apply date filters if provided
-            if start_date:
-                try:
-                    start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
-                    start_datetime = user_tz.localize(start_datetime)
-                    strategies_queryset = strategies_queryset.filter(trade__entered_at__gte=start_datetime)
-                except ValueError:
-                    pass
-            
-            if end_date:
-                try:
-                    end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
-                    end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
-                    end_datetime = user_tz.localize(end_datetime)
-                    strategies_queryset = strategies_queryset.filter(trade__entered_at__lte=end_datetime)
-                except ValueError:
-                    pass
-            
-            strategies_data = TradeStrategySerializer(strategies_queryset, many=True).data
-            
-        except Exception as e:
-            logger.error(f"Erreur lors du chargement des stratégies globales: {str(e)}")
-            strategies_data = []
+    try:
+        from .serializers import TradeStrategySerializer
+
+        ta_id = None
+        if trading_account_id:
+            ta_id = int(trading_account_id)
+
+        pos_id = None
+        raw_ps = request.GET.get('position_strategy')
+        if raw_ps:
+            try:
+                pos_id = int(raw_ps)
+            except (ValueError, TypeError):
+                pos_id = None
+
+        ctx = compute_strategy_compliance_context(
+            request.user,
+            trading_account_id=ta_id,
+            position_strategy_id=pos_id,
+            start_date=start_date,
+            end_date=end_date,
+            year=None,
+            month=None,
+        )
+        compliance_stats = {
+            'current_streak': ctx['current_streak'],
+            'best_streak': ctx['best_streak'],
+            'current_streak_start': ctx['current_streak_start'],
+            'next_badge': compute_dashboard_next_badge(ctx['current_streak']),
+        }
+        strategies_data = TradeStrategySerializer(ctx['strategies_queryset'], many=True).data
+    except (ValueError, TypeError):
+        strategies_data = []
+    except Exception as e:
+        logger.error(f"Erreur lors du chargement des stratégies / compliance dashboard: {str(e)}")
+        strategies_data = []
     
     # Build response
     response_data = {

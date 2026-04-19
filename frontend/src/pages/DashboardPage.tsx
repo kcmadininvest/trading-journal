@@ -1557,6 +1557,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [trades, strategies, allTradesForSequences, allStrategiesForSequences]);
 
+  /** Meilleure série (respect stratégie) : API consolidée si présente, sinon fallback client (échantillon trades). */
+  const disciplineBestStreakDays = useMemo(() => {
+    if (complianceStats != null) {
+      return complianceStats.best_streak ?? 0;
+    }
+    return additionalStats?.maxConsecutiveDaysRespected ?? 0;
+  }, [complianceStats, additionalStats?.maxConsecutiveDaysRespected]);
+
   // Préparer les données pour le hook (utiliser allTradesForSequences si disponible)
   const allTradesForIndicators = useMemo(() => {
     return allTradesForSequences.length > 0 ? allTradesForSequences : trades;
@@ -2081,16 +2089,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <ModernStatCard
                     label={t('dashboard:sequenceRespect')}
                     value={(() => {
-                      // Utiliser complianceStats.best_streak si disponible (inclut les jours sans trades)
-                      // Sinon utiliser additionalStats.maxConsecutiveDaysRespected (seulement les jours avec trades)
-                      const bestStreak = complianceStats?.best_streak ?? 0;
-                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
-                      return `${Math.max(bestStreak, maxDaysRespected)} ${t('dashboard:days')}`;
+                      return `${disciplineBestStreakDays} ${t('dashboard:days')}`;
                     })()}
                     variant={(() => {
-                      const bestStreak = complianceStats?.best_streak ?? 0;
-                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
-                      const value = Math.max(bestStreak, maxDaysRespected);
+                      const value = disciplineBestStreakDays;
                       return value >= 21 ? 'success' : value > 0 ? 'info' : 'default';
                     })()}
                     size="small"
@@ -2100,10 +2102,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       </svg>
                     }
                     progressValue={(() => {
-                      // Utiliser complianceStats.best_streak si disponible (inclut les jours sans trades)
-                      const bestStreak = complianceStats?.best_streak ?? 0;
-                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
-                      return Math.max(bestStreak, maxDaysRespected);
+                      return disciplineBestStreakDays;
                     })()}
                     progressMax={21}
                     progressLabel={t('dashboard:objective')}
@@ -2118,15 +2117,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       }
                     ]}
                     trend={(() => {
-                      const bestStreak = complianceStats?.best_streak ?? 0;
-                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
-                      const value = Math.max(bestStreak, maxDaysRespected);
+                      const value = disciplineBestStreakDays;
                       return value >= 21 ? 'up' : value > 0 ? 'up' : undefined;
                     })()}
                     trendValue={(() => {
-                      const bestStreak = complianceStats?.best_streak ?? 0;
-                      const maxDaysRespected = additionalStats.maxConsecutiveDaysRespected || 0;
-                      const value = Math.max(bestStreak, maxDaysRespected);
+                      const value = disciplineBestStreakDays;
                       return value >= 21 ? t('dashboard:objectiveAchieved') : value > 0 ? `${21 - value} ${t('dashboard:daysRemaining')}` : undefined;
                     })()}
                   />
