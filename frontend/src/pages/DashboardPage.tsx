@@ -2026,22 +2026,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       // Sinon utiliser additionalStats (seulement les jours avec trades)
                       const streakDays = complianceStats?.current_streak ?? 0;
                       const notRespectedDays = additionalStats.currentConsecutiveDaysNotRespected;
-                      const nextBadge = complianceStats?.next_badge;
                       
                       if (streakDays > 0) {
-                        return (
-                          <div className="flex items-center justify-between w-full gap-2">
-                            <span>{streakDays} {t('dashboard:days')}</span>
-                            {nextBadge && (
-                              <span className="hidden 2xl:inline-flex text-xs px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 whitespace-nowrap shrink-0">
-                                {t('dashboard:badgeInDays', { 
-                                  badgeName: t(`strategy:badges.labels.${nextBadge.id ?? ''}`, { defaultValue: nextBadge.name }),
-                                  days: Math.max(0, nextBadge.days - streakDays)
-                                })}
-                              </span>
-                            )}
-                          </div>
-                        );
+                        return `${streakDays} ${t('dashboard:days')}`;
                       } else if (notRespectedDays > 0) {
                         return `${notRespectedDays} ${t('dashboard:days')}`;
                       }
