@@ -80,6 +80,15 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
 
   const getActivePresetKey = useCallback((): string | null => {
     if (!value) return null;
+    // Plusieurs préréglages peuvent avoir la même plage (ex. avril : « 3 derniers mois » = 1er janv. →
+    // aujourd’hui comme « Cette année » ; en janvier : « Ce mois » = « Cette année »). On respecte alors
+    // le préréglage réellement choisi (`value.preset`) s’il correspond aux dates.
+    if (value.preset && value.preset !== 'custom') {
+      const chosen = presets[value.preset as keyof typeof presets];
+      if (chosen && value.start === chosen.start && value.end === chosen.end) {
+        return value.preset;
+      }
+    }
     for (const key of ALL_PRESET_KEYS) {
       const preset = presets[key as keyof typeof presets];
       if (preset && value.start === preset.start && value.end === preset.end) {
