@@ -3,6 +3,8 @@ import { Scatter } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
+import { formatDate } from '../../utils/dateFormat';
+import { usePreferences } from '../../hooks/usePreferences';
 
 interface MaeMfeDataPoint {
   tradeId: number;
@@ -30,6 +32,9 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
   tradesCount,
 }) => {
   const { t } = useTranslation();
+  const { preferences } = usePreferences();
+  const dateFormat = preferences.date_format ?? 'EU';
+  const timezone = preferences.timezone;
 
   // Séparer les trades gagnants et perdants
   const { winningTrades, losingTrades } = useMemo(() => {
@@ -120,11 +125,12 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
           },
           label: (context: any) => {
             const point = context.raw;
+            const dateLabel = formatDate(point.tradeDay, dateFormat, false, timezone);
             return [
               `${t('analytics:charts.maeMfe.mae')}: ${formatCurrency(point.x, currencySymbol)}`,
               `${t('analytics:charts.maeMfe.mfe')}: ${formatCurrency(point.y, currencySymbol)}`,
               `${t('analytics:charts.maeMfe.pnl')}: ${formatCurrency(point.pnl, currencySymbol)}`,
-              `${t('analytics:charts.maeMfe.date')}: ${point.tradeDay}`,
+              `${t('analytics:charts.maeMfe.date')}: ${dateLabel || point.tradeDay}`,
             ];
           },
         },
@@ -190,7 +196,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         },
       },
     },
-  }), [chartColors, currencySymbol, t]);
+  }), [chartColors, currencySymbol, dateFormat, timezone, t]);
 
   return (
     <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px] flex flex-col">
