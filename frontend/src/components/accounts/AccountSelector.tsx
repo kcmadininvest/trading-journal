@@ -408,9 +408,19 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
                       if (opt.value === 0) onChange && onChange(null); else onChange && onChange(opt.value as number);
                       setOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${opt.value === currentValue ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${
+                      opt.value === currentValue
+                        ? 'bg-blue-50/90 font-medium text-blue-900 dark:bg-blue-950/45 dark:text-blue-100'
+                        : 'text-gray-800 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
+                    }`}
                   >
-                    <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap flex-1 text-left transition-all duration-200">
+                    <span
+                      className={`whitespace-nowrap flex-1 text-left transition-all duration-200 ${
+                        opt.value === currentValue
+                          ? 'text-blue-900 dark:text-blue-100'
+                          : 'text-gray-900 dark:text-gray-100'
+                      }`}
+                    >
                       {renderAccountName(opt.label, hideAccountNumber)}
                     </span>
                     {(opt as any).isDefault && <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0 ml-2">{t('common:default')}</span>}

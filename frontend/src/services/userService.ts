@@ -45,6 +45,16 @@ export interface PrivacyOverrides {
   };
 }
 
+/** Aligné sur `StoredPeriodV1` (frontend/src/utils/periodPresetRanges.ts) */
+export interface JournalPeriodStored {
+  preset: string;
+  start?: string;
+  end?: string;
+}
+
+/** Clés = id de compte en chaîne ou `"all"` ; valeurs = id stratégie ou `null` (toutes) */
+export type JournalPositionStrategiesMap = Record<string, number | null>;
+
 export interface UserPreferences {
   language: 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
   timezone: string;
@@ -58,6 +68,8 @@ export interface UserPreferences {
   privacy_overrides?: PrivacyOverrides;
   import_guide_collapsed?: boolean;
   show_pre_market?: boolean;
+  journal_period?: JournalPeriodStored | null;
+  journal_position_strategies?: JournalPositionStrategiesMap | null;
   created_at?: string;
   updated_at?: string;
 }

@@ -3,8 +3,15 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+import re
 from datetime import datetime, timedelta
 from .models import User, UserPreferences
+
+_JOURNAL_PERIOD_PRESETS = frozenset({
+    'today', 'thisWeek', 'lastWeek', 'thisMonth', 'lastMonth',
+    'last3Months', 'last6Months', 'thisYear', 'rollingYear', 'lastYear', 'allTime', 'custom',
+})
+_YMD_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -390,13 +397,61 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
     """
     Sérialiseur pour les préférences utilisateur
     """
+
+    def validate_journal_period(self, value):
+        if value is None:
+            return value
+        if not isinstance(value, dict):
+            raise serializers.ValidationError('journal_period doit être un objet JSON ou null.')
+        preset = value.get('preset')
+        if not isinstance(preset, str) or preset not in _JOURNAL_PERIOD_PRESETS:
+            raise serializers.ValidationError('preset de période invalide.')
+        if preset == 'custom':
+            start, end = value.get('start'), value.get('end')
+            if not isinstance(start, str) or not isinstance(end, str):
+                raise serializers.ValidationError('Pour une période custom, start et end (chaînes) sont requis.')
+            if not _YMD_RE.match(start) or not _YMD_RE.match(end):
+                raise serializers.ValidationError('Dates custom invalides (attendu YYYY-MM-DD).')
+            if start > end:
+                raise serializers.ValidationError('start doit être antérieur ou égal à end.')
+        return value
+
+    def validate_journal_position_strategies(self, value):
+        if value is None:
+            return value
+        if not isinstance(value, dict):
+            raise serializers.ValidationError('journal_position_strategies doit être un objet ou null.')
+        cleaned = {}
+        for raw_key, raw_val in value.items():
+            if not isinstance(raw_key, str):
+                raise serializers.ValidationError('Les clés de journal_position_strategies doivent être des chaînes.')
+            key = raw_key.strip()
+            if key == 'all':
+                pass
+            elif key.isdigit() and int(key) > 0:
+                pass
+            else:
+                raise serializers.ValidationError(f'Clé de compte invalide: {raw_key!r}.')
+            if raw_val is None:
+                cleaned[key] = None
+            elif isinstance(raw_val, bool):
+                raise serializers.ValidationError('Valeur booléenne non autorisée pour une stratégie.')
+            elif isinstance(raw_val, int):
+                if raw_val < 1:
+                    raise serializers.ValidationError('Identifiant de stratégie invalide.')
+                cleaned[key] = raw_val
+            else:
+                raise serializers.ValidationError('Valeur de stratégie invalide (entier ou null).')
+        return cleaned
+
     class Meta:
         model = UserPreferences
         fields = (
             'language', 'timezone', 'date_format', 'number_format',
             'theme', 'font_size', 'sidebar_collapsed', 'email_goal_alerts',
             'import_guide_collapsed', 'items_per_page', 'privacy_overrides',
-            'show_pre_market', 'created_at', 'updated_at'
+            'show_pre_market', 'journal_period', 'journal_position_strategies',
+            'created_at', 'updated_at',
         )
         read_only_fields = ('created_at', 'updated_at')
 

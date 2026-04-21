@@ -40,7 +40,7 @@ const ALL_PRESET_KEYS: PeriodPreset[] = PERIOD_MENU_GROUPS.flatMap((g) => [...g.
 const pillTrigger =
   'inline-flex w-full min-w-0 items-center gap-2 truncate rounded-lg border px-3 py-2 text-sm font-medium shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:ring-offset-0 dark:focus:ring-blue-400/30';
 const pillTriggerStyle =
-  'border-gray-200 bg-white text-gray-900 hover:border-gray-300 hover:bg-gray-50/90 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-700/70';
+  'border-gray-200 bg-white text-gray-900 hover:border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-700/70';
 
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   value,
@@ -311,7 +311,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
                 className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors ${
                   activePresetKey === key
                     ? 'bg-blue-50/90 font-medium text-blue-900 dark:bg-blue-950/45 dark:text-blue-100'
-                    : 'text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700'
+                    : 'text-gray-800 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 <span className="min-w-0 whitespace-normal break-words">{fullLabels[key]}</span>
@@ -331,7 +331,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
           className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
             activePresetKey === 'custom'
               ? 'bg-blue-50/90 font-medium text-blue-900 dark:bg-blue-950/45 dark:text-blue-100'
-              : 'text-gray-800 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700'
+              : 'text-gray-800 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
           }`}
         >
           <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

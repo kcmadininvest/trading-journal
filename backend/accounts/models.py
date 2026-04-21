@@ -204,7 +204,23 @@ class UserPreferences(models.Model):
         verbose_name=_('Privacy Overrides par Page'),
         help_text=str(_('Overrides de confidentialité par contexte de page (dashboard, statistics, trades, etc.)'))
     )
-    
+
+    # Filtres journal (période globale + stratégie de position par compte), synchronisés avec le frontend
+    journal_period = models.JSONField(
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name=_('Période du journal'),
+        help_text=str(_('Préréglage ou plage personnalisée (preset, start/end si custom)')),
+    )
+    journal_position_strategies = models.JSONField(
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name=_('Stratégies de position par compte'),
+        help_text=str(_('Carte compte_id ou "all" vers id de stratégie de position (null = toutes)')),
+    )
+
     # Métadonnées
     created_at = models.DateTimeField(
         auto_now_add=True,
