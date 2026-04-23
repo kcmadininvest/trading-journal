@@ -18,6 +18,39 @@ import logging
 
 logger: logging.Logger = logging.getLogger(__name__)
 
+TRADE_DRIVEN_GOAL_TYPES = (
+    'pnl_total',
+    'max_consecutive_losses',
+    'daily_loss_limit_breaches',
+    'expectancy',
+    'avg_rr_actual',
+    'journal_completion_rate',
+    'win_rate',
+    'trades_count',
+    'profit_factor',
+    'max_drawdown',
+    'strategy_respect',
+    'winning_days',
+)
+
+STRATEGY_DRIVEN_GOAL_TYPES = (
+    'strategy_respect',
+    'journal_completion_rate',
+)
+
+
+def refresh_goals_for_user(user, goal_types):
+    """
+    Recalcule les objectifs actifs/non annulés d'un utilisateur pour les types fournis.
+    """
+    goals_qs = TradingGoal.objects.filter(  # type: ignore
+        user=user,
+        goal_type__in=goal_types,
+    ).exclude(status='cancelled')
+
+    for goal in goals_qs:
+        goal.update_progress()
+
 
 def get_user_timezone(request):
     """
@@ -360,7 +393,60 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Associe automatiquement la transaction à l'utilisateur connecté."""
-        serializer.save(user=self.request.user)
+        transaction = serializer.save(user=self.request.user)
+        self._refresh_withdrawal_goals(
+            user=self.request.user,
+            trading_account_id=transaction.trading_account_id
+        )
+
+    def perform_update(self, serializer):
+        """
+        Met à jour une transaction puis recalcule les objectifs de retraits impactés.
+        """
+        previous = self.get_object()
+        previous_account_id = previous.trading_account_id
+
+        transaction = serializer.save()
+        updated_account_id = transaction.trading_account_id
+
+        impacted_account_ids = {previous_account_id, updated_account_id}
+        for account_id in impacted_account_ids:
+            if account_id is None:
+                continue
+            self._refresh_withdrawal_goals(
+                user=self.request.user,
+                trading_account_id=account_id
+            )
+
+    def perform_destroy(self, instance):
+        """
+        Supprime une transaction puis recalcule les objectifs de retraits impactés.
+        """
+        trading_account_id = instance.trading_account_id
+        instance.delete()
+        self._refresh_withdrawal_goals(
+            user=self.request.user,
+            trading_account_id=trading_account_id
+        )
+
+    def _refresh_withdrawal_goals(self, user, trading_account_id=None):
+        """
+        Recalcule les objectifs de retraits non annulés:
+        - objectifs globaux (sans compte),
+        - objectifs liés au compte impacté.
+        """
+        goals_qs = TradingGoal.objects.filter(  # type: ignore
+            user=user,
+            goal_type='withdrawal_amount'
+        ).exclude(status='cancelled')
+
+        if trading_account_id is not None:
+            goals_qs = goals_qs.filter(
+                Q(trading_account__isnull=True) | Q(trading_account_id=trading_account_id)
+            )
+
+        for goal in goals_qs:
+            goal.update_progress()
     
     @action(detail=False, methods=['get'])
     def balance(self, request):
@@ -495,6 +581,21 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 pass  # Ignorer les dates mal formatées
         
         return queryset.order_by('-entered_at')
+
+    def perform_create(self, serializer):
+        """Crée un trade puis recalcule les objectifs dépendants des trades."""
+        serializer.save()
+        refresh_goals_for_user(self.request.user, TRADE_DRIVEN_GOAL_TYPES)
+
+    def perform_update(self, serializer):
+        """Met à jour un trade puis recalcule les objectifs dépendants des trades."""
+        serializer.save()
+        refresh_goals_for_user(self.request.user, TRADE_DRIVEN_GOAL_TYPES)
+
+    def perform_destroy(self, instance):
+        """Supprime un trade puis recalcule les objectifs dépendants des trades."""
+        instance.delete()
+        refresh_goals_for_user(self.request.user, TRADE_DRIVEN_GOAL_TYPES)
     
     @action(detail=False, methods=['delete'])
     def clear_all(self, request):
@@ -511,6 +612,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         # Supprimer seulement les données de l'utilisateur connecté
         TopStepTrade.objects.filter(user=request.user).delete()  # type: ignore
         TopStepImportLog.objects.filter(user=request.user).delete()  # type: ignore
+        refresh_goals_for_user(request.user, TRADE_DRIVEN_GOAL_TYPES)
         
         return Response({ 
             'success': True, 
@@ -1481,6 +1583,9 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 logger.error(f"  Erreur: {result.get('error')}")
             
             if result['success']:
+                if not dry_run and result.get('success_count', 0) > 0:
+                    refresh_goals_for_user(request.user, TRADE_DRIVEN_GOAL_TYPES)
+
                 # Construire un message détaillé
                 message_parts = []
                 if result['success_count'] > 0:
@@ -2612,6 +2717,21 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(trade__contract_name__icontains=contract_name)
         
         return queryset.order_by('-created_at')
+
+    def perform_create(self, serializer):
+        """Crée une stratégie puis recalcule les objectifs dépendants des stratégies."""
+        serializer.save(user=self.request.user)
+        refresh_goals_for_user(self.request.user, STRATEGY_DRIVEN_GOAL_TYPES)
+
+    def perform_update(self, serializer):
+        """Met à jour une stratégie puis recalcule les objectifs dépendants des stratégies."""
+        serializer.save()
+        refresh_goals_for_user(self.request.user, STRATEGY_DRIVEN_GOAL_TYPES)
+
+    def perform_destroy(self, instance):
+        """Supprime une stratégie puis recalcule les objectifs dépendants des stratégies."""
+        instance.delete()
+        refresh_goals_for_user(self.request.user, STRATEGY_DRIVEN_GOAL_TYPES)
     
     @action(detail=False, methods=['get'])
     def by_trade(self, request):
@@ -3446,6 +3566,8 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 created_strategies.append(strategy)
             
             serializer = self.get_serializer(created_strategies, many=True)
+            if created_strategies:
+                refresh_goals_for_user(self.request.user, STRATEGY_DRIVEN_GOAL_TYPES)
             return Response(serializer.data)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
