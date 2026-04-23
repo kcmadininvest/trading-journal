@@ -192,6 +192,65 @@ const categorizeDuration = (minutes: number): string => {
   return '60m+';
 };
 
+/** Seuils d’agrégation automatique pour le graphique waterfall (affichage uniquement). */
+const WATERFALL_DAILY_BAR_MAX = 90;
+const WATERFALL_WEEKLY_AGGREGATE_MAX_DAYS = 730;
+
+interface WaterfallDailyPoint {
+  dateKey: string;
+  pnlTrading: number;
+  dailyNetTransactions: number;
+  dailyTotalVariation: number;
+  cumulative: number;
+  is_positive: boolean;
+  hasTradingData: boolean;
+}
+
+type WaterfallAggregation = 'day' | 'week' | 'month';
+
+interface WaterfallDisplayPoint extends WaterfallDailyPoint {
+  date: string;
+  aggregation: WaterfallAggregation;
+  rangeStartKey: string;
+  rangeEndKey: string;
+}
+
+/** Lundi ISO (UTC) pour regrouper les jours civils YYYY-MM-DD. */
+function utcMondayKeyOfIsoDate(isoDateKey: string): string {
+  const [y, m, d] = isoDateKey.split('-').map(Number);
+  const utcMidnight = Date.UTC(y, m - 1, d);
+  const dow = new Date(utcMidnight).getUTCDay();
+  const offsetDays = dow === 0 ? -6 : 1 - dow;
+  const mondayMs = utcMidnight + offsetDays * 86400000;
+  const mon = new Date(mondayMs);
+  const yy = mon.getUTCFullYear();
+  const mm = String(mon.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(mon.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+function formatWaterfallDayLabel(
+  dateKey: string,
+  locale: string,
+  timeZone: string,
+  includeYear: boolean
+): string {
+  return new Date(`${dateKey}T12:00:00`).toLocaleDateString(locale, {
+    month: 'short',
+    day: 'numeric',
+    ...(includeYear ? { year: 'numeric' as const } : {}),
+    timeZone,
+  });
+}
+
+function formatWaterfallMonthAxisLabel(monthKey: string, locale: string): string {
+  const [y, m] = monthKey.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(locale, {
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 /** Fuseaux alignés sur le backend (market_holidays.MARKET_TIMEZONES) pour détecter le changement de jour calendaire. */
 const MARKET_CLOCK_TIMEZONES: Array<[string, string]> = [
   ['XNYS', 'America/New_York'],
@@ -203,7 +262,7 @@ const MARKET_CLOCK_TIMEZONES: Array<[string, string]> = [
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { preferences } = usePreferences();
   const { theme } = useTheme();
-  const { t } = useI18nTranslation();
+  const { t, i18n } = useI18nTranslation();
   const privacySettings = usePrivacySettings('dashboard');
   /** Évite de reconstruire le PnL (somme des barres) via tooltips / datalabels / axe Y */
   const hideWeekdayChartMoneyValues =
@@ -964,7 +1023,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         cumulativeBalance += dailyTotalVariation;
 
         return {
-          date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
+          dateKey: date,
           pnlTrading,
           dailyNetTransactions,
           dailyTotalVariation,
@@ -1003,7 +1062,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       cumulativeBalance += dailyTotalVariation;
 
       return {
-        date: new Date(date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric', timeZone: preferences.timezone }),
+        dateKey: date,
         pnlTrading,
         dailyNetTransactions,
         dailyTotalVariation,
@@ -1012,18 +1071,111 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         hasTradingData: Object.prototype.hasOwnProperty.call(dailyData, date),
       };
     });
-  }, [dailyAggregates, trades, transactionsInSelectedPeriod, preferences.timezone]);
+  }, [dailyAggregates, trades, transactionsInSelectedPeriod]);
+
+  // Série affichée (agrégation auto) pour le graphique uniquement — waterfallStats reste sur waterfallData journalier.
+  const waterfallDisplay = useMemo(() => {
+    const daily = waterfallData;
+    if (daily.length === 0) {
+      return { rows: [] as WaterfallDisplayPoint[], mode: 'day' as WaterfallAggregation };
+    }
+
+    const locale = i18n.resolvedLanguage || i18n.language || 'en';
+    const tz = preferences.timezone;
+    const firstKey = daily[0].dateKey;
+    const lastKey = daily[daily.length - 1].dateKey;
+    const spanMultipleYears = firstKey.slice(0, 4) !== lastKey.slice(0, 4);
+    const includeYearOnDayLabels = spanMultipleYears || daily.length > 365;
+
+    const wrapDay = (row: WaterfallDailyPoint): WaterfallDisplayPoint => ({
+      ...row,
+      date: formatWaterfallDayLabel(row.dateKey, locale, tz, includeYearOnDayLabels),
+      aggregation: 'day',
+      rangeStartKey: row.dateKey,
+      rangeEndKey: row.dateKey,
+    });
+
+    if (daily.length <= WATERFALL_DAILY_BAR_MAX) {
+      return { rows: daily.map(wrapDay), mode: 'day' as WaterfallAggregation };
+    }
+
+    if (daily.length <= WATERFALL_WEEKLY_AGGREGATE_MAX_DAYS) {
+      const buckets = new Map<string, WaterfallDailyPoint[]>();
+      for (const row of daily) {
+        const wk = utcMondayKeyOfIsoDate(row.dateKey);
+        if (!buckets.has(wk)) buckets.set(wk, []);
+        buckets.get(wk)!.push(row);
+      }
+      const sortedWeeks = Array.from(buckets.keys()).sort();
+      const rows: WaterfallDisplayPoint[] = sortedWeeks.map((weekKey) => {
+        const rowsIn = buckets.get(weekKey)!;
+        const first = rowsIn[0];
+        const last = rowsIn[rowsIn.length - 1];
+        const pnlTrading = rowsIn.reduce((s, r) => s + r.pnlTrading, 0);
+        const dailyNetTransactions = rowsIn.reduce((s, r) => s + r.dailyNetTransactions, 0);
+        const dailyTotalVariation = rowsIn.reduce((s, r) => s + r.dailyTotalVariation, 0);
+        return {
+          dateKey: weekKey,
+          date: t('dashboard:waterfallWeekAxis', {
+            start: formatWaterfallDayLabel(first.dateKey, locale, tz, true),
+            end: formatWaterfallDayLabel(last.dateKey, locale, tz, true),
+          }),
+          pnlTrading,
+          dailyNetTransactions,
+          dailyTotalVariation,
+          cumulative: last.cumulative,
+          is_positive: dailyTotalVariation >= 0,
+          hasTradingData: rowsIn.some((r) => r.hasTradingData),
+          aggregation: 'week',
+          rangeStartKey: first.dateKey,
+          rangeEndKey: last.dateKey,
+        };
+      });
+      return { rows, mode: 'week' as WaterfallAggregation };
+    }
+
+    const monthBuckets = new Map<string, WaterfallDailyPoint[]>();
+    for (const row of daily) {
+      const mk = row.dateKey.slice(0, 7);
+      if (!monthBuckets.has(mk)) monthBuckets.set(mk, []);
+      monthBuckets.get(mk)!.push(row);
+    }
+    const sortedMonths = Array.from(monthBuckets.keys()).sort();
+    const rows: WaterfallDisplayPoint[] = sortedMonths.map((monthKey) => {
+      const rowsIn = monthBuckets.get(monthKey)!;
+      const first = rowsIn[0];
+      const last = rowsIn[rowsIn.length - 1];
+      const pnlTrading = rowsIn.reduce((s, r) => s + r.pnlTrading, 0);
+      const dailyNetTransactions = rowsIn.reduce((s, r) => s + r.dailyNetTransactions, 0);
+      const dailyTotalVariation = rowsIn.reduce((s, r) => s + r.dailyTotalVariation, 0);
+      return {
+        dateKey: `${monthKey}-01`,
+        date: formatWaterfallMonthAxisLabel(monthKey, locale),
+        pnlTrading,
+        dailyNetTransactions,
+        dailyTotalVariation,
+        cumulative: last.cumulative,
+        is_positive: dailyTotalVariation >= 0,
+        hasTradingData: rowsIn.some((r) => r.hasTradingData),
+        aggregation: 'month',
+        rangeStartKey: first.dateKey,
+        rangeEndKey: last.dateKey,
+      };
+    });
+    return { rows, mode: 'month' as WaterfallAggregation };
+  }, [waterfallData, preferences.timezone, i18n.resolvedLanguage, i18n.language, t]);
 
   // Préparer les données pour le graphique waterfall avec barres flottantes
   const waterfallChartData = useMemo(() => {
-    if (waterfallData.length === 0) return null;
+    const displayRows = waterfallDisplay.rows;
+    if (displayRows.length === 0) return null;
 
-    const labels = waterfallData.map(d => d.date);
+    const labels = displayRows.map((d) => d.date);
     
     // Pour un graphique waterfall, nous créons des barres flottantes
     // Chaque barre va de la valeur précédente à la valeur actuelle
-    const waterfallBarData = waterfallData.map((d, index) => {
-      const previousCumulative = index === 0 ? 0 : waterfallData[index - 1].cumulative;
+    const waterfallBarData = displayRows.map((d, index) => {
+      const previousCumulative = index === 0 ? 0 : displayRows[index - 1].cumulative;
       const currentCumulative = d.cumulative;
       const hasNetFlow = Math.abs(d.dailyNetTransactions) > 0;
       
@@ -1037,6 +1189,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         isNetFlowPositive: d.dailyNetTransactions > 0,
         isPositive: d.dailyTotalVariation >= 0,
         cumulative: currentCumulative,
+        aggregation: d.aggregation,
+        rangeStartKey: d.rangeStartKey,
+        rangeEndKey: d.rangeEndKey,
       };
     });
 
@@ -1049,6 +1204,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         {
           label: t('dashboard:capitalEvolution'),
           data: floatingBars,
+          maxBarThickness: 56,
           // Les barres avec flux net utilisent une palette dédiée pour être identifiables immédiatement.
           backgroundColor: waterfallBarData.map(d => {
             if (d.hasNetFlow) {
@@ -1071,7 +1227,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         }
       ]
     };
-  }, [waterfallData, t]);
+  }, [waterfallDisplay.rows, t]);
 
   // Statistiques pour le waterfall
   const waterfallStats = useMemo(() => {
@@ -2466,6 +2622,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           },
                           displayColors: false,
                           callbacks: {
+                            title: function (tooltipItems: any[]) {
+                              if (!tooltipItems.length) return '';
+                              const idx = tooltipItems[0].dataIndex;
+                              const ds = tooltipItems[0].chart.data.datasets[0] as any;
+                              const bar = ds._waterfallData?.[idx];
+                              if (!bar) return tooltipItems[0].label || '';
+                              const loc = i18n.resolvedLanguage || i18n.language || 'en';
+                              const tz = preferences.timezone;
+                              if (bar.aggregation === 'day') return tooltipItems[0].label || '';
+                              if (bar.aggregation === 'week') {
+                                return t('dashboard:waterfallTooltipWeekTitle', {
+                                  start: formatWaterfallDayLabel(bar.rangeStartKey, loc, tz, true),
+                                  end: formatWaterfallDayLabel(bar.rangeEndKey, loc, tz, true),
+                                });
+                              }
+                              return t('dashboard:waterfallTooltipMonthTitle', {
+                                monthLabel: formatWaterfallMonthAxisLabel(bar.rangeStartKey.slice(0, 7), loc),
+                              });
+                            },
                             label: function(context: any) {
                               const index = context.dataIndex;
                               const waterfallBarData = context.dataset._waterfallData[index];
@@ -2474,6 +2649,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               const dailyNetTransactions = waterfallBarData.dailyNetTransactions ?? 0;
                               const cumulative = waterfallBarData.cumulative;
                               const start = waterfallBarData.start;
+                              const isAgg = waterfallBarData.aggregation && waterfallBarData.aggregation !== 'day';
+                              const pnlLineKey = isAgg ? 'dashboard:periodPnL' : 'dashboard:dayPnL';
+                              const netFlowLineKey = isAgg ? 'dashboard:periodNetFlow' : 'dashboard:netFlow';
                               
                               // Calculer la variation en % par rapport à la barre précédente
                               let variationPercent = 0;
@@ -2486,8 +2664,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               
                               return [
                                 `${t('dashboard:variation')}: ${formatCurrency(totalVariation, currencySymbol)}`,
-                                `${t('dashboard:dayPnL')}: ${formatCurrency(pnlTrading, currencySymbol)}`,
-                                `${t('dashboard:netFlow', { defaultValue: 'Flux net' })}: ${formatCurrency(dailyNetTransactions, currencySymbol)}`,
+                                `${t(pnlLineKey)}: ${formatCurrency(pnlTrading, currencySymbol)}`,
+                                `${t(netFlowLineKey)}: ${formatCurrency(dailyNetTransactions, currencySymbol)}`,
                                 `${t('dashboard:cumulativeCapital')}: ${formatCurrency(cumulative, currencySymbol)}`,
                                 `${t('dashboard:variation')}: ${variationPercent >= 0 ? '+' : ''}${formatNumber(variationPercent, 2)}%`
                               ];
@@ -2506,6 +2684,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           ticks: {
                             maxRotation: 45,
                             minRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 24,
                             color: chartColors.textSecondary,
                             font: {
                               size: 11
@@ -2544,7 +2724,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         }
                       },
                       animation: {
-                        duration: 1000,
+                        duration: waterfallDisplay.rows.length > 50 ? 0 : 1000,
                         easing: 'easeInOutQuart' as const
                       }
                     }}
