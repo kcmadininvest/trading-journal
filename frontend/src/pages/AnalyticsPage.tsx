@@ -37,6 +37,7 @@ import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPerio
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { useStatistics } from '../hooks/useStatistics';
 import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
 import { PageShell } from '../components/layout';
@@ -138,6 +139,9 @@ const AnalyticsPage: React.FC = () => {
     accountId,
     startDate: summaryStartDate,
     endDate: summaryEndDate,
+    loading: accountLoading,
+  });
+  const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
     loading: accountLoading,
   });
 
@@ -1517,6 +1521,7 @@ const AnalyticsPage: React.FC = () => {
           className="mb-6"
           indicators={indicators} 
           currencySymbol={currencySymbol} 
+          globalAllAccountsActivity={globalAllAccountsActivity}
           hideInitialBalance={privacySettings.hideInitialBalance}
           hideCurrentBalance={privacySettings.hideCurrentBalance}
           hideConsistencyTarget={privacySettings.hideConsistencyTarget}

@@ -24,6 +24,7 @@ import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { ExportButton } from '../components/exports';
 import Tooltip from '../components/ui/Tooltip';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
@@ -80,6 +81,9 @@ function StatisticsPage() {
     endDate: summaryEndDate,
     loading: accountLoading,
     positionStrategy: selectedPositionStrategy,
+  });
+  const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
+    loading: accountLoading,
   });
   
   // Fonction pour recharger les statistiques après un import
@@ -408,6 +412,7 @@ function StatisticsPage() {
             className="mb-4 sm:mb-6"
             indicators={indicators} 
             currencySymbol={currencySymbol} 
+            globalAllAccountsActivity={globalAllAccountsActivity}
             hideInitialBalance={privacySettings.hideInitialBalance}
             hideCurrentBalance={privacySettings.hideCurrentBalance}
             hideConsistencyTarget={privacySettings.hideConsistencyTarget}
@@ -444,7 +449,7 @@ function StatisticsPage() {
                     value={statisticsData.win_rate}
                     config={GAUGE_CONFIGS.winRate}
                     tooltip={t('statistics:overview.winRateTooltip')}
-                    formatValue={(val: number) => `${formatNumber(val, 1)}%`}
+                    formatValue={(val: number) => `${formatNumber(val, 2)}%`}
                     showLabels={true}
                     size="md"
                   />

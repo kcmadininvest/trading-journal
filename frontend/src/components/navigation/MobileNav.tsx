@@ -31,10 +31,47 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentUser, currentPage, onNavig
   };
 
   const groups = [
-    { id: 'trading', label: t('navigation:groups.trading', { defaultValue: 'Trading' }), items: menuItems.trading, icon: '📊' },
-    { id: 'management', label: t('navigation:groups.management', { defaultValue: 'Gestion' }), items: menuItems.management, icon: '📁' },
-    { id: 'strategies', label: t('navigation:groups.strategies', { defaultValue: 'Stratégies' }), items: menuItems.strategies, icon: '⚡' },
-    { id: 'system', label: t('navigation:groups.system', { defaultValue: 'Système' }), items: menuItems.system, icon: '⚙️' },
+    {
+      id: 'trading',
+      label: t('navigation:groups.trading', { defaultValue: 'Trading' }),
+      items: menuItems.trading,
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17l6-6 4 4 8-10" />
+        </svg>
+      ),
+    },
+    {
+      id: 'management',
+      label: t('navigation:groups.management', { defaultValue: 'Gestion' }),
+      items: menuItems.management,
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
+        </svg>
+      ),
+    },
+    {
+      id: 'strategies',
+      label: t('navigation:groups.strategies', { defaultValue: 'Stratégies' }),
+      items: menuItems.strategies,
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 3L4 14h6l-1 7 9-11h-6l1-7z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'system',
+      label: t('navigation:groups.system', { defaultValue: 'Système' }),
+      items: menuItems.system,
+      icon: (
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+      ),
+    },
   ];
 
   return (

@@ -33,6 +33,7 @@ import { useComplianceRefresh } from '../contexts/ComplianceRefreshContext';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { dashboardService } from '../services/dashboard';
+import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { getChartColors } from '../utils/chartConfig';
 import { ChartSkeleton } from '../components/strategy/charts/ChartSkeleton';
 import { LazyChart } from '../components/strategy/charts/LazyChart';
@@ -218,7 +219,7 @@ const StrategiesPage: React.FC = () => {
       if (summaryEndDate) dashboardFilters.end_date = summaryEndDate;
       if (selectedPositionStrategy) dashboardFilters.position_strategy = selectedPositionStrategy;
 
-      const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, currenciesData, accountData, dashboardData] = 
+      const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, currenciesData, accountData, dashboardData] =
         await Promise.all([
           // Appel 1: Statistics
           tradeStrategiesService.statistics(params),
@@ -287,6 +288,10 @@ const StrategiesPage: React.FC = () => {
     allTrades: [],
     filteredTrades,
     activeDays: dashboardSummary?.active_days,
+  });
+
+  const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
+    loading: accountLoading,
   });
 
 
@@ -422,6 +427,7 @@ const StrategiesPage: React.FC = () => {
             className="mb-4 sm:mb-6"
             indicators={indicators} 
             currencySymbol={currencySymbol} 
+            globalAllAccountsActivity={globalAllAccountsActivity}
             hideInitialBalance={privacySettings.hideInitialBalance}
             hideCurrentBalance={privacySettings.hideCurrentBalance}
             hideConsistencyTarget={privacySettings.hideConsistencyTarget}

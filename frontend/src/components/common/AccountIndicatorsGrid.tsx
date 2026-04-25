@@ -163,9 +163,9 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 <>
                   <div
                     aria-hidden
-                    className="mx-0 hidden min-h-0 w-px shrink-0 self-stretch bg-gray-200 dark:bg-gray-600 xl:mx-4 xl:block min-[2000px]:hidden"
+                    className="mx-0 hidden min-h-0 w-px shrink-0 self-stretch bg-gray-200 dark:bg-gray-600 xl:mx-4 xl:block"
                   />
-                  <div className="hidden min-w-0 flex-1 flex-col gap-1 justify-center border-t border-gray-200 pt-3 dark:border-gray-600 max-[1999px]:flex xl:border-t-0 xl:pt-0 min-[2000px]:hidden">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1 justify-center border-t border-gray-200 pt-3 dark:border-gray-600 xl:border-t-0 xl:pt-0">
                     <span className="break-words text-[10px] font-medium uppercase leading-snug tracking-wider text-gray-500 dark:text-gray-400">
                       {t('dashboard:allAccountsCumulative', { defaultValue: 'Tous comptes (cumul)' })}
                     </span>

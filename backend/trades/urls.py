@@ -22,6 +22,7 @@ router.register(r'portfolio-export', PortfolioExportViewSet, basename='portfolio
 urlpatterns = [
     path('', include(router.urls)),
     path('dashboard-summary/', views.dashboard_summary, name='dashboard-summary'),
+    path('dashboard-activity-summary/', views.dashboard_activity_summary, name='dashboard-activity-summary'),
     path('market-holidays/', views.market_holidays, name='market-holidays'),
     path('market-holidays/today/', views.market_holidays_today, name='market-holidays-today'),
     path('calculator/position-size/', calculator_views.calculate_position_size, name='calculate-position-size'),

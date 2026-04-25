@@ -35,9 +35,6 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   pnlSparkline = [],
   winRate,
   winRateSparkline = [],
-  totalPositions,
-  globalActiveDays,
-  activitySparkline = [],
   currencySymbol,
   hideCurrentBalance = false,
   pnlCurrencyMode = 'single',
@@ -62,10 +59,6 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
     if (rate >= 45) return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
     return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
   };
-
-  /** Pas de seuil : style neutre (pas de sémantique vert/orange/rouge) */
-  const activityCardClasses =
-    'text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-700';
 
   const formatPnL = (value: number) => {
     const absValue = Math.abs(value);
@@ -236,47 +229,8 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
         </Tooltip>
       )}
 
-      {/* Carte Activité : au-delà du Full HD (1920px) — min-[1920px] laissait l’indicateur visible en 1920×1080 */}
-      <div className="hidden min-[2000px]:block h-full min-h-0 flex-shrink-0 self-stretch">
-        <Tooltip
-          className="block h-full min-h-0"
-          content={t('dashboard:globalActivityTooltip', {
-            defaultValue:
-              'Total des positions (tous comptes) et jours actifs — mêmes règles que sous le solde actuel (jours avec au moins un trade ou suivi discipline).',
-          })}
-        >
-          <div className={`${cardShell} ${activityCardClasses}`}>
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </div>
-            <div className="flex min-w-0 flex-col justify-center">
-              <div className="whitespace-nowrap text-xs font-medium opacity-75">
-                {t('dashboard:globalActivity', { defaultValue: 'Activité' })}
-              </div>
-              <div className="flex flex-nowrap items-baseline gap-x-1.5 whitespace-nowrap">
-                <span className="text-lg font-bold tabular-nums leading-none">{totalPositions}</span>
-                <span className="text-[11px] font-medium leading-none opacity-80">
-                  {t('dashboard:globalPositionsLabel', { defaultValue: 'positions' })}
-                </span>
-                <span className="select-none text-[11px] leading-none opacity-45" aria-hidden>
-                  ·
-                </span>
-                <span className="text-lg font-bold tabular-nums leading-none">{globalActiveDays}</span>
-                <span className="text-[11px] font-medium leading-none opacity-80">
-                  {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}
-                </span>
-              </div>
-            </div>
-            {renderSparklineSlot(activitySparkline)}
-          </div>
-        </Tooltip>
-      </div>
+      {/* Carte Activité retirée de la barre du haut :
+          les données d'activité restent affichées dans Total trades */}
     </div>
   );
 };

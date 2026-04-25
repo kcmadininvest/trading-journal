@@ -38,7 +38,49 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
   size = 'md',
   compactBar = false,
 }) => {
+  const labelRef = React.useRef<HTMLSpanElement>(null);
+  const gaugeRef = React.useRef<HTMLDivElement>(null);
+  const [isLabelTruncated, setIsLabelTruncated] = React.useState(false);
+  const [showDetailedScale, setShowDetailedScale] = React.useState(true);
   const { min, max, thresholds, unit = '' } = config;
+
+  React.useEffect(() => {
+    const checkTruncation = () => {
+      const el = labelRef.current;
+      if (!el) return;
+      setIsLabelTruncated(el.scrollWidth > el.clientWidth);
+    };
+
+    checkTruncation();
+    window.addEventListener('resize', checkTruncation);
+
+    return () => {
+      window.removeEventListener('resize', checkTruncation);
+    };
+  }, [label]);
+
+  React.useEffect(() => {
+    const updateScaleVisibility = () => {
+      const gaugeEl = gaugeRef.current;
+      if (!gaugeEl) return;
+      // En dessous de cette largeur, les labels intermédiaires se chevauchent.
+      setShowDetailedScale(gaugeEl.clientWidth >= 180);
+    };
+
+    updateScaleVisibility();
+
+    const gaugeEl = gaugeRef.current;
+    if (!gaugeEl) return;
+
+    const resizeObserver = new ResizeObserver(updateScaleVisibility);
+    resizeObserver.observe(gaugeEl);
+    window.addEventListener('resize', updateScaleVisibility);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateScaleVisibility);
+    };
+  }, []);
 
   // Calculer la position du curseur (0-100%)
   const clampedValue = Math.max(min, Math.min(max, value));
@@ -119,7 +161,7 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
   const displayValue = formatValue ? formatValue(value) : `${value.toFixed(2)}${unit}`;
 
   const barContent = (
-    <div className="relative">
+    <div ref={gaugeRef} className="relative">
       <div className={`w-full ${sizeClasses[size]} rounded-full overflow-hidden ${getGaugeBackgroundClass()}`}>
         <div
           className={`${sizeClasses[size]} ${colorClasses[currentColor]} rounded-full transition-all duration-700 ease-out relative`}
@@ -139,7 +181,11 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
             style={{ left: `${thresholdPercentage}%` }}
           >
             {showLabels && (
-              <span className="absolute top-full mt-1 -translate-x-1/2 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              <span
+                className={`absolute top-full mt-1 -translate-x-1/2 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ${
+                  showDetailedScale ? 'block' : 'hidden'
+                }`}
+              >
                 {threshold.value}
               </span>
             )}
@@ -151,7 +197,7 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
       {showLabels && (
         <div className="absolute top-full mt-1 left-0 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
           <span>{min}</span>
-          <span>{max}+</span>
+          {showDetailedScale ? <span>{max}+</span> : <span>{max}</span>}
         </div>
       )}
     </div>
@@ -163,11 +209,20 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
 
   return (
     <div className={showLabels ? 'mb-4' : ''}>
-    <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
       {/* Label (côté gauche) */}
-      <div className="flex-shrink-0 w-[35%] min-w-0">
-        <div className="flex items-center gap-1">
-          <span className="text-sm text-gray-500 dark:text-gray-400 truncate">{label}</span>
+      <div className="w-full min-w-0 sm:w-[35%] sm:flex-shrink-0">
+        <div className="flex items-center gap-1 min-w-0">
+          <Tooltip content={label} delay={0} disabled={!isLabelTruncated} className="w-full">
+            <span
+              ref={labelRef}
+              className={`block w-full text-sm text-gray-500 dark:text-gray-400 whitespace-normal break-words sm:truncate ${
+                isLabelTruncated ? 'cursor-help' : ''
+              }`}
+            >
+              {label}
+            </span>
+          </Tooltip>
           {tooltip && (
             <Tooltip content={tooltip}>
               <svg className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
@@ -179,7 +234,7 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
       </div>
 
       {/* Valeur (avant la jauge) */}
-      <span className={`flex-shrink-0 text-base font-semibold ${textColorClasses[currentColor]} text-right min-w-[4rem]`}>
+      <span className={`text-base font-semibold ${textColorClasses[currentColor]} text-left min-w-[4rem] sm:flex-shrink-0 sm:text-right`}>
         {displayValue}
       </span>
 

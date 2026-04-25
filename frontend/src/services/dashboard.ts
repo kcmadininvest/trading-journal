@@ -24,6 +24,11 @@ export interface DashboardSummary {
   count: number;
 }
 
+export interface DashboardActivitySummary {
+  total_positions: number;
+  active_days: number;
+}
+
 export interface DashboardFilters {
   trading_account?: number;
   start_date?: string;
@@ -73,6 +78,42 @@ class DashboardService {
     const url = `${this.baseUrl}/api/trades/dashboard-summary/?${params.toString()}`;
     const response = await this.fetchWithAuth(url);
     return response.json();
+  }
+
+  async getActivitySummary(filters: DashboardFilters = {}): Promise<DashboardActivitySummary> {
+    const params = new URLSearchParams();
+
+    if (filters.trading_account) {
+      params.append('trading_account', filters.trading_account.toString());
+    }
+    if (filters.start_date) {
+      params.append('start_date', filters.start_date);
+    }
+    if (filters.end_date) {
+      params.append('end_date', filters.end_date);
+    }
+    if (filters.position_strategy) {
+      params.append('position_strategy', filters.position_strategy.toString());
+    }
+
+    const url = `${this.baseUrl}/api/trades/dashboard-activity-summary/?${params.toString()}`;
+
+    try {
+      const response = await this.fetchWithAuth(url);
+      return response.json();
+    } catch {
+      // Fallback de compatibilité : si l'endpoint léger n'est pas disponible,
+      // reconstruire les compteurs à partir de dashboard-summary.
+      const summary = await this.getSummary(filters);
+      const totalPositions = (summary.daily_aggregates || []).reduce(
+        (sum, day) => sum + (day.trade_count || 0),
+        0
+      );
+      return {
+        total_positions: totalPositions,
+        active_days: summary.active_days ?? 0,
+      };
+    }
   }
 }
 

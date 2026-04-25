@@ -8,6 +8,7 @@ import { PeriodSelector } from '../components/common/PeriodSelector';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday, MarketTodaySnapshot } from '../services/calendar';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
@@ -433,17 +434,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [globalDashboardData, globalStrategyStats]);
 
-  /** Cumul tous comptes / toute période — pour la carte Total trades quand la carte Activité du header est masquée */
-  const globalAllAccountsActivity = useMemo(() => {
-    if (!globalDashboardData) return null;
-    const totalPositions =
-      globalDashboardData.daily_aggregates?.reduce(
-        (sum: number, day: any) => sum + (day.trade_count || 0),
-        0
-      ) || 0;
-    const globalActiveDays = globalDashboardData.active_days ?? 0;
-    return { totalPositions, globalActiveDays };
-  }, [globalDashboardData]);
+  /** Cumul tous comptes / toute période — pour la carte Total trades */
+  const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
+    loading: accountLoading,
+  });
   
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
@@ -1903,7 +1897,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
                       <div className="text-sm sm:text-xl xl:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {tradingMetrics.winRate.toFixed(1)}%
+                        {formatNumber(tradingMetrics.winRate, 2)}%
                       </div>
                     </div>
                   </div>

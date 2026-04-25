@@ -4930,6 +4930,107 @@ def dashboard_summary(request):
     return Response(response_data)
 
 
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def dashboard_activity_summary(request):
+    """
+    Lightweight dashboard endpoint for activity counters only.
+    Returns total positions and active days without loading heavy payloads.
+    """
+    from django.db.models.functions import Coalesce
+
+    trading_account_id = request.GET.get('trading_account')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    position_strategy_id = request.GET.get('position_strategy')
+    start_date_obj = None
+    end_date_obj = None
+
+    trades_queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+
+    if trading_account_id:
+        trades_queryset = trades_queryset.filter(trading_account_id=trading_account_id)
+    else:
+        active_accounts = TradingAccount.objects.filter(  # type: ignore
+            user=request.user
+        ).exclude(status='archived').values_list('id', flat=True)
+        trades_queryset = trades_queryset.filter(trading_account_id__in=active_accounts)
+
+    if position_strategy_id:
+        try:
+            position_strategy_id = int(position_strategy_id)
+            family_ids = get_position_strategy_family_ids(request.user, position_strategy_id)
+            trades_queryset = trades_queryset.filter(position_strategy_id__in=family_ids)
+        except (ValueError, TypeError):
+            pass
+
+    user_timezone = getattr(getattr(request.user, 'preferences', None), 'timezone', None)
+    try:
+        user_tz = pytz.timezone(user_timezone) if user_timezone else pytz.timezone('Europe/Paris')
+    except pytz.exceptions.UnknownTimeZoneError:
+        logger.warning(f"Timezone inconnue: {user_timezone}, utilisation de Europe/Paris par défaut")
+        user_tz = pytz.timezone('Europe/Paris')
+    except Exception as e:
+        logger.error(f"Erreur lors de la configuration de la timezone: {str(e)}")
+        user_tz = pytz.timezone('Europe/Paris')
+
+    if start_date:
+        try:
+            start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+            start_date_obj = start_datetime.date()
+            start_datetime = user_tz.localize(start_datetime)
+            trades_queryset = trades_queryset.filter(entered_at__gte=start_datetime)
+        except ValueError:
+            start_date_obj = None
+
+    if end_date:
+        try:
+            end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+            end_date_obj = end_datetime.date()
+            end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
+            end_datetime = user_tz.localize(end_datetime)
+            trades_queryset = trades_queryset.filter(entered_at__lte=end_datetime)
+        except ValueError:
+            end_date_obj = None
+
+    # Total positions = number of trades in filtered scope
+    total_positions = trades_queryset.count()
+
+    # Active days = union of trade days and compliance days
+    trade_dates = set()
+    for d in trades_queryset.annotate(
+        date=Coalesce('trade_day', TruncDate('entered_at'))
+    ).values_list('date', flat=True).distinct():
+        if d:
+            trade_dates.add(d.isoformat())
+
+    day_compliance_filter = DayStrategyCompliance.objects.filter(  # type: ignore
+        user=request.user,
+        strategy_respected__isnull=False,
+    )
+    if trading_account_id:
+        day_compliance_filter = day_compliance_filter.filter(trading_account_id=trading_account_id)
+    else:
+        day_compliance_filter = day_compliance_filter.filter(trading_account_id__in=active_accounts)
+
+    if start_date_obj:
+        day_compliance_filter = day_compliance_filter.filter(date__gte=start_date_obj)
+    if end_date_obj:
+        day_compliance_filter = day_compliance_filter.filter(date__lte=end_date_obj)
+
+    compliance_dates = set(
+        d.isoformat()
+        for d in day_compliance_filter.values_list('date', flat=True).distinct()
+        if d
+    )
+    active_days_count = len(trade_dates.union(compliance_dates))
+
+    return Response({
+        'total_positions': total_positions,
+        'active_days': active_days_count,
+    })
+
+
 def _market_holidays_today_response(request):
     """Réponse JSON pour le statut jour férié « journée entière » (date locale par marché)."""
     markets_param = request.GET.get('markets', 'XNYS,XPAR,XLON,XTKS')
