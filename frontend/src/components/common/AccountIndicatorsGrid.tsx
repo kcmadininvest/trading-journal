@@ -165,24 +165,27 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                     aria-hidden
                     className="mx-0 hidden min-h-0 w-px shrink-0 self-stretch bg-gray-200 dark:bg-gray-600 xl:mx-4 xl:block"
                   />
-                  <div className="flex min-w-0 flex-1 flex-col gap-1 justify-center border-t border-gray-200 pt-3 dark:border-gray-600 xl:border-t-0 xl:pt-0">
-                    <span className="break-words text-[10px] font-medium uppercase leading-snug tracking-wider text-gray-500 dark:text-gray-400">
+                  <div
+                    className="flex min-w-0 flex-1 flex-col gap-1 justify-center border-t border-gray-200 pt-3 dark:border-gray-600 xl:border-t-0 xl:pt-0"
+                    style={{ fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif' }}
+                  >
+                    <span className="break-words text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       {t('dashboard:allAccountsCumulative', { defaultValue: 'Tous comptes (cumul)' })}
                     </span>
-                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm text-gray-800 dark:text-gray-200">
-                      <span className="text-lg font-bold tabular-nums leading-none">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-base font-semibold text-gray-900 dark:text-gray-100 lg:text-xl">
                         {globalAllAccountsActivity.totalPositions}
                       </span>
-                      <span className="text-xs font-medium opacity-80">
+                      <span className="text-xs font-medium lowercase text-gray-700 dark:text-gray-300 lg:text-base">
                         {t('dashboard:globalPositionsLabel', { defaultValue: 'positions' })}
                       </span>
-                      <span className="select-none text-xs opacity-40" aria-hidden>
+                      <span className="select-none text-xs text-gray-400 dark:text-gray-500 lg:text-base" aria-hidden>
                         ·
                       </span>
-                      <span className="text-lg font-bold tabular-nums leading-none">
+                      <span className="text-base font-semibold text-gray-900 dark:text-gray-100 lg:text-xl">
                         {globalAllAccountsActivity.globalActiveDays}
                       </span>
-                      <span className="text-xs font-medium opacity-80">
+                      <span className="text-xs font-medium lowercase text-gray-700 dark:text-gray-300 lg:text-base">
                         {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}
                       </span>
                     </div>
