@@ -16,7 +16,7 @@
   "points": "ポイント",
   "pnl": "PnL",
   "fees": "Frais",
-  "feesTotal": "総コスト",
+  "feesTotal": "コスト",
   "feesColumnTooltip": "手数料 + コミッション",
   "netPnl": "PnL Net",
   "duration": "Durée",

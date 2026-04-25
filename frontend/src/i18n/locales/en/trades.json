@@ -17,7 +17,7 @@
   "points": "Points",
   "pnl": "PnL",
   "fees": "Fees",
-  "feesTotal": "Total cost",
+  "feesTotal": "Cost",
   "feesColumnTooltip": "Fees + Commissions",
   "netPnl": "Net PnL",
   "duration": "Duration",

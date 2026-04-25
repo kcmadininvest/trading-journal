@@ -88,7 +88,7 @@ export const useChartOptions = ({
           size: windowSize.isMobile ? 10 : 13,
         },
         formatter: function(value: number) {
-          return value > 0 ? formatNumberRef.current(value, 1) + '%' : '';
+          return value > 0 ? formatNumberRef.current(value, 2) + '%' : '';
         },
         anchor: 'center' as const,
         align: 'center' as const,
@@ -776,7 +776,7 @@ export const useChartOptions = ({
           size: windowSize.isMobile ? 10 : 12,
         },
         formatter: function(value: number) {
-          return formatNumberRef.current(value, 1) + '%';
+          return formatNumberRef.current(value, 2) + '%';
         },
         anchor: 'center' as const,
         align: 'center' as const,

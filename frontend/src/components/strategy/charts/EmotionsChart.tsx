@@ -63,7 +63,7 @@ export const EmotionsChart: React.FC<EmotionsChartProps> = React.memo(({
                   {t('strategies:percentage', { defaultValue: 'Pourcentage' })}
                 </div>
                 <div className="text-xl lg:text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {formatNumber((data as any).topEmotion.percentage, 1)}%
+                  {formatNumber((data as any).topEmotion.percentage, 2)}%
                 </div>
               </div>
             </>

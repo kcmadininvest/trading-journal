@@ -16,7 +16,7 @@
   "points": "포인트",
   "pnl": "PnL",
   "fees": "Frais",
-  "feesTotal": "총 비용",
+  "feesTotal": "비용",
   "feesColumnTooltip": "수수료 + 커미션",
   "netPnl": "PnL Net",
   "duration": "Durée",

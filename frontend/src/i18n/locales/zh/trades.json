@@ -16,7 +16,7 @@
   "points": "点数",
   "pnl": "PnL",
   "fees": "Frais",
-  "feesTotal": "总成本",
+  "feesTotal": "成本",
   "feesColumnTooltip": "费用 + 佣金",
   "netPnl": "PnL Net",
   "duration": "Durée",
