@@ -63,10 +63,17 @@ const HomePage: React.FC = () => {
     const currentLang = i18nInstance.language?.split('-')[0] || 'fr';
     setCurrentLanguage(currentLang);
     
-    // Nettoyer les paramètres URL si présents (pour éviter les problèmes d'indexation)
+    // Nettoyer uniquement les paramètres inutiles en conservant `lang`
+    // pour maintenir des URLs indexables de type `/?lang=xx`.
     if (window.location.search) {
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, '', newUrl);
+      const searchParams = new URLSearchParams(window.location.search);
+      const langParam = searchParams.get('lang');
+      const hasSupportedLang = !!langParam && ['fr', 'en', 'es', 'de'].includes(langParam);
+
+      if (!hasSupportedLang) {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
     }
     
     return () => {

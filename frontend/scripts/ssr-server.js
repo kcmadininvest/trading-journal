@@ -16,7 +16,7 @@ const PORT = 3001;
 const BUILD_DIR = path.join(__dirname, '..', 'build');
 const PRERENDER_DIR = path.join(BUILD_DIR, 'prerendered');
 
-// Pages à pré-rendre (SANS paramètres de requête pour éviter les problèmes SEO)
+// Pages à pré-rendre
 const PAGES_TO_PRERENDER = [
   { path: '/', lang: 'fr' },
   { path: '/', lang: 'en' },
@@ -123,8 +123,10 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     // Forcer baseUrl à toujours être en HTTPS
     const rawBaseUrl = process.env.REACT_APP_BASE_URL || 'https://app.kctradingjournal.com';
     const baseUrl = ensureHttps(rawBaseUrl);
-    // URL canonique SANS paramètres de requête (bonne pratique SEO)
-    const fullUrl = ensureHttps(`${baseUrl}${route}`);
+    // URL canonique: conserver ?lang uniquement pour la home
+    const fullUrl = route === '/'
+      ? ensureHttps(`${baseUrl}/?lang=${lang}`)
+      : ensureHttps(`${baseUrl}${route}`);
     
     // Remplacer les balises meta avec des regex plus robustes
     html = html.replace(/<title>.*?<\/title>/i, `<title>${currentSeo.title}</title>`);
@@ -150,7 +152,7 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     // Mettre à jour le canonical
     html = html.replace(/<link\s+rel=["']canonical["']\s+href=["'][^"']*["']/i, `<link rel="canonical" href="${fullUrl}"`);
     
-    // Mettre à jour les balises hreflang (SANS paramètres de requête)
+    // Mettre à jour les balises hreflang
     const hreflangUrls = {
       '/': baseUrl,
       '/about': `${baseUrl}/about`,
@@ -165,19 +167,22 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     
     const currentHreflangUrl = hreflangUrls[route] || baseUrl;
     
-    // Pour la page d'accueil, toutes les langues pointent vers la même URL
+    // Pour la page d'accueil, pointer vers les variantes linguistiques en query param
     if (route === '/') {
       const hreflangReplacements = {
-        fr: `<link rel="alternate" hreflang="fr" href="${baseUrl}/" />`,
-        en: `<link rel="alternate" hreflang="en" href="${baseUrl}/" />`,
-        es: `<link rel="alternate" hreflang="es" href="${baseUrl}/" />`,
-        de: `<link rel="alternate" hreflang="de" href="${baseUrl}/" />`,
+        fr: `<link rel="alternate" hreflang="fr" href="${baseUrl}/?lang=fr" />`,
+        en: `<link rel="alternate" hreflang="en" href="${baseUrl}/?lang=en" />`,
+        es: `<link rel="alternate" hreflang="es" href="${baseUrl}/?lang=es" />`,
+        de: `<link rel="alternate" hreflang="de" href="${baseUrl}/?lang=de" />`,
       };
       
       ['fr', 'en', 'es', 'de'].forEach((l) => {
         const regex = new RegExp(`<link\\s+rel=["']alternate["']\\s+hreflang=["']${l}["']\\s+href=["'][^"']*["']`, 'i');
         html = html.replace(regex, hreflangReplacements[l]);
       });
+
+      const xDefaultRegex = /<link\s+rel=["']alternate["']\s+hreflang=["']x-default["']\s+href=["'][^"']*["']/i;
+      html = html.replace(xDefaultRegex, `<link rel="alternate" hreflang="x-default" href="${baseUrl}/?lang=fr"`);
     }
     
     // Ajouter un commentaire pour indiquer que c'est pré-rendu

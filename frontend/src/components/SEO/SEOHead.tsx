@@ -34,18 +34,41 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   const rawBaseUrl = process.env.REACT_APP_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://app.kctradingjournal.com');
   const baseUrl = ensureHttps(rawBaseUrl);
   
-  // Forcer l'URL canonique à toujours être en HTTPS et SANS paramètres de requête
-  // Cela évite les problèmes de contenu dupliqué avec Google
+  // Construire l'URL canonique en HTTPS.
+  // On conserve ?lang uniquement pour la home afin d'exposer les variantes linguistiques
+  // explicitement demandées (/?lang=en, /?lang=es, /?lang=de).
   const cleanCanonicalUrl = (() => {
     try {
       const urlObj = new URL(ensureHttps(url));
-      // Supprimer tous les paramètres de requête (comme ?lang=en)
-      urlObj.search = '';
+      const isHomePage = urlObj.pathname === '/' || urlObj.pathname === '';
+      const langParam = urlObj.searchParams.get('lang');
+      const isSupportedLang = !!langParam && ['fr', 'en', 'es', 'de'].includes(langParam);
+
+      if (isHomePage) {
+        const canonicalLang = isSupportedLang ? langParam : currentLang;
+        if (canonicalLang && ['fr', 'en', 'es', 'de'].includes(canonicalLang)) {
+          urlObj.search = `?lang=${canonicalLang}`;
+        } else {
+          urlObj.search = '';
+        }
+      } else {
+        urlObj.search = '';
+      }
       urlObj.hash = '';
       return urlObj.toString();
     } catch {
       // Fallback si l'URL n'est pas valide
-      return ensureHttps(url).split('?')[0].split('#')[0];
+      const safeUrl = ensureHttps(url).split('#')[0];
+      const match = safeUrl.match(/^(.+?)(\?lang=(fr|en|es|de))?$/i);
+      if (!match) {
+        return ensureHttps(url).split('?')[0].split('#')[0];
+      }
+      const [, basePart, langPart = ''] = match;
+      const isHomeUrl = /https?:\/\/[^/]+\/?$/i.test(basePart);
+      if (isHomeUrl && langPart) {
+        return `${basePart.replace(/\?$/, '')}${langPart}`;
+      }
+      return basePart;
     }
   })();
   const canonicalUrl = cleanCanonicalUrl;
@@ -159,13 +182,10 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     
     // URLs selon la page et la langue
     const getUrlForLanguage = (lang: string): string => {
-      // Page d'accueil - utiliser la même URL propre pour toutes les langues
-      // La détection de langue se fait côté client via navigator.language
-      // Cela évite les problèmes de contenu dupliqué avec Google
+      // Page d'accueil - exposer explicitement chaque variante linguistique
+      // pour que Google puisse associer correctement les alternates hreflang.
       if (currentPath === '/' || currentPath === '' || currentPath === '/#') {
-        // Pour la page d'accueil, toutes les langues pointent vers la même URL
-        // La langue est détectée automatiquement côté client
-        return baseUrl;
+        return `${baseUrl}/?lang=${lang}`;
       }
       
       // Page À Propos
@@ -205,8 +225,8 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       updateLinkTag('alternate', langUrl, lang);
     });
     
-    // x-default pointe vers la langue par défaut (français) ou la version sans paramètre
-    updateLinkTag('alternate', baseUrl, 'x-default');
+    // x-default pointe vers la version par défaut (français)
+    updateLinkTag('alternate', `${baseUrl}/?lang=fr`, 'x-default');
 
     // Mettre à jour la langue HTML
     document.documentElement.lang = currentLang;

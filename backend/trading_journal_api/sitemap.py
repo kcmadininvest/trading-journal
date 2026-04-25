@@ -24,6 +24,42 @@ class StaticViewSitemap(Sitemap):
                 ]
             },
             {
+                'url': '/?lang=en',
+                'priority': 0.9,
+                'changefreq': 'daily',
+                'images': [
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/og-image.png', 'title': 'K&C Trading Journal'},
+                ]
+            },
+            {
+                'url': '/?lang=fr',
+                'priority': 0.9,
+                'changefreq': 'daily',
+                'images': [
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/og-image.png', 'title': 'K&C Trading Journal'},
+                ]
+            },
+            {
+                'url': '/?lang=es',
+                'priority': 0.9,
+                'changefreq': 'daily',
+                'images': [
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/og-image.png', 'title': 'K&C Trading Journal'},
+                ]
+            },
+            {
+                'url': '/?lang=de',
+                'priority': 0.9,
+                'changefreq': 'daily',
+                'images': [
+                    {'loc': '/android-chrome-512x512.png', 'title': 'K&C Trading Journal Logo'},
+                    {'loc': '/og-image.png', 'title': 'K&C Trading Journal'},
+                ]
+            },
+            {
                 'url': '/a-propos', 
                 'priority': 0.8,
                 'changefreq': 'monthly',

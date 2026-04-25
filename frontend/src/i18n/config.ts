@@ -416,9 +416,18 @@ const getDefaultLanguage = (): string => {
 const languageDetector = new LanguageDetector();
 languageDetector.addDetector(customNavigatorLanguagesDetector);
 
-// Obtenir la langue initiale : TOUJOURS détecter depuis le navigateur
+// Obtenir la langue initiale :
+// 1) paramètre `?lang=` si présent et supporté
+// 2) fallback navigateur
 // Le backend synchronisera avec les préférences sauvegardées après connexion
 const getInitialLanguage = (): string => {
+  if (typeof window !== 'undefined') {
+    const urlLang = new URLSearchParams(window.location.search).get('lang');
+    if (urlLang && ['fr', 'en', 'es', 'de'].includes(urlLang)) {
+      return urlLang;
+    }
+  }
+
   // Pour les utilisateurs non authentifiés : détecter depuis le navigateur
   // Pour les utilisateurs authentifiés : usePreferences écrasera avec la langue backend
   const detectedLang = getDefaultLanguage();
@@ -442,11 +451,13 @@ i18n
     
     detection: {
       // Ordre de détection : 
-      // 1. customNavigatorLanguages (navigator.languages avec ordre de préférence)
-      // 2. navigator (fallback standard)
+      // 1. querystring `?lang=` (priorité SEO/home multilingue)
+      // 2. customNavigatorLanguages (navigator.languages avec ordre de préférence)
+      // 3. navigator (fallback standard)
       // Note: localStorage n'est PAS utilisé pour la détection initiale
       // Le backend est la source de vérité et écrasera via usePreferences après connexion
-      order: ['customNavigatorLanguages', 'navigator'],
+      order: ['querystring', 'customNavigatorLanguages', 'navigator'],
+      lookupQuerystring: 'lang',
       // Ne pas sauvegarder automatiquement - le backend gère la persistance
       caches: [],
       lookupLocalStorage: 'i18nextLng',
