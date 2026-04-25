@@ -78,13 +78,34 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
     };
   }, [bins, t, isDark]);
 
-  // Valeur maximale pour l'axe Y
-  const maxYValue = useMemo(() => {
-    if (bins.length === 0) return undefined;
+  // Configuration de l'axe Y avec pas explicite pour éviter les ticks trop proches (ex: 14 puis 15)
+  const yAxisConfig = useMemo(() => {
+    if (bins.length === 0) {
+      return { max: undefined as number | undefined, stepSize: 1 };
+    }
+
     const maxValue = Math.max(...bins.map(bin => bin.successful + bin.unsuccessful));
-    const withPadding = maxValue * 1.10;
-    // Arrondir au multiple de 5 supérieur pour un affichage plus esthétique
-    return Math.ceil(withPadding / 5) * 5;
+    const withPadding = Math.max(maxValue * 1.1, 1);
+    const targetTicks = 6;
+    const roughStep = Math.max(withPadding / targetTicks, 1);
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const normalizedStep = roughStep / magnitude;
+
+    let niceNormalizedStep = 1;
+    if (normalizedStep <= 1) {
+      niceNormalizedStep = 1;
+    } else if (normalizedStep <= 2) {
+      niceNormalizedStep = 2;
+    } else if (normalizedStep <= 5) {
+      niceNormalizedStep = 5;
+    } else {
+      niceNormalizedStep = 10;
+    }
+
+    const stepSize = niceNormalizedStep * magnitude;
+    const max = Math.ceil(withPadding / stepSize) * stepSize;
+
+    return { max, stepSize };
   }, [bins]);
 
   // Configuration du graphique
@@ -161,12 +182,14 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
       y: {
         stacked: true,
         beginAtZero: true,
-        max: maxYValue,
+        max: yAxisConfig.max,
         grid: {
           color: chartThemeColors.grid,
           lineWidth: 1,
         },
         ticks: {
+          stepSize: yAxisConfig.stepSize,
+          precision: 0,
           color: chartThemeColors.textSecondary,
           font: {
             size: 11
@@ -187,7 +210,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
       duration: 1000,
       easing: 'easeInOutQuart' as const
     }
-  }), [chartThemeColors, maxYValue, isDark]);
+  }), [chartThemeColors, yAxisConfig, isDark]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

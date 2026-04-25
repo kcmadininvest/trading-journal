@@ -2155,8 +2155,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 trendValue={`${t('dashboard:avg')}: ${formatCurrency(Math.abs(tradingMetrics.avgWinningTrade), currencySymbol)} / ${formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}`}
               />
               
-              <Tooltip content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}>
-                <div className="h-full">
+              <Tooltip
+                content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}
+                triggerDisplay="block"
+                className="h-full w-full"
+              >
+                <div className="h-full w-full">
                   <ModernStatCard
                     label={(() => {
                       // Utiliser complianceStats.current_streak si disponible (inclut les jours sans trades)
@@ -2221,8 +2225,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
               </Tooltip>
               
-              <Tooltip content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}>
-                <div className="h-full">
+              <Tooltip
+                content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}
+                triggerDisplay="block"
+                className="h-full w-full"
+              >
+                <div className="h-full w-full">
                   <ModernStatCard
                     label={t('dashboard:sequenceRespect')}
                     value={(() => {
@@ -2265,8 +2273,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
               </Tooltip>
               
-              <Tooltip content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}>
-                <div className="h-full">
+              <Tooltip
+                content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}
+                triggerDisplay="block"
+                className="h-full w-full"
+              >
+                <div className="h-full w-full">
                   <ModernStatCard
                     label={t('dashboard:sequenceNotRespect')}
                     value={`${additionalStats.maxConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`}

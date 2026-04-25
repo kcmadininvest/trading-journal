@@ -372,11 +372,6 @@ const DailyView: React.FC<DailyViewProps> = ({
                           <span className={`text-xs sm:text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-700 dark:text-gray-300'}`}>
                             {dayNumber}
                           </span>
-                          {dayData?.has_journal_entry && (
-                            <Tooltip content={t('calendar:hasJournal', { defaultValue: 'Journal disponible' })} position="top">
-                              <span className="w-2 h-2 rounded-full bg-blue-500" />
-                            </Tooltip>
-                          )}
                           <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap">
                             {/* Actions pour les jours avec trades */}
                             {tradeCount > 0 && (
