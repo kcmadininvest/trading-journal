@@ -212,11 +212,11 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
       {/* Label (côté gauche) */}
       <div className="w-full min-w-0 sm:w-[35%] sm:flex-shrink-0">
-        <div className="flex items-center gap-1 min-w-0">
-          <Tooltip content={label} delay={0} disabled={!isLabelTruncated} className="w-full">
+        <div className="inline-flex items-center gap-1 min-w-0 leading-tight">
+          <Tooltip content={label} delay={0} disabled={!isLabelTruncated}>
             <span
               ref={labelRef}
-              className={`block w-full text-sm text-gray-500 dark:text-gray-400 whitespace-normal break-words sm:truncate ${
+              className={`inline-block max-w-full text-sm text-gray-500 dark:text-gray-400 whitespace-normal break-words sm:truncate ${
                 isLabelTruncated ? 'cursor-help' : ''
               }`}
             >
@@ -224,8 +224,8 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
             </span>
           </Tooltip>
           {tooltip && (
-            <Tooltip content={tooltip}>
-              <svg className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+            <Tooltip content={tooltip} className="items-center leading-none">
+              <svg className="block w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
               </svg>
             </Tooltip>

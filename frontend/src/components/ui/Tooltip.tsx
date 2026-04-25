@@ -9,6 +9,7 @@ interface TooltipProps {
   disabled?: boolean;
   className?: string;
   offset?: { x?: number; y?: number };
+  triggerDisplay?: 'inline-flex' | 'block';
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
@@ -19,6 +20,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   disabled = false,
   className = '',
   offset = { x: 0, y: 0 },
+  triggerDisplay = 'inline-flex',
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
@@ -144,17 +146,11 @@ const Tooltip: React.FC<TooltipProps> = ({
     }
   };
 
-  // Détecter si className contient "block" ou "w-full" pour utiliser block au lieu de inline-block
-  // Utiliser une regex pour matcher les classes complètes et éviter les conflits avec "inline-block"
-  const hasBlockClass = /\bblock\b/.test(className) && !/\binline-block\b/.test(className);
-  const hasWFullClass = /\bw-full\b/.test(className);
-  const displayClass = hasBlockClass || hasWFullClass ? 'block' : 'inline-block';
-  
   return (
     <>
       <div
         ref={triggerRef}
-        className={`${displayClass} ${className}`}
+        className={`${triggerDisplay} align-middle ${className}`}
         onMouseEnter={showTooltip}
         onMouseLeave={hideTooltip}
         onFocus={showTooltip}

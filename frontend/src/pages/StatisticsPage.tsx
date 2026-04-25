@@ -536,16 +536,16 @@ function StatisticsPage() {
                       <span className="text-sm sm:text-base font-semibold text-pink-500 dark:text-pink-400">{statisticsData.losing_trades}</span>
                     </div>
                     <div className="flex flex-col items-center px-1">
-                      <div className="flex items-center gap-0.5">
+                      <div className="inline-flex items-center gap-1 leading-tight">
                         <span className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('statistics:tradesAnalysis.breakEven', { defaultValue: 'Breakeven' })}</span>
                         <Tooltip
                           content={t('statistics:tradesAnalysis.breakEvenInlineExplanation', {
                             defaultValue: 'Les BE à PnL > 0 restent comptés dans les gagnants. Seuls les BE stricts (PnL = 0) sont exclus du total.',
                           }) + ` | = 0 : ${statisticsData.break_even_zero_trades ?? 0}`}
                           position="bottom"
-                          offset={{ x: -60 }}
+                          className="items-center leading-none"
                         >
-                          <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 cursor-help flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="block w-4 h-4 text-gray-400 dark:text-gray-500 cursor-help flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
                           </svg>
                         </Tooltip>
