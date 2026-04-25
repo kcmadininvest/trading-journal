@@ -130,27 +130,27 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     
     // Remplacer les balises meta avec des regex plus robustes
     html = html.replace(/<title>.*?<\/title>/i, `<title>${currentSeo.title}</title>`);
-    html = html.replace(/<meta\s+name=["']description["']\s+content=["'][^"']*["']/i, `<meta name="description" content="${currentSeo.description.replace(/"/g, '&quot;')}"`);
-    html = html.replace(/<meta\s+name=["']keywords["']\s+content=["'][^"']*["']/i, `<meta name="keywords" content="${currentSeo.keywords.replace(/"/g, '&quot;')}"`);
+    html = html.replace(/<meta\s+name=["']description["']\s+content=["'][^"']*["']\s*\/?>/i, `<meta name="description" content="${currentSeo.description.replace(/"/g, '&quot;')}" />`);
+    html = html.replace(/<meta\s+name=["']keywords["']\s+content=["'][^"']*["']\s*\/?>/i, `<meta name="keywords" content="${currentSeo.keywords.replace(/"/g, '&quot;')}" />`);
     
     // Mettre à jour og:locale et autres balises Open Graph
-    html = html.replace(/<meta\s+property=["']og:locale["']\s+content=["'][^"']*["']/i, `<meta property="og:locale" content="${currentSeo.locale}"`);
-    html = html.replace(/<meta\s+property=["']og:title["']\s+content=["'][^"']*["']/i, `<meta property="og:title" content="${currentSeo.title.replace(/"/g, '&quot;')}"`);
-    html = html.replace(/<meta\s+property=["']og:description["']\s+content=["'][^"']*["']/i, `<meta property="og:description" content="${currentSeo.description.replace(/"/g, '&quot;')}"`);
-    html = html.replace(/<meta\s+property=["']og:url["']\s+content=["'][^"']*["']/i, `<meta property="og:url" content="${fullUrl}"`);
+    html = html.replace(/<meta\s+property=["']og:locale["']\s+content=["'][^"']*["']\s*\/?>/i, `<meta property="og:locale" content="${currentSeo.locale}" />`);
+    html = html.replace(/<meta\s+property=["']og:title["']\s+content=["'][^"']*["']\s*\/?>/i, `<meta property="og:title" content="${currentSeo.title.replace(/"/g, '&quot;')}" />`);
+    html = html.replace(/<meta\s+property=["']og:description["']\s+content=["'][^"']*["']\s*\/?>/i, `<meta property="og:description" content="${currentSeo.description.replace(/"/g, '&quot;')}" />`);
+    html = html.replace(/<meta\s+property=["']og:url["']\s+content=["'][^"']*["']\s*\/?>/i, `<meta property="og:url" content="${fullUrl}" />`);
     
     // S'assurer que og:logo est présent
     if (!html.includes('property="og:logo"')) {
       html = html.replace(/<meta\s+property=["']og:image["']/i, `<meta property="og:logo" content="${baseUrl}/logo.png" />\n    <meta property="og:image"`);
     } else {
-      html = html.replace(/<meta\s+property=["']og:logo["']\s+content=["'][^"']*["']/i, `<meta property="og:logo" content="${baseUrl}/logo.png"`);
+      html = html.replace(/<meta\s+property=["']og:logo["']\s+content=["'][^"']*["']\s*\/?>/i, `<meta property="og:logo" content="${baseUrl}/logo.png" />`);
     }
     
     // Mettre à jour la langue HTML
     html = html.replace(/<html\s+lang=["'][^"']*["']/i, `<html lang="${lang}"`);
     
     // Mettre à jour le canonical
-    html = html.replace(/<link\s+rel=["']canonical["']\s+href=["'][^"']*["']/i, `<link rel="canonical" href="${fullUrl}"`);
+    html = html.replace(/<link\s+rel=["']canonical["']\s+href=["'][^"']*["']\s*\/?>/i, `<link rel="canonical" href="${fullUrl}" />`);
     
     // Mettre à jour les balises hreflang
     const hreflangUrls = {
@@ -177,12 +177,12 @@ async function generatePrerenderedHTML(route, lang, query = '') {
       };
       
       ['fr', 'en', 'es', 'de'].forEach((l) => {
-        const regex = new RegExp(`<link\\s+rel=["']alternate["']\\s+hreflang=["']${l}["']\\s+href=["'][^"']*["']`, 'i');
+        const regex = new RegExp(`<link\\s+rel=["']alternate["']\\s+hreflang=["']${l}["']\\s+href=["'][^"']*["']\\s*\\/?>`, 'i');
         html = html.replace(regex, hreflangReplacements[l]);
       });
 
-      const xDefaultRegex = /<link\s+rel=["']alternate["']\s+hreflang=["']x-default["']\s+href=["'][^"']*["']/i;
-      html = html.replace(xDefaultRegex, `<link rel="alternate" hreflang="x-default" href="${baseUrl}/?lang=fr"`);
+      const xDefaultRegex = /<link\s+rel=["']alternate["']\s+hreflang=["']x-default["']\s+href=["'][^"']*["']\s*\/?>/i;
+      html = html.replace(xDefaultRegex, `<link rel="alternate" hreflang="x-default" href="${baseUrl}/?lang=fr" />`);
     }
     
     // Ajouter un commentaire pour indiquer que c'est pré-rendu
