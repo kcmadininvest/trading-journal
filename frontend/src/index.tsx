@@ -6,9 +6,16 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { PreferencesProvider } from './hooks/usePreferences';
 import { TradingAccountProvider } from './contexts/TradingAccountContext';
+import {
+  applyAppFontFamily,
+  getStoredAppFontFamily,
+  syncChartFontFamily,
+} from './utils/chartConfig';
 import './i18n/config'; // Initialiser i18n
 
-Chart.defaults.font.family = 'Inter, ui-sans-serif, system-ui, sans-serif';
+const initialFontStack = applyAppFontFamily(getStoredAppFontFamily());
+syncChartFontFamily(initialFontStack);
+Chart.defaults.font.family = initialFontStack;
 
 // Appliquer la taille de police depuis localStorage avant le premier rendu pour éviter le flash
 try {

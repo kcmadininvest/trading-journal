@@ -8,7 +8,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: [
-          'Inter',
+          'var(--app-font-sans)',
           'ui-sans-serif',
           'system-ui',
           'sans-serif',
@@ -18,7 +18,7 @@ module.exports = {
           'Noto Color Emoji',
         ],
         mono: [
-          'Inter',
+          'var(--app-font-sans)',
           'ui-sans-serif',
           'system-ui',
           'sans-serif',

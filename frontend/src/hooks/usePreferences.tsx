@@ -3,10 +3,18 @@
  */
 
 import { useState, useEffect, useContext, createContext, useCallback } from 'react';
+import { Chart } from 'chart.js';
 import userService, { UserPreferences } from '../services/userService';
 import { changeLanguage } from '../i18n/config';
 import { authService } from '../services/auth';
 import i18n from '../i18n/config';
+import {
+  AppFontFamily,
+  applyAppFontFamily,
+  getStoredAppFontFamily,
+  storeAppFontFamily,
+  syncChartFontFamily,
+} from '../utils/chartConfig';
 
 interface PreferencesContextType {
   preferences: UserPreferences;
@@ -55,6 +63,7 @@ const getInitialFontSize = (): 'small' | 'medium' | 'large' => {
 };
 
 const DEFAULT_ITEMS_PER_PAGE = 20;
+const DEFAULT_FONT_FAMILY: AppFontFamily = 'inter';
 
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Initialiser la langue avec celle détectée par i18n (depuis navigator)
@@ -87,6 +96,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     number_format: 'comma',
     theme: getInitialTheme(),
     font_size: getInitialFontSize(),
+    font_family: getStoredAppFontFamily(),
     email_goal_alerts: true,
     items_per_page: DEFAULT_ITEMS_PER_PAGE,
     show_pre_market: false,
@@ -119,11 +129,16 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         // Appliquer la taille de police immédiatement
         root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
         root.classList.add(`font-size-${prefs.font_size || 'medium'}`);
+        const effectiveFontFamily = prefs.font_family || DEFAULT_FONT_FAMILY;
+        const fontStack = applyAppFontFamily(effectiveFontFamily);
+        syncChartFontFamily(fontStack);
+        Chart.defaults.font.family = fontStack;
         
         // Sauvegarder le thème et la taille de police dans localStorage pour éviter le flash au prochain chargement
         try {
           localStorage.setItem('theme', prefs.theme || 'light');
           localStorage.setItem('font_size', prefs.font_size || 'medium');
+          storeAppFontFamily(effectiveFontFamily);
         } catch {
           // Ignorer les erreurs de localStorage
         }
@@ -183,6 +198,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           number_format: 'comma',
           theme: getInitialTheme(),
           font_size: defaultFontSize,
+          font_family: DEFAULT_FONT_FAMILY,
           items_per_page: DEFAULT_ITEMS_PER_PAGE,
           email_goal_alerts: true,
           show_pre_market: false,
@@ -191,6 +207,9 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const root = document.documentElement;
         root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
         root.classList.add(`font-size-${defaultFontSize}`);
+        const fontStack = applyAppFontFamily(DEFAULT_FONT_FAMILY);
+        syncChartFontFamily(fontStack);
+        Chart.defaults.font.family = fontStack;
       }
     };
     
@@ -233,6 +252,14 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, [preferences.font_size]);
 
+  useEffect(() => {
+    const effectiveFontFamily = preferences.font_family || DEFAULT_FONT_FAMILY;
+    const fontStack = applyAppFontFamily(effectiveFontFamily);
+    syncChartFontFamily(fontStack);
+    Chart.defaults.font.family = fontStack;
+    storeAppFontFamily(effectiveFontFamily);
+  }, [preferences.font_family]);
+
   return (
     <PreferencesContext.Provider value={{ preferences, loading, refreshPreferences, mergePreferences }}>
       {children}
@@ -269,6 +296,7 @@ export const usePreferences = (): PreferencesContextType => {
           number_format: 'comma',
           theme: 'light',
           font_size: defaultFontSize,
+          font_family: getStoredAppFontFamily(),
           items_per_page: DEFAULT_ITEMS_PER_PAGE,
           email_goal_alerts: true,
           show_pre_market: false,

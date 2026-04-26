@@ -1,7 +1,126 @@
 import { ChartOptions } from 'chart.js';
 
+export type AppFontFamily =
+  | 'inter'
+  | 'lato'
+  | 'montserrat'
+  | 'noto_sans'
+  | 'nunito'
+  | 'open_sans'
+  | 'poppins'
+  | 'raleway'
+  | 'roboto'
+  | 'source_sans_3'
+  | 'ubuntu'
+  | 'work_sans';
+
+export const APP_FONT_FAMILY_STORAGE_KEY = 'font_family';
+export const APP_FONT_LINK_ID = 'app-google-font';
+export const SYSTEM_FONT_FALLBACK = 'ui-sans-serif, system-ui, sans-serif';
+const DEFAULT_FONT_FAMILY: AppFontFamily = 'inter';
+
+export interface AppFontOption {
+  value: AppFontFamily;
+  cssFamily: string;
+  googleFamilyParam: string;
+}
+
+/** Ordre alphabétique sur le nom affiché (cssFamily). */
+const APP_FONT_OPTIONS: AppFontOption[] = [
+  { value: 'inter', cssFamily: 'Inter', googleFamilyParam: 'Inter:wght@400;500;600;700' },
+  { value: 'lato', cssFamily: 'Lato', googleFamilyParam: 'Lato:wght@400;700' },
+  { value: 'montserrat', cssFamily: 'Montserrat', googleFamilyParam: 'Montserrat:wght@400;500;600;700' },
+  { value: 'noto_sans', cssFamily: 'Noto Sans', googleFamilyParam: 'Noto+Sans:wght@400;500;600;700' },
+  { value: 'nunito', cssFamily: 'Nunito', googleFamilyParam: 'Nunito:wght@400;500;600;700' },
+  { value: 'open_sans', cssFamily: 'Open Sans', googleFamilyParam: 'Open+Sans:wght@400;500;600;700' },
+  { value: 'poppins', cssFamily: 'Poppins', googleFamilyParam: 'Poppins:wght@400;500;600;700' },
+  { value: 'raleway', cssFamily: 'Raleway', googleFamilyParam: 'Raleway:wght@400;500;600;700' },
+  { value: 'roboto', cssFamily: 'Roboto', googleFamilyParam: 'Roboto:wght@400;500;700' },
+  { value: 'source_sans_3', cssFamily: 'Source Sans 3', googleFamilyParam: 'Source+Sans+3:wght@400;500;600;700' },
+  { value: 'ubuntu', cssFamily: 'Ubuntu', googleFamilyParam: 'Ubuntu:wght@400;500;700' },
+  { value: 'work_sans', cssFamily: 'Work Sans', googleFamilyParam: 'Work+Sans:wght@400;500;600;700' },
+];
+
+const APP_FONT_OPTION_MAP = new Map<AppFontFamily, AppFontOption>(
+  APP_FONT_OPTIONS.map((option) => [option.value, option]),
+);
+
+export const getAppFontOptions = (): AppFontOption[] => APP_FONT_OPTIONS;
+
+export const isAppFontFamily = (value: string | null | undefined): value is AppFontFamily => {
+  if (!value) {
+    return false;
+  }
+  return APP_FONT_OPTION_MAP.has(value as AppFontFamily);
+};
+
+export const normalizeAppFontFamily = (value: string | null | undefined): AppFontFamily => {
+  if (isAppFontFamily(value)) {
+    return value;
+  }
+  return DEFAULT_FONT_FAMILY;
+};
+
+export const getFontStackFromFamily = (fontFamily: AppFontFamily): string => {
+  const option = APP_FONT_OPTION_MAP.get(fontFamily) ?? APP_FONT_OPTION_MAP.get(DEFAULT_FONT_FAMILY)!;
+  return `'${option.cssFamily}', ${SYSTEM_FONT_FALLBACK}`;
+};
+
+export const getGoogleFontsUrl = (fontFamily: AppFontFamily): string => {
+  const option = APP_FONT_OPTION_MAP.get(fontFamily) ?? APP_FONT_OPTION_MAP.get(DEFAULT_FONT_FAMILY)!;
+  return `https://fonts.googleapis.com/css2?family=${option.googleFamilyParam}&display=swap`;
+};
+
+export const applyAppFontFamilyToDocument = (fontFamily: AppFontFamily): string => {
+  const fontStack = getFontStackFromFamily(fontFamily);
+  document.documentElement.style.setProperty('--app-font-sans', fontStack);
+  return fontStack;
+};
+
+export const ensureGoogleFontLink = (fontFamily: AppFontFamily): void => {
+  const href = getGoogleFontsUrl(fontFamily);
+  let link = document.getElementById(APP_FONT_LINK_ID) as HTMLLinkElement | null;
+  if (!link) {
+    link = document.createElement('link');
+    link.id = APP_FONT_LINK_ID;
+    link.rel = 'stylesheet';
+    document.head.appendChild(link);
+  }
+  if (link.href !== href) {
+    link.href = href;
+  }
+};
+
+export const applyAppFontFamily = (fontFamily: AppFontFamily): string => {
+  ensureGoogleFontLink(fontFamily);
+  const fontStack = applyAppFontFamilyToDocument(fontFamily);
+  syncChartFontFamily(fontStack);
+  return fontStack;
+};
+
+export const getStoredAppFontFamily = (): AppFontFamily => {
+  try {
+    const stored = localStorage.getItem(APP_FONT_FAMILY_STORAGE_KEY);
+    return normalizeAppFontFamily(stored);
+  } catch {
+    return DEFAULT_FONT_FAMILY;
+  }
+};
+
+export const storeAppFontFamily = (fontFamily: AppFontFamily): void => {
+  try {
+    localStorage.setItem(APP_FONT_FAMILY_STORAGE_KEY, fontFamily);
+  } catch {
+    // Ignore localStorage errors.
+  }
+};
+
 /** Même pile que `Chart.defaults.font` dans `index.tsx`. Obligatoire pour datalabels et tout `font` partiel (sinon fallback Helvetica interne de `helpers.toFont`). */
-export const CHART_FONT_FAMILY = 'Inter, ui-sans-serif, system-ui, sans-serif';
+export let CHART_FONT_FAMILY = getFontStackFromFamily(DEFAULT_FONT_FAMILY);
+
+export const syncChartFontFamily = (fontFamily: string): void => {
+  CHART_FONT_FAMILY = fontFamily;
+};
 
 interface ChartColors {
   text: string;

@@ -448,7 +448,7 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
         model = UserPreferences
         fields = (
             'language', 'timezone', 'date_format', 'number_format',
-            'theme', 'font_size', 'sidebar_collapsed', 'email_goal_alerts',
+            'theme', 'font_size', 'font_family', 'sidebar_collapsed', 'email_goal_alerts',
             'import_guide_collapsed', 'items_per_page', 'privacy_overrides',
             'show_pre_market', 'journal_period', 'journal_position_strategies',
             'created_at', 'updated_at',

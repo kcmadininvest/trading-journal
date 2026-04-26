@@ -113,6 +113,21 @@ class UserPreferences(models.Model):
         ('medium', 'Moyen'),
         ('large', 'Grand'),
     ]
+
+    FONT_FAMILY_CHOICES = [
+        ('inter', 'Inter'),
+        ('lato', 'Lato'),
+        ('montserrat', 'Montserrat'),
+        ('noto_sans', 'Noto Sans'),
+        ('nunito', 'Nunito'),
+        ('open_sans', 'Open Sans'),
+        ('poppins', 'Poppins'),
+        ('raleway', 'Raleway'),
+        ('roboto', 'Roboto'),
+        ('source_sans_3', 'Source Sans 3'),
+        ('ubuntu', 'Ubuntu'),
+        ('work_sans', 'Work Sans'),
+    ]
     
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -161,6 +176,12 @@ class UserPreferences(models.Model):
         choices=FONT_SIZE_CHOICES,
         default='medium',
         verbose_name=_('Taille de police')
+    )
+    font_family = models.CharField(
+        max_length=32,
+        choices=FONT_FAMILY_CHOICES,
+        default='inter',
+        verbose_name=_('Famille de police')
     )
     show_pre_market = models.BooleanField(
         default=False,

@@ -4,6 +4,7 @@
 
 @layer base {
   html {
+    --app-font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
     @apply font-sans antialiased;
   }
   body {

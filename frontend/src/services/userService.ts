@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { AppFontFamily } from '../utils/chartConfig';
 
 export interface User {
   id: number;
@@ -62,6 +63,7 @@ export interface UserPreferences {
   number_format: 'point' | 'comma';
   theme: 'light' | 'dark';
   font_size: 'small' | 'medium' | 'large';
+  font_family: AppFontFamily;
   sidebar_collapsed?: boolean;
   email_goal_alerts?: boolean;
   items_per_page?: number;

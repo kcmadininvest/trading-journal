@@ -18,6 +18,14 @@ import { PasswordStrengthMeter } from '../components/settings/PasswordStrengthMe
 import { SessionCard } from '../components/settings/SessionCard';
 import { DangerZoneCard } from '../components/settings/DangerZoneCard';
 import { SettingsToast } from '../components/settings/SettingsToast';
+import {
+  AppFontFamily,
+  applyAppFontFamily,
+  getAppFontOptions,
+  storeAppFontFamily,
+  syncChartFontFamily,
+} from '../utils/chartConfig';
+import { Chart } from 'chart.js';
 
 const TIMEZONE_GROUPS = [
   {
@@ -153,6 +161,7 @@ const SettingsPage: React.FC = () => {
     number_format: 'comma',
     theme: 'light',
     font_size: 'medium',
+    font_family: 'inter',
     email_goal_alerts: true,
     show_pre_market: false,
   });
@@ -292,6 +301,13 @@ const SettingsPage: React.FC = () => {
         try {
           localStorage.setItem('font_size', updatedPreferences.font_size);
         } catch {}
+      }
+
+      if (updatedPreferences.font_family) {
+        const fontStack = applyAppFontFamily(updatedPreferences.font_family);
+        syncChartFontFamily(fontStack);
+        Chart.defaults.font.family = fontStack;
+        storeAppFontFamily(updatedPreferences.font_family);
       }
       
       if (updatedPreferences.language) {
@@ -905,6 +921,19 @@ const SettingsPage: React.FC = () => {
                       { value: 'medium', label: t('settings:fontSizeMedium') },
                       { value: 'large', label: t('settings:fontSizeLarge') },
                     ]}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('settings:fontFamily', { defaultValue: 'Police' })}
+                  </label>
+                  <CustomSelect
+                    value={preferences.font_family}
+                    onChange={(value) => setPreferences({ ...preferences, font_family: value as AppFontFamily })}
+                    options={getAppFontOptions().map((font) => ({
+                      value: font.value,
+                      label: t(`settings:fontFamilyOption_${font.value}`, { defaultValue: font.value }),
+                    }))}
                   />
                 </div>
               </div>
