@@ -143,13 +143,35 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         bodyColor: chartThemeColors.text,
         borderColor: chartThemeColors.tooltipBorder,
         borderWidth: 1,
-        padding: 12,
-        displayColors: true,
+        padding: 16,
         titleFont: {
           family: CHART_FONT_FAMILY,
+          size: 14,
+          weight: 600,
         },
         bodyFont: {
           family: CHART_FONT_FAMILY,
+          size: 13,
+          weight: 500,
+        },
+        displayColors: false,
+        mode: 'index' as const,
+        intersect: false,
+        callbacks: {
+          title: (items: any[]) => {
+            if (!items.length) return '';
+            return items[0].label || '';
+          },
+          label: (context: any) => {
+            const label = context.dataset?.label || '';
+            const value = context.parsed?.y ?? 0;
+            return `${label}: ${value}`;
+          },
+          footer: (items: any[]) => {
+            if (!items.length) return '';
+            const total = items.reduce((sum, item) => sum + (item.parsed?.y ?? 0), 0);
+            return `${t('dashboard:numberOfTrades')}: ${total}`;
+          },
         },
       },
       datalabels: {
@@ -221,7 +243,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
       duration: 1000,
       easing: 'easeInOutQuart' as const
     }
-  }), [chartThemeColors, yAxisConfig, isDark]);
+  }), [chartThemeColors, yAxisConfig, isDark, t]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
