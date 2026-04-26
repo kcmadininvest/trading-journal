@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface CorrelationChartProps {
   data: {
@@ -55,23 +55,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         },
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           title: (items: any) => {
             const item = items[0];
@@ -85,6 +69,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
             return formatCurrency(pnl, currencySymbol);
           },
         },
+        }),
       },
     },
     scales: {

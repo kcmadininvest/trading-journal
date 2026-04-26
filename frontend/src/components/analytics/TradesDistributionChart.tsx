@@ -3,7 +3,7 @@ import { Doughnut as ChartDoughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface TradesDistributionChartProps {
   data: {
@@ -101,22 +101,8 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
                   display: false,
                 },
                 tooltip: {
-                  backgroundColor: chartColors.tooltipBg,
-                  titleColor: chartColors.tooltipTitle,
-                  bodyColor: chartColors.tooltipBody,
-                  borderColor: chartColors.tooltipBorder,
-                  borderWidth: 1,
+                  ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
                   padding: 12,
-                  titleFont: {
-                    family: CHART_FONT_FAMILY,
-                    size: 13,
-                    weight: 600,
-                  },
-                  bodyFont: {
-                    family: CHART_FONT_FAMILY,
-                    size: 12,
-                    weight: 500,
-                  },
                   callbacks: {
                     label: (context: any) => {
                       const label = context.label || '';
@@ -128,6 +114,7 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
                       ];
                     },
                   },
+                  }),
                 },
               },
             }}

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface PnlDistributionChartProps {
   data: {
@@ -74,23 +74,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           title: (items: any) => {
             const index = items[0].dataIndex;
@@ -113,6 +97,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
             ];
           },
         },
+        }),
       },
     },
     scales: {

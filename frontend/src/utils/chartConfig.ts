@@ -1,4 +1,4 @@
-import { ChartOptions } from 'chart.js';
+import { ChartOptions, TooltipOptions, ChartType } from 'chart.js';
 
 export type AppFontFamily =
   | 'inter'
@@ -122,7 +122,7 @@ export const syncChartFontFamily = (fontFamily: string): void => {
   CHART_FONT_FAMILY = fontFamily;
 };
 
-interface ChartColors {
+export interface ChartColors {
   text: string;
   textSecondary: string;
   background: string;
@@ -132,6 +132,69 @@ interface ChartColors {
   tooltipTitle: string;
   tooltipBody: string;
   tooltipBorder: string;
+}
+
+/** Variante de tooltip Chart.js mutualisée (barres vs courbes multi-séries). */
+export type ChartTooltipVariant = 'barStackedLike' | 'lineMultiSeries';
+
+export interface BuildChartTooltipPluginOptions {
+  /** Ex. masquage privacy : `enabled: false` */
+  enabled?: boolean;
+}
+
+const baseTooltipFonts = () => ({
+  titleFont: {
+    family: CHART_FONT_FAMILY,
+    size: 14,
+    weight: 600 as const,
+  },
+  bodyFont: {
+    family: CHART_FONT_FAMILY,
+    size: 13,
+    weight: 500 as const,
+  },
+});
+
+/**
+ * Configuration standard `plugins.tooltip` pour l’application (couleurs getChartColors, typo, padding).
+ * Les `callbacks` et autres surcharges se passent via `overrides` (spread après l’appel).
+ */
+export function buildChartTooltipPlugin<TChartType extends ChartType = ChartType>(
+  chartColors: ChartColors,
+  variant: ChartTooltipVariant,
+  options?: BuildChartTooltipPluginOptions,
+  /** Surcharges (callbacks, external, filter, etc.) */
+  overrides?: Record<string, unknown>
+): Partial<TooltipOptions<TChartType>> {
+  const common = {
+    backgroundColor: chartColors.tooltipBg,
+    titleColor: chartColors.tooltipTitle,
+    bodyColor: chartColors.tooltipBody,
+    borderColor: chartColors.tooltipBorder,
+    borderWidth: 1,
+    padding: 16,
+    ...baseTooltipFonts(),
+    ...(options?.enabled !== undefined ? { enabled: options.enabled } : {}),
+  };
+
+  const variantPart =
+    variant === 'lineMultiSeries'
+      ? {
+          displayColors: true,
+          mode: 'index' as const,
+          intersect: false,
+        }
+      : {
+          displayColors: false,
+          mode: 'index' as const,
+          intersect: false,
+        };
+
+  return {
+    ...common,
+    ...variantPart,
+    ...(overrides as object),
+  } as Partial<TooltipOptions<TChartType>>;
 }
 
 interface WindowSize {
@@ -196,27 +259,7 @@ export const createBaseChartOptions = ({
         size: isMobile ? 10 : 13,
       },
     },
-    tooltip: {
-      backgroundColor: chartColors.tooltipBg,
-      titleColor: chartColors.tooltipTitle,
-      bodyColor: chartColors.tooltipBody,
-      borderColor: chartColors.tooltipBorder,
-      borderWidth: 1,
-      padding: 16,
-      titleFont: {
-        family: CHART_FONT_FAMILY,
-        size: 14,
-        weight: 600,
-      },
-      bodyFont: {
-        family: CHART_FONT_FAMILY,
-        size: 13,
-        weight: 500,
-      },
-      displayColors: false,
-      mode: 'index' as const,
-      intersect: false,
-    },
+    tooltip: buildChartTooltipPlugin(chartColors, 'barStackedLike'),
   },
   scales: {
     y: {
@@ -336,27 +379,7 @@ export const createBarChartOptions = (
           color: chartColors.textSecondary,
         },
       },
-      tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
-        mode: 'index' as const,
-        intersect: false,
-      },
+      tooltip: buildChartTooltipPlugin(chartColors, 'barStackedLike'),
     },
     scales: {
       y: {
@@ -448,25 +471,7 @@ export const createLineChartOptions = (
           color: chartColors.textSecondary,
         },
       },
-      tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 500,
-        },
-        displayColors: true,
-      },
+      tooltip: buildChartTooltipPlugin(chartColors, 'lineMultiSeries'),
     },
     scales: {
       y: {

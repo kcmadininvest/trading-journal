@@ -15,6 +15,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrency as formatCurrencyUtil } from '../../utils/numberFormat';
+import { getChartColors, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -81,16 +82,7 @@ function AccountBalanceChart({
     };
   }, [formatCurrencyProp, currencySymbol, preferences.number_format]);
 
-  // Helper function pour obtenir les couleurs selon le thème
-  const chartThemeColors = useMemo(() => ({
-    text: isDark ? '#d1d5db' : '#374151',
-    textSecondary: isDark ? '#9ca3af' : '#6b7280',
-    background: isDark ? '#1f2937' : '#ffffff',
-    grid: isDark ? '#374151' : '#e5e7eb',
-    border: isDark ? '#4b5563' : '#d1d5db',
-    tooltipBg: isDark ? '#374151' : '#ffffff',
-    tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
-  }), [isDark]);
+  const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
 
   // Préparer les données du graphique
   const { chartData, chartLabels, pnlMapping, netTransactionsMapping } = useMemo(() => {
@@ -351,24 +343,7 @@ function AccountBalanceChart({
         display: false,
       },
       tooltip: {
-        enabled: !hideProfitLoss,
-        backgroundColor: chartThemeColors.tooltipBg,
-        titleColor: chartThemeColors.text,
-        bodyColor: chartThemeColors.text,
-        borderColor: chartThemeColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          size: 13,
-          weight: 500,
-        },
-        displayColors: true,
-        mode: 'index' as const,
-        intersect: false,
+        ...buildChartTooltipPlugin(chartColors, 'lineMultiSeries', { enabled: !hideProfitLoss }, {
         external: function(context: any) {
           // Empêcher complètement l'affichage du tooltip pour les points intermédiaires
           if (!context || !context.tooltip || !context.tooltip.dataPoints || context.tooltip.dataPoints.length === 0) {
@@ -446,6 +421,7 @@ function AccountBalanceChart({
             return labels;
           },
         },
+        }),
       },
     },
     scales: {
@@ -453,7 +429,7 @@ function AccountBalanceChart({
         ticks: {
           maxRotation: 45,
           minRotation: 45,
-          color: chartThemeColors.textSecondary,
+          color: chartColors.textSecondary,
           font: {
             size: 11,
           },
@@ -462,14 +438,14 @@ function AccountBalanceChart({
           display: false,
         },
         border: {
-          color: chartThemeColors.border,
+          color: chartColors.border,
         },
       },
       y: {
         beginAtZero: false,
         ticks: {
           display: !hideProfitLoss,
-          color: chartThemeColors.textSecondary,
+          color: chartColors.textSecondary,
           font: {
             size: 12,
           },
@@ -479,11 +455,11 @@ function AccountBalanceChart({
           },
         },
         grid: {
-          color: chartThemeColors.grid,
+          color: chartColors.grid,
           lineWidth: 1,
         },
         border: {
-          color: chartThemeColors.border,
+          color: chartColors.border,
           display: false,
         },
         title: {
@@ -505,7 +481,7 @@ function AccountBalanceChart({
         duration: 0, // Désactiver l'animation pour éviter le tremblement après chargement
       },
     };
-  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartThemeColors, formatCurrency, currencySymbol, t, hideProfitLoss]);
+  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartColors, formatCurrency, currencySymbol, t, hideProfitLoss]);
 
   if (data.length === 0) {
     return (

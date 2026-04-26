@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatNumber } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface RadarChartProps {
   data: any;
@@ -288,22 +288,8 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                     display: false,
                   },
                   tooltip: {
-                    backgroundColor: chartColors.tooltipBg,
-                    titleColor: chartColors.tooltipTitle,
-                    bodyColor: chartColors.tooltipBody,
-                    borderColor: chartColors.tooltipBorder,
-                    borderWidth: 1,
+                    ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
                     padding: 14,
-                    titleFont: {
-                      family: CHART_FONT_FAMILY,
-                      size: 14,
-                      weight: 600,
-                    },
-                    bodyFont: {
-                      family: CHART_FONT_FAMILY,
-                      size: 13,
-                      weight: 500,
-                    },
                     callbacks: {
                       title: (context: any) => {
                         return context[0].label;
@@ -321,6 +307,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                         ];
                       },
                     },
+                    }),
                   },
                 },
                 scales: {

@@ -44,6 +44,7 @@ import {
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar } from 'react-chartjs-2';
+import { getChartColors, buildChartTooltipPlugin } from '../utils/chartConfig';
 
 // Lazy load heavy chart components for better performance
 const DurationDistributionChart = lazy(() => import('../components/charts/DurationDistributionChart'));
@@ -1730,16 +1731,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   });
 
 
-  // Helper function pour obtenir les couleurs selon le thème
-  const chartColors = useMemo(() => ({
-    text: isDark ? '#d1d5db' : '#374151',
-    textSecondary: isDark ? '#9ca3af' : '#6b7280',
-    background: isDark ? '#1f2937' : '#ffffff',
-    grid: isDark ? '#374151' : '#e5e7eb',
-    border: isDark ? '#4b5563' : '#d1d5db',
-    tooltipBg: isDark ? '#374151' : '#ffffff',
-    tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
-  }), [isDark]);
+  const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
 
 
   return (
@@ -2429,22 +2421,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         display: false
                       },
                       tooltip: {
-                        enabled: !hideWeekdayChartMoneyValues,
-                        backgroundColor: chartColors.tooltipBg,
-                        titleColor: chartColors.text,
-                        bodyColor: chartColors.text,
-                        borderColor: chartColors.tooltipBorder,
-                        borderWidth: 1,
-                        padding: 16,
-                        titleFont: {
-                          size: 14,
-                          weight: 600,
-                        },
-                        bodyFont: {
-                          size: 13,
-                          weight: 500,
-                        },
-                        displayColors: false,
+                        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', {
+                          enabled: !hideWeekdayChartMoneyValues,
+                        }),
                         callbacks: {
                           label: function(context: any) {
                             const index = context.dataIndex;
@@ -2611,22 +2590,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                           display: false
                         },
                         tooltip: {
-                          enabled: !privacySettings.hideProfitLoss,
-                          backgroundColor: chartColors.tooltipBg,
-                          titleColor: chartColors.text,
-                          bodyColor: chartColors.text,
-                          borderColor: chartColors.tooltipBorder,
-                          borderWidth: 1,
-                          padding: 16,
-                          titleFont: {
-                            size: 14,
-                            weight: 600,
-                          },
-                          bodyFont: {
-                            size: 13,
-                            weight: 500,
-                          },
-                          displayColors: false,
+                          ...buildChartTooltipPlugin(chartColors, 'barStackedLike', {
+                            enabled: !privacySettings.hideProfitLoss,
+                          }),
                           callbacks: {
                             title: function (tooltipItems: any[]) {
                               if (!tooltipItems.length) return '';

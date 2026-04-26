@@ -3,7 +3,7 @@ import { Scatter as ChartScatter } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface TradeDurationPnlScatterChartProps {
   data: Array<{
@@ -49,19 +49,8 @@ export const TradeDurationPnlScatterChart: React.FC<TradeDurationPnlScatterChart
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         padding: 14,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-        },
-        displayColors: false,
         callbacks: {
           title: (items: any) => {
             const raw = items[0]?.raw as { x: number; y: number };
@@ -76,6 +65,7 @@ export const TradeDurationPnlScatterChart: React.FC<TradeDurationPnlScatterChart
             });
           },
         },
+        }),
       },
     },
     scales: {

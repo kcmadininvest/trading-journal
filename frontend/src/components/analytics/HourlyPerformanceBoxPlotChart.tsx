@@ -4,7 +4,7 @@ import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot
 import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 ChartJS.register(BoxPlotController, BoxAndWiskers);
 
@@ -113,23 +113,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           title: (items: any) => {
             const index = items[0].dataIndex;
@@ -148,6 +132,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
             ];
           },
         },
+        }),
       },
     },
     scales: {

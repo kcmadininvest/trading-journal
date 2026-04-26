@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface MonthlyPerformanceChartProps {
   data: {
@@ -92,22 +92,8 @@ export const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = (
                 display: false,
               },
               tooltip: {
-                backgroundColor: chartColors.tooltipBg,
-                titleColor: chartColors.tooltipTitle,
-                bodyColor: chartColors.tooltipBody,
-                borderColor: chartColors.tooltipBorder,
-                borderWidth: 1,
+                ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
                 padding: 12,
-                titleFont: {
-                  family: CHART_FONT_FAMILY,
-                  size: 13,
-                  weight: 600,
-                },
-                bodyFont: {
-                  family: CHART_FONT_FAMILY,
-                  size: 12,
-                  weight: 500,
-                },
                 callbacks: {
                   label: (context: any) => {
                     const index = context.dataIndex;
@@ -119,6 +105,7 @@ export const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = (
                     ];
                   },
                 },
+                }),
               },
             },
             scales: {

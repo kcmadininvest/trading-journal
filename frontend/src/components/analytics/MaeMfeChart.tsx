@@ -5,7 +5,7 @@ import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
 import { usePreferences } from '../../hooks/usePreferences';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface MaeMfeDataPoint {
   tradeId: number;
@@ -105,23 +105,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         },
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 500,
-        },
-        displayColors: true,
+        ...buildChartTooltipPlugin(chartColors, 'lineMultiSeries', undefined, {
         callbacks: {
           title: (items: any) => {
             const point = items[0].raw;
@@ -138,6 +122,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
             ];
           },
         },
+        }),
       },
     },
     scales: {

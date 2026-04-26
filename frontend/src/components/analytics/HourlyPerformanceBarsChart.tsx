@@ -3,7 +3,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { formatCurrency } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface HourlyPerformanceBarsChartProps {
   data: { hour: string; hourNum: number; pnl: number }[];
@@ -65,23 +65,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           title: (items: any) => {
             const index = items[0].dataIndex;
@@ -92,6 +76,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
             return formatCurrency(pnl, currencySymbol);
           },
         },
+        }),
       },
     },
     scales: {

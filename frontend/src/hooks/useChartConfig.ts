@@ -1,5 +1,6 @@
 import { ChartOptions } from 'chart.js';
 import { chartColors } from '../config/chartConfig';
+import { getChartColors, buildChartTooltipPlugin } from '../utils/chartConfig';
 
 interface UseBarChartConfigOptions {
   layout?: {
@@ -59,9 +60,13 @@ interface UseBarChartConfigOptions {
     duration?: number;
     easing?: 'linear' | 'easeInQuad' | 'easeOutQuad' | 'easeInOutQuad' | 'easeInCubic' | 'easeOutCubic' | 'easeInOutCubic' | 'easeInQuart' | 'easeOutQuart' | 'easeInOutQuart' | 'easeInQuint' | 'easeOutQuint' | 'easeInOutQuint' | 'easeInSine' | 'easeOutSine' | 'easeInOutSine' | 'easeInExpo' | 'easeOutExpo' | 'easeInOutExpo' | 'easeInCirc' | 'easeOutCirc' | 'easeInOutCirc' | 'easeInElastic' | 'easeOutElastic' | 'easeInOutElastic' | 'easeInBack' | 'easeOutBack' | 'easeInOutBack' | 'easeInBounce' | 'easeOutBounce' | 'easeInOutBounce';
   };
+  /** Thème sombre pour le tooltip Chart.js (défaut : clair). */
+  isDark?: boolean;
 }
 
 export function useBarChartConfig(config?: UseBarChartConfigOptions): { options: ChartOptions<'bar'> } {
+  const themeChartColors = getChartColors(config?.isDark ?? false);
+
   const defaultOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -82,23 +87,7 @@ export function useBarChartConfig(config?: UseBarChartConfigOptions): { options:
           },
         },
       },
-      tooltip: {
-        backgroundColor: 'white',
-        titleColor: '#4b5563',
-        bodyColor: '#1f2937',
-        borderColor: '#e5e7eb',
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          size: 14,
-          weight: 600 as const,
-        },
-        bodyFont: {
-          size: 13,
-          weight: 500 as const,
-        },
-        displayColors: true,
-      },
+      tooltip: buildChartTooltipPlugin(themeChartColors, 'barStackedLike'),
       datalabels: config?.plugins?.datalabels?.display ? {
         display: true,
         ...(config.plugins.datalabels.color !== undefined && {

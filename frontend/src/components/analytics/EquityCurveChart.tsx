@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface EquityCurveChartProps {
   data: any;
@@ -49,26 +49,8 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
         display: false,
       },
       tooltip: {
-        enabled: true,
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
+        ...buildChartTooltipPlugin(chartColors, 'lineMultiSeries', { enabled: true }, {
         padding: 12,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 12,
-          weight: 500,
-        },
-        displayColors: true,
-        mode: 'index' as const,
-        intersect: false,
         callbacks: {
           title: (context: any) => {
             if (!data?.rawData) return '';
@@ -110,6 +92,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
             return tooltipLines;
           },
         },
+        }),
       },
     },
     scales: {

@@ -3,7 +3,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface GainsVsLossesChartProps {
   data: {
@@ -54,22 +54,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 12,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 12,
-          weight: 500,
-        },
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           title: (items: any) => {
             const index = items[0].dataIndex;
@@ -87,6 +72,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
             ];
           },
         },
+        }),
       },
     },
     scales: {
@@ -166,22 +152,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 12,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 12,
-          weight: 500,
-        },
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           title: (items: any) => {
             const index = items[0].dataIndex;
@@ -199,6 +170,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
             ];
           },
         },
+        }),
       },
     },
     scales: {

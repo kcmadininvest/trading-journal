@@ -3,7 +3,7 @@ import { Line as ChartLine } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
 import { formatNumber, formatCurrency } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface DrawdownChartProps {
   data: Array<{ date: string; drawdown: number; drawdownAmount: number; drawdownPercent: number; cumulativePnl: number }>;
@@ -85,26 +85,7 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
                   display: false,
                 },
                 tooltip: {
-                  enabled: true,
-                  mode: 'index',
-                  intersect: false,
-                  backgroundColor: chartColors.tooltipBg,
-                  titleColor: chartColors.tooltipTitle,
-                  bodyColor: chartColors.tooltipBody,
-                  borderColor: chartColors.tooltipBorder,
-                  borderWidth: 1,
-                  padding: 16,
-                  titleFont: {
-                    family: CHART_FONT_FAMILY,
-                    size: 14,
-                    weight: 600,
-                  },
-                  bodyFont: {
-                    family: CHART_FONT_FAMILY,
-                    size: 13,
-                    weight: 500,
-                  },
-                  displayColors: false,
+                  ...buildChartTooltipPlugin(chartColors, 'barStackedLike', { enabled: true }, {
                   callbacks: {
                     title: (items: any) => {
                       const index = items[0].dataIndex;
@@ -119,6 +100,7 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
                       ];
                     },
                   },
+                  }),
                 },
               },
               scales: {

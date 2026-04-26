@@ -11,7 +11,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar } from 'react-chartjs-2';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, getChartColors, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 // Register Chart.js components
 ChartJS.register(
@@ -38,15 +38,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
-  // Couleurs du thème
-  const chartThemeColors = useMemo(() => ({
-    text: isDark ? '#d1d5db' : '#374151',
-    textSecondary: isDark ? '#9ca3af' : '#6b7280',
-    grid: isDark ? '#374151' : '#e5e7eb',
-    border: isDark ? '#4b5563' : '#d1d5db',
-    tooltipBg: isDark ? '#374151' : '#ffffff',
-    tooltipBorder: isDark ? '#4b5563' : '#e5e7eb',
-  }), [isDark]);
+  const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
 
   // Données du graphique
   const chartData = useMemo(() => {
@@ -132,47 +124,32 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
             family: CHART_FONT_FAMILY,
             size: 12
           },
-          color: chartThemeColors.text,
+          color: chartColors.text,
           boxWidth: 10,
           boxHeight: 10,
         }
       },
       tooltip: {
-        backgroundColor: chartThemeColors.tooltipBg,
-        titleColor: chartThemeColors.text,
-        bodyColor: chartThemeColors.text,
-        borderColor: chartThemeColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          family: CHART_FONT_FAMILY,
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          family: CHART_FONT_FAMILY,
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
-        mode: 'index' as const,
-        intersect: false,
-        callbacks: {
-          title: (items: any[]) => {
-            if (!items.length) return '';
-            return items[0].label || '';
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
+          callbacks: {
+            title: (items: any[]) => {
+              if (!items.length) return '';
+              return items[0].label || '';
+            },
+            label: (context: any) => {
+              const label = context.dataset?.label || '';
+              const value = context.parsed?.y ?? 0;
+              return `${label}: ${value}`;
+            },
+            // Utiliser afterBody plutôt que footer : le bloc « footer » de Chart.js laisse souvent
+            // une marge / une ligne vide visible même quand le rendu est minimal.
+            afterBody: (items: any[]) => {
+              if (!items?.length) return '';
+              const total = items.reduce((sum, item) => sum + (item.parsed?.y ?? 0), 0);
+              return `${t('dashboard:numberOfTrades')}: ${total}`;
+            },
           },
-          label: (context: any) => {
-            const label = context.dataset?.label || '';
-            const value = context.parsed?.y ?? 0;
-            return `${label}: ${value}`;
-          },
-          footer: (items: any[]) => {
-            if (!items.length) return '';
-            const total = items.reduce((sum, item) => sum + (item.parsed?.y ?? 0), 0);
-            return `${t('dashboard:numberOfTrades')}: ${total}`;
-          },
-        },
+        }),
       },
       datalabels: {
         display: true,
@@ -201,14 +178,14 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         ticks: {
           maxRotation: 0,
           minRotation: 0,
-          color: chartThemeColors.textSecondary,
+          color: chartColors.textSecondary,
           font: {
             family: CHART_FONT_FAMILY,
             size: 11
           },
         },
         border: {
-          color: chartThemeColors.border,
+          color: chartColors.border,
         },
       },
       y: {
@@ -216,20 +193,20 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         beginAtZero: true,
         max: yAxisConfig.max,
         grid: {
-          color: chartThemeColors.grid,
+          color: chartColors.grid,
           lineWidth: 1,
         },
         ticks: {
           stepSize: yAxisConfig.stepSize,
           precision: 0,
-          color: chartThemeColors.textSecondary,
+          color: chartColors.textSecondary,
           font: {
             family: CHART_FONT_FAMILY,
             size: 11
           },
         },
         border: {
-          color: chartThemeColors.border,
+          color: chartColors.border,
           display: false,
         },
       }
@@ -243,7 +220,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
       duration: 1000,
       easing: 'easeInOutQuart' as const
     }
-  }), [chartThemeColors, yAxisConfig, isDark, t]);
+  }), [chartColors, yAxisConfig, isDark, t]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

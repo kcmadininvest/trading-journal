@@ -1,17 +1,7 @@
 import { useMemo, useRef } from 'react';
 import type { EasingFunction } from 'chart.js';
 import { WeekdayComplianceChartData } from './useWeekdayCompliance';
-
-interface ChartColors {
-  text: string;
-  textSecondary: string;
-  grid: string;
-  border: string;
-  tooltipBg: string;
-  tooltipTitle: string;
-  tooltipBody: string;
-  tooltipBorder: string;
-}
+import { buildChartTooltipPlugin, type ChartColors } from '../utils/chartConfig';
 
 interface UseChartOptionsParams {
   chartColors: ChartColors;
@@ -109,23 +99,7 @@ export const useChartOptions = ({
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
-        mode: 'index' as const,
-        intersect: false,
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           title: function(context: any) {
             const idx = context[0].dataIndex;
@@ -182,6 +156,7 @@ export const useChartOptions = ({
             }
           },
         },
+        }),
       },
     },
     scales: {
@@ -264,23 +239,7 @@ export const useChartOptions = ({
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
-        mode: 'index' as const,
-        intersect: false,
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           label: function(context: any) {
             const label = context.dataset.label || '';
@@ -288,6 +247,7 @@ export const useChartOptions = ({
             return `${label}: ${formatNumberRef.current(value, 2)}%`;
           },
         },
+        }),
       },
     },
     scales: {
@@ -376,23 +336,7 @@ export const useChartOptions = ({
           display: false,
         },
         tooltip: {
-          backgroundColor: chartColors.tooltipBg,
-          titleColor: chartColors.tooltipTitle,
-          bodyColor: chartColors.tooltipBody,
-          borderColor: chartColors.tooltipBorder,
-          borderWidth: 1,
-          padding: 16,
-          titleFont: {
-            size: 14,
-            weight: 600,
-          },
-          bodyFont: {
-            size: 13,
-            weight: 500,
-          },
-          displayColors: false,
-          mode: 'index' as const,
-          intersect: false,
+          ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
           callbacks: {
             title: function(context: any) {
               return context[0].label || '';
@@ -405,6 +349,7 @@ export const useChartOptions = ({
               return `${label}: ${value} (${formatNumberRef.current(percentage, 1)}%)`;
             },
           },
+          }),
         },
       },
       scales: {
@@ -540,21 +485,7 @@ export const useChartOptions = ({
         display: false,
       },
       tooltip: {
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          size: 13,
-          weight: 500,
-        },
-        displayColors: false,
+        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
         callbacks: {
           label: function(context: any) {
             const label = context.label || '';
@@ -564,6 +495,7 @@ export const useChartOptions = ({
             return `${label}: ${value} (${formatNumberRef.current(percentage, 1)}%)`;
           },
         },
+        }),
       },
     },
   }), [chartColors, isDark, windowSize.isMobile, windowSize.isTablet, optimizedAnimation]);
@@ -630,23 +562,7 @@ export const useChartOptions = ({
           display: false,
         },
         tooltip: {
-          mode: 'index' as const,
-          intersect: false,
-          backgroundColor: chartColors.tooltipBg,
-          titleColor: chartColors.tooltipTitle,
-          bodyColor: chartColors.tooltipBody,
-          borderColor: chartColors.tooltipBorder,
-          borderWidth: 1,
-          padding: 16,
-          titleFont: {
-            size: 14,
-            weight: 600,
-          },
-          bodyFont: {
-            size: 13,
-            weight: 500,
-          },
-          displayColors: true,
+          ...buildChartTooltipPlugin(chartColors, 'lineMultiSeries', undefined, {
           callbacks: {
             title: function(context: any) {
               const rawData = evolutionDataRef.current?.rawData;
@@ -689,6 +605,7 @@ export const useChartOptions = ({
               return `${datasetLabel}: ${fn(value, 2)}% ${totalStrategies > 0 ? `(${respected}/${totalStrategies})` : ''} ${periodLabel}`;
             },
           },
+          }),
         },
       },
       scales: {
@@ -783,23 +700,7 @@ export const useChartOptions = ({
         clamp: true,
       },
       tooltip: {
-        mode: 'index' as const,
-        intersect: false,
-        backgroundColor: chartColors.tooltipBg,
-        titleColor: chartColors.tooltipTitle,
-        bodyColor: chartColors.tooltipBody,
-        borderColor: chartColors.tooltipBorder,
-        borderWidth: 1,
-        padding: 16,
-        titleFont: {
-          size: 14,
-          weight: 600,
-        },
-        bodyFont: {
-          size: 13,
-          weight: 500,
-        },
-        displayColors: true,
+        ...buildChartTooltipPlugin(chartColors, 'lineMultiSeries', undefined, {
         callbacks: {
           label: function(context: any) {
             const value = context.parsed.y || 0;
@@ -850,6 +751,7 @@ export const useChartOptions = ({
             });
           },
         },
+        }),
       },
     },
     scales: {

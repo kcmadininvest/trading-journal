@@ -14,7 +14,7 @@ import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
-import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 // Enregistrer les composants nécessaires pour le graphique mixte
 ChartJS.register(
@@ -170,22 +170,8 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
                 },
               },
               tooltip: {
-                backgroundColor: chartColors.tooltipBg,
-                titleColor: chartColors.tooltipTitle,
-                bodyColor: chartColors.tooltipBody,
-                borderColor: chartColors.tooltipBorder,
-                borderWidth: 1,
+                ...buildChartTooltipPlugin(chartColors, 'lineMultiSeries', undefined, {
                 padding: 12,
-                titleFont: {
-                  family: CHART_FONT_FAMILY,
-                  size: 13,
-                  weight: 600,
-                },
-                bodyFont: {
-                  family: CHART_FONT_FAMILY,
-                  size: 12,
-                  weight: 500,
-                },
                 callbacks: {
                   label: (context: any) => {
                     const value = context.parsed.y;
@@ -196,6 +182,7 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
                     return `${datasetLabel}: ${value}`;
                   },
                 },
+                }),
               },
             },
             scales: {
