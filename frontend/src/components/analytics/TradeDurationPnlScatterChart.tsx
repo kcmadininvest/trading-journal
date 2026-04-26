@@ -3,6 +3,7 @@ import { Scatter as ChartScatter } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface TradeDurationPnlScatterChartProps {
   data: Array<{
@@ -54,6 +55,12 @@ export const TradeDurationPnlScatterChart: React.FC<TradeDurationPnlScatterChart
         borderColor: chartColors.tooltipBorder,
         borderWidth: 1,
         padding: 14,
+        titleFont: {
+          family: CHART_FONT_FAMILY,
+        },
+        bodyFont: {
+          family: CHART_FONT_FAMILY,
+        },
         displayColors: false,
         callbacks: {
           title: (items: any) => {
@@ -78,6 +85,7 @@ export const TradeDurationPnlScatterChart: React.FC<TradeDurationPnlScatterChart
         max: maxDuration * 1.05,
         ticks: {
           color: chartColors.textSecondary,
+          font: { family: CHART_FONT_FAMILY, size: 11 },
           callback: (value: any) => formatDuration(Number(value)),
         },
         grid: {
@@ -87,12 +95,13 @@ export const TradeDurationPnlScatterChart: React.FC<TradeDurationPnlScatterChart
           display: true,
           text: t('analytics:charts.durationVsPnl.xAxis'),
           color: chartColors.text,
-          font: { size: 13, weight: 600 },
+          font: { family: CHART_FONT_FAMILY, size: 13, weight: 600 },
         },
       },
       y: {
         ticks: {
           color: chartColors.textSecondary,
+          font: { family: CHART_FONT_FAMILY, size: 11 },
           callback: (value: any) => formatCurrency(Number(value), currencySymbol),
         },
         grid: {
@@ -102,7 +111,7 @@ export const TradeDurationPnlScatterChart: React.FC<TradeDurationPnlScatterChart
           display: true,
           text: t('analytics:charts.durationVsPnl.yAxis'),
           color: chartColors.text,
-          font: { size: 13, weight: 600 },
+          font: { family: CHART_FONT_FAMILY, size: 13, weight: 600 },
         },
       },
     },

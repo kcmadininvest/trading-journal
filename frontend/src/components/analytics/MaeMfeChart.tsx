@@ -5,6 +5,7 @@ import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
 import { usePreferences } from '../../hooks/usePreferences';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface MaeMfeDataPoint {
   tradeId: number;
@@ -95,6 +96,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         labels: {
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
             weight: 500,
           },
@@ -110,10 +112,12 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         borderWidth: 1,
         padding: 16,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 14,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 500,
         },
@@ -145,6 +149,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
           text: t('analytics:charts.maeMfe.xAxis', { defaultValue: 'MAE - Maximum Adverse Excursion' }),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },
@@ -152,6 +157,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
           callback: function(value: any) {
@@ -174,6 +180,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
           text: t('analytics:charts.maeMfe.yAxis', { defaultValue: 'MFE - Maximum Favorable Excursion' }),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },
@@ -181,6 +188,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
           callback: function(value: any) {

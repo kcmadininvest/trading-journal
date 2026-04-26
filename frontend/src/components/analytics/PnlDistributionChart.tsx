@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface PnlDistributionChartProps {
   data: {
@@ -49,6 +50,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
           return isDark ? '#f3f4f6' : '#ffffff';
         },
         font: {
+          family: CHART_FONT_FAMILY,
           weight: 700,
           size: windowWidth < 640 ? 11 : 13,
         },
@@ -79,10 +81,12 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
         borderWidth: 1,
         padding: 16,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 14,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 500,
         },
@@ -118,6 +122,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
           minRotation: 45,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
           },
           autoSkip: true,
@@ -135,6 +140,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
           },
           callback: function(value: any) {
@@ -154,6 +160,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
           text: t('analytics:charts.pnlDistribution.yAxis'),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },

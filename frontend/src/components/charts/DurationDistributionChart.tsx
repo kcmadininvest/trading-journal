@@ -11,6 +11,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar } from 'react-chartjs-2';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 // Register Chart.js components
 ChartJS.register(
@@ -128,6 +129,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
           usePointStyle: true,
           padding: 12,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12
           },
           color: chartThemeColors.text,
@@ -143,6 +145,12 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         borderWidth: 1,
         padding: 12,
         displayColors: true,
+        titleFont: {
+          family: CHART_FONT_FAMILY,
+        },
+        bodyFont: {
+          family: CHART_FONT_FAMILY,
+        },
       },
       datalabels: {
         display: true,
@@ -153,6 +161,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
           return datasetIndex === 0 ? '#ffffff' : (isDark ? '#f3f4f6' : '#1f2937');
         },
         font: {
+          family: CHART_FONT_FAMILY,
           weight: 600 as const,
           size: 13,
         },
@@ -172,6 +181,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
           minRotation: 0,
           color: chartThemeColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11
           },
         },
@@ -192,6 +202,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
           precision: 0,
           color: chartThemeColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11
           },
         },

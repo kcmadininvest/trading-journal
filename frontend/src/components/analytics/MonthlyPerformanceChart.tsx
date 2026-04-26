@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface MonthlyPerformanceChartProps {
   data: {
@@ -98,10 +99,12 @@ export const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = (
                 borderWidth: 1,
                 padding: 12,
                 titleFont: {
+                  family: CHART_FONT_FAMILY,
                   size: 13,
                   weight: 600,
                 },
                 bodyFont: {
+                  family: CHART_FONT_FAMILY,
                   size: 12,
                   weight: 500,
                 },
@@ -123,6 +126,7 @@ export const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = (
                 ticks: {
                   color: chartColors.textSecondary,
                   font: {
+                    family: CHART_FONT_FAMILY,
                     size: 11,
                   },
                   maxRotation: 45,
@@ -139,6 +143,7 @@ export const MonthlyPerformanceChart: React.FC<MonthlyPerformanceChartProps> = (
                 ticks: {
                   color: chartColors.textSecondary,
                   font: {
+                    family: CHART_FONT_FAMILY,
                     size: 11,
                   },
                   callback: function(value) {

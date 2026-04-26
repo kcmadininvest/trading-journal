@@ -14,6 +14,7 @@ import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 // Enregistrer les composants nécessaires pour le graphique mixte
 ChartJS.register(
@@ -161,6 +162,7 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
                 labels: {
                   color: chartColors.textSecondary,
                   font: {
+                    family: CHART_FONT_FAMILY,
                     size: 11,
                   },
                   usePointStyle: true,
@@ -175,10 +177,12 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
                 borderWidth: 1,
                 padding: 12,
                 titleFont: {
+                  family: CHART_FONT_FAMILY,
                   size: 13,
                   weight: 600,
                 },
                 bodyFont: {
+                  family: CHART_FONT_FAMILY,
                   size: 12,
                   weight: 500,
                 },
@@ -199,6 +203,7 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
                 ticks: {
                   color: chartColors.textSecondary,
                   font: {
+                    family: CHART_FONT_FAMILY,
                     size: 11,
                   },
                   maxRotation: 45,
@@ -217,6 +222,7 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
                   stepSize: 1,
                   color: chartColors.textSecondary,
                   font: {
+                    family: CHART_FONT_FAMILY,
                     size: 11,
                   },
                   precision: 0,

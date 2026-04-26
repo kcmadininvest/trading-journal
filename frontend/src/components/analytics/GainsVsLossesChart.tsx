@@ -3,6 +3,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface GainsVsLossesChartProps {
   data: {
@@ -41,6 +42,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           return isDark ? '#e5e7eb' : '#1f2937';
         },
         font: {
+          family: CHART_FONT_FAMILY,
           weight: 600,
           size: windowWidth < 640 ? 9 : 11,
         },
@@ -59,10 +61,12 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
         borderWidth: 1,
         padding: 12,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 12,
           weight: 500,
         },
@@ -93,6 +97,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           stepSize: 1,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
         },
@@ -108,6 +113,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           text: t('analytics:charts.gainsVsLosses.count', { defaultValue: 'Nombre de trades' }),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
             weight: 600,
           },
@@ -117,6 +123,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 10,
           },
           maxRotation: 0,
@@ -147,6 +154,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           return isDark ? '#e5e7eb' : '#1f2937';
         },
         font: {
+          family: CHART_FONT_FAMILY,
           weight: 600,
           size: windowWidth < 640 ? 9 : 11,
         },
@@ -165,10 +173,12 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
         borderWidth: 1,
         padding: 12,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 12,
           weight: 500,
         },
@@ -199,6 +209,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           stepSize: 1,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
         },
@@ -214,6 +225,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           text: t('analytics:charts.gainsVsLosses.count', { defaultValue: 'Nombre de trades' }),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
             weight: 600,
           },
@@ -223,6 +235,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 10,
           },
           maxRotation: 0,

@@ -3,6 +3,7 @@ import { Line as ChartLine } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
 import { formatNumber, formatCurrency } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface DrawdownChartProps {
   data: Array<{ date: string; drawdown: number; drawdownAmount: number; drawdownPercent: number; cumulativePnl: number }>;
@@ -94,10 +95,12 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
                   borderWidth: 1,
                   padding: 16,
                   titleFont: {
+                    family: CHART_FONT_FAMILY,
                     size: 14,
                     weight: 600,
                   },
                   bodyFont: {
+                    family: CHART_FONT_FAMILY,
                     size: 13,
                     weight: 500,
                   },
@@ -125,6 +128,7 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
                     minRotation: 45,
                     color: chartColors.textSecondary,
                     font: {
+                      family: CHART_FONT_FAMILY,
                       size: 11,
                     },
                   },
@@ -140,6 +144,7 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
                   ticks: {
                     color: chartColors.textSecondary,
                     font: {
+                      family: CHART_FONT_FAMILY,
                       size: 12,
                     },
                     callback: function(value) {

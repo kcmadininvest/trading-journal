@@ -3,6 +3,7 @@ import { Doughnut as ChartDoughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface TradesDistributionChartProps {
   data: {
@@ -87,6 +88,7 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
                     return '#ffffff';
                   },
                   font: {
+                    family: CHART_FONT_FAMILY,
                     weight: 600,
                     size: 14,
                   },
@@ -106,10 +108,12 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
                   borderWidth: 1,
                   padding: 12,
                   titleFont: {
+                    family: CHART_FONT_FAMILY,
                     size: 13,
                     weight: 600,
                   },
                   bodyFont: {
+                    family: CHART_FONT_FAMILY,
                     size: 12,
                     weight: 500,
                   },

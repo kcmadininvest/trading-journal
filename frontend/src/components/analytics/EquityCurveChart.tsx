@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface EquityCurveChartProps {
   data: any;
@@ -56,10 +57,12 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
         borderWidth: 1,
         padding: 12,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 12,
           weight: 500,
         },
@@ -117,6 +120,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
           maxRotation: 45,
@@ -138,6 +142,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
           callback: function(value: number | string) {

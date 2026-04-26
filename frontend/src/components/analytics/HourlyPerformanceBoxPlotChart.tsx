@@ -4,6 +4,7 @@ import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot
 import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 ChartJS.register(BoxPlotController, BoxAndWiskers);
 
@@ -119,10 +120,12 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         borderWidth: 1,
         padding: 16,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 14,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 500,
         },
@@ -155,6 +158,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
           minRotation: 45,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
         },
@@ -169,6 +173,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
           text: t('analytics:charts.hourlyPerformanceBoxPlot.xAxis'),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },
@@ -178,6 +183,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
           },
           callback: function(value: any) {
@@ -198,6 +204,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
           text: t('analytics:charts.hourlyPerformanceBoxPlot.yAxis'),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },

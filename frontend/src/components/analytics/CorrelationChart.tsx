@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface CorrelationChartProps {
   data: {
@@ -43,6 +44,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         labels: {
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
           },
           usePointStyle: true,
@@ -60,10 +62,12 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         borderWidth: 1,
         padding: 16,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 14,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 500,
         },
@@ -93,6 +97,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
           stepSize: 0.5,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
           },
           callback: function(value: any) {
@@ -122,6 +127,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
           text: t('analytics:charts.correlation.xAxis'),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },
@@ -131,6 +137,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
           },
           callback: function(value: any) {
@@ -151,6 +158,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
           text: t('analytics:charts.correlation.yAxis'),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },

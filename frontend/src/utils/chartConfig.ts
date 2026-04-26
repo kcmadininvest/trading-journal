@@ -1,5 +1,8 @@
 import { ChartOptions } from 'chart.js';
 
+/** Même pile que `Chart.defaults.font` dans `index.tsx`. Obligatoire pour datalabels et tout `font` partiel (sinon fallback Helvetica interne de `helpers.toFont`). */
+export const CHART_FONT_FAMILY = 'Inter, ui-sans-serif, system-ui, sans-serif';
+
 interface ChartColors {
   text: string;
   textSecondary: string;
@@ -59,6 +62,7 @@ export const createBaseChartOptions = ({
         usePointStyle: true,
         padding: isMobile ? 12 : 20,
         font: {
+          family: CHART_FONT_FAMILY,
           size: isMobile ? 10 : 12,
         },
         color: chartColors.textSecondary,
@@ -68,6 +72,7 @@ export const createBaseChartOptions = ({
       display: showDataLabels,
       color: '#ffffff',
       font: {
+        family: CHART_FONT_FAMILY,
         weight: 600,
         size: isMobile ? 10 : 13,
       },
@@ -80,10 +85,12 @@ export const createBaseChartOptions = ({
       borderWidth: 1,
       padding: 16,
       titleFont: {
+        family: CHART_FONT_FAMILY,
         size: 14,
         weight: 600,
       },
       bodyFont: {
+        family: CHART_FONT_FAMILY,
         size: 13,
         weight: 500,
       },
@@ -100,6 +107,7 @@ export const createBaseChartOptions = ({
       ticks: {
         color: chartColors.textSecondary,
         font: {
+          family: CHART_FONT_FAMILY,
           size: isMobile ? 10 : 12,
         },
       },
@@ -116,6 +124,7 @@ export const createBaseChartOptions = ({
         text: yAxisLabel,
         color: chartColors.text,
         font: {
+          family: CHART_FONT_FAMILY,
           size: isMobile ? 11 : 13,
           weight: 600,
         },
@@ -128,6 +137,7 @@ export const createBaseChartOptions = ({
       ticks: {
         color: chartColors.textSecondary,
         font: {
+          family: CHART_FONT_FAMILY,
           size: isMobile ? 10 : 12,
         },
       },
@@ -201,6 +211,7 @@ export const createBarChartOptions = (
           usePointStyle: true,
           padding: windowSize.isMobile ? 12 : 20,
           font: {
+            family: CHART_FONT_FAMILY,
             size: windowSize.isMobile ? 10 : 12,
           },
           color: chartColors.textSecondary,
@@ -214,10 +225,12 @@ export const createBarChartOptions = (
         borderWidth: 1,
         padding: 16,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 14,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 500,
         },
@@ -235,6 +248,7 @@ export const createBarChartOptions = (
           callback: showPercentage ? (value: any) => value + '%' : undefined,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: windowSize.isMobile ? 10 : 12,
           },
         },
@@ -252,6 +266,7 @@ export const createBarChartOptions = (
             text: yAxisTitle,
             color: chartColors.text,
             font: {
+              family: CHART_FONT_FAMILY,
               size: windowSize.isMobile ? 11 : 13,
               weight: 600,
             },
@@ -263,6 +278,7 @@ export const createBarChartOptions = (
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: windowSize.isMobile ? 10 : 12,
           },
         },
@@ -307,6 +323,7 @@ export const createLineChartOptions = (
           usePointStyle: true,
           padding: windowSize.isMobile ? 12 : 20,
           font: {
+            family: CHART_FONT_FAMILY,
             size: windowSize.isMobile ? 10 : 12,
           },
           color: chartColors.textSecondary,
@@ -320,10 +337,12 @@ export const createLineChartOptions = (
         borderWidth: 1,
         padding: 16,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 14,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 500,
         },
@@ -338,6 +357,7 @@ export const createLineChartOptions = (
           callback: showPercentage ? (value: any) => value + '%' : undefined,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: windowSize.isMobile ? 10 : 12,
           },
         },
@@ -355,6 +375,7 @@ export const createLineChartOptions = (
             text: yAxisTitle,
             color: chartColors.text,
             font: {
+              family: CHART_FONT_FAMILY,
               size: windowSize.isMobile ? 11 : 13,
               weight: 600,
             },
@@ -365,6 +386,7 @@ export const createLineChartOptions = (
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: windowSize.isMobile ? 10 : 12,
           },
           ...(xAxisRotation > 0 && {

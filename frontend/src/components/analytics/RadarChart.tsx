@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatNumber } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface RadarChartProps {
   data: any;
@@ -294,10 +295,12 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                     borderWidth: 1,
                     padding: 14,
                     titleFont: {
+                      family: CHART_FONT_FAMILY,
                       size: 14,
                       weight: 600,
                     },
                     bodyFont: {
+                      family: CHART_FONT_FAMILY,
                       size: 13,
                       weight: 500,
                     },
@@ -330,6 +333,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                       stepSize: 25,
                       color: chartColors.textSecondary,
                       font: {
+                        family: CHART_FONT_FAMILY,
                         size: 8,
                         weight: 500,
                       },
@@ -347,6 +351,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
                       display: true,
                       color: isDark ? '#e5e7eb' : '#1f2937',
                       font: {
+                        family: CHART_FONT_FAMILY,
                         size: 14,
                         weight: 400,
                       },

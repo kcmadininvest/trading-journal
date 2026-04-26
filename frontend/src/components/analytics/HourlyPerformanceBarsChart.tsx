@@ -3,6 +3,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { formatCurrency } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface HourlyPerformanceBarsChartProps {
   data: { hour: string; hourNum: number; pnl: number }[];
@@ -39,6 +40,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
           return isDark ? '#f3f4f6' : '#ffffff';
         },
         font: {
+          family: CHART_FONT_FAMILY,
           weight: 700,
           size: windowWidth < 640 ? 11 : 13,
         },
@@ -70,10 +72,12 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
         borderWidth: 1,
         padding: 16,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 14,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 500,
         },
@@ -98,6 +102,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
           minRotation: 45,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
           autoSkip: false,
@@ -113,6 +118,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
           },
           callback: function(value: any) {
@@ -133,6 +139,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
           text: t('analytics:charts.hourlyPerformanceBars.yAxis'),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Scatter as ChartScatter } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY } from '../../utils/chartConfig';
 
 interface HourlyPerformanceScatterChartProps {
   data: {
@@ -40,10 +41,12 @@ export const HourlyPerformanceScatterChart: React.FC<HourlyPerformanceScatterCha
         borderWidth: 1,
         padding: 16,
         titleFont: {
+          family: CHART_FONT_FAMILY,
           size: 14,
           weight: 600,
         },
         bodyFont: {
+          family: CHART_FONT_FAMILY,
           size: 13,
           weight: 500,
         },
@@ -79,6 +82,7 @@ export const HourlyPerformanceScatterChart: React.FC<HourlyPerformanceScatterCha
           stepSize: 0.5,
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 11,
           },
           callback: function(value: any, index: number, ticks: any) {
@@ -130,6 +134,7 @@ export const HourlyPerformanceScatterChart: React.FC<HourlyPerformanceScatterCha
           text: t('analytics:charts.hourlyPerformanceScatter.xAxis'),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },
@@ -139,6 +144,7 @@ export const HourlyPerformanceScatterChart: React.FC<HourlyPerformanceScatterCha
         ticks: {
           color: chartColors.textSecondary,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 12,
           },
           callback: function(value: any) {
@@ -159,6 +165,7 @@ export const HourlyPerformanceScatterChart: React.FC<HourlyPerformanceScatterCha
           text: t('analytics:charts.hourlyPerformanceScatter.yAxis'),
           color: chartColors.text,
           font: {
+            family: CHART_FONT_FAMILY,
             size: 13,
             weight: 600,
           },
