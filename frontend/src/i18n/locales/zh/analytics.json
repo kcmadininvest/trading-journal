@@ -70,7 +70,8 @@
       "yAxis": "MFE - 最大有利偏移",
       "winningTrades": "盈利交易",
       "losingTrades": "亏损交易",
-      "noData": "此期间没有MAE/MFE数据"
+      "noData": "此期间没有MAE/MFE数据",
+      "densityHint": "交易数量较多时，标记会更小、更透明，以便突出密集区域。"
     }
   },
   "common": {

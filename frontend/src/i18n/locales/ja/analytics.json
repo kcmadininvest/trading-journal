@@ -46,7 +46,8 @@
       "yAxis": "MFE - 最大有利エクスカーション",
       "winningTrades": "勝ちトレード",
       "losingTrades": "負けトレード",
-      "noData": "この期間のMAE/MFEデータはありません"
+      "noData": "この期間のMAE/MFEデータはありません",
+      "densityHint": "トレード数が多い場合はマーカーを小さく薄く表示し、密集している領域が分かりやすくなります。"
     },
     "correlation": {
       "title": "Corrélation PnL vs Nombre de Trades",

@@ -126,7 +126,8 @@
       "yAxis": "MFE - Maximum Favorable Excursion",
       "winningTrades": "Trades gagnants",
       "losingTrades": "Trades perdants",
-      "noData": "Aucune donnée MAE/MFE disponible pour cette période"
+      "noData": "Aucune donnée MAE/MFE disponible pour cette période",
+      "densityHint": "Les marqueurs rétrécissent et deviennent plus transparents lorsqu'il y a beaucoup de trades, ce qui fait ressortir les zones denses."
     },
     "monthlyPerformance": {
       "title": "Performance Mensuelle/Annuelle",

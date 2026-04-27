@@ -92,7 +92,8 @@
       "yAxis": "MFE - Massima Escursione Favorevole",
       "winningTrades": "Operazioni vincenti",
       "losingTrades": "Operazioni perdenti",
-      "noData": "Nessun dato MAE/MFE disponibile per questo periodo"
+      "noData": "Nessun dato MAE/MFE disponibile per questo periodo",
+      "densityHint": "Con molte operazioni, i punti diventano più piccoli e trasparenti così le zone dense risaltano."
     },
     "monthlyPerformance": {
       "title": "Prestazione Mensile/Annuale",

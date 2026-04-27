@@ -46,7 +46,8 @@
       "yAxis": "MFE - 최대 유리 익스커션",
       "winningTrades": "수익 거래",
       "losingTrades": "손실 거래",
-      "noData": "이 기간에 대한 MAE/MFE 데이터가 없습니다"
+      "noData": "이 기간에 대한 MAE/MFE 데이터가 없습니다",
+      "densityHint": "거래가 많을 때는 마커를 더 작고 투명하게 표시해 밀집 구간이 잘 보이도록 합니다."
     },
     "correlation": {
       "title": "Corrélation PnL vs Nombre de Trades",

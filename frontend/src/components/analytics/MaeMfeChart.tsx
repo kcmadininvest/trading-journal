@@ -26,6 +26,28 @@ interface MaeMfeChartProps {
   tradesCount: number;
 }
 
+/** Ajuste taille, transparence et bordures selon le nombre de points (nuage lisible). */
+function getMaeMfeScatterStyle(pointCount: number) {
+  const t = Math.min(1, Math.max(0, (pointCount - 25) / 375));
+  const pointRadius = Math.max(2, Math.round(6 - 3.5 * t));
+  const pointHoverRadius = Math.max(7, pointRadius + 4);
+  const borderWidth = pointCount > 220 ? 0 : pointCount > 90 ? 1 : 2;
+  const fillA = Number((0.58 - 0.33 * t).toFixed(2));
+  const strokeA = Number((0.92 - 0.35 * t).toFixed(2));
+  const hitRadius = pointRadius <= 3 ? 20 : pointRadius <= 4 ? 16 : 12;
+  return {
+    pointRadius,
+    pointHoverRadius,
+    borderWidth,
+    hitRadius,
+    winningFill: `rgba(59, 130, 246, ${fillA})`,
+    winningStroke: `rgba(59, 130, 246, ${strokeA})`,
+    losingFill: `rgba(236, 72, 153, ${fillA})`,
+    losingStroke: `rgba(236, 72, 153, ${strokeA})`,
+    showDensityHint: pointCount >= 70,
+  };
+}
+
 export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
   data,
   currencySymbol,
@@ -44,6 +66,8 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
     return { winningTrades: winning, losingTrades: losing };
   }, [data]);
 
+  const scatterStyle = useMemo(() => getMaeMfeScatterStyle(data.length), [data.length]);
+
   const chartData = useMemo(() => ({
     datasets: [
       {
@@ -57,11 +81,11 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
           pnl: d.pnl,
           tradeDay: d.tradeDay,
         })),
-        backgroundColor: 'rgba(59, 130, 246, 0.6)',
-        borderColor: 'rgba(59, 130, 246, 1)',
-        borderWidth: 2,
-        pointRadius: 6,
-        pointHoverRadius: 8,
+        backgroundColor: scatterStyle.winningFill,
+        borderColor: scatterStyle.winningStroke,
+        borderWidth: scatterStyle.borderWidth,
+        pointRadius: scatterStyle.pointRadius,
+        pointHoverRadius: scatterStyle.pointHoverRadius,
       },
       {
         label: t('analytics:charts.maeMfe.losingTrades', { defaultValue: 'Trades perdants' }),
@@ -74,18 +98,27 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
           pnl: d.pnl,
           tradeDay: d.tradeDay,
         })),
-        backgroundColor: 'rgba(236, 72, 153, 0.6)',
-        borderColor: 'rgba(236, 72, 153, 1)',
-        borderWidth: 2,
-        pointRadius: 6,
-        pointHoverRadius: 8,
+        backgroundColor: scatterStyle.losingFill,
+        borderColor: scatterStyle.losingStroke,
+        borderWidth: scatterStyle.borderWidth,
+        pointRadius: scatterStyle.pointRadius,
+        pointHoverRadius: scatterStyle.pointHoverRadius,
       },
     ],
-  }), [winningTrades, losingTrades, t]);
+  }), [winningTrades, losingTrades, scatterStyle, t]);
 
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'nearest' as const,
+      intersect: false,
+    },
+    elements: {
+      point: {
+        hitRadius: scatterStyle.hitRadius,
+      },
+    },
     plugins: {
       datalabels: {
         display: false,
@@ -189,7 +222,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         },
       },
     },
-  }), [chartColors, currencySymbol, dateFormat, timezone, t]);
+  }), [chartColors, currencySymbol, dateFormat, scatterStyle.hitRadius, timezone, t]);
 
   return (
     <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px] flex flex-col">
@@ -211,6 +244,15 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
+
+      {scatterStyle.showDensityHint && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 -mt-2 leading-snug">
+          {t('analytics:charts.maeMfe.densityHint', {
+            defaultValue:
+              'Les marqueurs rétrécissent et deviennent plus transparents lorsqu\'il y a beaucoup de trades, ce qui fait ressortir les zones denses.',
+          })}
+        </p>
+      )}
 
       <div className="relative flex-1 min-h-[320px]">
         {data.length === 0 ? (
