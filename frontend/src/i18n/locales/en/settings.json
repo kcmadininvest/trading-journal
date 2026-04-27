@@ -12,6 +12,8 @@
   "email": "Email",
   "username": "Username",
   "saveChanges": "Save Changes",
+  "saveAllChanges": "Save all",
+  "allChangesSaved": "Profile and preferences saved.",
   "changePassword": "Change Password",
   "oldPassword": "Old Password",
   "newPassword": "New Password",

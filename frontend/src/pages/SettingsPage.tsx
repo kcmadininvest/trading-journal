@@ -4,6 +4,7 @@ import authService from '../services/auth';
 import { changeLanguage } from '../i18n/config';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../hooks/useTheme';
+import { usePreferences } from '../hooks/usePreferences';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { GroupedSelect } from '../components/common/GroupedSelect';
 import PaginationControls from '../components/ui/PaginationControls';
@@ -13,7 +14,6 @@ import { SettingsLayout } from '../components/settings/SettingsLayout';
 import { SettingsSidebar } from '../components/settings/SettingsSidebar';
 import { SettingsSection } from '../components/settings/SettingsSection';
 import { SettingsInput } from '../components/settings/SettingsInput';
-import { UnsavedChangesBar } from '../components/settings/UnsavedChangesBar';
 import { PasswordStrengthMeter } from '../components/settings/PasswordStrengthMeter';
 import { SessionCard } from '../components/settings/SessionCard';
 import { DangerZoneCard } from '../components/settings/DangerZoneCard';
@@ -136,14 +136,24 @@ const TIMEZONE_GROUPS = [
   },
 ];
 
+type SettingsInitialSnapshot = {
+  profile: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    username: string;
+  };
+  preferences: UserPreferences;
+};
+
 const SettingsPage: React.FC = () => {
   const { t } = useI18nTranslation();
-  const { theme, setTheme } = useTheme();
+  const { theme } = useTheme();
+  const { mergePreferences } = usePreferences();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'trading' | 'display' | 'data'>('profile');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [initialData, setInitialData] = useState<any>(null);
+  const [initialData, setInitialData] = useState<SettingsInitialSnapshot | null>(null);
 
   // Profil
   const [profile, setProfile] = useState({
@@ -216,15 +226,30 @@ const SettingsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Détecter les changements non sauvegardés
-  useEffect(() => {
-    if (!initialData) return;
-    
-    const profileChanged = JSON.stringify(profile) !== JSON.stringify(initialData.profile);
-    const preferencesChanged = JSON.stringify(preferences) !== JSON.stringify(initialData.preferences);
-    
-    setHasUnsavedChanges(profileChanged || preferencesChanged);
+  const { profileDirty, prefsDirty, hasUnsavedChanges } = useMemo(() => {
+    if (!initialData) {
+      return { profileDirty: false, prefsDirty: false, hasUnsavedChanges: false };
+    }
+    const profileDirty =
+      JSON.stringify(profile) !== JSON.stringify(initialData.profile);
+    const prefsDirty =
+      JSON.stringify(preferences) !== JSON.stringify(initialData.preferences);
+    return {
+      profileDirty,
+      prefsDirty,
+      hasUnsavedChanges: profileDirty || prefsDirty,
+    };
   }, [profile, preferences, initialData]);
+
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const loadSecurityData = async () => {
     try {
@@ -243,24 +268,77 @@ const SettingsPage: React.FC = () => {
     setMessage({ type, text });
   };
 
+  const applyPreferencesServerResponse = (updatedPreferences: UserPreferences) => {
+    mergePreferences(updatedPreferences);
+    if (updatedPreferences.font_size) {
+      const root = document.documentElement;
+      root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
+      root.classList.add(`font-size-${updatedPreferences.font_size}`);
+      try {
+        localStorage.setItem('font_size', updatedPreferences.font_size);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (updatedPreferences.font_family) {
+      const fontStack = applyAppFontFamily(updatedPreferences.font_family);
+      syncChartFontFamily(fontStack);
+      Chart.defaults.font.family = fontStack;
+      storeAppFontFamily(updatedPreferences.font_family);
+    }
+    if (updatedPreferences.language) {
+      changeLanguage(updatedPreferences.language);
+    }
+    window.dispatchEvent(new CustomEvent('preferences:updated'));
+  };
+
+  const persistProfile = async (options?: { quietSuccess?: boolean }): Promise<boolean> => {
+    try {
+      const result = await userService.updateCurrentUserProfile(profile);
+      if (!options?.quietSuccess) {
+        showMessage('success', t('settings:profileUpdated'));
+      }
+      if (result.user) {
+        authService.updateUser(result.user);
+        window.dispatchEvent(
+          new CustomEvent('user:profile-updated', {
+            detail: { user: result.user },
+          })
+        );
+      }
+      setInitialData((prev: SettingsInitialSnapshot | null) =>
+        prev ? { ...prev, profile: { ...profile } } : null
+      );
+      return true;
+    } catch (error: any) {
+      showMessage('error', error.message || t('settings:errorProfileUpdate'));
+      return false;
+    }
+  };
+
+  const persistPreferences = async (options?: { quietSuccess?: boolean }): Promise<boolean> => {
+    try {
+      const updatedPreferences = await userService.updatePreferences(preferences);
+      if (!options?.quietSuccess) {
+        showMessage('success', t('settings:preferencesUpdated'));
+      }
+      applyPreferencesServerResponse(updatedPreferences);
+      setPreferences(updatedPreferences);
+      setInitialData((prev: SettingsInitialSnapshot | null) =>
+        prev ? { ...prev, preferences: updatedPreferences } : null
+      );
+      return true;
+    } catch (error: any) {
+      showMessage('error', error.message || t('settings:errorPreferencesUpdate'));
+      return false;
+    }
+  };
+
   const handleProfileUpdate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setLoading(true);
     try {
-      const result = await userService.updateCurrentUserProfile(profile);
-      showMessage('success', t('settings:profileUpdated'));
-      
-      if (result.user) {
-        authService.updateUser(result.user);
-        window.dispatchEvent(new CustomEvent('user:profile-updated', { 
-          detail: { user: result.user } 
-        }));
-      }
-      
-      setInitialData({ ...initialData, profile });
-      setHasUnsavedChanges(false);
-    } catch (error: any) {
-      showMessage('error', error.message || t('settings:errorProfileUpdate'));
+      await persistProfile();
     } finally {
       setLoading(false);
     }
@@ -284,52 +362,30 @@ const SettingsPage: React.FC = () => {
     }
   };
 
-  const handlePreferencesUpdate = async () => {
+  const handleSaveChanges = async () => {
+    if (!initialData) return;
+    if (!profileDirty && !prefsDirty) return;
+
+    const bothDirtyAtStart = profileDirty && prefsDirty;
     setLoading(true);
     try {
-      const updatedPreferences = await userService.updatePreferences(preferences);
-      showMessage('success', t('settings:preferencesUpdated'));
-      
-      if (updatedPreferences.theme) {
-        setTheme(updatedPreferences.theme as 'light' | 'dark');
+      let snapshot = initialData;
+      if (profileDirty) {
+        const ok = await persistProfile({ quietSuccess: bothDirtyAtStart });
+        if (!ok) return;
+        snapshot = { ...snapshot, profile: { ...profile } };
       }
-      
-      if (updatedPreferences.font_size) {
-        const root = document.documentElement;
-        root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
-        root.classList.add(`font-size-${updatedPreferences.font_size}`);
-        try {
-          localStorage.setItem('font_size', updatedPreferences.font_size);
-        } catch {}
+      const prefsStillDirty =
+        JSON.stringify(preferences) !== JSON.stringify(snapshot.preferences);
+      if (prefsStillDirty) {
+        const ok = await persistPreferences({ quietSuccess: bothDirtyAtStart });
+        if (!ok) return;
       }
-
-      if (updatedPreferences.font_family) {
-        const fontStack = applyAppFontFamily(updatedPreferences.font_family);
-        syncChartFontFamily(fontStack);
-        Chart.defaults.font.family = fontStack;
-        storeAppFontFamily(updatedPreferences.font_family);
+      if (bothDirtyAtStart) {
+        showMessage('success', t('settings:allChangesSaved'));
       }
-      
-      if (updatedPreferences.language) {
-        changeLanguage(updatedPreferences.language);
-      }
-      
-      setPreferences(updatedPreferences);
-      setInitialData({ ...initialData, preferences: updatedPreferences });
-      setHasUnsavedChanges(false);
-      window.dispatchEvent(new CustomEvent('preferences:updated'));
-    } catch (error: any) {
-      showMessage('error', error.message || t('settings:errorPreferencesUpdate'));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSaveChanges = async () => {
-    if (activeTab === 'profile') {
-      await handleProfileUpdate();
-    } else if (activeTab === 'trading' || activeTab === 'display') {
-      await handlePreferencesUpdate();
     }
   };
 
@@ -337,24 +393,19 @@ const SettingsPage: React.FC = () => {
     if (initialData) {
       setProfile(initialData.profile);
       setPreferences(initialData.preferences);
-      setHasUnsavedChanges(false);
+      mergePreferences({ ...initialData.preferences });
     }
   };
 
-  const handleThemeToggle = async () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
+  /**
+   * Aperçu thème sans API : évite setTheme() du hook (persist + refresh + événement) qui provoquait
+   * plusieurs cycles et un interrupteur visuel instable. mergePreferences met à jour le contexte
+   * global ; useTheme applique la classe `dark` sur le document.
+   */
+  const handleThemeToggle = () => {
+    const newTheme: 'light' | 'dark' = theme === 'dark' ? 'light' : 'dark';
     setPreferences({ ...preferences, theme: newTheme });
-    await setTheme(newTheme);
-    
-    try {
-      await userService.updatePreferences({ ...preferences, theme: newTheme });
-      window.dispatchEvent(new CustomEvent('preferences:updated'));
-    } catch {
-      const previousTheme = theme;
-      setPreferences({ ...preferences, theme: previousTheme });
-      await setTheme(previousTheme);
-      showMessage('error', t('settings:errorThemeSave'));
-    }
+    mergePreferences({ theme: newTheme });
   };
 
   const handleRevokeSession = (jti: string) => {
@@ -451,6 +502,14 @@ const SettingsPage: React.FC = () => {
   const visibleSessions = showAllSessions ? sessions : sessions.slice(0, 3);
   const visibleHistory = showAllHistory ? paginatedHistory : paginatedHistory.slice(0, 3);
 
+  const saveActionLabel = useMemo(
+    () =>
+      profileDirty && prefsDirty
+        ? t('settings:saveAllChanges')
+        : t('settings:saveChanges'),
+    [profileDirty, prefsDirty, t]
+  );
+
   const tabs = [
     {
       id: 'profile' as const,
@@ -510,12 +569,43 @@ const SettingsPage: React.FC = () => {
         />
       }
       header={
-        message && (
-          <SettingsToast
-            type={message.type}
-            message={message.text}
-            onClose={() => setMessage(null)}
-          />
+        (message || hasUnsavedChanges) && (
+          <>
+            {message && (
+              <SettingsToast
+                type={message.type}
+                message={message.text}
+                onClose={() => setMessage(null)}
+              />
+            )}
+            {hasUnsavedChanges && (
+              <div className="flex-shrink-0 border-b border-amber-200/80 bg-amber-50 px-3 py-2.5 dark:border-amber-900/50 dark:bg-amber-950/40 sm:px-4">
+                <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    {t('settings:unsavedChanges')}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDiscardChanges}
+                      disabled={loading}
+                      className="rounded-md px-3 py-1.5 text-sm font-medium text-amber-900/90 hover:bg-amber-100 disabled:opacity-50 dark:text-amber-100 dark:hover:bg-amber-900/40"
+                    >
+                      {t('common:cancel', { defaultValue: 'Annuler' })}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveChanges}
+                      disabled={loading}
+                      className="rounded-md bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-50 dark:bg-amber-600 dark:hover:bg-amber-500"
+                    >
+                      {saveActionLabel}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )
       }
     >
@@ -556,29 +646,31 @@ const SettingsPage: React.FC = () => {
                   }
                 />
               </div>
-              <SettingsInput
-                label={t('settings:email')}
-                type="email"
-                value={profile.email}
-                onChange={(value) => setProfile({ ...profile, email: value })}
-                required
-                icon={
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                }
-              />
-              <SettingsInput
-                label={t('settings:username')}
-                value={profile.username}
-                onChange={(value) => setProfile({ ...profile, username: value })}
-                required
-                icon={
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                  </svg>
-                }
-              />
+              <div className="w-full max-w-3xl space-y-4">
+                <SettingsInput
+                  label={t('settings:email')}
+                  type="email"
+                  value={profile.email}
+                  onChange={(value) => setProfile({ ...profile, email: value })}
+                  required
+                  icon={
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  }
+                />
+                <SettingsInput
+                  label={t('settings:username')}
+                  value={profile.username}
+                  onChange={(value) => setProfile({ ...profile, username: value })}
+                  required
+                  icon={
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                    </svg>
+                  }
+                />
+              </div>
             </form>
           </SettingsSection>
         )}
@@ -608,33 +700,35 @@ const SettingsPage: React.FC = () => {
                     </svg>
                   }
                 />
-                <div>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <div>
+                    <SettingsInput
+                      label={t('settings:newPassword')}
+                      type="password"
+                      value={passwordForm.new_password}
+                      onChange={(value) => setPasswordForm({ ...passwordForm, new_password: value })}
+                      required
+                      icon={
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      }
+                    />
+                    <PasswordStrengthMeter password={passwordForm.new_password} />
+                  </div>
                   <SettingsInput
-                    label={t('settings:newPassword')}
+                    label={t('settings:confirmNewPassword')}
                     type="password"
-                    value={passwordForm.new_password}
-                    onChange={(value) => setPasswordForm({ ...passwordForm, new_password: value })}
+                    value={passwordForm.new_password_confirm}
+                    onChange={(value) => setPasswordForm({ ...passwordForm, new_password_confirm: value })}
                     required
                     icon={
                       <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     }
                   />
-                  <PasswordStrengthMeter password={passwordForm.new_password} />
                 </div>
-                <SettingsInput
-                  label={t('settings:confirmNewPassword')}
-                  type="password"
-                  value={passwordForm.new_password_confirm}
-                  onChange={(value) => setPasswordForm({ ...passwordForm, new_password_confirm: value })}
-                  required
-                  icon={
-                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  }
-                />
                 <button
                   type="submit"
                   disabled={loading}
@@ -852,105 +946,101 @@ const SettingsPage: React.FC = () => {
               </svg>
             }
           >
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('settings:language')}
-                  </label>
-                  <CustomSelect
-                    value={preferences.language}
-                    onChange={(value) => setPreferences({ ...preferences, language: value as 'de' | 'en' | 'fr' | 'es' })}
-                    options={[
-                      { value: 'fr', label: 'Français' },
-                      { value: 'en', label: 'English' },
-                      { value: 'de', label: 'Deutsch' },
-                      { value: 'es', label: 'Español' },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('settings:timezone')}
-                  </label>
-                  <GroupedSelect
-                    value={preferences.timezone}
-                    onChange={(value) => setPreferences({ ...preferences, timezone: value as string })}
-                    groups={TIMEZONE_GROUPS}
-                  />
-                </div>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="min-w-0">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('settings:language')}
+                </label>
+                <CustomSelect
+                  value={preferences.language}
+                  onChange={(value) => setPreferences({ ...preferences, language: value as 'de' | 'en' | 'fr' | 'es' })}
+                  options={[
+                    { value: 'fr', label: 'Français' },
+                    { value: 'en', label: 'English' },
+                    { value: 'de', label: 'Deutsch' },
+                    { value: 'es', label: 'Español' },
+                  ]}
+                />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    {t('settings:theme')}
-                  </label>
-                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        {theme === 'light' ? t('settings:themeLight') : t('settings:themeDark')}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleThemeToggle}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                        theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
+              <div className="min-w-0">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('settings:timezone')}
+                </label>
+                <GroupedSelect
+                  value={preferences.timezone}
+                  onChange={(value) => setPreferences({ ...preferences, timezone: value as string })}
+                  groups={TIMEZONE_GROUPS}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('settings:theme')}
+                </label>
+                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <svg className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span className="truncate text-sm text-gray-700 dark:text-gray-300">
+                      {theme === 'light' ? t('settings:themeLight') : t('settings:themeDark')}
+                    </span>
                   </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('settings:fontSize')}
-                  </label>
-                  <CustomSelect
-                    value={preferences.font_size}
-                    onChange={(value) => setPreferences({ ...preferences, font_size: value as 'small' | 'medium' | 'large' })}
-                    options={[
-                      { value: 'small', label: t('settings:fontSizeSmall') },
-                      { value: 'medium', label: t('settings:fontSizeMedium') },
-                      { value: 'large', label: t('settings:fontSizeLarge') },
-                    ]}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('settings:fontFamily', { defaultValue: 'Police' })}
-                  </label>
-                  <CustomSelect
-                    value={preferences.font_family}
-                    onChange={(value) => setPreferences({ ...preferences, font_family: value as AppFontFamily })}
-                    options={getAppFontOptions().map((font) => ({
-                      value: font.value,
-                      label: t(`settings:fontFamilyOption_${font.value}`, { defaultValue: font.value }),
-                    }))}
-                  />
+                  <button
+                    type="button"
+                    onClick={handleThemeToggle}
+                    className={`relative ml-2 inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                 </div>
               </div>
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              <div className="min-w-0">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('settings:fontSize')}
+                </label>
+                <CustomSelect
+                  value={preferences.font_size}
+                  onChange={(value) => setPreferences({ ...preferences, font_size: value as 'small' | 'medium' | 'large' })}
+                  options={[
+                    { value: 'small', label: t('settings:fontSizeSmall') },
+                    { value: 'medium', label: t('settings:fontSizeMedium') },
+                    { value: 'large', label: t('settings:fontSizeLarge') },
+                  ]}
+                />
+              </div>
+              <div className="min-w-0">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('settings:fontFamily', { defaultValue: 'Police' })}
+                </label>
+                <CustomSelect
+                  value={preferences.font_family}
+                  onChange={(value) => setPreferences({ ...preferences, font_family: value as AppFontFamily })}
+                  options={getAppFontOptions().map((font) => ({
+                    value: font.value,
+                    label: t(`settings:fontFamilyOption_${font.value}`, { defaultValue: font.value }),
+                  }))}
+                />
+              </div>
+              <div className="col-span-full border-t border-gray-200 pt-5 dark:border-gray-700">
+                <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t('settings:showPreMarket')}
                 </label>
-                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <svg className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <div>
-                      <span className="text-sm text-gray-700 dark:text-gray-300 block">
+                    <div className="min-w-0">
+                      <span className="block text-sm text-gray-700 dark:text-gray-300">
                         {t('settings:showPreMarket')}
                       </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
                         {t('settings:showPreMarketDesc')}
                       </span>
                     </div>
@@ -1002,13 +1092,6 @@ const SettingsPage: React.FC = () => {
           </>
         )}
       </div>
-
-      <UnsavedChangesBar
-        hasChanges={hasUnsavedChanges}
-        onSave={handleSaveChanges}
-        onDiscard={handleDiscardChanges}
-        isSaving={loading}
-      />
 
       {/* Modal de confirmation - Déconnecter une session */}
       <DeleteConfirmModal

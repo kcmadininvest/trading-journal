@@ -12,6 +12,8 @@
   "email": "Correo electrónico",
   "username": "Nombre de usuario",
   "saveChanges": "Guardar cambios",
+  "saveAllChanges": "Guardar todo",
+  "allChangesSaved": "Perfil y preferencias guardados.",
   "changePassword": "Cambiar contraseña",
   "oldPassword": "Contraseña actual",
   "newPassword": "Nueva contraseña",
