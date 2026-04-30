@@ -123,9 +123,9 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     // Forcer baseUrl à toujours être en HTTPS
     const rawBaseUrl = process.env.REACT_APP_BASE_URL || 'https://app.kctradingjournal.com';
     const baseUrl = ensureHttps(rawBaseUrl);
-    // URL canonique: conserver ?lang uniquement pour la home
+    // URL canonique: la home canonique doit rester `/`
     const fullUrl = route === '/'
-      ? ensureHttps(`${baseUrl}/?lang=${lang}`)
+      ? ensureHttps(`${baseUrl}/`)
       : ensureHttps(`${baseUrl}${route}`);
     
     // Remplacer les balises meta avec des regex plus robustes
@@ -167,13 +167,13 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     
     const currentHreflangUrl = hreflangUrls[route] || baseUrl;
     
-    // Pour la page d'accueil, pointer vers les variantes linguistiques en query param
+    // Pour la page d'accueil, conserver une canonical unique sur `/`
     if (route === '/') {
       const hreflangReplacements = {
-        fr: `<link rel="alternate" hreflang="fr" href="${baseUrl}/?lang=fr" />`,
-        en: `<link rel="alternate" hreflang="en" href="${baseUrl}/?lang=en" />`,
-        es: `<link rel="alternate" hreflang="es" href="${baseUrl}/?lang=es" />`,
-        de: `<link rel="alternate" hreflang="de" href="${baseUrl}/?lang=de" />`,
+        fr: `<link rel="alternate" hreflang="fr" href="${baseUrl}/" />`,
+        en: `<link rel="alternate" hreflang="en" href="${baseUrl}/" />`,
+        es: `<link rel="alternate" hreflang="es" href="${baseUrl}/" />`,
+        de: `<link rel="alternate" hreflang="de" href="${baseUrl}/" />`,
       };
       
       ['fr', 'en', 'es', 'de'].forEach((l) => {
@@ -182,7 +182,7 @@ async function generatePrerenderedHTML(route, lang, query = '') {
       });
 
       const xDefaultRegex = /<link\s+rel=["']alternate["']\s+hreflang=["']x-default["']\s+href=["'][^"']*["']\s*\/?>/i;
-      html = html.replace(xDefaultRegex, `<link rel="alternate" hreflang="x-default" href="${baseUrl}/?lang=fr" />`);
+      html = html.replace(xDefaultRegex, `<link rel="alternate" hreflang="x-default" href="${baseUrl}/" />`);
     }
     
     // Ajouter un commentaire pour indiquer que c'est pré-rendu

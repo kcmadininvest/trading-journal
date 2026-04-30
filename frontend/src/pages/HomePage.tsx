@@ -64,7 +64,7 @@ const HomePage: React.FC = () => {
     setCurrentLanguage(currentLang);
     
     // Nettoyer uniquement les paramètres inutiles en conservant `lang`
-    // pour maintenir des URLs indexables de type `/?lang=xx`.
+    // pour préserver l'UX de changement de langue (non canonique pour le SEO).
     if (window.location.search) {
       const searchParams = new URLSearchParams(window.location.search);
       const langParam = searchParams.get('lang');

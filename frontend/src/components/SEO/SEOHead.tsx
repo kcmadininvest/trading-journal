@@ -35,22 +35,14 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   const baseUrl = ensureHttps(rawBaseUrl);
   
   // Construire l'URL canonique en HTTPS.
-  // On conserve ?lang uniquement pour la home afin d'exposer les variantes linguistiques
-  // explicitement demandées (/?lang=en, /?lang=es, /?lang=de).
+  // La home canonique doit rester la racine `/` pour éviter les doublons `/?lang=xx`.
   const cleanCanonicalUrl = (() => {
     try {
       const urlObj = new URL(ensureHttps(url));
       const isHomePage = urlObj.pathname === '/' || urlObj.pathname === '';
-      const langParam = urlObj.searchParams.get('lang');
-      const isSupportedLang = !!langParam && ['fr', 'en', 'es', 'de'].includes(langParam);
 
       if (isHomePage) {
-        const canonicalLang = isSupportedLang ? langParam : currentLang;
-        if (canonicalLang && ['fr', 'en', 'es', 'de'].includes(canonicalLang)) {
-          urlObj.search = `?lang=${canonicalLang}`;
-        } else {
-          urlObj.search = '';
-        }
+        urlObj.search = '';
       } else {
         urlObj.search = '';
       }
@@ -123,8 +115,17 @@ const SEOHead: React.FC<SEOHeadProps> = ({
       updateMetaTag('keywords', keywords);
     }
 
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+
     // Robots
-    updateMetaTag('robots', noindex ? 'noindex, nofollow' : 'index, follow');
+    // Les URLs home avec `?lang=` sont des variantes non canoniques de `/`.
+    const isHomePage = currentPath === '/' || currentPath === '' || currentPath === '/#';
+    const hasHomeLangQuery = (() => {
+      if (typeof window === 'undefined') return false;
+      const langParam = new URLSearchParams(window.location.search).get('lang');
+      return isHomePage && !!langParam && ['fr', 'en', 'es', 'de'].includes(langParam);
+    })();
+    updateMetaTag('robots', noindex || hasHomeLangQuery ? 'noindex, follow' : 'index, follow');
     
     // Content-Language pour indiquer la langue du contenu
     updateMetaTag('content-language', currentLang);
@@ -178,14 +179,12 @@ const SEOHead: React.FC<SEOHeadProps> = ({
 
     // Hreflang tags - Générer les URLs pour chaque langue selon la page actuelle
     const languages = ['fr', 'en', 'es', 'de'];
-    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
     
     // URLs selon la page et la langue
     const getUrlForLanguage = (lang: string): string => {
-      // Page d'accueil - exposer explicitement chaque variante linguistique
-      // pour que Google puisse associer correctement les alternates hreflang.
+      // Page d'accueil: canonical unique sur `/`, pas d'alternates query-string.
       if (currentPath === '/' || currentPath === '' || currentPath === '/#') {
-        return `${baseUrl}/?lang=${lang}`;
+        return `${baseUrl}/`;
       }
       
       // Page À Propos
@@ -220,13 +219,16 @@ const SEOHead: React.FC<SEOHeadProps> = ({
     const existingHreflangs = document.querySelectorAll('link[rel="alternate"][hreflang]');
     existingHreflangs.forEach((link) => link.remove());
     
-    languages.forEach((lang) => {
-      const langUrl = getUrlForLanguage(lang);
-      updateLinkTag('alternate', langUrl, lang);
-    });
-    
-    // x-default pointe vers la version par défaut (français)
-    updateLinkTag('alternate', `${baseUrl}/?lang=fr`, 'x-default');
+    // Pour la home, conserver uniquement x-default vers `/` pour éviter les conflits canoniques.
+    if (isHomePage) {
+      updateLinkTag('alternate', `${baseUrl}/`, 'x-default');
+    } else {
+      languages.forEach((lang) => {
+        const langUrl = getUrlForLanguage(lang);
+        updateLinkTag('alternate', langUrl, lang);
+      });
+      updateLinkTag('alternate', getUrlForLanguage('fr'), 'x-default');
+    }
 
     // Mettre à jour la langue HTML
     document.documentElement.lang = currentLang;

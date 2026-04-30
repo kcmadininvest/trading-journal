@@ -89,6 +89,7 @@ const FeaturesPage: React.FC = () => {
   const finalLang = currentLang;
   
   const currentUrl = `${baseUrl}${urlMap[finalLang] || urlMap.fr}`;
+  const homeUrl = `/?lang=${finalLang}`;
 
   // Attendre que la langue soit appliquée et que i18n soit synchronisé
   const currentI18nLang = i18nHook.language?.split('-')[0] || 'fr';
@@ -278,7 +279,7 @@ const FeaturesPage: React.FC = () => {
 
           <div className="mt-12 text-center">
             <a
-              href="/"
+              href={homeUrl}
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

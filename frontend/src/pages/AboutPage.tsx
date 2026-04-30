@@ -80,6 +80,7 @@ const AboutPage: React.FC = () => {
   const finalLang = isLangApplied ? currentLang : savedLang;
   
   const currentUrl = `${baseUrl}${urlMap[finalLang] || urlMap.fr}`;
+  const homeUrl = `/?lang=${finalLang}`;
 
   // Traductions SEO selon la langue
   const seoData: Record<string, { title: string; description: string; keywords: string; name: string }> = {
@@ -171,7 +172,7 @@ const AboutPage: React.FC = () => {
           {/* Back Button */}
           <div className="mb-8">
             <a
-              href="/"
+              href={homeUrl}
               className="inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl border border-gray-200"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -360,7 +361,7 @@ const AboutPage: React.FC = () => {
           {/* Call to Action */}
           <div className="text-center">
             <a
-              href="/"
+              href={homeUrl}
               className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl text-lg"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

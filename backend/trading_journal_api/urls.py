@@ -92,6 +92,7 @@ def serve_template_file(request, filename):
         '.ico': 'image/x-icon',
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg',
+        '.txt': 'text/plain; charset=utf-8',
     }
     
     ext = file_path.suffix.lower()
@@ -151,6 +152,7 @@ urlpatterns = [
     
     # Données structurées pour Google (logo, organisation)
     path('organization.json', organization_schema, name='organization_schema'),
+    path('robots.txt', serve_template_file, {'filename': 'robots.txt'}, name='robots_txt'),
     
     # Fichiers statiques depuis templates (favicon, manifest, logos)
     path('favicon.ico', serve_template_file, {'filename': 'favicon.ico'}, name='favicon_ico'),
