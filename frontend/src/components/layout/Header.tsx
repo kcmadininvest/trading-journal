@@ -13,9 +13,18 @@ interface HeaderProps {
   currentPage: string;
   onNavigate: (page: string) => void;
   onLogout: () => void;
+  lockedPremiumPages?: Set<string>;
+  billingStatusLabel?: string | null;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({
+  currentUser,
+  currentPage,
+  onNavigate,
+  onLogout,
+  lockedPremiumPages = new Set(),
+  billingStatusLabel = null,
+}) => {
   const { t, i18n } = useI18nTranslation();
   const { mergePreferences } = usePreferences();
   const { theme, setTheme } = useTheme();
@@ -75,6 +84,10 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
       accounts: t('navigation:accounts'),
       transactions: t('navigation:transactions', { defaultValue: 'Transactions' }),
       goals: t('navigation:goals'),
+      billing: t('navigation:billing', { defaultValue: 'Abonnement' }),
+      'billing-success': t('navigation:billing', { defaultValue: 'Abonnement' }),
+      'billing-cancel': t('navigation:billing', { defaultValue: 'Abonnement' }),
+      'subscription-required': t('navigation:billing', { defaultValue: 'Abonnement' }),
       users: t('navigation:users'),
       settings: t('navigation:settings'),
     };
@@ -116,6 +129,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
             currentUser={currentUser}
             currentPage={currentPage}
             onNavigate={onNavigate}
+            lockedPremiumPages={lockedPremiumPages}
           />
           
           {/* Page title - visible below 2xl (where nav is hidden), hidden on 2xl+ */}
@@ -149,6 +163,11 @@ const Header: React.FC<HeaderProps> = ({ currentUser, currentPage, onNavigate, o
               }`}>
                 {currentUser.is_admin ? t('navigation:admin') : t('navigation:user')}
               </span>
+              {billingStatusLabel && (
+                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-300 flex-shrink-0">
+                  {billingStatusLabel}
+                </span>
+              )}
             </div>
           </div>
 

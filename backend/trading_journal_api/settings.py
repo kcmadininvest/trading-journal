@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'accounts',
     'trades',
     'daily_journal',
+    'billing',
 ]
 
 MIDDLEWARE = [
@@ -532,6 +533,10 @@ if EMAIL_HOST_PASSWORD:
 
 # Frontend URL pour les liens d'activation
 FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:3000')
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+STRIPE_PRICE_PREMIUM_ID = config('STRIPE_PRICE_PREMIUM_ID', default='')
 
 # ============================================================================
 # OPTIMISATIONS BACKEND - PHASE 1 & 2

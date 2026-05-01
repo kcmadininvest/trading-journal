@@ -225,7 +225,6 @@ class UserPreferences(models.Model):
         verbose_name=_('Privacy Overrides par Page'),
         help_text=str(_('Overrides de confidentialité par contexte de page (dashboard, statistics, trades, etc.)'))
     )
-
     # Filtres journal (période globale + stratégie de position par compte), synchronisés avec le frontend
     journal_period = models.JSONField(
         null=True,

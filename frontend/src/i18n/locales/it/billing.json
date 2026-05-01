@@ -1,0 +1,55 @@
+{
+  "title": "Abbonamento Premium",
+  "description": "Gestisci il tuo accesso Premium e il periodo di prova.",
+  "currentStatus": "Stato attuale: {{status}}",
+  "trialDaysLeft_one": "Ti resta {{count}} giorno di prova.",
+  "trialDaysLeft_other": "Ti restano {{count}} giorni di prova.",
+  "banner": {
+    "trialDaysLeft_one": "Prova Premium: {{count}} giorno rimasto.",
+    "trialDaysLeft_other": "Prova Premium: {{count}} giorni rimasti.",
+    "trialEnded": "Il tuo periodo di prova è terminato. Abbonati per continuare ad accedere alle funzionalità Premium.",
+    "active": "Il tuo abbonamento Premium è attivo."
+  },
+  "locked": {
+    "title": "Abbonamento Premium richiesto",
+    "description": "Questa sezione è disponibile solo con una prova attiva o un abbonamento Premium."
+  },
+  "cta": {
+    "subscribe": "Passa a Premium",
+    "subscribeNow": "Abbonati ora",
+    "manage": "Gestisci abbonamento",
+    "refresh": "Aggiorna stato",
+    "backToDashboard": "Torna alla dashboard",
+    "redirecting": "Reindirizzamento...",
+    "loading": "Caricamento...",
+    "unavailable": "Pagamento non disponibile"
+  },
+  "messages": {
+    "trialActive": "La tua prova è attiva. Puoi abbonarti ora per evitare interruzioni.",
+    "trialExpired": "La tua prova è terminata. Abbonati ora per mantenere l'accesso Premium.",
+    "active": "Il tuo abbonamento è attivo. Gestiscilo dal portale di fatturazione.",
+    "inactive": "Non hai un abbonamento attivo. Abbonati per sbloccare le funzionalità Premium."
+  },
+  "status": {
+    "admin_bypass": "Amministratore",
+    "trialing": "Prova in corso",
+    "active": "Premium attivo",
+    "inactive": "Nessun abbonamento",
+    "loading": "Caricamento..."
+  },
+  "header": {
+    "trialBadge_one": "Prova: {{count}}g",
+    "trialBadge_other": "Prova: {{count}}g",
+    "activeBadge": "Premium",
+    "inactiveBadge": "Senza abbonamento"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "Impossibile avviare il pagamento.",
+    "portalFailed": "Impossibile aprire il portale di fatturazione.",
+    "statusUnavailable": "Lo stato dell'abbonamento non è temporaneamente disponibile."
+  }
+}
+

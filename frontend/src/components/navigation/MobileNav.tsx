@@ -179,9 +179,14 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentUser, currentPage, onNavig
                     {visibleItems.map((item) => (
                       <button
                         key={item.id}
-                        onClick={() => handleNavigate(item.id)}
+                        onClick={() => {
+                          if (!item.disabled) handleNavigate(item.id);
+                        }}
+                        disabled={item.disabled}
                         className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                          currentPage === item.id
+                          item.disabled
+                            ? 'text-gray-500 cursor-not-allowed opacity-70'
+                            : currentPage === item.id
                             ? 'bg-blue-600 text-white'
                             : 'text-gray-300 hover:text-white hover:bg-gray-700'
                         }`}
@@ -190,6 +195,11 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentUser, currentPage, onNavig
                           {item.icon}
                         </span>
                         <span className="truncate">{item.label}</span>
+                        {item.badgeText && (
+                          <span className="ml-1 inline-flex items-center rounded-full border border-amber-400/40 bg-amber-500/20 px-2 py-0.5 text-[10px] tracking-wide text-amber-200">
+                            {item.badgeText}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>

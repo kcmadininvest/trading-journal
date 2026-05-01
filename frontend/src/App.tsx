@@ -21,9 +21,12 @@ import FeaturesPage from './pages/FeaturesPage';
 import DailyJournalPage from './pages/DailyJournalPage';
 import CalculatorPage from './pages/CalculatorPage';
 import CalculatorPopup from './pages/CalculatorPopup';
+import BillingPage from './pages/BillingPage';
+import SubscriptionRequiredPage from './pages/SubscriptionRequiredPage';
 import OrganizationSchema from './components/SEO/OrganizationSchema';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
+import { billingService, SubscriptionStatus } from './services/billing';
 import { useTheme } from './hooks/useTheme';
 import { goalsService, TradingGoal } from './services/goals';
 import { tradingAccountsService } from './services/tradingAccounts';
@@ -32,6 +35,23 @@ import { ComplianceRefreshProvider } from './contexts/ComplianceRefreshContext';
 
 // Lazy load StrategiesPage pour améliorer le temps de chargement initial
 const StrategiesPage = lazy(() => import('./pages/StrategiesPage'));
+const PREMIUM_LOCKED_PAGES = new Set([
+  'statistics',
+  'analytics',
+  'goals',
+  'calculator',
+  'strategies',
+  'position-strategies',
+]);
+const ALWAYS_ACCESSIBLE_PAGES = new Set([
+  'accounts',
+  'dashboard',
+  'calendar',
+  'daily-journal',
+  'trades',
+  'transactions',
+  'settings',
+]);
 
 function App() {
   const { t } = useI18nTranslation();
@@ -40,6 +60,9 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const currentPageRef = useRef(currentPage);
   const [showAccountCreationPrompt, setShowAccountCreationPrompt] = useState(false);
+  const [billingStatus, setBillingStatus] = useState<SubscriptionStatus | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
   useTheme();
   const notifiedGoalsRef = useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
   
@@ -107,6 +130,53 @@ function App() {
     };
   }, [currentUser]);
 
+  const refreshBillingStatus = React.useCallback(async () => {
+    if (!currentUser) {
+      setBillingStatus(null);
+      return;
+    }
+    setBillingLoading(true);
+    setBillingError(null);
+    try {
+      const data = await billingService.getSubscriptionStatus();
+      setBillingStatus(data);
+    } catch (error: any) {
+      setBillingError(error?.message || 'billing_error');
+    } finally {
+      setBillingLoading(false);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    refreshBillingStatus();
+  }, [refreshBillingStatus]);
+
+  const hasPremiumAccess = React.useMemo(() => {
+    if (!currentUser) return false;
+    if (currentUser.is_admin) return true;
+    return billingStatus?.access_state === 'trialing' || billingStatus?.access_state === 'active';
+  }, [currentUser, billingStatus]);
+
+  const lockedPremiumPages = React.useMemo(() => {
+    if (!currentUser || hasPremiumAccess) return new Set<string>();
+    return new Set(
+      Array.from(PREMIUM_LOCKED_PAGES).filter((page) => !ALWAYS_ACCESSIBLE_PAGES.has(page))
+    );
+  }, [currentUser, hasPremiumAccess]);
+
+  const billingStatusLabel = React.useMemo(() => {
+    if (!currentUser || !billingStatus || billingStatus.access_state === 'admin_bypass') {
+      return null;
+    }
+    if (billingStatus.access_state === 'trialing') {
+      return t('billing:header.trialBadge', { count: billingStatus.trial_days_left });
+    }
+    if (billingStatus.access_state === 'active') {
+      return t('billing:header.activeBadge');
+    }
+    return t('billing:header.inactiveBadge');
+  }, [currentUser, billingStatus, t]);
+
   // Vérification globale des objectifs récemment atteints (même si pas sur la page Goals)
   useEffect(() => {
     if (!currentUser) return;
@@ -168,12 +238,18 @@ function App() {
 
     // Gérer la navigation par hash
     const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '').trim();
-      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'calculator', 'legal-notice'];
+      const hashRaw = window.location.hash.replace('#', '').trim();
+      const hash = hashRaw.split('?')[0];
+      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'calculator', 'legal-notice', 'billing', 'billing-success', 'billing-cancel', 'subscription-required'];
       const page = currentPageRef.current;
       
       // Si on a un hash valide et qu'il est différent de la page actuelle
       if (hash && validPages.includes(hash) && hash !== page) {
+        if (lockedPremiumPages.has(hash)) {
+          setCurrentPage('subscription-required');
+          window.location.hash = 'subscription-required';
+          return;
+        }
         setCurrentPage(hash);
         return;
       }
@@ -192,11 +268,17 @@ function App() {
     window.addEventListener('hashchange', handleHashChange);
     
     // Initialiser la page selon le hash actuel au premier rendu
-    const currentHash = window.location.hash.replace('#', '').trim();
-    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'calculator', 'legal-notice'];
+    const currentHashRaw = window.location.hash.replace('#', '').trim();
+    const currentHash = currentHashRaw.split('?')[0];
+    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'calculator', 'legal-notice', 'billing', 'billing-success', 'billing-cancel', 'subscription-required'];
     const page = currentPageRef.current;
     
     if (currentHash && validPages.includes(currentHash)) {
+      if (lockedPremiumPages.has(currentHash)) {
+        window.location.hash = 'subscription-required';
+        setCurrentPage('subscription-required');
+        return;
+      }
       // Si le hash est valide et différent de la page actuelle, mettre à jour
       if (currentHash !== page) {
         setCurrentPage(currentHash);
@@ -213,7 +295,7 @@ function App() {
     return () => {
       window.removeEventListener('hashchange', handleHashChange);
     };
-  }, [currentUser]); // Ne pas inclure currentPage pour éviter les boucles
+  }, [currentUser, lockedPremiumPages]); // Ne pas inclure currentPage pour éviter les boucles
 
   // Gérer les événements de changement d'utilisateur - séparé pour éviter les conflits
   useEffect(() => {
@@ -259,6 +341,26 @@ function App() {
   const renderPage = () => {
     // Vérifier si on est sur la page d'activation
     const pathname = window.location.pathname;
+    if (pathname === '/strategy-checklist') {
+      if (!currentUser || lockedPremiumPages.has('strategies')) {
+        return <SubscriptionRequiredPage onBackToDashboard={() => {
+          window.location.hash = 'dashboard';
+          setCurrentPage('dashboard');
+        }} />;
+      }
+      return <StrategyChecklistPopup />;
+    }
+
+    if (pathname === '/calculator-popup') {
+      if (!currentUser || lockedPremiumPages.has('calculator')) {
+        return <SubscriptionRequiredPage onBackToDashboard={() => {
+          window.location.hash = 'dashboard';
+          setCurrentPage('dashboard');
+        }} />;
+      }
+      return <CalculatorPopup />;
+    }
+
     
     const activateMatch = pathname.match(/^\/activate-account\/([^/]+)\/?$/);
     if (activateMatch) {
@@ -294,8 +396,20 @@ function App() {
           case 'daily-journal':
             return <DailyJournalPage />;
           case 'statistics':
+            if (lockedPremiumPages.has('statistics')) {
+              return <SubscriptionRequiredPage onBackToDashboard={() => {
+                window.location.hash = 'dashboard';
+                setCurrentPage('dashboard');
+              }} />;
+            }
             return <StatisticsPage />;
           case 'strategies':
+            if (lockedPremiumPages.has('strategies')) {
+              return <SubscriptionRequiredPage onBackToDashboard={() => {
+                window.location.hash = 'dashboard';
+                setCurrentPage('dashboard');
+              }} />;
+            }
             return (
               <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -304,17 +418,52 @@ function App() {
               </Suspense>
             );
           case 'position-strategies':
+            if (lockedPremiumPages.has('position-strategies')) {
+              return <SubscriptionRequiredPage onBackToDashboard={() => {
+                window.location.hash = 'dashboard';
+                setCurrentPage('dashboard');
+              }} />;
+            }
             return <PositionStrategiesPage />;
           case 'analytics':
+            if (lockedPremiumPages.has('analytics')) {
+              return <SubscriptionRequiredPage onBackToDashboard={() => {
+                window.location.hash = 'dashboard';
+                setCurrentPage('dashboard');
+              }} />;
+            }
             return <AnalyticsPage />;
           case 'accounts':
             return <TradingAccountsPage />;
           case 'transactions':
             return <TransactionsPage />;
           case 'goals':
+            if (lockedPremiumPages.has('goals')) {
+              return <SubscriptionRequiredPage onBackToDashboard={() => {
+                window.location.hash = 'dashboard';
+                setCurrentPage('dashboard');
+              }} />;
+            }
             return <GoalsPage />;
           case 'calculator':
+            if (lockedPremiumPages.has('calculator')) {
+              return <SubscriptionRequiredPage onBackToDashboard={() => {
+                window.location.hash = 'dashboard';
+                setCurrentPage('dashboard');
+              }} />;
+            }
             return <CalculatorPage />;
+          case 'billing':
+            return <BillingPage billingStatus={billingStatus} onSubscriptionChanged={refreshBillingStatus} />;
+          case 'billing-success':
+            return <BillingPage billingStatus={billingStatus} onSubscriptionChanged={refreshBillingStatus} />;
+          case 'billing-cancel':
+            return <BillingPage billingStatus={billingStatus} onSubscriptionChanged={refreshBillingStatus} />;
+          case 'subscription-required':
+            return <SubscriptionRequiredPage onBackToDashboard={() => {
+              window.location.hash = 'dashboard';
+              setCurrentPage('dashboard');
+            }} />;
           case 'users':
             return <UserManagementPage />;
           case 'settings':
@@ -328,6 +477,12 @@ function App() {
   };
 
   const handleNavigate = (page: string) => {
+    if (lockedPremiumPages.has(page)) {
+      window.location.hash = 'subscription-required';
+      setCurrentPage('subscription-required');
+      return;
+    }
+
     // Vérifier si on est déjà sur cette page
     if (currentPageRef.current === page) {
       return; // Déjà sur cette page, ne rien faire
@@ -370,6 +525,41 @@ function App() {
           currentPage={currentPage}
           onNavigate={handleNavigate}
           onLogout={handleLogout}
+          lockedPremiumPages={lockedPremiumPages}
+          billingStatusLabel={billingStatusLabel}
+          topBanner={
+            billingStatus && !currentUser.is_admin ? (
+              <div
+                className="w-full border-b border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/30 px-3 sm:px-6 py-2.5"
+                aria-live="polite"
+              >
+                <div className="mx-auto max-w-7xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <p className="text-sm text-blue-900 dark:text-blue-100">
+                    {billingStatus.access_state === 'trialing'
+                      ? t('billing:banner.trialDaysLeft', { count: billingStatus.trial_days_left })
+                      : billingStatus.access_state === 'inactive'
+                        ? t('billing:banner.trialEnded')
+                        : t('billing:banner.active')}
+                  </p>
+                  {(billingStatus.access_state === 'trialing' || billingStatus.access_state === 'inactive') && (
+                    <button
+                      type="button"
+                      className="self-start sm:self-auto rounded-lg bg-blue-600 text-white text-sm font-medium px-3 py-1.5 hover:bg-blue-700 transition"
+                      onClick={() => handleNavigate('billing')}
+                      disabled={billingLoading}
+                    >
+                      {billingLoading ? t('billing:cta.loading') : t('billing:cta.subscribe')}
+                    </button>
+                  )}
+                </div>
+                {billingError && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                    {t('billing:errors.statusUnavailable')}
+                  </p>
+                )}
+              </div>
+            ) : null
+          }
         >
           {renderPage()}
         </Layout>
@@ -424,12 +614,6 @@ function App() {
 
 // Wrapper pour gérer les routes spéciales sans Layout
 function AppRouter() {
-  if (window.location.pathname === '/strategy-checklist') {
-    return <StrategyChecklistPopup />;
-  }
-  if (window.location.pathname === '/calculator-popup') {
-    return <CalculatorPopup />;
-  }
   return <App />;
 }
 

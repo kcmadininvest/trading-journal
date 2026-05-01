@@ -1,0 +1,55 @@
+{
+  "title": "Premium-Abonnement",
+  "description": "Verwalten Sie Ihren Premium-Zugang und Ihre Testphase.",
+  "currentStatus": "Aktueller Status: {{status}}",
+  "trialDaysLeft_one": "{{count}} Testtag verbleibend.",
+  "trialDaysLeft_other": "{{count}} Testtage verbleibend.",
+  "banner": {
+    "trialDaysLeft_one": "Premium-Test: noch {{count}} Tag.",
+    "trialDaysLeft_other": "Premium-Test: noch {{count}} Tage.",
+    "trialEnded": "Ihre Testphase ist beendet. Abonnieren Sie Premium für den weiteren Zugriff.",
+    "active": "Ihr Premium-Abonnement ist aktiv."
+  },
+  "locked": {
+    "title": "Premium-Abonnement erforderlich",
+    "description": "Dieser Bereich ist nur mit aktivem Test oder Premium-Abonnement verfügbar."
+  },
+  "cta": {
+    "subscribe": "Auf Premium upgraden",
+    "subscribeNow": "Jetzt abonnieren",
+    "manage": "Abonnement verwalten",
+    "refresh": "Status aktualisieren",
+    "backToDashboard": "Zurück zum Dashboard",
+    "redirecting": "Weiterleitung...",
+    "loading": "Laden...",
+    "unavailable": "Zahlung nicht verfügbar"
+  },
+  "messages": {
+    "trialActive": "Ihre Testphase ist aktiv. Sie können jetzt abonnieren, um Unterbrechungen zu vermeiden.",
+    "trialExpired": "Ihre Testphase ist beendet. Abonnieren Sie jetzt, um den Premium-Zugang zu behalten.",
+    "active": "Ihr Abonnement ist aktiv. Verwalten Sie es im Abrechnungsportal.",
+    "inactive": "Sie haben kein aktives Abonnement. Abonnieren Sie, um Premium-Funktionen freizuschalten."
+  },
+  "status": {
+    "admin_bypass": "Administrator",
+    "trialing": "Test aktiv",
+    "active": "Premium aktiv",
+    "inactive": "Kein Abonnement",
+    "loading": "Laden..."
+  },
+  "header": {
+    "trialBadge_one": "Test: {{count}}T",
+    "trialBadge_other": "Test: {{count}}T",
+    "activeBadge": "Premium",
+    "inactiveBadge": "Kein Abo"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "Checkout konnte nicht gestartet werden.",
+    "portalFailed": "Abrechnungsportal konnte nicht geöffnet werden.",
+    "statusUnavailable": "Abonnementstatus vorübergehend nicht verfügbar."
+  }
+}
+

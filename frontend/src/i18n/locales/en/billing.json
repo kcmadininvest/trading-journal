@@ -1,0 +1,55 @@
+{
+  "title": "Premium Subscription",
+  "description": "Manage your Premium access and trial period.",
+  "currentStatus": "Current status: {{status}}",
+  "trialDaysLeft_one": "{{count}} trial day remaining.",
+  "trialDaysLeft_other": "{{count}} trial days remaining.",
+  "banner": {
+    "trialDaysLeft_one": "Premium trial: {{count}} day left.",
+    "trialDaysLeft_other": "Premium trial: {{count}} days left.",
+    "trialEnded": "Your trial has ended. Subscribe to continue using Premium features.",
+    "active": "Your Premium subscription is active."
+  },
+  "locked": {
+    "title": "Premium Subscription Required",
+    "description": "This section is available only with an active trial or Premium subscription."
+  },
+  "cta": {
+    "subscribe": "Upgrade to Premium",
+    "subscribeNow": "Subscribe now",
+    "manage": "Manage subscription",
+    "refresh": "Refresh status",
+    "backToDashboard": "Back to dashboard",
+    "redirecting": "Redirecting...",
+    "loading": "Loading...",
+    "unavailable": "Payment unavailable"
+  },
+  "messages": {
+    "trialActive": "Your trial is active. You can subscribe now to avoid any interruption.",
+    "trialExpired": "Your trial has ended. Subscribe now to keep Premium access.",
+    "active": "Your subscription is active. Manage it from the billing portal.",
+    "inactive": "You do not have an active subscription. Subscribe to unlock Premium features."
+  },
+  "status": {
+    "admin_bypass": "Administrator",
+    "trialing": "Trial in progress",
+    "active": "Premium active",
+    "inactive": "No subscription",
+    "loading": "Loading..."
+  },
+  "header": {
+    "trialBadge_one": "Trial: {{count}}d",
+    "trialBadge_other": "Trial: {{count}}d",
+    "activeBadge": "Premium",
+    "inactiveBadge": "No subscription"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "Unable to start checkout.",
+    "portalFailed": "Unable to open billing portal.",
+    "statusUnavailable": "Subscription status is temporarily unavailable."
+  }
+}
+

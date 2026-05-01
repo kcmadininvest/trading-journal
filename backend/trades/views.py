@@ -100,6 +100,7 @@ from .compliance_streaks import (
     compute_strategy_compliance_context,
     get_position_strategy_family_ids,
 )
+from billing.permissions import IsPremiumBundleSubscriberOrAdmin
 
 
 
@@ -496,6 +497,13 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
     ViewSet pour gérer les trades TopStep.
     """
     permission_classes = [permissions.IsAuthenticated]
+    premium_restricted_actions = {'statistics', 'analytics'}
+
+    def get_permissions(self):
+        base_permissions = [permissions.IsAuthenticated()]
+        if self.action in self.premium_restricted_actions:
+            base_permissions.append(IsPremiumBundleSubscriberOrAdmin())
+        return base_permissions
     
     def get_serializer_class(self):  # type: ignore
         if self.action == 'list':
@@ -2682,7 +2690,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
     ViewSet pour gérer les données de stratégie liées aux trades.
     """
     serializer_class = TradeStrategySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
     
     
     def get_queryset(self):
@@ -3945,7 +3953,7 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
     ViewSet pour gérer les données de stratégie pour les jours sans trades.
     """
     serializer_class = DayStrategyComplianceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
     
     def get_queryset(self):
         """Retourne uniquement les compliances de l'utilisateur connecté."""
@@ -4103,7 +4111,7 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
     ViewSet pour gérer les stratégies de position avec versioning.
     """
     serializer_class = PositionStrategySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
     
     def get_queryset(self):
         """Retourne uniquement les stratégies de l'utilisateur connecté avec optimisations."""
@@ -4645,7 +4653,7 @@ class TradingGoalViewSet(viewsets.ModelViewSet):
     """
     ViewSet pour gérer les objectifs de trading.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
     serializer_class = TradingGoalSerializer
     
     def get_queryset(self):

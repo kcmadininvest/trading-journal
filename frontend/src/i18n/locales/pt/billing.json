@@ -1,0 +1,55 @@
+{
+  "title": "Assinatura Premium",
+  "description": "Gerencie seu acesso Premium e período de teste.",
+  "currentStatus": "Status atual: {{status}}",
+  "trialDaysLeft_one": "Falta {{count}} dia de teste.",
+  "trialDaysLeft_other": "Faltam {{count}} dias de teste.",
+  "banner": {
+    "trialDaysLeft_one": "Teste Premium: falta {{count}} dia.",
+    "trialDaysLeft_other": "Teste Premium: faltam {{count}} dias.",
+    "trialEnded": "Seu teste terminou. Assine para continuar usando os recursos Premium.",
+    "active": "Sua assinatura Premium está ativa."
+  },
+  "locked": {
+    "title": "Assinatura Premium obrigatória",
+    "description": "Esta seção só está disponível com teste ativo ou assinatura Premium."
+  },
+  "cta": {
+    "subscribe": "Assinar Premium",
+    "subscribeNow": "Assinar agora",
+    "manage": "Gerenciar assinatura",
+    "refresh": "Atualizar status",
+    "backToDashboard": "Voltar ao painel",
+    "redirecting": "Redirecionando...",
+    "loading": "Carregando...",
+    "unavailable": "Pagamento indisponível"
+  },
+  "messages": {
+    "trialActive": "Seu teste está ativo. Você pode assinar agora para evitar qualquer interrupção.",
+    "trialExpired": "Seu teste terminou. Assine agora para manter o acesso Premium.",
+    "active": "Sua assinatura está ativa. Gerencie-a pelo portal de cobrança.",
+    "inactive": "Você não tem assinatura ativa. Assine para desbloquear os recursos Premium."
+  },
+  "status": {
+    "admin_bypass": "Administrador",
+    "trialing": "Teste em andamento",
+    "active": "Premium ativo",
+    "inactive": "Sem assinatura",
+    "loading": "Carregando..."
+  },
+  "header": {
+    "trialBadge_one": "Teste: {{count}}d",
+    "trialBadge_other": "Teste: {{count}}d",
+    "activeBadge": "Premium",
+    "inactiveBadge": "Sem assinatura"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "Não foi possível iniciar o pagamento.",
+    "portalFailed": "Não foi possível abrir o portal de cobrança.",
+    "statusUnavailable": "O status da assinatura está temporariamente indisponível."
+  }
+}
+

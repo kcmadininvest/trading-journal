@@ -12,6 +12,7 @@ from django.utils.decorators import method_decorator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.conf import settings
+from django.utils import timezone
 from rolepermissions.decorators import has_permission_decorator
 from rolepermissions.checkers import has_permission
 from django.core.mail import send_mail
@@ -574,14 +575,22 @@ class LogoutView(APIView):
                     
                     if jti:
                         # Créer une entrée OutstandingToken si elle n'existe pas
-                        from datetime import datetime
+                        from datetime import datetime, timezone as dt_timezone
                         
                         # Convertir les timestamps en datetime
                         iat_timestamp = access_token.get('iat')
                         exp_timestamp = access_token.get('exp')
                         
-                        created_at = datetime.fromtimestamp(iat_timestamp) if iat_timestamp else datetime.now()
-                        expires_at = datetime.fromtimestamp(exp_timestamp) if exp_timestamp else datetime.now()
+                        created_at = (
+                            datetime.fromtimestamp(iat_timestamp, tz=dt_timezone.utc)
+                            if iat_timestamp
+                            else timezone.now()
+                        )
+                        expires_at = (
+                            datetime.fromtimestamp(exp_timestamp, tz=dt_timezone.utc)
+                            if exp_timestamp
+                            else timezone.now()
+                        )
                         
                         # Essayer de récupérer l'utilisateur depuis le token
                         user_id = access_token.get('user_id')
@@ -1294,15 +1303,13 @@ class ActiveSessionsView(APIView):
         try:
             from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
             from rest_framework_simplejwt.tokens import RefreshToken
-            from datetime import datetime
             
             # OutstandingToken contient uniquement les refresh tokens
             # Récupérer le jti du refresh token actuel depuis le cookie/localStorage via le body
             # Pour cela, on va utiliser une approche différente : comparer les tokens par leur date de création récente
             
             # Récupérer tous les refresh tokens non expirés et non blacklistés de l'utilisateur
-            from datetime import datetime
-            now = datetime.now()
+            now = timezone.now()
             outstanding_tokens = OutstandingToken.objects.filter(
                 user=request.user,
                 expires_at__gt=now
@@ -1382,8 +1389,7 @@ class ActiveSessionsView(APIView):
             else:
                 # Déconnecter toutes les sessions (y compris la session actuelle)
                 # Blacklister tous les refresh tokens non expirés de l'utilisateur
-                from datetime import datetime
-                now = datetime.now()
+                now = timezone.now()
                 outstanding_tokens = OutstandingToken.objects.filter(
                     user=request.user,
                     expires_at__gt=now

@@ -9,10 +9,13 @@ interface NavigationMenuProps {
   currentUser: User;
   currentPage: string;
   onNavigate: (page: string) => void;
+  lockedPremiumPages?: Set<string>;
 }
 
-const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPage, onNavigate }) => {
+const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPage, onNavigate, lockedPremiumPages = new Set() }) => {
   const { t } = useI18nTranslation();
+  const premiumBadge = t('billing:labels.premium');
+  const isLocked = (pageId: string) => lockedPremiumPages.has(pageId);
 
   const tradingItems: NavItemConfig[] = [
     {
@@ -34,6 +37,8 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
         </svg>
       ),
       visible: true,
+      disabled: isLocked('analytics'),
+      badgeText: isLocked('analytics') ? premiumBadge : undefined,
     },
     {
       id: 'statistics',
@@ -44,6 +49,8 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
         </svg>
       ),
       visible: true,
+      disabled: isLocked('statistics'),
+      badgeText: isLocked('statistics') ? premiumBadge : undefined,
     },
     {
       id: 'trades',
@@ -99,6 +106,8 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
         </svg>
       ),
       visible: true,
+      disabled: isLocked('goals'),
+      badgeText: isLocked('goals') ? premiumBadge : undefined,
     },
     {
       id: 'calculator',
@@ -109,6 +118,8 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
         </svg>
       ),
       visible: true,
+      disabled: isLocked('calculator'),
+      badgeText: isLocked('calculator') ? premiumBadge : undefined,
     },
     {
       id: 'accounts',
@@ -132,6 +143,8 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
         </svg>
       ),
       visible: true,
+      disabled: isLocked('strategies'),
+      badgeText: isLocked('strategies') ? premiumBadge : undefined,
     },
     {
       id: 'position-strategies',
@@ -142,10 +155,22 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
         </svg>
       ),
       visible: true,
+      disabled: isLocked('position-strategies'),
+      badgeText: isLocked('position-strategies') ? premiumBadge : undefined,
     },
   ];
 
   const systemItems: NavItemConfig[] = [
+    {
+      id: 'billing',
+      label: t('navigation:billing', { defaultValue: 'Abonnement' }),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a5 5 0 10-10 0v2m-2 0h14a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V10a1 1 0 011-1z" />
+        </svg>
+      ),
+      visible: !currentUser.is_admin,
+    },
     {
       id: 'settings',
       label: t('navigation:settings'),
@@ -240,19 +265,30 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
 
         {/* Settings - direct link */}
         <NavItem
-          id="settings"
-          label={t('navigation:settings')}
-          icon={systemItems[0].icon}
-          isActive={currentPage === 'settings'}
+          id={currentUser.is_admin ? 'settings' : 'billing'}
+          label={currentUser.is_admin ? t('navigation:settings') : t('navigation:billing', { defaultValue: 'Abonnement' })}
+          icon={currentUser.is_admin ? systemItems[1].icon : systemItems[0].icon}
+          badgeText={!currentUser.is_admin ? premiumBadge : undefined}
+          isActive={currentUser.is_admin ? currentPage === 'settings' : currentPage === 'billing'}
           onClick={onNavigate}
         />
+
+        {!currentUser.is_admin && (
+          <NavItem
+            id="settings"
+            label={t('navigation:settings')}
+            icon={systemItems[1].icon}
+            isActive={currentPage === 'settings'}
+            onClick={onNavigate}
+          />
+        )}
 
         {/* Users - admin only, direct link */}
         {currentUser.is_admin && (
           <NavItem
             id="users"
             label={t('navigation:users')}
-            icon={systemItems[1].icon}
+            icon={systemItems[2].icon}
             isActive={currentPage === 'users'}
             onClick={onNavigate}
           />

@@ -8,6 +8,9 @@ interface LayoutProps {
   currentPage: string;
   onNavigate: (page: string) => void;
   onLogout: () => void;
+  topBanner?: React.ReactNode;
+  lockedPremiumPages?: Set<string>;
+  billingStatusLabel?: string | null;
   children: React.ReactNode;
 }
 
@@ -16,6 +19,9 @@ const Layout: React.FC<LayoutProps> = ({
   currentPage,
   onNavigate,
   onLogout,
+  topBanner,
+  lockedPremiumPages,
+  billingStatusLabel,
   children,
 }) => {
   return (
@@ -26,7 +32,11 @@ const Layout: React.FC<LayoutProps> = ({
         currentPage={currentPage}
         onNavigate={onNavigate}
         onLogout={onLogout}
+        lockedPremiumPages={lockedPremiumPages}
+        billingStatusLabel={billingStatusLabel}
       />
+
+      {topBanner}
 
       <main className="flex w-full flex-1 flex-col min-h-0 bg-gray-50 dark:bg-gray-900 pt-16 sm:pt-20">
         {/* Espacement sous le header : géré par PageShell (pageLayout) */}

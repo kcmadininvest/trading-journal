@@ -1,0 +1,55 @@
+{
+  "title": "プレミアムサブスクリプション",
+  "description": "プレミアムアクセスと無料トライアル期間を管理します。",
+  "currentStatus": "現在のステータス: {{status}}",
+  "trialDaysLeft_one": "無料トライアル残り{{count}}日。",
+  "trialDaysLeft_other": "無料トライアル残り{{count}}日。",
+  "banner": {
+    "trialDaysLeft_one": "プレミアムトライアル: 残り{{count}}日。",
+    "trialDaysLeft_other": "プレミアムトライアル: 残り{{count}}日。",
+    "trialEnded": "無料トライアルは終了しました。プレミアム機能を継続利用するには登録してください。",
+    "active": "プレミアムサブスクリプションは有効です。"
+  },
+  "locked": {
+    "title": "プレミアム登録が必要です",
+    "description": "このセクションは有効なトライアルまたはプレミアム登録が必要です。"
+  },
+  "cta": {
+    "subscribe": "プレミアムに登録",
+    "subscribeNow": "今すぐ登録",
+    "manage": "サブスクリプション管理",
+    "refresh": "ステータスを更新",
+    "backToDashboard": "ダッシュボードに戻る",
+    "redirecting": "リダイレクト中...",
+    "loading": "読み込み中...",
+    "unavailable": "決済は利用できません"
+  },
+  "messages": {
+    "trialActive": "無料トライアルは有効です。中断を避けるため、今すぐ登録できます。",
+    "trialExpired": "無料トライアルは終了しました。プレミアムアクセスを維持するには今すぐ登録してください。",
+    "active": "サブスクリプションは有効です。請求ポータルで管理できます。",
+    "inactive": "有効なサブスクリプションがありません。プレミアム機能を利用するには登録してください。"
+  },
+  "status": {
+    "admin_bypass": "管理者",
+    "trialing": "トライアル中",
+    "active": "プレミアム有効",
+    "inactive": "未登録",
+    "loading": "読み込み中..."
+  },
+  "header": {
+    "trialBadge_one": "試用: {{count}}日",
+    "trialBadge_other": "試用: {{count}}日",
+    "activeBadge": "Premium",
+    "inactiveBadge": "未登録"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "決済を開始できませんでした。",
+    "portalFailed": "請求ポータルを開けませんでした。",
+    "statusUnavailable": "サブスクリプション状態は一時的に利用できません。"
+  }
+}
+

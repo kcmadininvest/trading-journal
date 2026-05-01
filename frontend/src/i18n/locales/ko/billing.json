@@ -1,0 +1,55 @@
+{
+  "title": "프리미엄 구독",
+  "description": "프리미엄 접근 권한과 체험 기간을 관리하세요.",
+  "currentStatus": "현재 상태: {{status}}",
+  "trialDaysLeft_one": "체험 기간 {{count}}일 남음.",
+  "trialDaysLeft_other": "체험 기간 {{count}}일 남음.",
+  "banner": {
+    "trialDaysLeft_one": "프리미엄 체험: {{count}}일 남았습니다.",
+    "trialDaysLeft_other": "프리미엄 체험: {{count}}일 남았습니다.",
+    "trialEnded": "체험 기간이 종료되었습니다. 프리미엄 기능을 계속 사용하려면 구독하세요.",
+    "active": "프리미엄 구독이 활성화되어 있습니다."
+  },
+  "locked": {
+    "title": "프리미엄 구독이 필요합니다",
+    "description": "이 섹션은 활성 체험 또는 프리미엄 구독 사용자만 이용할 수 있습니다."
+  },
+  "cta": {
+    "subscribe": "프리미엄 구독",
+    "subscribeNow": "지금 구독",
+    "manage": "구독 관리",
+    "refresh": "상태 새로고침",
+    "backToDashboard": "대시보드로 돌아가기",
+    "redirecting": "이동 중...",
+    "loading": "로딩 중...",
+    "unavailable": "결제를 사용할 수 없습니다"
+  },
+  "messages": {
+    "trialActive": "체험이 활성화되어 있습니다. 중단 없이 이용하려면 지금 구독할 수 있습니다.",
+    "trialExpired": "체험이 종료되었습니다. 프리미엄 접근을 유지하려면 지금 구독하세요.",
+    "active": "구독이 활성화되어 있습니다. 결제 포털에서 관리할 수 있습니다.",
+    "inactive": "활성 구독이 없습니다. 프리미엄 기능을 사용하려면 구독하세요."
+  },
+  "status": {
+    "admin_bypass": "관리자",
+    "trialing": "체험 중",
+    "active": "프리미엄 활성",
+    "inactive": "구독 없음",
+    "loading": "로딩 중..."
+  },
+  "header": {
+    "trialBadge_one": "체험: {{count}}일",
+    "trialBadge_other": "체험: {{count}}일",
+    "activeBadge": "Premium",
+    "inactiveBadge": "구독 없음"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "결제를 시작할 수 없습니다.",
+    "portalFailed": "결제 포털을 열 수 없습니다.",
+    "statusUnavailable": "구독 상태를 일시적으로 가져올 수 없습니다."
+  }
+}
+

@@ -1,0 +1,55 @@
+{
+  "title": "Suscripción Premium",
+  "description": "Gestiona tu acceso Premium y tu período de prueba.",
+  "currentStatus": "Estado actual: {{status}}",
+  "trialDaysLeft_one": "Te queda {{count}} día de prueba.",
+  "trialDaysLeft_other": "Te quedan {{count}} días de prueba.",
+  "banner": {
+    "trialDaysLeft_one": "Prueba Premium: queda {{count}} día.",
+    "trialDaysLeft_other": "Prueba Premium: quedan {{count}} días.",
+    "trialEnded": "Tu período de prueba terminó. Suscríbete para seguir usando las funciones Premium.",
+    "active": "Tu suscripción Premium está activa."
+  },
+  "locked": {
+    "title": "Se requiere suscripción Premium",
+    "description": "Esta sección solo está disponible con una prueba activa o una suscripción Premium."
+  },
+  "cta": {
+    "subscribe": "Pasar a Premium",
+    "subscribeNow": "Suscribirse ahora",
+    "manage": "Gestionar suscripción",
+    "refresh": "Actualizar estado",
+    "backToDashboard": "Volver al panel",
+    "redirecting": "Redirigiendo...",
+    "loading": "Cargando...",
+    "unavailable": "Pago no disponible"
+  },
+  "messages": {
+    "trialActive": "Tu prueba está activa. Puedes suscribirte ahora para evitar cualquier interrupción.",
+    "trialExpired": "Tu prueba ha terminado. Suscríbete ahora para mantener el acceso Premium.",
+    "active": "Tu suscripción está activa. Puedes gestionarla desde el portal de facturación.",
+    "inactive": "No tienes una suscripción activa. Suscríbete para desbloquear funciones Premium."
+  },
+  "status": {
+    "admin_bypass": "Administrador",
+    "trialing": "Prueba en curso",
+    "active": "Premium activo",
+    "inactive": "Sin suscripción",
+    "loading": "Cargando..."
+  },
+  "header": {
+    "trialBadge_one": "Prueba: {{count}}d",
+    "trialBadge_other": "Prueba: {{count}}d",
+    "activeBadge": "Premium",
+    "inactiveBadge": "Sin suscripción"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "No se pudo iniciar el pago.",
+    "portalFailed": "No se pudo abrir el portal de facturación.",
+    "statusUnavailable": "El estado de suscripción no está disponible temporalmente."
+  }
+}
+

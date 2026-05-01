@@ -1,0 +1,55 @@
+{
+  "title": "Premium 订阅",
+  "description": "管理您的 Premium 权限和试用期。",
+  "currentStatus": "当前状态：{{status}}",
+  "trialDaysLeft_one": "试用剩余 {{count}} 天。",
+  "trialDaysLeft_other": "试用剩余 {{count}} 天。",
+  "banner": {
+    "trialDaysLeft_one": "Premium 试用：剩余 {{count}} 天。",
+    "trialDaysLeft_other": "Premium 试用：剩余 {{count}} 天。",
+    "trialEnded": "您的试用期已结束。订阅后可继续使用 Premium 功能。",
+    "active": "您的 Premium 订阅已激活。"
+  },
+  "locked": {
+    "title": "需要 Premium 订阅",
+    "description": "此区域仅对试用中或已订阅 Premium 的用户开放。"
+  },
+  "cta": {
+    "subscribe": "升级到 Premium",
+    "subscribeNow": "立即订阅",
+    "manage": "管理订阅",
+    "refresh": "刷新状态",
+    "backToDashboard": "返回仪表盘",
+    "redirecting": "跳转中...",
+    "loading": "加载中...",
+    "unavailable": "支付暂不可用"
+  },
+  "messages": {
+    "trialActive": "您的试用仍在进行中。您现在可以订阅以避免中断。",
+    "trialExpired": "您的试用已结束。请立即订阅以保留 Premium 访问权限。",
+    "active": "您的订阅已激活。可在账单门户中管理。",
+    "inactive": "您当前没有有效订阅。订阅后可解锁 Premium 功能。"
+  },
+  "status": {
+    "admin_bypass": "管理员",
+    "trialing": "试用中",
+    "active": "Premium 已激活",
+    "inactive": "未订阅",
+    "loading": "加载中..."
+  },
+  "header": {
+    "trialBadge_one": "试用：{{count}}天",
+    "trialBadge_other": "试用：{{count}}天",
+    "activeBadge": "Premium",
+    "inactiveBadge": "未订阅"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "无法启动支付流程。",
+    "portalFailed": "无法打开账单门户。",
+    "statusUnavailable": "订阅状态暂时不可用。"
+  }
+}
+

@@ -1,0 +1,55 @@
+{
+  "title": "Abonnement Premium",
+  "description": "Gérez votre accès Premium et votre période d'essai.",
+  "currentStatus": "Statut actuel : {{status}}",
+  "trialDaysLeft_one": "Il vous reste {{count}} jour d'essai Premium.",
+  "trialDaysLeft_other": "Il vous reste {{count}} jours d'essai Premium.",
+  "banner": {
+    "trialDaysLeft_one": "Essai Premium : {{count}} jour restant.",
+    "trialDaysLeft_other": "Essai Premium : {{count}} jours restants.",
+    "trialEnded": "Votre essai est terminé. Abonnez-vous pour continuer à accéder aux fonctionnalités Premium.",
+    "active": "Votre abonnement Premium est actif."
+  },
+  "locked": {
+    "title": "Abonnement Premium requis",
+    "description": "Cette section est réservée aux utilisateurs avec un essai actif ou un abonnement Premium."
+  },
+  "cta": {
+    "subscribe": "Passer à Premium",
+    "subscribeNow": "S'abonner maintenant",
+    "manage": "Gérer mon abonnement",
+    "refresh": "Actualiser le statut",
+    "backToDashboard": "Retour au tableau de bord",
+    "redirecting": "Redirection...",
+    "loading": "Chargement...",
+    "unavailable": "Paiement indisponible"
+  },
+  "messages": {
+    "trialActive": "Votre essai est actif. Vous pouvez vous abonner dès maintenant pour éviter toute interruption.",
+    "trialExpired": "Votre essai est terminé. Abonnez-vous maintenant pour conserver l'accès Premium.",
+    "active": "Votre abonnement est actif. Gérez-le depuis le portail de facturation.",
+    "inactive": "Vous n'avez pas d'abonnement actif. Abonnez-vous pour débloquer les fonctionnalités Premium."
+  },
+  "status": {
+    "admin_bypass": "Administrateur",
+    "trialing": "Essai en cours",
+    "active": "Premium actif",
+    "inactive": "Aucun abonnement",
+    "loading": "Chargement..."
+  },
+  "header": {
+    "trialBadge_one": "Essai : {{count}}j",
+    "trialBadge_other": "Essai : {{count}}j",
+    "activeBadge": "Premium",
+    "inactiveBadge": "Sans abonnement"
+  },
+  "labels": {
+    "premium": "Premium"
+  },
+  "errors": {
+    "checkoutFailed": "Impossible de démarrer le paiement.",
+    "portalFailed": "Impossible d'ouvrir le portail de facturation.",
+    "statusUnavailable": "Le statut d'abonnement est momentanément indisponible."
+  }
+}
+

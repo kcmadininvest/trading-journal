@@ -6,6 +6,8 @@ export interface NavItemConfig {
   label: string;
   icon: React.ReactElement;
   visible: boolean;
+  disabled?: boolean;
+  badgeText?: string;
 }
 
 interface NavGroupProps {
@@ -114,6 +116,8 @@ const NavGroup: React.FC<NavGroupProps> = ({ label, items, currentPage, onNaviga
                 icon={item.icon}
                 isActive={currentPage === item.id}
                 onClick={handleNavigate}
+                disabled={item.disabled}
+                badgeText={item.badgeText}
                 className="w-full justify-start"
               />
             ))}

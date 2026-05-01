@@ -9,10 +9,11 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .services.position_calculator import PositionCalculator
+from billing.permissions import IsPremiumBundleSubscriberOrAdmin
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPremiumBundleSubscriberOrAdmin])
 def calculate_position_size(request):
     """
     Calculate position size based on risk parameters.
@@ -95,7 +96,7 @@ def calculate_position_size(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPremiumBundleSubscriberOrAdmin])
 def calculate_fixed_risk(request):
     """
     Calculate position size based on fixed dollar risk.
@@ -164,7 +165,7 @@ def calculate_fixed_risk(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPremiumBundleSubscriberOrAdmin])
 def calculate_risk_reward(request):
     """
     Calculate risk/reward ratio for a position.
@@ -236,7 +237,7 @@ def calculate_risk_reward(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPremiumBundleSubscriberOrAdmin])
 def calculate_breakeven(request):
     """
     Calculate breakeven price including commissions.
@@ -302,7 +303,7 @@ def calculate_breakeven(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPremiumBundleSubscriberOrAdmin])
 def calculate_margin(request):
     """
     Calculate margin required for a position.
@@ -374,7 +375,7 @@ def calculate_margin(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPremiumBundleSubscriberOrAdmin])
 def calculate_forex_lot_size(request):
     """
     Calculate forex lot size based on risk parameters.

@@ -171,6 +171,15 @@ import frCalculator from './locales/fr/calculator.json';
 import enCalculator from './locales/en/calculator.json';
 import esCalculator from './locales/es/calculator.json';
 import deCalculator from './locales/de/calculator.json';
+import frBilling from './locales/fr/billing.json';
+import enBilling from './locales/en/billing.json';
+import esBilling from './locales/es/billing.json';
+import deBilling from './locales/de/billing.json';
+import itBilling from './locales/it/billing.json';
+import ptBilling from './locales/pt/billing.json';
+import jaBilling from './locales/ja/billing.json';
+import koBilling from './locales/ko/billing.json';
+import zhBilling from './locales/zh/billing.json';
 
 // Custom detector qui utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 const customNavigatorLanguagesDetector = {
@@ -238,6 +247,7 @@ const resources = {
     features: frFeatures,
     contact: frContact,
     calculator: frCalculator,
+    billing: frBilling,
   },
   en: {
     common: enCommon,
@@ -262,6 +272,7 @@ const resources = {
     features: enFeatures,
     contact: enContact,
     calculator: enCalculator,
+    billing: enBilling,
   },
   es: {
     common: esCommon,
@@ -286,6 +297,7 @@ const resources = {
     features: esFeatures,
     contact: esContact,
     calculator: esCalculator,
+    billing: esBilling,
   },
   de: {
     common: deCommon,
@@ -310,6 +322,7 @@ const resources = {
     features: deFeatures,
     contact: deContact,
     calculator: deCalculator,
+    billing: deBilling,
   },
   it: {
     common: itCommon,
@@ -324,6 +337,7 @@ const resources = {
     users: itUsers,
     accounts: itAccounts,
     auth: itAuth,
+    billing: itBilling,
   },
   pt: {
     common: ptCommon,
@@ -338,6 +352,7 @@ const resources = {
     users: ptUsers,
     accounts: ptAccounts,
     auth: ptAuth,
+    billing: ptBilling,
   },
   ja: {
     common: jaCommon,
@@ -352,6 +367,7 @@ const resources = {
     users: jaUsers,
     accounts: jaAccounts,
     auth: jaAuth,
+    billing: jaBilling,
   },
   ko: {
     common: koCommon,
@@ -366,6 +382,7 @@ const resources = {
     users: koUsers,
     accounts: koAccounts,
     auth: koAuth,
+    billing: koBilling,
   },
   zh: {
     common: zhCommon,
@@ -380,6 +397,7 @@ const resources = {
     users: zhUsers,
     accounts: zhAccounts,
     auth: zhAuth,
+    billing: zhBilling,
   },
 };
 
@@ -443,7 +461,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs
