@@ -914,22 +914,39 @@ const SettingsPage: React.FC = () => {
                 <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
                   {t('settings:notifications', { defaultValue: 'Notifications' })}
                 </h4>
-                <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                  <div className="flex-1">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {t('settings:emailGoalAlerts', { defaultValue: 'Alertes email pour les objectifs' })}
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <svg className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <div className="min-w-0">
+                      <span className="block text-sm text-gray-700 dark:text-gray-300">
+                        {t('settings:emailGoalAlerts', { defaultValue: 'Alertes email pour les objectifs' })}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                        {t('settings:emailGoalAlertsDescription', { defaultValue: 'Recevoir des emails quand un objectif est atteint ou en danger' })}
+                      </span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {t('settings:emailGoalAlertsDescription', { defaultValue: 'Recevoir des emails quand un objectif est atteint ou en danger' })}
-                    </p>
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={preferences.email_goal_alerts !== false}
-                    onChange={(e) => setPreferences({ ...preferences, email_goal_alerts: e.target.checked })}
-                    className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700 cursor-pointer ml-3"
-                  />
-                </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreferences({
+                        ...preferences,
+                        email_goal_alerts: !(preferences.email_goal_alerts !== false),
+                      })
+                    }
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      preferences.email_goal_alerts !== false ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        preferences.email_goal_alerts !== false ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
           </SettingsSection>
