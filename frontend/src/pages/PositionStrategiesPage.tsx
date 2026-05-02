@@ -588,7 +588,19 @@ const PositionStrategiesPage: React.FC = () => {
     
     handleCloseViewModal();
   };
-  
+
+  const handleOpenCalculatorPopup = () => {
+    const width = 800;
+    const height = 900;
+    const left = window.screenX + window.outerWidth - width - 30;
+    const top = window.screenY + 50;
+    window.open(
+      '/calculator-popup',
+      'calculator-popup',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+  };
+
   // Fonction pour comparer deux versions et identifier les changements
   const getVersionChanges = (current: PositionStrategy, previous: PositionStrategy | null) => {
     if (!previous) return null;
@@ -1332,6 +1344,17 @@ const PositionStrategiesPage: React.FC = () => {
                                     </svg>
                                   </button>
                                 </Tooltip>
+                                <Tooltip content={t('positionStrategies:openCalculatorTooltip', { defaultValue: 'Ouvrir le calculateur de position dans une fenêtre flottante' })} position="top">
+                                  <button
+                                    type="button"
+                                    onClick={handleOpenCalculatorPopup}
+                                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+                                  >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                  </button>
+                                </Tooltip>
                               </div>
                               
                               {/* Menu dropdown pour actions supplémentaires */}
@@ -1536,6 +1559,17 @@ const PositionStrategiesPage: React.FC = () => {
                       >
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={t('positionStrategies:openCalculatorTooltip', { defaultValue: 'Ouvrir le calculateur de position dans une fenêtre flottante' })} position="top">
+                      <button
+                        type="button"
+                        onClick={handleOpenCalculatorPopup}
+                        className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200"
+                      >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                       </button>
                     </Tooltip>
@@ -2093,11 +2127,23 @@ const PositionStrategiesPage: React.FC = () => {
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <Tooltip content={t('positionStrategies:detachTooltip', { defaultValue: 'Détacher dans une fenêtre flottante' })} position="bottom">
                     <button
+                      type="button"
                       onClick={handleDetachChecklist}
                       className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-center transition-colors"
                     >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </button>
+                  </Tooltip>
+                  <Tooltip content={t('positionStrategies:openCalculatorTooltip', { defaultValue: 'Ouvrir le calculateur de position dans une fenêtre flottante' })} position="bottom">
+                    <button
+                      type="button"
+                      onClick={handleOpenCalculatorPopup}
+                      className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center justify-center transition-colors"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                       </svg>
                     </button>
                   </Tooltip>

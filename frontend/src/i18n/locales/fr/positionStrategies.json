@@ -48,6 +48,7 @@
   "downloadPdf": "Télécharger PDF",
   "detach": "Détacher",
   "detachTooltip": "Détacher dans une fenêtre flottante",
+  "openCalculatorTooltip": "Ouvrir le calculateur de position dans une fenêtre flottante",
   "resetChecklist": "Tout décocher",
   "strategyChecklist": "Checklist",
   "rulesFollowed": "{{checked}} / {{total}} règles suivies",

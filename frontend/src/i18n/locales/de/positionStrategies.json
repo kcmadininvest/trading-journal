@@ -48,6 +48,7 @@
   "downloadPdf": "PDF herunterladen",
   "detach": "Abtrennen",
   "detachTooltip": "In ein schwebendes Fenster abtrennen",
+  "openCalculatorTooltip": "Positionsgrößen-Rechner in schwebendem Fenster öffnen",
   "resetChecklist": "Alle abwählen",
   "strategyChecklist": "Checkliste",
   "rulesFollowed": "{{checked}} / {{total}} Regeln befolgt",

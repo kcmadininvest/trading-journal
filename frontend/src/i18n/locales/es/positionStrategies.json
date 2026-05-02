@@ -48,6 +48,7 @@
   "downloadPdf": "Descargar PDF",
   "detach": "Separar",
   "detachTooltip": "Separar en una ventana flotante",
+  "openCalculatorTooltip": "Abrir la calculadora de tamaño de posición en una ventana flotante",
   "resetChecklist": "Desmarcar todo",
   "strategyChecklist": "Checklist",
   "rulesFollowed": "{{checked}} / {{total}} reglas seguidas",

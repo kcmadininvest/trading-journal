@@ -48,6 +48,7 @@
   "downloadPdf": "Download PDF",
   "detach": "Detach",
   "detachTooltip": "Detach into a floating window",
+  "openCalculatorTooltip": "Open the position size calculator in a floating window",
   "resetChecklist": "Uncheck all",
   "strategyChecklist": "Checklist",
   "rulesFollowed": "{{checked}} / {{total}} rules followed",
