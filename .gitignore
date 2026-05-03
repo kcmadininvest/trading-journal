@@ -46,6 +46,9 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Outils locaux (hors dépôt)
+/tools/
+
 # IDE
 .vscode/
 .idea/
