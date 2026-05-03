@@ -16,7 +16,8 @@ class TradingAccountSerializer(serializers.ModelSerializer):
     trades_count = serializers.SerializerMethodField()
     is_topstep = serializers.BooleanField(read_only=True)
     is_active = serializers.BooleanField(read_only=True)
-    
+    accounts_copying_this_one = serializers.SerializerMethodField()
+
     class Meta:
         model = TradingAccount
         fields = [
@@ -36,17 +37,46 @@ class TradingAccountSerializer(serializers.ModelSerializer):
             'broker_config',
             'description',
             'is_default',
+            'copy_imports_from',
+            'accounts_copying_this_one',
             'trades_count',
             'is_topstep',
             'is_active',
             'created_at',
             'updated_at'
         ]
-        read_only_fields = ['user', 'created_at', 'updated_at']
-    
+        read_only_fields = ['user', 'created_at', 'updated_at', 'accounts_copying_this_one']
+
+    def get_accounts_copying_this_one(self, obj):
+        qs = obj.accounts_that_copy_me.filter(status='active').order_by('name')
+        return [
+            {'id': a.id, 'name': a.name, 'status': a.status, 'account_type': a.account_type}
+            for a in qs
+        ]
+
     def get_trades_count(self, obj):
         """Retourne le nombre de trades associés à ce compte."""
         return obj.topstep_trades.count()
+
+    def validate_copy_imports_from(self, leader):
+        if leader is None:
+            return None
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            raise serializers.ValidationError('Requête invalide.')
+        user = request.user
+        if leader.user_id != user.id:
+            raise serializers.ValidationError('Le compte source doit vous appartenir.')
+        inst = self.instance
+        if inst and leader.pk == inst.pk:
+            raise serializers.ValidationError('Un compte ne peut pas copier lui-même.')
+        if inst and leader.copy_imports_from_id == inst.pk:
+            raise serializers.ValidationError('Référence circulaire entre deux comptes.')
+        if inst and inst.accounts_that_copy_me.exists():
+            raise serializers.ValidationError(
+                'Des comptes copient déjà les imports de celui-ci. Retirez-les avant de le configurer comme copieur.'
+            )
+        return leader
     
     def validate_name(self, value):
         """Valide que le nom du compte est unique pour l'utilisateur."""
@@ -87,7 +117,8 @@ class TradingAccountListSerializer(serializers.ModelSerializer):
     trades_count = serializers.SerializerMethodField()
     is_topstep = serializers.BooleanField(read_only=True)
     is_active = serializers.BooleanField(read_only=True)
-    
+    accounts_copying_this_one = serializers.SerializerMethodField()
+
     class Meta:
         model = TradingAccount
         fields = [
@@ -103,12 +134,21 @@ class TradingAccountListSerializer(serializers.ModelSerializer):
             'profit_target_enabled',
             'status',
             'is_default',
+            'copy_imports_from',
+            'accounts_copying_this_one',
             'trades_count',
             'is_topstep',
             'is_active',
             'created_at'
         ]
-    
+
+    def get_accounts_copying_this_one(self, obj):
+        qs = obj.accounts_that_copy_me.filter(status='active').order_by('name')
+        return [
+            {'id': a.id, 'name': a.name, 'status': a.status, 'account_type': a.account_type}
+            for a in qs
+        ]
+
     def get_trades_count(self, obj):
         """Retourne le nombre de trades associés à ce compte."""
         return obj.topstep_trades.count()

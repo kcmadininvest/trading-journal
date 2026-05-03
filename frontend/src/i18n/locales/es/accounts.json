@@ -49,6 +49,7 @@
   },
   "deleteTitle": "Eliminar cuenta",
   "deleteConfirm": "¿Eliminar permanentemente la cuenta \"{{name}}\" y todos sus datos (operaciones asociadas)?\n\nEsta acción es irreversible.",
+  "archiveModalTitle": "Archivar cuenta",
   "confirmArchive": "¿Está seguro de que desea archivar esta cuenta? Ya no será visible de forma predeterminada.",
   "form": {
     "editTitle": "Editar Cuenta",
@@ -87,6 +88,13 @@
     "profitTarget": "Objetivo de Beneficio",
     "profitTargetPlaceholder": "Ingresar objetivo de beneficio",
     "profitTargetDescription": "Objetivo de beneficio a alcanzar (entrada manual)"
+  },
+  "copyTrading": {
+    "followersTitle": "Cuentas que reciben una copia de sus importaciones (esta cuenta como origen)",
+    "noFollowers": "Ninguna cuenta seguidora. En otra cuenta, active la copia y elija esta como origen.",
+    "copyFromEnabled": "Esta cuenta recibe una copia de las importaciones CSV realizadas en la cuenta siguiente",
+    "leaderLabel": "Cuenta origen (archivo CSV)",
+    "leaderHelp": "Tras guardar, una importación en esa cuenta duplicará también las operaciones aquí."
   },
   "defaultCurrencyName": "Dólar estadounidense",
   "onboarding": {

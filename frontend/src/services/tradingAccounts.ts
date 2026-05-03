@@ -17,6 +17,15 @@ export interface TradingAccount {
   broker_config?: Record<string, any>;
   description?: string;
   is_default: boolean;
+  /** Compte dont les imports CSV sont dupliqués ici (copy trading) */
+  copy_imports_from?: number | null;
+  /** Comptes actifs qui copient les imports de ce compte (lecture seule, API) */
+  accounts_copying_this_one?: Array<{
+    id: number;
+    name: string;
+    status: string;
+    account_type: string;
+  }>;
   trades_count?: number;
   is_topstep?: boolean;
   is_active?: boolean;

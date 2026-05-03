@@ -223,7 +223,12 @@ class TradesService {
     };
   }
 
-  async uploadCSV(file: File, trading_account?: number, dryRun = false): Promise<{
+  async uploadCSV(
+    file: File,
+    trading_account?: number,
+    dryRun = false,
+    duplicateToCopyAccounts = true
+  ): Promise<{
     success: boolean;
     message?: string;
     error?: string;
@@ -244,6 +249,7 @@ class TradesService {
     if (dryRun) {
       form.append('dry_run', 'true');
     }
+    form.append('duplicate_to_copy_accounts', duplicateToCopyAccounts ? 'true' : 'false');
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/upload_csv/`, {
       method: 'POST',
       body: form,

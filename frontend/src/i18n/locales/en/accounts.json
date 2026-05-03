@@ -49,6 +49,7 @@
   },
   "deleteTitle": "Delete Account",
   "deleteConfirm": "Permanently delete account \"{{name}}\" and all its data (associated trades)?\n\nThis action is irreversible.",
+  "archiveModalTitle": "Archive account",
   "confirmArchive": "Are you sure you want to archive this account? It will no longer be visible by default.",
   "form": {
     "editTitle": "Edit Account",
@@ -87,6 +88,13 @@
     "profitTarget": "Profit Target",
     "profitTargetPlaceholder": "Enter profit target",
     "profitTargetDescription": "Profit target to achieve (manual entry)"
+  },
+  "copyTrading": {
+    "followersTitle": "Accounts that receive a copy of your imports (this account as source)",
+    "noFollowers": "No follower accounts. On another account, enable copy and choose this one as the source.",
+    "copyFromEnabled": "This account receives a copy of CSV imports made on the account below",
+    "leaderLabel": "Source account (CSV file)",
+    "leaderHelp": "After saving, importing on that account will also duplicate trades here."
   },
   "defaultCurrencyName": "US Dollar",
   "onboarding": {

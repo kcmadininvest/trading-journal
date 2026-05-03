@@ -1,5 +1,6 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { tradesService } from '../../services/trades';
+import { tradingAccountsService, TradingAccount } from '../../services/tradingAccounts';
 import { AccountSelector } from '../accounts/AccountSelector';
 import { useAccountNumberVisibility } from '../../hooks/useAccountNumberVisibility';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -8,6 +9,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../../contexts/TradingAccountContext';
 import userService from '../../services/userService';
 import Tooltip from '../ui/Tooltip';
+import { SettingsStyleToggle } from '../ui/SettingsStyleToggle';
 
 interface ImportTradesModalProps {
   open: boolean;
@@ -50,6 +52,17 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
   const previousFileRef = useRef<File | null>(null);
   const previousAccountRef = useRef<number | null | undefined>(null);
 
+  const [importAccountsList, setImportAccountsList] = useState<TradingAccount[]>([]);
+  const [duplicateToCopyAccounts, setDuplicateToCopyAccounts] = useState(true);
+
+  const followerCount = useMemo(() => {
+    const id = accountId;
+    if (id == null || id === undefined || typeof id !== 'number') return 0;
+    return importAccountsList.filter(
+      (a) => a.status === 'active' && a.copy_imports_from === id
+    ).length;
+  }, [importAccountsList, accountId]);
+
   const CSV_COLUMNS = useMemo(() => [
     { name: 'Id', description: t('trades:importModal.formatGuide.columns.Id.description'), example: '1443101901', required: true },
     { name: 'ContractName', description: t('trades:importModal.formatGuide.columns.ContractName.description'), example: 'NQZ5', required: true },
@@ -66,9 +79,26 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
     { name: 'Commissions', description: t('trades:importModal.formatGuide.columns.Commissions.description'), example: '0.00', required: false },
   ], [t]);
 
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await tradingAccountsService.list({ include_inactive: true });
+        if (!cancelled) setImportAccountsList(list);
+      } catch {
+        if (!cancelled) setImportAccountsList([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   // Réinitialiser tous les états quand la modale s'ouvre
   React.useEffect(() => {
     if (open) {
+      setDuplicateToCopyAccounts(true);
       // Réinitialiser tous les états pour permettre un nouvel import
       setState('initial');
       setSelectedFile(null);
@@ -189,7 +219,14 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
     setPreviewResult(null);
     
     try {
-      const data = await tradesService.uploadCSV(selectedFile, accountId ?? undefined, true); // dry_run = true
+      const dup =
+        duplicateToCopyAccounts && followerCount > 0 && typeof accountId === 'number';
+      const data = await tradesService.uploadCSV(
+        selectedFile,
+        accountId ?? undefined,
+        true,
+        dup
+      );
       setPreviewResult(data);
       setState('preview');
       
@@ -216,7 +253,14 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
     setState('importing');
     
     try {
-      const data = await tradesService.uploadCSV(selectedFile, accountId ?? undefined, false); // dry_run = false
+      const dup =
+        duplicateToCopyAccounts && followerCount > 0 && typeof accountId === 'number';
+      const data = await tradesService.uploadCSV(
+        selectedFile,
+        accountId ?? undefined,
+        false,
+        dup
+      );
       setImportResult(data);
       setState('success');
       
@@ -413,6 +457,31 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
               {t('trades:importModal.tradingAccount')}
             </label>
             <AccountSelector value={accountId} onChange={handleAccountChange} hideLabel hideAccountNumber={hideAccountNumber} />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-xl">
+              {followerCount > 0
+                ? t('trades:importModal.duplicateToCopiersHelp', { count: followerCount })
+                : t('trades:importModal.duplicateToCopiersNone')}
+            </p>
+            <div className="mt-3 block max-w-xl">
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                <div className="min-w-0 flex-1 pr-2">
+                  <span
+                    className={`block text-sm font-medium ${
+                      followerCount === 0
+                        ? 'text-gray-400 dark:text-gray-500'
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {t('trades:importModal.duplicateToCopiers')}
+                  </span>
+                </div>
+                <SettingsStyleToggle
+                  pressed={duplicateToCopyAccounts}
+                  onPressedChange={setDuplicateToCopyAccounts}
+                  disabled={followerCount === 0}
+                />
+              </div>
+            </div>
           </div>
 
           {/* File Upload Area */}

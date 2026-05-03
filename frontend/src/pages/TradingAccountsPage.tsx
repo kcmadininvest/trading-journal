@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
 import PaginationControls from '../components/ui/PaginationControls';
-import { DeleteConfirmModal, Tooltip } from '../components/ui';
+import { ConfirmModal, DeleteConfirmModal, Tooltip } from '../components/ui';
 import TradingAccountModal from '../components/accounts/TradingAccountModal';
 import { AccountsFilters } from '../components/accounts/AccountsFilters';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -159,6 +159,9 @@ const TradingAccountsPage: React.FC = () => {
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [accountToArchive, setAccountToArchive] = useState<TradingAccount | null>(null);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
 
   // Composant pour les en-têtes de colonnes triables
   const SortableHeader: React.FC<{ field: SortField; label: string; className?: string }> = ({ field, label, className = '' }) => (
@@ -286,18 +289,23 @@ const TradingAccountsPage: React.FC = () => {
     } catch {}
   };
 
-  const handleArchive = async (acc: TradingAccount) => {
-    if (!window.confirm(t('accounts:confirmArchive', { 
-      defaultValue: 'Êtes-vous sûr de vouloir archiver ce compte ? Il ne sera plus visible par défaut.' 
-    }))) {
-      return;
-    }
-    
+  const handleArchive = (acc: TradingAccount) => {
+    setAccountToArchive(acc);
+    setShowArchiveModal(true);
+  };
+
+  const confirmArchive = async () => {
+    if (!accountToArchive) return;
+    setArchiveLoading(true);
     try {
-      await tradingAccountsService.archive(acc.id);
+      await tradingAccountsService.archive(accountToArchive.id);
       await load();
+      setShowArchiveModal(false);
+      setAccountToArchive(null);
     } catch (error) {
-      console.error('Erreur lors de l\'archivage:', error);
+      console.error("Erreur lors de l'archivage:", error);
+    } finally {
+      setArchiveLoading(false);
     }
   };
 
@@ -715,6 +723,7 @@ const TradingAccountsPage: React.FC = () => {
       {/* Modal de création/édition */}
       <TradingAccountModal
         account={editingAccount}
+        allAccounts={allAccounts}
         isOpen={showAccountModal}
         onClose={() => {
           setShowAccountModal(false);
@@ -736,6 +745,32 @@ const TradingAccountsPage: React.FC = () => {
         message={accountToDelete ? t('accounts:deleteConfirm', { name: accountToDelete.name }) : ''}
         isLoading={deleteLoading}
         confirmButtonText={t('accounts:actions.deleteLabel', { defaultValue: 'Delete' })}
+      />
+
+      {/* Modal d'archivage (même coque que ConfirmModal / suppression) */}
+      <ConfirmModal
+        isOpen={showArchiveModal}
+        variant="warning"
+        onClose={() => {
+          if (!archiveLoading) {
+            setShowArchiveModal(false);
+            setAccountToArchive(null);
+          }
+        }}
+        onConfirm={confirmArchive}
+        title={t('accounts:archiveModalTitle', { defaultValue: 'Archiver le compte' })}
+        message={
+          accountToArchive ? (
+            <div className="space-y-3">
+              <p className="text-base font-semibold text-gray-900 dark:text-gray-100">{accountToArchive.name}</p>
+              <p className="text-gray-600 dark:text-gray-400">{t('accounts:confirmArchive')}</p>
+            </div>
+          ) : (
+            ''
+          )
+        }
+        isLoading={archiveLoading}
+        confirmButtonText={t('accounts:actions.archive')}
       />
     </PageShell>
   );

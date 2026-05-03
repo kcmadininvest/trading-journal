@@ -122,7 +122,9 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
         if not self.request.user.is_authenticated:
             return TradingAccount.objects.none()  # type: ignore
         
-        queryset = TradingAccount.objects.filter(user=self.request.user)  # type: ignore
+        queryset = TradingAccount.objects.filter(user=self.request.user).select_related(  # type: ignore
+            'copy_imports_from',
+        ).prefetch_related('accounts_that_copy_me')
         
         # Pour les opérations de détail (retrieve, update, delete), inclure les archivés
         # Pour la liste, exclure les archivés sauf si explicitement demandé
@@ -1569,9 +1571,24 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             
             # Récupérer le paramètre dry_run (pour l'aperçu)
             dry_run = request.data.get('dry_run', 'false').lower() == 'true'
-            
-            # Importer via l'utilitaire
-            importer = TopStepCSVImporter(user, trading_account)
+            duplicate_to_copy = request.data.get('duplicate_to_copy_accounts', 'true')
+            duplicate_to_copy = str(duplicate_to_copy).lower() not in ('false', '0', 'no')
+
+            target_accounts = [trading_account]
+            if duplicate_to_copy:
+                followers = (
+                    TradingAccount.objects.filter(  # type: ignore
+                        user=user,
+                        copy_imports_from=trading_account,
+                        status='active',
+                    )
+                    .exclude(pk=trading_account.pk)
+                    .order_by('name')
+                )
+                target_accounts = [trading_account] + list(followers)
+
+            # Importer via l'utilitaire (plusieurs comptes si copieurs configurés)
+            importer = TopStepCSVImporter(user, target_accounts=target_accounts)
             result = importer.import_from_string(content, csv_file.name, dry_run=dry_run)
             
             # Log des résultats
@@ -1621,6 +1638,8 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     response_data['total_pnl'] = result['total_pnl']
                 if 'total_fees' in result:
                     response_data['total_fees'] = result['total_fees']
+                if 'copy_accounts_count' in result:
+                    response_data['copy_accounts_count'] = result['copy_accounts_count']
                 
                 return Response(response_data, status=status.HTTP_201_CREATED)
             else:
@@ -2719,6 +2738,9 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         if trade_id:
             queryset = queryset.filter(trade__topstep_id=trade_id)
+            ta_f = self.request.query_params.get('trading_account')
+            if ta_f:
+                queryset = queryset.filter(trade__trading_account_id=ta_f)
         if strategy_respected is not None:
             queryset = queryset.filter(strategy_respected=strategy_respected.lower() == 'true')  # type: ignore
         if contract_name:
@@ -2750,10 +2772,14 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         
         try:
             # 🔒 SÉCURITÉ : Filtrer par utilisateur connecté
-            strategy = TradeStrategy.objects.filter(  # type: ignore
-                user=self.request.user,  # ✅ Filtre par utilisateur
-                trade__topstep_id=trade_id
-            ).first()
+            strategy_qs = TradeStrategy.objects.filter(  # type: ignore
+                user=self.request.user,
+                trade__topstep_id=trade_id,
+            )
+            ta = request.query_params.get('trading_account')
+            if ta:
+                strategy_qs = strategy_qs.filter(trade__trading_account_id=ta)
+            strategy = strategy_qs.order_by('-trade__id').first()
             if strategy:
                 serializer = self.get_serializer(strategy)
                 return Response(serializer.data)
@@ -3548,10 +3574,13 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 if not trade_id:
                     continue
                 
-                # Chercher le trade de l'utilisateur connecté uniquement
-                try:
-                    trade = TopStepTrade.objects.get(topstep_id=trade_id, user=self.request.user)  # type: ignore
-                except TopStepTrade.DoesNotExist:  # type: ignore
+                # Résoudre le trade (topstep_id peut exister sur plusieurs comptes)
+                trade_qs = TopStepTrade.objects.filter(topstep_id=trade_id, user=self.request.user)  # type: ignore
+                ta_id = strategy_data.get('trading_account_id')
+                if ta_id is not None:
+                    trade_qs = trade_qs.filter(trading_account_id=ta_id)
+                trade = trade_qs.order_by('-id').first()
+                if not trade:
                     continue
                 
                 # Créer ou mettre à jour la stratégie

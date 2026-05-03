@@ -2,10 +2,13 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TradingAccount } from '../../services/tradingAccounts';
 import { Currency } from '../../services/currencies';
 import { NumberInput } from '../common/NumberInput';
+import { SettingsStyleToggle } from '../ui/SettingsStyleToggle';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
 interface TradingAccountModalProps {
   account: TradingAccount | null;
+  /** Liste complète des comptes (pour sélecteur « copier depuis » et cohérence) */
+  allAccounts: TradingAccount[];
   isOpen: boolean;
   onClose: () => void;
   onSave: (accountId: number | null, data: Partial<TradingAccount>) => Promise<void>;
@@ -14,6 +17,7 @@ interface TradingAccountModalProps {
 
 const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
   account,
+  allAccounts,
   isOpen,
   onClose,
   onSave,
@@ -40,6 +44,11 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
   const currencyRef = useRef<HTMLDivElement | null>(null);
   const typeRef = useRef<HTMLDivElement | null>(null);
   const statusRef = useRef<HTMLDivElement | null>(null);
+
+  const leaderCandidates = useMemo(() => {
+    const selfId = account?.id;
+    return (allAccounts || []).filter((a) => selfId == null || a.id !== selfId);
+  }, [allAccounts, account?.id]);
 
   const orderedCurrencies = useMemo(() => {
     if (!currencies || currencies.length === 0) return [] as Currency[];
@@ -76,6 +85,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
         description: account.description || '',
         broker_account_id: account.broker_account_id || '',
         is_default: account.is_default,
+        copy_imports_from: account.copy_imports_from ?? null,
       });
     } else {
       setForm({
@@ -89,6 +99,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
         profit_target: undefined,
         profit_target_enabled: false,
         broker_account_id: '',
+        copy_imports_from: null,
       });
     }
     setError('');
@@ -122,6 +133,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
       const formData: Partial<TradingAccount> = {
         ...form,
         broker_account_id: (form as any).broker_account_id || '',
+        copy_imports_from: (form as any).copy_imports_from ?? null,
       };
       await onSave(account?.id || null, formData);
       // La modale sera fermée par handleSaveAccount
@@ -310,18 +322,22 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
               </div>
             </div>
 
-            <label htmlFor="mll_enabled" className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
-              <input
-                type="checkbox"
-                id="mll_enabled"
-                checked={(form as any).mll_enabled !== false}
-                onChange={(e) => setForm(prev => ({ ...prev, mll_enabled: e.target.checked } as any))}
-                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 cursor-pointer flex-shrink-0"
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="min-w-0">
+                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('accounts:form.enableMLL', { defaultValue: 'Activer le Maximum Loss Limit (MLL)' })}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                    {t('accounts:form.maximumLossLimitDescription', { defaultValue: 'Limite de perte maximale (saisie manuelle)' })}
+                  </span>
+                </div>
+              </div>
+              <SettingsStyleToggle
+                pressed={(form as any).mll_enabled !== false}
+                onPressedChange={(next) => setForm((prev) => ({ ...prev, mll_enabled: next } as any))}
               />
-              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('accounts:form.enableMLL', { defaultValue: 'Activer le Maximum Loss Limit (MLL)' })}
-              </span>
-            </label>
+            </div>
             {(form as any).mll_enabled !== false && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
@@ -348,18 +364,22 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
               </div>
             )}
 
-            <label htmlFor="profit_target_enabled" className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
-              <input
-                type="checkbox"
-                id="profit_target_enabled"
-                checked={(form as any).profit_target_enabled === true}
-                onChange={(e) => setForm(prev => ({ ...prev, profit_target_enabled: e.target.checked } as any))}
-                className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 cursor-pointer flex-shrink-0"
+            <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="min-w-0">
+                  <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('accounts:form.enableProfitTarget', { defaultValue: "Activer l'objectif de profit" })}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                    {t('accounts:form.profitTargetDescription', { defaultValue: 'Objectif de profit à atteindre (saisie manuelle)' })}
+                  </span>
+                </div>
+              </div>
+              <SettingsStyleToggle
+                pressed={(form as any).profit_target_enabled === true}
+                onPressedChange={(next) => setForm((prev) => ({ ...prev, profit_target_enabled: next } as any))}
               />
-              <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('accounts:form.enableProfitTarget', { defaultValue: 'Activer l\'objectif de profit' })}
-              </span>
-            </label>
+            </div>
             {(form as any).profit_target_enabled === true && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
@@ -452,17 +472,103 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <label className="inline-flex items-center gap-3 text-xs sm:text-sm text-gray-700 dark:text-gray-300 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                <input
-                  type="checkbox"
-                  className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 focus:ring-blue-500 bg-white dark:bg-gray-700 appearance-none checked:bg-blue-600 dark:checked:bg-blue-400 cursor-pointer flex-shrink-0"
-                  checked={Boolean((form as any).is_default)}
-                  onChange={(e) => setForm(prev => ({ ...prev, is_default: e.target.checked } as any))}
+            {account && (
+              <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50/80 dark:bg-indigo-900/20 p-3 sm:p-4">
+                <h3 className="text-xs sm:text-sm font-semibold text-indigo-900 dark:text-indigo-200 mb-2">
+                  {t('accounts:copyTrading.followersTitle')}
+                </h3>
+                {(account.accounts_copying_this_one?.length ?? 0) > 0 ? (
+                  <ul className="space-y-1.5 text-xs sm:text-sm text-gray-800 dark:text-gray-200">
+                    {(account.accounts_copying_this_one || []).map((c) => (
+                      <li key={c.id} className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{c.name}</span>
+                        <span className="text-gray-500 dark:text-gray-400">({t(`accounts:accountTypes.${c.account_type}`)})</span>
+                        <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded ${
+                          c.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200'
+                        }`}>
+                          {t(`accounts:status.${c.status}`)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                    {t('accounts:copyTrading.noFollowers')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/30 p-3 sm:p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-white/70 p-3 dark:bg-gray-800/50">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('accounts:copyTrading.copyFromEnabled')}
+                    </span>
+                  </div>
+                </div>
+                <SettingsStyleToggle
+                  pressed={
+                    (form as any).copy_imports_from != null && (form as any).copy_imports_from !== undefined
+                  }
+                  onPressedChange={(next) => {
+                    if (next) {
+                      const first = leaderCandidates[0];
+                      setForm((prev) => ({
+                        ...prev,
+                        copy_imports_from: first ? first.id : null,
+                      } as any));
+                    } else {
+                      setForm((prev) => ({ ...prev, copy_imports_from: null } as any));
+                    }
+                  }}
+                  disabled={leaderCandidates.length === 0}
                 />
-                <span>{t('accounts:form.setAsDefault', { defaultValue: 'Définir comme compte par défaut' })}</span>
-              </label>
-              <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.onlyOneDefault')}</div>
+              </div>
+              {(form as any).copy_imports_from != null && (form as any).copy_imports_from !== undefined && (
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    {t('accounts:copyTrading.leaderLabel')}
+                  </label>
+                  <select
+                    className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-xs sm:text-sm px-2 sm:px-3 py-2"
+                    value={(form as any).copy_imports_from ?? ''}
+                    onChange={(e) => {
+                      const v = e.target.value ? parseInt(e.target.value, 10) : null;
+                      setForm((prev) => ({ ...prev, copy_imports_from: v } as any));
+                    }}
+                  >
+                    {leaderCandidates.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({t(`accounts:accountTypes.${a.account_type}`)})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                    {t('accounts:copyTrading.leaderHelp')}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/30 p-3 sm:p-4">
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-white/70 p-3 dark:bg-gray-800/50">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="min-w-0 pr-2">
+                    <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('accounts:form.setAsDefault', { defaultValue: 'Définir comme compte par défaut' })}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                      {t('accounts:form.onlyOneDefault')}
+                    </span>
+                  </div>
+                </div>
+                <SettingsStyleToggle
+                  pressed={Boolean((form as any).is_default)}
+                  onPressedChange={(next) => setForm((prev) => ({ ...prev, is_default: next } as any))}
+                />
+              </div>
             </div>
 
             {/* Footer */}

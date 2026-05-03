@@ -75,6 +75,13 @@
     "profitTargetPlaceholder": "输入利润目标",
     "profitTargetDescription": "要达到的利润目标（手动输入）"
   },
+  "copyTrading": {
+    "followersTitle": "接收您导入副本的账户（本账户为来源）",
+    "noFollowers": "暂无跟随账户。请在其他账户中启用复制并将本账户设为来源。",
+    "copyFromEnabled": "本账户复制在下方所选账户上进行的 CSV 导入",
+    "leaderLabel": "来源账户（CSV 文件）",
+    "leaderHelp": "保存后，在该账户上导入时也会将交易复制到此账户。"
+  },
   "defaultCurrencyName": "Dollar américain",
   "onboarding": {
     "title": "创建您的第一个交易账户",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { User, UserUpdateData } from '../../services/userService';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { CustomSelect } from '../common/CustomSelect';
+import { SettingsStyleToggle } from '../ui/SettingsStyleToggle';
 
 interface UserEditModalProps {
   user: User | null;
@@ -47,11 +48,8 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError('');
   };
 
@@ -189,40 +187,45 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               />
             </div>
 
-            {/* Cases à cocher avec styles améliorés */}
             <div className="space-y-2 sm:space-y-3">
-              <label htmlFor="is_active" className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  name="is_active"
-                  checked={formData.is_active}
-                  onChange={handleInputChange}
-                  className="h-5 w-5 mt-0.5 rounded appearance-none flex-shrink-0 cursor-pointer"
-                />
-                <div className="flex-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100 select-none">
-                  <span className="font-medium">{t('users:editModal.accountActive')}</span>
-                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {formData.is_active ? t('users:active') : t('users:inactive')}
-                  </p>
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('users:editModal.accountActive')}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                      {formData.is_active ? t('users:active') : t('users:inactive')}
+                    </span>
+                  </div>
                 </div>
-              </label>
-              <label htmlFor="is_verified" className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="is_verified"
-                  name="is_verified"
-                  checked={formData.is_verified}
-                  onChange={handleInputChange}
-                  className="h-5 w-5 mt-0.5 rounded appearance-none flex-shrink-0 cursor-pointer"
+                <SettingsStyleToggle
+                  pressed={Boolean(formData.is_active)}
+                  onPressedChange={(next) => {
+                    setFormData((prev) => ({ ...prev, is_active: next }));
+                    setError('');
+                  }}
                 />
-                <div className="flex-1 text-xs sm:text-sm text-gray-900 dark:text-gray-100 select-none">
-                  <span className="font-medium">{t('users:editModal.emailVerified')}</span>
-                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {formData.is_verified ? t('users:verified') : t('users:notVerified')}
-                  </p>
+              </div>
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="min-w-0">
+                    <span className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('users:editModal.emailVerified')}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                      {formData.is_verified ? t('users:verified') : t('users:notVerified')}
+                    </span>
+                  </div>
                 </div>
-              </label>
+                <SettingsStyleToggle
+                  pressed={Boolean(formData.is_verified)}
+                  onPressedChange={(next) => {
+                    setFormData((prev) => ({ ...prev, is_verified: next }));
+                    setError('');
+                  }}
+                />
+              </div>
             </div>
 
             {/* Footer avec boutons */}

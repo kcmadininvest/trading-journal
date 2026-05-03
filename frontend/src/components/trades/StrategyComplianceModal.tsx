@@ -752,6 +752,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
         // Mode normal avec trades
         const strategiesToSave: BulkStrategyData[] = trades.map((trade) => ({
           trade_id: trade.topstep_id,
+          trading_account_id: tradingAccount,
           strategy_respected: trade.strategyRespected,
           gain_if_strategy_respected: trade.gainIfStrategyRespected,
           dominant_emotions: trade.dominantEmotions,

@@ -91,10 +91,10 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
           </div>
         </div>
 
-        {/* Variation et Total Trades regroupés */}
+        {/* Variation et Total Trades regroupés — variation en largeur contenu, le reste pour trades/cumul */}
         <div className="flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
           {accountBalance.initial > 0 && (
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex min-w-0 shrink-0 flex-col gap-1">
               <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {variationValue >= 0 
@@ -104,24 +104,28 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 </svg>
                 {t('dashboard:variation', { defaultValue: 'Variation' })}
               </span>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`text-xl font-semibold ${
-                  variationValue >= 0 
-                    ? 'text-blue-600 dark:text-blue-400' 
-                    : 'text-pink-600 dark:text-pink-400'
-                }`}>
-                  {hideProfitLoss 
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2 sm:flex-wrap">
+                <span
+                  className={`text-lg font-semibold tabular-nums sm:text-xl ${
+                    variationValue >= 0
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-pink-600 dark:text-pink-400'
+                  }`}
+                >
+                  {hideProfitLoss
                     ? maskValue(variationValue, currencySymbol)
-                    : formatCurrency(variationValue, currencySymbol, preferences.number_format, 2)
-                  }
+                    : formatCurrency(variationValue, currencySymbol, preferences.number_format, 2)}
                 </span>
                 {!hideProfitLoss && (
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    variationValue >= 0
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                      : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
-                  }`}>
-                    {variationValue >= 0 ? '+' : ''}{formatNumber(variationPercentage, 2, preferences.number_format)}%
+                  <span
+                    className={`inline-flex w-fit shrink-0 items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                      variationValue >= 0
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+                        : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
+                    }`}
+                  >
+                    {variationValue >= 0 ? '+' : ''}
+                    {formatNumber(variationPercentage, 2, preferences.number_format)}%
                   </span>
                 )}
               </div>
@@ -171,20 +175,23 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                     <span className="break-words text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
                       {t('dashboard:allAccountsCumulative', { defaultValue: 'Tous comptes (cumul)' })}
                     </span>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-base font-semibold text-gray-900 dark:text-gray-100 lg:text-xl">
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-x-2 xl:gap-x-1 2xl:gap-x-2">
+                      <span className="text-base font-semibold tabular-nums text-gray-900 dark:text-gray-100 xl:text-sm 2xl:text-base min-[1800px]:text-xl">
                         {globalAllAccountsActivity.totalPositions}
                       </span>
-                      <span className="text-xs font-medium lowercase text-gray-700 dark:text-gray-300 lg:text-base">
+                      <span className="text-xs font-medium lowercase leading-tight text-gray-700 dark:text-gray-300 xl:text-[0.625rem] xl:leading-tight 2xl:text-xs min-[1800px]:text-sm">
                         {t('dashboard:globalPositionsLabel', { defaultValue: 'positions' })}
                       </span>
-                      <span className="select-none text-xs text-gray-400 dark:text-gray-500 lg:text-base" aria-hidden>
+                      <span
+                        className="select-none text-xs leading-none text-gray-400 dark:text-gray-500 xl:text-[0.625rem] 2xl:text-xs min-[1800px]:text-sm"
+                        aria-hidden
+                      >
                         ·
                       </span>
-                      <span className="text-base font-semibold text-gray-900 dark:text-gray-100 lg:text-xl">
+                      <span className="text-base font-semibold tabular-nums text-gray-900 dark:text-gray-100 xl:text-sm 2xl:text-base min-[1800px]:text-xl">
                         {globalAllAccountsActivity.globalActiveDays}
                       </span>
-                      <span className="text-xs font-medium lowercase text-gray-700 dark:text-gray-300 lg:text-base">
+                      <span className="text-xs font-medium lowercase leading-tight text-gray-700 dark:text-gray-300 xl:text-[0.625rem] xl:leading-tight 2xl:text-xs min-[1800px]:text-sm">
                         {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}
                       </span>
                     </div>

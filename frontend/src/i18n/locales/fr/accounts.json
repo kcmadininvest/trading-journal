@@ -49,6 +49,7 @@
   },
   "deleteTitle": "Supprimer le compte",
   "deleteConfirm": "Supprimer définitivement le compte \"{{name}}\" et toutes ses données (trades associés) ?\n\nCette action est irréversible.",
+  "archiveModalTitle": "Archiver le compte",
   "confirmArchive": "Êtes-vous sûr de vouloir archiver ce compte ? Il ne sera plus visible par défaut.",
   "form": {
     "editTitle": "Modifier le compte",
@@ -87,6 +88,13 @@
     "profitTarget": "Objectif de profit",
     "profitTargetPlaceholder": "Saisir l'objectif de profit",
     "profitTargetDescription": "Objectif de profit à atteindre (saisie manuelle)"
+  },
+  "copyTrading": {
+    "followersTitle": "Comptes qui reçoivent une copie de vos imports (ce compte comme source)",
+    "noFollowers": "Aucun compte copieur. Sur un autre compte, activez la copie et choisissez celui-ci comme source.",
+    "copyFromEnabled": "Ce compte reçoit une copie des imports CSV effectués sur le compte ci-dessous",
+    "leaderLabel": "Compte source (fichier CSV)",
+    "leaderHelp": "Après enregistrement, un import sur ce compte dupliquera aussi les trades ici."
   },
   "defaultCurrencyName": "Dollar américain",
   "onboarding": {

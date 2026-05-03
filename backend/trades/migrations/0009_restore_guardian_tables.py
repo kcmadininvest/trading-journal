@@ -1,4 +1,11 @@
 # Generated manually to restore Guardian tables that were incorrectly removed
+#
+# Historique : une ancienne version de 0008 supprimait les tables Guardian ;
+# ce fichier recréait des tables minimales (CREATE IF NOT EXISTS), ce qui
+# entrait en conflit avec guardian.0001_initial sur les bases neuves (tests).
+# La suppression Guardian est désormais commentée dans 0008 ; l’app guardian
+# est la seule source de vérité pour le schéma. Cette migration reste vide
+# pour conserver le graphe (merge 0010).
 
 from django.db import migrations
 
@@ -9,33 +16,4 @@ class Migration(migrations.Migration):
         ('trades', '0008_remove_unused_tables'),
     ]
 
-    operations = [
-        # Restaurer les tables Guardian qui ont été incorrectement supprimées
-        # Ces tables sont nécessaires car django-guardian est configuré dans settings.py
-        migrations.RunSQL(
-            sql="""
-            -- Restaurer les tables Guardian nécessaires pour les permissions d'objets
-            CREATE TABLE IF NOT EXISTS guardian_userobjectpermission (
-                id SERIAL PRIMARY KEY,
-                object_pk VARCHAR(255) NOT NULL,
-                content_type_id INTEGER NOT NULL,
-                permission_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
-                UNIQUE (user_id, permission_id, object_pk, content_type_id)
-            );
-            
-            CREATE TABLE IF NOT EXISTS guardian_groupobjectpermission (
-                id SERIAL PRIMARY KEY,
-                object_pk VARCHAR(255) NOT NULL,
-                content_type_id INTEGER NOT NULL,
-                permission_id INTEGER NOT NULL,
-                group_id INTEGER NOT NULL,
-                UNIQUE (group_id, permission_id, object_pk, content_type_id)
-            );
-            """,
-            reverse_sql="""
-            -- Ne pas supprimer les tables Guardian car elles sont nécessaires
-            -- pour le bon fonctionnement de django-guardian configuré dans settings.py
-            """,
-        ),
-    ]
+    operations = []

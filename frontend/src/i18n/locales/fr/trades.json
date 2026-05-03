@@ -192,7 +192,10 @@
   "importModal": {
     "title": "Importer des trades",
     "format": "Format CSV",
-    "tradingAccount": "Compte de trading",
+    "tradingAccount": "Compte du fichier CSV",
+    "duplicateToCopiers": "Dupliquer vers les comptes copieurs configurés",
+    "duplicateToCopiersHelp": "{{count}} compte(s) copieur(s) actif(s) pour ce compte.",
+    "duplicateToCopiersNone": "Aucun compte copieur. Configurez la copie dans Comptes de trading → modifier un compte.",
     "csvFile": "Fichier CSV",
     "selectFile": "Veuillez sélectionner un fichier CSV.",
     "errorAnalyzing": "Erreur lors de l'analyse du fichier",

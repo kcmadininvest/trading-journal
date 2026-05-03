@@ -1,6 +1,8 @@
 import React from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 
+export type ConfirmModalVariant = 'default' | 'warning';
+
 interface ConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,7 +13,40 @@ interface ConfirmModalProps {
   confirmButtonText?: string;
   cancelButtonText?: string;
   showCancelButton?: boolean;
+  /** default = en-tête bleu (confirmation) ; warning = ambre (ex. archivage) */
+  variant?: ConfirmModalVariant;
 }
+
+const VARIANT_STYLES: Record<
+  ConfirmModalVariant,
+  {
+    headerBorder: string;
+    headerBg: string;
+    iconWrap: string;
+    iconText: string;
+    closeRing: string;
+    confirmBtn: string;
+  }
+> = {
+  default: {
+    headerBorder: 'border-blue-100 dark:border-blue-900/40',
+    headerBg: 'from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20',
+    iconWrap: 'bg-blue-100 dark:bg-blue-900/30',
+    iconText: 'text-blue-600 dark:text-blue-400',
+    closeRing: 'focus:ring-blue-500',
+    confirmBtn:
+      'bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2',
+  },
+  warning: {
+    headerBorder: 'border-amber-100 dark:border-amber-900/40',
+    headerBg: 'from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/15',
+    iconWrap: 'bg-amber-100 dark:bg-amber-900/30',
+    iconText: 'text-amber-600 dark:text-amber-400',
+    closeRing: 'focus:ring-amber-500',
+    confirmBtn:
+      'bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2',
+  },
+};
 
 const ConfirmModal: React.FC<ConfirmModalProps> = ({
   isOpen,
@@ -23,8 +58,10 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmButtonText,
   cancelButtonText,
   showCancelButton = true,
+  variant = 'default',
 }) => {
   const { t } = useI18nTranslation();
+  const vs = VARIANT_STYLES[variant];
 
   if (!isOpen) return null;
 
@@ -60,12 +97,40 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg transform transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 border border-gray-100 dark:border-gray-700 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative border-b border-blue-100 dark:border-blue-900/40 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-2xl px-6 py-4">
+        <div
+          className={`relative border-b bg-gradient-to-r rounded-t-2xl px-6 py-4 ${vs.headerBorder} ${vs.headerBg}`}
+        >
           <div className="flex items-center gap-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+            <div
+              className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${vs.iconWrap}`}
+            >
+              {variant === 'warning' ? (
+                <svg
+                  className={`w-6 h-6 ${vs.iconText}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className={`w-6 h-6 ${vs.iconText}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 pr-10">{defaultTitle}</h2>
           </div>
@@ -74,7 +139,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             <button
               onClick={onClose}
               onMouseDown={(e) => e.stopPropagation()}
-              className="absolute top-4 right-3 z-20 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors p-2 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
+              className={`absolute top-4 right-3 z-20 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors p-2 hover:bg-white/80 dark:hover:bg-gray-700/80 rounded-xl focus:outline-none focus:ring-2 ${vs.closeRing} focus:ring-offset-2 cursor-pointer`}
               type="button"
               aria-label="Fermer"
             >
@@ -109,7 +174,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
               type="button"
               onClick={handleConfirm}
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm shadow-sm hover:shadow-md"
+              className={`px-4 py-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium text-sm shadow-sm hover:shadow-md ${vs.confirmBtn}`}
             >
               {isLoading ? (
                 <span className="flex items-center">

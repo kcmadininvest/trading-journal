@@ -49,6 +49,7 @@
   },
   "deleteTitle": "Konto löschen",
   "deleteConfirm": "Konto \"{{name}}\" und alle seine Daten (zugehörige Trades) dauerhaft löschen?\n\nDiese Aktion ist unwiderruflich.",
+  "archiveModalTitle": "Konto archivieren",
   "confirmArchive": "Sind Sie sicher, dass Sie dieses Konto archivieren möchten? Es wird standardmäßig nicht mehr sichtbar sein.",
   "form": {
     "editTitle": "Konto bearbeiten",
@@ -87,6 +88,13 @@
     "profitTarget": "Gewinnziel",
     "profitTargetPlaceholder": "Gewinnziel eingeben",
     "profitTargetDescription": "Zu erreichendes Gewinnziel (manuelle Eingabe)"
+  },
+  "copyTrading": {
+    "followersTitle": "Konten, die eine Kopie Ihrer Importe erhalten (dieses Konto als Quelle)",
+    "noFollowers": "Keine Folgekonten. Aktivieren Sie auf einem anderen Konto die Kopie und wählen Sie dieses als Quelle.",
+    "copyFromEnabled": "Dieses Konto erhält eine Kopie der CSV-Importe, die auf dem unten gewählten Konto durchgeführt werden",
+    "leaderLabel": "Quellkonto (CSV-Datei)",
+    "leaderHelp": "Nach dem Speichern wird ein Import auf diesem Konto die Trades auch hier duplizieren."
   },
   "defaultCurrencyName": "US-Dollar",
   "onboarding": {

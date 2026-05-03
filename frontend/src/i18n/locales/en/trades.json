@@ -192,7 +192,10 @@
   "importModal": {
     "title": "Import Trades",
     "format": "CSV Format",
-    "tradingAccount": "Trading Account",
+    "tradingAccount": "CSV file account",
+    "duplicateToCopiers": "Duplicate to configured follower accounts",
+    "duplicateToCopiersHelp": "{{count}} active follower account(s) for this account.",
+    "duplicateToCopiersNone": "No follower accounts. Set up copy trading under Trading Accounts → edit an account.",
     "csvFile": "CSV File",
     "selectFile": "Please select a CSV file.",
     "errorAnalyzing": "Error analyzing file",

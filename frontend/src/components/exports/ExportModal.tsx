@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import exportService, { ExportTemplate, ExportConfiguration } from '../../services/exports';
 import { DateInput } from '../common/DateInput';
 import { ConfirmModal, DeleteConfirmModal } from '../ui';
+import { SettingsStyleToggle } from '../ui/SettingsStyleToggle';
 import { CustomSelect } from '../common/CustomSelect';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -469,40 +470,34 @@ const ExportModal: React.FC<ExportModalProps> = ({
               <div>
                 <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">{t('statistics:exportModal.optionsTitle', { defaultValue: 'Options' })}</h4>
                 <div className="space-y-2">
-                  <label className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <input
-                      type="checkbox"
-                      checked={configuration.options.watermark}
-                      onChange={() =>
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                    <span className="min-w-0 flex-1 pr-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('statistics:exportModal.options.watermark', { defaultValue: 'Inclure un watermark' })}
+                    </span>
+                    <SettingsStyleToggle
+                      pressed={Boolean(configuration.options.watermark)}
+                      onPressedChange={(next) =>
                         setConfiguration((prev) => ({
                           ...prev,
-                          options: {
-                            ...prev.options,
-                            watermark: !prev.options.watermark,
-                          },
+                          options: { ...prev.options, watermark: next },
                         }))
                       }
-                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer flex-shrink-0"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('statistics:exportModal.options.watermark', { defaultValue: 'Inclure un watermark' })}</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer p-2 -m-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                    <input
-                      type="checkbox"
-                      checked={configuration.options.page_numbers}
-                      onChange={() =>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                    <span className="min-w-0 flex-1 pr-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t('statistics:exportModal.options.pageNumbers', { defaultValue: 'Numéros de page' })}
+                    </span>
+                    <SettingsStyleToggle
+                      pressed={Boolean(configuration.options.page_numbers)}
+                      onPressedChange={(next) =>
                         setConfiguration((prev) => ({
                           ...prev,
-                          options: {
-                            ...prev.options,
-                            page_numbers: !prev.options.page_numbers,
-                          },
+                          options: { ...prev.options, page_numbers: next },
                         }))
                       }
-                      className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer flex-shrink-0"
                     />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{t('statistics:exportModal.options.pageNumbers', { defaultValue: 'Numéros de page' })}</span>
-                  </label>
+                  </div>
                 </div>
               </div>
             </div>

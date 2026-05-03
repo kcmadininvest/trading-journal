@@ -89,6 +89,8 @@ export interface DailyCompliance {
 
 export interface BulkStrategyData {
   trade_id: string;
+  /** Résout l’ambiguïté si le même topstep_id existe sur plusieurs comptes */
+  trading_account_id?: number;
   strategy_respected?: boolean | null;
   dominant_emotions?: string[];
   gain_if_strategy_respected?: boolean | null;
@@ -173,8 +175,11 @@ class TradeStrategiesService {
   /**
    * Récupère la stratégie pour un trade spécifique
    */
-  async byTrade(tradeId: string): Promise<TradeStrategy | null> {
+  async byTrade(tradeId: string, tradingAccountId?: number): Promise<TradeStrategy | null> {
     const params = new URLSearchParams({ trade_id: tradeId });
+    if (tradingAccountId != null) {
+      params.append('trading_account', String(tradingAccountId));
+    }
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/by_trade/?${params}`
     );
@@ -208,7 +213,7 @@ class TradeStrategiesService {
       trade_id: tradeId,
       ...data,
     };
-    const existing = await this.byTrade(tradeId);
+    const existing = await this.byTrade(tradeId, payload.trading_account_id);
     
     if (existing) {
       // Mise à jour

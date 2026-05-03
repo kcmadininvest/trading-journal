@@ -40,6 +40,9 @@
     "unarchive": "Desarchivia"
   },
   "deleteConfirm": "Elimina definitivamente il conto \"{{name}}\" e tutti i suoi dati (trades associati) ?\n\nQuesta azione è irreversibile.",
+  "deleteTitle": "Elimina conto",
+  "archiveModalTitle": "Archivia conto",
+  "confirmArchive": "Archiviare questo conto? Non sarà più visibile per impostazione predefinita.",
   "form": {
     "editTitle": "Modifica il conto",
     "newTitle": "Nuovo conto",
@@ -75,7 +78,14 @@
     "profitTargetPlaceholder": "Inserisci obiettivo di profitto",
     "profitTargetDescription": "Obiettivo di profitto da raggiungere (inserimento manuale)"
   },
-  "defaultCurrencyName": "Dollar américain",
+  "copyTrading": {
+    "followersTitle": "Conti che ricevono una copia delle tue importazioni (questo conto come origine)",
+    "noFollowers": "Nessun conto seguace. Su un altro conto, attiva la copia e scegli questo come origine.",
+    "copyFromEnabled": "Questo conto riceve una copia delle importazioni CSV effettuate sul conto sotto indicato",
+    "leaderLabel": "Conto di origine (file CSV)",
+    "leaderHelp": "Dopo il salvataggio, un'importazione su quel conto duplicherà anche i trade qui."
+  },
+  "defaultCurrencyName": "Dollaro statunitense",
   "onboarding": {
     "title": "Crea il tuo primo conto di trading",
     "description": "Prima di iniziare a registrare le tue operazioni, crea un conto di trading. Ti abbiamo reindirizzato alla scheda 'Conti di Trading' per guidarti.",

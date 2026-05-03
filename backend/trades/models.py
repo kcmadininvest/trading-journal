@@ -153,6 +153,16 @@ class TradingAccount(models.Model):
         verbose_name='Compte par défaut',
         help_text='Compte sélectionné par défaut pour cet utilisateur'
     )
+
+    copy_imports_from = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='accounts_that_copy_me',
+        verbose_name='Copier les imports depuis',
+        help_text='Si défini, les imports CSV sur ce compte source seront aussi dupliqués sur ce compte.',
+    )
     
     # Métadonnées système
     created_at = models.DateTimeField(
@@ -173,6 +183,7 @@ class TradingAccount(models.Model):
             models.Index(fields=['user', 'status']),
             models.Index(fields=['account_type']),
             models.Index(fields=['is_default']),
+            models.Index(fields=['copy_imports_from']),
         ]
     
     def __str__(self):
@@ -411,12 +422,11 @@ class TopStepTrade(models.Model):
         help_text='Compte de trading associé à ce trade'
     )
     
-    # Id (champ original TopStep)
+    # Id (champ original TopStep) — unicité par (user, trading_account, topstep_id), pas globalement
     topstep_id = models.CharField(
         max_length=50,
-        unique=True,
         verbose_name='ID TopStep',
-        help_text='ID unique du trade dans TopStep'
+        help_text='ID du trade dans l’export broker (unique par compte pour cet utilisateur)'
     )
     
     # ContractName
