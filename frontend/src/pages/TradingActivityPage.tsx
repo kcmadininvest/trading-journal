@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast/headless';
 import { PageShell } from '../components/layout';
+import { DeleteConfirmModal, Tooltip } from '../components/ui';
 import { useColonBeforeValue } from '../hooks/useColonBeforeValue';
 import { usePreferences } from '../hooks/usePreferences';
 import {
@@ -41,6 +42,59 @@ const MODAL_DATE_INPUT_CLASS =
   'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70';
 
 type TradingActivityT = (key: string) => string;
+
+function TradingActivityLedgerActions({
+  editLabel,
+  deleteLabel,
+  onEdit,
+  onRequestDelete,
+  compact,
+}: {
+  editLabel: string;
+  deleteLabel: string;
+  onEdit: () => void;
+  onRequestDelete: () => void;
+  compact: boolean;
+}) {
+  const pad = compact ? 'p-1.5' : 'p-2';
+  const icon = compact ? 'h-4 w-4' : 'h-5 w-5';
+  return (
+    <div className={`inline-flex items-center ${compact ? 'justify-end gap-2' : 'justify-end gap-3'}`}>
+      <Tooltip content={editLabel} position="top">
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={editLabel}
+          className={`${pad} rounded-lg text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-300`}
+        >
+          <svg className={icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+        </button>
+      </Tooltip>
+      <Tooltip content={deleteLabel} position="top">
+        <button
+          type="button"
+          onClick={onRequestDelete}
+          aria-label={deleteLabel}
+          className={`${pad} rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300`}
+        >
+          <svg className={icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-7 0h8"
+            />
+          </svg>
+        </button>
+      </Tooltip>
+    </div>
+  );
+}
 
 function MobileCurrencySummaryCard({
   code,
@@ -198,21 +252,17 @@ function MobileExpenseCard({
           </dd>
         </div>
       </dl>
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="min-h-[44px] flex-1 rounded-lg border border-blue-200 bg-blue-50 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-        >
-          {t('actions.edit')}
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="min-h-[44px] flex-1 rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 dark:border-red-900 dark:bg-red-900/25 dark:text-red-300 dark:hover:bg-red-900/40"
-        >
-          {t('actions.delete')}
-        </button>
+      <div
+        className="mt-4 flex w-full flex-row justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-600"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <TradingActivityLedgerActions
+          editLabel={t('actions.edit')}
+          deleteLabel={t('actions.delete')}
+          onEdit={onEdit}
+          onRequestDelete={onDelete}
+          compact={false}
+        />
       </div>
     </article>
   );
@@ -263,21 +313,17 @@ function MobileCreditCard({
           <dd className="mt-0.5 break-words text-xs text-gray-800 dark:text-gray-200">{linkLabel}</dd>
         </div>
       </dl>
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="min-h-[44px] flex-1 rounded-lg border border-blue-200 bg-blue-50 py-2.5 text-sm font-medium text-blue-700 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
-        >
-          {t('actions.edit')}
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          className="min-h-[44px] flex-1 rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 dark:border-red-900 dark:bg-red-900/25 dark:text-red-300 dark:hover:bg-red-900/40"
-        >
-          {t('actions.delete')}
-        </button>
+      <div
+        className="mt-4 flex w-full flex-row justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-600"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <TradingActivityLedgerActions
+          editLabel={t('actions.edit')}
+          deleteLabel={t('actions.delete')}
+          onEdit={onEdit}
+          onRequestDelete={onDelete}
+          compact={false}
+        />
       </div>
     </article>
   );
@@ -285,6 +331,7 @@ function MobileCreditCard({
 
 const TradingActivityPage: React.FC = () => {
   const { t } = useI18nTranslation('trading_activity');
+  const { t: tCommon } = useI18nTranslation('common');
   const { preferences } = usePreferences();
   const colonFr = useColonBeforeValue();
   const defaultCurrency = preferences.default_currency || 'USD';
@@ -306,6 +353,9 @@ const TradingActivityPage: React.FC = () => {
   const [editingCredit, setEditingCredit] = useState<TradingActivityCredit | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [ledgerTab, setLedgerTab] = useState<'debit' | 'credit'>('debit');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'expense' | 'credit'; id: number } | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const refreshWithdrawalSuggestions = useCallback(async () => {
     try {
@@ -568,25 +618,39 @@ const TradingActivityPage: React.FC = () => {
     }
   };
 
-  const deleteExpense = async (id: number) => {
-    if (!window.confirm(t('confirm.deleteExpense'))) return;
-    try {
-      await tradingActivityService.deleteExpense(id);
-      toast.success(t('toast.deleted'));
-      await loadAll();
-    } catch (e: any) {
-      toast.error(e?.message || t('errors.save'));
-    }
+  const requestDeleteExpense = (id: number) => {
+    setDeleteTarget({ kind: 'expense', id });
+    setDeleteModalOpen(true);
   };
 
-  const deleteCredit = async (id: number) => {
-    if (!window.confirm(t('confirm.deleteCredit'))) return;
+  const requestDeleteCredit = (id: number) => {
+    setDeleteTarget({ kind: 'credit', id });
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (deleteLoading) return;
+    setDeleteModalOpen(false);
+    setDeleteTarget(null);
+  };
+
+  const confirmDeleteLedgerRow = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
     try {
-      await tradingActivityService.deleteCredit(id);
+      if (deleteTarget.kind === 'expense') {
+        await tradingActivityService.deleteExpense(deleteTarget.id);
+      } else {
+        await tradingActivityService.deleteCredit(deleteTarget.id);
+      }
       toast.success(t('toast.deleted'));
+      setDeleteModalOpen(false);
+      setDeleteTarget(null);
       await loadAll();
     } catch (e: any) {
       toast.error(e?.message || t('errors.save'));
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -763,7 +827,7 @@ const TradingActivityPage: React.FC = () => {
                           dateFormat={dateFormatPref}
                           timezone={timezonePref}
                           onEdit={() => openEditExpense(row)}
-                          onDelete={() => deleteExpense(row.id)}
+                          onDelete={() => requestDeleteExpense(row.id)}
                         />
                       </div>
                     ))}
@@ -805,21 +869,14 @@ const TradingActivityPage: React.FC = () => {
                                   ? `${formatNumber(row.secondary_amount, 2, numberFormat)} ${row.secondary_currency}`
                                   : '—'}
                               </td>
-                              <td className="whitespace-nowrap px-3 py-2">
-                                <button
-                                  type="button"
-                                  className="mr-2 text-blue-600 dark:text-blue-400"
-                                  onClick={() => openEditExpense(row)}
-                                >
-                                  {t('actions.edit')}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="text-red-600 dark:text-red-400"
-                                  onClick={() => deleteExpense(row.id)}
-                                >
-                                  {t('actions.delete')}
-                                </button>
+                              <td className="whitespace-nowrap px-3 py-2 text-right">
+                                <TradingActivityLedgerActions
+                                  editLabel={t('actions.edit')}
+                                  deleteLabel={t('actions.delete')}
+                                  onEdit={() => openEditExpense(row)}
+                                  onRequestDelete={() => requestDeleteExpense(row.id)}
+                                  compact
+                                />
                               </td>
                             </tr>
                           ))}
@@ -867,7 +924,7 @@ const TradingActivityPage: React.FC = () => {
                           dateFormat={dateFormatPref}
                           timezone={timezonePref}
                           onEdit={() => openEditCredit(row)}
-                          onDelete={() => deleteCredit(row.id)}
+                          onDelete={() => requestDeleteCredit(row.id)}
                         />
                       </div>
                     ))}
@@ -903,21 +960,14 @@ const TradingActivityPage: React.FC = () => {
                                   ? `#${row.linked_account_transaction_detail.id} ${row.linked_account_transaction_detail.trading_account_name}`
                                   : '—'}
                               </td>
-                              <td className="whitespace-nowrap px-3 py-2">
-                                <button
-                                  type="button"
-                                  className="mr-2 text-blue-600 dark:text-blue-400"
-                                  onClick={() => openEditCredit(row)}
-                                >
-                                  {t('actions.edit')}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="text-red-600 dark:text-red-400"
-                                  onClick={() => deleteCredit(row.id)}
-                                >
-                                  {t('actions.delete')}
-                                </button>
+                              <td className="whitespace-nowrap px-3 py-2 text-right">
+                                <TradingActivityLedgerActions
+                                  editLabel={t('actions.edit')}
+                                  deleteLabel={t('actions.delete')}
+                                  onEdit={() => openEditCredit(row)}
+                                  onRequestDelete={() => requestDeleteCredit(row.id)}
+                                  compact
+                                />
                               </td>
                             </tr>
                           ))}
@@ -1298,6 +1348,26 @@ const TradingActivityPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <DeleteConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDeleteLedgerRow}
+        title={
+          deleteTarget?.kind === 'expense'
+            ? t('confirm.deleteExpense')
+            : deleteTarget?.kind === 'credit'
+              ? t('confirm.deleteCredit')
+              : t('actions.delete')
+        }
+        message={
+          <p className="text-gray-600 dark:text-gray-400">
+            {tCommon('deleteConfirmGeneric', { defaultValue: 'This action cannot be undone.' })}
+          </p>
+        }
+        isLoading={deleteLoading}
+        confirmButtonText={t('actions.delete')}
+      />
     </PageShell>
   );
 };
