@@ -1,0 +1,89 @@
+{
+  "title": "Rentabilität der Handelsaktivität",
+  "subtitle": "Ausgaben (Bewertungen, Daten, Resets…) und Gutschriften (Auszahlungen), ohne App-Abonnement.",
+  "loading": "Wird geladen…",
+  "tabs": {
+    "debit": "Lastschrift",
+    "credit": "Gutschrift",
+    "ariaLabel": "Ausgaben und Gutschriften"
+  },
+  "summary": {
+    "primaryTitle": "Salden nach Hauptwährung",
+    "secondaryTitle": "Salden nach Zweitwährung",
+    "credits": "Gutschriften",
+    "expenses": "Ausgaben",
+    "balance": "Saldo",
+    "empty": "Noch keine Daten."
+  },
+  "expenses": {
+    "title": "Ausgaben (Lastschrift)",
+    "add": "Ausgabe hinzufügen",
+    "edit": "Ausgabe bearbeiten",
+    "empty": "Keine Ausgaben erfasst.",
+    "modalNewDesc": "Geben Sie Beträge und Angaben zur Ausgabe ein.",
+    "modalEditDesc": "Felder anpassen und speichern."
+  },
+  "credits": {
+    "title": "Gutschriften",
+    "add": "Gutschrift hinzufügen",
+    "edit": "Gutschrift bearbeiten",
+    "empty": "Keine Gutschriften erfasst.",
+    "modalNewDesc": "Erfassen Sie eine Gutschrift oder verknüpfen Sie sie mit einer Kontoauszahlung.",
+    "modalEditDesc": "Gutschrift anpassen und speichern.",
+    "linkedWithdrawal": "Verknüpfte Auszahlung",
+    "linkWithdrawal": "Mit Auszahlung verknüpfen (Trading-Konto)",
+    "noLink": "Keine Verknüpfung"
+  },
+  "table": {
+    "date": "Datum",
+    "category": "Kategorie",
+    "label": "Bezeichnung",
+    "subtotal": "Zwischensumme",
+    "vat": "MwSt.",
+    "total": "Gesamt",
+    "ref": "Ref.",
+    "secondary": "Sekundär",
+    "amount": "Betrag"
+  },
+  "form": {
+    "date": "Datum",
+    "primaryCurrency": "Hauptwährung",
+    "subtotal": "Zwischensumme",
+    "vat": "MwSt. (20 % vorgeschlagen)",
+    "total": "Gesamt (Zwischensumme + MwSt.)",
+    "ref": "Rechnungsreferenz",
+    "category": "Kategorie",
+    "categoryNone": "— Keine —",
+    "newCategory": "Anlegen",
+    "newCategoryPlaceholder": "Neue Kategorie…",
+    "label": "Bezeichnung",
+    "secondaryAmount": "Sekundärbetrag",
+    "secondaryCurrency": "Zweitwährung",
+    "amount": "Betrag",
+    "notes": "Notizen",
+    "none": "—"
+  },
+  "actions": {
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "closeModal": "Schließen"
+  },
+  "toast": {
+    "expenseCreated": "Ausgabe gespeichert.",
+    "expenseUpdated": "Ausgabe aktualisiert.",
+    "creditCreated": "Gutschrift gespeichert.",
+    "creditUpdated": "Gutschrift aktualisiert.",
+    "deleted": "Gelöscht.",
+    "categoryCreated": "Kategorie angelegt."
+  },
+  "errors": {
+    "load": "Daten konnten nicht geladen werden.",
+    "save": "Speichern fehlgeschlagen."
+  },
+  "confirm": {
+    "deleteExpense": "Diese Ausgabe löschen?",
+    "deleteCredit": "Diese Gutschrift löschen?"
+  }
+}

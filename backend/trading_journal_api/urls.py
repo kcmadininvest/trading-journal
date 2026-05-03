@@ -171,6 +171,7 @@ urlpatterns = [
     path('api/trades/', include('trades.urls')),
     path('api/daily-journal/', include('daily_journal.urls')),
     path('api/billing/', include('billing.urls')),
+    path('api/trading-activity/', include('trading_activity.urls')),
 ]
 
 # Servir les fichiers media et static AVANT le catch-all React

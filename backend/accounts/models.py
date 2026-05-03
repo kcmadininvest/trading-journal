@@ -163,7 +163,13 @@ class UserPreferences(models.Model):
         default='comma',
         verbose_name=_('Format des nombres')
     )
-    
+    default_currency = models.CharField(
+        max_length=3,
+        default='USD',
+        verbose_name=_('Devise par défaut (rentabilité activité)'),
+        help_text=_('Code ISO 4217 utilisé par défaut pour les nouvelles écritures débit/crédit.'),
+    )
+
     # Préférences d'affichage
     theme = models.CharField(
         max_length=10,

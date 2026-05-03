@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import userService, { UserPreferences, ActiveSession, LoginHistoryEntry, PasswordChangeData } from '../services/userService';
+import { TRADING_CURRENCY_CODES } from '../constants/tradingCurrencies';
 import authService from '../services/auth';
 import { changeLanguage } from '../i18n/config';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -169,6 +170,7 @@ const SettingsPage: React.FC = () => {
     timezone: 'Europe/Paris',
     date_format: 'EU',
     number_format: 'comma',
+    default_currency: 'USD',
     theme: 'light',
     font_size: 'medium',
     font_family: 'inter',
@@ -908,6 +910,21 @@ const SettingsPage: React.FC = () => {
                       { value: 'point', label: t('settings:numberFormatPoint') },
                     ]}
                   />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('settings:defaultCurrency')}
+                  </label>
+                  <CustomSelect
+                    value={preferences.default_currency || 'USD'}
+                    onChange={(value) =>
+                      setPreferences({ ...preferences, default_currency: value as string })
+                    }
+                    options={TRADING_CURRENCY_CODES.map((code) => ({ value: code, label: code }))}
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('settings:defaultCurrencyHelp')}
+                  </p>
                 </div>
               </div>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">

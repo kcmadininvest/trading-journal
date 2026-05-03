@@ -94,6 +94,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     timezone: getInitialTimezone(), // Détecter automatiquement le timezone
     date_format: 'EU',
     number_format: 'comma',
+    default_currency: 'USD',
     theme: getInitialTheme(),
     font_size: getInitialFontSize(),
     font_family: getStoredAppFontFamily(),
@@ -117,6 +118,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setPreferences({
           ...prefs,
           items_per_page: prefs.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
+          default_currency: prefs.default_currency || 'USD',
         });
         // Appliquer le thème immédiatement
         const root = document.documentElement;

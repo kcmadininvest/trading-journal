@@ -1,0 +1,89 @@
+{
+  "title": "Trading activity profitability",
+  "subtitle": "Costs (evals, data, resets…) and credits (withdrawals), separate from app subscription.",
+  "loading": "Loading…",
+  "tabs": {
+    "debit": "Debit",
+    "credit": "Credit",
+    "ariaLabel": "Expenses and credits"
+  },
+  "summary": {
+    "primaryTitle": "Balances by primary currency",
+    "secondaryTitle": "Balances by secondary currency",
+    "credits": "Credits",
+    "expenses": "Expenses",
+    "balance": "Balance",
+    "empty": "No data yet."
+  },
+  "expenses": {
+    "title": "Expenses (debit)",
+    "add": "Add expense",
+    "edit": "Edit expense",
+    "empty": "No expenses yet.",
+    "modalNewDesc": "Enter amounts and details for this expense.",
+    "modalEditDesc": "Update the fields, then save."
+  },
+  "credits": {
+    "title": "Credits",
+    "add": "Add credit",
+    "edit": "Edit credit",
+    "empty": "No credits yet.",
+    "modalNewDesc": "Record a credit or link it to an account withdrawal.",
+    "modalEditDesc": "Update the credit, then save.",
+    "linkedWithdrawal": "Linked withdrawal",
+    "linkWithdrawal": "Link to account withdrawal",
+    "noLink": "No link"
+  },
+  "table": {
+    "date": "Date",
+    "category": "Category",
+    "label": "Label",
+    "subtotal": "Subtotal",
+    "vat": "VAT",
+    "total": "Total",
+    "ref": "Ref.",
+    "secondary": "Secondary",
+    "amount": "Amount"
+  },
+  "form": {
+    "date": "Date",
+    "primaryCurrency": "Primary currency",
+    "subtotal": "Subtotal",
+    "vat": "VAT (20% suggested)",
+    "total": "Total (subtotal + VAT)",
+    "ref": "Invoice reference",
+    "category": "Category",
+    "categoryNone": "— None —",
+    "newCategory": "Create",
+    "newCategoryPlaceholder": "New category…",
+    "label": "Label",
+    "secondaryAmount": "Secondary amount",
+    "secondaryCurrency": "Secondary currency",
+    "amount": "Amount",
+    "notes": "Notes",
+    "none": "—"
+  },
+  "actions": {
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "closeModal": "Close"
+  },
+  "toast": {
+    "expenseCreated": "Expense saved.",
+    "expenseUpdated": "Expense updated.",
+    "creditCreated": "Credit saved.",
+    "creditUpdated": "Credit updated.",
+    "deleted": "Deleted.",
+    "categoryCreated": "Category created."
+  },
+  "errors": {
+    "load": "Could not load data.",
+    "save": "Could not save."
+  },
+  "confirm": {
+    "deleteExpense": "Delete this expense?",
+    "deleteCredit": "Delete this credit?"
+  }
+}

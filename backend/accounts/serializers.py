@@ -7,6 +7,14 @@ import re
 from datetime import datetime, timedelta
 from .models import User, UserPreferences
 
+# Aligné sur trading_activity.constants.COMMON_CURRENCY_CODES (éviter import cross-app au chargement)
+_ALLOWED_DEFAULT_CURRENCIES = frozenset(
+    {
+        'USD', 'EUR', 'GBP', 'CHF', 'CAD', 'AUD', 'JPY', 'CNY', 'SEK', 'NOK', 'DKK',
+        'PLN', 'HKD', 'SGD', 'NZD', 'MXN', 'ZAR',
+    }
+)
+
 _JOURNAL_PERIOD_PRESETS = frozenset({
     'today', 'thisWeek', 'lastWeek', 'thisMonth', 'lastMonth',
     'last3Months', 'last6Months', 'thisYear', 'rollingYear', 'lastYear', 'allTime', 'custom',
@@ -444,10 +452,18 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('Valeur de stratégie invalide (entier ou null).')
         return cleaned
 
+    def validate_default_currency(self, value: str) -> str:
+        if not value:
+            return 'USD'
+        code = str(value).strip().upper()
+        if code not in _ALLOWED_DEFAULT_CURRENCIES:
+            raise serializers.ValidationError('Code devise non supporté pour la rentabilité activité.')
+        return code
+
     class Meta:
         model = UserPreferences
         fields = (
-            'language', 'timezone', 'date_format', 'number_format',
+            'language', 'timezone', 'date_format', 'number_format', 'default_currency',
             'theme', 'font_size', 'font_family', 'sidebar_collapsed', 'email_goal_alerts',
             'import_guide_collapsed', 'items_per_page', 'privacy_overrides',
             'show_pre_market', 'journal_period', 'journal_position_strategies',

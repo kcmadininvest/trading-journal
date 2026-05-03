@@ -83,6 +83,7 @@ const Header: React.FC<HeaderProps> = ({
       analytics: t('navigation:analytics'),
       accounts: t('navigation:accounts'),
       transactions: t('navigation:transactions', { defaultValue: 'Transactions' }),
+      'trading-activity': t('navigation:tradingActivity', { defaultValue: 'Rentabilité activité' }),
       goals: t('navigation:goals'),
       billing: t('navigation:billing', { defaultValue: 'Abonnement' }),
       'billing-success': t('navigation:billing', { defaultValue: 'Abonnement' }),

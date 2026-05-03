@@ -181,6 +181,11 @@ import jaBilling from './locales/ja/billing.json';
 import koBilling from './locales/ko/billing.json';
 import zhBilling from './locales/zh/billing.json';
 
+import frTradingActivity from './locales/fr/trading_activity.json';
+import enTradingActivity from './locales/en/trading_activity.json';
+import esTradingActivity from './locales/es/trading_activity.json';
+import deTradingActivity from './locales/de/trading_activity.json';
+
 // Custom detector qui utilise navigator.languages pour respecter l'ordre de préférence (comme YouTube)
 const customNavigatorLanguagesDetector = {
   name: 'customNavigatorLanguages',
@@ -248,6 +253,7 @@ const resources = {
     contact: frContact,
     calculator: frCalculator,
     billing: frBilling,
+    trading_activity: frTradingActivity,
   },
   en: {
     common: enCommon,
@@ -273,6 +279,7 @@ const resources = {
     contact: enContact,
     calculator: enCalculator,
     billing: enBilling,
+    trading_activity: enTradingActivity,
   },
   es: {
     common: esCommon,
@@ -298,6 +305,7 @@ const resources = {
     contact: esContact,
     calculator: esCalculator,
     billing: esBilling,
+    trading_activity: esTradingActivity,
   },
   de: {
     common: deCommon,
@@ -323,6 +331,7 @@ const resources = {
     contact: deContact,
     calculator: deCalculator,
     billing: deBilling,
+    trading_activity: deTradingActivity,
   },
   it: {
     common: itCommon,
@@ -338,6 +347,7 @@ const resources = {
     accounts: itAccounts,
     auth: itAuth,
     billing: itBilling,
+    trading_activity: enTradingActivity,
   },
   pt: {
     common: ptCommon,
@@ -353,6 +363,7 @@ const resources = {
     accounts: ptAccounts,
     auth: ptAuth,
     billing: ptBilling,
+    trading_activity: enTradingActivity,
   },
   ja: {
     common: jaCommon,
@@ -368,6 +379,7 @@ const resources = {
     accounts: jaAccounts,
     auth: jaAuth,
     billing: jaBilling,
+    trading_activity: enTradingActivity,
   },
   ko: {
     common: koCommon,
@@ -383,6 +395,7 @@ const resources = {
     accounts: koAccounts,
     auth: koAuth,
     billing: koBilling,
+    trading_activity: enTradingActivity,
   },
   zh: {
     common: zhCommon,
@@ -398,6 +411,7 @@ const resources = {
     accounts: zhAccounts,
     auth: zhAuth,
     billing: zhBilling,
+    trading_activity: enTradingActivity,
   },
 };
 
@@ -461,7 +475,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'trading_activity'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

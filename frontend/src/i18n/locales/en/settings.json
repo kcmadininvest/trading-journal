@@ -45,6 +45,8 @@
   "numberFormat": "Number Format",
   "numberFormatComma": "Comma (1,234.56)",
   "numberFormatPoint": "Point (1.234,56)",
+  "defaultCurrency": "Default currency (trading activity profitability)",
+  "defaultCurrencyHelp": "ISO code used to pre-fill primary amounts for trading activity expenses and credits.",
   "savePreferences": "Save Preferences",
   "displayPreferences": "Display Preferences",
   "language": "Language",

@@ -1,0 +1,89 @@
+{
+  "title": "Rentabilidad de la actividad de trading",
+  "subtitle": "Gastos (evaluaciones, datos, resets…) y créditos (retiros), aparte de la suscripción a la aplicación.",
+  "loading": "Cargando…",
+  "tabs": {
+    "debit": "Débito",
+    "credit": "Crédito",
+    "ariaLabel": "Gastos y créditos"
+  },
+  "summary": {
+    "primaryTitle": "Saldos por divisa principal",
+    "secondaryTitle": "Saldos por divisa secundaria",
+    "credits": "Créditos",
+    "expenses": "Gastos",
+    "balance": "Saldo",
+    "empty": "Aún no hay datos."
+  },
+  "expenses": {
+    "title": "Gastos (débito)",
+    "add": "Añadir gasto",
+    "edit": "Editar gasto",
+    "empty": "No hay gastos registrados.",
+    "modalNewDesc": "Introduzca importes e información del gasto.",
+    "modalEditDesc": "Modifique los campos y guarde."
+  },
+  "credits": {
+    "title": "Créditos",
+    "add": "Añadir crédito",
+    "edit": "Editar crédito",
+    "empty": "No hay créditos registrados.",
+    "modalNewDesc": "Registre un crédito o vincúlelo a un retiro de cuenta.",
+    "modalEditDesc": "Modifique el crédito y guarde.",
+    "linkedWithdrawal": "Retiro vinculado",
+    "linkWithdrawal": "Vincular a un retiro (cuenta de trading)",
+    "noLink": "Sin vínculo"
+  },
+  "table": {
+    "date": "Fecha",
+    "category": "Categoría",
+    "label": "Etiqueta",
+    "subtotal": "Subtotal",
+    "vat": "IVA",
+    "total": "Total",
+    "ref": "Ref.",
+    "secondary": "Secundario",
+    "amount": "Importe"
+  },
+  "form": {
+    "date": "Fecha",
+    "primaryCurrency": "Divisa principal",
+    "subtotal": "Subtotal",
+    "vat": "IVA (20 % sugerido)",
+    "total": "Total (subtotal + IVA)",
+    "ref": "Referencia de factura",
+    "category": "Categoría",
+    "categoryNone": "— Ninguna —",
+    "newCategory": "Crear",
+    "newCategoryPlaceholder": "Nueva categoría…",
+    "label": "Etiqueta",
+    "secondaryAmount": "Importe secundario",
+    "secondaryCurrency": "Divisa secundaria",
+    "amount": "Importe",
+    "notes": "Notas",
+    "none": "—"
+  },
+  "actions": {
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "closeModal": "Cerrar"
+  },
+  "toast": {
+    "expenseCreated": "Gasto guardado.",
+    "expenseUpdated": "Gasto actualizado.",
+    "creditCreated": "Crédito guardado.",
+    "creditUpdated": "Crédito actualizado.",
+    "deleted": "Eliminado.",
+    "categoryCreated": "Categoría creada."
+  },
+  "errors": {
+    "load": "No se pudieron cargar los datos.",
+    "save": "No se pudo guardar."
+  },
+  "confirm": {
+    "deleteExpense": "¿Eliminar este gasto?",
+    "deleteCredit": "¿Eliminar este crédito?"
+  }
+}

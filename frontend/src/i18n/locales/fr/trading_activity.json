@@ -1,0 +1,89 @@
+{
+  "title": "Rentabilité activité trading",
+  "subtitle": "Dépenses (évaluations, données, resets…) et crédits (retraits), hors abonnement application.",
+  "loading": "Chargement…",
+  "tabs": {
+    "debit": "Débit",
+    "credit": "Crédit",
+    "ariaLabel": "Dépenses et crédits"
+  },
+  "summary": {
+    "primaryTitle": "Soldes par devise principale",
+    "secondaryTitle": "Soldes par devise secondaire",
+    "credits": "Crédits",
+    "expenses": "Dépenses",
+    "balance": "Solde",
+    "empty": "Aucune donnée pour le moment."
+  },
+  "expenses": {
+    "title": "Dépenses (débit)",
+    "add": "Ajouter une dépense",
+    "edit": "Modifier la dépense",
+    "empty": "Aucune dépense enregistrée.",
+    "modalNewDesc": "Saisissez les montants et informations de la dépense.",
+    "modalEditDesc": "Modifiez les champs puis enregistrez."
+  },
+  "credits": {
+    "title": "Crédits",
+    "add": "Ajouter un crédit",
+    "edit": "Modifier le crédit",
+    "empty": "Aucun crédit enregistré.",
+    "modalNewDesc": "Enregistrez un crédit ou liez-le à un retrait de compte.",
+    "modalEditDesc": "Modifiez le crédit puis enregistrez.",
+    "linkedWithdrawal": "Retrait lié",
+    "linkWithdrawal": "Lier à un retrait (compte de trading)",
+    "noLink": "Aucun lien"
+  },
+  "table": {
+    "date": "Date",
+    "category": "Catégorie",
+    "label": "Libellé",
+    "subtotal": "Sous-total",
+    "vat": "TVA",
+    "total": "Total",
+    "ref": "Réf.",
+    "secondary": "Second",
+    "amount": "Montant"
+  },
+  "form": {
+    "date": "Date",
+    "primaryCurrency": "Devise principale",
+    "subtotal": "Sous-total",
+    "vat": "TVA (20 % suggéré)",
+    "total": "Total (sous-total + TVA)",
+    "ref": "Référence facture",
+    "category": "Catégorie",
+    "categoryNone": "— Aucune —",
+    "newCategory": "Créer",
+    "newCategoryPlaceholder": "Nouvelle catégorie…",
+    "label": "Libellé",
+    "secondaryAmount": "Montant secondaire",
+    "secondaryCurrency": "Devise secondaire",
+    "amount": "Montant",
+    "notes": "Notes",
+    "none": "—"
+  },
+  "actions": {
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "closeModal": "Fermer"
+  },
+  "toast": {
+    "expenseCreated": "Dépense enregistrée.",
+    "expenseUpdated": "Dépense mise à jour.",
+    "creditCreated": "Crédit enregistré.",
+    "creditUpdated": "Crédit mis à jour.",
+    "deleted": "Supprimé.",
+    "categoryCreated": "Catégorie créée."
+  },
+  "errors": {
+    "load": "Impossible de charger les données.",
+    "save": "Enregistrement impossible."
+  },
+  "confirm": {
+    "deleteExpense": "Supprimer cette dépense ?",
+    "deleteCredit": "Supprimer ce crédit ?"
+  }
+}

@@ -10,6 +10,7 @@ import StatisticsPage from './pages/StatisticsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import TradingAccountsPage from './pages/TradingAccountsPage';
 import TransactionsPage from './pages/TransactionsPage';
+import TradingActivityPage from './pages/TradingActivityPage';
 import SettingsPage from './pages/SettingsPage';
 import ActivateAccountPage from './pages/ActivateAccountPage';
 import PositionStrategiesPage from './pages/PositionStrategiesPage';
@@ -42,6 +43,7 @@ const PREMIUM_LOCKED_PAGES = new Set([
   'calculator',
   'strategies',
   'position-strategies',
+  'trading-activity',
 ]);
 const ALWAYS_ACCESSIBLE_PAGES = new Set([
   'accounts',
@@ -240,7 +242,7 @@ function App() {
     const handleHashChange = () => {
       const hashRaw = window.location.hash.replace('#', '').trim();
       const hash = hashRaw.split('?')[0];
-      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'calculator', 'legal-notice', 'billing', 'billing-success', 'billing-cancel', 'subscription-required'];
+      const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'trading-activity', 'goals', 'calculator', 'legal-notice', 'billing', 'billing-success', 'billing-cancel', 'subscription-required'];
       const page = currentPageRef.current;
       
       // Si on a un hash valide et qu'il est différent de la page actuelle
@@ -270,7 +272,7 @@ function App() {
     // Initialiser la page selon le hash actuel au premier rendu
     const currentHashRaw = window.location.hash.replace('#', '').trim();
     const currentHash = currentHashRaw.split('?')[0];
-    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'goals', 'calculator', 'legal-notice', 'billing', 'billing-success', 'billing-cancel', 'subscription-required'];
+    const validPages = ['dashboard', 'calendar', 'daily-journal', 'trades', 'statistics', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'trading-activity', 'goals', 'calculator', 'legal-notice', 'billing', 'billing-success', 'billing-cancel', 'subscription-required'];
     const page = currentPageRef.current;
     
     if (currentHash && validPages.includes(currentHash)) {
@@ -437,6 +439,14 @@ function App() {
             return <TradingAccountsPage />;
           case 'transactions':
             return <TransactionsPage />;
+          case 'trading-activity':
+            if (lockedPremiumPages.has('trading-activity')) {
+              return <SubscriptionRequiredPage onBackToDashboard={() => {
+                window.location.hash = 'dashboard';
+                setCurrentPage('dashboard');
+              }} />;
+            }
+            return <TradingActivityPage />;
           case 'goals':
             if (lockedPremiumPages.has('goals')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {

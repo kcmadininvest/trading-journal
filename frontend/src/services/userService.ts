@@ -61,6 +61,8 @@ export interface UserPreferences {
   timezone: string;
   date_format: 'US' | 'EU';
   number_format: 'point' | 'comma';
+  /** ISO 4217 — défaut pour rentabilité activité trading */
+  default_currency?: string;
   theme: 'light' | 'dark';
   font_size: 'small' | 'medium' | 'large';
   font_family: AppFontFamily;

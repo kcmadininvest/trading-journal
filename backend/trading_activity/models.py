@@ -1,0 +1,219 @@
+from __future__ import annotations
+
+from decimal import Decimal
+
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.db import models
+
+from .constants import COMMON_CURRENCY_CODES, DEFAULT_PRIMARY_CURRENCY
+
+
+def validate_iso_currency(value: str) -> None:
+    if not value or len(value) != 3 or not value.isalpha():
+        raise ValidationError('Code devise invalide (ISO 4217, 3 lettres).')
+    code = value.upper()
+    if code not in COMMON_CURRENCY_CODES:
+        raise ValidationError(
+            f'Devise non supportée. Valeurs autorisées : {", ".join(sorted(COMMON_CURRENCY_CODES))}.'
+        )
+
+
+class TradingActivityExpenseCategory(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_activity_expense_categories',
+        verbose_name='Utilisateur',
+    )
+    name = models.CharField(max_length=100, verbose_name='Nom')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
+
+    class Meta:
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'name'], name='unique_trading_activity_category_name_per_user'),
+        ]
+        verbose_name = 'Catégorie de dépense (activité trading)'
+        verbose_name_plural = 'Catégories de dépense (activité trading)'
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.user_id})'
+
+
+class TradingActivityExpense(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_activity_expenses',
+        verbose_name='Utilisateur',
+    )
+    date = models.DateField(verbose_name='Date')
+    primary_currency = models.CharField(
+        max_length=3,
+        verbose_name='Devise principale',
+        default=DEFAULT_PRIMARY_CURRENCY,
+    )
+    subtotal = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0'))],
+        verbose_name='Sous-total',
+    )
+    vat_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0'))],
+        verbose_name='TVA',
+    )
+    total = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        verbose_name='Total',
+    )
+    invoice_reference = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        verbose_name='Référence facture',
+    )
+    secondary_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0'))],
+        verbose_name='Montant secondaire',
+    )
+    secondary_currency = models.CharField(
+        max_length=3,
+        blank=True,
+        default='',
+        verbose_name='Devise secondaire',
+    )
+    category = models.ForeignKey(
+        TradingActivityExpenseCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='expenses',
+        verbose_name='Catégorie',
+    )
+    label = models.CharField(max_length=255, blank=True, default='', verbose_name='Libellé')
+    notes = models.TextField(blank=True, default='', verbose_name='Notes')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', '-date']),
+            models.Index(fields=['user', 'primary_currency']),
+        ]
+        verbose_name = 'Dépense activité trading'
+        verbose_name_plural = 'Dépenses activité trading'
+
+    def clean(self) -> None:
+        validate_iso_currency(self.primary_currency)
+        if self.secondary_amount is not None and self.secondary_amount > 0:
+            if not self.secondary_currency:
+                raise ValidationError({'secondary_currency': 'La devise secondaire est requise si un montant secondaire est renseigné.'})
+            validate_iso_currency(self.secondary_currency)
+        elif self.secondary_currency and not self.secondary_amount:
+            raise ValidationError({'secondary_amount': 'Le montant secondaire est requis si une devise secondaire est renseignée.'})
+        expected = (self.subtotal or Decimal('0')) + (self.vat_amount or Decimal('0'))
+        if self.total and abs(self.total - expected) > Decimal('0.02'):
+            raise ValidationError({'total': 'Le total doit correspondre à sous-total + TVA (tolérance 0,02).'})
+
+    def save(self, *args, **kwargs):
+        self.primary_currency = self.primary_currency.upper()
+        if self.secondary_currency:
+            self.secondary_currency = self.secondary_currency.upper()
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'Dépense {self.date} {self.total} {self.primary_currency}'
+
+
+class TradingActivityCredit(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_activity_credits',
+        verbose_name='Utilisateur',
+    )
+    date = models.DateField(verbose_name='Date')
+    primary_currency = models.CharField(
+        max_length=3,
+        verbose_name='Devise principale',
+        default=DEFAULT_PRIMARY_CURRENCY,
+    )
+    amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        verbose_name='Montant',
+    )
+    secondary_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0'))],
+        verbose_name='Montant secondaire',
+    )
+    secondary_currency = models.CharField(
+        max_length=3,
+        blank=True,
+        default='',
+        verbose_name='Devise secondaire',
+    )
+    linked_account_transaction = models.ForeignKey(
+        'trades.AccountTransaction',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='trading_activity_credits',
+        verbose_name='Transaction de compte liée',
+    )
+    notes = models.TextField(blank=True, default='', verbose_name='Notes')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', '-date']),
+            models.Index(fields=['user', 'primary_currency']),
+        ]
+        verbose_name = 'Crédit activité trading'
+        verbose_name_plural = 'Crédits activité trading'
+
+    def clean(self) -> None:
+        validate_iso_currency(self.primary_currency)
+        if self.secondary_amount is not None and self.secondary_amount > 0:
+            if not self.secondary_currency:
+                raise ValidationError({'secondary_currency': 'La devise secondaire est requise si un montant secondaire est renseigné.'})
+            validate_iso_currency(self.secondary_currency)
+        elif self.secondary_currency and not self.secondary_amount:
+            raise ValidationError({'secondary_amount': 'Le montant secondaire est requis si une devise secondaire est renseignée.'})
+        if self.linked_account_transaction_id:
+            tx = self.linked_account_transaction
+            if tx.user_id != self.user_id and tx.trading_account.user_id != self.user_id:
+                raise ValidationError({'linked_account_transaction': 'La transaction liée doit appartenir au même utilisateur.'})
+            if tx.transaction_type != 'withdrawal':
+                raise ValidationError({'linked_account_transaction': 'Seuls les retraits peuvent être liés.'})
+
+    def save(self, *args, **kwargs):
+        self.primary_currency = self.primary_currency.upper()
+        if self.secondary_currency:
+            self.secondary_currency = self.secondary_currency.upper()
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'Crédit {self.date} {self.amount} {self.primary_currency}'

@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'trades',
     'daily_journal',
     'billing',
+    'trading_activity',
 ]
 
 MIDDLEWARE = [
