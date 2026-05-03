@@ -11,6 +11,20 @@ import { useTradingAccount } from '../../contexts/TradingAccountContext';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber } from '../../utils/numberFormat';
 
+/** Normalise l'ID renvoyé par l'API (nombre, chaîne ou objet minimal) pour le select stratégie. */
+function normalizePositionStrategyId(raw: unknown): number | null {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  if (typeof raw === 'string') {
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (typeof raw === 'object' && raw !== null && 'id' in raw) {
+    return normalizePositionStrategyId((raw as { id: unknown }).id);
+  }
+  return null;
+}
+
 interface CreateTradeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -33,6 +47,8 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   const [loadingStrategies, setLoadingStrategies] = useState(false);
   const [isPnlManuallyEdited, setIsPnlManuallyEdited] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
+  /** Titre API du trade en cours d'édition (stratégie absente de la liste active/courante). */
+  const [loadedPositionStrategyTitle, setLoadedPositionStrategyTitle] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     trading_account: null as number | null,
@@ -76,10 +92,13 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   }, [isOpen]);
 
   // Charger les données du trade si on est en mode édition
+  // Ne pas attendre preferencesLoading : les préférences ont déjà un fuseau par défaut et bloquer
+  // retardait l'hydratation du formulaire (champ stratégie vide jusqu'au GET préférences).
   useEffect(() => {
-    if (isOpen && tradeId && !preferencesLoading) {
+    if (isOpen && tradeId) {
       const loadTrade = async () => {
         setIsLoading(true);
+        setLoadedPositionStrategyTitle(null);
         try {
           const trade = await tradesService.retrieve(tradeId);
           // Formater les dates pour datetime-local (YYYY-MM-DDTHH:mm)
@@ -134,10 +153,11 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
             commissions: trade.commissions || '0',
             pnl: trade.pnl || '',
             notes: trade.notes || '',
-            position_strategy: trade.position_strategy || null,
+            position_strategy: normalizePositionStrategyId(trade.position_strategy),
             planned_stop_loss: trade.planned_stop_loss || '',
             planned_take_profit: trade.planned_take_profit || '',
           });
+          setLoadedPositionStrategyTitle(trade.position_strategy_title || null);
           // En mode édition, permettre le recalcul automatique du PnL
           // L'utilisateur peut toujours éditer manuellement le PnL s'il le souhaite
           setIsPnlManuallyEdited(false);
@@ -151,7 +171,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       };
       loadTrade();
     }
-  }, [isOpen, tradeId, t, preferences.timezone, preferencesLoading]);
+  }, [isOpen, tradeId, t, preferences.timezone]);
 
   // Options pour le type de trade
   const tradeTypeOptions = useMemo(() => [
@@ -160,13 +180,25 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   ], [t]);
 
   // Options pour les stratégies
-  const strategyOptions = useMemo(() => [
-    { value: null, label: t('trades:createModal.noStrategy', { defaultValue: 'Aucune stratégie' }) },
-    ...strategies.map(strategy => ({
+  const strategyOptions = useMemo(() => {
+    const noStrategy = { value: null as number | null, label: t('trades:createModal.noStrategy', { defaultValue: 'Aucune stratégie' }) };
+    const pid = formData.position_strategy;
+    const inList = pid != null && strategies.some((s) => s.id === pid);
+    const extra: { value: number; label: string }[] =
+      tradeId && pid != null && !inList
+        ? [
+            {
+              value: pid,
+              label: loadedPositionStrategyTitle || `Stratégie #${pid}`,
+            },
+          ]
+        : [];
+    const fromList = strategies.map((strategy) => ({
       value: strategy.id,
-      label: `${strategy.title}${strategy.version > 1 ? ` (v${strategy.version})` : ''}`
-    }))
-  ], [strategies, t]);
+      label: `${strategy.title}${strategy.version > 1 ? ` (v${strategy.version})` : ''}`,
+    }));
+    return [noStrategy, ...extra, ...fromList];
+  }, [strategies, t, tradeId, formData.position_strategy, loadedPositionStrategyTitle]);
 
   // Placeholders formatés selon les préférences utilisateur
   const pricePlaceholder = useMemo(() => formatNumber(0, 4, preferences.number_format), [preferences.number_format]);
@@ -252,6 +284,7 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
   useEffect(() => {
     if (!isOpen) {
       setHasInitialized(false);
+      setLoadedPositionStrategyTitle(null);
     }
   }, [isOpen]);
 

@@ -38,7 +38,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, minWidth: 0 });
 
-  const currentOption = options.find(opt => opt.value === value) || options[0];
+  const optionMatchesValue = (optVal: string | number | null, val: string | number | null) =>
+    optVal === val ||
+    (val != null &&
+      optVal != null &&
+      typeof optVal !== 'boolean' &&
+      typeof val !== 'boolean' &&
+      String(optVal) === String(val));
+
+  const currentOption = options.find(opt => optionMatchesValue(opt.value, value)) || options[0];
   const normalizeText = (input: string) =>
     input
       .normalize('NFD')
@@ -181,7 +189,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
               type="button"
               onClick={() => handleSelect(opt.value)}
               className={`w-full flex items-center justify-start px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                opt.value === value ? 'bg-gray-50 dark:bg-gray-700' : ''
+                optionMatchesValue(opt.value, value) ? 'bg-gray-50 dark:bg-gray-700' : ''
               }`}
             >
               <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{opt.label}</span>
