@@ -14,6 +14,7 @@ import {
   WithdrawalSuggestion,
 } from '../services/tradingActivity';
 import { normalizeDecimalForApi, parseUserDecimal } from '../utils/normalizeDecimalForApi';
+import { formatDate, formatDateTimeShort, type DateFormatType } from '../utils/dateFormat';
 import { formatNumber, type NumberFormatType } from '../utils/numberFormat';
 
 /** Même principe que PageSizeSelector : pas de flèche native du navigateur sur les <select>. */
@@ -136,20 +137,25 @@ function MobileExpenseCard({
   row,
   t,
   numberFormat,
+  dateFormat,
+  timezone,
   onEdit,
   onDelete,
 }: {
   row: TradingActivityExpense;
   t: TradingActivityT;
   numberFormat: NumberFormatType;
+  dateFormat: DateFormatType;
+  timezone?: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const dateLabel = formatDate(row.date, dateFormat, false, timezone);
   return (
     <article className="touch-pan-y rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-gray-100 pb-3 dark:border-gray-700/80">
         <time className="text-sm font-semibold text-gray-900 dark:text-gray-100" dateTime={row.date}>
-          {row.date}
+          {dateLabel}
         </time>
         <span className="max-w-[65%] truncate rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-200">
           {row.category_name || '—'}
@@ -216,15 +222,20 @@ function MobileCreditCard({
   row,
   t,
   numberFormat,
+  dateFormat,
+  timezone,
   onEdit,
   onDelete,
 }: {
   row: TradingActivityCredit;
   t: TradingActivityT;
   numberFormat: NumberFormatType;
+  dateFormat: DateFormatType;
+  timezone?: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const dateLabel = formatDate(row.date, dateFormat, false, timezone);
   const linkLabel = row.linked_account_transaction_detail
     ? `#${row.linked_account_transaction_detail.id} ${row.linked_account_transaction_detail.trading_account_name}`
     : '—';
@@ -232,7 +243,7 @@ function MobileCreditCard({
     <article className="touch-pan-y rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3 dark:border-gray-700/80">
         <time className="text-sm font-semibold text-gray-900 dark:text-gray-100" dateTime={row.date}>
-          {row.date}
+          {dateLabel}
         </time>
         <span className="tabular-nums text-base font-bold text-gray-900 dark:text-gray-100">
           {formatNumber(row.amount, 2, numberFormat)} {row.primary_currency}
@@ -278,6 +289,8 @@ const TradingActivityPage: React.FC = () => {
   const colonFr = useColonBeforeValue();
   const defaultCurrency = preferences.default_currency || 'USD';
   const numberFormat: NumberFormatType = preferences.number_format || 'comma';
+  const dateFormatPref: DateFormatType = preferences.date_format ?? 'EU';
+  const timezonePref = preferences.timezone;
 
   const [summary, setSummary] = useState<TradingActivitySummary | null>(null);
   const [expenses, setExpenses] = useState<TradingActivityExpense[]>([]);
@@ -747,6 +760,8 @@ const TradingActivityPage: React.FC = () => {
                           row={row}
                           t={t}
                           numberFormat={numberFormat}
+                          dateFormat={dateFormatPref}
+                          timezone={timezonePref}
                           onEdit={() => openEditExpense(row)}
                           onDelete={() => deleteExpense(row.id)}
                         />
@@ -772,7 +787,9 @@ const TradingActivityPage: React.FC = () => {
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                           {expenses.map((row) => (
                             <tr key={row.id} className="text-gray-800 dark:text-gray-200">
-                              <td className="whitespace-nowrap px-3 py-2">{row.date}</td>
+                              <td className="whitespace-nowrap px-3 py-2">
+                                {formatDate(row.date, dateFormatPref, false, timezonePref)}
+                              </td>
                               <td className="px-3 py-2">{row.category_name || '—'}</td>
                               <td className="max-w-[140px] truncate px-3 py-2">{row.label || '—'}</td>
                               <td className="px-3 py-2">
@@ -847,6 +864,8 @@ const TradingActivityPage: React.FC = () => {
                           row={row}
                           t={t}
                           numberFormat={numberFormat}
+                          dateFormat={dateFormatPref}
+                          timezone={timezonePref}
                           onEdit={() => openEditCredit(row)}
                           onDelete={() => deleteCredit(row.id)}
                         />
@@ -868,7 +887,9 @@ const TradingActivityPage: React.FC = () => {
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                           {credits.map((row) => (
                             <tr key={row.id} className="text-gray-800 dark:text-gray-200">
-                              <td className="whitespace-nowrap px-3 py-2">{row.date}</td>
+                              <td className="whitespace-nowrap px-3 py-2">
+                                {formatDate(row.date, dateFormatPref, false, timezonePref)}
+                              </td>
                               <td className="px-3 py-2 font-medium">
                                 {formatNumber(row.amount, 2, numberFormat)} {row.primary_currency}
                               </td>
@@ -1177,7 +1198,7 @@ const TradingActivityPage: React.FC = () => {
                     <option value="">{t('credits.noLink')}</option>
                     {withdrawalSelectOptions.map((w) => (
                       <option key={w.id} value={w.id}>
-                        #{w.id} — {formatNumber(w.amount, 2, numberFormat)} {w.currency} — {w.trading_account_name} ({new Date(w.transaction_date).toLocaleString()})
+                        #{w.id} — {formatNumber(w.amount, 2, numberFormat)} {w.currency} — {w.trading_account_name} ({formatDateTimeShort(w.transaction_date, dateFormatPref, timezonePref)})
                       </option>
                     ))}
                   </select>
