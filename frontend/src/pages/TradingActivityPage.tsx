@@ -364,17 +364,17 @@ function MobileCreditCard({
       </div>
       <dl className="mt-3 space-y-2 text-sm">
         <div>
+          <dt className="text-gray-500 dark:text-gray-400">{t('table.fxRate')}</dt>
+          <dd className="mt-0.5 tabular-nums text-gray-900 dark:text-gray-100">
+            {formatCreditFxRateDisplay(row, t, numberFormat) ?? '—'}
+          </dd>
+        </div>
+        <div>
           <dt className="text-gray-500 dark:text-gray-400">{t('table.secondary')}</dt>
           <dd className="mt-0.5 tabular-nums text-gray-900 dark:text-gray-100">
             {row.secondary_amount
               ? `${formatNumber(row.secondary_amount, 2, numberFormat)} ${row.secondary_currency}`
               : '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-gray-500 dark:text-gray-400">{t('table.fxRate')}</dt>
-          <dd className="mt-0.5 tabular-nums text-gray-900 dark:text-gray-100">
-            {formatCreditFxRateDisplay(row, t, numberFormat) ?? '—'}
           </dd>
         </div>
         <div>
@@ -1292,8 +1292,8 @@ const TradingActivityPage: React.FC = () => {
                           <tr>
                             <th className="px-3 py-2">{t('table.date')}</th>
                             <th className="px-3 py-2">{t('table.amount')}</th>
-                            <th className="px-3 py-2">{t('table.secondary')}</th>
                             <th className="px-3 py-2">{t('table.fxRate')}</th>
+                            <th className="px-3 py-2">{t('table.secondary')}</th>
                             <th className="px-3 py-2">{t('table.transferFee')}</th>
                             <th className="px-3 py-2">{t('credits.linkedWithdrawal')}</th>
                             <th className="w-28 px-3 py-2" />
@@ -1308,13 +1308,13 @@ const TradingActivityPage: React.FC = () => {
                               <td className="px-3 py-2 font-medium">
                                 {formatNumber(row.amount, 2, numberFormat)} {row.primary_currency}
                               </td>
+                              <td className="px-3 py-2 tabular-nums text-xs">
+                                {formatCreditFxRateDisplay(row, t, numberFormat) ?? '—'}
+                              </td>
                               <td className="px-3 py-2">
                                 {row.secondary_amount
                                   ? `${formatNumber(row.secondary_amount, 2, numberFormat)} ${row.secondary_currency}`
                                   : '—'}
-                              </td>
-                              <td className="px-3 py-2 tabular-nums text-xs">
-                                {formatCreditFxRateDisplay(row, t, numberFormat) ?? '—'}
                               </td>
                               <td className="px-3 py-2 tabular-nums text-xs">
                                 {row.transfer_fee_amount != null &&
@@ -1358,6 +1358,7 @@ const TradingActivityPage: React.FC = () => {
                                   </div>
                                 ))}
                               </td>
+                              <td className="px-3 py-2 text-left text-gray-500 dark:text-gray-400">—</td>
                               <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
                                 {(summary.credit_totals.secondary ?? []).length > 0
                                   ? (summary.credit_totals.secondary ?? []).map((b) => (
@@ -1367,7 +1368,6 @@ const TradingActivityPage: React.FC = () => {
                                     ))
                                   : '—'}
                               </td>
-                              <td className="px-3 py-2 text-left text-gray-500 dark:text-gray-400">—</td>
                               <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
                                 {(summary.credit_totals.fees ?? []).length > 0
                                   ? (summary.credit_totals.fees ?? []).map((b) => (
