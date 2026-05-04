@@ -21,7 +21,9 @@
     "edit": "Edit expense",
     "empty": "No expenses yet.",
     "modalNewDesc": "Enter amounts and details for this expense.",
-    "modalEditDesc": "Update the fields, then save."
+    "modalEditDesc": "Update the fields, then save.",
+    "totals": "Totals",
+    "totalsCount": "({{count}} expenses)"
   },
   "credits": {
     "title": "Credits",
@@ -32,7 +34,10 @@
     "modalEditDesc": "Update the credit, then save.",
     "linkedWithdrawal": "Linked withdrawal",
     "linkWithdrawal": "Link to account withdrawal",
-    "noLink": "No link"
+    "noLink": "No link",
+    "fxRateDisplay": "1 {{left}} = {{rate}} {{right}}",
+    "totals": "Totals",
+    "totalsCount": "({{count}} credits)"
   },
   "table": {
     "date": "Date",
@@ -43,7 +48,9 @@
     "total": "Total",
     "ref": "Ref.",
     "secondary": "Secondary",
-    "amount": "Amount"
+    "amount": "Amount",
+    "fxRate": "FX rate",
+    "transferFee": "Transfer fee"
   },
   "form": {
     "date": "Date",
@@ -61,7 +68,12 @@
     "secondaryCurrency": "Secondary currency",
     "amount": "Amount",
     "notes": "Notes",
-    "none": "—"
+    "none": "—",
+    "fxRate": "FX rate (1 {{secondary}} = … {{primary}})",
+    "fxRateHint": "Primary-currency units for one unit of secondary currency (any ISO pair). Leave empty if there was no conversion.",
+    "fxRateSecondaryPlaceholder": "secondary ccy",
+    "transferFee": "Transfer fee ({{currency}})",
+    "transferFeeHint": "Fee amount in the secondary currency (same ISO code as the secondary amount). Leave empty if none."
   },
   "actions": {
     "edit": "Edit",

@@ -21,7 +21,9 @@
     "edit": "Ausgabe bearbeiten",
     "empty": "Keine Ausgaben erfasst.",
     "modalNewDesc": "Geben Sie Beträge und Angaben zur Ausgabe ein.",
-    "modalEditDesc": "Felder anpassen und speichern."
+    "modalEditDesc": "Felder anpassen und speichern.",
+    "totals": "Summen",
+    "totalsCount": "({{count}} Ausgaben)"
   },
   "credits": {
     "title": "Gutschriften",
@@ -32,7 +34,10 @@
     "modalEditDesc": "Gutschrift anpassen und speichern.",
     "linkedWithdrawal": "Verknüpfte Auszahlung",
     "linkWithdrawal": "Mit Auszahlung verknüpfen (Trading-Konto)",
-    "noLink": "Keine Verknüpfung"
+    "noLink": "Keine Verknüpfung",
+    "fxRateDisplay": "1 {{left}} = {{rate}} {{right}}",
+    "totals": "Summen",
+    "totalsCount": "({{count}} Gutschriften)"
   },
   "table": {
     "date": "Datum",
@@ -43,7 +48,9 @@
     "total": "Gesamt",
     "ref": "Ref.",
     "secondary": "Sekundär",
-    "amount": "Betrag"
+    "amount": "Betrag",
+    "fxRate": "Kurs",
+    "transferFee": "Transfergebühr"
   },
   "form": {
     "date": "Datum",
@@ -61,7 +68,12 @@
     "secondaryCurrency": "Zweitwährung",
     "amount": "Betrag",
     "notes": "Notizen",
-    "none": "—"
+    "none": "—",
+    "fxRate": "Wechselkurs (1 {{secondary}} = … {{primary}})",
+    "fxRateHint": "Hauptwährungseinheiten pro 1 Einheit der Zweitwährung (beliebiges ISO-Währungspaar). Leer lassen, wenn kein Umrechnungskurs.",
+    "fxRateSecondaryPlaceholder": "Zweitwährung",
+    "transferFee": "Transfergebühr ({{currency}})",
+    "transferFeeHint": "Gebühr in der Zweitwährung (gleicher ISO-Code wie der Sekundärbetrag). Leer lassen, wenn keine Gebühr anfiel."
   },
   "actions": {
     "edit": "Bearbeiten",

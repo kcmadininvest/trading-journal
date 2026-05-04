@@ -34,6 +34,8 @@ export interface TradingActivityCredit {
   amount: string;
   secondary_amount: string | null;
   secondary_currency: string;
+  fx_rate: string | null;
+  transfer_fee_amount: string | null;
   linked_account_transaction: number | null;
   linked_account_transaction_detail?: {
     id: number;
@@ -54,6 +56,33 @@ export interface CurrencySummaryBlock {
   balance: string;
 }
 
+export interface ExpenseTotalsPrimaryBlock {
+  primary_currency: string;
+  subtotal: string;
+  vat_amount: string;
+  total: string;
+}
+
+export interface ExpenseTotalsSecondaryBlock {
+  secondary_currency: string;
+  secondary_amount: string;
+}
+
+export interface CreditTotalsPrimaryBlock {
+  primary_currency: string;
+  amount: string;
+}
+
+export interface CreditTotalsSecondaryBlock {
+  secondary_currency: string;
+  secondary_amount: string;
+}
+
+export interface CreditTotalsFeeBlock {
+  secondary_currency: string;
+  transfer_fee_amount: string;
+}
+
 export interface TradingActivitySummary {
   primary_by_currency: Record<string, CurrencySummaryBlock>;
   secondary_by_currency: Record<string, CurrencySummaryBlock>;
@@ -63,6 +92,15 @@ export interface TradingActivitySummary {
     primary_currency: string;
     total: string;
   }>;
+  expense_totals?: {
+    primary: ExpenseTotalsPrimaryBlock[];
+    secondary: ExpenseTotalsSecondaryBlock[];
+  };
+  credit_totals?: {
+    primary: CreditTotalsPrimaryBlock[];
+    secondary: CreditTotalsSecondaryBlock[];
+    fees: CreditTotalsFeeBlock[];
+  };
 }
 
 export interface WithdrawalSuggestion {
@@ -72,6 +110,13 @@ export interface WithdrawalSuggestion {
   trading_account_id: number;
   trading_account_name: string;
   currency: string;
+}
+
+export interface PaginatedResults<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 function authHeaders(): HeadersInit {
@@ -141,8 +186,12 @@ export const tradingActivityService = {
     return request(`${BASE}/expense-categories/${id}/`, { method: 'DELETE' });
   },
 
-  listExpenses(): Promise<TradingActivityExpense[]> {
-    return request(`${BASE}/expenses/`);
+  listExpenses(params?: { page?: number; page_size?: number }): Promise<PaginatedResults<TradingActivityExpense>> {
+    const q = new URLSearchParams();
+    if (params?.page != null) q.set('page', String(params.page));
+    if (params?.page_size != null) q.set('page_size', String(params.page_size));
+    const suffix = q.toString() ? `?${q.toString()}` : '';
+    return request(`${BASE}/expenses/${suffix}`);
   },
 
   createExpense(data: Record<string, unknown>): Promise<TradingActivityExpense> {
@@ -157,8 +206,12 @@ export const tradingActivityService = {
     return request(`${BASE}/expenses/${id}/`, { method: 'DELETE' });
   },
 
-  listCredits(): Promise<TradingActivityCredit[]> {
-    return request(`${BASE}/credits/`);
+  listCredits(params?: { page?: number; page_size?: number }): Promise<PaginatedResults<TradingActivityCredit>> {
+    const q = new URLSearchParams();
+    if (params?.page != null) q.set('page', String(params.page));
+    if (params?.page_size != null) q.set('page_size', String(params.page_size));
+    const suffix = q.toString() ? `?${q.toString()}` : '';
+    return request(`${BASE}/credits/${suffix}`);
   },
 
   createCredit(data: Record<string, unknown>): Promise<TradingActivityCredit> {

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast/headless';
 import { PageShell } from '../components/layout';
-import { DeleteConfirmModal, Tooltip } from '../components/ui';
+import { DeleteConfirmModal, PaginationControls, Tooltip } from '../components/ui';
 import { useColonBeforeValue } from '../hooks/useColonBeforeValue';
 import { usePreferences } from '../hooks/usePreferences';
 import {
@@ -41,7 +41,70 @@ function ModalSelectChevron(): React.ReactElement {
 const MODAL_DATE_INPUT_CLASS =
   'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 [color-scheme:light] dark:[color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70';
 
-type TradingActivityT = (key: string) => string;
+const LEDGER_PAGE_SIZE_OPTIONS = [5, 10, 25, 50, 100] as const;
+const DEFAULT_LEDGER_PAGE_SIZE = 10;
+
+type TradingActivityT = (key: string, options?: Record<string, string | number>) => string;
+
+/**
+ * Cotation du taux : toute paire ISO (devise principale / secondaire), sans devise codée en dur.
+ * On choisit l’ordre affiché « 1 [gauche] = taux [droite] » en comparant `fx_rate` aux ratios des montants
+ * `amount / secondary_amount` et `secondary_amount / amount`, avec une **erreur relative** pour rester
+ * stable quelle que soit l’échelle du taux (très petit ou très grand).
+ * - Si le taux colle surtout à `amount / secondary_amount` : 1 devise secondaire = fx × devise principale.
+ * - Sinon (colle surtout à l’inverse) : 1 devise principale = fx × devise secondaire.
+ */
+function formatCreditFxRateDisplay(
+  row: Pick<
+    TradingActivityCredit,
+    'fx_rate' | 'primary_currency' | 'secondary_currency' | 'amount' | 'secondary_amount'
+  >,
+  t: TradingActivityT,
+  numberFormat: NumberFormatType,
+): string | null {
+  if (row.fx_rate == null || String(row.fx_rate).trim() === '') return null;
+  const fx = Number(row.fx_rate);
+  if (!Number.isFinite(fx) || fx <= 0) return null;
+
+  const priCcy = row.primary_currency || '—';
+  const secCcy = (row.secondary_currency || '').trim();
+  if (!secCcy) {
+    return t('credits.fxRateDisplay', {
+      left: '—',
+      right: priCcy,
+      rate: formatNumber(fx, 6, numberFormat),
+    });
+  }
+
+  const priAmt = Number(row.amount);
+  const secAmt = row.secondary_amount != null ? Number(row.secondary_amount) : NaN;
+
+  let left: string;
+  let right: string;
+  if (Number.isFinite(priAmt) && priAmt > 0 && Number.isFinite(secAmt) && secAmt > 0) {
+    const rModel = priAmt / secAmt;
+    const rInv = 1 / rModel;
+    const scaleEps = 1e-15;
+    const relDir = Math.abs(fx - rModel) / Math.max(Math.abs(rModel), scaleEps);
+    const relInv = Math.abs(fx - rInv) / Math.max(Math.abs(rInv), scaleEps);
+    if (relDir <= relInv) {
+      left = secCcy;
+      right = priCcy;
+    } else {
+      left = priCcy;
+      right = secCcy;
+    }
+  } else {
+    left = secCcy;
+    right = priCcy;
+  }
+
+  return t('credits.fxRateDisplay', {
+    left,
+    right,
+    rate: formatNumber(fx, 6, numberFormat),
+  });
+}
 
 function TradingActivityLedgerActions({
   editLabel,
@@ -309,6 +372,22 @@ function MobileCreditCard({
           </dd>
         </div>
         <div>
+          <dt className="text-gray-500 dark:text-gray-400">{t('table.fxRate')}</dt>
+          <dd className="mt-0.5 tabular-nums text-gray-900 dark:text-gray-100">
+            {formatCreditFxRateDisplay(row, t, numberFormat) ?? '—'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-gray-500 dark:text-gray-400">{t('table.transferFee')}</dt>
+          <dd className="mt-0.5 tabular-nums text-gray-900 dark:text-gray-100">
+            {row.transfer_fee_amount != null &&
+            String(row.transfer_fee_amount).trim() !== '' &&
+            Number(row.transfer_fee_amount) > 0
+              ? `${formatNumber(row.transfer_fee_amount, 2, numberFormat)} ${row.secondary_currency || ''}`.trim()
+              : '—'}
+          </dd>
+        </div>
+        <div>
           <dt className="text-gray-500 dark:text-gray-400">{t('credits.linkedWithdrawal')}</dt>
           <dd className="mt-0.5 break-words text-xs text-gray-800 dark:text-gray-200">{linkLabel}</dd>
         </div>
@@ -342,6 +421,15 @@ const TradingActivityPage: React.FC = () => {
   const [summary, setSummary] = useState<TradingActivitySummary | null>(null);
   const [expenses, setExpenses] = useState<TradingActivityExpense[]>([]);
   const [credits, setCredits] = useState<TradingActivityCredit[]>([]);
+  const [expensesPage, setExpensesPage] = useState(1);
+  const [expensesPageSize, setExpensesPageSize] = useState(DEFAULT_LEDGER_PAGE_SIZE);
+  const [expensesTotal, setExpensesTotal] = useState(0);
+  const [expensesLoading, setExpensesLoading] = useState(false);
+  const [creditsPage, setCreditsPage] = useState(1);
+  const [creditsPageSize, setCreditsPageSize] = useState(DEFAULT_LEDGER_PAGE_SIZE);
+  const [creditsTotal, setCreditsTotal] = useState(0);
+  const [creditsLoading, setCreditsLoading] = useState(false);
+  const [ledgerBump, setLedgerBump] = useState(0);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [currencies, setCurrencies] = useState<string[]>([]);
   const [withdrawals, setWithdrawals] = useState<WithdrawalSuggestion[]>([]);
@@ -413,41 +501,107 @@ const TradingActivityPage: React.FC = () => {
     notes: '',
     secondary_amount: '',
     secondary_currency: '',
+    fx_rate: '',
+    transfer_fee_amount: '',
     linked_account_transaction: '' as string,
   });
 
-  const loadAll = useCallback(async () => {
+  const loadStaticData = useCallback(async () => {
     setLoading(true);
     try {
-      const [sum, ex, cr, cat, cur] = await Promise.all([
+      const [sum, cat, cur] = await Promise.all([
         tradingActivityService.getSummary(),
-        tradingActivityService.listExpenses(),
-        tradingActivityService.listCredits(),
         tradingActivityService.listCategories(),
         tradingActivityService.listCurrencies(),
       ]);
       setSummary(sum);
-      setExpenses(ex);
-      setCredits(cr);
       setCategories(cat);
       setCurrencies(cur.currencies);
-      await refreshWithdrawalSuggestions();
+      const wd = await tradingActivityService.listWithdrawalSuggestions();
+      setWithdrawals(Array.isArray(wd?.withdrawals) ? wd.withdrawals : []);
     } catch (e: any) {
       toast.error(e?.message || t('errors.load'));
     } finally {
       setLoading(false);
     }
-  }, [t, refreshWithdrawalSuggestions]);
+  }, [t]);
+
+  const loadExpensesList = useCallback(
+    async (page: number, pageSize: number) => {
+      setExpensesLoading(true);
+      try {
+        let p = page;
+        let data = await tradingActivityService.listExpenses({ page: p, page_size: pageSize });
+        while ((data.results?.length ?? 0) === 0 && data.count > 0 && p > 1) {
+          p -= 1;
+          data = await tradingActivityService.listExpenses({ page: p, page_size: pageSize });
+        }
+        setExpensesPage(p);
+        setExpenses(Array.isArray(data.results) ? data.results : []);
+        setExpensesTotal(typeof data.count === 'number' ? data.count : 0);
+      } catch (e: any) {
+        toast.error(e?.message || t('errors.load'));
+      } finally {
+        setExpensesLoading(false);
+      }
+    },
+    [t],
+  );
+
+  const loadCreditsList = useCallback(
+    async (page: number, pageSize: number) => {
+      setCreditsLoading(true);
+      try {
+        let p = page;
+        let data = await tradingActivityService.listCredits({ page: p, page_size: pageSize });
+        while ((data.results?.length ?? 0) === 0 && data.count > 0 && p > 1) {
+          p -= 1;
+          data = await tradingActivityService.listCredits({ page: p, page_size: pageSize });
+        }
+        setCreditsPage(p);
+        setCredits(Array.isArray(data.results) ? data.results : []);
+        setCreditsTotal(typeof data.count === 'number' ? data.count : 0);
+      } catch (e: any) {
+        toast.error(e?.message || t('errors.load'));
+      } finally {
+        setCreditsLoading(false);
+      }
+    },
+    [t],
+  );
+
+  const refreshLedgersAfterMutation = useCallback(
+    async (opts?: { resetExpensesPage?: boolean; resetCreditsPage?: boolean }) => {
+      try {
+        const sum = await tradingActivityService.getSummary();
+        setSummary(sum);
+      } catch (e: any) {
+        toast.error(e?.message || t('errors.load'));
+      }
+      if (opts?.resetExpensesPage) setExpensesPage(1);
+      if (opts?.resetCreditsPage) setCreditsPage(1);
+      setLedgerBump((b) => b + 1);
+    },
+    [t],
+  );
+
+  useEffect(() => {
+    void loadStaticData();
+  }, [loadStaticData]);
+
+  useEffect(() => {
+    void loadExpensesList(expensesPage, expensesPageSize);
+  }, [expensesPage, expensesPageSize, ledgerBump, loadExpensesList]);
+
+  useEffect(() => {
+    void loadCreditsList(creditsPage, creditsPageSize);
+  }, [creditsPage, creditsPageSize, ledgerBump, loadCreditsList]);
 
   useEffect(() => {
     if (creditModal) {
       void refreshWithdrawalSuggestions();
     }
   }, [creditModal, editingCredit?.id, refreshWithdrawalSuggestions]);
-
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
 
   useEffect(() => {
     setExpForm((f) => ({ ...f, primary_currency: f.primary_currency || defaultCurrency }));
@@ -517,6 +671,8 @@ const TradingActivityPage: React.FC = () => {
       notes: '',
       secondary_amount: '',
       secondary_currency: '',
+      fx_rate: '',
+      transfer_fee_amount: '',
       linked_account_transaction: '',
     });
     setCreditModal(true);
@@ -534,6 +690,14 @@ const TradingActivityPage: React.FC = () => {
           ? formatNumber(row.secondary_amount, 2, numberFormat)
           : '',
       secondary_currency: row.secondary_currency || '',
+      fx_rate:
+        row.fx_rate != null && String(row.fx_rate).trim() !== ''
+          ? formatNumber(row.fx_rate, 6, numberFormat)
+          : '',
+      transfer_fee_amount:
+        row.transfer_fee_amount != null && String(row.transfer_fee_amount).trim() !== ''
+          ? formatNumber(row.transfer_fee_amount, 2, numberFormat)
+          : '',
       linked_account_transaction:
         row.linked_account_transaction != null ? String(row.linked_account_transaction) : '',
     });
@@ -582,7 +746,7 @@ const TradingActivityPage: React.FC = () => {
         toast.success(t('toast.expenseCreated'));
       }
       setExpenseModal(false);
-      await loadAll();
+      await refreshLedgersAfterMutation({ resetExpensesPage: !editingExpense });
     } catch (e: any) {
       toast.error(e?.message || t('errors.save'));
     }
@@ -593,6 +757,10 @@ const TradingActivityPage: React.FC = () => {
       const amountApi = normalizeDecimalForApi(credForm.amount, numberFormat);
       const secCredRaw = credForm.secondary_amount.trim();
       const secondaryCredApi = secCredRaw ? normalizeDecimalForApi(secCredRaw, numberFormat) : '';
+      const fxRaw = credForm.fx_rate.trim();
+      const feeRaw = credForm.transfer_fee_amount.trim();
+      const fxApi = fxRaw ? normalizeDecimalForApi(fxRaw, numberFormat) : '';
+      const feeApi = feeRaw ? normalizeDecimalForApi(feeRaw, numberFormat) : '';
       const payload: Record<string, unknown> = {
         date: credForm.date,
         primary_currency: credForm.primary_currency,
@@ -600,6 +768,8 @@ const TradingActivityPage: React.FC = () => {
         notes: credForm.notes || '',
         secondary_amount: secondaryCredApi ? secondaryCredApi : null,
         secondary_currency: credForm.secondary_currency || '',
+        fx_rate: fxApi ? fxApi : null,
+        transfer_fee_amount: feeApi ? feeApi : null,
         linked_account_transaction: credForm.linked_account_transaction
           ? Number(credForm.linked_account_transaction)
           : null,
@@ -612,7 +782,7 @@ const TradingActivityPage: React.FC = () => {
         toast.success(t('toast.creditCreated'));
       }
       setCreditModal(false);
-      await loadAll();
+      await refreshLedgersAfterMutation({ resetCreditsPage: !editingCredit });
     } catch (e: any) {
       toast.error(e?.message || t('errors.save'));
     }
@@ -646,12 +816,22 @@ const TradingActivityPage: React.FC = () => {
       toast.success(t('toast.deleted'));
       setDeleteModalOpen(false);
       setDeleteTarget(null);
-      await loadAll();
+      await refreshLedgersAfterMutation();
     } catch (e: any) {
       toast.error(e?.message || t('errors.save'));
     } finally {
       setDeleteLoading(false);
     }
+  };
+
+  const handleExpensesPageSizeChange = (size: number) => {
+    setExpensesPageSize(size);
+    setExpensesPage(1);
+  };
+
+  const handleCreditsPageSizeChange = (size: number) => {
+    setCreditsPageSize(size);
+    setCreditsPage(1);
   };
 
   const createInlineCategory = async () => {
@@ -677,6 +857,21 @@ const TradingActivityPage: React.FC = () => {
     if (!summary) return [];
     return Object.entries(summary.secondary_by_currency).sort(([a], [b]) => a.localeCompare(b));
   }, [summary]);
+
+  const expensesTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(expensesTotal / Math.max(1, expensesPageSize))),
+    [expensesTotal, expensesPageSize],
+  );
+  const creditsTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(creditsTotal / Math.max(1, creditsPageSize))),
+    [creditsTotal, creditsPageSize],
+  );
+  const expensePaginationStart0 = expensesTotal === 0 ? 0 : (expensesPage - 1) * expensesPageSize;
+  const expensePaginationEndInclusive =
+    expensesTotal === 0 ? 0 : Math.min(expensesPage * expensesPageSize, expensesTotal);
+  const creditPaginationStart0 = creditsTotal === 0 ? 0 : (creditsPage - 1) * creditsPageSize;
+  const creditPaginationEndInclusive =
+    creditsTotal === 0 ? 0 : Math.min(creditsPage * creditsPageSize, creditsTotal);
 
   return (
     <PageShell variant="fluid">
@@ -752,7 +947,8 @@ const TradingActivityPage: React.FC = () => {
           )}
         </div>
 
-        <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+        <div className="flex min-w-0 flex-col space-y-4 sm:space-y-6">
+        <div className="flex min-w-0 flex-col overflow-x-auto rounded-xl border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
           <div
             className="flex w-full shrink-0 gap-1 border-b border-gray-200 px-1 pt-1 dark:border-gray-700 sm:px-3 sm:pt-2"
             role="tablist"
@@ -797,7 +993,7 @@ const TradingActivityPage: React.FC = () => {
               id="trading-ledger-panel-debit"
               role="tabpanel"
               aria-labelledby="trading-ledger-tab-debit"
-              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+              className="flex min-w-0 flex-col"
             >
               <div className="flex shrink-0 flex-col gap-3 border-b border-gray-200 px-3 py-3 dark:border-gray-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
                 <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 sm:text-lg">{t('expenses.title')}</h2>
@@ -809,12 +1005,14 @@ const TradingActivityPage: React.FC = () => {
                   {t('expenses.add')}
                 </button>
               </div>
-              {expenses.length === 0 && !loading ? (
+              {expensesLoading && expenses.length === 0 ? (
+                <p className="p-4 text-gray-500">{t('loading')}</p>
+              ) : !expensesLoading && expensesTotal === 0 ? (
                 <p className="p-4 text-sm text-gray-500">{t('expenses.empty')}</p>
               ) : (
-                <>
+                <div className="flex min-w-0 flex-col">
                   <div
-                    className="touch-pan-y space-y-3 p-3 pb-8 xl:hidden"
+                    className="touch-pan-y space-y-3 p-3 xl:hidden"
                     role="list"
                     aria-label={t('expenses.title')}
                   >
@@ -831,9 +1029,68 @@ const TradingActivityPage: React.FC = () => {
                         />
                       </div>
                     ))}
+                    {!expensesLoading && expensesTotal > 0 && summary?.expense_totals ? (
+                      <div
+                        className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-800/80"
+                        aria-label={t('expenses.totals')}
+                      >
+                        <p className="mb-2 text-xs font-semibold text-gray-800 dark:text-gray-100">
+                          <span className="inline-flex items-center gap-1.5">
+                            <svg className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            {t('expenses.totals')} {t('expenses.totalsCount', { count: expensesTotal })}
+                          </span>
+                        </p>
+                        <dl className="grid grid-cols-1 gap-2 text-xs text-gray-800 dark:text-gray-100 sm:grid-cols-2">
+                          <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.subtotal')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-medium">
+                              {(summary.expense_totals.primary ?? []).map((b) => (
+                                <div key={b.primary_currency}>
+                                  {formatNumber(b.subtotal, 2, numberFormat)} {b.primary_currency}
+                                </div>
+                              ))}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.vat')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-medium">
+                              {(summary.expense_totals.primary ?? []).map((b) => (
+                                <div key={`vat-${b.primary_currency}`}>
+                                  {formatNumber(b.vat_amount, 2, numberFormat)} {b.primary_currency}
+                                </div>
+                              ))}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.total')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-semibold">
+                              {(summary.expense_totals.primary ?? []).map((b) => (
+                                <div key={`tot-${b.primary_currency}`}>
+                                  {formatNumber(b.total, 2, numberFormat)} {b.primary_currency}
+                                </div>
+                              ))}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.secondary')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-medium">
+                              {(summary.expense_totals.secondary ?? []).length > 0
+                                ? (summary.expense_totals.secondary ?? []).map((b) => (
+                                    <div key={b.secondary_currency}>
+                                      {formatNumber(b.secondary_amount, 2, numberFormat)} {b.secondary_currency}
+                                    </div>
+                                  ))
+                                : '—'}
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                    ) : null}
                   </div>
-                  <div className="hidden min-h-0 min-w-0 flex-1 flex-col overflow-hidden xl:flex">
-                    <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto overscroll-y-contain">
+                  <div className="hidden min-w-0 flex-col xl:flex">
+                    <div className="min-w-0 overflow-x-auto">
                       <table className="min-w-full text-sm">
                         <thead className="bg-gray-50 text-left text-gray-600 dark:bg-gray-900/50 dark:text-gray-300">
                           <tr>
@@ -881,10 +1138,56 @@ const TradingActivityPage: React.FC = () => {
                             </tr>
                           ))}
                         </tbody>
+                        {!expensesLoading && expensesTotal > 0 && summary?.expense_totals ? (
+                          <tfoot className="bg-gray-50 dark:bg-gray-700/50">
+                            <tr className="border-t-2 border-gray-200 dark:border-gray-600">
+                              <td colSpan={3} className="px-3 py-2 font-medium text-gray-700 dark:text-gray-300">
+                                <span className="inline-flex items-center gap-1.5">
+                                  <svg className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                  </svg>
+                                  {t('expenses.totals')} {t('expenses.totalsCount', { count: expensesTotal })}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                {(summary.expense_totals.primary ?? []).map((b) => (
+                                  <div key={b.primary_currency} className="whitespace-nowrap">
+                                    {formatNumber(b.subtotal, 2, numberFormat)} {b.primary_currency}
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                {(summary.expense_totals.primary ?? []).map((b) => (
+                                  <div key={`vat-${b.primary_currency}`} className="whitespace-nowrap">
+                                    {formatNumber(b.vat_amount, 2, numberFormat)} {b.primary_currency}
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                {(summary.expense_totals.primary ?? []).map((b) => (
+                                  <div key={`tot-${b.primary_currency}`} className="whitespace-nowrap">
+                                    {formatNumber(b.total, 2, numberFormat)} {b.primary_currency}
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="px-3 py-2 text-left text-gray-500 dark:text-gray-400">—</td>
+                              <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                {(summary.expense_totals.secondary ?? []).length > 0
+                                  ? (summary.expense_totals.secondary ?? []).map((b) => (
+                                      <div key={b.secondary_currency} className="whitespace-nowrap">
+                                        {formatNumber(b.secondary_amount, 2, numberFormat)} {b.secondary_currency}
+                                      </div>
+                                    ))
+                                  : '—'}
+                              </td>
+                              <td className="w-28 px-3 py-2" aria-hidden />
+                            </tr>
+                          </tfoot>
+                        ) : null}
                       </table>
                     </div>
                   </div>
-                </>
+                </div>
               )}
             </section>
           )}
@@ -894,7 +1197,7 @@ const TradingActivityPage: React.FC = () => {
               id="trading-ledger-panel-credit"
               role="tabpanel"
               aria-labelledby="trading-ledger-tab-credit"
-              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+              className="flex min-w-0 flex-col"
             >
               <div className="flex shrink-0 flex-col gap-3 border-b border-gray-200 px-3 py-3 dark:border-gray-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
                 <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 sm:text-lg">{t('credits.title')}</h2>
@@ -906,12 +1209,14 @@ const TradingActivityPage: React.FC = () => {
                   {t('credits.add')}
                 </button>
               </div>
-              {credits.length === 0 && !loading ? (
+              {creditsLoading && credits.length === 0 ? (
+                <p className="p-4 text-gray-500">{t('loading')}</p>
+              ) : !creditsLoading && creditsTotal === 0 ? (
                 <p className="p-4 text-sm text-gray-500">{t('credits.empty')}</p>
               ) : (
-                <>
+                <div className="flex min-w-0 flex-col">
                   <div
-                    className="touch-pan-y space-y-3 p-3 pb-8 xl:hidden"
+                    className="touch-pan-y space-y-3 p-3 xl:hidden"
                     role="list"
                     aria-label={t('credits.title')}
                   >
@@ -928,15 +1233,68 @@ const TradingActivityPage: React.FC = () => {
                         />
                       </div>
                     ))}
+                    {!creditsLoading && creditsTotal > 0 && summary?.credit_totals ? (
+                      <div
+                        className="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-600 dark:bg-gray-800/80"
+                        aria-label={t('credits.totals')}
+                      >
+                        <p className="mb-2 text-xs font-semibold text-gray-800 dark:text-gray-100">
+                          <span className="inline-flex items-center gap-1.5">
+                            <svg className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            {t('credits.totals')} {t('credits.totalsCount', { count: creditsTotal })}
+                          </span>
+                        </p>
+                        <dl className="grid grid-cols-1 gap-2 text-xs text-gray-800 dark:text-gray-100 sm:grid-cols-3">
+                          <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.amount')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-medium">
+                              {(summary.credit_totals.primary ?? []).map((b) => (
+                                <div key={b.primary_currency}>
+                                  {formatNumber(b.amount, 2, numberFormat)} {b.primary_currency}
+                                </div>
+                              ))}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.secondary')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-medium">
+                              {(summary.credit_totals.secondary ?? []).length > 0
+                                ? (summary.credit_totals.secondary ?? []).map((b) => (
+                                    <div key={b.secondary_currency}>
+                                      {formatNumber(b.secondary_amount, 2, numberFormat)} {b.secondary_currency}
+                                    </div>
+                                  ))
+                                : '—'}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.transferFee')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-medium">
+                              {(summary.credit_totals.fees ?? []).length > 0
+                                ? (summary.credit_totals.fees ?? []).map((b) => (
+                                    <div key={`fee-${b.secondary_currency}`}>
+                                      {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.secondary_currency}
+                                    </div>
+                                  ))
+                                : '—'}
+                            </dd>
+                          </div>
+                        </dl>
+                      </div>
+                    ) : null}
                   </div>
-                  <div className="hidden min-h-0 min-w-0 flex-1 flex-col overflow-hidden xl:flex">
-                    <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto overscroll-y-contain">
+                  <div className="hidden min-w-0 flex-col xl:flex">
+                    <div className="min-w-0 overflow-x-auto">
                       <table className="min-w-full text-sm">
                         <thead className="bg-gray-50 text-left text-gray-600 dark:bg-gray-900/50 dark:text-gray-300">
                           <tr>
                             <th className="px-3 py-2">{t('table.date')}</th>
                             <th className="px-3 py-2">{t('table.amount')}</th>
                             <th className="px-3 py-2">{t('table.secondary')}</th>
+                            <th className="px-3 py-2">{t('table.fxRate')}</th>
+                            <th className="px-3 py-2">{t('table.transferFee')}</th>
                             <th className="px-3 py-2">{t('credits.linkedWithdrawal')}</th>
                             <th className="w-28 px-3 py-2" />
                           </tr>
@@ -953,6 +1311,16 @@ const TradingActivityPage: React.FC = () => {
                               <td className="px-3 py-2">
                                 {row.secondary_amount
                                   ? `${formatNumber(row.secondary_amount, 2, numberFormat)} ${row.secondary_currency}`
+                                  : '—'}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums text-xs">
+                                {formatCreditFxRateDisplay(row, t, numberFormat) ?? '—'}
+                              </td>
+                              <td className="px-3 py-2 tabular-nums text-xs">
+                                {row.transfer_fee_amount != null &&
+                                String(row.transfer_fee_amount).trim() !== '' &&
+                                Number(row.transfer_fee_amount) > 0
+                                  ? `${formatNumber(row.transfer_fee_amount, 2, numberFormat)} ${row.secondary_currency || ''}`.trim()
                                   : '—'}
                               </td>
                               <td className="px-3 py-2 text-xs">
@@ -972,13 +1340,96 @@ const TradingActivityPage: React.FC = () => {
                             </tr>
                           ))}
                         </tbody>
+                        {!creditsLoading && creditsTotal > 0 && summary?.credit_totals ? (
+                          <tfoot className="bg-gray-50 dark:bg-gray-700/50">
+                            <tr className="border-t-2 border-gray-200 dark:border-gray-600">
+                              <td className="px-3 py-2 text-left font-medium text-gray-700 dark:text-gray-300">
+                                <span className="inline-flex items-center gap-1.5">
+                                  <svg className="h-3.5 w-3.5 shrink-0 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                  </svg>
+                                  {t('credits.totals')} {t('credits.totalsCount', { count: creditsTotal })}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                {(summary.credit_totals.primary ?? []).map((b) => (
+                                  <div key={b.primary_currency} className="whitespace-nowrap">
+                                    {formatNumber(b.amount, 2, numberFormat)} {b.primary_currency}
+                                  </div>
+                                ))}
+                              </td>
+                              <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                {(summary.credit_totals.secondary ?? []).length > 0
+                                  ? (summary.credit_totals.secondary ?? []).map((b) => (
+                                      <div key={b.secondary_currency} className="whitespace-nowrap">
+                                        {formatNumber(b.secondary_amount, 2, numberFormat)} {b.secondary_currency}
+                                      </div>
+                                    ))
+                                  : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-left text-gray-500 dark:text-gray-400">—</td>
+                              <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
+                                {(summary.credit_totals.fees ?? []).length > 0
+                                  ? (summary.credit_totals.fees ?? []).map((b) => (
+                                      <div key={`fee-${b.secondary_currency}`} className="whitespace-nowrap">
+                                        {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.secondary_currency}
+                                      </div>
+                                    ))
+                                  : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-left text-gray-500 dark:text-gray-400">—</td>
+                              <td className="w-28 px-3 py-2" aria-hidden />
+                            </tr>
+                          </tfoot>
+                        ) : null}
                       </table>
                     </div>
                   </div>
-                </>
+                </div>
               )}
             </section>
           )}
+        </div>
+
+        {ledgerTab === 'debit' && (
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+            <PaginationControls
+              currentPage={expensesPage}
+              totalPages={expensesTotalPages}
+              totalItems={expensesTotal}
+              itemsPerPage={expensesPageSize}
+              startIndex={expensePaginationStart0}
+              endIndex={expensePaginationEndInclusive}
+              onPageChange={(p) => {
+                setExpensesPage(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onPageSizeChange={handleExpensesPageSizeChange}
+              pageSizeOptions={[...LEDGER_PAGE_SIZE_OPTIONS]}
+              className="border-t-0"
+            />
+          </div>
+        )}
+
+        {ledgerTab === 'credit' && (
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+            <PaginationControls
+              currentPage={creditsPage}
+              totalPages={creditsTotalPages}
+              totalItems={creditsTotal}
+              itemsPerPage={creditsPageSize}
+              startIndex={creditPaginationStart0}
+              endIndex={creditPaginationEndInclusive}
+              onPageChange={(p) => {
+                setCreditsPage(p);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onPageSizeChange={handleCreditsPageSizeChange}
+              pageSizeOptions={[...LEDGER_PAGE_SIZE_OPTIONS]}
+              className="border-t-0"
+            />
+          </div>
+        )}
         </div>
       </div>
 
@@ -1315,6 +1766,43 @@ const TradingActivityPage: React.FC = () => {
                     </select>
                     <ModalSelectChevron />
                   </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('form.fxRate', {
+                      secondary: credForm.secondary_currency || t('form.fxRateSecondaryPlaceholder'),
+                      primary: credForm.primary_currency,
+                    })}
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    value={credForm.fx_rate}
+                    onChange={(e) => setCredForm({ ...credForm, fx_rate: e.target.value })}
+                    aria-describedby="cred-fx-rate-hint"
+                  />
+                  <p id="cred-fx-rate-hint" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('form.fxRateHint')}
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('form.transferFee', {
+                      currency: credForm.secondary_currency || t('form.fxRateSecondaryPlaceholder'),
+                    })}
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    value={credForm.transfer_fee_amount}
+                    onChange={(e) => setCredForm({ ...credForm, transfer_fee_amount: e.target.value })}
+                    aria-describedby="cred-transfer-fee-hint"
+                  />
+                  <p id="cred-transfer-fee-hint" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {t('form.transferFeeHint')}
+                  </p>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.notes')}</label>

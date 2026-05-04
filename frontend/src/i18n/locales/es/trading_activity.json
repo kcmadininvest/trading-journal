@@ -21,7 +21,9 @@
     "edit": "Editar gasto",
     "empty": "No hay gastos registrados.",
     "modalNewDesc": "Introduzca importes e información del gasto.",
-    "modalEditDesc": "Modifique los campos y guarde."
+    "modalEditDesc": "Modifique los campos y guarde.",
+    "totals": "Totales",
+    "totalsCount": "({{count}} gastos)"
   },
   "credits": {
     "title": "Créditos",
@@ -32,7 +34,10 @@
     "modalEditDesc": "Modifique el crédito y guarde.",
     "linkedWithdrawal": "Retiro vinculado",
     "linkWithdrawal": "Vincular a un retiro (cuenta de trading)",
-    "noLink": "Sin vínculo"
+    "noLink": "Sin vínculo",
+    "fxRateDisplay": "1 {{left}} = {{rate}} {{right}}",
+    "totals": "Totales",
+    "totalsCount": "({{count}} créditos)"
   },
   "table": {
     "date": "Fecha",
@@ -43,7 +48,9 @@
     "total": "Total",
     "ref": "Ref.",
     "secondary": "Secundario",
-    "amount": "Importe"
+    "amount": "Importe",
+    "fxRate": "Tipo de cambio",
+    "transferFee": "Comisión transferencia"
   },
   "form": {
     "date": "Fecha",
@@ -61,7 +68,12 @@
     "secondaryCurrency": "Divisa secundaria",
     "amount": "Importe",
     "notes": "Notas",
-    "none": "—"
+    "none": "—",
+    "fxRate": "Tipo de cambio (1 {{secondary}} = … {{primary}})",
+    "fxRateHint": "Unidades de la divisa principal por 1 unidad de la divisa secundaria (cualquier par ISO). Dejar vacío si no hubo cambio.",
+    "fxRateSecondaryPlaceholder": "div. sec.",
+    "transferFee": "Comisión de transferencia ({{currency}})",
+    "transferFeeHint": "Importe de la comisión en la divisa secundaria (mismo código ISO que el importe secundario). Dejar vacío si no hay comisión."
   },
   "actions": {
     "edit": "Editar",

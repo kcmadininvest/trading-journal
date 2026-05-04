@@ -21,7 +21,9 @@
     "edit": "Modifier la dépense",
     "empty": "Aucune dépense enregistrée.",
     "modalNewDesc": "Saisissez les montants et informations de la dépense.",
-    "modalEditDesc": "Modifiez les champs puis enregistrez."
+    "modalEditDesc": "Modifiez les champs puis enregistrez.",
+    "totals": "Totaux",
+    "totalsCount": "({{count}} dépenses)"
   },
   "credits": {
     "title": "Crédits",
@@ -32,7 +34,10 @@
     "modalEditDesc": "Modifiez le crédit puis enregistrez.",
     "linkedWithdrawal": "Retrait lié",
     "linkWithdrawal": "Lier à un retrait (compte de trading)",
-    "noLink": "Aucun lien"
+    "noLink": "Aucun lien",
+    "fxRateDisplay": "1 {{left}} = {{rate}} {{right}}",
+    "totals": "Totaux",
+    "totalsCount": "({{count}} crédits)"
   },
   "table": {
     "date": "Date",
@@ -43,7 +48,9 @@
     "total": "Total",
     "ref": "Réf.",
     "secondary": "Second",
-    "amount": "Montant"
+    "amount": "Montant",
+    "fxRate": "Taux",
+    "transferFee": "Frais transfert"
   },
   "form": {
     "date": "Date",
@@ -61,7 +68,12 @@
     "secondaryCurrency": "Devise secondaire",
     "amount": "Montant",
     "notes": "Notes",
-    "none": "—"
+    "none": "—",
+    "fxRate": "Taux (1 {{secondary}} = … {{primary}})",
+    "fxRateHint": "Nombre d’unités de la devise principale pour 1 unité de la devise secondaire (toute paire ISO). Laisser vide si pas de change.",
+    "fxRateSecondaryPlaceholder": "devise sec.",
+    "transferFee": "Frais de transfert ({{currency}})",
+    "transferFeeHint": "Montant des frais dans la devise secondaire (même code ISO que le montant secondaire). Laisser vide s’il n’y en a pas."
   },
   "actions": {
     "edit": "Modifier",

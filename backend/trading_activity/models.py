@@ -172,6 +172,23 @@ class TradingActivityCredit(models.Model):
         default='',
         verbose_name='Devise secondaire',
     )
+    fx_rate = models.DecimalField(
+        max_digits=18,
+        decimal_places=6,
+        null=True,
+        blank=True,
+        verbose_name='Taux de change',
+        help_text='1 unité de devise secondaire = fx_rate unités de devise principale.',
+    )
+    transfer_fee_amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0'))],
+        verbose_name='Frais de transfert',
+        help_text='Montant des frais, exprimé dans la devise secondaire.',
+    )
     linked_account_transaction = models.ForeignKey(
         'trades.AccountTransaction',
         on_delete=models.SET_NULL,
@@ -201,6 +218,19 @@ class TradingActivityCredit(models.Model):
             validate_iso_currency(self.secondary_currency)
         elif self.secondary_currency and not self.secondary_amount:
             raise ValidationError({'secondary_amount': 'Le montant secondaire est requis si une devise secondaire est renseignée.'})
+        if self.fx_rate is not None:
+            if self.fx_rate <= 0:
+                raise ValidationError({'fx_rate': 'Le taux de change doit être strictement positif.'})
+            if not self.secondary_currency or not self.secondary_amount or self.secondary_amount <= 0:
+                raise ValidationError(
+                    {'fx_rate': 'Le taux de change nécessite un montant et une devise secondaires renseignés.'}
+                )
+        fee = self.transfer_fee_amount
+        if fee is not None and fee > 0:
+            if not self.secondary_currency or not self.secondary_amount or self.secondary_amount <= 0:
+                raise ValidationError(
+                    {'transfer_fee_amount': 'Les frais de transfert nécessitent un montant et une devise secondaires.'}
+                )
         if self.linked_account_transaction_id:
             tx = self.linked_account_transaction
             if tx.user_id != self.user_id and tx.trading_account.user_id != self.user_id:
