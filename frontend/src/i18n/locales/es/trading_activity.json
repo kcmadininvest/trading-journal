@@ -71,9 +71,19 @@
     "none": "—",
     "fxRate": "Tipo de cambio (1 {{secondary}} = … {{primary}})",
     "fxRateHint": "Unidades de la divisa principal por 1 unidad de la divisa secundaria (cualquier par ISO). Dejar vacío si no hubo cambio.",
+    "fxRateIntermediary": "Tipo de cambio (1 {{primary}} = … {{secondary}})",
+    "fxRateIntermediaryHint": "Unidades de la divisa secundaria por 1 unidad de la divisa principal (cualquier par ISO). Dejar vacío si no hubo cambio.",
+    "fxRateFormatLabel": "Formato del tipo de cambio",
+    "fxRateFormatApp": "App (1 secundario = … principal)",
+    "fxRateFormatIntermediary": "Como en la operación (1 principal = … secundario)",
     "fxRateSecondaryPlaceholder": "div. sec.",
+    "feeCurrencyLabel": "Divisa de la comisión",
+    "feeCurrencyPrimary": "Divisa enviada (principal)",
+    "feeCurrencySecondary": "Divisa recibida (secundaria)",
     "transferFee": "Comisión de transferencia ({{currency}})",
-    "transferFeeHint": "Importe de la comisión en la divisa secundaria (mismo código ISO que el importe secundario). Dejar vacío si no hay comisión."
+    "transferFeeHint": "Importe de la comisión en la divisa seleccionada. Dejar vacío si no hay comisión.",
+    "netConverted": "Neto convertido",
+    "expectedReceived": "Recibido esperado"
   },
   "actions": {
     "edit": "Editar",
@@ -92,7 +102,8 @@
   },
   "errors": {
     "load": "No se pudieron cargar los datos.",
-    "save": "No se pudo guardar."
+    "save": "No se pudo guardar.",
+    "maxDigits": "El valor es demasiado largo: máximo {{max}} dígitos."
   },
   "confirm": {
     "deleteExpense": "¿Eliminar este gasto?",

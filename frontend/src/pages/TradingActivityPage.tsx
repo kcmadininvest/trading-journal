@@ -47,21 +47,18 @@ const DEFAULT_LEDGER_PAGE_SIZE = 10;
 type TradingActivityT = (key: string, options?: Record<string, string | number>) => string;
 
 /**
- * Cotation du taux : toute paire ISO (devise principale / secondaire), sans devise codée en dur.
- * On choisit l’ordre affiché « 1 [gauche] = taux [droite] » en comparant `fx_rate` aux ratios des montants
- * `amount / secondary_amount` et `secondary_amount / amount`, avec une **erreur relative** pour rester
- * stable quelle que soit l’échelle du taux (très petit ou très grand).
- * - Si le taux colle surtout à `amount / secondary_amount` : 1 devise secondaire = fx × devise principale.
- * - Sinon (colle surtout à l’inverse) : 1 devise principale = fx × devise secondaire.
+ * Convention de `fx_rate` (stockage / API) :
+ * `fx_rate` = nombre d’unités de devise principale pour 1 unité de devise secondaire.
+ * Donc : 1 secondary = fx_rate primary.
  */
-function formatCreditFxRateDisplay(
+function formatCreditFxRateLines(
   row: Pick<
     TradingActivityCredit,
     'fx_rate' | 'primary_currency' | 'secondary_currency' | 'amount' | 'secondary_amount'
   >,
   t: TradingActivityT,
   numberFormat: NumberFormatType,
-): string | null {
+): { appLine: string; primaryFirstLine: string } | null {
   if (row.fx_rate == null || String(row.fx_rate).trim() === '') return null;
   const fx = Number(row.fx_rate);
   if (!Number.isFinite(fx) || fx <= 0) return null;
@@ -69,41 +66,141 @@ function formatCreditFxRateDisplay(
   const priCcy = row.primary_currency || '—';
   const secCcy = (row.secondary_currency || '').trim();
   if (!secCcy) {
-    return t('credits.fxRateDisplay', {
-      left: '—',
+    return {
+      appLine: t('credits.fxRateDisplay', {
+        left: '—',
+        right: priCcy,
+        rate: formatNumber(fx, 6, numberFormat),
+      }),
+      primaryFirstLine: t('credits.fxRateDisplay', {
+        left: priCcy,
+        right: '—',
+        rate: formatNumber(1 / fx, 6, numberFormat),
+      }),
+    };
+  }
+
+  return {
+    // Convention stockée: 1 secondary = fx primary
+    appLine: t('credits.fxRateDisplay', {
+      left: secCcy,
       right: priCcy,
       rate: formatNumber(fx, 6, numberFormat),
-    });
+    }),
+    // Cotation « 1 principal = … secondaire » (souvent sur les relevés de transfert)
+    primaryFirstLine: t('credits.fxRateDisplay', {
+      left: priCcy,
+      right: secCcy,
+      rate: formatNumber(1 / fx, 6, numberFormat),
+    }),
+  };
+}
+
+function CreditFxRateCell({
+  row,
+  t,
+  numberFormat,
+}: {
+  row: TradingActivityCredit;
+  t: TradingActivityT;
+  numberFormat: NumberFormatType;
+}) {
+  const lines = formatCreditFxRateLines(row, t, numberFormat);
+  if (!lines) return <span>—</span>;
+  return (
+    <div className="flex flex-col leading-tight">
+      <div className="text-xs font-medium tabular-nums text-gray-900 dark:text-gray-100">
+        {lines.primaryFirstLine}
+      </div>
+      <div className="text-[11px] tabular-nums text-gray-600 dark:text-gray-400">
+        {lines.appLine}
+      </div>
+    </div>
+  );
+}
+
+function CreditConversionPreview({
+  t,
+  numberFormat,
+  primaryCurrency,
+  secondaryCurrency,
+  amount,
+  fxRate,
+  fxRateFormat,
+  feeAmount,
+  feeCurrency,
+}: {
+  t: TradingActivityT;
+  numberFormat: NumberFormatType;
+  primaryCurrency: string;
+  secondaryCurrency: string;
+  amount: string;
+  fxRate: string;
+  fxRateFormat: 'app' | 'intermediary';
+  feeAmount: string;
+  feeCurrency: 'secondary' | 'primary';
+}) {
+  const amountNum = parseUserDecimal(amount, numberFormat);
+  const feeNum = feeAmount.trim() ? parseUserDecimal(feeAmount, numberFormat) : 0;
+  const fxNum = fxRate.trim() ? parseUserDecimal(fxRate, numberFormat) : NaN;
+
+  if (!Number.isFinite(amountNum) || amountNum <= 0) return null;
+  if (feeNum < 0) return null;
+
+  // fxStored = primary / secondary
+  let fxStored = fxNum;
+  if (Number.isFinite(fxNum) && fxNum > 0 && fxRateFormat === 'intermediary') {
+    fxStored = 1 / fxNum;
   }
 
-  const priAmt = Number(row.amount);
-  const secAmt = row.secondary_amount != null ? Number(row.secondary_amount) : NaN;
+  const showFx = Number.isFinite(fxStored) && fxStored > 0 && secondaryCurrency;
+  if (!showFx) return null;
 
-  let left: string;
-  let right: string;
-  if (Number.isFinite(priAmt) && priAmt > 0 && Number.isFinite(secAmt) && secAmt > 0) {
-    const rModel = priAmt / secAmt;
-    const rInv = 1 / rModel;
-    const scaleEps = 1e-15;
-    const relDir = Math.abs(fx - rModel) / Math.max(Math.abs(rModel), scaleEps);
-    const relInv = Math.abs(fx - rInv) / Math.max(Math.abs(rInv), scaleEps);
-    if (relDir <= relInv) {
-      left = secCcy;
-      right = priCcy;
-    } else {
-      left = priCcy;
-      right = secCcy;
-    }
-  } else {
-    left = secCcy;
-    right = priCcy;
-  }
+  const netPrimary = feeCurrency === 'primary' ? amountNum - feeNum : amountNum;
+  if (!Number.isFinite(netPrimary)) return null;
 
-  return t('credits.fxRateDisplay', {
-    left,
-    right,
-    rate: formatNumber(fx, 6, numberFormat),
-  });
+  const expectedSecondary = netPrimary / fxStored;
+  const expectedSecondaryAfterFee =
+    feeCurrency === 'secondary' ? expectedSecondary - feeNum : expectedSecondary;
+
+  const priCcy = primaryCurrency || '—';
+  const secCcy = secondaryCurrency || '—';
+
+  return (
+    <div className="mt-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-200">
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-gray-500 dark:text-gray-400">
+            {t('form.netConverted', { defaultValue: 'Net converti' })}
+          </span>
+          <span className="font-medium tabular-nums">
+            {formatNumber(netPrimary, 2, numberFormat)} {priCcy}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-gray-500 dark:text-gray-400">
+            {t('form.expectedReceived', { defaultValue: 'Reçu attendu' })}
+          </span>
+          <span className="font-medium tabular-nums">
+            {formatNumber(expectedSecondaryAfterFee, 2, numberFormat)} {secCcy}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function countDigitsForLimit(value: string): number {
+  // Compte uniquement les chiffres, ignore signe et séparateur décimal.
+  return (value || '').replace(/[^0-9]/g, '').length;
+}
+
+function toApiDecimalFromNumber(value: number, maxDecimals: number): string {
+  // Évite les notations exponentielles et limite la précision pour ne pas exploser la longueur.
+  // On tronque les zéros inutiles pour rester propre côté API.
+  if (!Number.isFinite(value)) return '';
+  const fixed = value.toFixed(Math.max(0, Math.min(18, maxDecimals)));
+  return fixed.replace(/\.?0+$/, '');
 }
 
 function TradingActivityLedgerActions({
@@ -366,7 +463,7 @@ function MobileCreditCard({
         <div>
           <dt className="text-gray-500 dark:text-gray-400">{t('table.fxRate')}</dt>
           <dd className="mt-0.5 tabular-nums text-gray-900 dark:text-gray-100">
-            {formatCreditFxRateDisplay(row, t, numberFormat) ?? '—'}
+            <CreditFxRateCell row={row} t={t} numberFormat={numberFormat} />
           </dd>
         </div>
         <div>
@@ -380,11 +477,15 @@ function MobileCreditCard({
         <div>
           <dt className="text-gray-500 dark:text-gray-400">{t('table.transferFee')}</dt>
           <dd className="mt-0.5 tabular-nums text-gray-900 dark:text-gray-100">
-            {row.transfer_fee_amount != null &&
-            String(row.transfer_fee_amount).trim() !== '' &&
-            Number(row.transfer_fee_amount) > 0
-              ? `${formatNumber(row.transfer_fee_amount, 2, numberFormat)} ${row.secondary_currency || ''}`.trim()
-              : '—'}
+            {row.transfer_fee_amount_input != null &&
+            String(row.transfer_fee_amount_input).trim() !== '' &&
+            Number(row.transfer_fee_amount_input) > 0
+              ? `${formatNumber(row.transfer_fee_amount_input, 2, numberFormat)} ${row.transfer_fee_currency || ''}`.trim()
+              : row.transfer_fee_amount != null &&
+                String(row.transfer_fee_amount).trim() !== '' &&
+                Number(row.transfer_fee_amount) > 0
+                ? `${formatNumber(row.transfer_fee_amount, 2, numberFormat)} ${row.secondary_currency || ''}`.trim()
+                : '—'}
           </dd>
         </div>
         <div>
@@ -505,6 +606,8 @@ const TradingActivityPage: React.FC = () => {
     transfer_fee_amount: '',
     linked_account_transaction: '' as string,
   });
+  const [creditFxRateFormat, setCreditFxRateFormat] = useState<'app' | 'intermediary'>('app');
+  const [creditFeeCurrency, setCreditFeeCurrency] = useState<'secondary' | 'primary'>('secondary');
 
   const loadStaticData = useCallback(async () => {
     setLoading(true);
@@ -675,6 +778,8 @@ const TradingActivityPage: React.FC = () => {
       transfer_fee_amount: '',
       linked_account_transaction: '',
     });
+    setCreditFxRateFormat('app');
+    setCreditFeeCurrency('secondary');
     setCreditModal(true);
   };
 
@@ -695,12 +800,21 @@ const TradingActivityPage: React.FC = () => {
           ? formatNumber(row.fx_rate, 6, numberFormat)
           : '',
       transfer_fee_amount:
-        row.transfer_fee_amount != null && String(row.transfer_fee_amount).trim() !== ''
-          ? formatNumber(row.transfer_fee_amount, 2, numberFormat)
+        row.transfer_fee_amount_input != null && String(row.transfer_fee_amount_input).trim() !== ''
+          ? formatNumber(row.transfer_fee_amount_input, 2, numberFormat)
+          : row.transfer_fee_amount != null && String(row.transfer_fee_amount).trim() !== ''
+            ? formatNumber(row.transfer_fee_amount, 2, numberFormat)
           : '',
       linked_account_transaction:
         row.linked_account_transaction != null ? String(row.linked_account_transaction) : '',
     });
+    // On édite une ligne déjà stockée dans la convention de l’app (primary/secondary).
+    setCreditFxRateFormat('app');
+    setCreditFeeCurrency(
+      row.transfer_fee_currency && row.transfer_fee_currency === row.primary_currency
+        ? 'primary'
+        : 'secondary',
+    );
     setCreditModal(true);
   };
 
@@ -759,8 +873,35 @@ const TradingActivityPage: React.FC = () => {
       const secondaryCredApi = secCredRaw ? normalizeDecimalForApi(secCredRaw, numberFormat) : '';
       const fxRaw = credForm.fx_rate.trim();
       const feeRaw = credForm.transfer_fee_amount.trim();
-      const fxApi = fxRaw ? normalizeDecimalForApi(fxRaw, numberFormat) : '';
-      const feeApi = feeRaw ? normalizeDecimalForApi(feeRaw, numberFormat) : '';
+      let fxApi = fxRaw ? normalizeDecimalForApi(fxRaw, numberFormat) : '';
+      const feeInputApi = feeRaw ? normalizeDecimalForApi(feeRaw, numberFormat) : '';
+
+      // 1) Cotation 1 principal = X secondaire -> stockage API (1 secondaire = fx principal)
+      if (creditFxRateFormat === 'intermediary' && fxApi) {
+        const fxInput = Number(fxApi);
+        if (!Number.isFinite(fxInput) || fxInput <= 0) {
+          toast.error(t('errors.save'));
+          return;
+        }
+        // Le backend impose typiquement 6 décimales max sur les champs Decimal.
+        fxApi = toApiDecimalFromNumber(1 / fxInput, 6);
+      }
+
+      // Limite : 15 chiffres max (hors séparateur décimal).
+      const MAX_DIGITS = 15;
+      const fieldsToCheck: Array<{ label: string; value: string }> = [
+        { label: 'amount', value: amountApi },
+        { label: 'secondary_amount', value: secondaryCredApi },
+        { label: 'fx_rate', value: fxApi },
+        { label: 'transfer_fee_amount_input', value: feeInputApi },
+      ];
+      for (const f of fieldsToCheck) {
+        if (f.value && countDigitsForLimit(f.value) > MAX_DIGITS) {
+          toast.error(t('errors.maxDigits', { max: MAX_DIGITS }));
+          return;
+        }
+      }
+
       const payload: Record<string, unknown> = {
         date: credForm.date,
         primary_currency: credForm.primary_currency,
@@ -769,7 +910,10 @@ const TradingActivityPage: React.FC = () => {
         secondary_amount: secondaryCredApi ? secondaryCredApi : null,
         secondary_currency: credForm.secondary_currency || '',
         fx_rate: fxApi ? fxApi : null,
-        transfer_fee_amount: feeApi ? feeApi : null,
+        transfer_fee_amount_input: feeInputApi ? feeInputApi : null,
+        transfer_fee_currency: feeInputApi
+          ? (creditFeeCurrency === 'primary' ? credForm.primary_currency : credForm.secondary_currency)
+          : '',
         linked_account_transaction: credForm.linked_account_transaction
           ? Number(credForm.linked_account_transaction)
           : null,
@@ -948,44 +1092,66 @@ const TradingActivityPage: React.FC = () => {
         </div>
 
         <div className="flex min-w-0 flex-col space-y-4 sm:space-y-6">
-        <div className="flex min-w-0 flex-col overflow-x-auto rounded-xl border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
-          <div
-            className="flex w-full shrink-0 gap-1 border-b border-gray-200 px-1 pt-1 dark:border-gray-700 sm:px-3 sm:pt-2"
-            role="tablist"
-            aria-label={t('tabs.ariaLabel')}
-          >
-            <button
-              type="button"
-              role="tab"
-              id="trading-ledger-tab-debit"
-              aria-selected={ledgerTab === 'debit'}
-              aria-controls="trading-ledger-panel-debit"
-              tabIndex={ledgerTab === 'debit' ? 0 : -1}
-              onClick={() => setLedgerTab('debit')}
-              className={`min-h-[44px] flex-1 rounded-t-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-4 ${
-                ledgerTab === 'debit'
-                  ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
-                  : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
+        <div className="flex min-w-0 flex-col overflow-x-auto overflow-y-hidden rounded-xl border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+          <div className="flex w-full shrink-0 items-center justify-between gap-2 border-b border-gray-200 px-1 py-1 dark:border-gray-700 sm:px-3 sm:py-2">
+            <div
+              className="flex min-w-0 flex-1 gap-1"
+              role="tablist"
+              aria-label={t('tabs.ariaLabel')}
             >
-              {t('tabs.debit')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              id="trading-ledger-tab-credit"
-              aria-selected={ledgerTab === 'credit'}
-              aria-controls="trading-ledger-panel-credit"
-              tabIndex={ledgerTab === 'credit' ? 0 : -1}
-              onClick={() => setLedgerTab('credit')}
-              className={`min-h-[44px] flex-1 rounded-t-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-4 ${
-                ledgerTab === 'credit'
-                  ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
-                  : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-              }`}
-            >
-              {t('tabs.credit')}
-            </button>
+              <button
+                type="button"
+                role="tab"
+                id="trading-ledger-tab-debit"
+                aria-selected={ledgerTab === 'debit'}
+                aria-controls="trading-ledger-panel-debit"
+                tabIndex={ledgerTab === 'debit' ? 0 : -1}
+                onClick={() => setLedgerTab('debit')}
+                className={`min-h-[44px] flex-1 rounded-t-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-4 ${
+                  ledgerTab === 'debit'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {t('tabs.debit')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="trading-ledger-tab-credit"
+                aria-selected={ledgerTab === 'credit'}
+                aria-controls="trading-ledger-panel-credit"
+                tabIndex={ledgerTab === 'credit' ? 0 : -1}
+                onClick={() => setLedgerTab('credit')}
+                className={`min-h-[44px] flex-1 rounded-t-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-4 ${
+                  ledgerTab === 'credit'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {t('tabs.credit')}
+              </button>
+            </div>
+
+            {ledgerTab === 'credit' && (
+              <button
+                type="button"
+                onClick={openNewCredit}
+                className="self-center min-h-[44px] shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:px-4 sm:py-2"
+              >
+                {t('credits.add')}
+              </button>
+            )}
+
+            {ledgerTab === 'debit' && (
+              <button
+                type="button"
+                onClick={openNewExpense}
+                className="self-center min-h-[44px] shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:px-4 sm:py-2"
+              >
+                {t('expenses.add')}
+              </button>
+            )}
           </div>
 
           {ledgerTab === 'debit' && (
@@ -995,16 +1161,6 @@ const TradingActivityPage: React.FC = () => {
               aria-labelledby="trading-ledger-tab-debit"
               className="flex min-w-0 flex-col"
             >
-              <div className="flex shrink-0 flex-col gap-3 border-b border-gray-200 px-3 py-3 dark:border-gray-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
-                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 sm:text-lg">{t('expenses.title')}</h2>
-                <button
-                  type="button"
-                  onClick={openNewExpense}
-                  className="min-h-[44px] w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:w-auto sm:py-2"
-                >
-                  {t('expenses.add')}
-                </button>
-              </div>
               {expensesLoading && expenses.length === 0 ? (
                 <p className="p-4 text-gray-500">{t('loading')}</p>
               ) : !expensesLoading && expensesTotal === 0 ? (
@@ -1199,16 +1355,6 @@ const TradingActivityPage: React.FC = () => {
               aria-labelledby="trading-ledger-tab-credit"
               className="flex min-w-0 flex-col"
             >
-              <div className="flex shrink-0 flex-col gap-3 border-b border-gray-200 px-3 py-3 dark:border-gray-700 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-4">
-                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 sm:text-lg">{t('credits.title')}</h2>
-                <button
-                  type="button"
-                  onClick={openNewCredit}
-                  className="min-h-[44px] w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:w-auto sm:py-2"
-                >
-                  {t('credits.add')}
-                </button>
-              </div>
               {creditsLoading && credits.length === 0 ? (
                 <p className="p-4 text-gray-500">{t('loading')}</p>
               ) : !creditsLoading && creditsTotal === 0 ? (
@@ -1258,24 +1404,24 @@ const TradingActivityPage: React.FC = () => {
                             </dd>
                           </div>
                           <div className="flex flex-col gap-1">
-                            <dt className="text-gray-500 dark:text-gray-400">{t('table.secondary')}</dt>
-                            <dd className="space-y-0.5 tabular-nums font-medium">
-                              {(summary.credit_totals.secondary ?? []).length > 0
-                                ? (summary.credit_totals.secondary ?? []).map((b) => (
-                                    <div key={b.secondary_currency}>
-                                      {formatNumber(b.secondary_amount, 2, numberFormat)} {b.secondary_currency}
-                                    </div>
-                                  ))
-                                : '—'}
-                            </dd>
-                          </div>
-                          <div className="flex flex-col gap-1">
                             <dt className="text-gray-500 dark:text-gray-400">{t('table.transferFee')}</dt>
                             <dd className="space-y-0.5 tabular-nums font-medium">
                               {(summary.credit_totals.fees ?? []).length > 0
                                 ? (summary.credit_totals.fees ?? []).map((b) => (
                                     <div key={`fee-${b.secondary_currency}`}>
                                       {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.secondary_currency}
+                                    </div>
+                                  ))
+                                : '—'}
+                            </dd>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <dt className="text-gray-500 dark:text-gray-400">{t('table.secondary')}</dt>
+                            <dd className="space-y-0.5 tabular-nums font-medium">
+                              {(summary.credit_totals.secondary ?? []).length > 0
+                                ? (summary.credit_totals.secondary ?? []).map((b) => (
+                                    <div key={b.secondary_currency}>
+                                      {formatNumber(b.secondary_amount, 2, numberFormat)} {b.secondary_currency}
                                     </div>
                                   ))
                                 : '—'}
@@ -1293,8 +1439,8 @@ const TradingActivityPage: React.FC = () => {
                             <th className="px-3 py-2">{t('table.date')}</th>
                             <th className="px-3 py-2">{t('table.amount')}</th>
                             <th className="px-3 py-2">{t('table.fxRate')}</th>
-                            <th className="px-3 py-2">{t('table.secondary')}</th>
                             <th className="px-3 py-2">{t('table.transferFee')}</th>
+                            <th className="px-3 py-2">{t('table.secondary')}</th>
                             <th className="px-3 py-2">{t('credits.linkedWithdrawal')}</th>
                             <th className="w-28 px-3 py-2" />
                           </tr>
@@ -1308,22 +1454,26 @@ const TradingActivityPage: React.FC = () => {
                               <td className="px-3 py-2 font-medium">
                                 {formatNumber(row.amount, 2, numberFormat)} {row.primary_currency}
                               </td>
-                              <td className="px-3 py-2 tabular-nums text-xs">
-                                {formatCreditFxRateDisplay(row, t, numberFormat) ?? '—'}
+                              <td className="px-3 py-2 tabular-nums">
+                                <CreditFxRateCell row={row} t={t} numberFormat={numberFormat} />
+                              </td>
+                              <td className="px-3 py-2 tabular-nums">
+                                {row.transfer_fee_amount_input != null &&
+                                String(row.transfer_fee_amount_input).trim() !== '' &&
+                                Number(row.transfer_fee_amount_input) > 0
+                                  ? `${formatNumber(row.transfer_fee_amount_input, 2, numberFormat)} ${row.transfer_fee_currency || ''}`.trim()
+                                  : row.transfer_fee_amount != null &&
+                                    String(row.transfer_fee_amount).trim() !== '' &&
+                                    Number(row.transfer_fee_amount) > 0
+                                    ? `${formatNumber(row.transfer_fee_amount, 2, numberFormat)} ${row.secondary_currency || ''}`.trim()
+                                    : '—'}
                               </td>
                               <td className="px-3 py-2">
                                 {row.secondary_amount
                                   ? `${formatNumber(row.secondary_amount, 2, numberFormat)} ${row.secondary_currency}`
                                   : '—'}
                               </td>
-                              <td className="px-3 py-2 tabular-nums text-xs">
-                                {row.transfer_fee_amount != null &&
-                                String(row.transfer_fee_amount).trim() !== '' &&
-                                Number(row.transfer_fee_amount) > 0
-                                  ? `${formatNumber(row.transfer_fee_amount, 2, numberFormat)} ${row.secondary_currency || ''}`.trim()
-                                  : '—'}
-                              </td>
-                              <td className="px-3 py-2 text-xs">
+                              <td className="px-3 py-2">
                                 {row.linked_account_transaction_detail
                                   ? `#${row.linked_account_transaction_detail.id} ${row.linked_account_transaction_detail.trading_account_name}`
                                   : '—'}
@@ -1360,19 +1510,19 @@ const TradingActivityPage: React.FC = () => {
                               </td>
                               <td className="px-3 py-2 text-left text-gray-500 dark:text-gray-400">—</td>
                               <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-                                {(summary.credit_totals.secondary ?? []).length > 0
-                                  ? (summary.credit_totals.secondary ?? []).map((b) => (
-                                      <div key={b.secondary_currency} className="whitespace-nowrap">
-                                        {formatNumber(b.secondary_amount, 2, numberFormat)} {b.secondary_currency}
+                                {(summary.credit_totals.fees ?? []).length > 0
+                                  ? (summary.credit_totals.fees ?? []).map((b) => (
+                                      <div key={`fee-${b.secondary_currency}`} className="whitespace-nowrap">
+                                        {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.secondary_currency}
                                       </div>
                                     ))
                                   : '—'}
                               </td>
                               <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
-                                {(summary.credit_totals.fees ?? []).length > 0
-                                  ? (summary.credit_totals.fees ?? []).map((b) => (
-                                      <div key={`fee-${b.secondary_currency}`} className="whitespace-nowrap">
-                                        {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.secondary_currency}
+                                {(summary.credit_totals.secondary ?? []).length > 0
+                                  ? (summary.credit_totals.secondary ?? []).map((b) => (
+                                      <div key={b.secondary_currency} className="whitespace-nowrap">
+                                        {formatNumber(b.secondary_amount, 2, numberFormat)} {b.secondary_currency}
                                       </div>
                                     ))
                                   : '—'}
@@ -1656,7 +1806,7 @@ const TradingActivityPage: React.FC = () => {
           }}
         >
           <div
-            className="flex max-h-[min(92dvh,100vh-1rem)] w-full max-w-lg flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-gray-800 sm:max-h-[90vh] sm:rounded-xl"
+            className="flex max-h-[min(92dvh,100vh-1rem)] w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-gray-800 sm:max-h-[90vh] sm:rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex flex-shrink-0 items-start justify-between gap-3 rounded-t-2xl border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-3 dark:border-gray-700 dark:from-blue-900/20 dark:to-indigo-900/20 sm:items-center sm:rounded-t-xl sm:px-6 sm:py-5">
@@ -1769,10 +1919,46 @@ const TradingActivityPage: React.FC = () => {
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('form.fxRate', {
-                      secondary: credForm.secondary_currency || t('form.fxRateSecondaryPlaceholder'),
-                      primary: credForm.primary_currency,
-                    })}
+                    {t('form.fxRateFormatLabel', { defaultValue: 'Format du taux' })}
+                  </label>
+                  <div className="relative">
+                    <select
+                      className={MODAL_SELECT_CLASS}
+                      value={creditFxRateFormat}
+                      onChange={(e) =>
+                        setCreditFxRateFormat(
+                          e.target.value === 'intermediary' ? 'intermediary' : 'app',
+                        )
+                      }
+                    >
+                      <option value="app">
+                        {t('form.fxRateFormatApp', {
+                          defaultValue: 'App (1 secondaire = … principal)',
+                        })}
+                      </option>
+                      <option value="intermediary">
+                        {t('form.fxRateFormatIntermediary', {
+                          defaultValue: 'Comme sur l’opération (1 principal = … secondaire)',
+                        })}
+                      </option>
+                    </select>
+                    <ModalSelectChevron />
+                  </div>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {creditFxRateFormat === 'intermediary'
+                      ? t('form.fxRateIntermediary', {
+                          primary: credForm.primary_currency,
+                          secondary:
+                            credForm.secondary_currency || t('form.fxRateSecondaryPlaceholder'),
+                          defaultValue: 'Taux (1 {{primary}} = … {{secondary}})',
+                        })
+                      : t('form.fxRate', {
+                          secondary:
+                            credForm.secondary_currency || t('form.fxRateSecondaryPlaceholder'),
+                          primary: credForm.primary_currency,
+                        })}
                   </label>
                   <input
                     type="text"
@@ -1783,13 +1969,47 @@ const TradingActivityPage: React.FC = () => {
                     aria-describedby="cred-fx-rate-hint"
                   />
                   <p id="cred-fx-rate-hint" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {t('form.fxRateHint')}
+                    {creditFxRateFormat === 'intermediary'
+                      ? t('form.fxRateIntermediaryHint', {
+                          defaultValue:
+                            'Nombre d’unités de la devise secondaire pour 1 unité de devise principale. Laisser vide si pas de change.',
+                        })
+                      : t('form.fxRateHint')}
                   </p>
                 </div>
-                <div className="sm:col-span-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('form.feeCurrencyLabel', { defaultValue: 'Devise des frais' })}
+                  </label>
+                  <div className="relative">
+                    <select
+                      className={MODAL_SELECT_CLASS}
+                      value={creditFeeCurrency}
+                      onChange={(e) =>
+                        setCreditFeeCurrency(e.target.value === 'primary' ? 'primary' : 'secondary')
+                      }
+                    >
+                      <option value="primary">
+                        {t('form.feeCurrencyPrimary', {
+                          defaultValue: 'Devise envoyée (principal)',
+                        })}
+                      </option>
+                      <option value="secondary">
+                        {t('form.feeCurrencySecondary', {
+                          defaultValue: 'Devise reçue (secondaire)',
+                        })}
+                      </option>
+                    </select>
+                    <ModalSelectChevron />
+                  </div>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('form.transferFee', {
-                      currency: credForm.secondary_currency || t('form.fxRateSecondaryPlaceholder'),
+                      currency:
+                        (creditFeeCurrency === 'primary'
+                          ? credForm.primary_currency
+                          : credForm.secondary_currency) || t('form.fxRateSecondaryPlaceholder'),
                     })}
                   </label>
                   <input
@@ -1803,6 +2023,17 @@ const TradingActivityPage: React.FC = () => {
                   <p id="cred-transfer-fee-hint" className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {t('form.transferFeeHint')}
                   </p>
+                  <CreditConversionPreview
+                    t={t}
+                    numberFormat={numberFormat}
+                    primaryCurrency={credForm.primary_currency}
+                    secondaryCurrency={credForm.secondary_currency}
+                    amount={credForm.amount}
+                    fxRate={credForm.fx_rate}
+                    fxRateFormat={creditFxRateFormat}
+                    feeAmount={credForm.transfer_fee_amount}
+                    feeCurrency={creditFeeCurrency}
+                  />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.notes')}</label>

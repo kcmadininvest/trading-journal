@@ -189,6 +189,22 @@ class TradingActivityCredit(models.Model):
         verbose_name='Frais de transfert',
         help_text='Montant des frais, exprimé dans la devise secondaire.',
     )
+    transfer_fee_amount_input = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal('0'))],
+        verbose_name='Frais de transfert (saisie)',
+        help_text='Montant des frais tel que saisi (devise envoyée ou reçue).',
+    )
+    transfer_fee_currency = models.CharField(
+        max_length=3,
+        blank=True,
+        default='',
+        verbose_name='Devise des frais (saisie)',
+        help_text='Code ISO de la devise des frais telle que saisie (devise principale ou secondaire).',
+    )
     linked_account_transaction = models.ForeignKey(
         'trades.AccountTransaction',
         on_delete=models.SET_NULL,
@@ -231,6 +247,19 @@ class TradingActivityCredit(models.Model):
                 raise ValidationError(
                     {'transfer_fee_amount': 'Les frais de transfert nécessitent un montant et une devise secondaires.'}
                 )
+
+        fee_input = self.transfer_fee_amount_input
+        if fee_input is not None and fee_input > 0:
+            if not self.transfer_fee_currency:
+                raise ValidationError({'transfer_fee_currency': 'La devise des frais est requise si un montant de frais est renseigné.'})
+            validate_iso_currency(self.transfer_fee_currency)
+            if self.transfer_fee_currency not in {self.primary_currency, self.secondary_currency}:
+                raise ValidationError({'transfer_fee_currency': 'La devise des frais doit être la devise principale ou la devise secondaire.'})
+            if not self.secondary_currency or not self.secondary_amount or self.secondary_amount <= 0:
+                raise ValidationError({'transfer_fee_amount_input': 'Les frais nécessitent un montant et une devise secondaires.'})
+            if self.transfer_fee_currency == self.primary_currency:
+                if self.fx_rate is None or self.fx_rate <= 0:
+                    raise ValidationError({'transfer_fee_amount_input': 'Un taux de change est requis si les frais sont saisis en devise principale.'})
         if self.linked_account_transaction_id:
             tx = self.linked_account_transaction
             if tx.user_id != self.user_id and tx.trading_account.user_id != self.user_id:
@@ -242,6 +271,16 @@ class TradingActivityCredit(models.Model):
         self.primary_currency = self.primary_currency.upper()
         if self.secondary_currency:
             self.secondary_currency = self.secondary_currency.upper()
+        if self.transfer_fee_currency:
+            self.transfer_fee_currency = self.transfer_fee_currency.upper()
+
+        # Normaliser les frais en devise secondaire (champ historique) tout en gardant les champs saisis.
+        if self.transfer_fee_amount_input is not None and self.transfer_fee_amount_input > 0 and self.transfer_fee_currency:
+            if self.transfer_fee_currency == self.secondary_currency:
+                self.transfer_fee_amount = self.transfer_fee_amount_input
+            elif self.transfer_fee_currency == self.primary_currency and self.fx_rate:
+                # fx_rate = primary / secondary => fee_secondary = fee_primary / fx_rate
+                self.transfer_fee_amount = (self.transfer_fee_amount_input / self.fx_rate).quantize(Decimal('0.01'))
         self.full_clean()
         super().save(*args, **kwargs)
 

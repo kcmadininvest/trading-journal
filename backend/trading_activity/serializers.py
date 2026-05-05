@@ -112,6 +112,8 @@ class TradingActivityCreditSerializer(serializers.ModelSerializer):
             'secondary_currency',
             'fx_rate',
             'transfer_fee_amount',
+            'transfer_fee_amount_input',
+            'transfer_fee_currency',
             'linked_account_transaction',
             'linked_account_transaction_detail',
             'notes',
@@ -172,6 +174,14 @@ class TradingActivityCreditSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Les frais ne peuvent pas être négatifs.')
         return value
 
+    def validate_transfer_fee_currency(self, value: str) -> str:
+        if not value:
+            return ''
+        code = _normalize_currency(value)
+        if code not in COMMON_CURRENCY_CODES:
+            raise serializers.ValidationError('Devise des frais non supportée.')
+        return code
+
     def validate(self, attrs):
         sec_amt = attrs.get('secondary_amount', getattr(self.instance, 'secondary_amount', None))
         sec_cur = attrs.get('secondary_currency', getattr(self.instance, 'secondary_currency', None))
@@ -182,6 +192,8 @@ class TradingActivityCreditSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'secondary_amount': 'Requis avec une devise secondaire.'})
         fx_rate = attrs.get('fx_rate', getattr(self.instance, 'fx_rate', None))
         fee = attrs.get('transfer_fee_amount', getattr(self.instance, 'transfer_fee_amount', None))
+        fee_input = attrs.get('transfer_fee_amount_input', getattr(self.instance, 'transfer_fee_amount_input', None))
+        fee_ccy = attrs.get('transfer_fee_currency', getattr(self.instance, 'transfer_fee_currency', None))
         if fx_rate is not None:
             if not sec_cur or sec_amt is None or sec_amt <= 0:
                 raise serializers.ValidationError(
@@ -192,6 +204,18 @@ class TradingActivityCreditSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {'transfer_fee_amount': 'Les frais nécessitent un montant et une devise secondaires.'}
                 )
+        if fee_input is not None and fee_input > 0:
+            if not sec_cur or sec_amt is None or sec_amt <= 0:
+                raise serializers.ValidationError(
+                    {'transfer_fee_amount_input': 'Les frais nécessitent un montant et une devise secondaires.'}
+                )
+            if not fee_ccy:
+                raise serializers.ValidationError({'transfer_fee_currency': 'La devise des frais est requise si un montant de frais est renseigné.'})
+            pri_cur = attrs.get('primary_currency', getattr(self.instance, 'primary_currency', None))
+            if fee_ccy not in {pri_cur, sec_cur}:
+                raise serializers.ValidationError({'transfer_fee_currency': 'La devise des frais doit être la devise principale ou la devise secondaire.'})
+            if fee_ccy == pri_cur and (fx_rate is None or fx_rate <= 0):
+                raise serializers.ValidationError({'transfer_fee_amount_input': 'Un taux de change est requis si les frais sont saisis en devise principale.'})
         return attrs
 
     def create(self, validated_data):

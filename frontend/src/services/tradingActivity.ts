@@ -36,6 +36,8 @@ export interface TradingActivityCredit {
   secondary_currency: string;
   fx_rate: string | null;
   transfer_fee_amount: string | null;
+  transfer_fee_amount_input?: string | null;
+  transfer_fee_currency?: string | null;
   linked_account_transaction: number | null;
   linked_account_transaction_detail?: {
     id: number;

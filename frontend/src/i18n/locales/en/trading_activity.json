@@ -71,9 +71,19 @@
     "none": "—",
     "fxRate": "FX rate (1 {{secondary}} = … {{primary}})",
     "fxRateHint": "Primary-currency units for one unit of secondary currency (any ISO pair). Leave empty if there was no conversion.",
+    "fxRateIntermediary": "FX rate (1 {{primary}} = … {{secondary}})",
+    "fxRateIntermediaryHint": "Secondary-currency units for one unit of primary currency (any ISO pair). Leave empty if there was no conversion.",
+    "fxRateFormatLabel": "Rate format",
+    "fxRateFormatApp": "App (1 secondary = … primary)",
+    "fxRateFormatIntermediary": "As on the transfer (1 primary = … secondary)",
     "fxRateSecondaryPlaceholder": "secondary ccy",
+    "feeCurrencyLabel": "Fee currency",
+    "feeCurrencyPrimary": "Sent currency (primary)",
+    "feeCurrencySecondary": "Received currency (secondary)",
     "transferFee": "Transfer fee ({{currency}})",
-    "transferFeeHint": "Fee amount in the secondary currency (same ISO code as the secondary amount). Leave empty if none."
+    "transferFeeHint": "Fee amount in the selected currency. Leave empty if none.",
+    "netConverted": "Net converted",
+    "expectedReceived": "Expected received"
   },
   "actions": {
     "edit": "Edit",
@@ -92,7 +102,8 @@
   },
   "errors": {
     "load": "Could not load data.",
-    "save": "Could not save."
+    "save": "Could not save.",
+    "maxDigits": "Value is too long: max {{max}} digits."
   },
   "confirm": {
     "deleteExpense": "Delete this expense?",

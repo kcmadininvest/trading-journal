@@ -71,9 +71,19 @@
     "none": "—",
     "fxRate": "Wechselkurs (1 {{secondary}} = … {{primary}})",
     "fxRateHint": "Hauptwährungseinheiten pro 1 Einheit der Zweitwährung (beliebiges ISO-Währungspaar). Leer lassen, wenn kein Umrechnungskurs.",
+    "fxRateIntermediary": "Wechselkurs (1 {{primary}} = … {{secondary}})",
+    "fxRateIntermediaryHint": "Zweitwährungseinheiten pro 1 Einheit der Hauptwährung (beliebiges ISO-Währungspaar). Leer lassen, wenn kein Umrechnungskurs.",
+    "fxRateFormatLabel": "Kursformat",
+    "fxRateFormatApp": "App (1 Sekundär = … Primär)",
+    "fxRateFormatIntermediary": "Wie beim Transfer (1 Primär = … Sekundär)",
     "fxRateSecondaryPlaceholder": "Zweitwährung",
+    "feeCurrencyLabel": "Gebührwährung",
+    "feeCurrencyPrimary": "Gesendete Währung (primär)",
+    "feeCurrencySecondary": "Erhaltene Währung (sekundär)",
     "transferFee": "Transfergebühr ({{currency}})",
-    "transferFeeHint": "Gebühr in der Zweitwährung (gleicher ISO-Code wie der Sekundärbetrag). Leer lassen, wenn keine Gebühr anfiel."
+    "transferFeeHint": "Gebühr in der ausgewählten Währung. Leer lassen, wenn keine Gebühr anfiel.",
+    "netConverted": "Netto umgerechnet",
+    "expectedReceived": "Erwartet erhalten"
   },
   "actions": {
     "edit": "Bearbeiten",
@@ -92,7 +102,8 @@
   },
   "errors": {
     "load": "Daten konnten nicht geladen werden.",
-    "save": "Speichern fehlgeschlagen."
+    "save": "Speichern fehlgeschlagen.",
+    "maxDigits": "Wert ist zu lang: maximal {{max}} Ziffern."
   },
   "confirm": {
     "deleteExpense": "Diese Ausgabe löschen?",

@@ -71,9 +71,19 @@
     "none": "—",
     "fxRate": "Taux (1 {{secondary}} = … {{primary}})",
     "fxRateHint": "Nombre d’unités de la devise principale pour 1 unité de la devise secondaire (toute paire ISO). Laisser vide si pas de change.",
+    "fxRateIntermediary": "Taux (1 {{primary}} = … {{secondary}})",
+    "fxRateIntermediaryHint": "Nombre d’unités de la devise secondaire pour 1 unité de devise principale (toute paire ISO). Laisser vide si pas de change.",
+    "fxRateFormatLabel": "Format du taux",
+    "fxRateFormatApp": "App (1 secondaire = … principal)",
+    "fxRateFormatIntermediary": "Comme sur l’opération (1 principal = … secondaire)",
     "fxRateSecondaryPlaceholder": "devise sec.",
+    "feeCurrencyLabel": "Devise des frais",
+    "feeCurrencyPrimary": "Devise envoyée (principal)",
+    "feeCurrencySecondary": "Devise reçue (secondaire)",
     "transferFee": "Frais de transfert ({{currency}})",
-    "transferFeeHint": "Montant des frais dans la devise secondaire (même code ISO que le montant secondaire). Laisser vide s’il n’y en a pas."
+    "transferFeeHint": "Montant des frais dans la devise sélectionnée. Laisser vide s’il n’y en a pas.",
+    "netConverted": "Net converti",
+    "expectedReceived": "Reçu attendu"
   },
   "actions": {
     "edit": "Modifier",
@@ -92,7 +102,8 @@
   },
   "errors": {
     "load": "Impossible de charger les données.",
-    "save": "Enregistrement impossible."
+    "save": "Enregistrement impossible.",
+    "maxDigits": "Valeur trop longue : {{max}} chiffres max."
   },
   "confirm": {
     "deleteExpense": "Supprimer cette dépense ?",

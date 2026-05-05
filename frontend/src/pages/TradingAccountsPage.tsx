@@ -154,6 +154,8 @@ const TradingAccountsPage: React.FC = () => {
   }, [filteredAccounts, page, pageSize]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAccounts.length / pageSize));
+  const paginationStartIndex = filteredAccounts.length === 0 ? 0 : (page - 1) * pageSize + 1;
+  const paginationEndIndex = filteredAccounts.length === 0 ? 0 : Math.min(page * pageSize, filteredAccounts.length);
   const [editingAccount, setEditingAccount] = useState<TradingAccount | null>(null);
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState<TradingAccount | null>(null);
@@ -522,24 +524,6 @@ const TradingAccountsPage: React.FC = () => {
                   ))
                 )}
               </div>
-              {filteredAccounts.length > 0 && (
-                <div className="px-3 pb-3">
-                  <PaginationControls
-                    currentPage={page}
-                    totalPages={totalPages}
-                    totalItems={filteredAccounts.length}
-                    itemsPerPage={pageSize}
-                    startIndex={(page - 1) * pageSize + 1}
-                    endIndex={Math.min(page * pageSize, filteredAccounts.length)}
-                    onPageChange={(p) => {
-                      setPage(p);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onPageSizeChange={handlePageSizeChange}
-                    pageSizeOptions={[5, 10, 25, 50, 100]}
-                  />
-                </div>
-              )}
             </div>
 
             {/* Desktop Table View */}
@@ -698,27 +682,30 @@ const TradingAccountsPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              {filteredAccounts.length > 0 && (
-                <div className="px-2 sm:px-4 md:px-6">
-                  <PaginationControls
-                    currentPage={page}
-                    totalPages={totalPages}
-                    totalItems={filteredAccounts.length}
-                    itemsPerPage={pageSize}
-                    startIndex={(page - 1) * pageSize + 1}
-                    endIndex={Math.min(page * pageSize, filteredAccounts.length)}
-                    onPageChange={(p) => {
-                      setPage(p);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    onPageSizeChange={handlePageSizeChange}
-                    pageSizeOptions={[5, 10, 25, 50, 100]}
-                  />
-                </div>
-              )}
             </div>
           </div>
         </div>
+
+      {/* Pagination (dans un bloc séparé, comme Trades) */}
+      {filteredAccounts.length > 0 && (
+        <div className="mt-4 sm:mt-6 overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+          <PaginationControls
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={filteredAccounts.length}
+            itemsPerPage={pageSize}
+            startIndex={paginationStartIndex}
+            endIndex={paginationEndIndex}
+            onPageChange={(p) => {
+              setPage(p);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onPageSizeChange={handlePageSizeChange}
+            pageSizeOptions={[5, 10, 25, 50, 100]}
+            className="border-t-0"
+          />
+        </div>
+      )}
 
       {/* Modal de création/édition */}
       <TradingAccountModal
