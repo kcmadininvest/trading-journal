@@ -81,7 +81,7 @@ export interface CreditTotalsSecondaryBlock {
 }
 
 export interface CreditTotalsFeeBlock {
-  secondary_currency: string;
+  currency: string;
   transfer_fee_amount: string;
 }
 

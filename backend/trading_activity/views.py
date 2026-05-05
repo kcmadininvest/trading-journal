@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from decimal import Decimal
 
 from django.db.models import Q, Sum
@@ -185,19 +186,35 @@ class TradingActivitySummaryView(APIView):
             }
             for r in cred_secondary_totals
         ]
-        cred_fee_totals = (
+        # Totaux frais : même devise que l’affichage colonne (saisie), pas seulement la devise secondaire du crédit.
+        new_style_fee_q = (
+            Q(transfer_fee_amount_input__isnull=False)
+            & Q(transfer_fee_amount_input__gt=0)
+            & ~Q(transfer_fee_currency='')
+        )
+        fee_by_currency: dict[str, Decimal] = defaultdict(lambda: Decimal('0'))
+        for r in cred_qs.filter(new_style_fee_q).values('transfer_fee_currency').annotate(
+            fee_sum=Sum('transfer_fee_amount_input')
+        ):
+            ccy = (r['transfer_fee_currency'] or '').strip()
+            if ccy:
+                fee_by_currency[ccy] += r['fee_sum'] or Decimal('0')
+        for r in (
             cred_qs.filter(transfer_fee_amount__gt=0)
             .exclude(secondary_currency='')
+            .exclude(new_style_fee_q)
             .values('secondary_currency')
             .annotate(fee_sum=Sum('transfer_fee_amount'))
-            .order_by('secondary_currency')
-        )
+        ):
+            ccy = (r['secondary_currency'] or '').strip()
+            if ccy:
+                fee_by_currency[ccy] += r['fee_sum'] or Decimal('0')
         credit_totals_fees = [
             {
-                'secondary_currency': r['secondary_currency'],
-                'transfer_fee_amount': str(r['fee_sum'] or Decimal('0')),
+                'currency': ccy,
+                'transfer_fee_amount': str(amt),
             }
-            for r in cred_fee_totals
+            for ccy, amt in sorted(fee_by_currency.items(), key=lambda x: x[0])
         ]
 
         return Response(

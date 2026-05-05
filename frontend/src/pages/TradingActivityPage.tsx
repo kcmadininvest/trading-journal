@@ -1408,8 +1408,8 @@ const TradingActivityPage: React.FC = () => {
                             <dd className="space-y-0.5 tabular-nums font-medium">
                               {(summary.credit_totals.fees ?? []).length > 0
                                 ? (summary.credit_totals.fees ?? []).map((b) => (
-                                    <div key={`fee-${b.secondary_currency}`}>
-                                      {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.secondary_currency}
+                                    <div key={`fee-${b.currency}`}>
+                                      {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.currency}
                                     </div>
                                   ))
                                 : '—'}
@@ -1512,8 +1512,8 @@ const TradingActivityPage: React.FC = () => {
                               <td className="px-3 py-2 text-left font-semibold tabular-nums text-gray-900 dark:text-gray-100">
                                 {(summary.credit_totals.fees ?? []).length > 0
                                   ? (summary.credit_totals.fees ?? []).map((b) => (
-                                      <div key={`fee-${b.secondary_currency}`} className="whitespace-nowrap">
-                                        {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.secondary_currency}
+                                      <div key={`fee-${b.currency}`} className="whitespace-nowrap">
+                                        {formatNumber(b.transfer_fee_amount, 2, numberFormat)} {b.currency}
                                       </div>
                                     ))
                                   : '—'}
