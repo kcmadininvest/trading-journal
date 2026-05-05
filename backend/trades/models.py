@@ -183,7 +183,10 @@ class TradingAccount(models.Model):
             models.Index(fields=['user', 'status']),
             models.Index(fields=['account_type']),
             models.Index(fields=['is_default']),
-            models.Index(fields=['copy_imports_from']),
+            models.Index(
+                fields=['copy_imports_from'],
+                name='trades_trad_copy_im_7f3a1b_idx',
+            ),
         ]
     
     def __str__(self):
