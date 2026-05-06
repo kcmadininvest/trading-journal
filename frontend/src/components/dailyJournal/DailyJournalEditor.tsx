@@ -18,6 +18,7 @@ interface DailyJournalEditorProps {
   onSaved?: (entry: DailyJournalEntry) => void;
   onDeleted?: () => void;
   compact?: boolean;
+  defaultShowPreview?: boolean;
 }
 
 export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
@@ -28,6 +29,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   onSaved,
   onDeleted,
   compact = false,
+  defaultShowPreview = true,
 }) => {
   const { t } = useI18nTranslation();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -38,7 +40,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(defaultShowPreview);
   const [draftRestored, setDraftRestored] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

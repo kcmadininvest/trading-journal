@@ -47,7 +47,7 @@
     "vat": "IVA",
     "total": "Total",
     "ref": "Ref.",
-    "secondary": "Secundario",
+    "secondary": "Divisa secundaria",
     "amount": "Importe",
     "fxRate": "Tipo de cambio",
     "transferFee": "Comisión transferencia"

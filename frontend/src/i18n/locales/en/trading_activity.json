@@ -47,7 +47,7 @@
     "vat": "VAT",
     "total": "Total",
     "ref": "Ref.",
-    "secondary": "Secondary",
+    "secondary": "Secondary currency",
     "amount": "Amount",
     "fxRate": "FX rate",
     "transferFee": "Transfer fee"

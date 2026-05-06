@@ -47,7 +47,7 @@
     "vat": "MwSt.",
     "total": "Gesamt",
     "ref": "Ref.",
-    "secondary": "Sekundär",
+    "secondary": "Zweitwährung",
     "amount": "Betrag",
     "fxRate": "Kurs",
     "transferFee": "Transfergebühr"

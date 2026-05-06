@@ -105,6 +105,7 @@ export const DailyJournalModal: React.FC<DailyJournalModalProps> = ({
               tradingAccountId={tradingAccountId}
               entryId={entry?.id}
               initialEntry={entry}
+              defaultShowPreview={false}
               onSaved={(saved) => {
                 setEntry(saved);
                 setIsEditing(false);
