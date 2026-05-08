@@ -33,10 +33,7 @@ const DailyJournalPage: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [isEntryLoading, setIsEntryLoading] = useState(false);
   const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(true);
-  const [hoveredEntry, setHoveredEntry] = useState<DailyJournalGroupedEntry | null>(null);
-  const [hoveredEntryContent, setHoveredEntryContent] = useState<string | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const selectedYearRef = useRef<number | null>(null);
   const selectedMonthRef = useRef<number | null>(null);
 
@@ -125,39 +122,6 @@ const DailyJournalPage: React.FC = () => {
     });
     setIsMobileEditorOpen(true);
     setNewEntryDate('');
-  };
-
-  const handleEntryHover = async (entry: DailyJournalGroupedEntry) => {
-    // Annuler le timeout de sortie s'il existe
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-
-    // Délai de 300ms avant d'afficher le preview
-    hoverTimeoutRef.current = setTimeout(async () => {
-      setHoveredEntry(entry);
-      try {
-        const fullEntry = await dailyJournalService.getEntry(entry.id);
-        setHoveredEntryContent(fullEntry.content);
-      } catch {
-        setHoveredEntryContent(entry.content_preview);
-      }
-    }, 300);
-  };
-
-  const handleEntryLeave = () => {
-    // Annuler le timeout d'entrée s'il existe
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-
-    // Délai de 100ms avant de masquer le preview
-    hoverTimeoutRef.current = setTimeout(() => {
-      setHoveredEntry(null);
-      setHoveredEntryContent(null);
-    }, 100);
   };
 
   const handleViewModeChange = (mode: 'grid' | 'list') => {
@@ -644,36 +608,12 @@ const DailyJournalPage: React.FC = () => {
                           entry={entry}
                           formatDate={formatDate}
                           onOpenEntry={handleOpenEntry}
-                          onHover={handleEntryHover}
-                          onLeave={handleEntryLeave}
                           viewMode={viewMode}
                           markdownComponents={markdownComponents}
                           emptyText={t('dailyJournal.previewEmpty', { defaultValue: 'Aucun contenu a previsualiser.' })}
                         />
                       ))}
                     </div>
-                    {hoveredEntry && hoveredEntryContent && (
-                      <div 
-                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] bg-white dark:bg-gray-800 border-2 border-blue-300 dark:border-blue-600 rounded-xl shadow-2xl p-6 max-h-[80vh] max-w-2xl w-full overflow-y-auto transition-all duration-200 pointer-events-auto"
-                        onMouseEnter={() => {
-                          if (hoverTimeoutRef.current) {
-                            clearTimeout(hoverTimeoutRef.current);
-                            hoverTimeoutRef.current = null;
-                          }
-                        }}
-                        onMouseLeave={handleEntryLeave}
-                      >
-                        <div className="text-sm text-gray-700 dark:text-gray-300">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeRaw]}
-                            components={markdownComponents}
-                          >
-                            {hoveredEntryContent}
-                          </ReactMarkdown>
-                        </div>
-                      </div>
-                    )}
                   </>
                 )}
               </div>

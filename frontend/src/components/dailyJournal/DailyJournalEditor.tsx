@@ -29,7 +29,7 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
   onSaved,
   onDeleted,
   compact = false,
-  defaultShowPreview = true,
+  defaultShowPreview = false,
 }) => {
   const { t } = useI18nTranslation();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -230,7 +230,23 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
     });
   };
 
-  const handleToolbarAction = (action: 'bold' | 'italic' | 'underline' | 'strike' | 'code' | 'heading1' | 'heading2' | 'heading3' | 'bullet' | 'numbered' | 'link' | 'quote' | 'textColor' | 'highlight') => {
+  const applyBlockStyle = (style: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = content.slice(start, end) || 'texte';
+    const markup = `<div style="${style}">${selected}</div>`;
+    const next = `${content.slice(0, start)}${markup}${content.slice(end)}`;
+    setContent(next);
+    window.requestAnimationFrame(() => {
+      textarea.focus();
+      const cursor = start + markup.length;
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  };
+
+  const handleToolbarAction = (action: 'bold' | 'italic' | 'underline' | 'strike' | 'code' | 'heading1' | 'heading2' | 'heading3' | 'bullet' | 'numbered' | 'link' | 'quote' | 'textColor' | 'highlight' | 'alignLeft' | 'alignCenter' | 'alignRight' | 'justify') => {
     switch (action) {
       case 'bold':
         toggleWrap('**');
@@ -287,6 +303,18 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
         break;
       case 'highlight':
         highlightInputRef.current?.click();
+        break;
+      case 'alignLeft':
+        applyBlockStyle('text-align: left');
+        break;
+      case 'alignCenter':
+        applyBlockStyle('text-align: center');
+        break;
+      case 'alignRight':
+        applyBlockStyle('text-align: right');
+        break;
+      case 'justify':
+        applyBlockStyle('text-align: justify');
         break;
       default:
         break;

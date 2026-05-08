@@ -3,7 +3,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { Tooltip } from '../ui';
 
 interface JournalEditorToolbarProps {
-  onAction: (action: 'bold' | 'italic' | 'underline' | 'strike' | 'code' | 'heading1' | 'heading2' | 'heading3' | 'bullet' | 'numbered' | 'link' | 'quote' | 'textColor' | 'highlight') => void;
+  onAction: (action: 'bold' | 'italic' | 'underline' | 'strike' | 'code' | 'heading1' | 'heading2' | 'heading3' | 'bullet' | 'numbered' | 'link' | 'quote' | 'textColor' | 'highlight' | 'alignLeft' | 'alignCenter' | 'alignRight' | 'justify') => void;
   onInsertText?: (text: string) => void;
   disabled?: boolean;
 }
@@ -78,6 +78,46 @@ export const JournalEditorToolbar: React.FC<JournalEditorToolbarProps> = ({ onAc
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2}>
             <path d="M9 3l8 8-4 4-8-8z" strokeLinecap="round" strokeLinejoin="round" />
             <rect x="3" y="17" width="10" height="4" rx="1" fill="currentColor" opacity="0.35" stroke="none" />
+          </svg>
+        </button>
+      </Tooltip>
+      <Tooltip {...tooltipProps} content={t('dailyJournal.tooltip.alignLeft', { defaultValue: 'Aligner à gauche' })}>
+        <button type="button" onClick={() => onAction('alignLeft')} disabled={disabled} className={buttonClass} aria-label={t('dailyJournal.tooltip.alignLeft', { defaultValue: 'Aligner à gauche' })}>
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+            <path d="M4 6h16" />
+            <path d="M4 10h10" />
+            <path d="M4 14h16" />
+            <path d="M4 18h10" />
+          </svg>
+        </button>
+      </Tooltip>
+      <Tooltip {...tooltipProps} content={t('dailyJournal.tooltip.alignCenter', { defaultValue: 'Centrer' })}>
+        <button type="button" onClick={() => onAction('alignCenter')} disabled={disabled} className={buttonClass} aria-label={t('dailyJournal.tooltip.alignCenter', { defaultValue: 'Centrer' })}>
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+            <path d="M4 6h16" />
+            <path d="M7 10h10" />
+            <path d="M4 14h16" />
+            <path d="M7 18h10" />
+          </svg>
+        </button>
+      </Tooltip>
+      <Tooltip {...tooltipProps} content={t('dailyJournal.tooltip.alignRight', { defaultValue: 'Aligner à droite' })}>
+        <button type="button" onClick={() => onAction('alignRight')} disabled={disabled} className={buttonClass} aria-label={t('dailyJournal.tooltip.alignRight', { defaultValue: 'Aligner à droite' })}>
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+            <path d="M4 6h16" />
+            <path d="M10 10h10" />
+            <path d="M4 14h16" />
+            <path d="M10 18h10" />
+          </svg>
+        </button>
+      </Tooltip>
+      <Tooltip {...tooltipProps} content={t('dailyJournal.tooltip.justify', { defaultValue: 'Justifier' })}>
+        <button type="button" onClick={() => onAction('justify')} disabled={disabled} className={buttonClass} aria-label={t('dailyJournal.tooltip.justify', { defaultValue: 'Justifier' })}>
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+            <path d="M4 6h16" />
+            <path d="M4 10h16" />
+            <path d="M4 14h16" />
+            <path d="M4 18h16" />
           </svg>
         </button>
       </Tooltip>
