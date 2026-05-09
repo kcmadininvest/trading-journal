@@ -1771,11 +1771,10 @@ const TradingActivityPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.date')}</label>
-                  <input
-                    type="date"
-                    className={MODAL_DATE_INPUT_CLASS}
+                  <DateInput
                     value={expForm.date}
-                    onChange={(e) => setExpForm({ ...expForm, date: e.target.value })}
+                    onChange={(value) => setExpForm({ ...expForm, date: value })}
+                    className={MODAL_DATE_INPUT_CLASS}
                   />
                 </div>
                 <div>
@@ -2003,11 +2002,10 @@ const TradingActivityPage: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.date')}</label>
-                  <input
-                    type="date"
-                    className={MODAL_DATE_INPUT_CLASS}
+                  <DateInput
                     value={credForm.date}
-                    onChange={(e) => setCredForm({ ...credForm, date: e.target.value })}
+                    onChange={(value) => setCredForm({ ...credForm, date: value })}
+                    className={MODAL_DATE_INPUT_CLASS}
                   />
                 </div>
                 <div>
