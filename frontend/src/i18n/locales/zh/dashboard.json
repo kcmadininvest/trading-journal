@@ -153,6 +153,7 @@
   "visible": "可见",
   "badgeInDays": "{{badgeName}} {{days}}天后",
   "activeDays": "活跃天数",
+  "accountCreatedOn": "自 {{date}} 起",
   "globalActivity": "活动",
   "globalActivityTooltip": "总持仓数（所有账户）与活跃天数 — 规则与当前余额下方相同（至少一笔交易或有纪律跟踪的日期）。",
   "globalPositionsLabel": "笔仓位"

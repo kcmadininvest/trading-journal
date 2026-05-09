@@ -151,6 +151,7 @@
   "visible": "표시",
   "badgeInDays": "{{badgeName}} {{days}}일 후",
   "activeDays": "활성 일수",
+  "accountCreatedOn": "{{date}}부터",
   "globalActivity": "활동",
   "globalActivityTooltip": "총 포지션(전 계좌) 및 활성 일수 — 현재 잔액 아래와 동일한 규칙(최소 1건 거래 또는 규율 추적이 있는 날).",
   "globalPositionsLabel": "포지션"

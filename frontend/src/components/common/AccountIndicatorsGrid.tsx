@@ -32,7 +32,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
 }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
-  const { accountBalance, totalTrades, bestAndWorstDays, consistencyTarget, activeDays } = indicators;
+  const { accountBalance, totalTrades, bestAndWorstDays, consistencyTarget, activeDays, accountCreatedAt } = indicators;
 
   const variationValue = accountBalance.current - accountBalance.initial;
   const variationPercentage = accountBalance.initial > 0 
@@ -41,6 +41,10 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
 
   const hasActiveDays = useMemo(() => typeof activeDays === 'number' && activeDays >= 0, [activeDays]);
   const showTradesSection = useMemo(() => totalTrades > 0 || hasActiveDays, [totalTrades, hasActiveDays]);
+  const formattedAccountCreatedDate = useMemo(() => {
+    if (!accountCreatedAt) return '';
+    return formatDate(accountCreatedAt, preferences.date_format, false, preferences.timezone);
+  }, [accountCreatedAt, preferences.date_format, preferences.timezone]);
   const visibleConsistencyTarget = consistencyTarget && !hideConsistencyTarget;
 
   // Barre de progression pour le Consistency Target
@@ -143,12 +147,28 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               }
             >
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  {t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}
-                </span>
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex min-w-0 flex-1 items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span className="truncate">{t('dashboard:totalTrades', { defaultValue: 'Total Trades' })}</span>
+                  </span>
+                  {formattedAccountCreatedDate ? (
+                    <span
+                      className="min-w-0 max-w-[45%] shrink truncate text-right text-[10px] font-normal normal-case tracking-normal text-gray-500 dark:text-gray-400"
+                      title={t('dashboard:accountCreatedOn', {
+                        date: formattedAccountCreatedDate,
+                        defaultValue: 'Depuis le {{date}}',
+                      })}
+                    >
+                      {t('dashboard:accountCreatedOn', {
+                        date: formattedAccountCreatedDate,
+                        defaultValue: 'Depuis le {{date}}',
+                      })}
+                    </span>
+                  ) : null}
+                </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                     {totalTrades}

@@ -168,7 +168,7 @@ const TradingAccountsPage: React.FC = () => {
   // Composant pour les en-têtes de colonnes triables
   const SortableHeader: React.FC<{ field: SortField; label: string; className?: string }> = ({ field, label, className = '' }) => (
     <th 
-      className={`px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors select-none ${className}`}
+      className={`px-2 sm:px-4 py-2 sm:py-3 text-left text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors select-none ${className}`}
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-1">
@@ -373,8 +373,8 @@ const TradingAccountsPage: React.FC = () => {
 
       {/* Table */}
       <div className="max-w-full">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-            <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+            <div className="px-3 sm:px-4 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                 {filteredAccounts.length === 1 
                   ? t('accounts:accountCount', { count: filteredAccounts.length })
@@ -527,8 +527,7 @@ const TradingAccountsPage: React.FC = () => {
             </div>
 
             {/* Desktop Table View */}
-            <div className="hidden md:block overflow-hidden">
-              <div className="overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-700/50">
                     <tr>
@@ -541,28 +540,28 @@ const TradingAccountsPage: React.FC = () => {
                       <SortableHeader field="initial_capital" label={t('accounts:columns.initialCapital')} />
                       <SortableHeader field="maximum_loss_limit" label={t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })} className="hidden xl:table-cell" />
                       <SortableHeader field="trades_count" label={t('accounts:columns.trades')} />
-                      <th className="px-2 sm:px-4 md:px-6 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                     {loading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <tr key={`skeleton-${i}`}>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/3 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
-                          <td className="hidden lg:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
-                          <td className="hidden lg:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
-                          <td className="hidden xl:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 text-right"><div className="h-8 bg-gray-100 dark:bg-gray-700 rounded w-40 ml-auto animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-1/3 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
+                          <td className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3"><div className="h-5 bg-gray-100 dark:bg-gray-700 rounded w-16 animate-pulse" /></td>
+                          <td className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
+                          <td className="hidden xl:table-cell px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 text-right"><div className="h-8 bg-gray-100 dark:bg-gray-700 rounded w-40 ml-auto animate-pulse" /></td>
                         </tr>
                       ))
                     ) : filteredAccounts.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="px-4 sm:px-6 py-8 sm:py-10 text-center">
+                        <td colSpan={10} className="px-3 sm:px-4 py-4 sm:py-6 text-center">
                           <div className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
                             {allAccounts.length === 0 
                               ? t('accounts:noAccounts')
@@ -575,12 +574,12 @@ const TradingAccountsPage: React.FC = () => {
                         <tr 
                           key={acc.id} 
                           onClick={() => handleEdit(acc)}
-                          className="hover:bg-gray-50/60 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
                         >
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-mono">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300 font-mono">
                             {acc.id}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3">
                             <div className="flex items-center gap-2 min-w-0">
                               <span className="font-medium text-xs sm:text-sm text-gray-900 dark:text-gray-100 truncate">{acc.name}</span>
                               {acc.is_default && (
@@ -591,16 +590,16 @@ const TradingAccountsPage: React.FC = () => {
                               <div className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">{acc.description}</div>
                             )}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs capitalize">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">
+                            <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium capitalize">
                               {t(`accounts:accountTypes.${acc.account_type}`)}
                             </span>
                           </td>
-                          <td className="hidden lg:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          <td className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {acc.broker_account_id || '-'}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center rounded-md px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs ${acc.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : acc.status === 'inactive' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'}`}>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap">
+                            <span className={`inline-flex items-center rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium ${acc.status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : acc.status === 'inactive' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'}`}>
                               {acc.status === 'active' 
                                 ? t('accounts:status.active') 
                                 : acc.status === 'inactive' 
@@ -608,72 +607,84 @@ const TradingAccountsPage: React.FC = () => {
                                 : acc.status}
                             </span>
                           </td>
-                          <td className="hidden lg:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          <td className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {acc.created_at ? new Date(acc.created_at).toLocaleDateString('fr-FR', { 
                               year: 'numeric', 
                               month: '2-digit', 
                               day: '2-digit' 
                             }) : '-'}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {formatInitialCapital(acc)}
                           </td>
-                          <td className="hidden xl:table-cell px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          <td className="hidden xl:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {formatMaximumLossLimit(acc)}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                             {acc.trades_count ?? 0}
                           </td>
-                          <td className="px-2 sm:px-4 md:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
-                            <div className="inline-flex items-center gap-2 sm:gap-3 justify-end" onClick={(e) => e.stopPropagation()}>
-                              {!acc.is_default && (
-                                <Tooltip content={t('accounts:actions.setDefault')} position="top">
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-center">
+                            <div className="flex justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center" aria-hidden={acc.is_default}>
+                                {!acc.is_default ? (
+                                  <Tooltip content={t('accounts:actions.setDefault')} position="top">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSetDefault(acc.id)}
+                                      className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    </button>
+                                  </Tooltip>
+                                ) : null}
+                              </span>
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center" aria-hidden={acc.status === 'archived'}>
+                                {acc.status !== 'archived' ? (
+                                  <Tooltip content={acc.status === 'active' ? t('accounts:actions.disable') : t('accounts:actions.enable')} position="top">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleStatus(acc)}
+                                      className="p-1 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                                    >
+                                      {acc.status === 'active' ? (
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" /></svg>
+                                      ) : (
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                                      )}
+                                    </button>
+                                  </Tooltip>
+                                ) : null}
+                              </span>
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                                <Tooltip content={acc.status === 'archived' ? t('accounts:actions.unarchive') : t('accounts:actions.archive')} position="top">
                                   <button
-                                    onClick={() => handleSetDefault(acc.id)}
-                                    className="p-1.5 sm:p-2 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    type="button"
+                                    onClick={() => acc.status === 'archived' ? handleUnarchive(acc) : handleArchive(acc)}
+                                    className="p-1 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
                                   >
-                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                  </button>
-                                </Tooltip>
-                              )}
-                              {acc.status !== 'archived' && (
-                                <Tooltip content={acc.status === 'active' ? t('accounts:actions.disable') : t('accounts:actions.enable')} position="top">
-                                  <button
-                                    onClick={() => handleToggleStatus(acc)}
-                                    className="p-1.5 sm:p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
-                                  >
-                                    {acc.status === 'active' ? (
-                                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" /></svg>
+                                    {acc.status === 'archived' ? (
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                      </svg>
                                     ) : (
-                                      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" /></svg>
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
+                                      </svg>
                                     )}
                                   </button>
                                 </Tooltip>
-                              )}
-                              <Tooltip content={acc.status === 'archived' ? t('accounts:actions.unarchive') : t('accounts:actions.archive')} position="top">
-                                <button
-                                  onClick={() => acc.status === 'archived' ? handleUnarchive(acc) : handleArchive(acc)}
-                                  className="p-1.5 sm:p-2 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                >
-                                  {acc.status === 'archived' ? (
-                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                                    </svg>
-                                  ) : (
-                                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8" />
-                                    </svg>
-                                  )}
-                                </button>
-                              </Tooltip>
-                              <Tooltip content={t('accounts:actions.delete')} position="top">
-                                <button
-                                  onClick={() => handleDelete(acc)}
-                                  className="p-1.5 sm:p-2 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500"
-                                >
-                                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-7 0h8" /></svg>
-                                </button>
-                              </Tooltip>
+                              </span>
+                              <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center">
+                                <Tooltip content={t('accounts:actions.delete')} position="top">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDelete(acc)}
+                                    className="p-1 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-rose-500"
+                                  >
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-7 0h8" /></svg>
+                                  </button>
+                                </Tooltip>
+                              </span>
                             </div>
                           </td>
                         </tr>
@@ -681,7 +692,6 @@ const TradingAccountsPage: React.FC = () => {
                     )}
                   </tbody>
                 </table>
-              </div>
             </div>
           </div>
         </div>

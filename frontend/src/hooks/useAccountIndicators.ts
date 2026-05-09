@@ -34,6 +34,8 @@ export interface AccountIndicators {
   accountBalance: AccountBalance;
   totalTrades: number;
   activeDays?: number;
+  /** ISO date du compte de trading (TradingAccount.created_at) */
+  accountCreatedAt?: string;
   bestAndWorstDays: {
     bestDay: BestWorstDay | null;
     worstDay: BestWorstDay | null;
@@ -276,6 +278,7 @@ export function useAccountIndicators({
     accountBalance,
     totalTrades,
     activeDays,
+    accountCreatedAt: selectedAccount?.created_at ?? undefined,
     bestAndWorstDays,
     consistencyTarget,
   };

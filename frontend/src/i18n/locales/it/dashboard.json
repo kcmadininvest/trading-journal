@@ -19,6 +19,7 @@
   "accountBalance": "Solde du compte",
   "totalTrades": "Trade totali",
   "activeDays": "Giorni attivi",
+  "accountCreatedOn": "Dal {{date}}",
   "winningTrades": "Trades gagnants",
   "losingTrades": "Trades perdants",
   "totalPnL": "PnL totale",
