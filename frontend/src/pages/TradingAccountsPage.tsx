@@ -540,7 +540,7 @@ const TradingAccountsPage: React.FC = () => {
                       <SortableHeader field="initial_capital" label={t('accounts:columns.initialCapital')} />
                       <SortableHeader field="maximum_loss_limit" label={t('accounts:columns.maximumLossLimit', { defaultValue: 'Maximum Loss Limit' })} className="hidden xl:table-cell" />
                       <SortableHeader field="trades_count" label={t('accounts:columns.trades')} />
-                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
+                      <th className="px-2 sm:px-4 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('accounts:columns.actions')}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -556,7 +556,7 @@ const TradingAccountsPage: React.FC = () => {
                           <td className="px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-24 animate-pulse" /></td>
                           <td className="hidden xl:table-cell px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-20 animate-pulse" /></td>
                           <td className="px-2 sm:px-4 py-2 sm:py-3"><div className="h-4 bg-gray-100 dark:bg-gray-700 rounded w-12 animate-pulse" /></td>
-                          <td className="px-2 sm:px-4 py-2 sm:py-3 text-right"><div className="h-8 bg-gray-100 dark:bg-gray-700 rounded w-40 ml-auto animate-pulse" /></td>
+                          <td className="px-2 sm:px-4 py-2 sm:py-3 text-center"><div className="mx-auto h-8 w-40 animate-pulse rounded bg-gray-100 dark:bg-gray-700" /></td>
                         </tr>
                       ))
                     ) : filteredAccounts.length === 0 ? (
