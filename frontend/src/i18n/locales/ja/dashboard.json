@@ -97,6 +97,7 @@
   "dayPnLShort": "1日のPnL",
   "netFlow": "純フロー",
   "periodPnL": "期間PnL",
+  "periodPnLShort": "期間PnL",
   "periodNetFlow": "期間純フロー",
   "waterfallWeekAxis": "{{start}} – {{end}}",
   "waterfallTooltipWeekTitle": "{{start}}～{{end}}の週",

@@ -97,6 +97,7 @@
   "dayPnLShort": "每日盈亏",
   "netFlow": "净流动",
   "periodPnL": "区间盈亏",
+  "periodPnLShort": "区间盈亏",
   "periodNetFlow": "区间净流动",
   "waterfallWeekAxis": "{{start}} – {{end}}",
   "waterfallTooltipWeekTitle": "{{start}} 至 {{end}} 当周",

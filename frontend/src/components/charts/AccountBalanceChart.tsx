@@ -36,6 +36,9 @@ interface BalanceDataPoint {
   cumulative: number;
   mll?: number; // Maximum Loss Limit (optionnel)
   profitTarget?: number; // Profit Target (optionnel)
+  aggregation?: 'day' | 'week' | 'month';
+  rangeStartKey?: string; // YYYY-MM-DD
+  rangeEndKey?: string; // YYYY-MM-DD
 }
 
 interface AccountBalanceChartProps {
@@ -59,10 +62,49 @@ function AccountBalanceChart({
   profitTarget = 0,
   hideProfitLoss = false
 }: AccountBalanceChartProps) {
-  const { t } = useI18nTranslation();
+  const { t, i18n } = useI18nTranslation();
   const { theme } = useTheme();
   const { preferences } = usePreferences();
   const isDark = theme === 'dark';
+
+  const formatDayLabel = useMemo(() => {
+    const locale = i18n?.resolvedLanguage || i18n?.language || 'fr';
+    const tz = preferences.timezone;
+    return (isoKey: string, includeYear: boolean) => {
+      const d = new Date(`${isoKey}T00:00:00Z`);
+      const parts: Intl.DateTimeFormatOptions = includeYear
+        ? { year: 'numeric', month: 'short', day: 'numeric', timeZone: tz }
+        : { month: 'short', day: 'numeric', timeZone: tz };
+      return d.toLocaleDateString(locale, parts);
+    };
+  }, [i18n?.resolvedLanguage, i18n?.language, preferences.timezone]);
+
+  const formatMonthAxisLabel = useMemo(() => {
+    const locale = i18n?.resolvedLanguage || i18n?.language || 'fr';
+    return (monthKey: string) => {
+      const d = new Date(`${monthKey}-01T00:00:00Z`);
+      return d.toLocaleDateString(locale, { month: 'short', year: 'numeric' });
+    };
+  }, [i18n?.resolvedLanguage, i18n?.language]);
+
+  const formatPointLabel = useMemo(() => {
+    const locale = i18n?.resolvedLanguage || i18n?.language || 'fr';
+    const tz = preferences.timezone;
+    return (pt: BalanceDataPoint) => {
+      const agg = pt.aggregation || 'day';
+      if (agg === 'week' && pt.rangeStartKey && pt.rangeEndKey) {
+        const start = formatDayLabel(pt.rangeStartKey, true);
+        const end = formatDayLabel(pt.rangeEndKey, true);
+        return t('dashboard:waterfallWeekAxis', { start, end });
+      }
+      if (agg === 'month') {
+        const monthKey = (pt.rangeStartKey || pt.date).slice(0, 7);
+        return formatMonthAxisLabel(monthKey);
+      }
+      const d = new Date(pt.date);
+      return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: tz });
+    };
+  }, [i18n?.resolvedLanguage, i18n?.language, preferences.timezone, t, formatDayLabel, formatMonthAxisLabel]);
 
   // Wrapper pour formatCurrency avec préférences du projet
   // Utilise toujours le currencySymbol de la prop pour garantir la cohérence
@@ -98,13 +140,7 @@ function AccountBalanceChart({
       };
     }
 
-    const dates = data.map(d => 
-      new Date(d.date).toLocaleDateString('fr-FR', { 
-        month: 'short', 
-        day: 'numeric', 
-        timeZone: preferences.timezone 
-      })
-    );
+    const dates = data.map((d) => formatPointLabel(d));
     const balances = data.map(d => d.cumulative);
     const mllValues = data.map(d => d.mll);
 
@@ -325,7 +361,7 @@ function AccountBalanceChart({
       pnlMapping: processedPnlMapping,
       netTransactionsMapping: processedNetTransactionsMapping,
     };
-  }, [data, preferences.timezone, initialCapital, hideMll, hideProfitTarget, profitTarget]);
+  }, [data, initialCapital, hideMll, hideProfitTarget, profitTarget, formatPointLabel]);
 
   // Options du graphique
   const options = useMemo(() => {
@@ -393,6 +429,20 @@ function AccountBalanceChart({
               return ''; // Pas de titre pour les points intermédiaires
             }
             
+            const pt = data[index] as BalanceDataPoint | undefined;
+            const agg = pt?.aggregation || 'day';
+            if (agg === 'week' && pt?.rangeStartKey && pt?.rangeEndKey) {
+              return t('dashboard:waterfallTooltipWeekTitle', {
+                start: formatDayLabel(pt.rangeStartKey, true),
+                end: formatDayLabel(pt.rangeEndKey, true),
+              });
+            }
+            if (agg === 'month') {
+              const monthKey = (pt?.rangeStartKey || pt?.date || '').slice(0, 7);
+              return t('dashboard:waterfallTooltipMonthTitle', {
+                monthLabel: formatMonthAxisLabel(monthKey),
+              });
+            }
             return chartLabels[index] || '';
           },
           label: function(context: any) {
@@ -412,10 +462,14 @@ function AccountBalanceChart({
             // Ne pas afficher le MLL ici car il est déjà affiché par le dataset MLL
             const pnl = pnlMapping[index] ?? 0;
             const netFlow = netTransactionsMapping[index] ?? 0;
+            const pt = data[index] as BalanceDataPoint | undefined;
+            const isAgg = (pt?.aggregation && pt.aggregation !== 'day') || false;
+            const pnlKey = isAgg ? 'dashboard:periodPnLShort' : 'dashboard:dayPnLShort';
+            const netFlowKey = isAgg ? 'dashboard:periodNetFlow' : 'dashboard:netFlow';
             const labels = [
               `${t('dashboard:balance')}: ${formatCurrency(value, currencySymbol)}`,
-              `${t('dashboard:dayPnLShort')}: ${formatCurrency(pnl, currencySymbol)}`,
-              `${t('dashboard:netFlow', { defaultValue: 'Flux net' })}: ${formatCurrency(netFlow, currencySymbol)}`,
+              `${t(pnlKey, { defaultValue: isAgg ? 'PnL période' : 'PnL jour' })}: ${formatCurrency(pnl, currencySymbol)}`,
+              `${t(netFlowKey, { defaultValue: isAgg ? 'Flux net période' : 'Flux net' })}: ${formatCurrency(netFlow, currencySymbol)}`,
             ];
             
             return labels;
@@ -481,7 +535,7 @@ function AccountBalanceChart({
         duration: 0, // Désactiver l'animation pour éviter le tremblement après chargement
       },
     };
-  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartColors, formatCurrency, currencySymbol, t, hideProfitLoss]);
+  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartColors, formatCurrency, currencySymbol, t, hideProfitLoss, data, formatDayLabel, formatMonthAxisLabel]);
 
   if (data.length === 0) {
     return (

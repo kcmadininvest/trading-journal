@@ -197,6 +197,8 @@ const categorizeDuration = (minutes: number): string => {
 /** Seuils d’agrégation automatique pour le graphique waterfall (affichage uniquement). */
 const WATERFALL_DAILY_BAR_MAX = 90;
 const WATERFALL_WEEKLY_AGGREGATE_MAX_DAYS = 730;
+const BALANCE_DAILY_POINT_MAX = 180;
+const BALANCE_WEEKLY_AGGREGATE_MAX_DAYS = 730;
 
 interface WaterfallDailyPoint {
   dateKey: string;
@@ -209,6 +211,8 @@ interface WaterfallDailyPoint {
 }
 
 type WaterfallAggregation = 'day' | 'week' | 'month';
+
+type BalanceAggregation = 'day' | 'week' | 'month';
 
 interface WaterfallDisplayPoint extends WaterfallDailyPoint {
   date: string;
@@ -379,7 +383,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     // Discipline sparkline : données mensuelles des 12 derniers mois
     const periodData = (globalStrategyStats.statistics?.period_data || [])
       .sort((a: any, b: any) => a.date.localeCompare(b.date))
-      .filter((item: any) => item.total > 0); // Seulement les mois avec trades
+      // Inclure aussi les mois/jours sans trades mais avec discipline (DayStrategyCompliance)
+      .filter((item: any) => (item.total_with_strategy ?? item.total ?? 0) > 0);
     
     const disciplineSparkline = periodData.map((item: any) => item.respect_percentage || 0);
     
@@ -925,6 +930,76 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     if (!startDate || !endDate || accountBalanceData.length === 0) return accountBalanceData;
     return accountBalanceData.filter(d => d.date >= startDate && d.date <= endDate);
   }, [accountBalanceData, startDate, endDate]);
+
+  // Série affichée (agrégation auto) pour le graphique du solde uniquement.
+  // Les stats (performanceStats) restent basées sur la série journalière filtrée.
+  const balanceDisplay = useMemo(() => {
+    const daily = filteredBalanceData;
+    if (daily.length === 0) {
+      return { rows: [] as any[], mode: 'day' as BalanceAggregation };
+    }
+
+    const wrapDay = (row: any) => ({
+      ...row,
+      aggregation: 'day' as const,
+      rangeStartKey: row.date,
+      rangeEndKey: row.date,
+    });
+
+    if (daily.length <= BALANCE_DAILY_POINT_MAX) {
+      return { rows: daily.map(wrapDay), mode: 'day' as BalanceAggregation };
+    }
+
+    if (daily.length <= BALANCE_WEEKLY_AGGREGATE_MAX_DAYS) {
+      const buckets = new Map<string, any[]>();
+      for (const row of daily) {
+        const wk = utcMondayKeyOfIsoDate(row.date);
+        if (!buckets.has(wk)) buckets.set(wk, []);
+        buckets.get(wk)!.push(row);
+      }
+      const sortedWeeks = Array.from(buckets.keys()).sort();
+      const rows = sortedWeeks.map((weekKey) => {
+        const rowsIn = buckets.get(weekKey)!;
+        const first = rowsIn[0];
+        const last = rowsIn[rowsIn.length - 1];
+        return {
+          date: weekKey,
+          pnl: rowsIn.reduce((s, r) => s + (r.pnl || 0), 0),
+          dailyNetTransactions: rowsIn.reduce((s, r) => s + (r.dailyNetTransactions || 0), 0),
+          cumulative: last.cumulative,
+          mll: last.mll,
+          aggregation: 'week' as const,
+          rangeStartKey: first.date,
+          rangeEndKey: last.date,
+        };
+      });
+      return { rows, mode: 'week' as BalanceAggregation };
+    }
+
+    const monthBuckets = new Map<string, any[]>();
+    for (const row of daily) {
+      const mk = row.date.slice(0, 7);
+      if (!monthBuckets.has(mk)) monthBuckets.set(mk, []);
+      monthBuckets.get(mk)!.push(row);
+    }
+    const sortedMonths = Array.from(monthBuckets.keys()).sort();
+    const rows = sortedMonths.map((monthKey) => {
+      const rowsIn = monthBuckets.get(monthKey)!;
+      const first = rowsIn[0];
+      const last = rowsIn[rowsIn.length - 1];
+      return {
+        date: `${monthKey}-01`,
+        pnl: rowsIn.reduce((s, r) => s + (r.pnl || 0), 0),
+        dailyNetTransactions: rowsIn.reduce((s, r) => s + (r.dailyNetTransactions || 0), 0),
+        cumulative: last.cumulative,
+        mll: last.mll,
+        aggregation: 'month' as const,
+        rangeStartKey: first.date,
+        rangeEndKey: last.date,
+      };
+    });
+    return { rows, mode: 'month' as BalanceAggregation };
+  }, [filteredBalanceData]);
 
   // Calculer les statistiques de performance
   const performanceStats = useMemo(() => {
@@ -2362,7 +2437,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
               <div className="h-64 sm:h-80">
                 <AccountBalanceChart
-                  data={filteredBalanceData}
+                  data={balanceDisplay.rows}
                   currencySymbol={currencySymbol}
                   formatCurrency={formatCurrency}
                   initialCapital={selectedAccount?.initial_capital ? parseFloat(String(selectedAccount.initial_capital)) : 0}

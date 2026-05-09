@@ -95,6 +95,7 @@
   "dayPnLShort": "PnL giorno",
   "netFlow": "Flusso netto",
   "periodPnL": "PnL del periodo",
+  "periodPnLShort": "PnL periodo",
   "periodNetFlow": "Flusso netto del periodo",
   "waterfallWeekAxis": "{{start}} – {{end}}",
   "waterfallTooltipWeekTitle": "Settimana dal {{start}} al {{end}}",
