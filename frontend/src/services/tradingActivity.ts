@@ -121,6 +121,16 @@ export interface PaginatedResults<T> {
   results: T[];
 }
 
+export type TradingActivityLedgerFilters = {
+  date_from?: string;
+  date_to?: string;
+  q?: string;
+};
+
+export type TradingActivityExpenseLedgerFilters = TradingActivityLedgerFilters & {
+  category?: number | string;
+};
+
 function authHeaders(): HeadersInit {
   const token = localStorage.getItem('access_token');
   return {
@@ -188,10 +198,19 @@ export const tradingActivityService = {
     return request(`${BASE}/expense-categories/${id}/`, { method: 'DELETE' });
   },
 
-  listExpenses(params?: { page?: number; page_size?: number }): Promise<PaginatedResults<TradingActivityExpense>> {
+  listExpenses(params?: {
+    page?: number;
+    page_size?: number;
+    filters?: TradingActivityExpenseLedgerFilters;
+  }): Promise<PaginatedResults<TradingActivityExpense>> {
     const q = new URLSearchParams();
     if (params?.page != null) q.set('page', String(params.page));
     if (params?.page_size != null) q.set('page_size', String(params.page_size));
+    const f = params?.filters;
+    if (f?.date_from) q.set('date_from', String(f.date_from));
+    if (f?.date_to) q.set('date_to', String(f.date_to));
+    if (f?.q) q.set('q', String(f.q));
+    if (f?.category != null && String(f.category).trim() !== '') q.set('category', String(f.category));
     const suffix = q.toString() ? `?${q.toString()}` : '';
     return request(`${BASE}/expenses/${suffix}`);
   },
@@ -208,10 +227,18 @@ export const tradingActivityService = {
     return request(`${BASE}/expenses/${id}/`, { method: 'DELETE' });
   },
 
-  listCredits(params?: { page?: number; page_size?: number }): Promise<PaginatedResults<TradingActivityCredit>> {
+  listCredits(params?: {
+    page?: number;
+    page_size?: number;
+    filters?: TradingActivityLedgerFilters;
+  }): Promise<PaginatedResults<TradingActivityCredit>> {
     const q = new URLSearchParams();
     if (params?.page != null) q.set('page', String(params.page));
     if (params?.page_size != null) q.set('page_size', String(params.page_size));
+    const f = params?.filters;
+    if (f?.date_from) q.set('date_from', String(f.date_from));
+    if (f?.date_to) q.set('date_to', String(f.date_to));
+    if (f?.q) q.set('q', String(f.q));
     const suffix = q.toString() ? `?${q.toString()}` : '';
     return request(`${BASE}/credits/${suffix}`);
   },

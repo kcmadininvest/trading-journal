@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import date
 from decimal import Decimal
 
 from django.db.models import Q, Sum
 from rest_framework import permissions, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -23,6 +25,30 @@ from .serializers import (
     TradingActivityExpenseCategorySerializer,
     TradingActivityExpenseSerializer,
 )
+
+
+def _parse_iso_date_param(value: str | None, *, param: str) -> date | None:
+    if value is None:
+        return None
+    raw = str(value).strip()
+    if raw == '':
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError as exc:
+        raise ValidationError({param: 'Format invalide. Utilisez YYYY-MM-DD.'}) from exc
+
+
+def _parse_int_param(value: str | None, *, param: str) -> int | None:
+    if value is None:
+        return None
+    raw = str(value).strip()
+    if raw == '':
+        return None
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise ValidationError({param: 'Valeur invalide. Entier requis.'}) from exc
 
 
 class TradingActivityExpenseCategoryViewSet(viewsets.ModelViewSet):
@@ -44,11 +70,31 @@ class TradingActivityExpenseViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
-        return (
+        qs = (
             TradingActivityExpense.objects.filter(user=self.request.user)
             .select_related('category')
             .order_by('-date', '-created_at')
         )
+        qp = self.request.query_params
+
+        date_from = _parse_iso_date_param(qp.get('date_from'), param='date_from')
+        date_to = _parse_iso_date_param(qp.get('date_to'), param='date_to')
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+
+        category_id = _parse_int_param(qp.get('category'), param='category')
+        if category_id is not None:
+            qs = qs.filter(category_id=category_id)
+
+        q = (qp.get('q') or '').strip()
+        if q:
+            qs = qs.filter(
+                Q(invoice_reference__icontains=q) | Q(label__icontains=q) | Q(notes__icontains=q)
+            )
+
+        return qs
 
 
 class TradingActivityCreditViewSet(viewsets.ModelViewSet):
@@ -57,11 +103,25 @@ class TradingActivityCreditViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPageNumberPagination
 
     def get_queryset(self):
-        return (
+        qs = (
             TradingActivityCredit.objects.filter(user=self.request.user)
             .select_related('linked_account_transaction', 'linked_account_transaction__trading_account')
             .order_by('-date', '-created_at')
         )
+        qp = self.request.query_params
+
+        date_from = _parse_iso_date_param(qp.get('date_from'), param='date_from')
+        date_to = _parse_iso_date_param(qp.get('date_to'), param='date_to')
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+
+        q = (qp.get('q') or '').strip()
+        if q:
+            qs = qs.filter(Q(notes__icontains=q))
+
+        return qs
 
 
 class CurrencySuggestionsView(APIView):

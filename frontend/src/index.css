@@ -10,6 +10,21 @@
   body {
     @apply antialiased;
   }
+
+  :root {
+    --ui-control-min-height: 2.5rem; /* 40px (équivalent h-10) */
+  }
+
+  /*
+    Normalisation globale des hauteurs de champs.
+    - Applique une hauteur minimale (pas une hauteur fixe) pour ne pas casser
+      certains champs plus denses.
+    - Exclut les types qui ne doivent pas être normalisés.
+  */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  select {
+    min-height: var(--ui-control-min-height);
+  }
 }
 
 /* Padding vertical des pages (sous le header fixe / au-dessus du footer) — hors JIT Tailwind pour éviter toute classe absente du bundle */

@@ -3,6 +3,8 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast/headless';
 import { PageShell } from '../components/layout';
 import { DeleteConfirmModal, PaginationControls, Tooltip } from '../components/ui';
+import { DateInput } from '../components/common/DateInput';
+import { CustomSelect } from '../components/common/CustomSelect';
 import { useColonBeforeValue } from '../hooks/useColonBeforeValue';
 import { usePreferences } from '../hooks/usePreferences';
 import {
@@ -546,6 +548,33 @@ const TradingActivityPage: React.FC = () => {
   const [deleteTarget, setDeleteTarget] = useState<{ kind: 'expense' | 'credit'; id: number } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [ledgerFilters, setLedgerFilters] = useState<{
+    date_from: string;
+    date_to: string;
+    q: string;
+    category: string;
+  }>({
+    date_from: '',
+    date_to: '',
+    q: '',
+    category: '',
+  });
+  const [debouncedLedgerQuery, setDebouncedLedgerQuery] = useState('');
+
+  useEffect(() => {
+    const h = window.setTimeout(() => {
+      setDebouncedLedgerQuery((ledgerFilters.q || '').trim());
+    }, 300);
+    return () => window.clearTimeout(h);
+  }, [ledgerFilters.q]);
+
+  useEffect(() => {
+    setExpensesPage(1);
+    setCreditsPage(1);
+    setLedgerBump((b) => b + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ledgerFilters.date_from, ledgerFilters.date_to, debouncedLedgerQuery, ledgerFilters.category]);
+
   const refreshWithdrawalSuggestions = useCallback(async () => {
     try {
       const wd = await tradingActivityService.listWithdrawalSuggestions(
@@ -634,10 +663,28 @@ const TradingActivityPage: React.FC = () => {
       setExpensesLoading(true);
       try {
         let p = page;
-        let data = await tradingActivityService.listExpenses({ page: p, page_size: pageSize });
+        let data = await tradingActivityService.listExpenses({
+          page: p,
+          page_size: pageSize,
+          filters: {
+            date_from: ledgerFilters.date_from || undefined,
+            date_to: ledgerFilters.date_to || undefined,
+            q: debouncedLedgerQuery || undefined,
+            category: ledgerFilters.category || undefined,
+          },
+        });
         while ((data.results?.length ?? 0) === 0 && data.count > 0 && p > 1) {
           p -= 1;
-          data = await tradingActivityService.listExpenses({ page: p, page_size: pageSize });
+          data = await tradingActivityService.listExpenses({
+            page: p,
+            page_size: pageSize,
+            filters: {
+              date_from: ledgerFilters.date_from || undefined,
+              date_to: ledgerFilters.date_to || undefined,
+              q: debouncedLedgerQuery || undefined,
+              category: ledgerFilters.category || undefined,
+            },
+          });
         }
         setExpensesPage(p);
         setExpenses(Array.isArray(data.results) ? data.results : []);
@@ -648,7 +695,7 @@ const TradingActivityPage: React.FC = () => {
         setExpensesLoading(false);
       }
     },
-    [t],
+    [t, ledgerFilters.category, ledgerFilters.date_from, ledgerFilters.date_to, debouncedLedgerQuery],
   );
 
   const loadCreditsList = useCallback(
@@ -656,10 +703,26 @@ const TradingActivityPage: React.FC = () => {
       setCreditsLoading(true);
       try {
         let p = page;
-        let data = await tradingActivityService.listCredits({ page: p, page_size: pageSize });
+        let data = await tradingActivityService.listCredits({
+          page: p,
+          page_size: pageSize,
+          filters: {
+            date_from: ledgerFilters.date_from || undefined,
+            date_to: ledgerFilters.date_to || undefined,
+            q: debouncedLedgerQuery || undefined,
+          },
+        });
         while ((data.results?.length ?? 0) === 0 && data.count > 0 && p > 1) {
           p -= 1;
-          data = await tradingActivityService.listCredits({ page: p, page_size: pageSize });
+          data = await tradingActivityService.listCredits({
+            page: p,
+            page_size: pageSize,
+            filters: {
+              date_from: ledgerFilters.date_from || undefined,
+              date_to: ledgerFilters.date_to || undefined,
+              q: debouncedLedgerQuery || undefined,
+            },
+          });
         }
         setCreditsPage(p);
         setCredits(Array.isArray(data.results) ? data.results : []);
@@ -670,7 +733,7 @@ const TradingActivityPage: React.FC = () => {
         setCreditsLoading(false);
       }
     },
-    [t],
+    [t, ledgerFilters.date_from, ledgerFilters.date_to, debouncedLedgerQuery],
   );
 
   const refreshLedgersAfterMutation = useCallback(
@@ -1152,6 +1215,87 @@ const TradingActivityPage: React.FC = () => {
                 {t('expenses.add')}
               </button>
             )}
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-5 m-3 sm:m-4 md:m-5 border border-gray-200 dark:border-gray-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                  {tCommon('dailyJournal.startDate', { defaultValue: 'Date début' })}
+                </label>
+                <DateInput
+                  value={ledgerFilters.date_from}
+                  onChange={(value) => setLedgerFilters((f) => ({ ...f, date_from: value }))}
+                  className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                  {tCommon('dailyJournal.endDate', { defaultValue: 'Date fin' })}
+                </label>
+                <DateInput
+                  value={ledgerFilters.date_to}
+                  onChange={(value) => setLedgerFilters((f) => ({ ...f, date_to: value }))}
+                  className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="min-w-0 w-full">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                  {t('form.category')}
+                </label>
+                <CustomSelect
+                  value={ledgerFilters.category}
+                  onChange={(value) => setLedgerFilters((f) => ({ ...f, category: value ? String(value) : '' }))}
+                  disabled={ledgerTab === 'credit'}
+                  options={[
+                    { value: '', label: t('form.categoryNone') },
+                    ...categories.map((c) => ({ value: String(c.id), label: c.name })),
+                  ]}
+                />
+              </div>
+
+              <div className="md:col-span-2 lg:col-span-1">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+                  {tCommon('search')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={ledgerFilters.q}
+                    onChange={(e) => setLedgerFilters((f) => ({ ...f, q: e.target.value }))}
+                    placeholder={tCommon('dailyJournal.searchPlaceholder', { defaultValue: 'Rechercher…' })}
+                    className="w-full h-10 px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="w-full flex items-end">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setLedgerFilters({
+                      date_from: '',
+                      date_to: '',
+                      q: '',
+                      category: '',
+                    })
+                  }
+                  className="w-full h-10 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+                >
+                  {tCommon('reset')}
+                </button>
+              </div>
+            </div>
           </div>
 
           {ledgerTab === 'debit' && (
