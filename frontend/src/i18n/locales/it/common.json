@@ -137,5 +137,8 @@
     "viewMode": "Modalità di visualizzazione",
     "gridView": "Vista griglia",
     "listView": "Vista elenco"
-  }
+  },
+  "pnlNetShort": "Netto",
+  "pnlGrossShort": "Lordo",
+  "pnlBasisToggleAria": "Visualizzazione PnL: netto o lordo"
 }

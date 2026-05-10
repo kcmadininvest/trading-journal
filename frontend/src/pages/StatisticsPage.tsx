@@ -29,10 +29,13 @@ import { ExportButton } from '../components/exports';
 import Tooltip from '../components/ui/Tooltip';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import { PageShell } from '../components/layout';
+import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
+import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
   const { preferences, loading: preferencesLoading } = usePreferences();
+  const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const { selectedAccountId, setSelectedAccountId, loading: accountLoading } = useTradingAccount();
   const { selectedPeriod, setSelectedPeriod, selectedPositionStrategy, setSelectedPositionStrategy } =
     usePersistedPeriodAndStrategyFilters(selectedAccountId);
@@ -58,7 +61,8 @@ function StatisticsPage() {
     selectedPeriod ? null : selectedMonth,
     selectedPeriod?.start || null,
     selectedPeriod?.end || null,
-    selectedPositionStrategy
+    selectedPositionStrategy,
+    pnlDisplayMode,
   );
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(
     accountLoading ? undefined : selectedAccountId, 
@@ -66,7 +70,8 @@ function StatisticsPage() {
     selectedPeriod ? null : selectedMonth,
     selectedPeriod?.start || null,
     selectedPeriod?.end || null,
-    selectedPositionStrategy
+    selectedPositionStrategy,
+    pnlDisplayMode,
   );
 
   const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
@@ -81,9 +86,11 @@ function StatisticsPage() {
     endDate: summaryEndDate,
     loading: accountLoading,
     positionStrategy: selectedPositionStrategy,
+    pnlDisplay: pnlDisplayMode,
   });
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
     loading: accountLoading,
+    pnlDisplay: pnlDisplayMode,
   });
   
   // Fonction pour recharger les statistiques après un import
@@ -230,6 +237,7 @@ function StatisticsPage() {
     filteredTrades,
     analyticsData,
     activeDays: dashboardSummary?.active_days,
+    pnlDisplay: pnlDisplayMode,
   });
 
   // Calculer le coût médian d'un trade
@@ -352,57 +360,58 @@ function StatisticsPage() {
       <div className="w-full">
         {/* Filtres */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4 flex-1">
-              {/* Compte de trading : largeur au contenu comme Dashboard / Analytics (évite lg:w-64 qui tronquait) */}
-              <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('statistics:tradingAccount')}
-                </label>
-                <AccountSelector
-                  value={selectedAccountId}
-                  onChange={(accountId) => {
-                    setSelectedAccountId(accountId);
-                  }}
-                  hideLabel
-                  hideAccountNumber={hideAccountNumber}
-                />
-              </div>
-              
-              {/* Sélecteur de période — largeur au contenu (aligné Dashboard / Analytics) */}
-              <div className="w-full lg:w-auto lg:flex-shrink-0">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('statistics:period', { defaultValue: 'Période' })}
-                </label>
-                <PeriodSelector
-                  value={selectedPeriod}
-                  onChange={(period) => {
-                    setSelectedPeriod(period);
-                    // Réinitialiser les anciens sélecteurs
-                    setSelectedYear(null);
-                    setSelectedMonth(null);
-                  }}
-                />
-              </div>
-
-              <PositionStrategyFilterField
-                className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
-                value={selectedPositionStrategy}
-                onChange={setSelectedPositionStrategy}
-                strategies={positionStrategies}
-                loading={loadingStrategies}
+          <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
+            {/* Compte de trading : largeur au contenu comme Dashboard / Analytics (évite lg:w-64 qui tronquait) */}
+            <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('statistics:tradingAccount')}
+              </label>
+              <AccountSelector
+                value={selectedAccountId}
+                onChange={(accountId) => {
+                  setSelectedAccountId(accountId);
+                }}
+                hideLabel
+                hideAccountNumber={hideAccountNumber}
               />
             </div>
-            
-            {/* Bouton d'export */}
-            {selectedAccount && (
-              <div className="flex-shrink-0 lg:self-end">
+
+            {/* Sélecteur de période — largeur au contenu (aligné Dashboard / Analytics) */}
+            <div className="w-full lg:w-auto lg:flex-shrink-0">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('statistics:period', { defaultValue: 'Période' })}
+              </label>
+              <PeriodSelector
+                value={selectedPeriod}
+                onChange={(period) => {
+                  setSelectedPeriod(period);
+                  // Réinitialiser les anciens sélecteurs
+                  setSelectedYear(null);
+                  setSelectedMonth(null);
+                }}
+              />
+            </div>
+
+            <PositionStrategyFilterField
+              className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
+              value={selectedPositionStrategy}
+              onChange={setSelectedPositionStrategy}
+              strategies={positionStrategies}
+              loading={loadingStrategies}
+            />
+
+            <div className="flex w-full items-end lg:w-auto lg:flex-shrink-0">
+              <PnlBasisToggle />
+            </div>
+
+            <div className="flex w-full flex-wrap items-end gap-2 lg:ml-auto lg:w-auto lg:flex-shrink-0 lg:justify-end">
+              {selectedAccount && (
                 <ExportButton
                   tradingAccountId={selectedAccount.id}
                   tradingAccountName={selectedAccount.name}
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 

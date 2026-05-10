@@ -15,11 +15,16 @@ import { tradingAccountsService, TradingAccount } from '../services/tradingAccou
 import { currenciesService, Currency } from '../services/currencies';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
+import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
+import { usePreferences } from '../hooks/usePreferences';
+import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 
 type ViewType = 'daily' | 'monthly';
 
 const CalendarPage: React.FC = () => {
   const { t } = useI18nTranslation();
+  const { preferences } = usePreferences();
+  const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const [viewType, setViewType] = useState<ViewType>('daily');
   const [isLoading, setIsLoading] = useState(true);
   const { selectedAccountId: selectedAccount, setSelectedAccountId: setSelectedAccount, loading: accountLoading } = useTradingAccount();
@@ -45,7 +50,12 @@ const CalendarPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await calendarService.getMonthData(currentYear, currentMonth, tradingAccount);
+      const data = await calendarService.getMonthData(
+        currentYear,
+        currentMonth,
+        tradingAccount,
+        pnlDisplayMode
+      );
       setDailyData(data);
     } catch (err) {
       setError(t('calendar:errorLoadingMonthlyData'));
@@ -53,7 +63,7 @@ const CalendarPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentYear, currentMonth, selectedAccount, t]);
+  }, [currentYear, currentMonth, selectedAccount, t, pnlDisplayMode]);
 
   // Charger les données pour la vue mensuelle
   const loadYearlyData = useCallback(async (year: number, tradingAccount?: number) => {
@@ -61,8 +71,8 @@ const CalendarPage: React.FC = () => {
     setError(null);
     try {
       const [monthlyData, weeklyData] = await Promise.all([
-        calendarService.getYearlyMonthlyData(year, tradingAccount),
-        calendarService.getYearlyWeeklyData(year, tradingAccount),
+        calendarService.getYearlyMonthlyData(year, tradingAccount, pnlDisplayMode),
+        calendarService.getYearlyWeeklyData(year, tradingAccount, pnlDisplayMode),
       ]);
       setYearlyMonthlyData(monthlyData);
       setYearlyWeeklyData(weeklyData);
@@ -72,7 +82,7 @@ const CalendarPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [t]);
+  }, [t, pnlDisplayMode]);
 
   // Charger les devises
   useEffect(() => {
@@ -145,13 +155,24 @@ const CalendarPage: React.FC = () => {
 
   return (
     <PageShell>
-        {/* Sélecteur de compte */}
-        <div className="mb-6 inline-block">
-          <AccountSelector
-            value={selectedAccount}
-            onChange={setSelectedAccount}
-            hideAccountNumber={hideAccountNumber}
-          />
+        {/* Filtres — même disposition que Stratégies (carte + compte + toggle aligné bas) */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
+            <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('common:tradingAccount')}
+              </label>
+              <AccountSelector
+                value={selectedAccount}
+                onChange={setSelectedAccount}
+                hideLabel
+                hideAccountNumber={hideAccountNumber}
+              />
+            </div>
+            <div className="flex w-full items-end lg:w-auto lg:flex-shrink-0">
+              <PnlBasisToggle />
+            </div>
+          </div>
         </div>
 
         {/* Affichage des erreurs */}

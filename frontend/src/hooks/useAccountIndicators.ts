@@ -2,6 +2,8 @@ import { useMemo, useState, useEffect, useCallback } from 'react';
 import { TradeListItem } from '../services/trades';
 import { TradingAccount } from '../services/tradingAccounts';
 import { accountTransactionsService, AccountBalance as AccountBalanceData } from '../services/accountTransactions';
+import type { PnlDisplayMode } from '../utils/pnlDisplay';
+import { getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 
 export interface DailyBalanceData {
   date: string;
@@ -59,6 +61,7 @@ interface UseAccountIndicatorsParams {
     };
   } | null;
   activeDays?: number;
+  pnlDisplay?: PnlDisplayMode;
 }
 
 /**
@@ -72,6 +75,7 @@ export function useAccountIndicators({
   filteredBalanceData,
   analyticsData,
   activeDays,
+  pnlDisplay = 'net',
 }: UseAccountIndicatorsParams): AccountIndicators {
   // État pour le solde avec transactions
   const [balanceWithTransactions, setBalanceWithTransactions] = useState<AccountBalanceData | null>(null);
@@ -118,9 +122,28 @@ export function useAccountIndicators({
 
     // Si on a le solde avec transactions depuis l'API, l'utiliser
     if (balanceWithTransactions) {
+      const initial = parseFloat(balanceWithTransactions.initial_capital);
+      const currentNet = parseFloat(balanceWithTransactions.current_balance);
+      if (pnlDisplay === 'net') {
+        return { initial, current: currentNet };
+      }
+      const rawGross = balanceWithTransactions.current_balance_gross;
+      let currentGross =
+        rawGross !== undefined && rawGross !== '' ? parseFloat(rawGross) : NaN;
+      if (!Number.isFinite(currentGross) && allTrades.length > 0) {
+        const pnlDelta = allTrades.reduce((s, t) => {
+          const g = getTradeDisplayPnlValue(t, 'gross') ?? 0;
+          const n = getTradeDisplayPnlValue(t, 'net') ?? 0;
+          return s + (g - n);
+        }, 0);
+        currentGross = currentNet + pnlDelta;
+      }
+      if (!Number.isFinite(currentGross)) {
+        currentGross = currentNet;
+      }
       return {
-        initial: parseFloat(balanceWithTransactions.initial_capital),
-        current: parseFloat(balanceWithTransactions.current_balance),
+        initial,
+        current: currentGross,
       };
     }
 
@@ -130,7 +153,10 @@ export function useAccountIndicators({
       : 0;
 
     // Calculer le PnL total de tous les trades du compte (pas seulement la période filtrée)
-    const totalPnl = allTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
+    const totalPnl = allTrades.reduce((sum, t) => {
+      const v = getTradeDisplayPnlValue(t, pnlDisplay);
+      return sum + (v ?? 0);
+    }, 0);
 
     const currentBalance = initialCapital + totalPnl;
 
@@ -138,7 +164,7 @@ export function useAccountIndicators({
       initial: initialCapital,
       current: currentBalance,
     };
-  }, [selectedAccount, allTrades, balanceWithTransactions]);
+  }, [selectedAccount, allTrades, balanceWithTransactions, pnlDisplay]);
 
   // Calculer le meilleur et le pire jour pour la période filtrée
   // Priorité: filteredBalanceData > analyticsData > calcul depuis filteredTrades
@@ -182,9 +208,10 @@ export function useAccountIndicators({
     // Grouper les trades par date
     const dailyData: { [date: string]: number } = {};
     filteredTrades.forEach(trade => {
-      if (trade.net_pnl && trade.trade_day) {
+      const v = getTradeDisplayPnlValue(trade, pnlDisplay);
+      if (v != null && trade.trade_day) {
         const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
+        dailyData[date] = (dailyData[date] || 0) + v;
       }
     });
 
@@ -208,7 +235,7 @@ export function useAccountIndicators({
       bestDay: bestDay.pnl > 0 ? { date: bestDay.date, pnl: bestDay.pnl } : null,
       worstDay: worstDay.pnl < 0 ? { date: worstDay.date, pnl: worstDay.pnl } : null,
     };
-  }, [filteredBalanceData, analyticsData, filteredTrades]);
+  }, [filteredBalanceData, analyticsData, filteredTrades, pnlDisplay]);
 
   // Calculer le Consistency Target pour les comptes TopStep
   // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
@@ -230,9 +257,10 @@ export function useAccountIndicators({
     // Grouper les trades par date pour trouver le meilleur jour
     const dailyData: { [date: string]: number } = {};
     allTrades.forEach(trade => {
-      if (trade.net_pnl && trade.trade_day) {
+      const v = getTradeDisplayPnlValue(trade, pnlDisplay);
+      if (v != null && trade.trade_day) {
         const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + parseFloat(trade.net_pnl);
+        dailyData[date] = (dailyData[date] || 0) + v;
       }
     });
 
@@ -269,7 +297,7 @@ export function useAccountIndicators({
       requiredTotalProfit,
       additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
     };
-  }, [selectedAccount, accountBalance, allTrades]);
+  }, [selectedAccount, accountBalance, allTrades, pnlDisplay]);
 
   // Total trades pour la période filtrée
   const totalTrades = filteredTrades.length;

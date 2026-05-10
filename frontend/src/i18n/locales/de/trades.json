@@ -183,6 +183,7 @@
     "symbol": "Symbol",
     "entryPrice": "Einstiegspreis",
     "exitPrice": "Austrittspreis",
+    "mainPnlColumn": "PnL ({{basis}})",
     "totalPnl": "Gesamt-PnL",
     "totalFees": "Gesamtgebühren",
     "winningTrades": "Gewinnende Trades",

@@ -41,6 +41,7 @@ import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActiv
 import { useStatistics } from '../hooks/useStatistics';
 import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
 import { PageShell } from '../components/layout';
+import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import {
   RadarChart,
@@ -62,6 +63,7 @@ import {
   createRadarAlternatingZonesPlugin,
   createRadarGradientPlugin,
 } from '../components/analytics';
+import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 
 
 // Enregistrer les composants Chart.js nécessaires
@@ -83,6 +85,7 @@ ChartJS.register(
 
 const AnalyticsPage: React.FC = () => {
   const { preferences } = usePreferences();
+  const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const { theme } = useTheme();
   const { t } = useI18nTranslation();
   const hideAccountNumber = useAccountNumberVisibility();
@@ -140,9 +143,11 @@ const AnalyticsPage: React.FC = () => {
     startDate: summaryStartDate,
     endDate: summaryEndDate,
     loading: accountLoading,
+    pnlDisplay: pnlDisplayMode,
   });
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
     loading: accountLoading,
+    pnlDisplay: pnlDisplayMode,
   });
 
   // Récupérer la liste des devises
@@ -271,6 +276,7 @@ const AnalyticsPage: React.FC = () => {
     allTrades,
     filteredTrades: trades,
     activeDays: dashboardSummary?.active_days,
+    pnlDisplay: pnlDisplayMode,
   });
 
   // Récupérer les statistiques pour le graphique radar
@@ -279,7 +285,9 @@ const AnalyticsPage: React.FC = () => {
     selectedPeriod ? null : selectedYear,
     selectedPeriod ? null : selectedMonth,
     selectedPeriod?.start || null,
-    selectedPeriod?.end || null
+    selectedPeriod?.end || null,
+    selectedPositionStrategy,
+    pnlDisplayMode,
   );
 
   // Performance par tranche de 30 minutes (nuage de points)
@@ -288,13 +296,13 @@ const AnalyticsPage: React.FC = () => {
     const timeSlotsWithData = new Set<number>();
     
     trades.forEach(trade => {
-      if (trade.entered_at && trade.net_pnl) {
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (trade.entered_at && pnl != null) {
         const date = new Date(trade.entered_at);
         const hour = date.getHours();
         const minutes = date.getMinutes();
         // Calculer la tranche de 30 minutes : 0.0, 0.5, 1.0, 1.5, etc.
         const timeSlot = hour + (minutes >= 30 ? 0.5 : 0);
-        const pnl = parseFloat(trade.net_pnl);
         
         scatterData.push({
           timeSlot,
@@ -309,7 +317,7 @@ const AnalyticsPage: React.FC = () => {
       data: scatterData,
       timeSlotsWithData: Array.from(timeSlotsWithData).sort((a, b) => a - b),
     };
-  }, [trades]);
+  }, [trades, pnlDisplayMode]);
 
   const parseDurationToMinutes = useCallback((trade: TradeListItem): number | null => {
     if (trade.entered_at && trade.exited_at) {
@@ -347,9 +355,9 @@ const AnalyticsPage: React.FC = () => {
   const tradeDurationVsPnlData = useMemo(() => {
     return trades
       .map((trade) => {
-        if (trade.net_pnl === null || trade.net_pnl === undefined) return null;
+        const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+        if (pnl === null) return null;
 
-        const pnl = parseFloat(String(trade.net_pnl));
         const durationMinutes = parseDurationToMinutes(trade);
 
         if (!Number.isFinite(pnl) || !durationMinutes || durationMinutes <= 0) {
@@ -362,15 +370,15 @@ const AnalyticsPage: React.FC = () => {
         };
       })
       .filter((point): point is { durationMinutes: number; pnl: number } => point !== null);
-  }, [trades, parseDurationToMinutes]);
+  }, [trades, parseDurationToMinutes, pnlDisplayMode]);
 
   const positionSizeVsPnlData = useMemo(() => {
     return trades
       .map((trade) => {
-        if (trade.net_pnl === null || trade.net_pnl === undefined) return null;
+        const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+        if (pnl === null) return null;
 
         const size = parseFloat(String(trade.size));
-        const pnl = parseFloat(String(trade.net_pnl));
         const entryPrice = parseFloat(String(trade.entry_price));
         const pointValue = trade.point_value ? parseFloat(String(trade.point_value)) : 1;
 
@@ -388,14 +396,14 @@ const AnalyticsPage: React.FC = () => {
         };
       })
       .filter((point): point is { size: number; pnl: number; notional: number } => point !== null);
-  }, [trades]);
+  }, [trades, pnlDisplayMode]);
 
   const featureCorrelationMatrixData = useMemo(() => {
     const rows = trades
       .map((trade) => {
-        if (trade.net_pnl === null || trade.net_pnl === undefined || !trade.entered_at) return null;
+        const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+        if (pnl === null || !trade.entered_at) return null;
 
-        const pnl = parseFloat(String(trade.net_pnl));
         const size = parseFloat(String(trade.size));
         const durationMinutes = parseDurationToMinutes(trade);
         const enteredAt = new Date(trade.entered_at);
@@ -470,17 +478,17 @@ const AnalyticsPage: React.FC = () => {
     );
 
     return { labels, matrix };
-  }, [trades, t, parseDurationToMinutes]);
+  }, [trades, t, parseDurationToMinutes, pnlDisplayMode]);
 
   // Performance par heure (barres)
   const hourlyPerformanceBars = useMemo(() => {
     const hourlyData: { [hour: number]: number } = {};
     
     trades.forEach(trade => {
-      if (trade.entered_at && trade.net_pnl) {
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (trade.entered_at && pnl != null) {
         const date = new Date(trade.entered_at);
         const hour = date.getHours();
-        const pnl = parseFloat(trade.net_pnl);
         
         hourlyData[hour] = (hourlyData[hour] || 0) + pnl;
       }
@@ -495,16 +503,16 @@ const AnalyticsPage: React.FC = () => {
         hourNum: hour, // Stocker le numéro d'heure pour référence
         pnl: hourlyData[hour] || 0,
       }));
-  }, [trades]);
+  }, [trades, pnlDisplayMode]);
 
   // Corrélation PnL vs Nombre de Trades
   const correlationData = useMemo(() => {
     const dailyData: { [date: string]: { trades: number; pnl: number } } = {};
     
     trades.forEach(trade => {
-      if (trade.trade_day && trade.net_pnl) {
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (trade.trade_day && pnl != null) {
         const date = trade.trade_day;
-        const pnl = parseFloat(trade.net_pnl);
         
         if (!dailyData[date]) {
           dailyData[date] = { trades: 0, pnl: 0 };
@@ -588,7 +596,7 @@ const AnalyticsPage: React.FC = () => {
     }
 
     return { dataPoints, xTicks, minTrades, maxTrades, regressionLine, correlationCoefficient, rSquared };
-  }, [trades]);
+  }, [trades, pnlDisplayMode]);
 
   // Drawdown par jour
   // Le graphique affiche l'écart entre le P/L cumulé le plus élevé (pic) et le P/L cumulé actuel au fil du temps
@@ -597,21 +605,16 @@ const AnalyticsPage: React.FC = () => {
     const dailyData: { [date: string]: number } = {};
     
     trades.forEach(trade => {
-      // Vérifications plus robustes pour s'assurer que les données sont valides
-      if (!trade.trade_day || trade.net_pnl === null || trade.net_pnl === undefined) {
+      if (!trade.trade_day) {
         return;
       }
       
       const date = String(trade.trade_day).trim();
       if (!date) return;
       
-      // Conversion sécurisée du P/L
-      const pnlStr = String(trade.net_pnl).trim();
-      const pnl = parseFloat(pnlStr);
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
       
-      // Vérifier que le parsing a réussi (pas NaN)
-      if (isNaN(pnl)) {
-        console.warn('Trade avec net_pnl invalide:', trade.net_pnl, trade);
+      if (pnl === null || !Number.isFinite(pnl)) {
         return;
       }
       
@@ -710,7 +713,7 @@ const AnalyticsPage: React.FC = () => {
     // - Les points avec drawdown = 0 (au peak ou au-dessus)
     // Cela garantit qu'on a toujours un graphique visible, même si toujours au pic (ligne à 0)
     return allData;
-  }, [trades, preferences.timezone, preferences.language, selectedAccount]);
+  }, [trades, preferences.timezone, preferences.language, selectedAccount, pnlDisplayMode]);
 
   // Heatmap Jour × Heure
   const heatmapData = useMemo(() => {
@@ -734,11 +737,11 @@ const AnalyticsPage: React.FC = () => {
     }
     
     trades.forEach(trade => {
-      if (trade.entered_at && trade.net_pnl) {
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (trade.entered_at && pnl != null) {
         const date = new Date(trade.entered_at);
         const day = (date.getDay() + 6) % 7; // 0 = Lundi, 6 = Dimanche
         const hour = date.getHours();
-        const pnl = parseFloat(trade.net_pnl);
         
         heatmap[day][hour] = (heatmap[day][hour] || 0) + pnl;
       }
@@ -789,7 +792,7 @@ const AnalyticsPage: React.FC = () => {
       maxPnl,
       hoursWithData: finalHoursWithData.length > 0 ? finalHoursWithData : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], // Fallback si aucune donnée
     };
-  }, [trades, t]);
+  }, [trades, t, pnlDisplayMode]);
 
   // Distribution des gains vs pertes (histogrammes séparés)
   const gainsVsLossesDistribution = useMemo(() => {
@@ -800,8 +803,8 @@ const AnalyticsPage: React.FC = () => {
     const losses: number[] = [];
     
     trades.forEach(trade => {
-      if (trade.net_pnl !== null && trade.net_pnl !== undefined) {
-        const pnl = parseFloat(trade.net_pnl);
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (pnl != null) {
         if (pnl > 0) {
           gains.push(pnl);
         } else if (pnl < 0) {
@@ -882,7 +885,7 @@ const AnalyticsPage: React.FC = () => {
       totalGains: gains.length,
       totalLosses: losses.length,
     };
-  }, [trades, formatNumber]);
+  }, [trades, formatNumber, pnlDisplayMode]);
 
   // Distribution des PnL (histogramme)
   const pnlDistribution = useMemo(() => {
@@ -893,8 +896,8 @@ const AnalyticsPage: React.FC = () => {
     let maxPnl = -Infinity;
     
     for (const trade of trades) {
-      if (trade.net_pnl !== null && trade.net_pnl !== undefined) {
-        const pnl = parseFloat(trade.net_pnl);
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (pnl != null) {
         pnls.push(pnl);
         if (pnl < minPnl) minPnl = pnl;
         if (pnl > maxPnl) maxPnl = pnl;
@@ -934,7 +937,7 @@ const AnalyticsPage: React.FC = () => {
         binWidth: binWidth, // Stocker pour référence
       };
     }).filter(bin => bin.count > 0); // Filtrer pour ne garder que les bins avec des données
-  }, [trades, formatNumber]);
+  }, [trades, formatNumber, pnlDisplayMode]);
 
   // Données MAE/MFE (Maximum Adverse Excursion / Maximum Favorable Excursion)
   const maeMfeData = useMemo(() => {
@@ -951,13 +954,16 @@ const AnalyticsPage: React.FC = () => {
     }> = [];
 
     trades.forEach(trade => {
-      if (!trade.entry_price || !trade.exit_price || trade.net_pnl === null || trade.net_pnl === undefined) {
+      if (!trade.entry_price || !trade.exit_price) {
         return;
       }
 
       const entryPrice = parseFloat(trade.entry_price);
       const exitPrice = parseFloat(trade.exit_price);
-      const pnl = parseFloat(trade.net_pnl);
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (pnl === null) {
+        return;
+      }
       const pointValue = trade.point_value ? parseFloat(trade.point_value) : 20; // Défaut: 20 pour NQ
       const size = parseFloat(trade.size);
 
@@ -1012,7 +1018,7 @@ const AnalyticsPage: React.FC = () => {
     });
 
     return data;
-  }, [trades]);
+  }, [trades, pnlDisplayMode]);
 
   // Données pour le graphique Equity Curve (Courbe de capital)
   const equityCurveData = useMemo(() => {
@@ -1035,15 +1041,15 @@ const AnalyticsPage: React.FC = () => {
     const dailyData: { [date: string]: number } = {};
     
     trades.forEach(trade => {
-      if (!trade.trade_day || trade.net_pnl === null || trade.net_pnl === undefined) {
+      if (!trade.trade_day) {
         return;
       }
       
       const date = String(trade.trade_day).trim();
       if (!date) return;
       
-      const pnl = parseFloat(String(trade.net_pnl));
-      if (isNaN(pnl)) return;
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (pnl === null || !Number.isFinite(pnl)) return;
       
       dailyData[date] = (dailyData[date] || 0) + pnl;
     });
@@ -1093,7 +1099,7 @@ const AnalyticsPage: React.FC = () => {
       rawData: equityData,
       initialCapital,
     } as any;
-  }, [trades, selectedAccount, isDark, t, formatDateMemo]);
+  }, [trades, selectedAccount, isDark, t, formatDateMemo, pnlDisplayMode]);
 
   // Performance mensuelle/annuelle (calendrier)
   const monthlyPerformanceData = useMemo(() => {
@@ -1102,10 +1108,10 @@ const AnalyticsPage: React.FC = () => {
     const monthlyData: { [key: string]: { pnl: number; count: number } } = {};
     
     trades.forEach(trade => {
-      if (trade.trade_day && trade.net_pnl !== null && trade.net_pnl !== undefined) {
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (trade.trade_day && pnl != null) {
         const date = new Date(trade.trade_day);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const pnl = parseFloat(String(trade.net_pnl));
         
         if (!monthlyData[monthKey]) {
           monthlyData[monthKey] = { pnl: 0, count: 0 };
@@ -1129,7 +1135,7 @@ const AnalyticsPage: React.FC = () => {
       countData: sortedMonths.map(key => monthlyData[key].count),
       rawData: sortedMonths.map(key => ({ month: key, ...monthlyData[key] })),
     };
-  }, [trades]);
+  }, [trades, pnlDisplayMode]);
 
   // Volume de trading dans le temps avec agrégation intelligente
   const tradingVolumeData = useMemo(() => {
@@ -1337,8 +1343,8 @@ const AnalyticsPage: React.FC = () => {
     // Pour éviter le double comptage, on doit exclure les trades gagnants sans TP des gagnants
     // Compter les trades avec P/L = 0 (break-even classique)
     const tradesWithZeroPnl = trades.filter(trade => {
-      if (trade.net_pnl === null || trade.net_pnl === undefined) return false;
-      const pnl = parseFloat(String(trade.net_pnl));
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (pnl === null) return false;
       return Math.abs(pnl) < 0.001; // Tolérance pour les valeurs très proches de 0
     }).length;
 
@@ -1367,7 +1373,7 @@ const AnalyticsPage: React.FC = () => {
       ],
       total,
     };
-  }, [trades, statisticsData, t]);
+  }, [trades, statisticsData, t, pnlDisplayMode]);
 
   // Le graphique radar gère maintenant sa propre normalisation en interne
   // Pas besoin de calculer radarChartData ici
@@ -1475,42 +1481,43 @@ const AnalyticsPage: React.FC = () => {
 
   return (
     <PageShell>
-      {/* Filtres */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col gap-4 lg:gap-0">
-          {/* Ligne 1: Compte + Période sur grands écrans */}
-          <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
-            {/* Compte de trading : largeur au contenu comme le Dashboard (évite lg:w-64 qui tronquait) */}
-            <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('analytics:tradingAccount')}
-              </label>
-              <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={hideAccountNumber} />
-            </div>
-            
-            {/* Sélecteur de période — comme Dashboard : largeur au contenu ; la stratégie prend le reste */}
-            <div className="w-full lg:w-auto lg:flex-shrink-0">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('analytics:period', { defaultValue: 'Période' })}
-              </label>
-              <PeriodSelector
-                value={selectedPeriod}
-                onChange={(period) => {
-                  setSelectedPeriod(period);
-                  // Réinitialiser les anciens sélecteurs
-                  setSelectedYear(null);
-                  setSelectedMonth(null);
-                }}
-              />
-            </div>
+      {/* Filtres — même grille que Stratégies / Statistiques */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
+          {/* Compte de trading : largeur au contenu comme le Dashboard (évite lg:w-64 qui tronquait) */}
+          <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('analytics:tradingAccount')}
+            </label>
+            <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={hideAccountNumber} />
+          </div>
 
-            <PositionStrategyFilterField
-              className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
-              value={selectedPositionStrategy}
-              onChange={setSelectedPositionStrategy}
-              strategies={positionStrategies}
-              loading={loadingStrategies}
+          {/* Sélecteur de période — comme Dashboard : largeur au contenu ; la stratégie prend le reste */}
+          <div className="w-full lg:w-auto lg:flex-shrink-0">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {t('analytics:period', { defaultValue: 'Période' })}
+            </label>
+            <PeriodSelector
+              value={selectedPeriod}
+              onChange={(period) => {
+                setSelectedPeriod(period);
+                // Réinitialiser les anciens sélecteurs
+                setSelectedYear(null);
+                setSelectedMonth(null);
+              }}
             />
+          </div>
+
+          <PositionStrategyFilterField
+            className="w-full lg:min-w-0 lg:flex-1 lg:max-w-sm"
+            value={selectedPositionStrategy}
+            onChange={setSelectedPositionStrategy}
+            strategies={positionStrategies}
+            loading={loadingStrategies}
+          />
+
+          <div className="flex w-full items-end lg:w-auto lg:flex-shrink-0">
+            <PnlBasisToggle />
           </div>
         </div>
       </div>

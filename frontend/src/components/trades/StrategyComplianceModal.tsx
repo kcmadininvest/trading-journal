@@ -12,6 +12,7 @@ import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { openMediaUrl } from '../../utils/mediaUrl';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
 
 interface StrategyComplianceModalProps {
   open: boolean;
@@ -50,6 +51,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
   tradingAccount,
 }) => {
   const { preferences } = usePreferences();
+  const pnlMode = parsePnlDisplayMode(preferences.pnl_display);
   const { triggerRefresh } = useComplianceRefresh();
   const { t } = useI18nTranslation();
   const [trades, setTrades] = useState<TradeWithStrategy[]>([]);
@@ -1162,15 +1164,19 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                           {trade.trade_type}
                         </span>
                         <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">{formatTimeLocal(trade.entered_at)}</span>
-                        {trade.net_pnl && (
-                          <span
-                            className={`text-xs sm:text-sm font-medium flex-shrink-0 ${
-                              parseFloat(trade.net_pnl) > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                            }`}
-                          >
-                            {formatCurrencyWithSign(trade.net_pnl, '', preferences.number_format, 2)}
-                          </span>
-                        )}
+                        {(() => {
+                          const v = getTradeDisplayPnlValue(trade, pnlMode);
+                          if (v == null) return null;
+                          return (
+                            <span
+                              className={`text-xs sm:text-sm font-medium flex-shrink-0 ${
+                                v > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                              }`}
+                            >
+                              {formatCurrencyWithSign(String(v), '', preferences.number_format, 2)}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1216,7 +1222,10 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       </div>
 
                       {/* Take Profit atteints - seulement si le trade est profitable */}
-                      {trade.net_pnl && parseFloat(trade.net_pnl) > 0 && (
+                      {(() => {
+                        const v = getTradeDisplayPnlValue(trade, pnlMode);
+                        return v != null && v > 0;
+                      })() && (
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             {t('trades:strategyCompliance.takeProfitReached')}
@@ -1292,7 +1301,11 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       )}
 
                       {/* Gain si stratégie respectée - seulement si le trade est perdant ET la stratégie n'a pas été respectée */}
-                      {trade.strategyRespected === false && trade.net_pnl && parseFloat(trade.net_pnl) <= 0 && (
+                      {trade.strategyRespected === false &&
+                        (() => {
+                          const v = getTradeDisplayPnlValue(trade, pnlMode);
+                          return v != null && v <= 0;
+                        })() && (
                         <div>
                           <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2 flex-wrap">
                             <span className="break-words">{t('trades:strategyCompliance.gainIfStrategyRespected')}</span>

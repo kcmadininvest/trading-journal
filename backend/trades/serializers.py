@@ -351,6 +351,7 @@ class TradeStatisticsSerializer(serializers.Serializer):
     win_rate = serializers.FloatField()
     total_pnl = serializers.DecimalField(max_digits=18, decimal_places=2)
     total_raw_pnl = serializers.DecimalField(max_digits=18, decimal_places=2)
+    total_net_pnl = serializers.DecimalField(max_digits=18, decimal_places=2)
     total_gains = serializers.DecimalField(max_digits=18, decimal_places=2)
     total_losses = serializers.DecimalField(max_digits=18, decimal_places=2)
     average_pnl = serializers.DecimalField(max_digits=18, decimal_places=2)

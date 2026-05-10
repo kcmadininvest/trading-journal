@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, authService } from '../../services/auth';
 import { Tooltip } from '../ui';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
@@ -7,7 +7,6 @@ import { changeLanguage } from '../../i18n/config';
 import userService, { UserPreferences } from '../../services/userService';
 import { NavigationMenu } from '../navigation';
 import { usePreferences } from '../../hooks/usePreferences';
-
 interface HeaderProps {
   currentUser: User;
   currentPage: string;
@@ -71,30 +70,6 @@ const Header: React.FC<HeaderProps> = ({
     }
   };
   
-  const pageTitle = useMemo(() => {
-    const titles: { [key: string]: string } = {
-      dashboard: t('navigation:dashboard'),
-      calendar: t('navigation:calendar'),
-      'daily-journal': t('navigation:dailyJournal', { defaultValue: 'Journal' }),
-      trades: t('navigation:trades'),
-      statistics: t('navigation:statistics'),
-      strategies: t('navigation:strategies'),
-      'position-strategies': t('navigation:positionStrategies'),
-      analytics: t('navigation:analytics'),
-      accounts: t('navigation:accounts'),
-      transactions: t('navigation:transactions', { defaultValue: 'Transactions' }),
-      'trading-activity': t('navigation:tradingActivity', { defaultValue: 'Rentabilité activité' }),
-      goals: t('navigation:goals'),
-      billing: t('navigation:billing', { defaultValue: 'Abonnement' }),
-      'billing-success': t('navigation:billing', { defaultValue: 'Abonnement' }),
-      'billing-cancel': t('navigation:billing', { defaultValue: 'Abonnement' }),
-      'subscription-required': t('navigation:billing', { defaultValue: 'Abonnement' }),
-      users: t('navigation:users'),
-      settings: t('navigation:settings'),
-    };
-    return titles[currentPage] || t('navigation:header.appName');
-  }, [currentPage, t]);
-
   const handleLogout = () => {
     authService.logout();
     onLogout();
@@ -123,28 +98,14 @@ const Header: React.FC<HeaderProps> = ({
           <div className="hidden 2xl:block h-8 w-px bg-gray-600"></div>
         </div>
 
-        {/* Center: Navigation + Page Title */}
+        {/* Center: Navigation */}
         <div className="flex items-center gap-4 flex-1 min-w-0">
-          {/* Navigation Menu (Mobile hamburger + Desktop nav) */}
           <NavigationMenu
             currentUser={currentUser}
             currentPage={currentPage}
             onNavigate={onNavigate}
             lockedPremiumPages={lockedPremiumPages}
           />
-          
-          {/* Page title - visible below 2xl (where nav is hidden), hidden on 2xl+ */}
-          <div className="flex 2xl:hidden items-center justify-center flex-1 min-w-0">
-            <h1 className="text-sm sm:text-base font-semibold text-white truncate">
-              {pageTitle}
-            </h1>
-          </div>
-          {/* Page title - centered on 2xl+ where full nav is shown */}
-          <div className="hidden 2xl:flex items-center justify-center flex-1 min-w-0">
-            <h1 className="text-base lg:text-lg font-semibold text-white truncate">
-              {pageTitle}
-            </h1>
-          </div>
         </div>
 
         {/* Right: User info and actions */}
@@ -152,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({
           {/* User info - hidden on mobile, shown on sm and up */}
           <div className="text-right hidden 2xl:block">
             <div className="flex items-center justify-end space-x-2">
-              <p className="text-sm font-medium text-white truncate max-w-[120px]">
+              <p className="text-xs font-medium text-white truncate max-w-[120px]">
                 {currentUser.first_name && currentUser.last_name 
                   ? `${currentUser.first_name} ${currentUser.last_name}` 
                   : currentUser.email}

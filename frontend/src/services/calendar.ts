@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import type { PnlDisplayMode } from '../utils/pnlDisplay';
 
 export interface DailyCalendarData {
   date: string;
@@ -133,13 +134,21 @@ class CalendarService {
   /**
    * Récupère les données pour un mois spécifique (vue quotidienne)
    */
-  async getMonthData(year: number, month: number, tradingAccount?: number): Promise<CalendarMonthResponse> {
+  async getMonthData(
+    year: number,
+    month: number,
+    tradingAccount?: number,
+    pnlDisplay?: PnlDisplayMode
+  ): Promise<CalendarMonthResponse> {
     const params = new URLSearchParams({
       year: String(year),
       month: String(month),
     });
     if (tradingAccount) {
       params.append('trading_account', String(tradingAccount));
+    }
+    if (pnlDisplay) {
+      params.append('pnl_display', pnlDisplay);
     }
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/calendar_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données mensuelles');
@@ -149,12 +158,19 @@ class CalendarService {
   /**
    * Récupère les données pour une année complète (vue mensuelle)
    */
-  async getYearlyMonthlyData(year: number, tradingAccount?: number): Promise<CalendarYearlyResponse> {
+  async getYearlyMonthlyData(
+    year: number,
+    tradingAccount?: number,
+    pnlDisplay?: PnlDisplayMode
+  ): Promise<CalendarYearlyResponse> {
     const params = new URLSearchParams({
       year: String(year),
     });
     if (tradingAccount) {
       params.append('trading_account', String(tradingAccount));
+    }
+    if (pnlDisplay) {
+      params.append('pnl_display', pnlDisplay);
     }
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/calendar_monthly_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données annuelles');
@@ -164,12 +180,19 @@ class CalendarService {
   /**
    * Récupère les données hebdomadaires pour une année
    */
-  async getYearlyWeeklyData(year: number, tradingAccount?: number): Promise<CalendarWeeklyYearlyResponse> {
+  async getYearlyWeeklyData(
+    year: number,
+    tradingAccount?: number,
+    pnlDisplay?: PnlDisplayMode
+  ): Promise<CalendarWeeklyYearlyResponse> {
     const params = new URLSearchParams({
       year: String(year),
     });
     if (tradingAccount) {
       params.append('trading_account', String(tradingAccount));
+    }
+    if (pnlDisplay) {
+      params.append('pnl_display', pnlDisplay);
     }
     const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/topstep/calendar_weekly_data/?${params}`);
     if (!res.ok) throw new Error('Erreur lors du chargement des données hebdomadaires');

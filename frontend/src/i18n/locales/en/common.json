@@ -166,6 +166,9 @@
     "localTime": "Local time: {{time}}",
     "earlyClose": "Early close"
   },
+  "pnlNetShort": "Net",
+  "pnlGrossShort": "Gross",
+  "pnlBasisToggleAria": "PnL amount display: net or gross",
   "dstChange": {
     "spring": "Daylight Saving Time",
     "fall": "Standard Time",

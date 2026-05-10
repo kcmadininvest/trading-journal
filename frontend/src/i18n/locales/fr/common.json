@@ -165,6 +165,9 @@
     "localTime": "Heure locale : {{time}}",
     "earlyClose": "Fermeture anticipée"
   },
+  "pnlNetShort": "Net",
+  "pnlGrossShort": "Brut",
+  "pnlBasisToggleAria": "Affichage des montants PnL : net ou brut",
   "dstChange": {
     "spring": "Heure d'été",
     "fall": "Heure d'hiver",

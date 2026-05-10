@@ -16,6 +16,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrency as formatCurrencyUtil } from '../../utils/numberFormat';
 import { getChartColors, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { parsePnlDisplayMode } from '../../utils/pnlDisplay';
 
 // Enregistrer les composants Chart.js nécessaires
 ChartJS.register(
@@ -464,11 +465,12 @@ function AccountBalanceChart({
             const netFlow = netTransactionsMapping[index] ?? 0;
             const pt = data[index] as BalanceDataPoint | undefined;
             const isAgg = (pt?.aggregation && pt.aggregation !== 'day') || false;
-            const pnlKey = isAgg ? 'dashboard:periodPnLShort' : 'dashboard:dayPnLShort';
+            const basis = t(parsePnlDisplayMode(preferences.pnl_display) === 'net' ? 'common:pnlNetShort' : 'common:pnlGrossShort');
+            const pnlKey = isAgg ? 'dashboard:periodPnLShortLabeled' : 'dashboard:dayPnLShortLabeled';
             const netFlowKey = isAgg ? 'dashboard:periodNetFlow' : 'dashboard:netFlow';
             const labels = [
               `${t('dashboard:balance')}: ${formatCurrency(value, currencySymbol)}`,
-              `${t(pnlKey, { defaultValue: isAgg ? 'PnL période' : 'PnL jour' })}: ${formatCurrency(pnl, currencySymbol)}`,
+              `${t(pnlKey, { basis })}: ${formatCurrency(pnl, currencySymbol)}`,
               `${t(netFlowKey, { defaultValue: isAgg ? 'Flux net période' : 'Flux net' })}: ${formatCurrency(netFlow, currencySymbol)}`,
             ];
             
@@ -535,7 +537,7 @@ function AccountBalanceChart({
         duration: 0, // Désactiver l'animation pour éviter le tremblement après chargement
       },
     };
-  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartColors, formatCurrency, currencySymbol, t, hideProfitLoss, data, formatDayLabel, formatMonthAxisLabel]);
+  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartColors, formatCurrency, currencySymbol, t, hideProfitLoss, data, formatDayLabel, formatMonthAxisLabel, preferences.pnl_display]);
 
   if (data.length === 0) {
     return (

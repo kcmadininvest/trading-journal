@@ -20,12 +20,18 @@ export interface AccountBalance {
   trading_account_name: string;
   initial_capital: string;
   total_pnl: string;
+  /** Somme PnL brut (coalesce pnl → net_pnl), pour affichage si préférence gross */
+  total_pnl_gross?: string;
   /** Capital initial + PnL trades uniquement (sans dépôts/retraits) */
   trading_equity?: string;
+  trading_equity_gross?: string;
   total_deposits: string;
   total_withdrawals: string;
   net_transactions: string;
+  /** Solde réel (net) — retraits / formulaires */
   current_balance: string;
+  /** Solde si l’on cumule le PnL brut + mêmes flux — aligné préférence affichage gross */
+  current_balance_gross?: string;
   currency: string;
 }
 

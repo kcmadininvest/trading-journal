@@ -176,6 +176,7 @@ const SettingsPage: React.FC = () => {
     font_family: 'inter',
     email_goal_alerts: true,
     show_pre_market: false,
+    pnl_display: 'net',
   });
 
   // Sécurité
@@ -884,7 +885,7 @@ const SettingsPage: React.FC = () => {
             }
           >
             <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     {t('settings:dateFormat')}
@@ -927,6 +928,7 @@ const SettingsPage: React.FC = () => {
                   </p>
                 </div>
               </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('settings:pnlDisplayLocationHint')}</p>
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                 <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-3">
                   {t('settings:notifications', { defaultValue: 'Notifications' })}

@@ -183,6 +183,7 @@
     "symbol": "Símbolo",
     "entryPrice": "Precio de Entrada",
     "exitPrice": "Precio de Salida",
+    "mainPnlColumn": "PnL ({{basis}})",
     "totalPnl": "Total PnL",
     "totalFees": "Comisiones totales",
     "winningTrades": "Operaciones ganadoras",

@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from ..models import TradingAccount
 
 from ..models import TradingGoal, TopStepTrade, TradeStrategy, AccountTransaction
+from ..pnl_basis import get_trade_pnl_field, trade_pnl_as_decimal
 
 
 class GoalProgressCalculator:
@@ -24,6 +25,10 @@ class GoalProgressCalculator:
         if isinstance(value, Decimal):
             return value
         return Decimal(str(value))
+
+    @staticmethod
+    def _pnl_field_for_goal(goal: TradingGoal) -> str:
+        return get_trade_pnl_field(goal.user)
 
     def _get_target_value(self, goal: TradingGoal) -> Decimal:
         """Récupère la valeur cible (threshold_target ou target_value pour rétrocompatibilité)."""
@@ -121,7 +126,8 @@ class GoalProgressCalculator:
 
     def _calculate_pnl_goal(self, goal: TradingGoal, trades) -> dict:
         """Calcule la progression pour un objectif PnL total."""
-        total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+        pf = self._pnl_field_for_goal(goal)
+        total_pnl = trades.aggregate(total=Sum(pf))['total'] or Decimal('0')
         current_value = total_pnl
 
         target_value_decimal = self._get_target_value(goal)
@@ -156,7 +162,8 @@ class GoalProgressCalculator:
                 'remaining_amount': target_value_decimal,
             }
 
-        winning_trades = trades.filter(net_pnl__gt=0).count()
+        pf = self._pnl_field_for_goal(goal)
+        winning_trades = trades.filter(**{f'{pf}__gt': 0}).count()
         win_rate = (winning_trades / total_trades) * 100
         current_value = Decimal(str(win_rate))
 
@@ -234,7 +241,8 @@ class GoalProgressCalculator:
 
     def _calculate_max_consecutive_losses_goal(self, goal: TradingGoal, trades) -> dict:
         """Calcule la progression pour un objectif de pertes consécutives maximales."""
-        ordered_trades = trades.order_by('trade_day', 'entered_at').values_list('net_pnl', flat=True)
+        pf = self._pnl_field_for_goal(goal)
+        ordered_trades = trades.order_by('trade_day', 'entered_at').values_list(pf, flat=True)
         current_streak = 0
         max_streak = 0
 
@@ -276,7 +284,8 @@ class GoalProgressCalculator:
                 'remaining_amount': Decimal('0'),
             }
 
-        daily_pnl = trades.values('trade_day').annotate(daily_total=Sum('net_pnl'))
+        pf = self._pnl_field_for_goal(goal)
+        daily_pnl = trades.values('trade_day').annotate(daily_total=Sum(pf))
         breach_threshold = -target_value_decimal
         breaches = sum(
             1 for day in daily_pnl
@@ -314,13 +323,14 @@ class GoalProgressCalculator:
                 'remaining_amount': target_value_decimal,
             }
 
-        wins_qs = trades.filter(net_pnl__gt=0)
-        losses_qs = trades.filter(net_pnl__lt=0)
+        pf = self._pnl_field_for_goal(goal)
+        wins_qs = trades.filter(**{f'{pf}__gt': 0})
+        losses_qs = trades.filter(**{f'{pf}__lt': 0})
         winning_count = wins_qs.count()
         losing_count = losses_qs.count()
 
-        avg_win = wins_qs.aggregate(avg=Avg('net_pnl'))['avg'] or Decimal('0')
-        avg_loss = losses_qs.aggregate(avg=Avg('net_pnl'))['avg'] or Decimal('0')
+        avg_win = wins_qs.aggregate(avg=Avg(pf))['avg'] or Decimal('0')
+        avg_loss = losses_qs.aggregate(avg=Avg(pf))['avg'] or Decimal('0')
 
         win_rate = Decimal(str(winning_count)) / Decimal(str(total_trades))
         loss_rate = Decimal(str(losing_count)) / Decimal(str(total_trades))
@@ -412,8 +422,9 @@ class GoalProgressCalculator:
 
     def _calculate_profit_factor_goal(self, goal: TradingGoal, trades) -> dict:
         """Calcule la progression pour un objectif Profit Factor."""
-        total_gains = trades.filter(net_pnl__gt=0).aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
-        total_losses = trades.filter(net_pnl__lt=0).aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+        pf = self._pnl_field_for_goal(goal)
+        total_gains = trades.filter(**{f'{pf}__gt': 0}).aggregate(total=Sum(pf))['total'] or Decimal('0')
+        total_losses = trades.filter(**{f'{pf}__lt': 0}).aggregate(total=Sum(pf))['total'] or Decimal('0')
 
         if total_losses == 0:
             current_value = Decimal('999999')
@@ -473,8 +484,9 @@ class GoalProgressCalculator:
         peak_capital = initial_capital
         max_drawdown = Decimal('0')
 
+        pf = self._pnl_field_for_goal(goal)
         for trade in trades_ordered:
-            cumulative_pnl += trade.net_pnl or Decimal('0')
+            cumulative_pnl += trade_pnl_as_decimal(trade, pf)
             current_capital = initial_capital + cumulative_pnl
 
             if current_capital > peak_capital:
@@ -555,8 +567,9 @@ class GoalProgressCalculator:
 
     def _calculate_winning_days_goal(self, goal: TradingGoal, trades) -> dict:
         """Calcule la progression pour un objectif Nombre de Jours Gagnants."""
+        pf = self._pnl_field_for_goal(goal)
         daily_pnl = trades.values('trade_day').annotate(
-            daily_total=Sum('net_pnl')
+            daily_total=Sum(pf)
         )
 
         winning_days = sum(1 for day in daily_pnl if day['daily_total'] and day['daily_total'] > 0)

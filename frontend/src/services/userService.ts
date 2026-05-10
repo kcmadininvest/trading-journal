@@ -74,6 +74,8 @@ export interface UserPreferences {
   show_pre_market?: boolean;
   journal_period?: JournalPeriodStored | null;
   journal_position_strategies?: JournalPositionStrategiesMap | null;
+  /** Agrégats / graphiques : net (défaut API) ou gross (PnL brut). */
+  pnl_display?: 'net' | 'gross';
   created_at?: string;
   updated_at?: string;
 }

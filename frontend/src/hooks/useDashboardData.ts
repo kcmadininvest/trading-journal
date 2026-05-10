@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { dashboardService, DashboardActivitySummary, DashboardSummary } from '../services/dashboard';
+import type { PnlDisplayMode } from '../utils/pnlDisplay';
 
 interface DashboardDataParams {
   accountId: number | null;
@@ -7,9 +8,10 @@ interface DashboardDataParams {
   endDate?: string;
   loading?: boolean;
   positionStrategy?: number | null;
+  pnlDisplay?: PnlDisplayMode;
 }
 
-export function useDashboardData({ accountId, startDate, endDate, loading, positionStrategy }: DashboardDataParams) {
+export function useDashboardData({ accountId, startDate, endDate, loading, positionStrategy, pnlDisplay = 'net' }: DashboardDataParams) {
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export function useDashboardData({ accountId, startDate, endDate, loading, posit
       if (startDate) filters.start_date = startDate;
       if (endDate) filters.end_date = endDate;
       if (positionStrategy) filters.position_strategy = positionStrategy;
+      filters.pnl_display = pnlDisplay;
 
       const result = await dashboardService.getSummary(filters);
       setData(result);
@@ -47,7 +50,7 @@ export function useDashboardData({ accountId, startDate, endDate, loading, posit
     } finally {
       setIsLoading(false);
     }
-  }, [accountId, startDate, endDate, loading, positionStrategy]);
+  }, [accountId, startDate, endDate, loading, positionStrategy, pnlDisplay]);
 
   useEffect(() => {
     fetchData();
@@ -56,7 +59,7 @@ export function useDashboardData({ accountId, startDate, endDate, loading, posit
   return { data, isLoading, error, refetch: fetchData };
 }
 
-export function useDashboardActivitySummary({ accountId, startDate, endDate, loading, positionStrategy }: DashboardDataParams) {
+export function useDashboardActivitySummary({ accountId, startDate, endDate, loading, positionStrategy, pnlDisplay = 'net' }: DashboardDataParams) {
   const [data, setData] = useState<DashboardActivitySummary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +84,7 @@ export function useDashboardActivitySummary({ accountId, startDate, endDate, loa
       if (startDate) filters.start_date = startDate;
       if (endDate) filters.end_date = endDate;
       if (positionStrategy) filters.position_strategy = positionStrategy;
+      filters.pnl_display = pnlDisplay;
 
       const result = await dashboardService.getActivitySummary(filters);
       setData(result);
@@ -91,7 +95,7 @@ export function useDashboardActivitySummary({ accountId, startDate, endDate, loa
     } finally {
       setIsLoading(false);
     }
-  }, [accountId, startDate, endDate, loading, positionStrategy]);
+  }, [accountId, startDate, endDate, loading, positionStrategy, pnlDisplay]);
 
   useEffect(() => {
     fetchData();

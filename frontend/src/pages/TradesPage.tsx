@@ -17,6 +17,7 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { usePreferences } from '../hooks/usePreferences';
 import userService from '../services/userService';
+import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 
 const DEFAULT_TRADES_PAGE_SIZE = 20;
 const TRADES_PAGE_SIZE_OPTIONS = [5, 10, 20, 25, 50, 100];
@@ -53,7 +54,13 @@ const TradesPage: React.FC = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectAllPages, setSelectAllPages] = useState(false);
-  const [stats, setStats] = useState<{ total_trades: number; total_pnl: number; total_fees: number; total_raw_pnl?: number } | null>(null);
+  const [stats, setStats] = useState<{
+    total_trades: number;
+    total_pnl: number;
+    total_fees: number;
+    total_raw_pnl?: number;
+    total_net_pnl?: number;
+  } | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const isInitializing = useRef(false);
@@ -229,7 +236,7 @@ const TradesPage: React.FC = () => {
     };
     loadStats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtersKey, hasInitialized, accountLoading]);
+  }, [filtersKey, hasInitialized, accountLoading, preferences.pnl_display]);
 
   useEffect(() => {
     if (!hasInitialized || accountLoading) {
@@ -494,52 +501,61 @@ const TradesPage: React.FC = () => {
 
   return (
     <PageShell variant="fluid">
-        {/* Sélecteur de compte et boutons d'action */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="inline-block w-full sm:w-auto">
-            <AccountSelector
-              value={selectedAccountId}
-              onChange={(accountId) => {
-                setSelectedAccountId(accountId);
-                setFilters(prev => ({ ...prev, trading_account: accountId }));
-              }}
-              hideAccountNumber={hideAccountNumber}
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => {
-                setEditingTradeId(null);
-                setShowCreateModal(true);
-              }}
-              disabled={isLoading}
-              className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              {t('trades:create', { defaultValue: 'Créer un trade' })}
-            </button>
-            <button
-              onClick={handleExportTrades}
-              disabled={isLoading}
-              className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              {t('trades:export', { defaultValue: 'Exporter' })}
-            </button>
-            <button
-              onClick={() => setShowImport(true)}
-              disabled={isLoading}
-              className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              {t('trades:import', { defaultValue: 'Importer' })}
-            </button>
+        {/* Compte, PnL net/brut et actions — même carte / grille que Stratégies / Calendrier */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
+            <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {t('common:tradingAccount')}
+              </label>
+              <AccountSelector
+                value={selectedAccountId}
+                onChange={(accountId) => {
+                  setSelectedAccountId(accountId);
+                  setFilters(prev => ({ ...prev, trading_account: accountId }));
+                }}
+                hideLabel
+                hideAccountNumber={hideAccountNumber}
+              />
+            </div>
+            <div className="flex w-full items-end lg:w-auto lg:flex-shrink-0">
+              <PnlBasisToggle />
+            </div>
+            <div className="flex w-full flex-wrap items-end gap-2 lg:ml-auto lg:w-auto lg:flex-shrink-0 lg:justify-end">
+              <button
+                onClick={() => {
+                  setEditingTradeId(null);
+                  setShowCreateModal(true);
+                }}
+                disabled={isLoading}
+                className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-green-600 dark:bg-green-500 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                {t('trades:create', { defaultValue: 'Créer un trade' })}
+              </button>
+              <button
+                onClick={handleExportTrades}
+                disabled={isLoading}
+                className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {t('trades:export', { defaultValue: 'Exporter' })}
+              </button>
+              <button
+                onClick={() => setShowImport(true)}
+                disabled={isLoading}
+                className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                {t('trades:import', { defaultValue: 'Importer' })}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -626,7 +642,7 @@ const TradesPage: React.FC = () => {
         totals={{
           pnl: stats?.total_raw_pnl,
           fees: stats?.total_fees,
-          net_pnl: stats?.total_pnl,
+          net_pnl: stats?.total_net_pnl ?? stats?.total_pnl,
           count: stats?.total_trades,
         }}
         onDelete={handleDeleteOne}

@@ -101,6 +101,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     email_goal_alerts: true,
     items_per_page: DEFAULT_ITEMS_PER_PAGE,
     show_pre_market: false,
+    pnl_display: 'net',
   });
   const [loading, setLoading] = useState(true);
 
@@ -119,6 +120,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           ...prefs,
           items_per_page: prefs.items_per_page ?? DEFAULT_ITEMS_PER_PAGE,
           default_currency: prefs.default_currency || 'USD',
+          pnl_display: prefs.pnl_display === 'gross' ? 'gross' : 'net',
         });
         // Appliquer le thème immédiatement
         const root = document.documentElement;
@@ -204,6 +206,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           items_per_page: DEFAULT_ITEMS_PER_PAGE,
           email_goal_alerts: true,
           show_pre_market: false,
+          pnl_display: 'net',
         });
         // Réinitialiser la taille de police au document
         const root = document.documentElement;

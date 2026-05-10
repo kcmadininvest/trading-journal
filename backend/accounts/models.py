@@ -102,7 +102,12 @@ class UserPreferences(models.Model):
         ('point', 'Point (1.234,56)'),
         ('comma', 'Virgule (1 234,56)'),
     ]
-    
+
+    PNL_DISPLAY_CHOICES = [
+        ('net', _('PnL net (après frais et commissions)')),
+        ('gross', _('PnL brut (avant frais et commissions)')),
+    ]
+
     THEME_CHOICES = [
         ('light', 'Clair'),
         ('dark', 'Sombre'),
@@ -168,6 +173,13 @@ class UserPreferences(models.Model):
         default='USD',
         verbose_name=_('Devise par défaut (rentabilité activité)'),
         help_text=_('Code ISO 4217 utilisé par défaut pour les nouvelles écritures débit/crédit.'),
+    )
+    pnl_display = models.CharField(
+        max_length=10,
+        choices=PNL_DISPLAY_CHOICES,
+        default='net',
+        verbose_name=_('Affichage du PnL'),
+        help_text=_('Montants agrégés et graphiques basés sur le net ou le brut.'),
     )
 
     # Préférences d'affichage

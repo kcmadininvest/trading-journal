@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import type { PnlDisplayMode } from '../utils/pnlDisplay';
 
 export interface TradeStrategy {
   id: number;
@@ -307,6 +308,7 @@ class TradeStrategiesService {
     end_date?: string;
     tradingAccount?: number;
     positionStrategy?: number;
+    pnlDisplay?: PnlDisplayMode;
   }): Promise<{
     period: {
       year: number;
@@ -367,7 +369,10 @@ class TradeStrategiesService {
     if (params?.positionStrategy) {
       queryParams.append('position_strategy', String(params.positionStrategy));
     }
-    
+    if (params?.pnlDisplay) {
+      queryParams.append('pnl_display', params.pnlDisplay);
+    }
+
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/statistics/?${queryParams}`
     );
@@ -389,6 +394,7 @@ class TradeStrategiesService {
       start_date?: string;
       end_date?: string;
       positionStrategy?: number;
+      pnlDisplay?: PnlDisplayMode;
     }
   ): Promise<StrategyComplianceStats> {
     const queryParams = new URLSearchParams();
@@ -410,6 +416,9 @@ class TradeStrategiesService {
       }
       if (filters.positionStrategy) {
         queryParams.append('position_strategy', String(filters.positionStrategy));
+      }
+      if (filters.pnlDisplay) {
+        queryParams.append('pnl_display', filters.pnlDisplay);
       }
     }
     const res = await this.fetchWithAuth(

@@ -33,6 +33,7 @@ import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import { ModernMarketInfo } from '../components/market/ModernMarketInfo';
 import { GlobalStatsIndicators } from '../components/dashboard/GlobalStatsIndicators';
 import { PageShell } from '../components/layout';
+import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -45,6 +46,7 @@ import {
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar } from 'react-chartjs-2';
 import { getChartColors, buildChartTooltipPlugin } from '../utils/chartConfig';
+import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 
 // Lazy load heavy chart components for better performance
 const DurationDistributionChart = lazy(() => import('../components/charts/DurationDistributionChart'));
@@ -267,6 +269,7 @@ const MARKET_CLOCK_TIMEZONES: Array<[string, string]> = [
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const { preferences } = usePreferences();
+  const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const { theme } = useTheme();
   const { t, i18n } = useI18nTranslation();
   const privacySettings = usePrivacySettings('dashboard');
@@ -300,6 +303,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     endDate: selectedPeriod?.end,
     loading: accountLoading,
     positionStrategy: selectedPositionStrategy,
+    pnlDisplay: pnlDisplayMode,
   });
 
   // Données globales all-time (tous comptes) — chargées sur tous les écrans pour les stats dans la carte Total trades < 2000px
@@ -308,6 +312,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     startDate: undefined,
     endDate: undefined,
     loading: accountLoading,
+    pnlDisplay: pnlDisplayMode,
   });
 
   // Extract data from consolidated response
@@ -443,6 +448,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   /** Cumul tous comptes / toute période — pour la carte Total trades */
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
     loading: accountLoading,
+    pnlDisplay: pnlDisplayMode,
   });
   
   const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
@@ -814,12 +820,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     
     // Fallback: utiliser les trades individuels si les agrégats ne sont pas disponibles
     const tradesWithDates = trades
-      .filter(trade => trade.net_pnl && trade.entered_at)
-      .map(trade => ({
-        date: trade.trade_day || new Date(trade.entered_at).toISOString().split('T')[0],
-        pnl: parseFloat(trade.net_pnl!),
-        enteredAt: new Date(trade.entered_at),
-      }))
+      .map(trade => {
+        const pv = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+        if (pv == null || !trade.entered_at) return null;
+        return {
+          date: trade.trade_day || new Date(trade.entered_at).toISOString().split('T')[0],
+          pnl: pv,
+          enteredAt: new Date(trade.entered_at),
+        };
+      })
+      .filter((row): row is { date: string; pnl: number; enteredAt: Date } => row !== null)
       .sort((a, b) => a.enteredAt.getTime() - b.enteredAt.getTime());
 
     // Grouper par date
@@ -897,7 +907,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }
 
     return result;
-  }, [dailyAggregates, trades, transactionsInSelectedPeriod, selectedAccount, dailyMetrics]);
+  }, [dailyAggregates, trades, transactionsInSelectedPeriod, selectedAccount, dailyMetrics, pnlDisplayMode]);
 
   // États pour les filtres de date
   const { defaultStartDate, defaultEndDate } = useMemo(() => {
@@ -1105,18 +1115,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }
     
     // Fallback: utiliser les trades individuels
-    const tradesWithDates = trades
-      .filter(trade => trade.net_pnl && trade.entered_at)
-      .map(trade => ({
-        date: trade.trade_day || new Date(trade.entered_at).toISOString().split('T')[0],
-        pnl: parseFloat(trade.net_pnl!),
-        enteredAt: new Date(trade.entered_at),
-      }))
+    const tradesWithDatesWaterfall = trades
+      .map(trade => {
+        const pv = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+        if (pv == null || !trade.entered_at) return null;
+        return {
+          date: trade.trade_day || new Date(trade.entered_at).toISOString().split('T')[0],
+          pnl: pv,
+          enteredAt: new Date(trade.entered_at),
+        };
+      })
+      .filter((row): row is { date: string; pnl: number; enteredAt: Date } => row !== null)
       .sort((a, b) => a.enteredAt.getTime() - b.enteredAt.getTime());
 
     // Grouper par date
     const dailyData: { [date: string]: number } = {};
-    tradesWithDates.forEach(trade => {
+    tradesWithDatesWaterfall.forEach(trade => {
       dailyData[trade.date] = (dailyData[trade.date] || 0) + trade.pnl;
     });
 
@@ -1141,7 +1155,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         hasTradingData: Object.prototype.hasOwnProperty.call(dailyData, date),
       };
     });
-  }, [dailyAggregates, trades, transactionsInSelectedPeriod]);
+  }, [dailyAggregates, trades, transactionsInSelectedPeriod, pnlDisplayMode]);
 
   // Série affichée (agrégation auto) pour le graphique uniquement — waterfallStats reste sur waterfallData journalier.
   const waterfallDisplay = useMemo(() => {
@@ -1357,10 +1371,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const dayNames = [sunday, monday, tuesday, wednesday, thursday, friday, saturday];
 
     trades.forEach(trade => {
-      if (trade.entered_at && trade.net_pnl !== null) {
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (trade.entered_at && pnl !== null) {
         const date = new Date(trade.entered_at);
         const dayName = dayNames[date.getDay()];
-        const pnl = parseFloat(trade.net_pnl);
         
         if (dayStats[dayName]) {
           dayStats[dayName].total_pnl += pnl;
@@ -1382,7 +1396,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         average_pnl: stats.trade_count > 0 ? stats.total_pnl / stats.trade_count : 0,
       }))
       .filter(d => d.day !== t('dashboard:saturday') && d.day !== t('dashboard:sunday')); // Filtrer les weekends
-  }, [trades, t]);
+  }, [trades, t, pnlDisplayMode]);
 
   // Préparer les données pour le graphique de performance par jour
   const weekdayChartData = useMemo(() => {
@@ -1395,7 +1409,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       labels,
       datasets: [
         {
-          label: t('dashboard:pnlTotal'),
+          label: t('dashboard:pnlTotalWithBasis', {
+            basis: t(pnlDisplayMode === 'net' ? 'common:pnlNetShort' : 'common:pnlGrossShort'),
+          }),
           data: totalPnlValues,
           backgroundColor: totalPnlValues.map(value => 
             value >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)'
@@ -1409,7 +1425,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         }
       ]
     };
-  }, [weekdayPerformanceData, t]);
+  }, [weekdayPerformanceData, t, pnlDisplayMode]);
 
   // Calculer les limites intelligentes pour l'axe Y - toujours inclure 0 avec valeurs arrondies
   const weekdayYAxisLimits = useMemo(() => {
@@ -1513,18 +1529,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const tradingMetrics = useMemo(() => {
     if (trades.length === 0) return null;
 
-    const winningTrades = trades.filter(t => t.is_profitable === true && t.net_pnl);
-    const losingTrades = trades.filter(t => t.is_profitable === false && t.net_pnl);
+    const winningTrades = trades.filter(t => t.is_profitable === true && getTradeDisplayPnlValue(t, pnlDisplayMode) != null);
+    const losingTrades = trades.filter(t => t.is_profitable === false && getTradeDisplayPnlValue(t, pnlDisplayMode) != null);
     
     const totalTrades = trades.filter(t => t.is_profitable !== null).length;
     const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
     
     const avgWinningTrade = winningTrades.length > 0
-      ? winningTrades.reduce((sum, t) => sum + parseFloat(t.net_pnl!), 0) / winningTrades.length
+      ? winningTrades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0) / winningTrades.length
       : 0;
     
     const avgLosingTrade = losingTrades.length > 0
-      ? losingTrades.reduce((sum, t) => sum + parseFloat(t.net_pnl!), 0) / losingTrades.length
+      ? losingTrades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0) / losingTrades.length
       : 0;
 
     return {
@@ -1532,7 +1548,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       avgWinningTrade,
       avgLosingTrade,
     };
-  }, [trades]);
+  }, [trades, pnlDisplayMode]);
 
   // Calculer les max pour les jauges (basé sur les données réelles avec marge)
   const gaugeMaxValues = useMemo(() => {
@@ -1596,12 +1612,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     if (trades.length === 0 && tradesForSequences.length === 0) return null;
 
     const totalTrades = trades.filter(t => t.is_profitable !== null).length;
-    const winningTrades = trades.filter(t => t.is_profitable === true && t.net_pnl);
-    const losingTrades = trades.filter(t => t.is_profitable === false && t.net_pnl);
+    const winningTrades = trades.filter(t => t.is_profitable === true && getTradeDisplayPnlValue(t, pnlDisplayMode) != null);
+    const losingTrades = trades.filter(t => t.is_profitable === false && getTradeDisplayPnlValue(t, pnlDisplayMode) != null);
     
-    const totalPnl = trades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
-    const totalWinnings = winningTrades.reduce((sum, t) => sum + parseFloat(t.net_pnl!), 0);
-    const totalLosses = losingTrades.reduce((sum, t) => sum + parseFloat(t.net_pnl!), 0);
+    const totalPnl = trades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0);
+    const totalWinnings = winningTrades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0);
+    const totalLosses = losingTrades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0);
     
     const profitFactor = totalLosses !== 0 ? Math.abs(totalWinnings / Math.abs(totalLosses)) : 0;
     
@@ -1739,7 +1755,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       // Compter les jours consécutifs avec P/L positif depuis le plus récent
       for (const dayKey of sortedDaysReverse) {
         const dayTrades = tradesByDay.get(dayKey)!;
-        const dayPnl = dayTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
+        const dayPnl = dayTrades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0);
         
         if (dayPnl > 0) {
           currentWinningStreakDays++;
@@ -1752,7 +1768,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       // Calculer le record maximum de jours consécutifs avec P/L positif
       for (const dayKey of sortedDays) {
         const dayTrades = tradesByDay.get(dayKey)!;
-        const dayPnl = dayTrades.reduce((sum, t) => sum + (t.net_pnl ? parseFloat(t.net_pnl) : 0), 0);
+        const dayPnl = dayTrades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0);
         
         if (dayPnl > 0) {
           tempWinningStreak++;
@@ -1781,7 +1797,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       currentWinningStreakDays,
       maxWinningStreakDays,
     };
-  }, [trades, strategies, allTradesForSequences, allStrategiesForSequences]);
+  }, [trades, strategies, allTradesForSequences, allStrategiesForSequences, pnlDisplayMode]);
 
   /** Meilleure série (respect stratégie) : API consolidée si présente, sinon fallback client (échantillon trades). */
   const disciplineBestStreakDays = useMemo(() => {
@@ -1803,6 +1819,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     filteredTrades: trades,
     filteredBalanceData,
     activeDays: dashboardData?.active_days,
+    pnlDisplay: pnlDisplayMode,
   });
 
 
@@ -1854,6 +1871,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 strategies={positionStrategies}
                 disabled={loadingStrategies}
               />
+            </div>
+            <div className="flex w-full min-w-0 min-[900px]:w-auto items-center justify-start min-[900px]:shrink-0">
+              <PnlBasisToggle />
             </div>
           </div>
 

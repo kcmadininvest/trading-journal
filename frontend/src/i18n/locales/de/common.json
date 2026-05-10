@@ -163,6 +163,9 @@
     "localTime": "Ortszeit: {{time}}",
     "earlyClose": "Verkürzter Handelstag"
   },
+  "pnlNetShort": "Netto",
+  "pnlGrossShort": "Brutto",
+  "pnlBasisToggleAria": "PnL-Anzeige: netto oder brutto",
   "dstChange": {
     "spring": "Sommerzeit",
     "fall": "Winterzeit",

@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import { useDashboardActivitySummary } from './useDashboardData';
+import type { PnlDisplayMode } from '../utils/pnlDisplay';
 
 interface UseGlobalAllAccountsActivityParams {
   loading?: boolean;
   positionStrategy?: number | null;
+  pnlDisplay?: PnlDisplayMode;
 }
 
 export interface GlobalAllAccountsActivityData {
@@ -14,6 +16,7 @@ export interface GlobalAllAccountsActivityData {
 export function useGlobalAllAccountsActivity({
   loading,
   positionStrategy = null,
+  pnlDisplay = 'net',
 }: UseGlobalAllAccountsActivityParams = {}) {
   const { data, isLoading, error, refetch } = useDashboardActivitySummary({
     accountId: null,
@@ -21,6 +24,7 @@ export function useGlobalAllAccountsActivity({
     endDate: undefined,
     loading,
     positionStrategy,
+    pnlDisplay,
   });
 
   const globalAllAccountsActivity = useMemo<GlobalAllAccountsActivityData | null>(() => {

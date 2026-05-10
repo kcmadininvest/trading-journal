@@ -125,7 +125,7 @@ const MobileNav: React.FC<MobileNavProps> = ({ currentUser, currentPage, onNavig
               {currentUser.first_name?.[0] || currentUser.email[0].toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
+              <p className="text-xs font-medium text-white truncate">
                 {currentUser.first_name && currentUser.last_name 
                   ? `${currentUser.first_name} ${currentUser.last_name}` 
                   : currentUser.email}

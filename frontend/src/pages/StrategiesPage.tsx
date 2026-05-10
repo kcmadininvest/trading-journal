@@ -24,6 +24,7 @@ import { useComplianceAggregation } from '../hooks/useComplianceAggregation';
 import { useWeekdayCompliance } from '../hooks/useWeekdayCompliance';
 import { useChartOptions } from '../hooks/useChartOptions';
 import { PageShell } from '../components/layout';
+import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { formatDate, getMonthName } from '../utils/dateFormat';
@@ -34,6 +35,7 @@ import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { dashboardService } from '../services/dashboard';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
+import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 import { getChartColors } from '../utils/chartConfig';
 import { ChartSkeleton } from '../components/strategy/charts/ChartSkeleton';
 import { LazyChart } from '../components/strategy/charts/LazyChart';
@@ -76,6 +78,7 @@ ChartJS.register(
 const StrategiesPage: React.FC = () => {
   const { theme } = useTheme();
   const { preferences } = usePreferences();
+  const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const { t, i18n } = useI18nTranslation();
   const privacySettings = usePrivacySettings('strategies');
   const isDark = theme === 'dark';
@@ -175,66 +178,107 @@ const StrategiesPage: React.FC = () => {
     return t(`strategies:emotions.${emotion}` as any, { defaultValue: emotion });
   }, [t]);
 
-  // Fonction unifiée pour charger toutes les données en parallèle
-  const loadAllData = useCallback(async () => {
+  /** Dernier mode net/brut — le chargement « filtres » lit toujours la valeur à jour sans recréer le callback quand seul le toggle change */
+  const pnlDisplayModeRef = useRef(pnlDisplayMode);
+  pnlDisplayModeRef.current = pnlDisplayMode;
+
+  /** Snapshot filtres pour rechargement silencieux au toggle PnL uniquement */
+  const strategiesFetchContextRef = useRef({
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+    accountId,
+    summaryStartDate,
+    summaryEndDate,
+    selectedPositionStrategy,
+  });
+  strategiesFetchContextRef.current = {
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+    accountId,
+    summaryStartDate,
+    summaryEndDate,
+    selectedPositionStrategy,
+  };
+
+  const tRef = useRef(t);
+  tRef.current = t;
+
+  const buildStrategiesParams = (
+    mode: ReturnType<typeof parsePnlDisplayMode>,
+    ctx: typeof strategiesFetchContextRef.current
+  ) => {
+    const params: {
+      year?: number;
+      month?: number;
+      start_date?: string;
+      end_date?: string;
+      tradingAccount?: number;
+      positionStrategy?: number;
+      pnlDisplay: ReturnType<typeof parsePnlDisplayMode>;
+    } = { pnlDisplay: mode };
+
+    if (ctx.selectedPeriod) {
+      params.start_date = ctx.selectedPeriod.start;
+      params.end_date = ctx.selectedPeriod.end;
+    } else if (ctx.selectedYear) {
+      params.year = ctx.selectedYear;
+      if (ctx.selectedMonth) {
+        params.month = ctx.selectedMonth;
+      }
+    }
+
+    if (ctx.accountId) {
+      params.tradingAccount = ctx.accountId;
+    }
+
+    if (ctx.selectedPositionStrategy) {
+      params.positionStrategy = ctx.selectedPositionStrategy;
+    }
+
+    return params;
+  };
+
+  const buildDashboardFilters = (
+    mode: ReturnType<typeof parsePnlDisplayMode>,
+    ctx: typeof strategiesFetchContextRef.current
+  ) => {
+    const dashboardFilters: Record<string, unknown> = { pnl_display: mode };
+    if (ctx.accountId) dashboardFilters.trading_account = ctx.accountId;
+    if (ctx.summaryStartDate) dashboardFilters.start_date = ctx.summaryStartDate;
+    if (ctx.summaryEndDate) dashboardFilters.end_date = ctx.summaryEndDate;
+    if (ctx.selectedPositionStrategy) dashboardFilters.position_strategy = ctx.selectedPositionStrategy;
+    return dashboardFilters;
+  };
+
+  // Chargement complet (filtres, compte, devises) — skeleton / loaders actifs
+  const loadAllDataFull = useCallback(async () => {
     setIsLoading(true);
     setLoadingAllAccountsCompliance(true);
     setLoadingSelectedAccountCompliance(true);
     setSummaryLoading(true);
     setError(null);
-    
+
+    const mode = pnlDisplayModeRef.current;
+    const ctx = strategiesFetchContextRef.current;
+
     try {
-      const params: {
-        year?: number;
-        month?: number;
-        start_date?: string;
-        end_date?: string;
-        tradingAccount?: number;
-        positionStrategy?: number;
-      } = {};
-      
-      // Utiliser la période sélectionnée (priorité) ou calculer depuis année/mois (rétrocompatibilité)
-      if (selectedPeriod) {
-        params.start_date = selectedPeriod.start;
-        params.end_date = selectedPeriod.end;
-      } else if (selectedYear) {
-        params.year = selectedYear;
-        if (selectedMonth) {
-          params.month = selectedMonth;
-        }
-      }
-      
-      if (accountId) {
-        params.tradingAccount = accountId;
-      }
-      
-      if (selectedPositionStrategy) {
-        params.positionStrategy = selectedPositionStrategy;
-      }
-      
-      // Paralléliser TOUS les appels API y compris dashboard summary
-      const dashboardFilters: any = {};
-      if (accountId) dashboardFilters.trading_account = accountId;
-      if (summaryStartDate) dashboardFilters.start_date = summaryStartDate;
-      if (summaryEndDate) dashboardFilters.end_date = summaryEndDate;
-      if (selectedPositionStrategy) dashboardFilters.position_strategy = selectedPositionStrategy;
+      const params = buildStrategiesParams(mode, ctx);
+      const dashboardFilters = buildDashboardFilters(mode, ctx);
 
       const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, currenciesData, accountData, dashboardData] =
         await Promise.all([
-          // Appel 1: Statistics
           tradeStrategiesService.statistics(params),
-          // Appel 2: Compliance tous comptes
           tradeStrategiesService.strategyComplianceStats(undefined, params),
-          // Appel 3: Compliance compte sélectionné (si applicable)
-          accountId ? tradeStrategiesService.strategyComplianceStats(accountId, params) : Promise.resolve(null),
-          // Appel 4: Currencies (caché côté service)
+          ctx.accountId
+            ? tradeStrategiesService.strategyComplianceStats(ctx.accountId, params)
+            : Promise.resolve(null),
           currenciesService.list(),
-          // Appel 5: Account sélectionné
-          accountId ? tradingAccountsService.get(accountId) : Promise.resolve(null),
-          // Appel 6: Dashboard summary
-          dashboardService.getSummary(dashboardFilters).catch(() => null),
+          ctx.accountId ? tradingAccountsService.get(ctx.accountId) : Promise.resolve(null),
+          dashboardService.getSummary(dashboardFilters as Parameters<typeof dashboardService.getSummary>[0]).catch(() => null),
         ]);
-      
+
       setStatistics(statisticsData);
       setAllAccountsCompliance(allAccountsComplianceData);
       setSelectedAccountCompliance(selectedAccountComplianceData);
@@ -242,7 +286,7 @@ const StrategiesPage: React.FC = () => {
       setSelectedAccount(accountData);
       setDashboardSummary(dashboardData);
     } catch (err: any) {
-      setError(err.message || t('strategies:errorLoadingStatistics'));
+      setError(err.message || tRef.current('strategies:errorLoadingStatistics'));
       console.error('Erreur lors du chargement des données:', err);
     } finally {
       setIsLoading(false);
@@ -250,24 +294,82 @@ const StrategiesPage: React.FC = () => {
       setLoadingSelectedAccountCompliance(false);
       setSummaryLoading(false);
     }
-  }, [selectedPeriod, selectedYear, selectedMonth, accountId, summaryStartDate, summaryEndDate, selectedPositionStrategy, t]);
+  }, []);
 
   useEffect(() => {
-    // Attendre que le compte soit chargé avant de charger les données
     if (accountLoading) {
       return;
     }
-    loadAllData();
-  }, [loadAllData, accountLoading]);
+    void loadAllDataFull();
+  }, [
+    loadAllDataFull,
+    accountLoading,
+    selectedPeriod,
+    selectedYear,
+    selectedMonth,
+    accountId,
+    summaryStartDate,
+    summaryEndDate,
+    selectedPositionStrategy,
+  ]);
+
+  // Toggle net/brut : mise à jour des agrégats uniquement, sans skeleton ni rechargement du bandeau carte compte
+  const silentPnlBootstrapRef = useRef(false);
+  useEffect(() => {
+    if (accountLoading) {
+      return;
+    }
+    if (!silentPnlBootstrapRef.current) {
+      silentPnlBootstrapRef.current = true;
+      return;
+    }
+
+    const mode = pnlDisplayMode;
+    const ctx = strategiesFetchContextRef.current;
+    let cancelled = false;
+
+    void (async () => {
+      setError(null);
+      try {
+        const params = buildStrategiesParams(mode, ctx);
+        const dashboardFilters = buildDashboardFilters(mode, ctx);
+
+        const [statisticsData, allAccountsComplianceData, selectedAccountComplianceData, dashboardData] = await Promise.all([
+          tradeStrategiesService.statistics(params),
+          tradeStrategiesService.strategyComplianceStats(undefined, params),
+          ctx.accountId
+            ? tradeStrategiesService.strategyComplianceStats(ctx.accountId, params)
+            : Promise.resolve(null),
+          dashboardService.getSummary(dashboardFilters as Parameters<typeof dashboardService.getSummary>[0]).catch(() => null),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+        setStatistics(statisticsData);
+        setAllAccountsCompliance(allAccountsComplianceData);
+        setSelectedAccountCompliance(selectedAccountComplianceData);
+        setDashboardSummary(dashboardData);
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err.message || tRef.current('strategies:errorLoadingStatistics'));
+          console.error('Erreur lors du rechargement PnL (stratégies):', err);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pnlDisplayMode, accountLoading]);
 
   // Se mettre à jour quand une compliance est sauvegardée/supprimée (via ComplianceRefreshContext)
-  // On mémorise la valeur de refreshCount au montage pour ne réagir qu'aux changements post-montage
   const mountedRefreshCount = useRef(refreshCount);
   useEffect(() => {
     if (refreshCount === mountedRefreshCount.current) return;
-    loadAllData();
+    void loadAllDataFull();
     reloadTrades();
-  }, [refreshCount]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [refreshCount, loadAllDataFull, reloadTrades]);
 
 
   const complianceSectionData = useMemo(() => selectedAccountCompliance || allAccountsCompliance, [selectedAccountCompliance, allAccountsCompliance]);
@@ -288,10 +390,12 @@ const StrategiesPage: React.FC = () => {
     allTrades: [],
     filteredTrades,
     activeDays: dashboardSummary?.active_days,
+    pnlDisplay: pnlDisplayMode,
   });
 
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
     loading: accountLoading,
+    pnlDisplay: pnlDisplayMode,
   });
 
 
@@ -418,6 +522,9 @@ const StrategiesPage: React.FC = () => {
               strategies={positionStrategies}
               loading={loadingStrategies}
             />
+            <div className="flex w-full items-end lg:w-auto lg:flex-shrink-0">
+              <PnlBasisToggle />
+            </div>
           </div>
         </div>
 
@@ -692,7 +799,7 @@ const StrategiesPage: React.FC = () => {
         setShowImport(false);
         if (done) {
           // Recharger toutes les données après un import réussi
-          loadAllData();
+          void loadAllDataFull();
           // Recharger aussi les trades pour mettre à jour les soldes et les graphiques
           reloadTrades();
         }

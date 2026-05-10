@@ -137,5 +137,8 @@
     "viewMode": "表示モード",
     "gridView": "グリッド表示",
     "listView": "リスト表示"
-  }
+  },
+  "pnlNetShort": "純",
+  "pnlGrossShort": "総",
+  "pnlBasisToggleAria": "損益の表示：純損益または総損益"
 }

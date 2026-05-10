@@ -161,6 +161,9 @@
     "localTime": "Hora local: {{time}}",
     "earlyClose": "Cierre anticipado"
   },
+  "pnlNetShort": "Neto",
+  "pnlGrossShort": "Bruto",
+  "pnlBasisToggleAria": "Visualización del PnL: neto o bruto",
   "dstChange": {
     "spring": "Horario de verano",
     "fall": "Horario de invierno",

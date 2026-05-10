@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import type { PnlDisplayMode } from '../utils/pnlDisplay';
 
 export interface DailyAggregate {
   date: string;
@@ -34,6 +35,7 @@ export interface DashboardFilters {
   start_date?: string;
   end_date?: string;
   position_strategy?: number;
+  pnl_display?: PnlDisplayMode;
 }
 
 class DashboardService {
@@ -74,6 +76,9 @@ class DashboardService {
     if (filters.position_strategy) {
       params.append('position_strategy', filters.position_strategy.toString());
     }
+    if (filters.pnl_display) {
+      params.append('pnl_display', filters.pnl_display);
+    }
 
     const url = `${this.baseUrl}/api/trades/dashboard-summary/?${params.toString()}`;
     const response = await this.fetchWithAuth(url);
@@ -94,6 +99,9 @@ class DashboardService {
     }
     if (filters.position_strategy) {
       params.append('position_strategy', filters.position_strategy.toString());
+    }
+    if (filters.pnl_display) {
+      params.append('pnl_display', filters.pnl_display);
     }
 
     const url = `${this.baseUrl}/api/trades/dashboard-activity-summary/?${params.toString()}`;

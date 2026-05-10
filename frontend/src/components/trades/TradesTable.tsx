@@ -6,6 +6,7 @@ import { feesPlusCommissions } from '../../utils/tradeFees';
 import { formatDateTimeShort } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import Tooltip from '../ui/Tooltip';
+import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
 
 interface TradesTableProps {
   items: TradeListItem[];
@@ -27,7 +28,9 @@ interface TradesTableProps {
 
 export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete, onRowClick, hideAccountNumber = false }) => {
   const { preferences } = usePreferences();
+  const pnlMode = parsePnlDisplayMode(preferences.pnl_display);
   const { t } = useI18nTranslation();
+  const primaryPnlEmphasis = 'ring-1 ring-inset ring-blue-500/35 dark:ring-blue-400/40 rounded-sm';
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const visibleIds = items.map(i => i.id);
   const allSelectedOnPage = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
@@ -293,7 +296,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   </div>
                 </div>
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 grid grid-cols-3 gap-3">
-                  <div>
+                  <div className={pnlMode === 'gross' ? primaryPnlEmphasis : ''}>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:pnl')}</div>
                     <div
                       className={`font-semibold tabular-nums ${
@@ -312,13 +315,15 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     </div>
                     <div className="font-medium text-gray-900 dark:text-gray-100 tabular-nums">{fmtCurrency(totalFeesPlusCommissionsStr(trade))}</div>
                   </div>
-                  <div>
+                  <div className={pnlMode === 'net' ? primaryPnlEmphasis : ''}>
                     <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:netPnl')}</div>
                     <div
                       className={`font-semibold tabular-nums ${
-                        trade.net_pnl == null || isNaN(parseFloat(trade.net_pnl))
-                          ? ''
-                          : parseFloat(trade.net_pnl) >= 0 ? 'text-profit' : 'text-loss'
+                        (() => {
+                          const v = getTradeDisplayPnlValue(trade, 'net');
+                          if (v == null) return '';
+                          return v >= 0 ? 'text-profit' : 'text-loss';
+                        })()
                       }`}
                     >
                       {fmtCurrency(trade.net_pnl)}
@@ -341,7 +346,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               </span>
             </div>
             <div className="grid grid-cols-3 gap-3 text-sm">
-              <div>
+              <div className={pnlMode === 'gross' ? primaryPnlEmphasis : ''}>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:pnl')}</div>
                 <div
                   className={`font-semibold tabular-nums ${totals.pnl !== undefined ? ((totals.pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}
@@ -358,7 +363,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   {totals.fees !== undefined ? formatCurrencyWithSign(totals.fees, '', preferences.number_format, 2) : '-'}
                 </div>
               </div>
-              <div>
+              <div className={pnlMode === 'net' ? primaryPnlEmphasis : ''}>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:netPnl')}</div>
                 <div
                   className={`font-semibold tabular-nums ${totals.net_pnl !== undefined ? ((totals.net_pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}
@@ -395,14 +400,14 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:entry')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:exit')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:points', { defaultValue: 'Points' })}</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:pnl')}</th>
+              <th className={`px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${pnlMode === 'gross' ? primaryPnlEmphasis : ''}`}>{t('trades:pnl')}</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 <div className="flex items-center justify-end gap-1 w-full">
                   <span>{t('trades:feesTotal')}</span>
                   {feesColumnHelpIcon}
                 </div>
               </th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:netPnl')}</th>
+              <th className={`px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider ${pnlMode === 'net' ? primaryPnlEmphasis : ''}`}>{t('trades:netPnl')}</th>
               <th className="hidden lg:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:duration')}</th>
               <th className="hidden xl:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:plannedRR', { defaultValue: 'R:R prévu' })}</th>
               <th className="hidden xl:table-cell px-2 sm:px-4 py-2 sm:py-3 text-right text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('trades:actualRR', { defaultValue: 'R:R réel' })}</th>
@@ -529,7 +534,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                     })()}
                   </td>
                   <td
-                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold ${
+                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold ${pnlMode === 'gross' ? primaryPnlEmphasis : ''} ${
                       trade.pnl == null || isNaN(parseFloat(trade.pnl))
                         ? ''
                         : parseFloat(trade.pnl) >= 0 ? 'text-profit' : 'text-loss'
@@ -539,10 +544,12 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   </td>
                   <td className="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums text-gray-700 dark:text-gray-300">{fmtCurrency(totalFeesPlusCommissionsStr(trade))}</td>
                   <td
-                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold ${
-                      trade.net_pnl == null || isNaN(parseFloat(trade.net_pnl))
-                        ? ''
-                        : parseFloat(trade.net_pnl) >= 0 ? 'text-profit' : 'text-loss'
+                    className={`px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-right tabular-nums font-semibold ${pnlMode === 'net' ? primaryPnlEmphasis : ''} ${
+                      (() => {
+                        const v = getTradeDisplayPnlValue(trade, 'net');
+                        if (v == null) return '';
+                        return v >= 0 ? 'text-profit' : 'text-loss';
+                      })()
                     }`}
                   >
                     {fmtCurrency(trade.net_pnl)}
@@ -614,13 +621,13 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
                   </span>
                 </td>
                 <td className="p-0"></td>
-                <td className={`px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold ${totals.pnl !== undefined ? ((totals.pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}>
+                <td className={`px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold ${pnlMode === 'gross' ? primaryPnlEmphasis : ''} ${totals.pnl !== undefined ? ((totals.pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}>
                   {totals.pnl !== undefined ? formatCurrencyWithSign(totals.pnl, '', preferences.number_format, 2) : ''}
                 </td>
                 <td className="px-2 sm:px-4 py-2 text-right text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                   {totals.fees !== undefined ? formatCurrencyWithSign(totals.fees, '', preferences.number_format, 2) : ''}
                 </td>
-                <td className={`px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold ${totals.net_pnl !== undefined ? ((totals.net_pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}>
+                <td className={`px-2 sm:px-4 py-2 text-right text-xs sm:text-sm font-semibold ${pnlMode === 'net' ? primaryPnlEmphasis : ''} ${totals.net_pnl !== undefined ? ((totals.net_pnl ?? 0) >= 0 ? 'text-profit' : 'text-loss') : ''}`}>
                   {totals.net_pnl !== undefined ? formatCurrencyWithSign(totals.net_pnl, '', preferences.number_format, 2) : ''}
                 </td>
                 <td className="p-0"></td>

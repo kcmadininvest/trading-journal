@@ -7,7 +7,7 @@ from rest_framework.test import APIRequestFactory
 
 from accounts.models import User
 from trades.account_balance import compute_trading_account_balance
-from trades.models import AccountTransaction, TradingAccount
+from trades.models import AccountTransaction, TopStepTrade, TradingAccount
 from trades.serializers import AccountTransactionSerializer
 
 
@@ -53,6 +53,28 @@ class AccountBalanceComputationTests(TestCase):
         self.assertEqual(b['trading_equity'], Decimal('1000.00'))
         self.assertEqual(b['net_transactions'], Decimal('50.00'))
         self.assertEqual(b['current_balance'], Decimal('1050.00'))
+
+    def test_gross_totals_when_pnl_differs_from_net_pnl(self) -> None:
+        now = timezone.now()
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-gross-1',
+            contract_name='NQ',
+            entered_at=now,
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            pnl=Decimal('100.000000000'),
+            net_pnl=Decimal('80.000000000'),
+        )
+        b = compute_trading_account_balance(self.account)
+        self.assertEqual(b['total_pnl'], Decimal('80.000000000'))
+        self.assertEqual(b['total_pnl_gross'], Decimal('100.000000000'))
+        self.assertEqual(b['trading_equity'], Decimal('1080.000000000'))
+        self.assertEqual(b['trading_equity_gross'], Decimal('1100.000000000'))
+        self.assertEqual(b['current_balance'], Decimal('1080.000000000'))
+        self.assertEqual(b['current_balance_gross'], Decimal('1100.000000000'))
 
 
 class WithdrawalValidationTests(TestCase):

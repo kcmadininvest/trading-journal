@@ -6,6 +6,7 @@ import { feesPlusCommissions } from '../../utils/tradeFees';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { DailyJournalEditor } from '../dailyJournal/DailyJournalEditor';
+import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
 
 interface DayTradesModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   onJournalSaved,
 }) => {
   const { preferences } = usePreferences();
+  const pnlMode = parsePnlDisplayMode(preferences.pnl_display);
   const { t } = useI18nTranslation();
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -229,7 +231,11 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                           <th className="px-4 py-3 text-right font-semibold text-gray-700 dark:text-gray-300">{t('trades:size')}</th>
                           <th className="px-4 py-3 text-right font-semibold text-gray-700 dark:text-gray-300">{t('trades:dayTradesModal.entryPrice')}</th>
                           <th className="px-4 py-3 text-right font-semibold text-gray-700 dark:text-gray-300">{t('trades:dayTradesModal.exitPrice')}</th>
-                          <th className="px-4 py-3 text-right font-semibold text-gray-700 dark:text-gray-300">{t('trades:pnl')}</th>
+                          <th className="px-4 py-3 text-right font-semibold text-gray-700 dark:text-gray-300">
+                            {t('trades:dayTradesModal.mainPnlColumn', {
+                              basis: t(pnlMode === 'net' ? 'common:pnlNetShort' : 'common:pnlGrossShort'),
+                            })}
+                          </th>
                           <th className="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-300">{t('trades:duration')}</th>
                         </tr>
                       </thead>
@@ -259,8 +265,20 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                             <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">
                               {trade.exit_price ? formatNumber(trade.exit_price, 2, preferences.number_format) : '—'}
                             </td>
-                            <td className={`px-4 py-3 text-right ${getPnlColor(trade.net_pnl)}`}>
-                              {formatPnl(trade.net_pnl)}
+                            <td
+                              className={`px-4 py-3 text-right ${getPnlColor(
+                                (() => {
+                                  const v = getTradeDisplayPnlValue(trade, pnlMode);
+                                  return v == null ? null : String(v);
+                                })()
+                              )}`}
+                            >
+                              {formatPnl(
+                                (() => {
+                                  const v = getTradeDisplayPnlValue(trade, pnlMode);
+                                  return v == null ? null : String(v);
+                                })()
+                              )}
                             </td>
                             <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{trade.duration_str || '—'}</td>
                           </tr>
@@ -276,11 +294,17 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:dayTradesModal.totalPnl')}</p>
                         <p
                           className={`text-lg font-bold ${getPnlColor(
-                            trades.reduce((sum, t) => sum + parseFloat(t.net_pnl || '0'), 0).toString()
+                            (() => {
+                              const s = trades.reduce((sum, tr) => sum + (getTradeDisplayPnlValue(tr, pnlMode) ?? 0), 0);
+                              return String(s);
+                            })()
                           )}`}
                         >
                           {formatPnl(
-                            trades.reduce((sum, t) => sum + parseFloat(t.net_pnl || '0'), 0).toString()
+                            (() => {
+                              const s = trades.reduce((sum, tr) => sum + (getTradeDisplayPnlValue(tr, pnlMode) ?? 0), 0);
+                              return String(s);
+                            })()
                           )}
                         </p>
                       </div>
@@ -297,7 +321,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
                       <div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('trades:dayTradesModal.winningTrades')}</p>
                         <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-                          {trades.filter((t) => parseFloat(t.net_pnl || '0') > 0).length} / {trades.length}
+                          {trades.filter((tr) => (getTradeDisplayPnlValue(tr, pnlMode) ?? 0) > 0).length} / {trades.length}
                         </p>
                       </div>
                     </div>

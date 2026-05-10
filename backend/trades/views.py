@@ -70,6 +70,21 @@ def get_user_timezone(request):
 
 
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, DayStrategyCompliance, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics
+from .pnl_basis import (
+    get_trade_pnl_field,
+    get_trade_pnl_field_for_request,
+    get_trade_join_pnl_field,
+    get_trade_join_pnl_field_for_request,
+    trade_pnl_as_float,
+    trade_pnl_as_decimal,
+)
+
+
+class PnlPreferenceMixin:
+    """Fournit get_pnl_field() aligné sur UserPreferences.pnl_display."""
+
+    def get_pnl_field(self) -> str:
+        return get_trade_pnl_field(self.request.user)
 from .account_balance import compute_trading_account_balance
 from daily_journal.models import DailyJournalEntry
 from .market_holidays import MarketHolidaysService
@@ -105,7 +120,7 @@ from billing.permissions import IsPremiumBundleSubscriberOrAdmin
 
 
 
-class TradingAccountViewSet(viewsets.ModelViewSet):
+class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     """
     ViewSet pour gérer les comptes de trading.
     """
@@ -262,25 +277,26 @@ class TradingAccountViewSet(viewsets.ModelViewSet):
                     'message': 'Aucun trade trouvé pour ce compte'
                 })
             
+            pf = self.get_pnl_field()
             # Calcul des statistiques de base
             total_trades = trades.count()
-            winning_trades = trades.filter(net_pnl__gt=0).count()
-            losing_trades = trades.filter(net_pnl__lt=0).count()
+            winning_trades = trades.filter(**{f'{pf}__gt': 0}).count()
+            losing_trades = trades.filter(**{f'{pf}__lt': 0}).count()
             win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
             
-            total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
-            total_gains = trades.filter(net_pnl__gt=0).aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
-            total_losses = trades.filter(net_pnl__lt=0).aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+            total_pnl = trades.aggregate(total=Sum(pf))['total'] or Decimal('0')
+            total_gains = trades.filter(**{f'{pf}__gt': 0}).aggregate(total=Sum(pf))['total'] or Decimal('0')
+            total_losses = trades.filter(**{f'{pf}__lt': 0}).aggregate(total=Sum(pf))['total'] or Decimal('0')
             
             # Meilleur trade : le plus gros gain parmi les trades gagnants uniquement
             # Si aucun trade gagnant, best_trade = 0 (ne pas afficher)
-            best_trade = trades.filter(net_pnl__gt=0).aggregate(best=Max('net_pnl'))['best']
+            best_trade = trades.filter(**{f'{pf}__gt': 0}).aggregate(best=Max(pf))['best']
             if best_trade is None:
                 best_trade = Decimal('0')
             
             # Pire trade : le plus gros loss parmi les trades perdants uniquement
             # Si aucun trade perdant, worst_trade = 0 (ne pas afficher)
-            worst_trade = trades.filter(net_pnl__lt=0).aggregate(worst=Min('net_pnl'))['worst']
+            worst_trade = trades.filter(**{f'{pf}__lt': 0}).aggregate(worst=Min(pf))['worst']
             if worst_trade is None:
                 worst_trade = Decimal('0')
             
@@ -474,27 +490,33 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
         bal = compute_trading_account_balance(account)
         initial_capital = bal['initial_capital']
         total_pnl = bal['total_pnl']
+        total_pnl_gross = bal['total_pnl_gross']
         trading_equity = bal['trading_equity']
+        trading_equity_gross = bal['trading_equity_gross']
         total_deposits = bal['total_deposits']
         total_withdrawals = bal['total_withdrawals']
         net_transactions = bal['net_transactions']
         current_balance = bal['current_balance']
+        current_balance_gross = bal['current_balance_gross']
 
         return Response({
             'trading_account_id': account.id,
             'trading_account_name': account.name,
             'initial_capital': str(initial_capital),
             'total_pnl': str(total_pnl),
+            'total_pnl_gross': str(total_pnl_gross),
             'trading_equity': str(trading_equity),
+            'trading_equity_gross': str(trading_equity_gross),
             'total_deposits': str(total_deposits),
             'total_withdrawals': str(total_withdrawals),
             'net_transactions': str(net_transactions),
             'current_balance': str(current_balance),
+            'current_balance_gross': str(current_balance_gross),
             'currency': account.currency,
         })
 
 
-class TopStepTradeViewSet(viewsets.ModelViewSet):
+class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     """
     ViewSet pour gérer les trades TopStep.
     """
@@ -576,10 +598,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass  # Ignorer les dates mal formatées
         if profitable is not None:
+            pf = self.get_pnl_field()
             if profitable.lower() == 'true':  # type: ignore
-                queryset = queryset.filter(net_pnl__gt=0)
+                queryset = queryset.filter(**{f'{pf}__gt': 0})
             elif profitable.lower() == 'false':  # type: ignore
-                queryset = queryset.filter(net_pnl__lt=0)
+                queryset = queryset.filter(**{f'{pf}__lt': 0})
         
         if trade_day:
             # Filtrer par date de trade spécifique
@@ -683,6 +706,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'losing_trades': 0,
                 'win_rate': 0,
                 'total_pnl': 0,
+                'total_net_pnl': 0,
                 'total_gains': 0,
                 'total_losses': 0,
                 'average_pnl': 0,
@@ -727,10 +751,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'plan_respect_rate': 0.0
             })
         
+        pf = self.get_pnl_field()
         # Statistiques de base
         total_trades = trades.count()
-        winning_trades = trades.filter(net_pnl__gt=0).count()
-        losing_trades = trades.filter(net_pnl__lt=0).count()
+        winning_trades = trades.filter(**{f'{pf}__gt': 0}).count()
+        losing_trades = trades.filter(**{f'{pf}__lt': 0}).count()
         win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
         
         # Agrégations (total_fees = frais plateforme + commissions, aligné sur exports/stats_calculator)
@@ -740,31 +765,32 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             output_field=DecimalField(max_digits=20, decimal_places=9),
         )
         aggregates = trades.aggregate(
-            total_pnl=Sum('net_pnl'),
-            average_pnl=Avg('net_pnl'),
+            total_pnl=Sum(pf),
+            average_pnl=Avg(pf),
             total_fees=Sum(_effective_fees),
             total_volume=Sum('size'),
-            total_raw_pnl=Sum('pnl')
+            total_raw_pnl=Sum('pnl'),
+            total_net_pnl=Sum('net_pnl'),
         )
         
         # Meilleur trade : le plus gros gain parmi les trades gagnants uniquement
         # Si aucun trade gagnant, best_trade = 0 (ne pas afficher)
-        best_trade = trades.filter(net_pnl__gt=0).aggregate(best=Max('net_pnl'))['best']
+        best_trade = trades.filter(**{f'{pf}__gt': 0}).aggregate(best=Max(pf))['best']
         if best_trade is None:
             best_trade = Decimal('0')
         
         # Pire trade : le plus gros loss parmi les trades perdants uniquement
         # Si aucun trade perdant, worst_trade = 0 (ne pas afficher)
-        worst_trade = trades.filter(net_pnl__lt=0).aggregate(worst=Min('net_pnl'))['worst']
+        worst_trade = trades.filter(**{f'{pf}__lt': 0}).aggregate(worst=Min(pf))['worst']
         if worst_trade is None:
             worst_trade = Decimal('0')
         
         # Calculs séparés pour gains et pertes
-        winning_trades_aggregate = trades.filter(net_pnl__gt=0).aggregate(
-            total_gains=Sum('net_pnl')
+        winning_trades_aggregate = trades.filter(**{f'{pf}__gt': 0}).aggregate(
+            total_gains=Sum(pf)
         )
-        losing_trades_aggregate = trades.filter(net_pnl__lt=0).aggregate(
-            total_losses=Sum('net_pnl')
+        losing_trades_aggregate = trades.filter(**{f'{pf}__lt': 0}).aggregate(
+            total_losses=Sum(pf)
         )
         
         total_gains = winning_trades_aggregate['total_gains'] or Decimal('0')
@@ -819,10 +845,10 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         
         # 9. Ratio de Durée (nécessite des calculs supplémentaires)
         duration_ratio = 0
-        winning_trades_duration = trades.filter(net_pnl__gt=0, trade_duration__isnull=False).aggregate(
+        winning_trades_duration = trades.filter(**{f'{pf}__gt': 0}, trade_duration__isnull=False).aggregate(
             avg_duration=Avg('trade_duration')
         )['avg_duration']
-        losing_trades_duration = trades.filter(net_pnl__lt=0, trade_duration__isnull=False).aggregate(
+        losing_trades_duration = trades.filter(**{f'{pf}__lt': 0}, trade_duration__isnull=False).aggregate(
             avg_duration=Avg('trade_duration')
         )['avg_duration']
         
@@ -845,7 +871,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             current_drawdown_start = None
             
             for idx, trade in enumerate(trades_ordered):
-                cumulative_capital += trade.net_pnl
+                cumulative_capital += trade_pnl_as_decimal(trade, pf)
                 
                 # Si on dépasse ou égale le pic précédent, on a récupéré
                 if cumulative_capital >= peak_capital:
@@ -921,7 +947,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 peak_capital = initial_capital  # Le pic commence au capital initial
                 
                 for trade in trades_ordered:
-                    cumulative_pnl += trade.net_pnl
+                    cumulative_pnl += trade_pnl_as_decimal(trade, pf)
                     current_capital = initial_capital + cumulative_pnl
                     
                     # Mettre à jour le pic si on dépasse le pic précédent
@@ -972,7 +998,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 peak_since_trough = initial_capital  # Le pic depuis le dernier creux
                 
                 for trade in trades_ordered:
-                    cumulative_pnl += trade.net_pnl
+                    cumulative_pnl += trade_pnl_as_decimal(trade, pf)
                     current_capital = initial_capital + cumulative_pnl
                     
                     # Si on descend en dessous du creux actuel, c'est un nouveau creux
@@ -1090,7 +1116,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                         trades_before_period = trades_before_period.filter(trading_account_id=trading_account_id)
                     trades_before_period = trades_before_period.filter(entered_at__lt=start_datetime)
                     
-                    pnl_before_period = trades_before_period.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+                    pnl_before_period = trades_before_period.aggregate(total=Sum(pf))['total'] or Decimal('0')
                     period_start_capital = initial_capital + pnl_before_period
                 except (ValueError, TypeError) as e:
                     logger.warning(f"Erreur lors du calcul du capital de début de période: {str(e)}")
@@ -1144,11 +1170,11 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         from django.db.models import Q, Exists, OuterRef
         
         # Trades avec P/L = 0 (break-even classique)
-        trades_with_zero_pnl = trades.filter(net_pnl=0)
+        trades_with_zero_pnl = trades.filter(**{pf: 0})
         
         # Trades gagnants (P/L > 0) sans TP atteint (tp1_reached = False et tp2_plus_reached = False)
         winning_trades_without_tp = trades.filter(
-            net_pnl__gt=0
+            **{f'{pf}__gt': 0}
         ).filter(
             Exists(
                 TradeStrategy.objects.filter(
@@ -1167,7 +1193,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         # 14. Sharpe Ratio (rendement ajusté à la volatilité)
         sharpe_ratio = 0.0
         if total_trades > 1:
-            pnl_values = list(trades.values_list('net_pnl', flat=True))
+            pnl_values = list(trades.values_list(pf, flat=True))
             if len(pnl_values) > 1:
                 import statistics
                 mean_pnl = statistics.mean([float(v) for v in pnl_values])
@@ -1178,7 +1204,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         # 15. Sortino Ratio (similaire au Sharpe mais ne pénalise que la volatilité négative)
         sortino_ratio = 0.0
         if total_trades > 1:
-            pnl_values = list(trades.values_list('net_pnl', flat=True))
+            pnl_values = list(trades.values_list(pf, flat=True))
             if len(pnl_values) > 1:
                 import statistics
                 mean_pnl = statistics.mean([float(v) for v in pnl_values])
@@ -1248,7 +1274,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             daily_data = defaultdict(lambda: {'pnl': Decimal('0.0')})
             for trade in trades:
                 day_key = trade.entered_at.astimezone(user_tz).date()
-                daily_data[day_key]['pnl'] += trade.net_pnl
+                daily_data[day_key]['pnl'] += trade_pnl_as_decimal(trade, pf)
             
             # Trier les jours par date (du plus récent au plus ancien)
             sorted_days = sorted(daily_data.keys(), reverse=True)
@@ -1299,6 +1325,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             'win_rate': win_rate,
             'total_pnl': aggregates['total_pnl'] or Decimal('0'),
             'total_raw_pnl': aggregates['total_raw_pnl'] or Decimal('0'),
+            'total_net_pnl': aggregates['total_net_pnl'] or Decimal('0'),
             'total_gains': total_gains,
             'total_losses': total_losses,
             'average_pnl': aggregates['average_pnl'] or Decimal('0'),
@@ -1394,22 +1421,23 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'sharpe_ratio': 0.0
             })
         
+        pf = self.get_pnl_field()
         # Séparer les trades gagnants et perdants
-        winning_trades = trades.filter(net_pnl__gt=0)
-        losing_trades = trades.filter(net_pnl__lt=0)
+        winning_trades = trades.filter(**{f'{pf}__gt': 0})
+        losing_trades = trades.filter(**{f'{pf}__lt': 0})
         
         # Calcul du Risk Reward Ratio
         risk_reward_ratio = 0.0
         if winning_trades.exists() and losing_trades.exists():
-            avg_win = winning_trades.aggregate(avg=Avg('net_pnl'))['avg']
-            avg_loss = abs(losing_trades.aggregate(avg=Avg('net_pnl'))['avg'])
+            avg_win = winning_trades.aggregate(avg=Avg(pf))['avg']
+            avg_loss = abs(losing_trades.aggregate(avg=Avg(pf))['avg'])
             if avg_loss > 0:
                 risk_reward_ratio = float(avg_win / avg_loss)
         
         # Calcul du Profit Factor
         profit_factor = 0.0
-        total_profits = winning_trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
-        total_losses = abs(losing_trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0'))
+        total_profits = winning_trades.aggregate(total=Sum(pf))['total'] or Decimal('0')
+        total_losses = abs(losing_trades.aggregate(total=Sum(pf))['total'] or Decimal('0'))
         if total_losses > 0:
             profit_factor = float(total_profits / total_losses)
         
@@ -1425,7 +1453,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             max_dd = Decimal('0')
             
             for trade in trades_ordered:
-                cumulative_capital += trade.net_pnl
+                cumulative_capital += trade_pnl_as_decimal(trade, pf)
                 if cumulative_capital > peak_capital:
                     peak_capital = cumulative_capital
                 
@@ -1457,7 +1485,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         recovery_factor = 0.0
         if max_drawdown > 0:
             # Le Recovery Factor = Profit Net / Max Drawdown (en valeur absolue)
-            total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+            total_pnl = trades.aggregate(total=Sum(pf))['total'] or Decimal('0')
             # Calculer le drawdown en valeur absolue (pas en pourcentage)
             if trades.exists():
                 trades_ordered = trades.order_by('entered_at')
@@ -1466,7 +1494,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 max_dd_absolute = Decimal('0')
                 
                 for trade in trades_ordered:
-                    cumulative_capital += trade.net_pnl
+                    cumulative_capital += trade_pnl_as_decimal(trade, pf)
                     if cumulative_capital > peak_capital:
                         peak_capital = cumulative_capital
                     
@@ -1481,14 +1509,14 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         # Calcul de l'Expectancy
         expectancy = 0.0
         if total_trades > 0:
-            total_pnl = trades.aggregate(total=Sum('net_pnl'))['total'] or Decimal('0')
+            total_pnl = trades.aggregate(total=Sum(pf))['total'] or Decimal('0')
             expectancy = float(total_pnl / total_trades)
         
         # Calcul du Sharpe Ratio (simplifié)
         sharpe_ratio = 0.0
         if total_trades > 1:
             # Calculer la volatilité des rendements
-            pnl_values = list(trades.values_list('net_pnl', flat=True))
+            pnl_values = list(trades.values_list(pf, flat=True))
             if len(pnl_values) > 1:
                 import statistics
                 mean_pnl = statistics.mean(pnl_values)
@@ -1716,13 +1744,14 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         if not trades.exists():
             return Response([])
         
+        pf = self.get_pnl_field()
         # Utiliser le timezone de l'utilisateur
         user_tz = get_user_timezone(request)
         # Agréger les PnL par jour
         pnl_by_day = defaultdict(float)
         for trade in trades:
             date = trade.entered_at.astimezone(user_tz).date()
-            pnl_by_day[date] += float(trade.net_pnl)
+            pnl_by_day[date] += trade_pnl_as_float(trade, pf)
         
         # Ordonner les jours chronologiquement et calculer le cumul
         sorted_dates = sorted(pnl_by_day.keys())
@@ -1751,6 +1780,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         if not trades.exists():
             return Response([])
         
+        pf = self.get_pnl_field()
         # Agréger les données par jour de la semaine
         weekday_stats = defaultdict(lambda: {
             'total_pnl': 0.0,
@@ -1760,7 +1790,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         
         for trade in trades:
             weekday = trade.entered_at.strftime('%A')
-            pnl = float(trade.net_pnl)
+            pnl = trade_pnl_as_float(trade, pf)
             
             weekday_stats[weekday]['total_pnl'] += pnl
             weekday_stats[weekday]['trade_count'] += 1
@@ -1798,14 +1828,15 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         Retourne les données pour le calendrier mensuel (P/L par jour et par semaine).
         """
         trades = self.get_queryset()
-        
+        pf = get_trade_pnl_field_for_request(request.user, request)
+
         # Récupérer les paramètres de date
         year = request.query_params.get('year')
         month = request.query_params.get('month')
-        
+
         # Utiliser le timezone de l'utilisateur
         user_tz = get_user_timezone(request)
-        
+
         if not year or not month:
             # Utiliser le mois courant par défaut dans le timezone utilisateur
             now = timezone.now().astimezone(user_tz)
@@ -1814,7 +1845,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         else:
             year = int(year)
             month = int(month)
-        
+
         # Filtrer les trades du mois spécifié dans le timezone utilisateur
         start_date = user_tz.localize(datetime(year, month, 1))
         if month == 12:
@@ -1898,7 +1929,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         for trade in month_trades:
             try:
                 day = trade.entered_at.day
-                daily_data[day]['pnl'] += float(trade.net_pnl or 0)
+                daily_data[day]['pnl'] += trade_pnl_as_float(trade, pf)
                 daily_data[day]['trade_count'] += 1
             except (AttributeError, TypeError, ValueError):
                 continue
@@ -1993,7 +2024,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             adjusted_days = days_from_start + (6 - first_weekday)  # Ajuster pour commencer par dimanche
             week_number = adjusted_days // 7 + 1
             
-            weekly_data[week_number]['pnl'] += float(trade.net_pnl)
+            weekly_data[week_number]['pnl'] += trade_pnl_as_float(trade, pf)
             weekly_data[week_number]['trade_count'] += 1
         
         # Convertir en format pour le frontend
@@ -2013,7 +2044,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 })
         
         # Calculer le total mensuel
-        monthly_total = sum(float(trade.net_pnl) for trade in month_trades)
+        monthly_total = sum(trade_pnl_as_float(trade, pf) for trade in month_trades)
         
         return Response({
             'daily_data': daily_result,
@@ -2029,6 +2060,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         Retourne les données pour le calendrier annuel (P/L par mois).
         """
         trades = self.get_queryset()
+        pf = get_trade_pnl_field_for_request(request.user, request)
         
         if not trades.exists():
             return Response({
@@ -2063,7 +2095,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         for trade in year_trades:
             # Convertir au timezone utilisateur avant d'extraire le mois
             month = trade.entered_at.astimezone(user_tz).month
-            monthly_data[month]['pnl'] += float(trade.net_pnl)
+            monthly_data[month]['pnl'] += trade_pnl_as_float(trade, pf)
             monthly_data[month]['trade_count'] += 1
         
         # Convertir en format pour le frontend
@@ -2083,7 +2115,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 })
         
         # Calculer le total annuel
-        yearly_total = sum(float(trade.net_pnl) for trade in year_trades)
+        yearly_total = sum(trade_pnl_as_float(trade, pf) for trade in year_trades)
         
         return Response({
             'monthly_data': monthly_result,
@@ -2097,6 +2129,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         Retourne les données hebdomadaires pour une année (P/L par semaine avec samedi).
         """
         trades = self.get_queryset()
+        pf = get_trade_pnl_field_for_request(request.user, request)
         
         if not trades.exists():
             return Response({
@@ -2157,11 +2190,14 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             # S'assurer que le samedi est dans l'année en cours
             if saturday_date.year == year or saturday_date.year == year + 1:
                 week_key = saturday_date.isoformat()
-                if trade.net_pnl is not None:
+                raw_pnl = getattr(trade, pf, None)
+                if raw_pnl is None and pf == 'pnl':
+                    raw_pnl = trade.net_pnl
+                if raw_pnl is not None:
                     current_pnl = weekly_data[week_key]['pnl']
                     if current_pnl is None:
                         current_pnl = 0.0
-                    weekly_data[week_key]['pnl'] = current_pnl + float(trade.net_pnl)
+                    weekly_data[week_key]['pnl'] = current_pnl + float(raw_pnl)
                 current_count = weekly_data[week_key]['trade_count']
                 if current_count is None:
                     current_count = 0
@@ -2187,7 +2223,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                     })
         
         # Calculer le total annuel
-        yearly_total = sum(float(trade.net_pnl) for trade in year_trades)
+        yearly_total = sum(trade_pnl_as_float(trade, pf) for trade in year_trades)
         
         return Response({
             'weekly_data': weekly_result,
@@ -2230,6 +2266,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             except ValueError:
                 pass
         
+        pf = get_trade_pnl_field(request.user)
         # Agréger par jour en utilisant SQL GROUP BY (beaucoup plus rapide)
         # Utiliser trade_day si disponible, sinon utiliser la date de entered_at
         from django.db.models import Q
@@ -2237,16 +2274,17 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         
         # Utiliser trade_day si disponible, sinon extraire la date de entered_at
         # trade_day est un DateField, donc on peut l'utiliser directement
+        # Alias day_pnl : évite collision si pf=='pnl' (Count FILTER + Q(pnl__gt) → SQL invalide)
         daily_aggregates = queryset.annotate(
             date=Coalesce(
                 'trade_day',
                 TruncDate('entered_at')
             )
         ).values('date').annotate(
-            pnl=Sum('net_pnl'),
+            day_pnl=Sum(pf),
             trade_count=Count('id'),
-            winning_count=Count('id', filter=Q(net_pnl__gt=0)),
-            losing_count=Count('id', filter=Q(net_pnl__lt=0)),
+            winning_count=Count('id', filter=Q(**{f'{pf}__gt': 0})),
+            losing_count=Count('id', filter=Q(**{f'{pf}__lt': 0})),
         ).order_by('date')
         
         # Convertir en format attendu
@@ -2265,7 +2303,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 
                 result.append({
                     'date': date_str,
-                    'pnl': float(item['pnl'] or 0),
+                    'pnl': float(item['day_pnl'] or 0),
                     'trade_count': item['trade_count'],
                     'winning_count': item['winning_count'],
                     'losing_count': item['losing_count'],
@@ -2327,13 +2365,14 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'monthly_performance': []
             })
 
+        pf = self.get_pnl_field()
         # Utiliser le timezone de l'utilisateur
         user_tz = get_user_timezone(request)
         # Agréger par jour
         daily_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0, 'trades': []})  # type: ignore
         for trade in trades:
             day_key = trade.entered_at.astimezone(user_tz).date()
-            daily_data[day_key]['pnl'] += float(trade.net_pnl)  # type: ignore
+            daily_data[day_key]['pnl'] += trade_pnl_as_float(trade, pf)  # type: ignore
             daily_data[day_key]['trade_count'] += 1  # type: ignore
             daily_data[day_key]['trades'].append(trade)  # type: ignore
 
@@ -2344,15 +2383,15 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         daily_trade_counts = [data['trade_count'] for data in daily_data.values()]  # type: ignore
 
         # Statistiques par trade
-        winning_trades = [float(trade.net_pnl) for trade in trades if trade.net_pnl > 0]
-        losing_trades = [float(trade.net_pnl) for trade in trades if trade.net_pnl < 0]
-        all_trade_pnls = [float(trade.net_pnl) for trade in trades]
+        winning_trades = [trade_pnl_as_float(trade, pf) for trade in trades if trade_pnl_as_float(trade, pf) > 0]
+        losing_trades = [trade_pnl_as_float(trade, pf) for trade in trades if trade_pnl_as_float(trade, pf) < 0]
+        all_trade_pnls = [trade_pnl_as_float(trade, pf) for trade in trades]
         
         # Calculer les durées moyennes des trades gagnants et perdants
-        winning_trades_duration = trades.filter(net_pnl__gt=0, trade_duration__isnull=False).aggregate(
+        winning_trades_duration = trades.filter(**{f'{pf}__gt': 0}, trade_duration__isnull=False).aggregate(
             avg_duration=Avg('trade_duration')
         )['avg_duration']
-        losing_trades_duration = trades.filter(net_pnl__lt=0, trade_duration__isnull=False).aggregate(
+        losing_trades_duration = trades.filter(**{f'{pf}__lt': 0}, trade_duration__isnull=False).aggregate(
             avg_duration=Avg('trade_duration')
         )['avg_duration']
         
@@ -2416,12 +2455,13 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         current_consecutive_losses = 0
         
         for trade in trades_sorted:
-            if trade.net_pnl > 0:
+            tpv = trade_pnl_as_float(trade, pf)
+            if tpv > 0:
                 # Trade gagnant
                 current_consecutive_wins += 1
                 current_consecutive_losses = 0
                 max_consecutive_wins = max(max_consecutive_wins, current_consecutive_wins)
-            elif trade.net_pnl < 0:
+            elif tpv < 0:
                 # Trade perdant
                 current_consecutive_losses += 1
                 current_consecutive_wins = 0
@@ -2472,7 +2512,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             month_key = trade.entered_at.strftime('%Y-%m')
             if month_key not in monthly_performance:
                 monthly_performance[month_key] = 0.0
-            monthly_performance[month_key] += float(trade.net_pnl)
+            monthly_performance[month_key] += trade_pnl_as_float(trade, pf)
         
         # Convertir en liste triée
         monthly_list = [
@@ -2535,6 +2575,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'hourly_data': [{'hour': i/2, 'pnl': 0.0, 'trade_count': 0} for i in range(48)]
             })
 
+        pf = self.get_pnl_field()
         # Agréger par tranche de 30 minutes
         hourly_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0})
         
@@ -2545,7 +2586,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             minute = local_time.minute
             time_slot = hour + (0.5 if minute >= 30 else 0.0)
             
-            hourly_data[time_slot]['pnl'] += float(trade.net_pnl)
+            hourly_data[time_slot]['pnl'] += trade_pnl_as_float(trade, pf)
             hourly_data[time_slot]['trade_count'] += 1
 
         # Créer le résultat pour toutes les tranches de 30 minutes (0-23.5)
@@ -2574,6 +2615,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'correlation_data': []
             })
 
+        pf = self.get_pnl_field()
         # Agréger par jour
         # Utiliser le timezone de l'utilisateur
         user_tz = get_user_timezone(request)
@@ -2581,7 +2623,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
         
         for trade in trades:
             date = trade.entered_at.astimezone(user_tz).date()
-            daily_data[date]['pnl'] += float(trade.net_pnl)
+            daily_data[date]['pnl'] += trade_pnl_as_float(trade, pf)
             daily_data[date]['trade_count'] += 1
 
         # Créer le résultat
@@ -2624,6 +2666,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
                 'drawdown_data': []
             })
         
+        pf = get_trade_pnl_field(request.user)
         # Calculer le P/L cumulé et le drawdown
         cumulative_pnl = 0
         peak_pnl = 0
@@ -2637,7 +2680,7 @@ class TopStepTradeViewSet(viewsets.ModelViewSet):
             date_str = trade.entered_at.astimezone(user_tz).date().isoformat()
             if date_str not in daily_data:
                 daily_data[date_str] = {'pnl': 0, 'trades': 0}
-            daily_data[date_str]['pnl'] += trade.net_pnl
+            daily_data[date_str]['pnl'] += trade_pnl_as_float(trade, pf)
             daily_data[date_str]['trades'] += 1
         
         # Calculer le drawdown jour par jour
@@ -2704,7 +2747,7 @@ class TopStepImportLogViewSet(viewsets.ReadOnlyModelViewSet):
         return TopStepImportLog.objects.filter(user=self.request.user).order_by('-imported_at')  # type: ignore
 
 
-class TradeStrategyViewSet(viewsets.ModelViewSet):
+class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     """
     ViewSet pour gérer les données de stratégie liées aux trades.
     """
@@ -2726,7 +2769,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                 'session_rating', 'created_at', 'updated_at', 'emotion_details',
                 'possible_improvements', 'gain_if_strategy_respected',
                 'trade__id', 'trade__topstep_id', 'trade__contract_name', 'trade__trade_type',
-                'trade__net_pnl', 'trade__entered_at', 'trade__exited_at', 'trade__trade_day',
+                'trade__pnl', 'trade__net_pnl', 'trade__entered_at', 'trade__exited_at', 'trade__trade_day',
                 'trade__trading_account__id', 'trade__trading_account__name',
                 'trade__trading_account__currency__code', 'trade__trading_account__currency__symbol'
             )  # type: ignore
@@ -2824,6 +2867,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         try:
             year = int(year)
             month = int(month)
+            pf = get_trade_pnl_field(request.user)
             
             # Créer les dates de début et fin du mois
             start_date = timezone.datetime(year, month, 1)
@@ -2856,7 +2900,8 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
                     'tp1_reached': strategy.tp1_reached,
                     'tp2_plus_reached': strategy.tp2_plus_reached,
                     'trade_info': {
-                        'net_pnl': str(strategy.trade.net_pnl) if strategy.trade.net_pnl else '0'
+                        'net_pnl': str(strategy.trade.net_pnl) if strategy.trade.net_pnl else '0',
+                        'display_pnl': str(trade_pnl_as_decimal(strategy.trade, pf)),
                     }
                 })
                 data_by_date[trade_day]['total'] += 1
@@ -2984,6 +3029,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             start_date = timezone.datetime(current_year, 1, 1)
             end_date = timezone.datetime(current_year + 1, 1, 1)
         
+        tjf = get_trade_join_pnl_field_for_request(request.user, request)
         # Base queryset : stratégies de l'utilisateur dans la période
         queryset = TradeStrategy.objects.filter(  # type: ignore
             user=self.request.user,
@@ -3307,17 +3353,17 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # 2. Taux de réussite selon respect de la stratégie
         # Taux de réussite si stratégie respectée (trades gagnants quand strategy_respected = True)
         respected_strategies = queryset.filter(strategy_respected=True)
-        winning_when_respected = respected_strategies.filter(trade__net_pnl__gt=0).count()
+        winning_when_respected = respected_strategies.filter(**{f'{tjf}__gt': 0}).count()
         success_rate_if_respected = (winning_when_respected / respected_strategies.count() * 100) if respected_strategies.count() > 0 else 0
         
         # Taux de réussite si stratégie non respectée (trades gagnants quand strategy_respected = False)
         not_respected_strategies = queryset.filter(strategy_respected=False)
-        winning_when_not_respected = not_respected_strategies.filter(trade__net_pnl__gt=0).count()
+        winning_when_not_respected = not_respected_strategies.filter(**{f'{tjf}__gt': 0}).count()
         success_rate_if_not_respected = (winning_when_not_respected / not_respected_strategies.count() * 100) if not_respected_strategies.count() > 0 else 0
         
         # 3. Répartition des sessions gagnantes selon TP1 et TP2+
-        # Les sessions gagnantes sont celles où le trade est gagnant (net_pnl > 0)
-        winning_sessions = queryset.filter(trade__net_pnl__gt=0)
+        # Les sessions gagnantes sont celles où le trade est gagnant (PnL préférence utilisateur > 0)
+        winning_sessions = queryset.filter(**{f'{tjf}__gt': 0})
         winning_count = winning_sessions.count()
         # TP1 : toutes les sessions où TP1 est atteint (même si TP2+ est aussi atteint)
         tp1_only = winning_sessions.filter(tp1_reached=True).count()
@@ -3745,6 +3791,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         total_respected = ctx['total_respected']
         total_not_respected = ctx['total_not_respected']
         strategies_queryset = ctx['strategies_queryset']
+        tjf = get_trade_join_pnl_field_for_request(request.user, request)
         
         # Le total inclut les trades avec stratégie ET les compliances pour les jours sans trades
         # (les compliances sont déjà comptées dans 'with_strategy', 'respected' et 'not_respected')
@@ -3826,20 +3873,19 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
         # Prochain objectif : le premier badge non obtenu qui n'est pas verrouillé
         next_badge = next((b for b in badges if not b.get('earned', False) and not b.get('locked', False)), None)
         
-        # Comparaison de performance via agrégation SQL
-        # F('trade__net_pnl') requis dans Case : un nom de champ seul peut ne pas résoudre la jointure trade__
+        # Comparaison de performance via agrégation SQL (champ PnL selon préférences)
         perf_qs = strategies_queryset.exclude(
             strategy_respected__isnull=True
-        ).exclude(trade__net_pnl__isnull=True)
+        ).exclude(**{f'{tjf}__isnull': True})
 
         _dec_out = DecimalField(max_digits=24, decimal_places=4)
         perf_stats = perf_qs.values('strategy_respected').annotate(
             count=Count('id'),
-            total_pnl=Sum('trade__net_pnl'),
-            winning_trades=Count('id', filter=Q(trade__net_pnl__gt=0)),
+            total_pnl=Sum(tjf),
+            winning_trades=Count('id', filter=Q(**{f'{tjf}__gt': 0})),
             gross_wins=Coalesce(
                 Sum(Case(
-                    When(trade__net_pnl__gt=0, then=F('trade__net_pnl')),
+                    When(**{f'{tjf}__gt': 0}, then=F(tjf)),
                     default=Value(Decimal('0')),
                     output_field=_dec_out,
                 )),
@@ -3848,7 +3894,7 @@ class TradeStrategyViewSet(viewsets.ModelViewSet):
             ),
             gross_losses=Coalesce(
                 Sum(Case(
-                    When(trade__net_pnl__lt=0, then=F('trade__net_pnl')),
+                    When(**{f'{tjf}__lt': 0}, then=F(tjf)),
                     default=Value(Decimal('0')),
                     output_field=_dec_out,
                 )),
@@ -4861,14 +4907,16 @@ def dashboard_summary(request):
         except ValueError:
             end_date_obj = None
     
+    _dash_pf = get_trade_pnl_field_for_request(request.user, request)
     # 1. Daily aggregates (for charts)
+    # day_pnl : ne pas nommer l'agrégat « pnl » si _dash_pf=='pnl' (collision avec Q(pnl__gt) → erreur PG)
     daily_aggregates = trades_queryset.annotate(
         date=Coalesce('trade_day', TruncDate('entered_at'))
     ).values('date').annotate(
-        pnl=Sum('net_pnl'),
+        day_pnl=Sum(_dash_pf),
         trade_count=Count('id'),
-        winning_count=Count('id', filter=Q(net_pnl__gt=0)),
-        losing_count=Count('id', filter=Q(net_pnl__lt=0)),
+        winning_count=Count('id', filter=Q(**{f'{_dash_pf}__gt': 0})),
+        losing_count=Count('id', filter=Q(**{f'{_dash_pf}__lt': 0})),
     ).order_by('date')
     
     daily_data = []
@@ -4878,7 +4926,7 @@ def dashboard_summary(request):
             date_str = item['date'].strftime('%Y-%m-%d') if hasattr(item['date'], 'strftime') else str(item['date'])
             daily_data.append({
                 'date': date_str,
-                'pnl': float(item['pnl'] or 0),
+                'pnl': float(item['day_pnl'] or 0),
                 'trade_count': item['trade_count'],
                 'winning_count': item['winning_count'],
                 'losing_count': item['losing_count'],

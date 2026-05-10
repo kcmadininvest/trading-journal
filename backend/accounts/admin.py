@@ -43,8 +43,8 @@ class UserPreferencesAdmin(admin.ModelAdmin):
     """
     Configuration de l'interface d'administration pour UserPreferences
     """
-    list_display = ('user', 'language', 'timezone', 'theme', 'date_format', 'number_format', 'updated_at')
-    list_filter = ('language', 'theme', 'date_format', 'number_format')
+    list_display = ('user', 'language', 'timezone', 'theme', 'date_format', 'number_format', 'pnl_display', 'updated_at')
+    list_filter = ('language', 'theme', 'date_format', 'number_format', 'pnl_display')
     search_fields = ('user__email', 'user__username')
     readonly_fields = ('created_at', 'updated_at')
 

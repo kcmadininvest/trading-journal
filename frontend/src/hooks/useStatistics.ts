@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { tradesService } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { tradeStrategiesService } from '../services/tradeStrategies';
+import type { PnlDisplayMode } from '../utils/pnlDisplay';
 
 export interface StatisticsData {
   total_trades: number;
@@ -111,7 +112,8 @@ export function useStatistics(
   month?: number | null,
   startDate?: string | null,
   endDate?: string | null,
-  positionStrategy?: number | null
+  positionStrategy?: number | null,
+  _pnlDisplay: PnlDisplayMode = 'net',
 ) {
   const [data, setData] = useState<StatisticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +162,7 @@ export function useStatistics(
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy]);
+  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy, _pnlDisplay]);
 
   return { data, isLoading, error };
 }
@@ -171,7 +173,8 @@ export function useAnalytics(
   month?: number | null,
   startDate?: string | null,
   endDate?: string | null,
-  positionStrategy?: number | null
+  positionStrategy?: number | null,
+  _pnlDisplay: PnlDisplayMode = 'net',
 ) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -205,7 +208,7 @@ export function useAnalytics(
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy]);
+  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy, _pnlDisplay]);
 
   return { data, isLoading, error };
 }

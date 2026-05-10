@@ -149,6 +149,7 @@
     "entryPrice": "Prix Entrée",
     "exitPrice": "Prix Sortie",
     "totalPnl": "Total PnL",
+    "mainPnlColumn": "P&L（{{basis}}）",
     "totalFees": "Frais totaux",
     "winningTrades": "Trades gagnants",
     "close": "Fermer"

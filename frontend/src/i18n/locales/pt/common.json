@@ -137,5 +137,8 @@
     "viewMode": "Modo de visualização",
     "gridView": "Vista em grade",
     "listView": "Vista em lista"
-  }
+  },
+  "pnlNetShort": "Líquido",
+  "pnlGrossShort": "Bruto",
+  "pnlBasisToggleAria": "Exibição do PnL: líquido ou bruto"
 }

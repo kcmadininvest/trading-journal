@@ -137,5 +137,8 @@
     "viewMode": "显示模式",
     "gridView": "网格视图",
     "listView": "列表视图"
-  }
+  },
+  "pnlNetShort": "净",
+  "pnlGrossShort": "毛",
+  "pnlBasisToggleAria": "盈亏显示：净或毛"
 }
