@@ -48,6 +48,11 @@ const renderAccountName = (name: string, hide: boolean): React.ReactNode => {
 function normalizeActiveAccountsSorted(list: TradingAccount[]): TradingAccount[] {
   const activeAccounts = list.filter((a) => a.status === 'active');
   activeAccounts.sort((a, b) => {
+    const aDef = !!a.is_default;
+    const bDef = !!b.is_default;
+    if (aDef !== bDef) {
+      return aDef ? -1 : 1;
+    }
     if (a.created_at && b.created_at) {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     }
