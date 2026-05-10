@@ -1,11 +1,34 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.utils.translation import gettext_lazy as _
 from decimal import Decimal
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def validate_media_or_http_url(value):
+    """
+    Accepte une URL HTTP(S) classique ou un chemin fichier uploadé (/media/...).
+    Les URLField Django refusent les chemins relatifs sans schéma, ce qui bloquait les screenshots locaux.
+    """
+    if value is None:
+        return ''
+    value = str(value).strip()
+    if not value:
+        return ''
+    if value.startswith('/media/'):
+        if '..' in value:
+            raise serializers.ValidationError(_('Chemin de fichier invalide.'))
+        return value
+    validator = URLValidator()
+    try:
+        validator(value)
+    except ValidationError:
+        raise serializers.ValidationError(_('Saisissez une URL valide.'))
+    return value
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -505,6 +528,12 @@ class TradeStrategySerializer(serializers.ModelSerializer):
     emotions_display = serializers.CharField(read_only=True)
     user_username = serializers.CharField(source='user.username', read_only=True)
     trade_info = serializers.SerializerMethodField()
+    screenshot_url = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        max_length=200,
+        validators=[validate_media_or_http_url],
+    )
     
     class Meta:
         model = TradeStrategy
@@ -564,6 +593,12 @@ class DayStrategyComplianceSerializer(serializers.ModelSerializer):
     emotions_display = serializers.CharField(read_only=True)
     user_username = serializers.CharField(source='user.username', read_only=True)
     trading_account_name = serializers.CharField(source='trading_account.name', read_only=True, allow_null=True)
+    screenshot_url = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        max_length=200,
+        validators=[validate_media_or_http_url],
+    )
     
     class Meta:
         model = DayStrategyCompliance

@@ -199,11 +199,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           </label>
         )}
         <div className="relative group">
-          <div className="relative w-full aspect-video max-w-md rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+          <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 leading-none">
             <img
               src={getFullMediaUrl(imageUrl)}
               alt="Screenshot"
-              className="w-full h-full object-contain"
+              className="w-full h-auto max-h-[min(70vh,36rem)] object-contain block align-top"
             />
             {/* Overlay au hover */}
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">

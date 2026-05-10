@@ -33,6 +33,7 @@ import { goalsService, TradingGoal } from './services/goals';
 import { tradingAccountsService } from './services/tradingAccounts';
 import ToastViewport from './components/ui/ToastViewport';
 import { ComplianceRefreshProvider } from './contexts/ComplianceRefreshContext';
+import { ImageLightboxProvider } from './contexts/ImageLightboxContext';
 
 // Lazy load StrategiesPage pour améliorer le temps de chargement initial
 const StrategiesPage = lazy(() => import('./pages/StrategiesPage'));
@@ -524,6 +525,7 @@ function App() {
 
   return (
     <ComplianceRefreshProvider>
+    <ImageLightboxProvider>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden">
       {/* Charger le schéma JSON-LD pour le SEO de manière compatible CSP */}
       <OrganizationSchema />
@@ -618,6 +620,7 @@ function App() {
         </div>
       )}
     </div>
+    </ImageLightboxProvider>
     </ComplianceRefreshProvider>
   );
 }

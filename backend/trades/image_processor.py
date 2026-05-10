@@ -7,7 +7,8 @@ import os
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
+from urllib.parse import urlparse
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
 from PIL import Image
@@ -216,6 +217,24 @@ class ImageProcessor:
             logger.error(f"Erreur lors du traitement de l'image : {e}")
             raise
     
+    def _media_relative_path_from_url(self, url: str) -> Optional[str]:
+        """
+        Extrait le chemin relatif sous MEDIA_ROOT à partir d'une URL absolue ou relative.
+        """
+        raw = (url or '').strip()
+        if not raw:
+            return None
+        path = urlparse(raw).path if raw.startswith(('http://', 'https://')) else raw
+        if not path.startswith('/'):
+            path = f'/{path}'
+        prefix = self.media_url if self.media_url.endswith('/') else f'{self.media_url}/'
+        if path.startswith(prefix):
+            return path[len(prefix):].lstrip('/')
+        # Secours si MEDIA_URL n'est pas un préfixe exact (ex. proxy, sous-chemin)
+        if path.startswith('/media/'):
+            return path[len('/media/'):].lstrip('/')
+        return None
+
     def delete_screenshot(self, url: str) -> bool:
         """
         Supprime un screenshot et sa miniature.
@@ -227,10 +246,8 @@ class ImageProcessor:
             True si la suppression a réussi, False sinon
         """
         try:
-            # Extraire le chemin relatif de l'URL
-            if url.startswith(self.media_url):
-                relative_path = url[len(self.media_url):].lstrip('/')
-            else:
+            relative_path = self._media_relative_path_from_url(url)
+            if not relative_path:
                 logger.warning(f"URL invalide : {url}")
                 return False
             
