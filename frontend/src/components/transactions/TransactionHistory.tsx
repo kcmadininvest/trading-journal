@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { accountTransactionsService, AccountTransaction, AccountBalance } from '../../services/accountTransactions';
 import { usePreferences } from '../../hooks/usePreferences';
 import { usePrivacySettings, maskValue } from '../../hooks/usePrivacySettings';
@@ -6,6 +6,7 @@ import { formatCurrency } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
 import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { DateInput } from '../common/DateInput';
 
 function symbolForCurrencyCode(code: string): string {
   if (code === 'USD') return '$';
@@ -29,6 +30,14 @@ interface TransactionHistoryProps {
   onDelete?: (transactionId: number) => void;
 }
 
+function transactionMatchesSearch(row: AccountTransaction, q: string): boolean {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return true;
+  const desc = (row.description || '').toLowerCase();
+  const acc = (row.trading_account_name || '').toLowerCase();
+  return desc.includes(needle) || acc.includes(needle);
+}
+
 export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   tradingAccountId,
   onEdit,
@@ -41,6 +50,10 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   const [listLoading, setListLoading] = useState(false);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [error, setError] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [searchQ, setSearchQ] = useState('');
+  const [debouncedSearchQ, setDebouncedSearchQ] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'deposit' | 'withdrawal'>('all');
   const [currentBalance, setCurrentBalance] = useState<number | null>(null);
   const [balanceCurrencyCode, setBalanceCurrencyCode] = useState<string>('USD');
@@ -48,7 +61,14 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   const [transactionToDelete, setTransactionToDelete] = useState<AccountTransaction | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const loadTransactions = async () => {
+  useEffect(() => {
+    const h = window.setTimeout(() => {
+      setDebouncedSearchQ(searchQ.trim());
+    }, 300);
+    return () => window.clearTimeout(h);
+  }, [searchQ]);
+
+  const loadTransactions = useCallback(async () => {
     setListLoading(true);
     setError('');
     if (tradingAccountId) {
@@ -59,9 +79,19 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       setBalanceCurrencyCode('USD');
     }
 
-    const listParams: { trading_account?: number } = {};
+    const listParams: {
+      trading_account?: number;
+      start_date?: string;
+      end_date?: string;
+    } = {};
     if (tradingAccountId) {
       listParams.trading_account = tradingAccountId;
+    }
+    if (dateFrom) {
+      listParams.start_date = dateFrom;
+    }
+    if (dateTo) {
+      listParams.end_date = dateTo;
     }
     const listPromise = accountTransactionsService.list(listParams);
     const balancePromise: Promise<AccountBalance | null> = tradingAccountId
@@ -91,29 +121,34 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     } finally {
       setBalanceLoading(false);
     }
-  };
+  }, [tradingAccountId, dateFrom, dateTo]);
 
   useEffect(() => {
     loadTransactions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tradingAccountId]);
+  }, [loadTransactions]);
+
+  const searchFiltered = useMemo(
+    () => allTransactions.filter((row) => transactionMatchesSearch(row, debouncedSearchQ)),
+    [allTransactions, debouncedSearchQ],
+  );
 
   const transactions = useMemo(() => {
-    if (filterType === 'all') {
-      return allTransactions;
-    }
-    return allTransactions.filter((t) => t.transaction_type === filterType);
-  }, [allTransactions, filterType]);
+    const base =
+      filterType === 'all'
+        ? searchFiltered
+        : searchFiltered.filter((row) => row.transaction_type === filterType);
+    return base;
+  }, [searchFiltered, filterType]);
 
-  // Calculer les compteurs
-  const totalCount = useMemo(() => allTransactions.length, [allTransactions]);
-  const depositCount = useMemo(() => 
-    allTransactions.filter(t => t.transaction_type === 'deposit').length,
-    [allTransactions]
+  // Calculer les compteurs (période API + recherche texte ; les totaux KPI restent sur allTransactions)
+  const totalCount = useMemo(() => searchFiltered.length, [searchFiltered]);
+  const depositCount = useMemo(
+    () => searchFiltered.filter((x) => x.transaction_type === 'deposit').length,
+    [searchFiltered],
   );
-  const withdrawalCount = useMemo(() => 
-    allTransactions.filter(t => t.transaction_type === 'withdrawal').length,
-    [allTransactions]
+  const withdrawalCount = useMemo(
+    () => searchFiltered.filter((x) => x.transaction_type === 'withdrawal').length,
+    [searchFiltered],
   );
 
   const netAccountFlow = useMemo(
@@ -205,6 +240,69 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
   return (
     <div className="space-y-4">
+      <div className="bg-gray-50 dark:bg-gray-800/80 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+              {t('common:dailyJournal.startDate', { defaultValue: 'Date début' })}
+            </label>
+            <DateInput
+              value={dateFrom}
+              onChange={setDateFrom}
+              className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+              {t('common:dailyJournal.endDate', { defaultValue: 'Date fin' })}
+            </label>
+            <DateInput
+              value={dateTo}
+              onChange={setDateTo}
+              className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="md:col-span-2 lg:col-span-2">
+            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
+              {t('common:search')}
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQ}
+                onChange={(e) => setSearchQ(e.target.value)}
+                placeholder={t('common:dailyJournal.searchPlaceholder', { defaultValue: 'Rechercher…' })}
+                className="w-full h-10 px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label={t('common:search')}
+              />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+          <div className="w-full flex items-end">
+            <button
+              type="button"
+              onClick={() => {
+                setDateFrom('');
+                setDateTo('');
+                setSearchQ('');
+                setDebouncedSearchQ('');
+              }}
+              className="w-full h-10 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
+            >
+              {t('common:reset')}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Filtres et solde */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex gap-2 overflow-x-auto">
