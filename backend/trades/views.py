@@ -86,6 +86,7 @@ class PnlPreferenceMixin:
     def get_pnl_field(self) -> str:
         return get_trade_pnl_field(self.request.user)
 from .account_balance import compute_trading_account_balance
+from .pagination import AccountTransactionPagination
 from daily_journal.models import DailyJournalEntry
 from .market_holidays import MarketHolidaysService
 from .serializers import (
@@ -367,48 +368,86 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = AccountTransactionSerializer  # type: ignore
-    pagination_class = None  # Liste complète côté client (filtres) ; évite COUNT + pages DRF
+    pagination_class = AccountTransactionPagination
 
-    def get_queryset(self):
-        """Retourne uniquement les transactions de l'utilisateur connecté."""
+    def _filtered_account_transactions(self, *, apply_transaction_type: bool) -> Any:
+        """Queryset filtré (sans tri ni select_related) pour list ou agrégations stats."""
         if not self.request.user.is_authenticated:
             return AccountTransaction.objects.none()  # type: ignore
-        
+
         queryset = AccountTransaction.objects.filter(user=self.request.user)  # type: ignore
-        
-        # Filtre par compte de trading (optionnel)
+
         trading_account_id = self.request.query_params.get('trading_account', None)
         if trading_account_id:
             queryset = queryset.filter(trading_account_id=trading_account_id)
-        
-        # Filtre par type de transaction (optionnel)
-        transaction_type = self.request.query_params.get('transaction_type', None)
-        if transaction_type:
-            queryset = queryset.filter(transaction_type=transaction_type)
-        
-        # Filtre par date de début (optionnel)
+
+        if apply_transaction_type:
+            transaction_type = self.request.query_params.get('transaction_type', None)
+            if transaction_type:
+                queryset = queryset.filter(transaction_type=transaction_type)
+
         start_date = self.request.query_params.get('start_date', None)
         if start_date and isinstance(start_date, str):
-            start_date_str: str = start_date  # Type narrowing pour le type checker
+            start_date_str: str = start_date
             try:
                 start_dt = datetime.strptime(start_date_str, '%Y-%m-%d')
                 queryset = queryset.filter(transaction_date__gte=start_dt)
             except ValueError:
                 pass
-        
-        # Filtre par date de fin (optionnel)
+
         end_date = self.request.query_params.get('end_date', None)
         if end_date and isinstance(end_date, str):
-            end_date_str: str = end_date  # Type narrowing pour le type checker
+            end_date_str: str = end_date
             try:
                 end_dt = datetime.strptime(end_date_str, '%Y-%m-%d')
-                # Ajouter 23h59 pour inclure toute la journée
                 end_dt = end_dt.replace(hour=23, minute=59, second=59)
                 queryset = queryset.filter(transaction_date__lte=end_dt)
             except ValueError:
                 pass
-        
-        return queryset.select_related('trading_account', 'user').order_by('-transaction_date', '-created_at')
+
+        q = (self.request.query_params.get('q') or '').strip()
+        if q:
+            queryset = queryset.filter(
+                Q(description__icontains=q) | Q(trading_account__name__icontains=q)
+            )
+
+        return queryset
+
+    def get_queryset(self):
+        """Retourne uniquement les transactions de l'utilisateur connecté."""
+        return (
+            self._filtered_account_transactions(apply_transaction_type=True)
+            .select_related('trading_account', 'user')
+            .order_by('-transaction_date', '-created_at')
+        )
+
+    @action(detail=False, methods=['get'], url_path='stats')
+    def stats(self, request):
+        """
+        Totaux et comptages sur les filtres compte / dates / recherche (sans filtre type),
+        pour badges et cartes KPI lorsque la liste est paginée.
+        """
+        qs = self._filtered_account_transactions(apply_transaction_type=False)
+        agg = qs.aggregate(
+            total=Count('id'),
+            deposits_count=Count('id', filter=Q(transaction_type='deposit')),
+            withdrawals_count=Count('id', filter=Q(transaction_type='withdrawal')),
+        )
+        dep_sum = qs.filter(transaction_type='deposit').aggregate(s=Sum('amount'))['s']
+        wit_sum = qs.filter(transaction_type='withdrawal').aggregate(s=Sum('amount'))['s']
+        dep_dec = dep_sum if dep_sum is not None else Decimal('0')
+        wit_dec = wit_sum if wit_sum is not None else Decimal('0')
+        net_flow = dep_dec - wit_dec
+        return Response(
+            {
+                'total': agg['total'] or 0,
+                'deposits_count': agg['deposits_count'] or 0,
+                'withdrawals_count': agg['withdrawals_count'] or 0,
+                'total_deposits': str(dep_dec),
+                'total_withdrawals': str(wit_dec),
+                'net_flow': str(net_flow),
+            }
+        )
     
     def perform_create(self, serializer):
         """Associe automatiquement la transaction à l'utilisateur connecté."""

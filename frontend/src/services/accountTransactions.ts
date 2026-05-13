@@ -35,6 +35,32 @@ export interface AccountBalance {
   currency: string;
 }
 
+export interface AccountTransactionsListResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AccountTransaction[];
+}
+
+export interface AccountTransactionsStats {
+  total: number;
+  deposits_count: number;
+  withdrawals_count: number;
+  total_deposits: string;
+  total_withdrawals: string;
+  net_flow: string;
+}
+
+export type AccountTransactionsListParams = {
+  trading_account?: number;
+  transaction_type?: 'deposit' | 'withdrawal';
+  start_date?: string;
+  end_date?: string;
+  q?: string;
+  page?: number;
+  page_size?: number;
+};
+
 class AccountTransactionsService {
   private readonly BASE_URL = getApiBaseUrl();
 
@@ -84,16 +110,10 @@ class AccountTransactionsService {
     return JSON.parse(text);
   }
 
-  /**
-   * Liste toutes les transactions de l'utilisateur
-   */
-  async list(params?: {
-    trading_account?: number;
-    transaction_type?: 'deposit' | 'withdrawal';
-    start_date?: string;
-    end_date?: string;
-  }): Promise<AccountTransaction[]> {
-    const queryParams = new URLSearchParams();
+  private appendListQueryParams(
+    queryParams: URLSearchParams,
+    params?: AccountTransactionsListParams
+  ) {
     if (params?.trading_account) {
       queryParams.append('trading_account', params.trading_account.toString());
     }
@@ -106,12 +126,53 @@ class AccountTransactionsService {
     if (params?.end_date) {
       queryParams.append('end_date', params.end_date);
     }
+    if (params?.q) {
+      queryParams.append('q', params.q);
+    }
+    if (params?.page != null) {
+      queryParams.append('page', String(params.page));
+    }
+    if (params?.page_size != null) {
+      queryParams.append('page_size', String(params.page_size));
+    }
+  }
 
+  /**
+   * Liste paginée des transactions (réponse DRF standard).
+   */
+  async list(params?: AccountTransactionsListParams): Promise<AccountTransactionsListResponse> {
+    const queryParams = new URLSearchParams();
+    this.appendListQueryParams(queryParams, params);
     const queryString = queryParams.toString();
     const endpoint = `account-transactions/${queryString ? `?${queryString}` : ''}`;
-    const response = await this.request<AccountTransaction[] | { results: AccountTransaction[] }>(endpoint);
-    
-    return Array.isArray(response) ? response : response.results;
+    const response = await this.request<AccountTransactionsListResponse | AccountTransaction[]>(endpoint);
+
+    if (Array.isArray(response)) {
+      return {
+        count: response.length,
+        next: null,
+        previous: null,
+        results: response,
+      };
+    }
+    return {
+      count: typeof response.count === 'number' ? response.count : 0,
+      next: response.next ?? null,
+      previous: response.previous ?? null,
+      results: Array.isArray(response.results) ? response.results : [],
+    };
+  }
+
+  /**
+   * Agrégats (comptages et sommes) pour les mêmes filtres compte / dates / recherche, sans filtre par type.
+   */
+  async stats(params?: Omit<AccountTransactionsListParams, 'page' | 'page_size' | 'transaction_type'>): Promise<AccountTransactionsStats> {
+    const queryParams = new URLSearchParams();
+    this.appendListQueryParams(queryParams, params);
+    const queryString = queryParams.toString();
+    return this.request<AccountTransactionsStats>(
+      `account-transactions/stats/${queryString ? `?${queryString}` : ''}`
+    );
   }
 
   /**
@@ -173,4 +234,3 @@ class AccountTransactionsService {
 }
 
 export const accountTransactionsService = new AccountTransactionsService();
-

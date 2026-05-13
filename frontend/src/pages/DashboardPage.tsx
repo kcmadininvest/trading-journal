@@ -529,8 +529,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           trading_account: accountId,
           start_date: selectedPeriod?.start,
           end_date: selectedPeriod?.end,
+          page: 1,
+          page_size: 10000,
         });
-        setTransactions(data);
+        setTransactions(data.results);
       } catch (err) {
         console.error('Erreur lors du chargement des transactions', err);
         setTransactions([]);

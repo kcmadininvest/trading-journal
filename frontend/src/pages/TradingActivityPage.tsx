@@ -1217,7 +1217,7 @@ const TradingActivityPage: React.FC = () => {
             )}
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-5 m-3 sm:m-4 md:m-5 border border-gray-200 dark:border-gray-700">
+          <div className="bg-gray-50 dark:bg-gray-800/80 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-5 m-3 sm:m-4 md:m-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">

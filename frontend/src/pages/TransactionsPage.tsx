@@ -110,9 +110,9 @@ const TransactionsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Historique */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+      {/* Historique — pas de carte englobante (aligné sur trading-activity : feuille + pagination séparées) */}
+      <div className="flex min-w-0 flex-col space-y-4 sm:space-y-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {t('transactions:history', { defaultValue: 'Historique des transactions' })}
         </h2>
         <TransactionHistory
