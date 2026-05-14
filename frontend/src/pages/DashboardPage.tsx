@@ -47,6 +47,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar } from 'react-chartjs-2';
 import { getChartColors, buildChartTooltipPlugin } from '../utils/chartConfig';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
+import { getWaterfallBarBorder, getWaterfallBarFill } from '../utils/waterfallBarGradient';
 
 // Lazy load heavy chart components for better performance
 const DurationDistributionChart = lazy(() => import('../components/charts/DurationDistributionChart'));
@@ -1304,19 +1305,33 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           label: t('dashboard:capitalEvolution'),
           data: floatingBars,
           maxBarThickness: 56,
-          // Les barres avec flux net utilisent une palette dédiée pour être identifiables immédiatement.
-          backgroundColor: waterfallBarData.map(d => {
-            if (d.hasNetFlow) {
-              return d.isNetFlowPositive ? 'rgba(167, 139, 250, 0.9)' : 'rgba(251, 191, 36, 0.9)';
-            }
-            return d.isPositive ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)';
-          }),
-          borderColor: waterfallBarData.map(d => {
-            if (d.hasNetFlow) {
-              return d.isNetFlowPositive ? '#A78BFA' : '#FBBF24';
-            }
-            return d.isPositive ? '#3b82f6' : '#ec4899';
-          }),
+          // Dégradé le long de la barre : portion flux net (dépôt/retrait) vs portion PnL trading (jour / semaine / mois).
+          backgroundColor: (ctx: any) => {
+            const row = waterfallBarData[ctx.dataIndex];
+            if (!row) return 'rgba(156, 163, 175, 0.5)';
+            return getWaterfallBarFill(
+              { chart: ctx.chart, dataIndex: ctx.dataIndex, datasetIndex: ctx.datasetIndex },
+              {
+                start: row.start,
+                end: row.end,
+                pnlTrading: row.pnlTrading,
+                dailyNetTransactions: row.dailyNetTransactions,
+              }
+            );
+          },
+          borderColor: (ctx: any) => {
+            const row = waterfallBarData[ctx.dataIndex];
+            if (!row) return 'rgba(107, 114, 128, 0.8)';
+            return getWaterfallBarBorder(
+              { chart: ctx.chart, dataIndex: ctx.dataIndex, datasetIndex: ctx.datasetIndex },
+              {
+                start: row.start,
+                end: row.end,
+                pnlTrading: row.pnlTrading,
+                dailyNetTransactions: row.dailyNetTransactions,
+              }
+            );
+          },
           borderWidth: 0,
           borderRadius: 0,
           borderSkipped: false,
