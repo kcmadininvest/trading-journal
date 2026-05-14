@@ -1155,69 +1155,7 @@ const TradingActivityPage: React.FC = () => {
         </div>
 
         <div className="flex min-w-0 flex-col space-y-4 sm:space-y-6">
-        <div className="flex min-w-0 flex-col overflow-x-auto overflow-y-hidden rounded-xl border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex w-full shrink-0 items-center justify-between gap-2 border-b border-gray-200 px-1 py-1 dark:border-gray-700 sm:px-3 sm:py-2">
-            <div
-              className="flex min-w-0 flex-1 gap-1"
-              role="tablist"
-              aria-label={t('tabs.ariaLabel')}
-            >
-              <button
-                type="button"
-                role="tab"
-                id="trading-ledger-tab-debit"
-                aria-selected={ledgerTab === 'debit'}
-                aria-controls="trading-ledger-panel-debit"
-                tabIndex={ledgerTab === 'debit' ? 0 : -1}
-                onClick={() => setLedgerTab('debit')}
-                className={`min-h-[44px] flex-1 rounded-t-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-4 ${
-                  ledgerTab === 'debit'
-                    ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
-                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
-              >
-                {t('tabs.debit')}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                id="trading-ledger-tab-credit"
-                aria-selected={ledgerTab === 'credit'}
-                aria-controls="trading-ledger-panel-credit"
-                tabIndex={ledgerTab === 'credit' ? 0 : -1}
-                onClick={() => setLedgerTab('credit')}
-                className={`min-h-[44px] flex-1 rounded-t-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-4 ${
-                  ledgerTab === 'credit'
-                    ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
-                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
-                }`}
-              >
-                {t('tabs.credit')}
-              </button>
-            </div>
-
-            {ledgerTab === 'credit' && (
-              <button
-                type="button"
-                onClick={openNewCredit}
-                className="self-center min-h-[44px] shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:px-4 sm:py-2"
-              >
-                {t('credits.add')}
-              </button>
-            )}
-
-            {ledgerTab === 'debit' && (
-              <button
-                type="button"
-                onClick={openNewExpense}
-                className="self-center min-h-[44px] shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:px-4 sm:py-2"
-              >
-                {t('expenses.add')}
-              </button>
-            )}
-          </div>
-
-          <div className="bg-gray-50 dark:bg-gray-800/80 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-5 m-3 sm:m-4 md:m-5">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-end">
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
@@ -1296,6 +1234,68 @@ const TradingActivityPage: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
+
+          <div className="flex min-w-0 flex-col overflow-x-auto overflow-y-hidden rounded-xl border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+            <div className="flex w-full shrink-0 items-center justify-between gap-2 border-b border-gray-200 px-1 py-1 dark:border-gray-700 sm:px-3 sm:py-2">
+            <div
+              className="flex min-w-0 flex-1 gap-1"
+              role="tablist"
+              aria-label={t('tabs.ariaLabel')}
+            >
+              <button
+                type="button"
+                role="tab"
+                id="trading-ledger-tab-debit"
+                aria-selected={ledgerTab === 'debit'}
+                aria-controls="trading-ledger-panel-debit"
+                tabIndex={ledgerTab === 'debit' ? 0 : -1}
+                onClick={() => setLedgerTab('debit')}
+                className={`min-h-[44px] flex-1 rounded-t-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-4 ${
+                  ledgerTab === 'debit'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {t('tabs.debit')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="trading-ledger-tab-credit"
+                aria-selected={ledgerTab === 'credit'}
+                aria-controls="trading-ledger-panel-credit"
+                tabIndex={ledgerTab === 'credit' ? 0 : -1}
+                onClick={() => setLedgerTab('credit')}
+                className={`min-h-[44px] flex-1 rounded-t-lg px-3 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-4 ${
+                  ledgerTab === 'credit'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {t('tabs.credit')}
+              </button>
+            </div>
+
+            {ledgerTab === 'credit' && (
+              <button
+                type="button"
+                onClick={openNewCredit}
+                className="self-center min-h-[44px] shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:px-4 sm:py-2"
+              >
+                {t('credits.add')}
+              </button>
+            )}
+
+            {ledgerTab === 'debit' && (
+              <button
+                type="button"
+                onClick={openNewExpense}
+                className="self-center min-h-[44px] shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:px-4 sm:py-2"
+              >
+                {t('expenses.add')}
+              </button>
+            )}
           </div>
 
           {ledgerTab === 'debit' && (
