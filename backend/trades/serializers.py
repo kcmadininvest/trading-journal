@@ -6,6 +6,8 @@ from decimal import Decimal
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
 import logging
 
+from .protected_screenshot_urls import transform_screenshot_url_for_response
+
 logger = logging.getLogger(__name__)
 
 
@@ -585,6 +587,17 @@ class TradeStrategySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La note doit être entre 1 et 5")
         return value
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and getattr(instance, 'user_id', None):
+            url = data.get('screenshot_url') or ''
+            if url:
+                data['screenshot_url'] = transform_screenshot_url_for_response(
+                    url, instance.user_id, request
+                )
+        return data
+
 
 class DayStrategyComplianceSerializer(serializers.ModelSerializer):
     """
@@ -635,6 +648,17 @@ class DayStrategyComplianceSerializer(serializers.ModelSerializer):
         if value is not None and (value < 1 or value > 5):
             raise serializers.ValidationError("La note doit être entre 1 et 5")
         return value
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and getattr(instance, 'user_id', None):
+            url = data.get('screenshot_url') or ''
+            if url:
+                data['screenshot_url'] = transform_screenshot_url_for_response(
+                    url, instance.user_id, request
+                )
+        return data
 
 
 class PositionStrategySerializer(serializers.ModelSerializer):
@@ -750,6 +774,17 @@ class PositionStrategySerializer(serializers.ModelSerializer):
         if value not in valid_statuses:
             raise serializers.ValidationError(f"Statut invalide. Choix possibles: {', '.join(valid_statuses)}")
         return value
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and getattr(instance, 'user_id', None):
+            uid = instance.user_id
+            for key in ('example_screenshot', 'example_screenshot_thumbnail'):
+                val = data.get(key) or ''
+                if val:
+                    data[key] = transform_screenshot_url_for_response(val, uid, request)
+        return data
 
 
 class PositionStrategyVersionSerializer(serializers.ModelSerializer):

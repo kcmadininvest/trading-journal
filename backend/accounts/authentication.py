@@ -28,7 +28,9 @@ class BlacklistJWTAuthentication(JWTAuthentication):
                 blacklisted = BlacklistedToken.objects.filter(token__jti=jti).exists()
                 if blacklisted:
                     raise InvalidToken('Token has been blacklisted')
-            except Exception as e:
-                raise InvalidToken(f'Token validation failed: {str(e)}')
+            except InvalidToken:
+                raise
+            except Exception:
+                raise InvalidToken('Token validation failed')
         
         return validated_token

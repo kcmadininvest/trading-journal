@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from . import views
 from .exports.views import ExportTemplateViewSet, PortfolioExportViewSet
 from . import calculator_views
+from . import protected_media_views
 
 app_name = 'trades'
 
@@ -20,6 +21,11 @@ router.register(r'export-templates', ExportTemplateViewSet, basename='export-tem
 router.register(r'portfolio-export', PortfolioExportViewSet, basename='portfolio-export')
 
 urlpatterns = [
+    path(
+        'protected-screenshot/',
+        protected_media_views.serve_protected_screenshot_media,
+        name='protected-screenshot-media',
+    ),
     path('', include(router.urls)),
     path('dashboard-summary/', views.dashboard_summary, name='dashboard-summary'),
     path('dashboard-activity-summary/', views.dashboard_activity_summary, name='dashboard-activity-summary'),

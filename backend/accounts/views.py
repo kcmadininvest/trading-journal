@@ -20,6 +20,8 @@ from typing import cast
 import ipaddress
 import logging
 
+from trades.protected_screenshot_urls import transform_screenshot_url_for_response
+
 logger = logging.getLogger(__name__)
 security_logger = logging.getLogger('security')
 
@@ -1574,7 +1576,9 @@ class DataExportView(APIView):
                         'session_rating': strategy.session_rating,
                         'emotion_details': strategy.emotion_details,
                         'possible_improvements': strategy.possible_improvements,
-                        'screenshot_url': strategy.screenshot_url,
+                        'screenshot_url': transform_screenshot_url_for_response(
+                            strategy.screenshot_url or '', user.id, request
+                        ),
                         'video_url': strategy.video_url,
                         'created_at': strategy.created_at.isoformat() if strategy.created_at else None,
                         'updated_at': strategy.updated_at.isoformat() if strategy.updated_at else None,

@@ -3758,7 +3758,9 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         # Vérifier que l'URL appartient bien à l'utilisateur
         # En vérifiant que le chemin contient l'ID de l'utilisateur
         user_id = request.user.id
-        if f'/screenshots/{user_id}/' not in screenshot_url:
+        from .protected_screenshot_urls import resolve_screenshot_url_for_delete
+        canonical_url = resolve_screenshot_url_for_delete(screenshot_url, user_id)
+        if not canonical_url or f'/screenshots/{user_id}/' not in canonical_url:
             logger.warning(
                 f"Tentative de suppression d'un screenshot non autorisé par l'utilisateur {user_id}: {screenshot_url}"
             )
@@ -3768,10 +3770,10 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         
         try:
             # Supprimer le fichier et sa miniature
-            success = image_processor.delete_screenshot(screenshot_url)
+            success = image_processor.delete_screenshot(canonical_url)
             
             if success:
-                logger.info(f"Screenshot supprimé avec succès par l'utilisateur {user_id}: {screenshot_url}")
+                logger.info(f"Screenshot supprimé avec succès par l'utilisateur {user_id}: {canonical_url}")
                 return Response({
                     'message': 'Screenshot supprimé avec succès'
                 }, status=status.HTTP_200_OK)
@@ -4191,7 +4193,9 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
         # Vérifier que l'URL appartient bien à l'utilisateur
         # En vérifiant que le chemin contient l'ID de l'utilisateur
         user_id = request.user.id
-        if f'/screenshots/{user_id}/' not in screenshot_url:
+        from .protected_screenshot_urls import resolve_screenshot_url_for_delete
+        canonical_url = resolve_screenshot_url_for_delete(screenshot_url, user_id)
+        if not canonical_url or f'/screenshots/{user_id}/' not in canonical_url:
             logger.warning(
                 f"Tentative de suppression d'un screenshot non autorisé par l'utilisateur {user_id}: {screenshot_url}"
             )
@@ -4201,10 +4205,10 @@ class DayStrategyComplianceViewSet(viewsets.ModelViewSet):
         
         try:
             # Supprimer le fichier et sa miniature
-            success = image_processor.delete_screenshot(screenshot_url)
+            success = image_processor.delete_screenshot(canonical_url)
             
             if success:
-                logger.info(f"Screenshot supprimé avec succès par l'utilisateur {user_id} (jour sans trade): {screenshot_url}")
+                logger.info(f"Screenshot supprimé avec succès par l'utilisateur {user_id} (jour sans trade): {canonical_url}")
                 return Response({
                     'message': 'Screenshot supprimé avec succès'
                 }, status=status.HTTP_200_OK)
@@ -4734,7 +4738,9 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
         # Vérifier que l'URL appartient bien à l'utilisateur
         # En vérifiant que le chemin contient l'ID de l'utilisateur
         user_id = request.user.id
-        if f'/screenshots/{user_id}/' not in screenshot_url:
+        from .protected_screenshot_urls import resolve_screenshot_url_for_delete
+        canonical_url = resolve_screenshot_url_for_delete(screenshot_url, user_id)
+        if not canonical_url or f'/screenshots/{user_id}/' not in canonical_url:
             logger.warning(
                 f"Tentative de suppression d'un screenshot de stratégie non autorisé par l'utilisateur {user_id}: {screenshot_url}"
             )
@@ -4744,10 +4750,10 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
         
         try:
             # Supprimer le fichier et sa miniature
-            success = image_processor.delete_screenshot(screenshot_url)
+            success = image_processor.delete_screenshot(canonical_url)
             
             if success:
-                logger.info(f"Screenshot de stratégie supprimé avec succès par l'utilisateur {user_id}: {screenshot_url}")
+                logger.info(f"Screenshot de stratégie supprimé avec succès par l'utilisateur {user_id}: {canonical_url}")
                 return Response({
                     'message': 'Screenshot supprimé avec succès'
                 }, status=status.HTTP_200_OK)

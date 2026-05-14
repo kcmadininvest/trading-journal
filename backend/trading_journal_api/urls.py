@@ -18,6 +18,9 @@ import os
 from xml.etree.ElementTree import Element, SubElement, tostring
 from django.utils.encoding import smart_str
 from datetime import datetime
+import time
+
+from django.core.cache import cache
 
 # Sitemaps
 sitemaps = {
@@ -145,6 +148,26 @@ def api_health(request):
     """Sondage minimal pour le front (footer) et la supervision ; aucune donnée métier."""
     if request.method != 'GET':
         return JsonResponse({'detail': 'Method not allowed'}, status=405)
+
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        client_ip = xff.split(',')[0].strip()[:200]
+    else:
+        client_ip = (request.META.get('REMOTE_ADDR') or 'unknown')[:200]
+
+    bucket = int(time.time()) // 60
+    rl_key = f'api_health:rl:{client_ip}:{bucket}'
+    try:
+        hits = cache.incr(rl_key)
+    except ValueError:
+        cache.add(rl_key, 1, timeout=90)
+        try:
+            hits = cache.incr(rl_key)
+        except ValueError:
+            hits = 1
+    if hits > 120:
+        return JsonResponse({'detail': 'Too many requests'}, status=429)
+
     return JsonResponse({'status': 'ok'})
 
 
