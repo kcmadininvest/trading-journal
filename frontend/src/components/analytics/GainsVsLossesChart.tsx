@@ -30,6 +30,12 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: 'y' as const,
+    /** Barres horizontales : sans axe Y, Chart.js mesure la distance sur X seul et associe le mauvais index au survol. */
+    interaction: {
+      mode: 'index' as const,
+      axis: 'y' as const,
+      intersect: false,
+    },
     animation: {
       duration: 0,
     },
@@ -55,6 +61,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
       },
       tooltip: {
         ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
+        axis: 'y' as const,
         callbacks: {
           title: (items: any) => {
             const index = items[0].dataIndex;
@@ -128,6 +135,11 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
     responsive: true,
     maintainAspectRatio: false,
     indexAxis: 'y' as const,
+    interaction: {
+      mode: 'index' as const,
+      axis: 'y' as const,
+      intersect: false,
+    },
     animation: {
       duration: 0,
     },
@@ -153,6 +165,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
       },
       tooltip: {
         ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
+        axis: 'y' as const,
         callbacks: {
           title: (items: any) => {
             const index = items[0].dataIndex;
