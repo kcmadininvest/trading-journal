@@ -21,7 +21,7 @@ import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
-import { formatDate } from '../utils/dateFormat';
+import { formatDate, toIsoCalendarDateInTimezone } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
@@ -520,18 +520,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Charger les transactions du compte
   useEffect(() => {
     const loadTransactions = async () => {
-      if (!accountId) {
-        setTransactions([]);
-        return;
-      }
+      const tz = preferences.timezone?.trim() || 'Europe/Paris';
       try {
-        const data = await accountTransactionsService.list({
-          trading_account: accountId,
+        // Compte unique : filtrer par compte. « Tous les comptes » : toutes les transactions
+        // utilisateur (aligné sur daily_aggregates du dashboard sans trading_account).
+        const common = {
           start_date: selectedPeriod?.start,
           end_date: selectedPeriod?.end,
+          timezone: tz,
           page: 1,
           page_size: 10000,
-        });
+        };
+        const data = accountId
+          ? await accountTransactionsService.list({
+              ...common,
+              trading_account: accountId,
+            })
+          : await accountTransactionsService.list(common);
         setTransactions(data.results);
       } catch (err) {
         console.error('Erreur lors du chargement des transactions', err);
@@ -548,18 +553,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     return () => {
       window.removeEventListener('account-transaction:updated', handleTransactionUpdate);
     };
-  }, [accountId, selectedPeriod?.start, selectedPeriod?.end]);
+  }, [accountId, selectedPeriod?.start, selectedPeriod?.end, preferences.timezone]);
 
   const transactionsInSelectedPeriod = useMemo(() => {
+    const tz = preferences.timezone;
     if (!selectedPeriod?.start || !selectedPeriod?.end) {
       return transactions;
     }
 
     return transactions.filter((transaction) => {
-      const transactionDate = transaction.transaction_date.split('T')[0];
-      return transactionDate >= selectedPeriod.start && transactionDate <= selectedPeriod.end;
+      const localDay = toIsoCalendarDateInTimezone(transaction.transaction_date, tz);
+      if (!localDay) return false;
+      return localDay >= selectedPeriod.start && localDay <= selectedPeriod.end;
     });
-  }, [transactions, selectedPeriod]);
+  }, [transactions, selectedPeriod, preferences.timezone]);
 
   // Compliance stats are now loaded from consolidated endpoint
   // Listen for compliance updates to refetch dashboard data
@@ -693,6 +700,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
   // Inclut maintenant les transactions (dépôts et retraits)
   const accountBalanceData = useMemo(() => {
+    const tz = preferences.timezone;
     const initialCapital = selectedAccount?.initial_capital 
       ? parseFloat(String(selectedAccount.initial_capital)) 
       : 0;
@@ -737,7 +745,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
     );
     sortedTransactions.forEach(transaction => {
-      const date = new Date(transaction.transaction_date).toISOString().split('T')[0];
+      const date = toIsoCalendarDateInTimezone(transaction.transaction_date, tz);
+      if (!date) return;
       const amount = parseFloat(transaction.amount.toString());
       const signedAmount = transaction.transaction_type === 'deposit' ? amount : -amount;
       transactionsByDate[date] = (transactionsByDate[date] || 0) + signedAmount;
@@ -793,8 +802,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         const firstDate = result[0].date;
         // Vérifier s'il y a des transactions ou trades avant la première date
         const hasDataBeforeFirst = sortedTransactions.some(t => {
-          const tDate = new Date(t.transaction_date).toISOString().split('T')[0];
-          return tDate < firstDate;
+          const tDate = toIsoCalendarDateInTimezone(t.transaction_date, tz);
+          return tDate && tDate < firstDate;
         }) || dailyAggregates.some(d => d.date < firstDate);
         
         // Si pas de données avant, ajouter un point au capital initial UN JOUR AVANT le premier trade
@@ -826,7 +835,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         const pv = getTradeDisplayPnlValue(trade, pnlDisplayMode);
         if (pv == null || !trade.entered_at) return null;
         return {
-          date: trade.trade_day || new Date(trade.entered_at).toISOString().split('T')[0],
+          date: trade.trade_day || toIsoCalendarDateInTimezone(trade.entered_at, tz),
           pnl: pv,
           enteredAt: new Date(trade.entered_at),
         };
@@ -884,8 +893,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       const firstDate = result[0].date;
       // Vérifier s'il y a des transactions ou trades avant la première date
       const hasDataBeforeFirst = sortedTransactions.some(t => {
-        const tDate = new Date(t.transaction_date).toISOString().split('T')[0];
-        return tDate < firstDate;
+        const tDate = toIsoCalendarDateInTimezone(t.transaction_date, tz);
+        return tDate && tDate < firstDate;
       }) || tradesWithDates.some(t => t.date < firstDate);
       
       // Si pas de données avant, ajouter un point au capital initial UN JOUR AVANT le premier trade
@@ -909,7 +918,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }
 
     return result;
-  }, [dailyAggregates, trades, transactionsInSelectedPeriod, selectedAccount, dailyMetrics, pnlDisplayMode]);
+  }, [dailyAggregates, trades, transactionsInSelectedPeriod, selectedAccount, dailyMetrics, pnlDisplayMode, preferences.timezone]);
 
   // États pour les filtres de date
   const { defaultStartDate, defaultEndDate } = useMemo(() => {
@@ -1077,9 +1086,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Préparer les données pour le graphique waterfall
   // Utiliser les données agrégées si disponibles
   const waterfallData = useMemo(() => {
+    const tz = preferences.timezone;
     const transactionsByDate: { [date: string]: number } = {};
     transactionsInSelectedPeriod.forEach(transaction => {
-      const date = new Date(transaction.transaction_date).toISOString().split('T')[0];
+      const date = toIsoCalendarDateInTimezone(transaction.transaction_date, tz);
+      if (!date) return;
       const amount = parseFloat(String(transaction.amount));
       if (Number.isNaN(amount)) return;
       const signedAmount = transaction.transaction_type === 'deposit' ? amount : -amount;
@@ -1122,7 +1133,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         const pv = getTradeDisplayPnlValue(trade, pnlDisplayMode);
         if (pv == null || !trade.entered_at) return null;
         return {
-          date: trade.trade_day || new Date(trade.entered_at).toISOString().split('T')[0],
+          date: trade.trade_day || toIsoCalendarDateInTimezone(trade.entered_at, tz),
           pnl: pv,
           enteredAt: new Date(trade.entered_at),
         };
@@ -1157,7 +1168,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         hasTradingData: Object.prototype.hasOwnProperty.call(dailyData, date),
       };
     });
-  }, [dailyAggregates, trades, transactionsInSelectedPeriod, pnlDisplayMode]);
+  }, [dailyAggregates, trades, transactionsInSelectedPeriod, pnlDisplayMode, preferences.timezone]);
 
   // Série affichée (agrégation auto) pour le graphique uniquement — waterfallStats reste sur waterfallData journalier.
   const waterfallDisplay = useMemo(() => {
@@ -1197,9 +1208,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         const rowsIn = buckets.get(weekKey)!;
         const first = rowsIn[0];
         const last = rowsIn[rowsIn.length - 1];
-        const pnlTrading = rowsIn.reduce((s, r) => s + r.pnlTrading, 0);
-        const dailyNetTransactions = rowsIn.reduce((s, r) => s + r.dailyNetTransactions, 0);
-        const dailyTotalVariation = rowsIn.reduce((s, r) => s + r.dailyTotalVariation, 0);
+        const pnlTrading = rowsIn.reduce((s, r) => s + (r.pnlTrading || 0), 0);
+        const dailyTotalVariation = rowsIn.reduce((s, r) => s + (r.dailyTotalVariation || 0), 0);
+        // Flux net période = variation totale − PnL trading (dépôts/retraits), cohérent avec la barre agrégée
+        const dailyNetTransactions = dailyTotalVariation - pnlTrading;
         return {
           dateKey: weekKey,
           date: t('dashboard:waterfallWeekAxis', {
@@ -1231,9 +1243,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       const rowsIn = monthBuckets.get(monthKey)!;
       const first = rowsIn[0];
       const last = rowsIn[rowsIn.length - 1];
-      const pnlTrading = rowsIn.reduce((s, r) => s + r.pnlTrading, 0);
-      const dailyNetTransactions = rowsIn.reduce((s, r) => s + r.dailyNetTransactions, 0);
-      const dailyTotalVariation = rowsIn.reduce((s, r) => s + r.dailyTotalVariation, 0);
+      const pnlTrading = rowsIn.reduce((s, r) => s + (r.pnlTrading || 0), 0);
+      const dailyTotalVariation = rowsIn.reduce((s, r) => s + (r.dailyTotalVariation || 0), 0);
+      const dailyNetTransactions = dailyTotalVariation - pnlTrading;
       return {
         dateKey: `${monthKey}-01`,
         date: formatWaterfallMonthAxisLabel(monthKey, locale),
@@ -1263,16 +1275,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const waterfallBarData = displayRows.map((d, index) => {
       const previousCumulative = index === 0 ? 0 : displayRows[index - 1].cumulative;
       const currentCumulative = d.cumulative;
-      const hasNetFlow = Math.abs(d.dailyNetTransactions) > 0;
+      const netCashFlow = d.dailyTotalVariation - d.pnlTrading;
+      const hasNetFlow = Math.abs(netCashFlow) > 1e-9;
       
       return {
         start: previousCumulative,
         end: currentCumulative,
         value: d.dailyTotalVariation,
         pnlTrading: d.pnlTrading,
-        dailyNetTransactions: d.dailyNetTransactions,
+        dailyNetTransactions: netCashFlow,
         hasNetFlow,
-        isNetFlowPositive: d.dailyNetTransactions > 0,
+        isNetFlowPositive: netCashFlow > 0,
         isPositive: d.dailyTotalVariation >= 0,
         cumulative: currentCumulative,
         aggregation: d.aggregation,
@@ -2792,7 +2805,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               const waterfallBarData = context.dataset._waterfallData[index];
                               const totalVariation = waterfallBarData.value;
                               const pnlTrading = waterfallBarData.pnlTrading ?? 0;
-                              const dailyNetTransactions = waterfallBarData.dailyNetTransactions ?? 0;
+                              // Toujours dériver du total affiché pour inclure dépôts/retraits (cohérent jour comme période)
+                              const dailyNetTransactions = totalVariation - pnlTrading;
                               const cumulative = waterfallBarData.cumulative;
                               const start = waterfallBarData.start;
                               const isAgg = waterfallBarData.aggregation && waterfallBarData.aggregation !== 'day';

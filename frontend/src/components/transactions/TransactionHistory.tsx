@@ -91,6 +91,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       trading_account: tradingAccountId,
       start_date: dateFrom || undefined,
       end_date: dateTo || undefined,
+      timezone: preferences.timezone,
       q: debouncedSearchQ || undefined,
     };
 
@@ -141,7 +142,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     } finally {
       setBalanceLoading(false);
     }
-  }, [tradingAccountId, dateFrom, dateTo, debouncedSearchQ, filterType, page, pageSize]);
+  }, [tradingAccountId, dateFrom, dateTo, debouncedSearchQ, filterType, page, pageSize, preferences.timezone]);
 
   useEffect(() => {
     void loadTransactions();

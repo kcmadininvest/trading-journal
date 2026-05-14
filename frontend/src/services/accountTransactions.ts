@@ -56,6 +56,8 @@ export type AccountTransactionsListParams = {
   transaction_type?: 'deposit' | 'withdrawal';
   start_date?: string;
   end_date?: string;
+  /** Fuseau IANA (ex. Europe/Paris) : bornes de période interprétées comme jours civils dans ce fuseau (aligné dashboard). */
+  timezone?: string;
   q?: string;
   page?: number;
   page_size?: number;
@@ -125,6 +127,9 @@ class AccountTransactionsService {
     }
     if (params?.end_date) {
       queryParams.append('end_date', params.end_date);
+    }
+    if (params?.timezone) {
+      queryParams.append('timezone', params.timezone);
     }
     if (params?.q) {
       queryParams.append('q', params.q);

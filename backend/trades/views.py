@@ -386,11 +386,20 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
             if transaction_type:
                 queryset = queryset.filter(transaction_type=transaction_type)
 
+        user_tz = get_user_timezone(self.request)
+        tz_override = (self.request.query_params.get('timezone') or '').strip()
+        if tz_override:
+            try:
+                user_tz = pytz.timezone(tz_override)
+            except pytz.exceptions.UnknownTimeZoneError:
+                pass
+
         start_date = self.request.query_params.get('start_date', None)
         if start_date and isinstance(start_date, str):
             start_date_str: str = start_date
             try:
-                start_dt = datetime.strptime(start_date_str, '%Y-%m-%d')
+                start_dt_naive = datetime.strptime(start_date_str, '%Y-%m-%d')
+                start_dt = user_tz.localize(start_dt_naive)
                 queryset = queryset.filter(transaction_date__gte=start_dt)
             except ValueError:
                 pass
@@ -399,8 +408,8 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
         if end_date and isinstance(end_date, str):
             end_date_str: str = end_date
             try:
-                end_dt = datetime.strptime(end_date_str, '%Y-%m-%d')
-                end_dt = end_dt.replace(hour=23, minute=59, second=59)
+                end_dt_naive = datetime.strptime(end_date_str, '%Y-%m-%d')
+                end_dt = user_tz.localize(end_dt_naive.replace(hour=23, minute=59, second=59))
                 queryset = queryset.filter(transaction_date__lte=end_dt)
             except ValueError:
                 pass

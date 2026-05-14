@@ -88,6 +88,37 @@ export const formatDate = (
 };
 
 /**
+ * Jour calendaire YYYY-MM-DD dans le fuseau donné (ex. alignement dépôts/retraits avec trade_day).
+ * Évite le décalage d’un jour causé par `toISOString().split('T')[0]` (jour UTC).
+ */
+export function toIsoCalendarDateInTimezone(date: string | Date, timeZone: string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  if (Number.isNaN(dateObj.getTime())) {
+    if (typeof date === 'string') {
+      const prefix = date.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (prefix) return prefix[1];
+    }
+    return '';
+  }
+  const tz = timeZone && timeZone.trim() !== '' ? timeZone.trim() : 'Europe/Paris';
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(dateObj);
+  } catch {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(dateObj);
+  }
+}
+
+/**
  * Formate une date pour affichage avec heure courte (HH:MM)
  * @param date - Date à formater
  * @param dateFormat - Format de date ('US' ou 'EU')
