@@ -2,7 +2,8 @@ import { getApiBaseUrl } from '../utils/apiConfig';
 
 export interface DailyJournalImage {
   id: number;
-  image: string;
+  /** Réservé à l'upload ; absent des réponses lecture seule. */
+  image?: string;
   image_url: string;
   caption: string;
   order: number;

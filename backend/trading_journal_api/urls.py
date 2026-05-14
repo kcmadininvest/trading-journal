@@ -11,6 +11,8 @@ from django.http import JsonResponse, FileResponse, HttpResponse
 from django.views.decorators.cache import cache_control
 from pathlib import Path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework.permissions import AllowAny, BasePermission, IsAuthenticated
+
 from .sitemap import StaticViewSitemap
 import os
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -138,14 +140,41 @@ def organization_schema(request):
     
     return JsonResponse(schema_data, json_dumps_params={'indent': 2})
 
+
+class _ApiSchemaAccess(BasePermission):
+    """En production : schéma OpenAPI réservé aux comptes administrateur authentifiés."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        return bool(
+            getattr(user, 'is_superuser', False)
+            or getattr(user, 'is_staff', False)
+            or getattr(user, 'role', None) == 'admin'
+        )
+
+
+class StaffOrDebugSpectacularAPIView(SpectacularAPIView):
+    def get_permissions(self):
+        if settings.DEBUG:
+            return [AllowAny()]
+        return [IsAuthenticated(), _ApiSchemaAccess()]
+
+
+class StaffOrDebugSpectacularSwaggerView(SpectacularSwaggerView):
+    def get_permissions(self):
+        if settings.DEBUG:
+            return [AllowAny()]
+        return [IsAuthenticated(), _ApiSchemaAccess()]
+
+
 urlpatterns = [
-    # Test endpoint
-    path("api/test/", lambda r: JsonResponse({"status": "ok"}), name="test"),
     path('admin/', admin.site.urls),
-    
-    # API Documentation
-    path('schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+
+    # API Documentation (accès restreint hors DEBUG)
+    path('schema/', StaffOrDebugSpectacularAPIView.as_view(), name='schema'),
+    path('docs/', StaffOrDebugSpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
     
     # Sitemap (vue personnalisée pour éviter les problèmes de template)
     path('sitemap.xml', generate_sitemap, name='sitemap'),
@@ -173,6 +202,12 @@ urlpatterns = [
     path('api/billing/', include('billing.urls')),
     path('api/trading-activity/', include('trading_activity.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns.insert(
+        0,
+        path("api/test/", lambda r: JsonResponse({"status": "ok"}), name="test"),
+    )
 
 # Servir les fichiers media et static AVANT le catch-all React
 # Cela permet d'accéder aux fichiers uploadés directement

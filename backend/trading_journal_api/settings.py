@@ -274,6 +274,7 @@ REST_FRAMEWORK = {
         'register': '5/hour',  # Endpoint d'inscription (personnalisé, basé sur email)
         'activate': '10/hour',  # Endpoint d'activation (personnalisé)
         'password_reset': '3/hour',  # Réinitialisation de mot de passe (personnalisé)
+        'contact': '5/hour',  # Formulaire contact page publique
     },
 }
 
@@ -538,48 +539,6 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 STRIPE_PRICE_PREMIUM_ID = config('STRIPE_PRICE_PREMIUM_ID', default='')
-
-# ============================================================================
-# OPTIMISATIONS BACKEND - PHASE 1 & 2
-# ============================================================================
-
-# Phase 1.2 : Configuration du cache (-200-400ms après 1ère requête)
-# Utiliser LocMemCache par défaut (Redis optionnel)
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'trading_journal_cache',
-        'TIMEOUT': 300,  # 5 minutes par défaut
-        'OPTIONS': {
-            'MAX_ENTRIES': 1000,
-        }
-    }
-}
-
-# Pour activer Redis (optionnel, meilleure performance) :
-# 1. Installer Redis : sudo apt-get install redis-server
-# 2. Démarrer Redis : sudo systemctl start redis
-# 3. Décommenter la configuration ci-dessous et commenter LocMemCache ci-dessus
-#
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django_redis.cache.RedisCache',
-#         'LOCATION': config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
-#         'OPTIONS': {
-#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-#             'CONNECTION_POOL_CLASS_KWARGS': {
-#                 'max_connections': 50,
-#                 'retry_on_timeout': True,
-#             },
-#             'SOCKET_CONNECT_TIMEOUT': 5,
-#             'SOCKET_TIMEOUT': 5,
-#         },
-#         'KEY_PREFIX': 'trading_journal',
-#         'TIMEOUT': 300,
-#     }
-# }
-# SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-# SESSION_CACHE_ALIAS = 'default'
 
 # Configuration GZIP
 GZIP_CONTENT_TYPES = (

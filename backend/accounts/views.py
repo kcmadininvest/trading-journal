@@ -25,7 +25,13 @@ security_logger = logging.getLogger('security')
 
 from .models import User, UserPreferences, LoginHistory, EmailActivationToken
 from .utils import send_activation_email, create_activation_token
-from .throttling import LoginThrottle, RegisterThrottle, EmailBasedRegisterThrottle, ActivationThrottle, PasswordResetThrottle
+from .throttling import (
+    LoginThrottle,
+    EmailBasedRegisterThrottle,
+    ActivationThrottle,
+    PasswordResetThrottle,
+    ContactThrottle,
+)
 from .serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -312,7 +318,6 @@ class AccountActivationView(APIView):
                             {
                                 'error': 'Ce lien d\'activation a expiré',
                                 'can_resend': True,
-                                'user_id': activation_token.user.id
                             },
                             status=status.HTTP_400_BAD_REQUEST
                         )
@@ -382,7 +387,6 @@ class AccountActivationView(APIView):
                                 'valid': False,
                                 'error': 'Ce lien d\'activation a expiré',
                                 'can_resend': True,
-                                'user_id': activation_token.user.id
                             },
                             status=status.HTTP_200_OK
                         )
@@ -410,20 +414,29 @@ class ResendActivationEmailView(APIView):
     
     def post(self, request):
         """
-        Renvoie un email d'activation à l'utilisateur
+        Renvoie un email d'activation à l'utilisateur.
+        Préférer ``token`` (lien d'activation) plutôt que ``user_id`` (déconseillé).
         """
-        email = request.data.get('email')
+        email = (request.data.get('email') or '').strip()
         user_id = request.data.get('user_id')
-        
-        if not email and not user_id:
+        activation_link_token = (request.data.get('token') or '').strip()
+
+        if not email and not user_id and not activation_link_token:
             return Response(
-                {'error': 'Email ou ID utilisateur requis'},
+                {'error': 'Email, token d\'activation ou identifiant requis'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
-            # Récupérer l'utilisateur
-            if user_id:
+            if activation_link_token:
+                try:
+                    act = EmailActivationToken.objects.select_related('user').get(token=activation_link_token)
+                except EmailActivationToken.DoesNotExist:
+                    return Response({
+                        'message': 'Si ce compte existe et n\'est pas activé, un email d\'activation a été envoyé.'
+                    }, status=status.HTTP_200_OK)
+                user = act.user
+            elif user_id:
                 user = User.objects.get(id=user_id)
             else:
                 user = User.objects.get(email=email)
@@ -1615,7 +1628,8 @@ class ContactView(APIView):
     Vue pour envoyer un email de contact depuis la page d'accueil
     """
     permission_classes = [permissions.AllowAny]  # Accessible sans authentification
-    
+    throttle_classes = [ContactThrottle]
+
     def post(self, request):
         """
         Envoie un email de contact

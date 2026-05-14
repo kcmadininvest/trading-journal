@@ -17,7 +17,6 @@ const ActivateAccountPage: React.FC<ActivateAccountPageProps> = ({ token: tokenP
   const [isSuccess, setIsSuccess] = useState(false);
   const [isAlreadyActivated, setIsAlreadyActivated] = useState(false);
   const [canResend, setCanResend] = useState(false);
-  const [userId, setUserId] = useState<number | null>(null);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
@@ -72,11 +71,10 @@ const ActivateAccountPage: React.FC<ActivateAccountPageProps> = ({ token: tokenP
             setTimeout(() => {
               window.location.href = '/';
             }, 2000);
-          } else if (data.can_resend && data.user_id) {
-            // Token expiré, proposer de renvoyer l'email
+          } else if (data.can_resend) {
+            // Token expiré, proposer de renvoyer l'email (sans exposer d'identifiant interne)
             setError(data.error || t('auth:activationLinkExpired'));
             setCanResend(true);
-            setUserId(data.user_id);
             setIsSuccess(false);
           } else {
             setError(data.error || data.detail || t('auth:activationError'));
@@ -147,7 +145,7 @@ const ActivateAccountPage: React.FC<ActivateAccountPageProps> = ({ token: tokenP
                   </p>
                   <button
                     onClick={async () => {
-                      if (!userId) return;
+                      if (!token) return;
                       setIsResending(true);
                       try {
                         const response = await fetch(`${getApiBaseUrl()}/api/accounts/auth/resend-activation/`, {
@@ -155,7 +153,7 @@ const ActivateAccountPage: React.FC<ActivateAccountPageProps> = ({ token: tokenP
                           headers: {
                             'Content-Type': 'application/json',
                           },
-                          body: JSON.stringify({ user_id: userId }),
+                          body: JSON.stringify({ token }),
                         });
 
                         const data = await response.json();

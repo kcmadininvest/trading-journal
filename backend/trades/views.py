@@ -1583,10 +1583,12 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         """
         from django.contrib.auth.models import User
         
-        # Log de la requête
-        logger.info(f"=== DEBUT UPLOAD CSV ===")
-        logger.info(f"Fichiers reçus: {list(request.FILES.keys())}")
-        logger.info(f"Data reçue: {list(request.data.keys())}")
+        # Journalisation minimale (évite données sensibles / PII dans les logs)
+        logger.info(
+            "upload_csv: début (nb_fichiers=%s, nb_champs_formulaire=%s)",
+            len(request.FILES),
+            len(request.data),
+        )
         
         serializer = CSVUploadSerializer(data=request.data)
         
@@ -1597,17 +1599,16 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         csv_file = serializer.validated_data.get('file')  # type: ignore
         if not csv_file:
             return Response({'error': 'Fichier CSV requis'}, status=status.HTTP_400_BAD_REQUEST)
-        logger.info(f"Fichier validé: {csv_file.name} ({csv_file.size} bytes)")
+        logger.info("upload_csv: fichier validé (%s octets)", getattr(csv_file, 'size', 0))
         
         try:
             # Lire le contenu du fichier et supprimer le BOM si présent
             content = csv_file.read().decode('utf-8-sig')  # utf-8-sig supprime automatiquement le BOM
-            logger.info(f"Contenu lu: {len(content)} caractères")
-            logger.info(f"Premières lignes:\n{content[:500]}")
+            logger.info("upload_csv: contenu décodé (%d caractères)", len(content))
             
             # Utiliser l'utilisateur connecté
             user = request.user
-            logger.info(f"Utilisateur: {user.username}")
+            logger.info("upload_csv: utilisateur id=%s", user.pk)
             
             # Récupérer le compte de trading (paramètre optionnel)
             trading_account_id = request.data.get('trading_account')

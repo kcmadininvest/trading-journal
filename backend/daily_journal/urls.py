@@ -9,5 +9,10 @@ router = DefaultRouter()
 router.register(r'entries', views.DailyJournalEntryViewSet, basename='daily-journal-entry')
 
 urlpatterns = [
+    path(
+        'journal-images/<int:pk>/',
+        views.serve_journal_image_file,
+        name='daily-journal-image-file',
+    ),
     path('', include(router.urls)),
 ]

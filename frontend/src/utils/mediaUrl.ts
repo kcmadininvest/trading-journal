@@ -31,10 +31,10 @@ function openUrlInNewTab(fullUrl: string): void {
 /**
  * Construit l'URL complète pour un fichier media
  * @param url - L'URL du fichier (peut être relative ou absolue)
- * @returns L'URL complète avec le domaine du backend
+ * @returns L'URL complète avec le domaine du backend, ou chaîne vide si absente
  */
-export const getFullMediaUrl = (url: string): string => {
-  if (!url) return url;
+export const getFullMediaUrl = (url: string | undefined | null): string => {
+  if (!url) return '';
 
   // Si l'URL est déjà complète (commence par http:// ou https://), la retourner telle quelle
   if (url.startsWith('http://') || url.startsWith('https://')) {

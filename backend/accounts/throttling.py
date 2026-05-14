@@ -68,3 +68,11 @@ class PasswordResetThrottle(AnonRateThrottle):
     """
     scope = 'password_reset'
 
+
+class ContactThrottle(AnonRateThrottle):
+    """
+    Throttling pour le formulaire de contact (page publique).
+    Limite les abus par adresse IP.
+    """
+    scope = 'contact'
+

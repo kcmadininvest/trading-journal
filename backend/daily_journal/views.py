@@ -1,12 +1,16 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser, FormParser
-
-from django.db.models import Max
+import mimetypes
 from collections import defaultdict
-from django.shortcuts import get_object_or_404
 
+from django.core import signing
+from django.db.models import Max, Prefetch
+from django.http import FileResponse
+from django.shortcuts import get_object_or_404
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.response import Response
+
+from .image_access import load_journal_image_payload
 from .models import DailyJournalEntry, DailyJournalImage
 from .serializers import (
     DailyJournalEntrySerializer,
@@ -23,7 +27,9 @@ class DailyJournalEntryViewSet(viewsets.ModelViewSet):
         if not self.request.user.is_authenticated:
             return DailyJournalEntry.objects.none()  # type: ignore
 
-        queryset = DailyJournalEntry.objects.filter(user=self.request.user).select_related('trading_account').prefetch_related('images')  # type: ignore
+        queryset = DailyJournalEntry.objects.filter(user=self.request.user).select_related('trading_account').prefetch_related(
+            Prefetch('images', queryset=DailyJournalImage.objects.select_related('entry'))
+        )  # type: ignore
 
         date = self.request.query_params.get('date')
         start_date = self.request.query_params.get('start_date')
@@ -49,7 +55,9 @@ class DailyJournalEntryViewSet(viewsets.ModelViewSet):
         """
         Retourne les entrées groupées par année et mois.
         """
-        queryset = DailyJournalEntry.objects.filter(user=request.user).select_related('trading_account').prefetch_related('images')  # type: ignore
+        queryset = DailyJournalEntry.objects.filter(user=request.user).select_related('trading_account').prefetch_related(
+            Prefetch('images', queryset=DailyJournalImage.objects.select_related('entry'))
+        )  # type: ignore
 
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
@@ -136,3 +144,36 @@ class DailyJournalEntryViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response(DailyJournalImageSerializer(image, context={'request': request}).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def serve_journal_image_file(request, pk: int):
+    """
+    Sert le fichier image après vérification d'un jeton signé (lié à l'image et au propriétaire).
+    Permet l'affichage dans <img src> sans en-tête Authorization.
+    """
+    raw = (request.GET.get('s') or '').strip()
+    if not raw:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    try:
+        payload = load_journal_image_payload(raw)
+    except (signing.BadSignature, signing.SignatureExpired):
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    if payload.get('i') != pk:
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    journal_image = get_object_or_404(
+        DailyJournalImage.objects.select_related('entry'),
+        pk=pk,
+        entry__user_id=payload['u'],
+    )
+    if not journal_image.image:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    content_type, _ = mimetypes.guess_type(journal_image.image.name)
+    file_handle = journal_image.image.open('rb')
+    response = FileResponse(file_handle, content_type=content_type or 'application/octet-stream')
+    response['Cache-Control'] = 'private, max-age=3600'
+    return response

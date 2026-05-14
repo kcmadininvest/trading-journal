@@ -1,10 +1,15 @@
+from urllib.parse import urlencode
+
+from django.urls import reverse
 from rest_framework import serializers
 
+from .image_access import sign_journal_image_payload
 from .models import DailyJournalEntry, DailyJournalImage
 
 
 class DailyJournalImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    image = serializers.ImageField(write_only=True, required=False)
 
     class Meta:
         model = DailyJournalImage
@@ -15,9 +20,13 @@ class DailyJournalImageSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if not obj.image:
             return ''
+        token = sign_journal_image_payload(obj.pk, obj.entry.user_id)
+        path = reverse('daily-journal-image-file', kwargs={'pk': obj.pk})
+        query = urlencode({'s': token})
+        relative = f'{path}?{query}'
         if request:
-            return request.build_absolute_uri(obj.image.url)
-        return obj.image.url
+            return request.build_absolute_uri(relative)
+        return relative
 
 
 class DailyJournalEntrySerializer(serializers.ModelSerializer):
