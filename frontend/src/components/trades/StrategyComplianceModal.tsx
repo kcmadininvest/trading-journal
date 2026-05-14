@@ -10,7 +10,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { useComplianceRefresh } from '../../contexts/ComplianceRefreshContext';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
-import { openMediaUrl } from '../../utils/mediaUrl';
+import { openMediaUrl, isAppHostedImageUrl } from '../../utils/mediaUrl';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
 
@@ -983,7 +983,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                   </label>
                   
                   {/* Champ URL + boutons pour les URLs externes uniquement */}
-                  {dayCompliance?.screenshot_url && !dayCompliance.screenshot_url.startsWith('/media/') && (
+                  {dayCompliance?.screenshot_url && !isAppHostedImageUrl(dayCompliance.screenshot_url) && (
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
                       <input
                         type="url"
@@ -1421,7 +1421,7 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                     </label>
                     
                     {/* Champ URL + boutons pour les URLs externes uniquement */}
-                    {trade.screenshotUrl && !trade.screenshotUrl.startsWith('/media/') && (
+                    {trade.screenshotUrl && !isAppHostedImageUrl(trade.screenshotUrl) && (
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-3">
                         <input
                           type="url"

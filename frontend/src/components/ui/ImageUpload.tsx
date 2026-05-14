@@ -1,6 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { openMediaUrl, getFullMediaUrl } from '../../utils/mediaUrl';
+import { openMediaUrl, getFullMediaUrl, isAppHostedImageUrl } from '../../utils/mediaUrl';
 
 export interface ImageUploadProps {
   value?: string; // URL de l'image existante
@@ -31,7 +31,56 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [blobPreviewUrl, setBlobPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [value, thumbnailUrl]);
+
+  useEffect(() => {
+    const hosted = Boolean(value && isAppHostedImageUrl(value));
+    if (!hosted) {
+      setBlobPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      return;
+    }
+
+    let revoked = false;
+    let objectUrl: string | null = null;
+    const ac = new AbortController();
+    const full = getFullMediaUrl(thumbnailUrl || value!);
+
+    setBlobPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+
+    fetch(full, { signal: ac.signal, credentials: 'omit' })
+      .then((r) => {
+        if (!r.ok) throw new Error('bad_status');
+        return r.blob();
+      })
+      .then((blob) => {
+        if (revoked) return;
+        objectUrl = URL.createObjectURL(blob);
+        setBlobPreviewUrl(objectUrl);
+        setImageError(false);
+      })
+      .catch(() => {
+        if (!revoked) setImageError(true);
+      });
+
+    return () => {
+      revoked = true;
+      ac.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      setBlobPreviewUrl(null);
+    };
+  }, [value, thumbnailUrl]);
 
   const validateFile = useCallback((file: File): boolean => {
     setError(null);
@@ -158,8 +207,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       return;
     }
 
-    // Si une fonction de suppression est fournie et que l'URL est un fichier uploadé
-    if (deleteFunction && value && value.startsWith('/media/')) {
+    // Si une fonction de suppression est fournie et que l’URL est un fichier géré par le serveur
+    if (deleteFunction && value && isAppHostedImageUrl(value)) {
       setIsDeleting(true);
       setError(null);
       
@@ -190,6 +239,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   // Si une image est déjà uploadée
   if (value && !isUploading) {
     const imageUrl = thumbnailUrl || value;
+    const hosted = isAppHostedImageUrl(value);
+    const showDirectImg = !hosted && !imageError;
+    const showHostedLoading = Boolean(hosted && !blobPreviewUrl && !imageError);
+    const canHoverPreview = !imageError && (!hosted || !!blobPreviewUrl);
     
     return (
       <div className="space-y-2">
@@ -199,48 +252,116 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           </label>
         )}
         <div className="relative group">
-          <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 leading-none">
-            <img
-              src={getFullMediaUrl(imageUrl)}
-              alt="Screenshot"
-              className="w-full h-auto max-h-[min(70vh,36rem)] object-contain block align-top"
-            />
-            {/* Overlay au hover */}
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={handleOpenImage}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-                {t('trades:strategyCompliance.openImage', { defaultValue: 'Ouvrir' })}
-              </button>
-              <button
-                type="button"
-                onClick={handleRemove}
-                disabled={disabled || isDeleting}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isDeleting ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {t('trades:strategyCompliance.deleting', { defaultValue: 'Suppression...' })}
-                  </>
-                ) : (
-                  <>
+          <div className="relative w-full max-w-md rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 leading-none flex flex-col min-h-[12rem]">
+            <div className="relative w-full min-h-[12rem] flex items-center justify-center">
+              {showDirectImg && (
+                <img
+                  key={getFullMediaUrl(imageUrl)}
+                  src={getFullMediaUrl(imageUrl)}
+                  alt="Screenshot"
+                  onLoad={() => setImageError(false)}
+                  onError={() => setImageError(true)}
+                  className="w-full h-auto max-h-[min(70vh,36rem)] object-contain block align-top"
+                />
+              )}
+              {hosted && blobPreviewUrl && !imageError && (
+                <img
+                  key={blobPreviewUrl}
+                  src={blobPreviewUrl}
+                  alt="Screenshot"
+                  onError={() => setImageError(true)}
+                  className="w-full h-auto max-h-[min(70vh,36rem)] object-contain block align-top"
+                />
+              )}
+              {showHostedLoading && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 px-4 py-6 text-center">
+                  {t('trades:strategyCompliance.previewLoading', {
+                    defaultValue: 'Chargement de l’aperçu…',
+                  })}
+                </p>
+              )}
+              {imageError && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 px-4 py-6 text-center">
+                  {t('trades:strategyCompliance.previewUnavailable', {
+                    defaultValue: 'Aperçu indisponible',
+                  })}
+                </p>
+              )}
+              {canHoverPreview && (
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleOpenImage}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                  >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
-                    {t('trades:strategyCompliance.removeScreenshot', { defaultValue: 'Supprimer' })}
-                  </>
-                )}
-              </button>
+                    {t('trades:strategyCompliance.openImage', { defaultValue: 'Ouvrir' })}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemove}
+                    disabled={disabled || isDeleting}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isDeleting ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        {t('trades:strategyCompliance.deleting', { defaultValue: 'Suppression...' })}
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        {t('trades:strategyCompliance.removeScreenshot', { defaultValue: 'Supprimer' })}
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
+            {imageError && (
+              <div className="flex flex-wrap items-center justify-center gap-3 px-3 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                <button
+                  type="button"
+                  onClick={handleOpenImage}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  {t('trades:strategyCompliance.openImage', { defaultValue: 'Ouvrir' })}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  disabled={disabled || isDeleting}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDeleting ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {t('trades:strategyCompliance.deleting', { defaultValue: 'Suppression...' })}
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      {t('trades:strategyCompliance.removeScreenshot', { defaultValue: 'Supprimer' })}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
         {description && (

@@ -243,7 +243,9 @@ class ImageProcessor:
             url: URL du screenshot à supprimer (original ou miniature)
             
         Returns:
-            True si la suppression a réussi, False sinon
+            True si au moins un fichier a été supprimé, ou si les deux chemins
+            attendus sont déjà absents (suppression idempotente). False si l’URL
+            ne permet pas de résoudre un chemin sous MEDIA_ROOT.
         """
         try:
             relative_path = self._media_relative_path_from_url(url)
@@ -283,10 +285,35 @@ class ImageProcessor:
             else:
                 logger.warning(f"Miniature non trouvée : {thumbnail_path}")
             
-            return deleted_count > 0
+            # Idempotent : OK si au moins un fichier a été supprimé, ou si plus aucun
+            # n'existe déjà (référence orpheline en base / jeton encore valide mais fichier manquant).
+            neither_exists = not original_path.exists() and not thumbnail_path.exists()
+            return deleted_count > 0 or neither_exists
                 
         except Exception as e:
             logger.error(f"Erreur lors de la suppression du fichier : {e}")
+            return False
+
+    def canonical_screenshot_has_any_file(self, canonical_media_url: str) -> bool:
+        """
+        Indique si au moins l'original ou la miniature existe sur disque pour une URL
+        /media/... pointant vers un screenshot .webp (même logique que delete_screenshot).
+        """
+        try:
+            relative_path = self._media_relative_path_from_url(canonical_media_url)
+            if not relative_path:
+                return False
+            absolute_path = self.media_root / relative_path
+            is_thumbnail = '_thumb.webp' in str(absolute_path)
+            if is_thumbnail:
+                original_path = Path(str(absolute_path).replace('_thumb.webp', '.webp'))
+                thumbnail_path = absolute_path
+            else:
+                original_path = absolute_path
+                thumbnail_path = Path(str(absolute_path).replace('.webp', '_thumb.webp'))
+            return original_path.is_file() or thumbnail_path.is_file()
+        except Exception as e:
+            logger.warning(f"canonical_screenshot_has_any_file: {canonical_media_url!r} — {e}")
             return False
 
 

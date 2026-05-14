@@ -42,6 +42,36 @@ class ScreenshotsService {
   }
 
   /**
+   * Interprète la réponse POST delete_screenshot : succès, ou 404 « fichier déjà absent »
+   * (anciens backends / idempotence) traité comme succès pour débloquer l’UI.
+   */
+  private async parseDeleteScreenshotResponse(response: Response): Promise<{ message: string }> {
+    if (response.ok) {
+      return await response.json();
+    }
+    const errorData = await response.json().catch(() => ({} as Record<string, unknown>));
+    const errText = String(errorData.error || errorData.detail || '');
+    if (
+      response.status === 404 &&
+      (errText.includes('Fichier non trouvé') ||
+        errText.includes('déjà supprimé') ||
+        errText.includes('File not found') ||
+        errText.includes('already deleted'))
+    ) {
+      return {
+        message:
+          (typeof errorData.message === 'string' && errorData.message) ||
+          'Référence retirée (fichier déjà absent sur le serveur).',
+      };
+    }
+    throw new Error(
+      (errorData.error as string) ||
+        (errorData.detail as string) ||
+        'Erreur lors de la suppression du screenshot'
+    );
+  }
+
+  /**
    * Upload un screenshot pour un trade
    * @param file - Le fichier image à uploader
    * @returns Les URLs de l'image originale et de la miniature
@@ -112,14 +142,7 @@ class ScreenshotsService {
       }
     );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || errorData.detail || 'Erreur lors de la suppression du screenshot'
-      );
-    }
-
-    return await response.json();
+    return this.parseDeleteScreenshotResponse(response);
   }
 
   /**
@@ -139,14 +162,7 @@ class ScreenshotsService {
       }
     );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || errorData.detail || 'Erreur lors de la suppression du screenshot'
-      );
-    }
-
-    return await response.json();
+    return this.parseDeleteScreenshotResponse(response);
   }
 
   /**
@@ -193,14 +209,7 @@ class ScreenshotsService {
       }
     );
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || errorData.detail || 'Erreur lors de la suppression du screenshot'
-      );
-    }
-
-    return await response.json();
+    return this.parseDeleteScreenshotResponse(response);
   }
 
   /**
