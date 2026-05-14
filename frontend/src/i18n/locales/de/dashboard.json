@@ -5,6 +5,7 @@
   "traderPerformanceTracker": "Trader Performance Tracker",
   "objectivesBasedOnHistory": "Ziele basierend auf Ihrer historischen Leistung",
   "winRate": "Gewinnrate",
+  "winRatePeriodPeakTooltip": "Höchste Gewinnrate zu einem beliebigen Zeitpunkt in der Periode, während die Trades chronologisch hinzukamen. Der orangefarbene Ring verlängert die Anzeige bis zu diesem Höchstwert, wenn er über dem aktuellen Periodenwert liegt.",
   "avgWinning": "Durchschn. Gewinn",
   "avgLosing": "Durchschn. Verlust",
   "objective": "Ziel",

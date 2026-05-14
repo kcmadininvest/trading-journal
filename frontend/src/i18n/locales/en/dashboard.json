@@ -5,6 +5,7 @@
   "traderPerformanceTracker": "Trader Performance Tracker",
   "objectivesBasedOnHistory": "Objectives based on your historical performance",
   "winRate": "Win Rate",
+  "winRatePeriodPeakTooltip": "Maximum win rate reached at any point during the period as trades accumulated in chronological order. The orange ring extends the gauge to that peak when it is above your current period rate.",
   "avgWinning": "Avg Winning",
   "avgLosing": "Avg Losing",
   "objective": "Objective",

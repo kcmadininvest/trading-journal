@@ -5,6 +5,7 @@
   "traderPerformanceTracker": "Trader Performance Tracker",
   "objectivesBasedOnHistory": "Objetivos basados en tu rendimiento histórico",
   "winRate": "Tasa de aciertos",
+  "winRatePeriodPeakTooltip": "Tasa de acierto máxima alcanzada en algún momento del periodo, a medida que se acumulan los trades en orden cronológico. El anillo naranja prolonga el indicador hasta ese máximo cuando supera la tasa actual del periodo.",
   "avgWinning": "Promedio ganador",
   "avgLosing": "Promedio perdedor",
   "objective": "Objetivo",

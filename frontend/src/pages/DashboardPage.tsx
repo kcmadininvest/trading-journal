@@ -1545,10 +1545,33 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       ? losingTrades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0) / losingTrades.length
       : 0;
 
+    let peakWinRateOnPeriod: number | null = null;
+    if (totalTrades > 0) {
+      const orderedDecided = [...trades]
+        .filter((t) => t.is_profitable !== null)
+        .sort((a, b) => {
+          const ta = a.entered_at ? new Date(a.entered_at).getTime() : 0;
+          const tb = b.entered_at ? new Date(b.entered_at).getTime() : 0;
+          return ta - tb;
+        });
+      let winsInPrefix = 0;
+      const cumulativeRates: number[] = [];
+      let k = 0;
+      for (const t of orderedDecided) {
+        k += 1;
+        if (t.is_profitable === true && getTradeDisplayPnlValue(t, pnlDisplayMode) != null) {
+          winsInPrefix += 1;
+        }
+        cumulativeRates.push((winsInPrefix / k) * 100);
+      }
+      peakWinRateOnPeriod = Math.max(...cumulativeRates);
+    }
+
     return {
       winRate,
       avgWinningTrade,
       avgLosingTrade,
+      peakWinRateOnPeriod,
     };
   }, [trades, pnlDisplayMode]);
 
@@ -1960,36 +1983,90 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 text-center uppercase tracking-wide">
                     {t('dashboard:winRate')}
                   </h3>
-                  <div className="relative w-[72px] h-[72px] sm:w-[110px] sm:h-[110px] md:w-[90px] md:h-[90px] lg:w-[110px] lg:h-[110px] xl:w-[130px] xl:h-[130px] mx-auto mb-2 sm:mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90 absolute top-0 left-0" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
-                      <circle
-                        cx="70"
-                        cy="70"
-                        r="66"
-                        stroke="#d1d5db"
-                        strokeWidth="8"
-                        fill="none"
-                        className="opacity-40"
-                      />
-                      <circle
-                        cx="70"
-                        cy="70"
-                        r="66"
-                        stroke={performanceLabels?.winRate.color || '#10b981'}
-                        strokeWidth="8"
-                        fill="none"
-                        strokeDasharray={2 * Math.PI * 66}
-                        strokeDashoffset={2 * Math.PI * 66 * (1 - Math.min(tradingMetrics.winRate / 100, 1))}
-                        strokeLinecap="round"
-                        className="transition-all duration-1000 ease-out"
-                      />
-                    </svg>
-                    <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-sm sm:text-xl xl:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {formatNumber(tradingMetrics.winRate, 2)}%
-                      </div>
-                    </div>
-                  </div>
+                  <Tooltip
+                    disabled={
+                      tradingMetrics.peakWinRateOnPeriod == null ||
+                      tradingMetrics.peakWinRateOnPeriod <=
+                        tradingMetrics.winRate + 1e-9
+                    }
+                    content={t('dashboard:winRatePeriodPeakTooltip', {
+                      defaultValue:
+                        'Highest win rate reached at any point during the period, as trades accumulated in chronological order. The orange ring shows how far above your current period rate that peak was.',
+                    })}
+                    position="bottom"
+                    triggerDisplay="block"
+                    className="mx-auto mb-2 block max-w-full w-[72px] sm:mb-4 sm:w-[110px] md:w-[90px] lg:w-[110px] xl:w-[130px]"
+                  >
+                    {(() => {
+                      const C = 2 * Math.PI * 66;
+                      const peakVal = tradingMetrics.peakWinRateOnPeriod;
+                      const currentVal = tradingMetrics.winRate;
+                      const p =
+                        peakVal != null ? Math.min(peakVal / 100, 1) : 0;
+                      const showPeakExtras =
+                        peakVal != null && peakVal > currentVal + 1e-9;
+                      return (
+                        <div
+                          className={clsx(
+                            'relative flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]',
+                            showPeakExtras && 'cursor-help'
+                          )}
+                        >
+                          <svg
+                            className="absolute inset-0 h-full w-full -rotate-90"
+                            viewBox="0 0 140 140"
+                            preserveAspectRatio="xMidYMid meet"
+                          >
+                            <circle
+                              cx="70"
+                              cy="70"
+                              r="66"
+                              stroke="#d1d5db"
+                              strokeWidth="8"
+                              fill="none"
+                              className="opacity-40"
+                            />
+                            {showPeakExtras ? (
+                              <circle
+                                cx="70"
+                                cy="70"
+                                r="66"
+                                stroke="currentColor"
+                                strokeWidth="8"
+                                fill="none"
+                                strokeDasharray={C}
+                                strokeDashoffset={C * (1 - p)}
+                                strokeLinecap="round"
+                                className="text-amber-500 transition-all duration-1000 ease-out dark:text-amber-400"
+                              />
+                            ) : null}
+                            <circle
+                              cx="70"
+                              cy="70"
+                              r="66"
+                              stroke={performanceLabels?.winRate.color || '#10b981'}
+                              strokeWidth="8"
+                              fill="none"
+                              strokeDasharray={C}
+                              strokeDashoffset={C * (1 - Math.min(tradingMetrics.winRate / 100, 1))}
+                              strokeLinecap="round"
+                              className="transition-all duration-1000 ease-out"
+                            />
+                          </svg>
+                          <div className="relative z-10 flex flex-col items-center justify-center px-0.5">
+                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 sm:text-xl xl:text-2xl">
+                              {formatNumber(tradingMetrics.winRate, 2)}%
+                            </div>
+                            {showPeakExtras ? (
+                              <div className="mt-0.5 text-[10px] font-semibold leading-none text-amber-600 dark:text-amber-400 sm:text-xs">
+                                {formatNumber(peakVal!, 2)}%
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </Tooltip>
                   <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
                     {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
                   </div>
