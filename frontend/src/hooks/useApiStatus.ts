@@ -13,9 +13,8 @@ export const useApiStatus = () => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      // Utiliser l'endpoint /api/test/ pour vérifier le statut de l'API
-      // Cet endpoint ne nécessite pas d'authentification et répond rapidement
-      const response = await fetch(`${baseUrl}/api/test/`, {
+      // Endpoint public minimal (prod et dev) — ne pas utiliser /api/test/ (DEBUG seulement)
+      const response = await fetch(`${baseUrl}/api/health/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -25,7 +24,6 @@ export const useApiStatus = () => {
 
       clearTimeout(timeoutId);
 
-      // Le endpoint /api/test/ retourne 200 si l'API est disponible
       if (response.ok && response.status === 200) {
         setStatus('online');
         setLastChecked(new Date());

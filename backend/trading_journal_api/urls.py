@@ -141,6 +141,13 @@ def organization_schema(request):
     return JsonResponse(schema_data, json_dumps_params={'indent': 2})
 
 
+def api_health(request):
+    """Sondage minimal pour le front (footer) et la supervision ; aucune donnée métier."""
+    if request.method != 'GET':
+        return JsonResponse({'detail': 'Method not allowed'}, status=405)
+    return JsonResponse({'status': 'ok'})
+
+
 class _ApiSchemaAccess(BasePermission):
     """En production : schéma OpenAPI réservé aux comptes administrateur authentifiés."""
 
@@ -171,6 +178,8 @@ class StaffOrDebugSpectacularSwaggerView(SpectacularSwaggerView):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    path('api/health/', api_health, name='api_health'),
 
     # API Documentation (accès restreint hors DEBUG)
     path('schema/', StaffOrDebugSpectacularAPIView.as_view(), name='schema'),
