@@ -26,6 +26,11 @@ urlpatterns = [
         protected_media_views.serve_protected_screenshot_media,
         name='protected-screenshot-media',
     ),
+    path(
+        'sign-screenshot-display-url/',
+        protected_media_views.sign_screenshot_display_url,
+        name='sign-screenshot-display-url',
+    ),
     path('', include(router.urls)),
     path('dashboard-summary/', views.dashboard_summary, name='dashboard-summary'),
     path('dashboard-activity-summary/', views.dashboard_activity_summary, name='dashboard-activity-summary'),

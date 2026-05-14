@@ -126,6 +126,38 @@ class ScreenshotsService {
   }
 
   /**
+   * Obtient une URL signée pour afficher un fichier sous /media/screenshots/
+   * (nécessaire lorsque le serveur web bloque l’accès direct à ce répertoire).
+   */
+  async signScreenshotDisplayUrl(url: string): Promise<string> {
+    const response = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/sign-screenshot-display-url/`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({} as Record<string, unknown>));
+      throw new Error(
+        (errorData.detail as string) ||
+          (errorData.error as string) ||
+          'Impossible de générer l’URL d’aperçu du screenshot'
+      );
+    }
+
+    const data = (await response.json()) as { signed_url?: string };
+    if (!data.signed_url) {
+      throw new Error('Réponse serveur invalide pour l’URL signée');
+    }
+    return data.signed_url;
+  }
+
+  /**
    * Supprime un screenshot pour un trade
    * @param screenshotUrl - L'URL du screenshot à supprimer
    * @returns Message de confirmation

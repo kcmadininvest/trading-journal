@@ -32,6 +32,18 @@ export function isAppHostedImageUrl(url: string | undefined | null): boolean {
   return isSignedProtectedImageUrl(url);
 }
 
+/**
+ * True si l’URL pointe vers un fichier sous media/screenshots/ servi uniquement
+ * via jeton (accès direct /media/ souvent interdit en production).
+ */
+export function needsSignedScreenshotMediaPath(url: string | undefined | null): boolean {
+  if (!url) return false;
+  const s = url.trim();
+  if (s.includes('/protected-screenshot')) return false;
+  if (s.includes('/journal-images/')) return false;
+  return s.includes('/media/screenshots/');
+}
+
 function shouldOpenInAppLightbox(originalUrl: string, fullUrl: string): boolean {
   if (originalUrl.startsWith('/media/')) {
     return true;

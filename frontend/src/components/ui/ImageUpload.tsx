@@ -1,6 +1,12 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { openMediaUrl, getFullMediaUrl, isAppHostedImageUrl } from '../../utils/mediaUrl';
+import {
+  openMediaUrl,
+  getFullMediaUrl,
+  isAppHostedImageUrl,
+  needsSignedScreenshotMediaPath,
+} from '../../utils/mediaUrl';
+import screenshotsService from '../../services/screenshots';
 
 export interface ImageUploadProps {
   value?: string; // URL de l'image existante
@@ -52,27 +58,40 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     let revoked = false;
     let objectUrl: string | null = null;
     const ac = new AbortController();
-    const full = getFullMediaUrl(thumbnailUrl || value!);
+    const targetPath = thumbnailUrl || value!;
 
     setBlobPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
 
-    fetch(full, { signal: ac.signal, credentials: 'omit' })
-      .then((r) => {
+    const loadPreview = async () => {
+      let fetchUrl = getFullMediaUrl(targetPath);
+      if (needsSignedScreenshotMediaPath(thumbnailUrl) || needsSignedScreenshotMediaPath(value)) {
+        try {
+          const signed = await screenshotsService.signScreenshotDisplayUrl(targetPath);
+          if (revoked) return;
+          fetchUrl = getFullMediaUrl(signed);
+        } catch {
+          if (!revoked) setImageError(true);
+          return;
+        }
+      }
+
+      try {
+        const r = await fetch(fetchUrl, { signal: ac.signal, credentials: 'omit' });
         if (!r.ok) throw new Error('bad_status');
-        return r.blob();
-      })
-      .then((blob) => {
+        const blob = await r.blob();
         if (revoked) return;
         objectUrl = URL.createObjectURL(blob);
         setBlobPreviewUrl(objectUrl);
         setImageError(false);
-      })
-      .catch(() => {
+      } catch {
         if (!revoked) setImageError(true);
-      });
+      }
+    };
+
+    void loadPreview();
 
     return () => {
       revoked = true;
