@@ -1041,9 +1041,10 @@ class TradeStrategy(models.Model):
         help_text='Lien vers l\'image TradingView ou autre'
     )
     
-    # Vidéo
+    # Vidéo (max_length élevé : liens YouTube avec paramètres > 200 car. par défaut)
     video_url = models.URLField(
         blank=True,
+        max_length=2000,
         verbose_name='URL Vidéo',
         help_text='Lien vers une vidéo YouTube ou autre'
     )
@@ -1783,9 +1784,10 @@ class DayStrategyCompliance(models.Model):
         help_text='Lien vers l\'image TradingView ou autre'
     )
     
-    # Vidéo
+    # Vidéo (max_length élevé : liens YouTube avec paramètres > 200 car. par défaut)
     video_url = models.URLField(
         blank=True,
+        max_length=2000,
         verbose_name='URL Vidéo',
         help_text='Lien vers une vidéo YouTube ou autre'
     )

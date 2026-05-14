@@ -3684,7 +3684,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     trade=trade,
                     defaults={
                         'strategy_respected': strategy_data.get('strategy_respected'),
-                        'dominant_emotions': strategy_data.get('dominant_emotions', []),
+                        'dominant_emotions': strategy_data.get('dominant_emotions') or [],
                         'gain_if_strategy_respected': strategy_data.get('gain_if_strategy_respected'),
                         'tp1_reached': strategy_data.get('tp1_reached', False),
                         'tp2_plus_reached': strategy_data.get('tp2_plus_reached', False),

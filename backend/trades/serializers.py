@@ -536,6 +536,12 @@ class TradeStrategySerializer(serializers.ModelSerializer):
         max_length=200,
         validators=[validate_media_or_http_url],
     )
+    video_url = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        max_length=2000,
+        validators=[validate_media_or_http_url],
+    )
     
     class Meta:
         model = TradeStrategy
@@ -610,6 +616,12 @@ class DayStrategyComplianceSerializer(serializers.ModelSerializer):
         allow_blank=True,
         required=False,
         max_length=200,
+        validators=[validate_media_or_http_url],
+    )
+    video_url = serializers.CharField(
+        allow_blank=True,
+        required=False,
+        max_length=2000,
         validators=[validate_media_or_http_url],
     )
     
