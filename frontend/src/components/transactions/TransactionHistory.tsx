@@ -295,8 +295,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex gap-2 overflow-x-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex gap-2 overflow-x-auto">
           <button
             type="button"
             onClick={() => setFilterType('all')}
@@ -413,6 +414,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {error && (
