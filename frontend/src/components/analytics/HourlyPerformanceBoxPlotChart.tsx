@@ -6,8 +6,6 @@ import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
-import type { PnlDisplayMode } from '../../utils/pnlDisplay';
-
 ChartJS.register(BoxPlotController, BoxAndWiskers);
 
 const OUTLIER_GAIN_COLOR = '#3b82f6';
@@ -86,8 +84,6 @@ interface HourlyPerformanceBoxPlotChartProps {
   };
   currencySymbol: string;
   chartColors: any;
-  /** Aligné sur le bouton PnL brut / net (données déjà filtrées côté page). */
-  pnlDisplayMode: PnlDisplayMode;
 }
 
 interface BoxPlotData {
@@ -142,7 +138,6 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
   data,
   currencySymbol,
   chartColors,
-  pnlDisplayMode,
 }) => {
   const { t } = useTranslation();
 
@@ -171,7 +166,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         ...stats,
       };
     });
-  }, [data, pnlDisplayMode]);
+  }, [data]);
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -270,7 +265,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         },
       },
     },
-  }), [chartColors, currencySymbol, t, boxPlotData, pnlDisplayMode]);
+  }), [chartColors, currencySymbol, t, boxPlotData]);
 
   if (!data || data.data.length === 0) {
     return (
@@ -315,7 +310,6 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
       </div>
       <div className="relative flex-1 min-h-[320px]">
         <Chart
-          key={pnlDisplayMode}
           type="boxplot"
           plugins={[hourlyBoxPlotColoredOutliersPlugin]}
           data={{

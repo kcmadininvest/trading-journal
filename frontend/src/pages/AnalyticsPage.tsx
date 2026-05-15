@@ -1645,17 +1645,17 @@ const AnalyticsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <HourlyPerformanceBoxPlotChart
+              key={pnlDisplayMode}
               data={hourlyPerformanceScatter}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
-              pnlDisplayMode={pnlDisplayMode}
             />
             <HourlyPerformanceBarsChart
+              key={pnlDisplayMode}
               data={hourlyPerformanceBars}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
               windowWidth={windowWidth}
-              pnlDisplayMode={pnlDisplayMode}
             />
             <HeatmapChart
               key={pnlDisplayMode}

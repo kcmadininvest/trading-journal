@@ -4,14 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
-import type { PnlDisplayMode } from '../../utils/pnlDisplay';
-
 interface HourlyPerformanceBarsChartProps {
   data: { hour: string; hourNum: number; pnl: number }[];
   currencySymbol: string;
   chartColors: any;
   windowWidth: number;
-  pnlDisplayMode: PnlDisplayMode;
 }
 
 export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProps> = ({
@@ -19,7 +16,6 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
   currencySymbol,
   chartColors,
   windowWidth,
-  pnlDisplayMode,
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -134,7 +130,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
         },
       },
     },
-  }), [chartColors, currencySymbol, t, data, windowWidth, isDark, pnlDisplayMode]);
+  }), [chartColors, currencySymbol, t, data, windowWidth, isDark]);
 
   if (!data || data.length === 0) {
     return (
@@ -156,7 +152,6 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
       </h3>
       <div className="relative flex-1 min-h-[320px]">
         <ChartBar
-          key={pnlDisplayMode}
           data={{
             labels: data.map(d => d.hour),
             datasets: [
