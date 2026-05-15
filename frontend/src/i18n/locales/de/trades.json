@@ -165,6 +165,7 @@
     "winners": "Gewinner",
     "losers": "Verlierer",
     "strategy": "Strategie",
+    "strategyNeutral": "Alle",
     "withStrategy": "Mit Strategie",
     "withoutStrategy": "Ohne Strategie",
     "positionStrategy": "Positionsstrategie"

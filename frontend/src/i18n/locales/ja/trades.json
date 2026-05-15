@@ -130,6 +130,7 @@
     "winners": "勝ちトレード",
     "losers": "負けトレード",
     "strategy": "戦略",
+    "strategyNeutral": "すべて",
     "withStrategy": "戦略あり",
     "withoutStrategy": "戦略なし",
     "positionStrategy": "ポジション戦略"
