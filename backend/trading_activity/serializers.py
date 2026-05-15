@@ -98,8 +98,19 @@ class TradingActivityExpenseSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+def _serialize_linked_withdrawal(tx) -> dict:
+    return {
+        'id': tx.id,
+        'amount': str(tx.amount),
+        'transaction_date': tx.transaction_date.isoformat(),
+        'trading_account_id': tx.trading_account_id,
+        'trading_account_name': tx.trading_account.name,
+        'currency': tx.trading_account.currency,
+    }
+
+
 class TradingActivityCreditSerializer(serializers.ModelSerializer):
-    linked_account_transaction_detail = serializers.SerializerMethodField(read_only=True)
+    linked_account_transactions_detail = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = TradingActivityCredit
@@ -114,26 +125,19 @@ class TradingActivityCreditSerializer(serializers.ModelSerializer):
             'transfer_fee_amount',
             'transfer_fee_amount_input',
             'transfer_fee_currency',
-            'linked_account_transaction',
-            'linked_account_transaction_detail',
+            'linked_account_transactions',
+            'linked_account_transactions_detail',
             'notes',
             'created_at',
             'updated_at',
         )
-        read_only_fields = ('id', 'linked_account_transaction_detail', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'linked_account_transactions_detail', 'created_at', 'updated_at')
 
-    def get_linked_account_transaction_detail(self, obj: TradingActivityCredit):
-        tx = obj.linked_account_transaction
-        if not tx:
-            return None
-        return {
-            'id': tx.id,
-            'amount': str(tx.amount),
-            'transaction_date': tx.transaction_date.isoformat(),
-            'trading_account_id': tx.trading_account_id,
-            'trading_account_name': tx.trading_account.name,
-            'currency': tx.trading_account.currency,
-        }
+    def get_linked_account_transactions_detail(self, obj: TradingActivityCredit):
+        txs = obj.linked_account_transactions.all()
+        if hasattr(txs, 'select_related'):
+            txs = txs.select_related('trading_account').order_by('-transaction_date', '-id')
+        return [_serialize_linked_withdrawal(tx) for tx in txs]
 
     def validate_primary_currency(self, value: str) -> str:
         code = _normalize_currency(value)
@@ -149,20 +153,23 @@ class TradingActivityCreditSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Devise secondaire non supportée.')
         return code
 
-    def validate_linked_account_transaction(self, tx):
-        if tx is None:
-            return None
+    def validate_linked_account_transactions(self, txs):
         user = self.context['request'].user
-        if tx.user_id != user.id and tx.trading_account.user_id != user.id:
-            raise serializers.ValidationError('Transaction introuvable ou non autorisée.')
-        if tx.transaction_type != 'withdrawal':
-            raise serializers.ValidationError('Seuls les retraits peuvent être liés.')
-        others = TradingActivityCredit.objects.filter(linked_account_transaction=tx)
+        tx_list = list(txs)
+        if not tx_list:
+            return []
+        tx_ids = [tx.id for tx in tx_list]
+        for tx in tx_list:
+            if tx.user_id != user.id and tx.trading_account.user_id != user.id:
+                raise serializers.ValidationError('Transaction introuvable ou non autorisée.')
+            if tx.transaction_type != 'withdrawal':
+                raise serializers.ValidationError('Seuls les retraits peuvent être liés.')
+        others = TradingActivityCredit.objects.filter(linked_account_transactions__in=tx_ids)
         if self.instance is not None:
             others = others.exclude(pk=self.instance.pk)
         if others.exists():
-            raise serializers.ValidationError('Ce retrait est déjà lié à un autre crédit.')
-        return tx
+            raise serializers.ValidationError('Un ou plusieurs retraits sont déjà liés à un autre crédit.')
+        return tx_list
 
     def validate_fx_rate(self, value):
         if value is not None and value <= 0:
@@ -219,8 +226,19 @@ class TradingActivityCreditSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        linked_txs = validated_data.pop('linked_account_transactions', [])
         validated_data['user'] = self.context['request'].user
-        return super().create(validated_data)
+        credit = super().create(validated_data)
+        if linked_txs:
+            credit.linked_account_transactions.set(linked_txs)
+        return credit
+
+    def update(self, instance, validated_data):
+        linked_txs = validated_data.pop('linked_account_transactions', None)
+        credit = super().update(instance, validated_data)
+        if linked_txs is not None:
+            credit.linked_account_transactions.set(linked_txs)
+        return credit
 
 
 class TradingActivitySummarySerializer(serializers.Serializer):

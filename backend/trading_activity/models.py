@@ -205,13 +205,11 @@ class TradingActivityCredit(models.Model):
         verbose_name='Devise des frais (saisie)',
         help_text='Code ISO de la devise des frais telle que saisie (devise principale ou secondaire).',
     )
-    linked_account_transaction = models.ForeignKey(
+    linked_account_transactions = models.ManyToManyField(
         'trades.AccountTransaction',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
         related_name='trading_activity_credits',
-        verbose_name='Transaction de compte liée',
+        blank=True,
+        verbose_name='Retraits liés',
     )
     notes = models.TextField(blank=True, default='', verbose_name='Notes')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
@@ -260,13 +258,6 @@ class TradingActivityCredit(models.Model):
             if self.transfer_fee_currency == self.primary_currency:
                 if self.fx_rate is None or self.fx_rate <= 0:
                     raise ValidationError({'transfer_fee_amount_input': 'Un taux de change est requis si les frais sont saisis en devise principale.'})
-        if self.linked_account_transaction_id:
-            tx = self.linked_account_transaction
-            if tx.user_id != self.user_id and tx.trading_account.user_id != self.user_id:
-                raise ValidationError({'linked_account_transaction': 'La transaction liée doit appartenir au même utilisateur.'})
-            if tx.transaction_type != 'withdrawal':
-                raise ValidationError({'linked_account_transaction': 'Seuls les retraits peuvent être liés.'})
-
     def save(self, *args, **kwargs):
         self.primary_currency = self.primary_currency.upper()
         if self.secondary_currency:

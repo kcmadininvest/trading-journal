@@ -9,7 +9,8 @@ interface TooltipProps {
   disabled?: boolean;
   className?: string;
   offset?: { x?: number; y?: number };
-  triggerDisplay?: 'inline-flex' | 'block';
+  triggerDisplay?: 'inline-flex' | 'inline-block' | 'block';
+  contentClassName?: string;
 }
 
 const Tooltip: React.FC<TooltipProps> = ({
@@ -21,6 +22,7 @@ const Tooltip: React.FC<TooltipProps> = ({
   className = '',
   offset = { x: 0, y: 0 },
   triggerDisplay = 'inline-flex',
+  contentClassName = '',
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
@@ -170,7 +172,7 @@ const Tooltip: React.FC<TooltipProps> = ({
               opacity: isPositioned ? 1 : 0,
             }}
           >
-            {content}
+            <span className={contentClassName}>{content}</span>
             <div className={getArrowClasses()} />
           </div>,
           document.body

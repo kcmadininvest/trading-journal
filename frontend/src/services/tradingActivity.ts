@@ -38,15 +38,15 @@ export interface TradingActivityCredit {
   transfer_fee_amount: string | null;
   transfer_fee_amount_input?: string | null;
   transfer_fee_currency?: string | null;
-  linked_account_transaction: number | null;
-  linked_account_transaction_detail?: {
+  linked_account_transactions: number[];
+  linked_account_transactions_detail?: Array<{
     id: number;
     amount: string;
     transaction_date: string;
     trading_account_id: number;
     trading_account_name: string;
     currency: string;
-  } | null;
+  }>;
   notes: string;
   created_at: string;
   updated_at: string;

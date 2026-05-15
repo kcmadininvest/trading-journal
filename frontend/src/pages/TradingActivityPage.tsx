@@ -48,6 +48,55 @@ const DEFAULT_LEDGER_PAGE_SIZE = 10;
 
 type TradingActivityT = (key: string, options?: Record<string, string | number>) => string;
 
+function LinkedWithdrawalsCell({
+  row,
+  t,
+  numberFormat,
+  dateFormat,
+  timezone,
+}: {
+  row: TradingActivityCredit;
+  t: TradingActivityT;
+  numberFormat: NumberFormatType;
+  dateFormat: DateFormatType;
+  timezone?: string;
+}) {
+  const details = row.linked_account_transactions_detail ?? [];
+  if (details.length === 0) {
+    return <span className="text-gray-500 dark:text-gray-400">—</span>;
+  }
+
+  if (details.length === 1) {
+    const d = details[0];
+    return (
+      <span className="text-gray-800 dark:text-gray-200">
+        #{d.id} {d.trading_account_name}
+      </span>
+    );
+  }
+
+  const tooltipContent = details
+    .map((d) => {
+      const amt = formatNumber(d.amount, 2, numberFormat);
+      const date = formatDateTimeShort(d.transaction_date, dateFormat, timezone);
+      return `#${d.id} ${d.trading_account_name} — ${amt} ${d.currency} (${date})`;
+    })
+    .join('\n');
+
+  return (
+    <Tooltip
+      content={tooltipContent}
+      position="top"
+      contentClassName="whitespace-pre-line block"
+      triggerDisplay="inline-flex"
+    >
+      <span className="inline-flex max-w-[8rem] truncate rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+        {t('credits.linkedWithdrawalsCount', { count: details.length })}
+      </span>
+    </Tooltip>
+  );
+}
+
 /**
  * Convention de `fx_rate` (stockage / API) :
  * `fx_rate` = nombre d’unités de devise principale pour 1 unité de devise secondaire.
@@ -448,9 +497,6 @@ function MobileCreditCard({
   onDelete: () => void;
 }) {
   const dateLabel = formatDate(row.date, dateFormat, false, timezone);
-  const linkLabel = row.linked_account_transaction_detail
-    ? `#${row.linked_account_transaction_detail.id} ${row.linked_account_transaction_detail.trading_account_name}`
-    : '—';
   return (
     <article className="touch-pan-y rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3 dark:border-gray-700/80">
@@ -491,8 +537,16 @@ function MobileCreditCard({
           </dd>
         </div>
         <div>
-          <dt className="text-gray-500 dark:text-gray-400">{t('credits.linkedWithdrawal')}</dt>
-          <dd className="mt-0.5 break-words text-xs text-gray-800 dark:text-gray-200">{linkLabel}</dd>
+          <dt className="text-gray-500 dark:text-gray-400">{t('credits.linkedWithdrawals')}</dt>
+          <dd className="mt-0.5 text-xs">
+            <LinkedWithdrawalsCell
+              row={row}
+              t={t}
+              numberFormat={numberFormat}
+              dateFormat={dateFormat}
+              timezone={timezone}
+            />
+          </dd>
         </div>
       </dl>
       <div
@@ -591,12 +645,10 @@ const TradingActivityPage: React.FC = () => {
     for (const w of withdrawals) {
       byId.set(w.id, w);
     }
-    if (editingCredit?.linked_account_transaction != null && editingCredit.linked_account_transaction_detail) {
-      const lid = editingCredit.linked_account_transaction;
-      const d = editingCredit.linked_account_transaction_detail;
-      if (!byId.has(lid)) {
-        byId.set(lid, {
-          id: lid,
+    for (const d of editingCredit?.linked_account_transactions_detail ?? []) {
+      if (!byId.has(d.id)) {
+        byId.set(d.id, {
+          id: d.id,
           amount: d.amount,
           transaction_date: d.transaction_date,
           trading_account_id: d.trading_account_id,
@@ -633,7 +685,7 @@ const TradingActivityPage: React.FC = () => {
     secondary_currency: '',
     fx_rate: '',
     transfer_fee_amount: '',
-    linked_account_transaction: '' as string,
+    linked_account_transactions: [] as string[],
   });
   const [creditFxRateFormat, setCreditFxRateFormat] = useState<'app' | 'intermediary'>('app');
   const [creditFeeCurrency, setCreditFeeCurrency] = useState<'secondary' | 'primary'>('secondary');
@@ -839,7 +891,7 @@ const TradingActivityPage: React.FC = () => {
       secondary_currency: '',
       fx_rate: '',
       transfer_fee_amount: '',
-      linked_account_transaction: '',
+      linked_account_transactions: [],
     });
     setCreditFxRateFormat('app');
     setCreditFeeCurrency('secondary');
@@ -868,8 +920,7 @@ const TradingActivityPage: React.FC = () => {
           : row.transfer_fee_amount != null && String(row.transfer_fee_amount).trim() !== ''
             ? formatNumber(row.transfer_fee_amount, 2, numberFormat)
           : '',
-      linked_account_transaction:
-        row.linked_account_transaction != null ? String(row.linked_account_transaction) : '',
+      linked_account_transactions: (row.linked_account_transactions ?? []).map(String),
     });
     // On édite une ligne déjà stockée dans la convention de l’app (primary/secondary).
     setCreditFxRateFormat('app');
@@ -881,18 +932,26 @@ const TradingActivityPage: React.FC = () => {
     setCreditModal(true);
   };
 
-  const pickWithdrawal = (idStr: string) => {
-    const w = withdrawalSelectOptions.find((x) => String(x.id) === idStr);
-    if (!w) {
-      setCredForm((f) => ({ ...f, linked_account_transaction: idStr }));
-      return;
-    }
-    setCredForm((f) => ({
-      ...f,
-      linked_account_transaction: idStr,
-      amount: formatNumber(w.amount, 2, numberFormat),
-      primary_currency: w.currency.toUpperCase(),
-    }));
+  const toggleWithdrawal = (idStr: string) => {
+    setCredForm((f) => {
+      const selected = f.linked_account_transactions.includes(idStr);
+      const next = selected
+        ? f.linked_account_transactions.filter((id) => id !== idStr)
+        : [...f.linked_account_transactions, idStr];
+      if (selected || next.length !== 1) {
+        return { ...f, linked_account_transactions: next };
+      }
+      const w = withdrawalSelectOptions.find((x) => String(x.id) === idStr);
+      if (!w) {
+        return { ...f, linked_account_transactions: next };
+      }
+      return {
+        ...f,
+        linked_account_transactions: next,
+        amount: formatNumber(w.amount, 2, numberFormat),
+        primary_currency: w.currency.toUpperCase(),
+      };
+    });
   };
 
   const saveExpense = async () => {
@@ -977,9 +1036,7 @@ const TradingActivityPage: React.FC = () => {
         transfer_fee_currency: feeInputApi
           ? (creditFeeCurrency === 'primary' ? credForm.primary_currency : credForm.secondary_currency)
           : '',
-        linked_account_transaction: credForm.linked_account_transaction
-          ? Number(credForm.linked_account_transaction)
-          : null,
+        linked_account_transactions: credForm.linked_account_transactions.map(Number),
       };
       if (editingCredit) {
         await tradingActivityService.updateCredit(editingCredit.id, payload);
@@ -1585,7 +1642,7 @@ const TradingActivityPage: React.FC = () => {
                             <th className="px-3 py-2">{t('table.fxRate')}</th>
                             <th className="px-3 py-2">{t('table.transferFee')}</th>
                             <th className="px-3 py-2">{t('table.secondary')}</th>
-                            <th className="px-3 py-2">{t('credits.linkedWithdrawal')}</th>
+                            <th className="px-3 py-2">{t('credits.linkedWithdrawals')}</th>
                             <th className="w-28 px-3 py-2" />
                           </tr>
                         </thead>
@@ -1617,10 +1674,14 @@ const TradingActivityPage: React.FC = () => {
                                   ? `${formatNumber(row.secondary_amount, 2, numberFormat)} ${row.secondary_currency}`
                                   : '—'}
                               </td>
-                              <td className="px-3 py-2">
-                                {row.linked_account_transaction_detail
-                                  ? `#${row.linked_account_transaction_detail.id} ${row.linked_account_transaction_detail.trading_account_name}`
-                                  : '—'}
+                              <td className="px-3 py-2 text-xs">
+                                <LinkedWithdrawalsCell
+                                  row={row}
+                                  t={t}
+                                  numberFormat={numberFormat}
+                                  dateFormat={dateFormatPref}
+                                  timezone={timezonePref}
+                                />
                               </td>
                               <td className="whitespace-nowrap px-3 py-2 text-right">
                                 <TradingActivityLedgerActions
@@ -1982,22 +2043,38 @@ const TradingActivityPage: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('credits.linkWithdrawal')}</label>
-                <div className="relative">
-                  <select
-                    className={MODAL_SELECT_CLASS}
-                    value={credForm.linked_account_transaction}
-                    onChange={(e) => pickWithdrawal(e.target.value)}
-                  >
-                    <option value="">{t('credits.noLink')}</option>
-                    {withdrawalSelectOptions.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        #{w.id} — {formatNumber(w.amount, 2, numberFormat)} {w.currency} — {w.trading_account_name} ({formatDateTimeShort(w.transaction_date, dateFormatPref, timezonePref)})
-                      </option>
-                    ))}
-                  </select>
-                  <ModalSelectChevron />
-                </div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('credits.linkWithdrawals')}</label>
+                {withdrawalSelectOptions.length === 0 ? (
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('credits.noWithdrawalsAvailable')}</p>
+                ) : (
+                  <ul className="max-h-48 overflow-y-auto rounded-lg border border-gray-200 divide-y divide-gray-100 dark:border-gray-600 dark:divide-gray-700">
+                    {withdrawalSelectOptions.map((w) => {
+                      const idStr = String(w.id);
+                      const checked = credForm.linked_account_transactions.includes(idStr);
+                      return (
+                        <li key={w.id}>
+                          <label className="flex cursor-pointer items-start gap-3 p-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <input
+                              type="checkbox"
+                              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-500"
+                              checked={checked}
+                              onChange={() => toggleWithdrawal(idStr)}
+                            />
+                            <span className="min-w-0 flex-1 text-gray-800 dark:text-gray-200">
+                              #{w.id} — {formatNumber(w.amount, 2, numberFormat)} {w.currency} — {w.trading_account_name}{' '}
+                              <span className="text-gray-500 dark:text-gray-400">
+                                ({formatDateTimeShort(w.transaction_date, dateFormatPref, timezonePref)})
+                              </span>
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {credForm.linked_account_transactions.length === 0 && withdrawalSelectOptions.length > 0 && (
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('credits.noLink')}</p>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>

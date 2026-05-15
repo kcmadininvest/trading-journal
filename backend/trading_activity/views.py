@@ -105,7 +105,10 @@ class TradingActivityCreditViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = (
             TradingActivityCredit.objects.filter(user=self.request.user)
-            .select_related('linked_account_transaction', 'linked_account_transaction__trading_account')
+            .prefetch_related(
+                'linked_account_transactions',
+                'linked_account_transactions__trading_account',
+            )
             .order_by('-date', '-created_at')
         )
         qp = self.request.query_params
@@ -314,13 +317,12 @@ class WithdrawalSuggestionsView(APIView):
                 if TradingActivityCredit.objects.filter(pk=cand, user=request.user).exists():
                     editing_pk = cand
 
-        linked_qs = TradingActivityCredit.objects.filter(
-            user=request.user,
-            linked_account_transaction_id__isnull=False,
+        used_tx_qs = AccountTransaction.objects.filter(
+            trading_activity_credits__user=request.user,
         )
         if editing_pk is not None:
-            linked_qs = linked_qs.exclude(pk=editing_pk)
-        used_tx_ids = list(linked_qs.values_list('linked_account_transaction_id', flat=True))
+            used_tx_qs = used_tx_qs.exclude(trading_activity_credits__pk=editing_pk)
+        used_tx_ids = list(used_tx_qs.values_list('pk', flat=True).distinct())
 
         qs = AccountTransaction.objects.filter(
             transaction_type='withdrawal',

@@ -34,8 +34,8 @@ class TradingActivityCreditAdmin(admin.ModelAdmin):
         'secondary_currency',
         'fx_rate',
         'transfer_fee_amount',
-        'linked_account_transaction_id',
         'updated_at',
     )
     list_filter = ('primary_currency', 'user')
-    raw_id_fields = ('user', 'linked_account_transaction')
+    raw_id_fields = ('user',)
+    filter_horizontal = ('linked_account_transactions',)
