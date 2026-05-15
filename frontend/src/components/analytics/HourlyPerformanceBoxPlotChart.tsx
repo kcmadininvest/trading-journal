@@ -1,12 +1,83 @@
 import React, { useMemo } from 'react';
-import { Chart as ChartJS } from 'chart.js';
+import { Chart as ChartJS, Plugin } from 'chart.js';
+import { drawPoint } from 'chart.js/helpers';
 import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot';
 import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import type { PnlDisplayMode } from '../../utils/pnlDisplay';
 
 ChartJS.register(BoxPlotController, BoxAndWiskers);
+
+const OUTLIER_GAIN_COLOR = '#3b82f6';
+const OUTLIER_LOSS_COLOR = '#ec4899';
+const OUTLIER_POINT_RADIUS = 4;
+
+type BoxPlotPoint = {
+  min: number;
+  q1: number;
+  median: number;
+  q3: number;
+  max: number;
+  outliers: number[];
+  items: number[];
+};
+
+/**
+ * La lib boxplot ne colore qu'une couleur par heure ; on redessine les outliers par PnL.
+ * Les outliers sur l'élément Chart.js sont en pixels — il faut lire les valeurs brutes du dataset.
+ */
+const hourlyBoxPlotColoredOutliersPlugin: Plugin<'boxplot'> = {
+  id: 'hourlyBoxPlotColoredOutliers',
+  afterDatasetsDraw(chart) {
+    const meta = chart.getDatasetMeta(0);
+    if (!meta?.data?.length || meta.hidden) {
+      return;
+    }
+
+    const yScale = chart.scales.y;
+    if (!yScale) {
+      return;
+    }
+
+    const dataset = chart.data.datasets[0];
+    const ctx = chart.ctx;
+    ctx.save();
+
+    meta.data.forEach((element, index) => {
+      const raw = dataset.data[index] as BoxPlotPoint | undefined;
+      const outliers = raw?.outliers;
+      if (!outliers?.length) {
+        return;
+      }
+
+      const { x } = (element as { getProps: (keys: string[], final?: boolean) => Record<string, unknown> }).getProps(
+        ['x'],
+        true,
+      );
+      const xPos = x as number;
+
+      for (const pnl of outliers) {
+        const color = pnl >= 0 ? OUTLIER_GAIN_COLOR : OUTLIER_LOSS_COLOR;
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        drawPoint(
+          ctx,
+          {
+            pointStyle: 'circle',
+            radius: OUTLIER_POINT_RADIUS,
+            borderWidth: 1,
+          },
+          xPos,
+          yScale.getPixelForValue(pnl),
+        );
+      }
+    });
+
+    ctx.restore();
+  },
+};
 
 interface HourlyPerformanceBoxPlotChartProps {
   data: {
@@ -15,6 +86,8 @@ interface HourlyPerformanceBoxPlotChartProps {
   };
   currencySymbol: string;
   chartColors: any;
+  /** Aligné sur le bouton PnL brut / net (données déjà filtrées côté page). */
+  pnlDisplayMode: PnlDisplayMode;
 }
 
 interface BoxPlotData {
@@ -69,6 +142,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
   data,
   currencySymbol,
   chartColors,
+  pnlDisplayMode,
 }) => {
   const { t } = useTranslation();
 
@@ -97,7 +171,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         ...stats,
       };
     });
-  }, [data]);
+  }, [data, pnlDisplayMode]);
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -196,7 +270,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         },
       },
     },
-  }), [chartColors, currencySymbol, t, boxPlotData]);
+  }), [chartColors, currencySymbol, t, boxPlotData, pnlDisplayMode]);
 
   if (!data || data.data.length === 0) {
     return (
@@ -241,7 +315,9 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
       </div>
       <div className="relative flex-1 min-h-[320px]">
         <Chart
+          key={pnlDisplayMode}
           type="boxplot"
+          plugins={[hourlyBoxPlotColoredOutliersPlugin]}
           data={{
             labels: boxPlotData.map(d => d.hour),
             datasets: [
@@ -254,29 +330,13 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
                   q3: d.q3,
                   max: d.max,
                   outliers: d.outliers,
+                  items: d.values,
                 })),
                 backgroundColor: 'rgba(59, 130, 246, 0.3)',
                 borderColor: '#3b82f6',
                 borderWidth: 2,
-                outlierBackgroundColor: (context: any) => {
-                  const dataIndex = context.dataIndex;
-                  const outlierIndex = context.outlierIndex;
-                  if (dataIndex !== undefined && outlierIndex !== undefined) {
-                    const outlierValue = boxPlotData[dataIndex]?.outliers[outlierIndex];
-                    return outlierValue >= 0 ? '#3b82f6' : '#ec4899';
-                  }
-                  return '#ec4899';
-                },
-                outlierBorderColor: (context: any) => {
-                  const dataIndex = context.dataIndex;
-                  const outlierIndex = context.outlierIndex;
-                  if (dataIndex !== undefined && outlierIndex !== undefined) {
-                    const outlierValue = boxPlotData[dataIndex]?.outliers[outlierIndex];
-                    return outlierValue >= 0 ? '#3b82f6' : '#ec4899';
-                  }
-                  return '#ec4899';
-                },
-                outlierRadius: 4,
+                outlierRadius: 0,
+                outlierHitRadius: 4,
                 itemRadius: 0,
                 itemStyle: 'circle' as const,
                 itemBackgroundColor: '#3b82f6',

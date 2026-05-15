@@ -2564,6 +2564,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
               <div className="h-64 sm:h-80">
                 <AccountBalanceChart
+                  key={pnlDisplayMode}
                   data={balanceDisplay.rows}
                   currencySymbol={currencySymbol}
                   formatCurrency={formatCurrency}
@@ -2602,6 +2603,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
               <div className="h-64 sm:h-80">
                 <ChartBar
+                  key={pnlDisplayMode}
                   data={weekdayChartData}
                   plugins={[{
                     id: 'adjustAxis',
@@ -2783,6 +2785,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
                 <div className="h-[280px] sm:h-[360px] md:h-[420px]">
                   <ChartBar
+                    key={pnlDisplayMode}
                     data={waterfallChartData}
                     options={{
                       responsive: true,
