@@ -6,7 +6,10 @@ from decimal import Decimal
 from .models import TopStepTrade, TopStepImportLog, TradeStrategy, PositionStrategy, TradingAccount, Currency, TradingGoal, AccountTransaction, AccountDailyMetrics, DayStrategyCompliance, ExportTemplate
 import logging
 
-from .protected_screenshot_urls import transform_screenshot_url_for_response
+from .protected_screenshot_urls import (
+    transform_screenshot_url_for_response,
+    resolve_screenshot_url_for_delete,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +34,17 @@ def validate_media_or_http_url(value):
     except ValidationError:
         raise serializers.ValidationError(_('Saisissez une URL valide.'))
     return value
+
+
+def normalize_screenshot_url_for_storage(value, user):
+    """
+    Les réponses API remplacent les chemins /media/screenshots/... par des URL signées (longues).
+    À la réécriture (PATCH), on reconvertit vers /media/... pour respecter max_length et la BDD.
+    """
+    if not value or user is None or not getattr(user, 'is_authenticated', False):
+        return value
+    canonical = resolve_screenshot_url_for_delete(value, user.pk)
+    return canonical if canonical else value
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -533,7 +547,7 @@ class TradeStrategySerializer(serializers.ModelSerializer):
     screenshot_url = serializers.CharField(
         allow_blank=True,
         required=False,
-        max_length=200,
+        max_length=2048,
         validators=[validate_media_or_http_url],
     )
     video_url = serializers.CharField(
@@ -593,6 +607,11 @@ class TradeStrategySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La note doit être entre 1 et 5")
         return value
 
+    def validate_screenshot_url(self, value):
+        request = self.context.get('request')
+        user = request.user if request else None
+        return normalize_screenshot_url_for_storage(value, user)
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         request = self.context.get('request')
@@ -615,7 +634,7 @@ class DayStrategyComplianceSerializer(serializers.ModelSerializer):
     screenshot_url = serializers.CharField(
         allow_blank=True,
         required=False,
-        max_length=200,
+        max_length=2048,
         validators=[validate_media_or_http_url],
     )
     video_url = serializers.CharField(
@@ -660,6 +679,11 @@ class DayStrategyComplianceSerializer(serializers.ModelSerializer):
         if value is not None and (value < 1 or value > 5):
             raise serializers.ValidationError("La note doit être entre 1 et 5")
         return value
+
+    def validate_screenshot_url(self, value):
+        request = self.context.get('request')
+        user = request.user if request else None
+        return normalize_screenshot_url_for_storage(value, user)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
