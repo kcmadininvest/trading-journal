@@ -183,7 +183,7 @@
   "allAccountsCumulative": "Todas las cuentas (acumulado)",
   "periodPerformance": {
     "sectionTitle": "Rendimiento reciente",
-    "sectionSubtitle": "PnL calendario (día, semana, mes, año) — independiente del filtro de período superior",
+    "sectionScopeHint": "(Independiente del filtro de período superior)",
     "day": "Hoy",
     "week": "Esta semana",
     "month": "Este mes",

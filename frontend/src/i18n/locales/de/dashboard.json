@@ -183,7 +183,7 @@
   "allAccountsCumulative": "Alle Konten (Gesamt)",
   "periodPerformance": {
     "sectionTitle": "Aktuelle Performance",
-    "sectionSubtitle": "Kalender-PnL (Tag, Woche, Monat, Jahr) — unabhängig vom Periodenfilter oben",
+    "sectionScopeHint": "(Unabhängig vom Periodenfilter oben)",
     "day": "Heute",
     "week": "Diese Woche",
     "month": "Dieser Monat",

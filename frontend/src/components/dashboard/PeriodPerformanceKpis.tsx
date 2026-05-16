@@ -332,16 +332,15 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
         defaultValue: 'Performance récente',
       })}
     >
-      <div className="mb-3 sm:mb-4">
+      <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 sm:mb-4">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
           {t('dashboard:periodPerformance.sectionTitle', { defaultValue: 'Performance récente' })}
         </h2>
-        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {t('dashboard:periodPerformance.sectionSubtitle', {
-            defaultValue:
-              'PnL calendaire — indépendant du filtre de période ci-dessus',
+        <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+          {t('dashboard:periodPerformance.sectionScopeHint', {
+            defaultValue: '(Indépendant du filtre de période ci-dessus)',
           })}
-        </p>
+        </span>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {PERIOD_KEYS.map((key) => {

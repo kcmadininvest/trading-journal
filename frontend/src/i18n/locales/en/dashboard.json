@@ -182,7 +182,7 @@
   "allAccountsCumulative": "All accounts (all-time)",
   "periodPerformance": {
     "sectionTitle": "Recent performance",
-    "sectionSubtitle": "Calendar PnL (day, week, month, year) — independent of the period filter above",
+    "sectionScopeHint": "(Independent of the period filter above)",
     "day": "Today",
     "week": "This week",
     "month": "This month",

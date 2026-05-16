@@ -183,7 +183,7 @@
   "allAccountsCumulative": "Tous comptes (cumul)",
   "periodPerformance": {
     "sectionTitle": "Performance récente",
-    "sectionSubtitle": "PnL calendaire (jour, semaine, mois, année) — indépendant du filtre de période ci-dessus",
+    "sectionScopeHint": "(Indépendant du filtre de période ci-dessus)",
     "day": "Aujourd'hui",
     "week": "Cette semaine",
     "month": "Ce mois",
