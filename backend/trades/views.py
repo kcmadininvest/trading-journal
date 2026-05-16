@@ -3658,12 +3658,15 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
         """Crée ou met à jour plusieurs stratégies de trades en une fois."""
+        from .protected_screenshot_urls import normalize_screenshot_url_for_storage
+
         strategies_data = request.data.get('strategies', [])
         if not strategies_data:
             return Response({'error': 'Aucune donnée de stratégie fournie'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             created_strategies = []
+            user_id = request.user.id
             for strategy_data in strategies_data:
                 trade_id = strategy_data.get('trade_id')
                 if not trade_id:
@@ -3691,13 +3694,16 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                         'session_rating': strategy_data.get('session_rating'),
                         'emotion_details': strategy_data.get('emotion_details', ''),
                         'possible_improvements': strategy_data.get('possible_improvements', ''),
-                        'screenshot_url': strategy_data.get('screenshot_url', ''),
+                        'screenshot_url': normalize_screenshot_url_for_storage(
+                            strategy_data.get('screenshot_url', ''),
+                            user_id,
+                        ),
                         'video_url': strategy_data.get('video_url', ''),
                     }
                 )
                 created_strategies.append(strategy)
             
-            serializer = self.get_serializer(created_strategies, many=True)
+            serializer = self.get_serializer(created_strategies, many=True, context={'request': request})
             if created_strategies:
                 refresh_goals_for_user(self.request.user, STRATEGY_DRIVEN_GOAL_TYPES)
             return Response(serializer.data)

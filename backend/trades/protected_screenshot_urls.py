@@ -83,6 +83,20 @@ def resolve_screenshot_file_or_none(relative_under_media: str, user_id: int) -> 
     return target
 
 
+def normalize_screenshot_url_for_storage(value, user_id) -> str:
+    """
+    Les réponses API exposent des URL signées (longues). À l'enregistrement, on stocke
+    le chemin canonique /media/screenshots/... pour respecter la limite BDD (200 car.).
+    """
+    if not value:
+        return ''
+    value = str(value).strip()
+    if not value or user_id is None:
+        return value
+    canonical = resolve_screenshot_url_for_delete(value, int(user_id))
+    return canonical if canonical else value
+
+
 def resolve_screenshot_url_for_delete(url: str, user_id: int) -> Optional[str]:
     """
     Accepte une URL /media/screenshots/... ou une URL API signée (protected-screenshot).

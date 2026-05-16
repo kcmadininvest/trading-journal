@@ -8,7 +8,7 @@ import logging
 
 from .protected_screenshot_urls import (
     transform_screenshot_url_for_response,
-    resolve_screenshot_url_for_delete,
+    normalize_screenshot_url_for_storage,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,17 +34,6 @@ def validate_media_or_http_url(value):
     except ValidationError:
         raise serializers.ValidationError(_('Saisissez une URL valide.'))
     return value
-
-
-def normalize_screenshot_url_for_storage(value, user):
-    """
-    Les réponses API remplacent les chemins /media/screenshots/... par des URL signées (longues).
-    À la réécriture (PATCH), on reconvertit vers /media/... pour respecter max_length et la BDD.
-    """
-    if not value or user is None or not getattr(user, 'is_authenticated', False):
-        return value
-    canonical = resolve_screenshot_url_for_delete(value, user.pk)
-    return canonical if canonical else value
 
 
 class TradingAccountSerializer(serializers.ModelSerializer):
@@ -610,7 +599,9 @@ class TradeStrategySerializer(serializers.ModelSerializer):
     def validate_screenshot_url(self, value):
         request = self.context.get('request')
         user = request.user if request else None
-        return normalize_screenshot_url_for_storage(value, user)
+        if user is None or not getattr(user, 'is_authenticated', False):
+            return value
+        return normalize_screenshot_url_for_storage(value, user.pk)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -683,7 +674,9 @@ class DayStrategyComplianceSerializer(serializers.ModelSerializer):
     def validate_screenshot_url(self, value):
         request = self.context.get('request')
         user = request.user if request else None
-        return normalize_screenshot_url_for_storage(value, user)
+        if user is None or not getattr(user, 'is_authenticated', False):
+            return value
+        return normalize_screenshot_url_for_storage(value, user.pk)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

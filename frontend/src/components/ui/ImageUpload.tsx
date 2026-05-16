@@ -40,9 +40,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [imageError, setImageError] = useState(false);
   const [blobPreviewUrl, setBlobPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewFailedRef = useRef<string | null>(null);
 
   useEffect(() => {
     setImageError(false);
+    previewFailedRef.current = null;
   }, [value, thumbnailUrl]);
 
   useEffect(() => {
@@ -60,6 +62,11 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     const ac = new AbortController();
     const targetPath = thumbnailUrl || value!;
 
+    if (previewFailedRef.current === targetPath) {
+      setImageError(true);
+      return;
+    }
+
     setBlobPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return null;
@@ -73,7 +80,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           if (revoked) return;
           fetchUrl = getFullMediaUrl(signed);
         } catch {
-          if (!revoked) setImageError(true);
+          if (!revoked) {
+            previewFailedRef.current = targetPath;
+            setImageError(true);
+          }
           return;
         }
       }
@@ -87,7 +97,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         setBlobPreviewUrl(objectUrl);
         setImageError(false);
       } catch {
-        if (!revoked) setImageError(true);
+        if (!revoked) {
+          previewFailedRef.current = targetPath;
+          setImageError(true);
+        }
       }
     };
 
@@ -300,11 +313,21 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 </p>
               )}
               {imageError && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 px-4 py-6 text-center">
-                  {t('trades:strategyCompliance.previewUnavailable', {
-                    defaultValue: 'Aperçu indisponible',
-                  })}
-                </p>
+                <div className="text-sm text-gray-600 dark:text-gray-400 px-4 py-6 text-center space-y-2">
+                  <p>
+                    {t('trades:strategyCompliance.previewUnavailable', {
+                      defaultValue: 'Aperçu indisponible',
+                    })}
+                  </p>
+                  {hosted && deleteFunction && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      {t('trades:strategyCompliance.previewMissingOnServer', {
+                        defaultValue:
+                          'Le fichier n’existe plus sur le serveur. Supprimez l’image puis enregistrez, ou ré-uploadez.',
+                      })}
+                    </p>
+                  )}
+                </div>
               )}
               {canHoverPreview && (
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
