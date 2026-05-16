@@ -125,8 +125,12 @@
   },
   "filters": {
     "instrument": "合约",
+    "allInstruments": "全部合约",
+    "instrumentsCount": "{{count}} 个合约",
     "type": "类型",
+    "typeNeutral": "全部",
     "pnl": "盈亏",
+    "pnlNeutral": "全部",
     "winners": "盈利交易",
     "losers": "亏损交易",
     "strategy": "策略",

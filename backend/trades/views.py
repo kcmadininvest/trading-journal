@@ -52,6 +52,21 @@ def refresh_goals_for_user(user, goal_types):
         goal.update_progress()
 
 
+def parse_contract_query_params(query_params) -> list[str]:
+    """Extrait les noms de contrats depuis les query params (répétables ou CSV)."""
+    raw = query_params.getlist('contract')
+    if not raw:
+        single = query_params.get('contract')
+        if single:
+            raw = [single]
+    names: list[str] = []
+    for item in raw:
+        if not item:
+            continue
+        names.extend(part.strip() for part in str(item).split(',') if part.strip())
+    return names
+
+
 def get_user_timezone(request):
     """
     Récupère le timezone de l'utilisateur depuis ses préférences.
@@ -681,7 +696,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             queryset = queryset.filter(trading_account_id=trading_account_id)
         
         # Filtres optionnels
-        contract = self.request.query_params.get('contract', None)
+        contracts = parse_contract_query_params(self.request.query_params)
         trade_type = self.request.query_params.get('type', None)
         start_date = self.request.query_params.get('start_date', None)
         end_date = self.request.query_params.get('end_date', None)
@@ -690,8 +705,8 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         has_strategy = self.request.query_params.get('has_strategy', None)
         position_strategy_id = self.request.query_params.get('position_strategy', None)
         
-        if contract:
-            queryset = queryset.filter(contract_name=contract)
+        if contracts:
+            queryset = queryset.filter(contract_name__in=contracts)
         if trade_type:
             queryset = queryset.filter(trade_type=trade_type)
         if has_strategy is not None:

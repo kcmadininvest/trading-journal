@@ -125,8 +125,12 @@
   },
   "filters": {
     "instrument": "銘柄",
+    "allInstruments": "すべての銘柄",
+    "instrumentsCount": "{{count}}件の銘柄",
     "type": "タイプ",
+    "typeNeutral": "すべて",
     "pnl": "損益",
+    "pnlNeutral": "すべて",
     "winners": "勝ちトレード",
     "losers": "負けトレード",
     "strategy": "戦略",

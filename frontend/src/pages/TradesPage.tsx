@@ -44,7 +44,7 @@ const TradesPage: React.FC = () => {
   const [instruments, setInstruments] = useState<string[]>([]);
   const [filters, setFilters] = useState({
     trading_account: null as number | null,
-    contract: '',
+    contract: [] as string[],
     type: '' as '' | 'Long' | 'Short',
     start_date: '',
     end_date: '',
@@ -118,7 +118,7 @@ const TradesPage: React.FC = () => {
     try {
       const res = await tradesService.list({
         trading_account: currentFilters.trading_account ?? undefined,
-        contract: currentFilters.contract || undefined,
+        contract: currentFilters.contract.length > 0 ? currentFilters.contract : undefined,
         type: currentFilters.type || undefined,
         start_date: currentFilters.start_date || undefined,
         end_date: currentFilters.end_date || undefined,
@@ -143,7 +143,7 @@ const TradesPage: React.FC = () => {
       const { trading_account, contract, type, start_date, end_date, profitable, position_strategy } = filters;
       const s = await tradesService.statistics({
         trading_account: trading_account ?? undefined,
-        contract: contract || undefined,
+        contract: contract.length > 0 ? contract : undefined,
         type: type || undefined,
         start_date: start_date || undefined,
         end_date: end_date || undefined,
@@ -221,7 +221,7 @@ const TradesPage: React.FC = () => {
         // Passer trading_account même s'il est null (tous les comptes) - undefined sera ignoré par l'API
         const s = await tradesService.statistics({
           trading_account: trading_account !== null ? trading_account : undefined,
-          contract: contract || undefined,
+          contract: contract.length > 0 ? contract : undefined,
           type: type || undefined,
           start_date: start_date || undefined,
           end_date: end_date || undefined,
@@ -250,8 +250,11 @@ const TradesPage: React.FC = () => {
         setInstruments(list);
 
         setFilters(prev => {
-          if (prev.contract && !list.includes(prev.contract)) {
-            return { ...prev, contract: '' };
+          if (prev.contract.length > 0) {
+            const valid = prev.contract.filter((c) => list.includes(c));
+            if (valid.length !== prev.contract.length) {
+              return { ...prev, contract: valid };
+            }
           }
           return prev;
         });
@@ -267,7 +270,7 @@ const TradesPage: React.FC = () => {
   const resetFilters = () => {
     setFilters({
       trading_account: selectedAccountId,
-      contract: '',
+      contract: [] as string[],
       type: '',
       start_date: '',
       end_date: '',
@@ -309,7 +312,7 @@ const TradesPage: React.FC = () => {
       try {
         const s = await tradesService.statistics({
           trading_account: filters.trading_account !== null ? filters.trading_account : undefined,
-          contract: filters.contract || undefined,
+          contract: filters.contract.length > 0 ? filters.contract : undefined,
           type: filters.type || undefined,
           start_date: filters.start_date || undefined,
           end_date: filters.end_date || undefined,
@@ -358,7 +361,7 @@ const TradesPage: React.FC = () => {
       try {
         const s = await tradesService.statistics({
           trading_account: filters.trading_account !== null ? filters.trading_account : undefined,
-          contract: filters.contract || undefined,
+          contract: filters.contract.length > 0 ? filters.contract : undefined,
           type: filters.type || undefined,
           start_date: filters.start_date || undefined,
           end_date: filters.end_date || undefined,
@@ -396,7 +399,7 @@ const TradesPage: React.FC = () => {
       while (hasMore) {
         const res = await tradesService.list({
           trading_account: filters.trading_account ?? undefined,
-          contract: filters.contract || undefined,
+          contract: filters.contract.length > 0 ? filters.contract : undefined,
           type: filters.type || undefined,
           start_date: filters.start_date || undefined,
           end_date: filters.end_date || undefined,
@@ -591,7 +594,7 @@ const TradesPage: React.FC = () => {
                       try {
                         const allIds = await tradesService.getAllIds({
                           trading_account: filters.trading_account ?? undefined,
-                          contract: filters.contract || undefined,
+                          contract: filters.contract.length > 0 ? filters.contract : undefined,
                           type: filters.type || undefined,
                           start_date: filters.start_date || undefined,
                           end_date: filters.end_date || undefined,

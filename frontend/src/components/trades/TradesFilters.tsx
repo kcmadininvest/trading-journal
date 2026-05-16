@@ -1,14 +1,27 @@
 import React, { useMemo, useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { CustomSelect } from '../common/CustomSelect';
+import { CustomMultiSelect } from '../common/CustomMultiSelect';
 import { DateInput } from '../common/DateInput';
 import { PositionStrategyPillBar } from '../common/PositionStrategyPillBar';
 import { usePositionStrategiesForFilter } from '../../hooks/usePositionStrategiesForFilter';
 import { Tooltip } from '../ui';
 
+const FILTER_TOGGLE_ITEM_CLASS =
+  'min-w-0 flex-1 inline-flex items-center justify-center rounded-md px-1.5 py-1.5 text-[11px] font-medium leading-tight ' +
+  'transition-[color,background-color,box-shadow] duration-200 ease-out ' +
+  'text-gray-500 hover:bg-gray-100/90 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200 ' +
+  'data-[state=on]:relative data-[state=on]:z-10 data-[state=on]:bg-blue-600 data-[state=on]:text-white ' +
+  'data-[state=on]:shadow-[0_3px_12px_-1px_rgba(37,99,235,0.55),0_2px_6px_-1px_rgba(15,23,42,0.18)] ' +
+  'data-[state=on]:hover:bg-blue-600 dark:data-[state=on]:bg-blue-500 dark:data-[state=on]:hover:bg-blue-500 ' +
+  'dark:data-[state=on]:shadow-[0_4px_16px_-2px_rgba(59,130,246,0.5),0_2px_8px_rgba(0,0,0,0.35)] ' +
+  'focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-700';
+
+const FILTER_TOGGLE_ROOT_CLASS =
+  'flex h-10 w-full min-w-0 items-stretch gap-0.5 overflow-visible rounded-md border border-gray-300 bg-white p-1 shadow-sm dark:border-gray-600 dark:bg-gray-700';
+
 /** Texte tronqué : tooltip au survol / focus uniquement si ellipses actives. */
-function StrategyToggleTruncatingLabel({ label }: { label: string }) {
+function FilterToggleTruncatingLabel({ label }: { label: string }) {
   const textRef = useRef<HTMLSpanElement>(null);
   const [isTruncated, setIsTruncated] = useState(false);
 
@@ -47,7 +60,7 @@ function StrategyToggleTruncatingLabel({ label }: { label: string }) {
 
 interface TradesFiltersProps {
   values: {
-    contract: string;
+    contract: string[];
     type: '' | 'Long' | 'Short';
     start_date: string;
     end_date: string;
@@ -64,22 +77,36 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
   const { t } = useI18nTranslation();
   const { strategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
 
-  const contractOptions = useMemo(() => [
-    { value: '', label: t('trades:filters.instrument') },
-    ...instruments.map((it) => ({ value: it, label: it }))
-  ], [instruments, t]);
+  const contractOptions = useMemo(
+    () => instruments.map((it) => ({ value: it, label: it })),
+    [instruments]
+  );
 
-  const typeOptions = useMemo(() => [
-    { value: '', label: t('trades:filters.type') },
-    { value: 'Long', label: t('trades:long') },
-    { value: 'Short', label: t('trades:short') }
-  ], [t]);
+  const typeToggleItems = useMemo(
+    () =>
+      [
+        { radixValue: 'short' as const, tradeType: 'Short' as const, label: t('trades:short') },
+        { radixValue: 'all' as const, tradeType: '' as const, label: t('trades:filters.typeNeutral') },
+        { radixValue: 'long' as const, tradeType: 'Long' as const, label: t('trades:long') },
+      ],
+    [t]
+  );
 
-  const profitableOptions = useMemo(() => [
-    { value: '', label: t('trades:filters.pnl') },
-    { value: 'true', label: t('trades:filters.winners') },
-    { value: 'false', label: t('trades:filters.losers') }
-  ], [t]);
+  const typeToggleValue =
+    values.type === 'Short' ? 'short' : values.type === 'Long' ? 'long' : 'all';
+
+  const pnlToggleItems = useMemo(
+    () =>
+      [
+        { radixValue: 'losers' as const, profitable: 'false' as const, label: t('trades:filters.losers') },
+        { radixValue: 'all' as const, profitable: '' as const, label: t('trades:filters.pnlNeutral') },
+        { radixValue: 'winners' as const, profitable: 'true' as const, label: t('trades:filters.winners') },
+      ],
+    [t]
+  );
+
+  const pnlToggleValue =
+    values.profitable === 'false' ? 'losers' : values.profitable === 'true' ? 'winners' : 'all';
 
   const strategyToggleItems = useMemo(
     () =>
@@ -94,29 +121,42 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
   const strategyToggleValue =
     values.has_strategy === 'false' ? 'without' : values.has_strategy === 'true' ? 'with' : 'all';
 
-  const strategyToggleItemClass =
-    'min-w-0 flex-1 inline-flex items-center justify-center rounded-md px-1.5 py-1.5 text-[11px] font-medium leading-tight ' +
-    'transition-[color,background-color,box-shadow] duration-200 ease-out ' +
-    'text-gray-500 hover:bg-gray-100/90 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700/50 dark:hover:text-gray-200 ' +
-    'data-[state=on]:relative data-[state=on]:z-10 data-[state=on]:bg-blue-600 data-[state=on]:text-white ' +
-    'data-[state=on]:shadow-[0_3px_12px_-1px_rgba(37,99,235,0.55),0_2px_6px_-1px_rgba(15,23,42,0.18)] ' +
-    'data-[state=on]:hover:bg-blue-600 dark:data-[state=on]:bg-blue-500 dark:data-[state=on]:hover:bg-blue-500 ' +
-    'dark:data-[state=on]:shadow-[0_4px_16px_-2px_rgba(59,130,246,0.5),0_2px_8px_rgba(0,0,0,0.35)] ' +
-    'focus:outline-none focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-700';
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-5 mb-4 sm:mb-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-3 items-end">
-        <CustomSelect
+        <CustomMultiSelect
           value={values.contract}
-          onChange={(value) => onChange({ contract: value as string })}
+          onChange={(contract) => onChange({ contract })}
           options={contractOptions}
+          placeholder={t('trades:filters.instrument')}
+          clearLabel={t('trades:filters.allInstruments')}
+          selectedCountLabel={(count) => t('trades:filters.instrumentsCount', { count })}
+          searchable={contractOptions.length > 8}
         />
-        <CustomSelect
-          value={values.type}
-          onChange={(value) => onChange({ type: value as '' | 'Long' | 'Short' })}
-          options={typeOptions}
-        />
+        <div className="min-w-0 w-full">
+          <ToggleGroup.Root
+            type="single"
+            value={typeToggleValue}
+            onValueChange={(v) => {
+              const key = v || 'all';
+              const row = typeToggleItems.find((i) => i.radixValue === key);
+              if (row) onChange({ type: row.tradeType });
+            }}
+            aria-label={t('trades:filters.type')}
+            className={FILTER_TOGGLE_ROOT_CLASS}
+          >
+            {typeToggleItems.map((item) => (
+              <ToggleGroup.Item
+                key={item.radixValue}
+                value={item.radixValue}
+                aria-label={item.label}
+                className={FILTER_TOGGLE_ITEM_CLASS}
+              >
+                <FilterToggleTruncatingLabel label={item.label} />
+              </ToggleGroup.Item>
+            ))}
+          </ToggleGroup.Root>
+        </div>
         <DateInput
           value={values.start_date}
           onChange={(value) => onChange({ start_date: value })}
@@ -127,11 +167,30 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
           onChange={(value) => onChange({ end_date: value })}
           className="w-full h-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <CustomSelect
-          value={values.profitable}
-          onChange={(value) => onChange({ profitable: value as '' | 'true' | 'false' })}
-          options={profitableOptions}
-        />
+        <div className="min-w-0 w-full">
+          <ToggleGroup.Root
+            type="single"
+            value={pnlToggleValue}
+            onValueChange={(v) => {
+              const key = v || 'all';
+              const row = pnlToggleItems.find((i) => i.radixValue === key);
+              if (row) onChange({ profitable: row.profitable });
+            }}
+            aria-label={t('trades:filters.pnl')}
+            className={FILTER_TOGGLE_ROOT_CLASS}
+          >
+            {pnlToggleItems.map((item) => (
+              <ToggleGroup.Item
+                key={item.radixValue}
+                value={item.radixValue}
+                aria-label={item.label}
+                className={FILTER_TOGGLE_ITEM_CLASS}
+              >
+                <FilterToggleTruncatingLabel label={item.label} />
+              </ToggleGroup.Item>
+            ))}
+          </ToggleGroup.Root>
+        </div>
         <div className="min-w-0 w-full">
           <ToggleGroup.Root
             type="single"
@@ -142,16 +201,16 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
               if (row) onChange({ has_strategy: row.hasStrategy });
             }}
             aria-label={t('trades:filters.strategy')}
-            className="flex h-10 w-full min-w-0 items-stretch gap-0.5 overflow-visible rounded-md border border-gray-300 bg-white p-1 shadow-sm dark:border-gray-600 dark:bg-gray-700"
+            className={FILTER_TOGGLE_ROOT_CLASS}
           >
             {strategyToggleItems.map((item) => (
               <ToggleGroup.Item
                 key={item.radixValue}
                 value={item.radixValue}
                 aria-label={item.label}
-                className={strategyToggleItemClass}
+                className={FILTER_TOGGLE_ITEM_CLASS}
               >
-                <StrategyToggleTruncatingLabel label={item.label} />
+                <FilterToggleTruncatingLabel label={item.label} />
               </ToggleGroup.Item>
             ))}
           </ToggleGroup.Root>

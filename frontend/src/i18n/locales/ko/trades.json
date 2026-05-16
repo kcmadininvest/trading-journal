@@ -125,8 +125,12 @@
   },
   "filters": {
     "instrument": "상품",
+    "allInstruments": "모든 상품",
+    "instrumentsCount": "{{count}}개 상품",
     "type": "유형",
+    "typeNeutral": "전체",
     "pnl": "손익",
+    "pnlNeutral": "전체",
     "winners": "수익 거래",
     "losers": "손실 거래",
     "strategy": "전략",

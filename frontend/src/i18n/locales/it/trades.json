@@ -125,8 +125,12 @@
   },
   "filters": {
     "instrument": "Strumento",
+    "allInstruments": "Tutti gli strumenti",
+    "instrumentsCount": "{{count}} strumenti",
     "type": "Tipo",
+    "typeNeutral": "Tutti",
     "pnl": "PnL",
+    "pnlNeutral": "Tutti",
     "winners": "Vincitori",
     "losers": "Perdenti",
     "strategy": "Strategia",

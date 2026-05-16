@@ -46,7 +46,7 @@ export interface TradeDetail extends TradeListItem {
 
 export interface TradesFilters {
   trading_account?: number;
-  contract?: string;
+  contract?: string | string[];
   type?: 'Long' | 'Short';
   start_date?: string; // YYYY-MM-DD
   end_date?: string;   // YYYY-MM-DD
@@ -120,14 +120,18 @@ class TradesService {
   private toQuery(params: Record<string, any>) {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([k, v]) => {
-      // Exclure les valeurs undefined, null, '' et 0 pour trading_account (0 signifie "tous les comptes")
-      if (v !== undefined && v !== null && v !== '') {
-        // Pour trading_account, ne pas inclure si c'est 0 (tous les comptes)
-        if (k === 'trading_account' && v === 0) {
-          return; // Ne pas ajouter ce paramètre
-        }
-        search.append(k, String(v));
+      if (v === undefined || v === null || v === '') {
+        return;
       }
+      if (k === 'trading_account' && v === 0) {
+        return;
+      }
+      if (Array.isArray(v)) {
+        if (v.length === 0) return;
+        v.forEach((item) => search.append(k, String(item)));
+        return;
+      }
+      search.append(k, String(v));
     });
     return search.toString();
   }
