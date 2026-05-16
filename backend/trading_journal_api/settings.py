@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'daily_journal',
     'billing',
     'trading_activity',
+    'integrations',
 ]
 
 MIDDLEWARE = [
@@ -275,8 +276,14 @@ REST_FRAMEWORK = {
         'activate': '10/hour',  # Endpoint d'activation (personnalisé)
         'password_reset': '3/hour',  # Réinitialisation de mot de passe (personnalisé)
         'contact': '5/hour',  # Formulaire contact page publique
+        'integration_test': '5/minute',  # Test connexion intégrations API
     },
 }
+
+# Intégrations API broker (TopStepX, futurs fournisseurs)
+INTEGRATIONS_CREDENTIALS_KEY = config('INTEGRATIONS_CREDENTIALS_KEY', default='')
+TOPSTEPX_API_BASE_URL = config('TOPSTEPX_API_BASE_URL', default='https://api.topstepx.com')
+TOPSTEPX_API_TIMEOUT_SECONDS = config('TOPSTEPX_API_TIMEOUT_SECONDS', default=10, cast=int)
 
 # JWT Settings - Configuration sécurisée avec déconnexion automatique et blacklist
 SIMPLE_JWT = {

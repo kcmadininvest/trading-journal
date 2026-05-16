@@ -130,5 +130,49 @@
   "passwordGood": "Good",
   "passwordStrong": "Strong",
   "showAll": "Show all",
-  "showLess": "Show less"
+  "showLess": "Show less",
+  "integrations": {
+    "title": "API connections",
+    "description": "Connect your broker accounts to prepare for automatic sync.",
+    "username": "Username",
+    "apiKey": "API key",
+    "apiKeyPlaceholder": "Paste your API key",
+    "apiKeyMaskedPlaceholder": "••••••••••••••••",
+    "apiKeyStored": "API key saved. Click « Change » to replace it.",
+    "changeApiKey": "Change",
+    "cancelApiKeyEdit": "Cancel edit",
+    "apiKeyPlaceholderKeep": "Leave empty to keep ({{hint}})",
+    "apiKeyHint": "Saved key: {{hint}}",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Credentials saved.",
+    "saveError": "Error while saving.",
+    "testConnection": "Test connection",
+    "testing": "Testing...",
+    "testSuccess": "Connection successful.",
+    "testFailed": "Connection failed.",
+    "delete": "Remove",
+    "deleting": "Removing...",
+    "deleted": "Connection removed.",
+    "deleteError": "Error while removing.",
+    "confirmDelete": "Remove {{name}} connection?",
+    "helpLink": "API documentation",
+    "loadError": "Unable to load integrations.",
+    "empty": "No integrations available.",
+    "lastValidated": "Last validated: {{date}}",
+    "status": {
+      "notConfigured": "Not configured",
+      "configured": "Configured",
+      "connected": "Connected"
+    },
+    "providers": {
+      "topstepx": {
+        "name": "TopStepX",
+        "description": "ProjectX / TopStepX API (username + API key from Platform Settings → API).",
+        "username": "TopStepX username",
+        "usernamePlaceholder": "Your TopStepX username",
+        "apiKey": "TopStepX API key"
+      }
+    }
+  }
 }

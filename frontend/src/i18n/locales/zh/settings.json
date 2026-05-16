@@ -125,5 +125,49 @@
   "passwordMismatch": "密码不匹配",
   "notifications": "通知",
   "emailGoalAlerts": "目标电子邮件提醒",
-  "emailGoalAlertsDescription": "当目标实现或处于危险中时接收电子邮件"
+  "emailGoalAlertsDescription": "当目标实现或处于危险中时接收电子邮件",
+  "integrations": {
+    "title": "API 连接",
+    "description": "连接您的经纪商账户，为将来的自动同步做准备。",
+    "username": "用户名",
+    "apiKey": "API 密钥",
+    "apiKeyPlaceholder": "粘贴您的 API 密钥",
+    "apiKeyMaskedPlaceholder": "••••••••••••••••",
+    "apiKeyStored": "API 密钥已保存。点击「修改」可更换。",
+    "changeApiKey": "修改",
+    "cancelApiKeyEdit": "取消",
+    "apiKeyPlaceholderKeep": "留空以保留 ({{hint}})",
+    "apiKeyHint": "已保存密钥: {{hint}}",
+    "save": "保存",
+    "saving": "保存中...",
+    "saved": "凭据已保存。",
+    "saveError": "保存时出错。",
+    "testConnection": "测试连接",
+    "testing": "测试中...",
+    "testSuccess": "连接成功。",
+    "testFailed": "连接失败。",
+    "delete": "删除",
+    "deleting": "删除中...",
+    "deleted": "连接已删除。",
+    "deleteError": "删除时出错。",
+    "confirmDelete": "删除 {{name}} 连接？",
+    "helpLink": "API 文档",
+    "loadError": "无法加载集成。",
+    "empty": "没有可用的集成。",
+    "lastValidated": "上次验证: {{date}}",
+    "status": {
+      "notConfigured": "未配置",
+      "configured": "已配置",
+      "connected": "已连接"
+    },
+    "providers": {
+      "topstepx": {
+        "name": "TopStepX",
+        "description": "ProjectX / TopStepX API（从平台设置 → API 获取用户名和 API 密钥）。",
+        "username": "TopStepX 用户名",
+        "usernamePlaceholder": "您的 TopStepX 用户名",
+        "apiKey": "TopStepX API 密钥"
+      }
+    }
+  }
 }

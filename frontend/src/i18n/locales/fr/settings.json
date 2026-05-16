@@ -130,5 +130,49 @@
   "passwordGood": "Bon",
   "passwordStrong": "Fort",
   "showAll": "Voir tout",
-  "showLess": "Voir moins"
+  "showLess": "Voir moins",
+  "integrations": {
+    "title": "Connexions API",
+    "description": "Connectez vos comptes broker pour préparer les synchronisations automatiques.",
+    "username": "Nom d'utilisateur",
+    "apiKey": "Clé API",
+    "apiKeyPlaceholder": "Collez votre clé API",
+    "apiKeyMaskedPlaceholder": "••••••••••••••••",
+    "apiKeyStored": "Clé API enregistrée. Cliquez sur « Modifier » pour la remplacer.",
+    "changeApiKey": "Modifier",
+    "cancelApiKeyEdit": "Annuler la modification",
+    "apiKeyPlaceholderKeep": "Laisser vide pour conserver ({{hint}})",
+    "apiKeyHint": "Clé enregistrée : {{hint}}",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "saved": "Identifiants enregistrés.",
+    "saveError": "Erreur lors de l'enregistrement.",
+    "testConnection": "Tester la connexion",
+    "testing": "Test en cours...",
+    "testSuccess": "Connexion réussie.",
+    "testFailed": "Échec de la connexion.",
+    "delete": "Supprimer",
+    "deleting": "Suppression...",
+    "deleted": "Connexion supprimée.",
+    "deleteError": "Erreur lors de la suppression.",
+    "confirmDelete": "Supprimer la connexion {{name}} ?",
+    "helpLink": "Documentation API",
+    "loadError": "Impossible de charger les intégrations.",
+    "empty": "Aucune intégration disponible.",
+    "lastValidated": "Dernière validation : {{date}}",
+    "status": {
+      "notConfigured": "Non configuré",
+      "configured": "Configuré",
+      "connected": "Connecté"
+    },
+    "providers": {
+      "topstepx": {
+        "name": "TopStepX",
+        "description": "API ProjectX / TopStepX (nom d'utilisateur + clé API depuis Paramètres → API sur la plateforme).",
+        "username": "Nom d'utilisateur TopStepX",
+        "usernamePlaceholder": "Votre identifiant TopStepX",
+        "apiKey": "Clé API TopStepX"
+      }
+    }
+  }
 }

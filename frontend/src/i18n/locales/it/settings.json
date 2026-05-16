@@ -125,5 +125,49 @@
   "passwordMismatch": "Le password non corrispondono",
   "notifications": "Notifiche",
   "emailGoalAlerts": "Avvisi email per gli obiettivi",
-  "emailGoalAlertsDescription": "Ricevi email quando un obiettivo viene raggiunto o è in pericolo"
+  "emailGoalAlertsDescription": "Ricevi email quando un obiettivo viene raggiunto o è in pericolo",
+  "integrations": {
+    "title": "Connessioni API",
+    "description": "Collega i tuoi account broker per preparare la sincronizzazione automatica.",
+    "username": "Nome utente",
+    "apiKey": "Chiave API",
+    "apiKeyPlaceholder": "Incolla la chiave API",
+    "apiKeyMaskedPlaceholder": "••••••••••••••••",
+    "apiKeyStored": "Chiave API salvata. Clicca « Modifica » per sostituirla.",
+    "changeApiKey": "Modifica",
+    "cancelApiKeyEdit": "Annulla",
+    "apiKeyPlaceholderKeep": "Lascia vuoto per mantenere ({{hint}})",
+    "apiKeyHint": "Chiave salvata: {{hint}}",
+    "save": "Salva",
+    "saving": "Salvataggio...",
+    "saved": "Credenziali salvate.",
+    "saveError": "Errore durante il salvataggio.",
+    "testConnection": "Testa connessione",
+    "testing": "Test in corso...",
+    "testSuccess": "Connessione riuscita.",
+    "testFailed": "Connessione fallita.",
+    "delete": "Rimuovi",
+    "deleting": "Rimozione...",
+    "deleted": "Connessione rimossa.",
+    "deleteError": "Errore durante la rimozione.",
+    "confirmDelete": "Rimuovere la connessione {{name}}?",
+    "helpLink": "Documentazione API",
+    "loadError": "Impossibile caricare le integrazioni.",
+    "empty": "Nessuna integrazione disponibile.",
+    "lastValidated": "Ultima validazione: {{date}}",
+    "status": {
+      "notConfigured": "Non configurato",
+      "configured": "Configurato",
+      "connected": "Connesso"
+    },
+    "providers": {
+      "topstepx": {
+        "name": "TopStepX",
+        "description": "API ProjectX / TopStepX (username + chiave API da Impostazioni → API sulla piattaforma).",
+        "username": "Username TopStepX",
+        "usernamePlaceholder": "Il tuo username TopStepX",
+        "apiKey": "Chiave API TopStepX"
+      }
+    }
+  }
 }

@@ -22,6 +22,9 @@ urlpatterns = [
     
     # Préférences utilisateur
     path('preferences/', views.UserPreferencesView.as_view(), name='user_preferences'),
+
+    # Intégrations API multi-fournisseurs
+    path('integrations/', include(('integrations.urls', 'integrations'))),
     
     # Gestion de session et déconnexion automatique
     path('session/info/', views.session_info, name='session_info'),

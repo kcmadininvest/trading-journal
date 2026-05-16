@@ -19,6 +19,7 @@ import { PasswordStrengthMeter } from '../components/settings/PasswordStrengthMe
 import { SessionCard } from '../components/settings/SessionCard';
 import { DangerZoneCard } from '../components/settings/DangerZoneCard';
 import { SettingsToast } from '../components/settings/SettingsToast';
+import { IntegrationsSection } from '../components/settings/IntegrationsSection';
 import {
   AppFontFamily,
   applyAppFontFamily,
@@ -967,6 +968,8 @@ const SettingsPage: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+              <IntegrationsSection onMessage={showMessage} />
             </div>
           </SettingsSection>
         )}

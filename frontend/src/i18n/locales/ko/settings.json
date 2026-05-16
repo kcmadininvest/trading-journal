@@ -125,5 +125,49 @@
   "passwordMismatch": "비밀번호가 일치하지 않습니다",
   "notifications": "알림",
   "emailGoalAlerts": "목표 이메일 알림",
-  "emailGoalAlertsDescription": "목표가 달성되거나 위험할 때 이메일을 받습니다"
+  "emailGoalAlertsDescription": "목표가 달성되거나 위험할 때 이메일을 받습니다",
+  "integrations": {
+    "title": "API 연결",
+    "description": "브로커 계정을 연결하여 자동 동기화를 준비합니다.",
+    "username": "사용자 이름",
+    "apiKey": "API 키",
+    "apiKeyPlaceholder": "API 키 붙여넣기",
+    "apiKeyMaskedPlaceholder": "••••••••••••••••",
+    "apiKeyStored": "API 키가 저장되었습니다. « 변경 »을 눌러 교체하세요.",
+    "changeApiKey": "변경",
+    "cancelApiKeyEdit": "취소",
+    "apiKeyPlaceholderKeep": "비워두면 유지 ({{hint}})",
+    "apiKeyHint": "저장된 키: {{hint}}",
+    "save": "저장",
+    "saving": "저장 중...",
+    "saved": "자격 증명이 저장되었습니다.",
+    "saveError": "저장 오류.",
+    "testConnection": "연결 테스트",
+    "testing": "테스트 중...",
+    "testSuccess": "연결 성공.",
+    "testFailed": "연결 실패.",
+    "delete": "제거",
+    "deleting": "제거 중...",
+    "deleted": "연결이 제거되었습니다.",
+    "deleteError": "제거 오류.",
+    "confirmDelete": "{{name}} 연결을 제거하시겠습니까?",
+    "helpLink": "API 문서",
+    "loadError": "통합을 불러올 수 없습니다.",
+    "empty": "사용 가능한 통합이 없습니다.",
+    "lastValidated": "마지막 검증: {{date}}",
+    "status": {
+      "notConfigured": "구성되지 않음",
+      "configured": "구성됨",
+      "connected": "연결됨"
+    },
+    "providers": {
+      "topstepx": {
+        "name": "TopStepX",
+        "description": "ProjectX / TopStepX API (플랫폼 설정 → API에서 사용자 이름 + API 키).",
+        "username": "TopStepX 사용자 이름",
+        "usernamePlaceholder": "TopStepX 사용자 이름",
+        "apiKey": "TopStepX API 키"
+      }
+    }
+  }
 }

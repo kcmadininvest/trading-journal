@@ -125,5 +125,49 @@
   "passwordMismatch": "As senhas não correspondem",
   "notifications": "Notificações",
   "emailGoalAlerts": "Alertas de email para metas",
-  "emailGoalAlertsDescription": "Receba emails quando uma meta for alcançada ou estiver em perigo"
+  "emailGoalAlertsDescription": "Receba emails quando uma meta for alcançada ou estiver em perigo",
+  "integrations": {
+    "title": "Conexões API",
+    "description": "Conecte suas contas de corretora para preparar a sincronização automática.",
+    "username": "Nome de usuário",
+    "apiKey": "Chave API",
+    "apiKeyPlaceholder": "Cole sua chave API",
+    "apiKeyMaskedPlaceholder": "••••••••••••••••",
+    "apiKeyStored": "Chave API salva. Clique em « Alterar » para substituir.",
+    "changeApiKey": "Alterar",
+    "cancelApiKeyEdit": "Cancelar",
+    "apiKeyPlaceholderKeep": "Deixe vazio para manter ({{hint}})",
+    "apiKeyHint": "Chave salva: {{hint}}",
+    "save": "Salvar",
+    "saving": "Salvando...",
+    "saved": "Credenciais salvas.",
+    "saveError": "Erro ao salvar.",
+    "testConnection": "Testar conexão",
+    "testing": "Testando...",
+    "testSuccess": "Conexão bem-sucedida.",
+    "testFailed": "Falha na conexão.",
+    "delete": "Remover",
+    "deleting": "Removendo...",
+    "deleted": "Conexão removida.",
+    "deleteError": "Erro ao remover.",
+    "confirmDelete": "Remover a conexão {{name}}?",
+    "helpLink": "Documentação da API",
+    "loadError": "Não foi possível carregar as integrações.",
+    "empty": "Nenhuma integração disponível.",
+    "lastValidated": "Última validação: {{date}}",
+    "status": {
+      "notConfigured": "Não configurado",
+      "configured": "Configurado",
+      "connected": "Conectado"
+    },
+    "providers": {
+      "topstepx": {
+        "name": "TopStepX",
+        "description": "API ProjectX / TopStepX (usuário + chave API em Configurações → API na plataforma).",
+        "username": "Usuário TopStepX",
+        "usernamePlaceholder": "Seu usuário TopStepX",
+        "apiKey": "Chave API TopStepX"
+      }
+    }
+  }
 }

@@ -128,5 +128,49 @@
   "passwordGood": "Buena",
   "passwordStrong": "Fuerte",
   "showAll": "Mostrar todo",
-  "showLess": "Mostrar menos"
+  "showLess": "Mostrar menos",
+  "integrations": {
+    "title": "Conexiones API",
+    "description": "Conecte sus cuentas de broker para preparar la sincronización automática.",
+    "username": "Nombre de usuario",
+    "apiKey": "Clave API",
+    "apiKeyPlaceholder": "Pegue su clave API",
+    "apiKeyMaskedPlaceholder": "••••••••••••••••",
+    "apiKeyStored": "Clave API guardada. Pulse « Modificar » para cambiarla.",
+    "changeApiKey": "Modificar",
+    "cancelApiKeyEdit": "Cancelar",
+    "apiKeyPlaceholderKeep": "Dejar vacío para conservar ({{hint}})",
+    "apiKeyHint": "Clave guardada: {{hint}}",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "saved": "Credenciales guardadas.",
+    "saveError": "Error al guardar.",
+    "testConnection": "Probar conexión",
+    "testing": "Probando...",
+    "testSuccess": "Conexión exitosa.",
+    "testFailed": "Error de conexión.",
+    "delete": "Eliminar",
+    "deleting": "Eliminando...",
+    "deleted": "Conexión eliminada.",
+    "deleteError": "Error al eliminar.",
+    "confirmDelete": "¿Eliminar la conexión {{name}}?",
+    "helpLink": "Documentación API",
+    "loadError": "No se pudieron cargar las integraciones.",
+    "empty": "No hay integraciones disponibles.",
+    "lastValidated": "Última validación: {{date}}",
+    "status": {
+      "notConfigured": "No configurado",
+      "configured": "Configurado",
+      "connected": "Conectado"
+    },
+    "providers": {
+      "topstepx": {
+        "name": "TopStepX",
+        "description": "API ProjectX / TopStepX (usuario + clave API en Ajustes → API de la plataforma).",
+        "username": "Usuario TopStepX",
+        "usernamePlaceholder": "Su usuario TopStepX",
+        "apiKey": "Clave API TopStepX"
+      }
+    }
+  }
 }

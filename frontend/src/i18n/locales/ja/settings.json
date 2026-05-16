@@ -125,5 +125,49 @@
   "passwordMismatch": "パスワードが一致しません",
   "notifications": "通知",
   "emailGoalAlerts": "目標のメール通知",
-  "emailGoalAlertsDescription": "目標が達成されたか危険にさらされたときにメールを受け取る"
+  "emailGoalAlertsDescription": "目標が達成されたか危険にさらされたときにメールを受け取る",
+  "integrations": {
+    "title": "API接続",
+    "description": "ブローカーアカウントを接続して、将来の自動同期に備えます。",
+    "username": "ユーザー名",
+    "apiKey": "APIキー",
+    "apiKeyPlaceholder": "APIキーを貼り付け",
+    "apiKeyMaskedPlaceholder": "••••••••••••••••",
+    "apiKeyStored": "APIキーを保存しました。「変更」で置き換えできます。",
+    "changeApiKey": "変更",
+    "cancelApiKeyEdit": "キャンセル",
+    "apiKeyPlaceholderKeep": "空のまま維持 ({{hint}})",
+    "apiKeyHint": "保存済みキー: {{hint}}",
+    "save": "保存",
+    "saving": "保存中...",
+    "saved": "認証情報を保存しました。",
+    "saveError": "保存エラー。",
+    "testConnection": "接続テスト",
+    "testing": "テスト中...",
+    "testSuccess": "接続に成功しました。",
+    "testFailed": "接続に失敗しました。",
+    "delete": "削除",
+    "deleting": "削除中...",
+    "deleted": "接続を削除しました。",
+    "deleteError": "削除エラー。",
+    "confirmDelete": "{{name}} の接続を削除しますか？",
+    "helpLink": "APIドキュメント",
+    "loadError": "統合を読み込めませんでした。",
+    "empty": "利用可能な統合がありません。",
+    "lastValidated": "最終検証: {{date}}",
+    "status": {
+      "notConfigured": "未設定",
+      "configured": "設定済み",
+      "connected": "接続済み"
+    },
+    "providers": {
+      "topstepx": {
+        "name": "TopStepX",
+        "description": "ProjectX / TopStepX API（プラットフォームの設定 → API からユーザー名とAPIキー）。",
+        "username": "TopStepXユーザー名",
+        "usernamePlaceholder": "TopStepXユーザー名",
+        "apiKey": "TopStepX APIキー"
+      }
+    }
+  }
 }
