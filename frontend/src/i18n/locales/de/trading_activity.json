@@ -89,6 +89,7 @@
   },
   "actions": {
     "edit": "Bearbeiten",
+    "clickToEdit": "Klicken zum Bearbeiten",
     "delete": "Löschen",
     "cancel": "Abbrechen",
     "save": "Speichern",

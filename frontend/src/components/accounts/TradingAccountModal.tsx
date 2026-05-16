@@ -263,8 +263,17 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                 className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                 value={(form as any).broker_account_id || ''}
                 onChange={(e) => setForm(prev => ({ ...prev, broker_account_id: e.target.value } as any))}
-                placeholder={t('accounts:form.brokerIdPlaceholder')}
+                placeholder={
+                  (form as any).account_type === 'topstep'
+                    ? t('accounts:form.brokerIdTopstepPlaceholder')
+                    : t('accounts:form.brokerIdPlaceholder')
+                }
               />
+              {(form as any).account_type === 'topstep' && (
+                <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                  {t('accounts:form.brokerIdTopstepHelp')}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">

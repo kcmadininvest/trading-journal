@@ -50,7 +50,9 @@
     "type": "Type",
     "typeDescription": "Choisissez le type de compte/broker.",
     "brokerId": "ID Broker (optionnel)",
-    "brokerIdPlaceholder": "Identifiant côté broker",
+    "brokerIdPlaceholder": "经纪商侧标识",
+    "brokerIdTopstepPlaceholder": "TopStepX 账户 ID（数字）",
+    "brokerIdTopstepHelp": "可选：留空即可；若账户名称与 TopStepX（账户菜单）完全一致将自动填写。请勿在多个账户上重复使用同一 ID。",
     "currency": "Devise",
     "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
     "status": "状态",
@@ -88,6 +90,16 @@
     "description": "在开始记录交易之前，请创建一个交易账户。我们已将您重定向到交易账户选项卡以指导您。",
     "openTab": "前往账户",
     "helper": "点击新建账户开始创建。"
+  },
+  "sync": {
+    "button": "同步",
+    "syncing": "同步中…",
+    "result": "新增 {{created}} 条，跳过 {{skipped}} 条",
+    "error": "同步失败。",
+    "lastSync": "上次同步：{{date}}",
+    "neverSynced": "尚未同步",
+    "brokerIdRequired": "请使用与 TopStepX 完全一致的账户名称（账户菜单）或有效的 ProjectX ID。名称匹配时将自动填写 ID。",
+    "integrationRequired": "请在设置 → 交易中配置 TopStepX 集成。"
   }
 }
 

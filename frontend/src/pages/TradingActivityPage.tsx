@@ -254,56 +254,43 @@ function toApiDecimalFromNumber(value: number, maxDecimals: number): string {
   return fixed.replace(/\.?0+$/, '');
 }
 
-function TradingActivityLedgerActions({
-  editLabel,
+function handleLedgerRowActivate(e: React.MouseEvent | React.KeyboardEvent, onEdit: () => void) {
+  const target = e.target as HTMLElement;
+  if (target.closest('button')) return;
+  onEdit();
+}
+
+function TradingActivityLedgerDeleteAction({
   deleteLabel,
-  onEdit,
   onRequestDelete,
   compact,
 }: {
-  editLabel: string;
   deleteLabel: string;
-  onEdit: () => void;
   onRequestDelete: () => void;
   compact: boolean;
 }) {
   const pad = compact ? 'p-1.5' : 'p-2';
   const icon = compact ? 'h-4 w-4' : 'h-5 w-5';
   return (
-    <div className={`inline-flex items-center ${compact ? 'justify-end gap-2' : 'justify-end gap-3'}`}>
-      <Tooltip content={editLabel} position="top">
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={editLabel}
-          className={`${pad} rounded-lg text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-300`}
-        >
-          <svg className={icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            />
-          </svg>
-        </button>
-      </Tooltip>
-      <Tooltip content={deleteLabel} position="top">
-        <button
-          type="button"
-          onClick={onRequestDelete}
-          aria-label={deleteLabel}
-          className={`${pad} rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300`}
-        >
-          <svg className={icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-7 0h8"
-            />
-          </svg>
-        </button>
-      </Tooltip>
-    </div>
+    <Tooltip content={deleteLabel} position="top">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRequestDelete();
+        }}
+        aria-label={deleteLabel}
+        className={`${pad} rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300`}
+      >
+        <svg className={icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-7 0h8"
+          />
+        </svg>
+      </button>
+    </Tooltip>
   );
 }
 
@@ -416,8 +403,21 @@ function MobileExpenseCard({
   onDelete: () => void;
 }) {
   const dateLabel = formatDate(row.date, dateFormat, false, timezone);
+  const clickToEditLabel = t('actions.clickToEdit');
   return (
-    <article className="touch-pan-y rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <article
+      role="button"
+      tabIndex={0}
+      title={clickToEditLabel}
+      onClick={(e) => handleLedgerRowActivate(e, onEdit)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleLedgerRowActivate(e, onEdit);
+        }
+      }}
+      className="touch-pan-y cursor-pointer rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/80"
+    >
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-gray-100 pb-3 dark:border-gray-700/80">
         <time className="text-sm font-semibold text-gray-900 dark:text-gray-100" dateTime={row.date}>
           {dateLabel}
@@ -463,14 +463,9 @@ function MobileExpenseCard({
           </dd>
         </div>
       </dl>
-      <div
-        className="mt-4 flex w-full flex-row justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-600"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <TradingActivityLedgerActions
-          editLabel={t('actions.edit')}
+      <div className="mt-4 flex w-full flex-row justify-end border-t border-gray-200 pt-4 dark:border-gray-600">
+        <TradingActivityLedgerDeleteAction
           deleteLabel={t('actions.delete')}
-          onEdit={onEdit}
           onRequestDelete={onDelete}
           compact={false}
         />
@@ -497,8 +492,21 @@ function MobileCreditCard({
   onDelete: () => void;
 }) {
   const dateLabel = formatDate(row.date, dateFormat, false, timezone);
+  const clickToEditLabel = t('actions.clickToEdit');
   return (
-    <article className="touch-pan-y rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <article
+      role="button"
+      tabIndex={0}
+      title={clickToEditLabel}
+      onClick={(e) => handleLedgerRowActivate(e, onEdit)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleLedgerRowActivate(e, onEdit);
+        }
+      }}
+      className="touch-pan-y cursor-pointer rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700/80"
+    >
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-3 dark:border-gray-700/80">
         <time className="text-sm font-semibold text-gray-900 dark:text-gray-100" dateTime={row.date}>
           {dateLabel}
@@ -549,14 +557,9 @@ function MobileCreditCard({
           </dd>
         </div>
       </dl>
-      <div
-        className="mt-4 flex w-full flex-row justify-end gap-3 border-t border-gray-200 pt-4 dark:border-gray-600"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <TradingActivityLedgerActions
-          editLabel={t('actions.edit')}
+      <div className="mt-4 flex w-full flex-row justify-end border-t border-gray-200 pt-4 dark:border-gray-600">
+        <TradingActivityLedgerDeleteAction
           deleteLabel={t('actions.delete')}
-          onEdit={onEdit}
           onRequestDelete={onDelete}
           compact={false}
         />
@@ -1459,12 +1462,19 @@ const TradingActivityPage: React.FC = () => {
                             <th className="px-3 py-2">{t('table.total')}</th>
                             <th className="px-3 py-2">{t('table.ref')}</th>
                             <th className="px-3 py-2">{t('table.secondary')}</th>
-                            <th className="w-28 px-3 py-2" />
+                            <th className="w-14 px-3 py-2">
+                              <span className="sr-only">{t('actions.delete')}</span>
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                           {expenses.map((row) => (
-                            <tr key={row.id} className="text-gray-800 dark:text-gray-200">
+                            <tr
+                              key={row.id}
+                              className="cursor-pointer text-gray-800 transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/50"
+                              onClick={(e) => handleLedgerRowActivate(e, () => openEditExpense(row))}
+                              title={t('actions.clickToEdit')}
+                            >
                               <td className="whitespace-nowrap px-3 py-2">
                                 {formatDate(row.date, dateFormatPref, false, timezonePref)}
                               </td>
@@ -1484,10 +1494,8 @@ const TradingActivityPage: React.FC = () => {
                                   : '—'}
                               </td>
                               <td className="whitespace-nowrap px-3 py-2 text-right">
-                                <TradingActivityLedgerActions
-                                  editLabel={t('actions.edit')}
+                                <TradingActivityLedgerDeleteAction
                                   deleteLabel={t('actions.delete')}
-                                  onEdit={() => openEditExpense(row)}
                                   onRequestDelete={() => requestDeleteExpense(row.id)}
                                   compact
                                 />
@@ -1643,12 +1651,19 @@ const TradingActivityPage: React.FC = () => {
                             <th className="px-3 py-2">{t('table.transferFee')}</th>
                             <th className="px-3 py-2">{t('table.secondary')}</th>
                             <th className="px-3 py-2">{t('credits.linkedWithdrawals')}</th>
-                            <th className="w-28 px-3 py-2" />
+                            <th className="w-14 px-3 py-2">
+                              <span className="sr-only">{t('actions.delete')}</span>
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                           {credits.map((row) => (
-                            <tr key={row.id} className="text-gray-800 dark:text-gray-200">
+                            <tr
+                              key={row.id}
+                              className="cursor-pointer text-gray-800 transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700/50"
+                              onClick={(e) => handleLedgerRowActivate(e, () => openEditCredit(row))}
+                              title={t('actions.clickToEdit')}
+                            >
                               <td className="whitespace-nowrap px-3 py-2">
                                 {formatDate(row.date, dateFormatPref, false, timezonePref)}
                               </td>
@@ -1684,10 +1699,8 @@ const TradingActivityPage: React.FC = () => {
                                 />
                               </td>
                               <td className="whitespace-nowrap px-3 py-2 text-right">
-                                <TradingActivityLedgerActions
-                                  editLabel={t('actions.edit')}
+                                <TradingActivityLedgerDeleteAction
                                   deleteLabel={t('actions.delete')}
-                                  onEdit={() => openEditCredit(row)}
                                   onRequestDelete={() => requestDeleteCredit(row.id)}
                                   compact
                                 />

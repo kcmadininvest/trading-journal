@@ -62,6 +62,8 @@
     "typeDescription": "Wählen Sie den Konten-/Broker-Typ.",
     "brokerId": "Broker-ID (optional)",
     "brokerIdPlaceholder": "Broker-seitige Kennung",
+    "brokerIdTopstepPlaceholder": "TopStepX-Konto-ID (numerisch)",
+    "brokerIdTopstepHelp": "Optional: leer lassen oder automatisch ausgefüllt, wenn der Kontoname exakt mit TopStepX übereinstimmt (Kontomenü). Dieselbe ID nicht auf mehrere Konten verwenden.",
     "currency": "Währung",
     "currencyDescription": "Währung auswählen; nur das Symbol wird angezeigt.",
     "initialCapital": "Anfangskapital",
@@ -102,5 +104,15 @@
     "description": "Bevor Sie mit der Aufzeichnung Ihrer Trades beginnen, erstellen Sie ein Handelskonto. Wir haben Sie zur Registerkarte 'Handelskonten' weitergeleitet, um Sie zu führen.",
     "openTab": "Zu den Konten gehen",
     "helper": "Klicken Sie auf 'Neues Konto', um mit der Erstellung zu beginnen."
+  },
+  "sync": {
+    "button": "Synchronisieren",
+    "syncing": "Synchronisierung…",
+    "result": "{{created}} erstellt, {{skipped}} übersprungen",
+    "error": "Synchronisierung fehlgeschlagen.",
+    "lastSync": "Letzte Sync: {{date}}",
+    "neverSynced": "Noch nicht synchronisiert",
+    "brokerIdRequired": "Verwenden Sie den exakten TopStepX-Kontonamen (Kontomenü) oder eine gültige ProjectX-ID. Die ID wird bei Namensübereinstimmung automatisch gesetzt.",
+    "integrationRequired": "Richten Sie die TopStepX-Integration unter Einstellungen → Trading ein."
   }
 }

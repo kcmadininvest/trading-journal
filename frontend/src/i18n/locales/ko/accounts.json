@@ -50,7 +50,9 @@
     "type": "Type",
     "typeDescription": "Choisissez le type de compte/broker.",
     "brokerId": "ID Broker (optionnel)",
-    "brokerIdPlaceholder": "Identifiant côté broker",
+    "brokerIdPlaceholder": "브로커 측 식별자",
+    "brokerIdTopstepPlaceholder": "TopStepX 계정 ID (숫자)",
+    "brokerIdTopstepHelp": "선택 사항: 비워 두거나 계정 이름이 TopStepX(계정 메뉴)와 정확히 일치하면 자동으로 채워집니다. 동일한 ID를 여러 계정에 사용하지 마세요.",
     "currency": "Devise",
     "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
     "status": "상태",
@@ -81,6 +83,16 @@
     "description": "거래 기록을 시작하기 전에 트레이딩 계정을 만드세요. '트레이딩 계정' 탭으로 리디렉션했습니다.",
     "openTab": "계정으로 이동",
     "helper": "'새 계정'을 클릭하여 생성을 시작하세요."
+  },
+  "sync": {
+    "button": "동기화",
+    "syncing": "동기화 중…",
+    "result": "{{created}}건 생성, {{skipped}}건 건너뜀",
+    "error": "동기화에 실패했습니다.",
+    "lastSync": "마지막 동기화: {{date}}",
+    "neverSynced": "아직 동기화되지 않음",
+    "brokerIdRequired": "TopStepX 계정 이름(계정 메뉴)을 정확히 입력하거나 유효한 ProjectX ID를 사용하세요. 이름이 일치하면 ID가 자동으로 설정됩니다.",
+    "integrationRequired": "설정 → 트레이딩에서 TopStepX 연동을 구성하세요."
   }
 }
 

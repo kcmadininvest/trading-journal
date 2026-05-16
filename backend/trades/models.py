@@ -882,6 +882,47 @@ class TopStepTrade(models.Model):
             raise ValueError(f"Erreur lors du parsing de la durée '{duration_str}': {str(e)}")
 
 
+class TradeSyncLog(models.Model):
+    """Journal des synchronisations API broker (TopStepX, etc.)."""
+
+    SOURCE_CHOICES = [
+        ('api', 'API'),
+        ('csv', 'CSV'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trade_sync_logs',
+        verbose_name='Utilisateur',
+    )
+    trading_account = models.ForeignKey(
+        'TradingAccount',
+        on_delete=models.CASCADE,
+        related_name='trade_sync_logs',
+        verbose_name='Compte de trading',
+    )
+    provider = models.CharField(max_length=64, db_index=True, verbose_name='Fournisseur')
+    source = models.CharField(max_length=16, choices=SOURCE_CHOICES, default='api', verbose_name='Source')
+    total_fetched = models.IntegerField(default=0, verbose_name='Éléments récupérés')
+    created_count = models.IntegerField(default=0, verbose_name='Créations')
+    skipped_count = models.IntegerField(default=0, verbose_name='Ignorés (doublons)')
+    error_count = models.IntegerField(default=0, verbose_name='Erreurs')
+    errors = models.JSONField(null=True, blank=True, verbose_name='Détails des erreurs')
+    synced_at = models.DateTimeField(auto_now_add=True, verbose_name='Synchronisé le')
+
+    class Meta:
+        ordering = ['-synced_at']
+        verbose_name = 'Log de synchronisation trades'
+        verbose_name_plural = 'Logs de synchronisation trades'
+        indexes = [
+            models.Index(fields=['trading_account', 'provider', '-synced_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.provider} @ {self.synced_at}'  # type: ignore
+
+
 class TopStepImportLog(models.Model):
     """
     Journal des imports de fichiers TopStep pour traçabilité.

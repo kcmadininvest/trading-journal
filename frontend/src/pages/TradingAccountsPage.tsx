@@ -4,6 +4,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import PaginationControls from '../components/ui/PaginationControls';
 import { ConfirmModal, DeleteConfirmModal, Tooltip } from '../components/ui';
 import TradingAccountModal from '../components/accounts/TradingAccountModal';
+import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
 import { AccountsFilters } from '../components/accounts/AccountsFilters';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
@@ -222,7 +223,22 @@ const TradingAccountsPage: React.FC = () => {
       // Inclure les archivés seulement si le filtre est activé
       const includeArchived = filters.status === 'archived' || filters.status === '';
       const list = await tradingAccountsService.list({ include_inactive: true, include_archived: includeArchived });
-      const arr = Array.isArray(list) ? list : (list as any)?.results ?? [];
+      let arr = Array.isArray(list) ? list : (list as any)?.results ?? [];
+      const hasTopstep = arr.some((a: TradingAccount) => a.account_type === 'topstep');
+      if (hasTopstep) {
+        try {
+          const repair = await tradingAccountsService.repairTopStepBrokerIds();
+          if (repair.repaired_count > 0) {
+            const refreshed = await tradingAccountsService.list({
+              include_inactive: true,
+              include_archived: includeArchived,
+            });
+            arr = Array.isArray(refreshed) ? refreshed : (refreshed as any)?.results ?? arr;
+          }
+        } catch {
+          // Intégration absente ou hors ligne : conserver la liste telle quelle
+        }
+      }
       setAllAccounts(arr);
     } catch {
       setAllAccounts([]);
@@ -470,7 +486,10 @@ const TradingAccountsPage: React.FC = () => {
                         </div>
                       </div>
                       
-                      <div className="pt-4 border-t border-gray-200 dark:border-gray-600 flex flex-row gap-3 w-full justify-end" onClick={(e) => e.stopPropagation()}>
+                      <div className="pt-4 border-t border-gray-200 dark:border-gray-600 flex flex-row flex-wrap gap-3 w-full justify-end items-center" onClick={(e) => e.stopPropagation()}>
+                        {acc.account_type === 'topstep' && acc.status === 'active' && (
+                          <TopStepSyncControls accountId={acc.id} compact />
+                        )}
                         {!acc.is_default && (
                           <Tooltip content={t('accounts:actions.setDefault')} position="top">
                             <button

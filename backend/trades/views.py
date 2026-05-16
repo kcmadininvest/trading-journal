@@ -209,6 +209,88 @@ class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 {'error': f'Erreur lors de la définition du compte par défaut: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    @action(detail=True, methods=['post'], url_path='sync')
+    def sync(self, request, pk=None):
+        """Synchronise les trades fermés TopStepX (insert-only, sans écrasement)."""
+        from trades.sync.topstepx_sync import TopStepXSyncService
+        from trades.throttling import TradeSyncThrottle
+
+        throttle = TradeSyncThrottle()
+        if not throttle.allow_request(request, self):
+            return Response(
+                {'error': 'Trop de synchronisations. Réessayez dans une minute.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        account = self.get_object()
+        full_resync = bool(request.data.get('full_resync', False))
+        try:
+            result = TopStepXSyncService().sync_account(
+                request.user,
+                account,
+                full_resync=full_resync,
+            )
+            status_payload = TopStepXSyncService().get_sync_status(account)
+            return Response({
+                'message': 'Synchronisation terminée.',
+                'created': result.created,
+                'skipped': result.skipped,
+                'total_fetched': result.total_fetched,
+                'last_sync_at': result.last_sync_at.isoformat(),
+                'errors': result.errors,
+                'status': status_payload,
+            })
+        except ValueError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as exc:
+            logger.exception('Erreur sync TopStepX compte %s', pk)
+            return Response(
+                {'error': 'Erreur lors de la synchronisation.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    @action(detail=True, methods=['get'], url_path='sync-status')
+    def sync_status(self, request, pk=None):
+        from trades.sync.topstepx_sync import TopStepXSyncService
+
+        account = self.get_object()
+        return Response(TopStepXSyncService().get_sync_status(account))
+
+    @action(detail=False, methods=['post'], url_path='repair-topstep-broker-ids')
+    def repair_topstep_broker_ids(self, request):
+        """Aligne broker_account_id sur le nom TopStepX (API Account/search)."""
+        from integrations.topstepx_auth import get_topstepx_integration, get_valid_session_token
+        from integrations.topstepx_accounts import repair_topstep_broker_account_ids
+        from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
+
+        integration = get_topstepx_integration(request.user)
+        if integration is None or not integration.secrets_encrypted:
+            return Response(
+                {'error': 'Configurez l\'intégration TopStepX dans les paramètres.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            token = get_valid_session_token(integration)
+        except TopStepXApiError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        accounts = list(
+            self.get_queryset().filter(account_type='topstep', status='active')
+        )
+        try:
+            repaired = repair_topstep_broker_account_ids(
+                TopStepXApiClient(),
+                token,
+                accounts,
+            )
+        except TopStepXApiError as exc:
+            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'repaired_count': len(repaired),
+            'repaired': repaired,
+        })
     
     @action(detail=True, methods=['post'])
     def archive(self, request, pk=None):

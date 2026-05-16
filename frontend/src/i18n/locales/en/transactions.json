@@ -24,6 +24,7 @@
   "description": "Description",
   "actions": "Actions",
   "edit": "Edit",
+  "clickToEdit": "Click to edit",
   "delete": "Delete",
   "deleteConfirmTitle": "Delete Transaction",
   "deleteConfirmMessage": "Are you sure you want to delete this transaction? This action is irreversible.",

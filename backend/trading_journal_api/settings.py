@@ -277,6 +277,7 @@ REST_FRAMEWORK = {
         'password_reset': '3/hour',  # Réinitialisation de mot de passe (personnalisé)
         'contact': '5/hour',  # Formulaire contact page publique
         'integration_test': '5/minute',  # Test connexion intégrations API
+        'trade_sync': '3/minute',  # Sync trades TopStepX
     },
 }
 

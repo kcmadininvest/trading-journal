@@ -50,7 +50,9 @@
     "type": "Type",
     "typeDescription": "Choisissez le type de compte/broker.",
     "brokerId": "ID Broker (optionnel)",
-    "brokerIdPlaceholder": "Identifiant côté broker",
+    "brokerIdPlaceholder": "ブローカー側の識別子",
+    "brokerIdTopstepPlaceholder": "TopStepX口座ID（数値）",
+    "brokerIdTopstepHelp": "任意：空欄可。口座名がTopStepX（口座メニュー）と完全一致する場合は自動入力されます。同じIDを複数の口座で使わないでください。",
     "currency": "Devise",
     "currencyDescription": "Sélectionnez la devise; seul le symbole sera affiché.",
     "status": "ステータス",
@@ -81,6 +83,16 @@
     "description": "トレードの記録を開始する前に、トレーディングアカウントを作成してください。「トレーディングアカウント」タブにリダイレクトしました。",
     "openTab": "アカウントへ移動",
     "helper": "「新しいアカウント」をクリックして作成を開始してください。"
+  },
+  "sync": {
+    "button": "同期",
+    "syncing": "同期中…",
+    "result": "{{created}} 件作成、{{skipped}} 件スキップ",
+    "error": "同期に失敗しました。",
+    "lastSync": "最終同期: {{date}}",
+    "neverSynced": "未同期",
+    "brokerIdRequired": "TopStepXの口座名（口座メニュー）を正確に入力するか、有効なProjectX IDを指定してください。名前が一致すればIDは自動設定されます。",
+    "integrationRequired": "設定 → トレードでTopStepX連携を設定してください。"
   }
 }
 

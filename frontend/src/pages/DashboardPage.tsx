@@ -35,6 +35,7 @@ import { GlobalStatsIndicators } from '../components/dashboard/GlobalStatsIndica
 import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformanceKpis';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
+import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -1926,7 +1927,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 disabled={loadingStrategies}
               />
             </div>
-            <div className="flex w-full min-w-0 min-[900px]:w-auto items-center justify-start min-[900px]:shrink-0">
+            <div className="flex w-full min-w-0 min-[900px]:w-auto flex-wrap items-center justify-start gap-2 min-[900px]:shrink-0">
+              <TopStepSyncControls accountId={accountId} onSynced={() => void refetch()} />
               <PnlBasisToggle />
             </div>
           </div>

@@ -62,6 +62,8 @@
     "typeDescription": "Choose the account/broker type.",
     "brokerId": "Broker ID (optional)",
     "brokerIdPlaceholder": "Broker-side identifier",
+    "brokerIdTopstepPlaceholder": "TopStepX account ID (numeric)",
+    "brokerIdTopstepHelp": "Optional: leave empty or auto-filled when the account name matches TopStepX exactly (account menu). Do not reuse the same ID on multiple accounts.",
     "currency": "Currency",
     "currencyDescription": "Select the currency; only the symbol will be displayed.",
     "initialCapital": "Initial Capital",
@@ -102,6 +104,16 @@
     "description": "Before you start recording your trades, create a trading account. We've redirected you to the 'Trading Accounts' tab to guide you.",
     "openTab": "Go to accounts",
     "helper": "Click 'New Account' to start creating."
+  },
+  "sync": {
+    "button": "Sync",
+    "syncing": "Syncing…",
+    "result": "{{created}} created, {{skipped}} skipped",
+    "error": "Sync failed.",
+    "lastSync": "Last sync: {{date}}",
+    "neverSynced": "Not synced yet",
+    "brokerIdRequired": "Use the exact TopStepX account name (account menu) or a valid ProjectX ID. The ID is set automatically when names match.",
+    "integrationRequired": "Set up the TopStepX integration in Settings → Trading."
   }
 }
 

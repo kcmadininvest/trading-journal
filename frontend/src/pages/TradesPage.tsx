@@ -18,6 +18,7 @@ import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { usePreferences } from '../hooks/usePreferences';
 import userService from '../services/userService';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
+import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
 
 const DEFAULT_TRADES_PAGE_SIZE = 20;
 const TRADES_PAGE_SIZE_OPTIONS = [5, 10, 20, 25, 50, 100];
@@ -521,7 +522,7 @@ const TradesPage: React.FC = () => {
             <div className="flex w-full items-end lg:w-auto lg:flex-shrink-0">
               <PnlBasisToggle />
             </div>
-            <div className="flex w-full flex-wrap items-end gap-2 lg:ml-auto lg:w-auto lg:flex-shrink-0 lg:justify-end">
+            <div className="flex w-full flex-wrap items-center gap-2 lg:ml-auto lg:w-auto lg:flex-shrink-0 lg:justify-end">
               <button
                 onClick={() => {
                   setEditingTradeId(null);
@@ -545,6 +546,11 @@ const TradesPage: React.FC = () => {
                 </svg>
                 {t('trades:export', { defaultValue: 'Exporter' })}
               </button>
+              <TopStepSyncControls
+                accountId={filters.trading_account ?? selectedAccountId}
+                enablePolling
+                onSynced={() => void load()}
+              />
               <button
                 onClick={() => setShowImport(true)}
                 disabled={isLoading}

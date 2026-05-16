@@ -51,6 +51,8 @@
     "typeDescription": "Escolha o tipo de conta/corretor.",
     "brokerId": "ID do Corretor (opcional)",
     "brokerIdPlaceholder": "Identificador do lado do corretor",
+    "brokerIdTopstepPlaceholder": "ID da conta TopStepX (numérico)",
+    "brokerIdTopstepHelp": "Opcional: deixe vazio ou preenchido automaticamente se o nome coincidir exatamente com o TopStepX (menu de contas). Não reutilize o mesmo ID em várias contas.",
     "currency": "Moeda",
     "currencyDescription": "Selecione a moeda; apenas o símbolo será exibido.",
     "status": "Status",
@@ -81,6 +83,16 @@
     "description": "Antes de começar a registrar suas operações, crie uma conta de trading. Redirecionamos você para a aba 'Contas de Trading' para orientá-lo.",
     "openTab": "Ir para as contas",
     "helper": "Clique em 'Nova Conta' para começar a criar."
+  },
+  "sync": {
+    "button": "Sincronizar",
+    "syncing": "A sincronizar…",
+    "result": "{{created}} criado(s), {{skipped}} ignorado(s)",
+    "error": "Falha na sincronização.",
+    "lastSync": "Última sync: {{date}}",
+    "neverSynced": "Ainda não sincronizado",
+    "brokerIdRequired": "Use o nome exato da conta TopStepX (menu de contas) ou um ID ProjectX válido. O ID é definido automaticamente quando o nome coincide.",
+    "integrationRequired": "Configure a integração TopStepX em Definições → Trading."
   }
 }
 

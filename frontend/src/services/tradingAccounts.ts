@@ -172,6 +172,79 @@ class TradingAccountsService {
     if (!res.ok) throw new Error('Erreur lors de la désarchivage du compte');
     return res.json();
   }
+
+  async sync(id: number, options?: { full_resync?: boolean }): Promise<TradeSyncResponse> {
+    const res = await this.fetchWithAuth(`${this.BASE_URL}/api/trades/trading-accounts/${id}/sync/`, {
+      method: 'POST',
+      body: JSON.stringify(options ?? {}),
+    });
+    const body = await res.json();
+    if (res.status === 429) {
+      throw new Error(body?.error || 'Trop de synchronisations. Réessayez dans une minute.');
+    }
+    if (!res.ok) {
+      throw new Error(body?.error || 'Erreur lors de la synchronisation.');
+    }
+    return body as TradeSyncResponse;
+  }
+
+  async getSyncStatus(id: number): Promise<TradeSyncStatus> {
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/trading-accounts/${id}/sync-status/`,
+    );
+    if (!res.ok) {
+      throw new Error('Erreur lors du chargement du statut de synchronisation.');
+    }
+    return res.json();
+  }
+
+  async repairTopStepBrokerIds(): Promise<RepairTopStepBrokerIdsResponse> {
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/trading-accounts/repair-topstep-broker-ids/`,
+      { method: 'POST', body: JSON.stringify({}) },
+    );
+    const body = await res.json();
+    if (!res.ok) {
+      throw new Error(body?.error || 'Erreur lors de la correction des ID broker TopStepX.');
+    }
+    return body as RepairTopStepBrokerIdsResponse;
+  }
+}
+
+export interface RepairTopStepBrokerIdsResponse {
+  repaired_count: number;
+  repaired: Array<{
+    trading_account_id: number;
+    name: string;
+    old_broker_account_id: string | null;
+    broker_account_id: string;
+  }>;
+}
+
+export interface TradeSyncResponse {
+  message: string;
+  created: number;
+  skipped: number;
+  total_fetched: number;
+  last_sync_at: string;
+  errors: string[];
+  status: TradeSyncStatus;
+}
+
+export interface TradeSyncStatus {
+  broker_account_id?: string;
+  last_sync_at?: string | null;
+  integration_configured: boolean;
+  integration_connected: boolean;
+  /** true si un POST sync est recommandé (dernière sync > sync_stale_minutes). */
+  should_sync?: boolean;
+  sync_stale_minutes?: number;
+  last_log?: {
+    synced_at: string;
+    created_count: number;
+    skipped_count: number;
+    total_fetched: number;
+  } | null;
 }
 
 export interface AccountDailyMetric {

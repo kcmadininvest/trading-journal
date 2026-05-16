@@ -73,11 +73,8 @@ class TopStepCSVImporter:
             raise ValueError("Aucun compte de trading par défaut trouvé pour cet utilisateur")
 
     def _row_exists(self, topstep_id, trading_account):
-        return TopStepTrade.objects.filter(
-            user=self.user,
-            trading_account=trading_account,
-            topstep_id=topstep_id,
-        ).exists()
+        from trades.sync.trade_upsert import trade_exists
+        return trade_exists(self.user, trading_account, topstep_id)
 
     def _parse_row(self, row, row_num):
         """Parse commun CSV → dict pour création / validation."""
@@ -143,27 +140,10 @@ class TopStepCSVImporter:
 
     def _import_row_for_account(self, parsed, row_num, trading_account):
         """Crée un trade pour un compte donné. Retourne l'instance ou None si doublon."""
-        if self._row_exists(parsed['topstep_id'], trading_account):
-            return None
-        trade = TopStepTrade.objects.create(
-            user=self.user,
-            trading_account=trading_account,
-            topstep_id=parsed['topstep_id'],
-            contract_name=parsed['contract_name'],
-            entered_at=parsed['entered_at'],
-            exited_at=parsed['exited_at'],
-            entry_price=parsed['entry_price'],
-            exit_price=parsed['exit_price'],
-            fees=parsed['fees'],
-            size=parsed['size'],
-            trade_type=parsed['trade_type'],
-            trade_day=parsed['trade_day'],
-            trade_duration=parsed['trade_duration'],
-            commissions=parsed['commissions'],
-            point_value=parsed['point_value'],
-            raw_data=parsed['raw_row'],
-        )
-        return trade
+        from trades.sync.trade_upsert import create_trade_from_parsed
+
+        payload = {**parsed, 'raw_data': parsed.get('raw_row')}
+        return create_trade_from_parsed(self.user, trading_account, payload)
 
     def import_from_file(self, file_path, filename=None):
         if filename is None:

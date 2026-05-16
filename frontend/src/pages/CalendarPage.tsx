@@ -16,6 +16,7 @@ import { currenciesService, Currency } from '../services/currencies';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
+import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
 import { usePreferences } from '../hooks/usePreferences';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 
@@ -169,7 +170,17 @@ const CalendarPage: React.FC = () => {
                 hideAccountNumber={hideAccountNumber}
               />
             </div>
-            <div className="flex w-full items-end lg:w-auto lg:flex-shrink-0">
+            <div className="flex w-full flex-wrap items-end gap-2 lg:w-auto lg:flex-shrink-0">
+              <TopStepSyncControls
+                accountId={selectedAccount}
+                onSynced={() => {
+                  if (viewType === 'daily') {
+                    void loadDailyData();
+                  } else {
+                    void loadYearlyData(currentYear, selectedAccount ?? undefined);
+                  }
+                }}
+              />
               <PnlBasisToggle />
             </div>
           </div>

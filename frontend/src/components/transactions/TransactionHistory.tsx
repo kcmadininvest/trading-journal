@@ -186,6 +186,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     setDeleteModalOpen(true);
   };
 
+  const handleRowActivate = (e: React.MouseEvent, transaction: AccountTransaction) => {
+    if (!onEdit) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+    onEdit(transaction);
+  };
+
   const handleDeleteConfirm = async () => {
     if (!transactionToDelete || !transactionToDelete.id) return;
 
@@ -437,7 +444,22 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
               return (
                 <div
                   key={transaction.id}
-                  className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
+                  role={onEdit ? 'button' : undefined}
+                  tabIndex={onEdit ? 0 : undefined}
+                  onClick={(e) => handleRowActivate(e, transaction)}
+                  onKeyDown={(e) => {
+                    if (!onEdit) return;
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onEdit(transaction);
+                    }
+                  }}
+                  title={onEdit ? t('transactions:clickToEdit', { defaultValue: 'Cliquer pour modifier' }) : undefined}
+                  className={`bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 ${
+                    onEdit
+                      ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/80 transition-colors'
+                      : ''
+                  }`}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -468,42 +490,26 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                         {formatCurrency(amount, rowCurrencySymbol, preferences.number_format, 2)}
                       </div>
                     </div>
-                    {(onEdit || onDelete) && (
-                      <div className="flex items-center gap-2 ml-2">
-                        {onEdit && (
-                          <button
-                            type="button"
-                            onClick={() => onEdit(transaction)}
-                            className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                            title={t('transactions:edit', { defaultValue: 'Modifier' })}
-                          >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                              />
-                            </svg>
-                          </button>
-                        )}
-                        {onDelete && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteClick(transaction)}
-                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                            title={t('transactions:delete', { defaultValue: 'Supprimer' })}
-                          >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        )}
+                    {onDelete && (
+                      <div className="flex items-center gap-2 ml-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(transaction);
+                          }}
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                          title={t('transactions:delete', { defaultValue: 'Supprimer' })}
+                        >
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -541,9 +547,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                   <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
                     {t('transactions:description', { defaultValue: 'Description' })}
                   </th>
-                  {(onEdit || onDelete) && (
-                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {t('transactions:actions', { defaultValue: 'Actions' })}
+                  {onDelete && (
+                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300 w-14">
+                      <span className="sr-only">{t('transactions:actions', { defaultValue: 'Actions' })}</span>
                     </th>
                   )}
                 </tr>
@@ -555,7 +561,11 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                   return (
                     <tr
                       key={transaction.id}
-                      className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      className={`border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${
+                        onEdit ? 'cursor-pointer' : ''
+                      }`}
+                      onClick={(e) => handleRowActivate(e, transaction)}
+                      title={onEdit ? t('transactions:clickToEdit', { defaultValue: 'Cliquer pour modifier' }) : undefined}
                     >
                       <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">
                         {formatDateTime(transaction.transaction_date)}
@@ -589,43 +599,27 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
                       <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                         {transaction.description || '-'}
                       </td>
-                      {(onEdit || onDelete) && (
+                      {onDelete && (
                         <td className="py-3 px-4">
-                          <div className="flex items-center justify-end gap-2">
-                            {onEdit && (
-                              <button
-                                type="button"
-                                onClick={() => onEdit(transaction)}
-                                className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                                title={t('transactions:edit', { defaultValue: 'Modifier' })}
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                  />
-                                </svg>
-                              </button>
-                            )}
-                            {onDelete && (
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteClick(transaction)}
-                                className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                title={t('transactions:delete', { defaultValue: 'Supprimer' })}
-                              >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                  />
-                                </svg>
-                              </button>
-                            )}
+                          <div className="flex items-center justify-end">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(transaction);
+                              }}
+                              className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                              title={t('transactions:delete', { defaultValue: 'Supprimer' })}
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
                           </div>
                         </td>
                       )}

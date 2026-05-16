@@ -80,6 +80,10 @@ class IntegrationDetailView(APIView):
         except ValueError as exc:
             return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
+        if provider == 'topstepx':
+            from integrations.topstepx_accounts import invalidate_topstepx_accounts_cache
+            invalidate_topstepx_accounts_cache(request.user.pk)
+
         return Response({
             'message': 'Intégration enregistrée.',
             'integration': integration_status_payload(provider_impl, integration),
@@ -92,6 +96,9 @@ class IntegrationDetailView(APIView):
         deleted = delete_integration(request.user, provider)
         if not deleted:
             return Response({'error': 'Aucune intégration à supprimer.'}, status=status.HTTP_404_NOT_FOUND)
+        if provider == 'topstepx':
+            from integrations.topstepx_accounts import invalidate_topstepx_accounts_cache
+            invalidate_topstepx_accounts_cache(request.user.pk)
         return Response({'message': 'Intégration supprimée.'}, status=status.HTTP_200_OK)
 
 
