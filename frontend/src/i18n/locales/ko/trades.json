@@ -135,8 +135,8 @@
     "losers": "손실 거래",
     "strategy": "전략",
     "strategyNeutral": "전체",
-    "withStrategy": "전략 있음",
-    "withoutStrategy": "전략 없음",
+    "withStrategy": "있음",
+    "withoutStrategy": "없음",
     "positionStrategy": "포지션 전략"
   },
   "dayTradesModal": {

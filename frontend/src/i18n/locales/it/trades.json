@@ -135,8 +135,8 @@
     "losers": "Perdenti",
     "strategy": "Strategia",
     "strategyNeutral": "Tutti",
-    "withStrategy": "Con strategia",
-    "withoutStrategy": "Senza strategia",
+    "withStrategy": "Con",
+    "withoutStrategy": "Senza",
     "positionStrategy": "Strategia di Posizione"
   },
   "dayTradesModal": {

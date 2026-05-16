@@ -135,8 +135,8 @@
     "losers": "亏损交易",
     "strategy": "策略",
     "strategyNeutral": "全部",
-    "withStrategy": "有策略",
-    "withoutStrategy": "无策略",
+    "withStrategy": "有",
+    "withoutStrategy": "无",
     "positionStrategy": "持仓策略"
   },
   "dayTradesModal": {
