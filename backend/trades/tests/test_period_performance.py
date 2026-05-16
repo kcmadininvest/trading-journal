@@ -1,7 +1,7 @@
-"""Tests for rolling day/week/month period performance KPIs."""
+"""Tests for rolling day/week/month/year period performance KPIs."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -42,15 +42,20 @@ class PeriodPerformanceComputationTests(APITestCase):
         self.tz = pytz.UTC
         self.ref = datetime(2026, 5, 16, 12, 0, 0, tzinfo=self.tz)
 
-    def _create_trade(self, day_offset: int, pnl: str, net_pnl: Optional[str] = None) -> None:
-        trade_day = (self.ref.date() + timedelta(days=day_offset))
+    def _create_trade_on_date(
+        self,
+        trade_day: date,
+        pnl: str,
+        net_pnl: Optional[str] = None,
+        trade_id: Optional[str] = None,
+    ) -> None:
         entered = self.tz.localize(
             datetime.combine(trade_day, datetime.min.time().replace(hour=10))
         )
         TopStepTrade.objects.create(
             user=self.user,
             trading_account=self.account,
-            topstep_id=f'period-{day_offset}-{pnl}',
+            topstep_id=trade_id or f'period-{trade_day.isoformat()}-{pnl}',
             contract_name='NQ',
             entered_at=entered,
             exited_at=entered + timedelta(hours=1),
@@ -62,6 +67,10 @@ class PeriodPerformanceComputationTests(APITestCase):
             pnl=Decimal(pnl),
             net_pnl=Decimal(net_pnl if net_pnl is not None else pnl),
         )
+
+    def _create_trade(self, day_offset: int, pnl: str, net_pnl: Optional[str] = None) -> None:
+        trade_day = self.ref.date() + timedelta(days=day_offset)
+        self._create_trade_on_date(trade_day, pnl, net_pnl, trade_id=f'period-{day_offset}-{pnl}')
 
     def test_day_week_month_aggregation(self) -> None:
         # ref = 2026-05-16 (Friday)
@@ -91,6 +100,83 @@ class PeriodPerformanceComputationTests(APITestCase):
 
         # month May 1-16: same trades in May
         self.assertEqual(result['month']['pnl'], 200.0)
+
+    def test_year_ytd_vs_same_period_last_year(self) -> None:
+        # ref = 2026-05-16
+        self._create_trade_on_date(date(2026, 5, 16), '50.00')
+        self._create_trade_on_date(date(2026, 2, 1), '30.00')
+        self._create_trade_on_date(date(2025, 5, 16), '20.00')
+        self._create_trade_on_date(date(2025, 2, 1), '10.00')
+        self._create_trade_on_date(date(2024, 12, 31), '999.00')  # hors période YTD
+
+        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        result = compute_period_performance(
+            qs,
+            self.tz,
+            Decimal('10000'),
+            'net_pnl',
+            reference_now=self.ref,
+        )
+
+        self.assertEqual(result['year']['pnl'], 80.0)
+        self.assertEqual(result['year']['previous_pnl'], 30.0)
+        self.assertAlmostEqual(result['year']['change_pct'], ((80 - 30) / 30) * 100, places=1)
+        self.assertEqual(result['year']['comparison_basis'], 'same_period_prior_year')
+
+    def test_year_fallback_to_full_prior_calendar_year(self) -> None:
+        """Si aucun trade sur la tranche YTD N-1, comparer à l'année civile complète."""
+        self._create_trade_on_date(date(2026, 5, 10), '100.00')
+        self._create_trade_on_date(date(2025, 11, 1), '50.00')
+        self._create_trade_on_date(date(2025, 12, 1), '-20.00')
+
+        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        result = compute_period_performance(
+            qs,
+            self.tz,
+            Decimal('10000'),
+            'net_pnl',
+            reference_now=self.ref,
+        )
+
+        self.assertEqual(result['year']['pnl'], 100.0)
+        self.assertEqual(result['year']['previous_pnl'], 30.0)
+        self.assertEqual(result['year']['comparison_basis'], 'full_prior_calendar_year')
+        self.assertEqual(result['year']['prior_calendar_year'], 2025)
+        self.assertIsNotNone(result['year']['change_pct'])
+
+    def test_year_counts_trade_day_when_entered_at_differs(self) -> None:
+        """Les imports peuvent avoir entered_at récent mais trade_day historique."""
+        trade_day_2025 = date(2025, 4, 10)
+        entered_2026 = self.tz.localize(datetime(2026, 1, 15, 10, 0, 0))
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='period-import-2025',
+            contract_name='NQ',
+            entered_at=entered_2026,
+            exited_at=entered_2026 + timedelta(hours=1),
+            entry_price=Decimal('100.000000000'),
+            exit_price=Decimal('101.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            trade_day=trade_day_2025,
+            pnl=Decimal('200.00'),
+            net_pnl=Decimal('200.00'),
+        )
+        self._create_trade_on_date(date(2026, 4, 10), '50.00')
+
+        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        result = compute_period_performance(
+            qs,
+            self.tz,
+            Decimal('10000'),
+            'net_pnl',
+            reference_now=self.ref,
+        )
+
+        self.assertEqual(result['year']['pnl'], 50.0)
+        self.assertEqual(result['year']['previous_pnl'], 200.0)
+        self.assertIsNotNone(result['year']['change_pct'])
 
     def test_change_pct_none_when_previous_zero(self) -> None:
         self._create_trade(0, '25.00')
@@ -161,6 +247,7 @@ class DashboardSummaryPeriodPerformanceTests(APITestCase):
         self.assertIn('day', pp)
         self.assertIn('week', pp)
         self.assertIn('month', pp)
+        self.assertIn('year', pp)
         self.assertEqual(pp['day']['pnl'], 40.0)
 
     def test_period_performance_ignores_date_filter(self) -> None:

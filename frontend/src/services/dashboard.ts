@@ -16,17 +16,25 @@ export interface ComplianceStats {
   next_badge: any;
 }
 
+export type YearComparisonBasis =
+  | 'same_period_prior_year'
+  | 'full_prior_calendar_year';
+
 export interface PeriodPerformanceEntry {
   pnl: number;
   previous_pnl: number;
   change_pct: number | null;
   return_on_capital_pct: number | null;
+  /** Année uniquement : base de comparaison pour le libellé « vs … » */
+  comparison_basis?: YearComparisonBasis;
+  prior_calendar_year?: number;
 }
 
 export interface PeriodPerformance {
   day: PeriodPerformanceEntry;
   week: PeriodPerformanceEntry;
   month: PeriodPerformanceEntry;
+  year: PeriodPerformanceEntry;
 }
 
 export interface DashboardSummary {

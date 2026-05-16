@@ -15,11 +15,13 @@ export interface PeriodPerformanceKpisProps {
   hideMoney?: boolean;
   loading?: boolean;
   className?: string;
+  /** true = un compte précis sélectionné (pas « Tous les comptes ») */
+  singleAccountSelected?: boolean;
 }
 
-type PeriodKey = 'day' | 'week' | 'month';
+type PeriodKey = 'day' | 'week' | 'month' | 'year';
 
-const PERIOD_KEYS: PeriodKey[] = ['day', 'week', 'month'];
+const PERIOD_KEYS: PeriodKey[] = ['day', 'week', 'month', 'year'];
 
 /** Même enveloppe que AccountSummaryCard (barre des soldes). */
 const SUMMARY_SHELL_CLASS = 'bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4';
@@ -28,6 +30,7 @@ const PREVIOUS_PERIOD_LABEL: Record<PeriodKey, string> = {
   day: 'dashboard:periodPerformance.vsYesterday',
   week: 'dashboard:periodPerformance.vsLastWeek',
   month: 'dashboard:periodPerformance.vsLastMonth',
+  year: 'dashboard:periodPerformance.vsLastYear',
 };
 
 /** Aligné sur AccountIndicatorsGrid (variation PnL) : bleu = gain, rose = perte. */
@@ -63,6 +66,7 @@ interface PeriodCardProps {
   currencySymbol: string;
   pnlCurrencyMode: 'single' | 'mixed';
   hideMoney: boolean;
+  singleAccountSelected: boolean;
 }
 
 const PeriodCard: React.FC<PeriodCardProps> = ({
@@ -71,18 +75,27 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
   currencySymbol,
   pnlCurrencyMode,
   hideMoney,
+  singleAccountSelected,
 }) => {
   const { t } = useTranslation();
   const { preferences } = usePreferences();
 
-  const vsLabel = t(PREVIOUS_PERIOD_LABEL[periodKey], {
-    defaultValue:
-      periodKey === 'day'
-        ? 'vs hier'
-        : periodKey === 'week'
-          ? 'vs semaine dernière'
-          : 'vs mois dernier',
-  });
+  const vsLabel =
+    periodKey === 'year' && entry.comparison_basis === 'full_prior_calendar_year'
+      ? t('dashboard:periodPerformance.vsFullPriorYear', {
+          year: entry.prior_calendar_year ?? new Date().getFullYear() - 1,
+          defaultValue: 'vs année {{year}} (totale)',
+        })
+      : t(PREVIOUS_PERIOD_LABEL[periodKey], {
+          defaultValue:
+            periodKey === 'day'
+              ? 'vs hier'
+              : periodKey === 'week'
+                ? 'vs semaine dernière'
+                : periodKey === 'month'
+                  ? 'vs mois dernier'
+                  : 'vs année dernière',
+        });
 
   const formatPnLValue = (value: number) => {
     if (hideMoney) {
@@ -104,13 +117,26 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
 
   const changePct = entry.change_pct;
   const periodPnlIsZero = Math.abs(entry.pnl) < 1e-9;
+  const hasPreviousBaseline = Math.abs(entry.previous_pnl ?? 0) >= 1e-9;
   const showChangeBadge =
     !periodPnlIsZero &&
+    hasPreviousBaseline &&
     changePct !== null &&
-    changePct !== undefined &&
-    changePct !== 0;
-  const showChangeUnavailable =
-    !periodPnlIsZero && (changePct === null || changePct === undefined);
+    changePct !== undefined;
+  const showChangeUnavailable = !periodPnlIsZero && !hasPreviousBaseline;
+  const priorYear = entry.prior_calendar_year ?? new Date().getFullYear() - 1;
+  const yearUnavailableHint =
+    periodKey === 'year' && showChangeUnavailable && !hideMoney
+      ? singleAccountSelected
+        ? t('dashboard:periodPerformance.noPriorYearOnAccount', {
+            year: priorYear,
+            defaultValue: 'Aucun trade en {{year}} sur ce compte',
+          })
+        : t('dashboard:periodPerformance.noPriorYearAnywhere', {
+            year: priorYear,
+            defaultValue: 'Aucun trade en {{year}}',
+          })
+      : null;
 
   return (
     <div
@@ -122,7 +148,13 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
       <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
         {t(`dashboard:periodPerformance.${periodKey}`, {
           defaultValue:
-            periodKey === 'day' ? "Aujourd'hui" : periodKey === 'week' ? 'Cette semaine' : 'Ce mois',
+            periodKey === 'day'
+              ? "Aujourd'hui"
+              : periodKey === 'week'
+                ? 'Cette semaine'
+                : periodKey === 'month'
+                  ? 'Ce mois'
+                  : 'Cette année',
         })}
       </span>
 
@@ -139,11 +171,19 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
         {showChangeBadge ? (
           <Tooltip
             disabled={hideMoney}
-            content={t('dashboard:periodPerformance.changePctTooltip', {
-              defaultValue:
-                'Évolution du PnL par rapport à la période précédente (même durée calendaire).',
-              previous: vsLabel,
-            })}
+            content={
+              periodKey === 'year' && entry.comparison_basis === 'full_prior_calendar_year'
+                ? t('dashboard:periodPerformance.changePctFullYearTooltip', {
+                    defaultValue:
+                      "Évolution du PnL année en cours par rapport au total de l'année civile précédente (aucun trade sur la même tranche à date).",
+                    year: entry.prior_calendar_year ?? new Date().getFullYear() - 1,
+                  })
+                : t('dashboard:periodPerformance.changePctTooltip', {
+                    defaultValue:
+                      'Évolution du PnL par rapport à la période précédente (même durée calendaire).',
+                    previous: vsLabel,
+                  })
+            }
           >
             <span
               className={clsx(
@@ -178,13 +218,21 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
         ) : showChangeUnavailable ? (
           <Tooltip
             disabled={hideMoney}
-            content={t('dashboard:periodPerformance.changePctUnavailableTooltip', {
-              defaultValue:
-                'Impossible de calculer l’évolution : la période précédente n’a pas de PnL.',
-            })}
+            content={
+              periodKey === 'year' && singleAccountSelected
+                ? t('dashboard:periodPerformance.noPriorYearOnAccountTooltip', {
+                    year: priorYear,
+                    defaultValue:
+                      "Ce compte n'a aucun trade en {{year}} (même sur l'année complète). Vos trades {{year}} sont peut‑être sur un autre compte : essayez « Tous les comptes ».",
+                  })
+                : t('dashboard:periodPerformance.changePctUnavailableTooltip', {
+                    defaultValue:
+                      'Impossible de calculer l’évolution : la période précédente n’a pas de PnL.',
+                  })
+            }
           >
-            <span className="inline-flex w-fit items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-              {hideMoney ? '***' : `— ${vsLabel}`}
+            <span className="inline-flex w-fit max-w-full items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium leading-snug text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+              {hideMoney ? '***' : yearUnavailableHint ?? `— ${vsLabel}`}
             </span>
           </Tooltip>
         ) : null}
@@ -225,6 +273,7 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
   hideMoney = false,
   loading = false,
   className = '',
+  singleAccountSelected = false,
 }) => {
   const { t } = useTranslation();
   const { preferences } = usePreferences();
@@ -256,7 +305,7 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
     return (
       <div className={clsx(SUMMARY_SHELL_CLASS, className)}>
         <div className="mb-3 h-5 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-700 sm:mb-4" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {PERIOD_KEYS.map((key) => (
             <div
               key={key}
@@ -294,17 +343,22 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
           })}
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        {PERIOD_KEYS.map((key) => (
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {PERIOD_KEYS.map((key) => {
+          const entry = data[key];
+          if (!entry) return null;
+          return (
           <PeriodCard
             key={key}
             periodKey={key}
-            entry={data[key]}
+            entry={entry}
             currencySymbol={displayCurrencySymbol}
             pnlCurrencyMode={pnlCurrencyMode}
             hideMoney={hideMoney}
+            singleAccountSelected={singleAccountSelected}
           />
-        ))}
+          );
+        })}
       </div>
     </section>
   );

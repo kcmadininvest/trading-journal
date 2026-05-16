@@ -1985,6 +1985,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         pnlCurrencyMode={accountId ? 'single' : globalPnlCurrencyMode}
         hideMoney={hideWeekdayChartMoneyValues}
         loading={dashboardLoading && !dashboardData}
+        singleAccountSelected={accountId != null}
       />
 
       {/* Message d'erreur */}
