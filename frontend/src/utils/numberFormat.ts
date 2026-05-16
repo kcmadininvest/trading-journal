@@ -95,3 +95,12 @@ export const formatCurrencyWithSign = (
   return `${sign}${formatted}`;
 };
 
+/** Symbole affiché pour un code devise (ex. USD → $), à partir du catalogue API. */
+export function getCurrencySymbolForCode(
+  currencyCode: string | undefined | null,
+  currencies: ReadonlyArray<{ code: string; symbol: string }>
+): string {
+  if (!currencyCode || !currencies.length) return '';
+  return currencies.find((c) => c.code === currencyCode)?.symbol ?? '';
+}
+

@@ -179,6 +179,20 @@
   "globalActivity": "Activity",
   "globalActivityTooltip": "Total positions (all accounts) and active days — same rules as under current balance (days with at least one trade or discipline tracking).",
   "globalPositionsLabel": "positions",
-  "allAccountsCumulative": "All accounts (all-time)"
+  "allAccountsCumulative": "All accounts (all-time)",
+  "periodPerformance": {
+    "sectionTitle": "Recent performance",
+    "sectionSubtitle": "Calendar PnL (day, week, month) — independent of the period filter above",
+    "day": "Today",
+    "week": "This week",
+    "month": "This month",
+    "vsYesterday": "vs yesterday",
+    "vsLastWeek": "vs last week",
+    "vsLastMonth": "vs last month",
+    "changePctTooltip": "PnL change vs the previous period ({{previous}}).",
+    "changePctUnavailableTooltip": "Change not available: previous period had no PnL.",
+    "returnOnCapital": "{{pct}} on capital",
+    "returnOnCapitalTooltip": "Period PnL as a percentage of initial capital for the displayed account(s). Amounts use the default currency from Settings."
+  }
 }
 

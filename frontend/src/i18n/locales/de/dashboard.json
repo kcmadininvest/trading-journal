@@ -180,5 +180,19 @@
   "globalActivity": "Aktivität",
   "globalActivityTooltip": "Gesamtpositionen (alle Konten) und aktive Tage — gleiche Regeln wie beim aktuellen Saldo (Tage mit mindestens einem Trade oder Disziplin-Tracking).",
   "globalPositionsLabel": "Positionen",
-  "allAccountsCumulative": "Alle Konten (Gesamt)"
+  "allAccountsCumulative": "Alle Konten (Gesamt)",
+  "periodPerformance": {
+    "sectionTitle": "Aktuelle Performance",
+    "sectionSubtitle": "Kalender-PnL (Tag, Woche, Monat) — unabhängig vom Periodenfilter oben",
+    "day": "Heute",
+    "week": "Diese Woche",
+    "month": "Dieser Monat",
+    "vsYesterday": "vs gestern",
+    "vsLastWeek": "vs letzte Woche",
+    "vsLastMonth": "vs letzter Monat",
+    "changePctTooltip": "PnL-Entwicklung gegenüber der Vorperiode ({{previous}}).",
+    "changePctUnavailableTooltip": "Entwicklung nicht berechenbar: Vorperiode ohne PnL.",
+    "returnOnCapital": "{{pct}} auf Kapital",
+    "returnOnCapitalTooltip": "Perioden-PnL in Prozent des Anfangskapitals der angezeigten Konten. Beträge nutzen die Standardwährung aus den Einstellungen."
+  }
 }

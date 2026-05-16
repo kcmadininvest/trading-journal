@@ -180,6 +180,20 @@
   "globalActivity": "Activité",
   "globalActivityTooltip": "Nombre total de positions (tous comptes) et jours actifs — mêmes règles que sous le solde actuel (jours avec au moins un trade ou suivi discipline).",
   "globalPositionsLabel": "positions",
-  "allAccountsCumulative": "Tous comptes (cumul)"
+  "allAccountsCumulative": "Tous comptes (cumul)",
+  "periodPerformance": {
+    "sectionTitle": "Performance récente",
+    "sectionSubtitle": "PnL calendaire (jour, semaine, mois) — indépendant du filtre de période ci-dessus",
+    "day": "Aujourd'hui",
+    "week": "Cette semaine",
+    "month": "Ce mois",
+    "vsYesterday": "vs hier",
+    "vsLastWeek": "vs semaine dernière",
+    "vsLastMonth": "vs mois dernier",
+    "changePctTooltip": "Évolution du PnL par rapport à la période précédente ({{previous}}).",
+    "changePctUnavailableTooltip": "Évolution non calculable : la période précédente n'a pas de PnL.",
+    "returnOnCapital": "{{pct}} sur capital",
+    "returnOnCapitalTooltip": "Rendement du PnL de la période rapporté au capital initial du (des) compte(s) affiché(s). Les montants utilisent la devise par défaut définie dans les paramètres."
+  }
 }
 

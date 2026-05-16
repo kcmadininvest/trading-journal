@@ -180,5 +180,19 @@
   "globalActivity": "Actividad",
   "globalActivityTooltip": "Total de posiciones (todas las cuentas) y días activos — mismas reglas que bajo el saldo actual (días con al menos una operación o seguimiento de disciplina).",
   "globalPositionsLabel": "posiciones",
-  "allAccountsCumulative": "Todas las cuentas (acumulado)"
+  "allAccountsCumulative": "Todas las cuentas (acumulado)",
+  "periodPerformance": {
+    "sectionTitle": "Rendimiento reciente",
+    "sectionSubtitle": "PnL calendario (día, semana, mes) — independiente del filtro de período superior",
+    "day": "Hoy",
+    "week": "Esta semana",
+    "month": "Este mes",
+    "vsYesterday": "vs ayer",
+    "vsLastWeek": "vs semana pasada",
+    "vsLastMonth": "vs mes pasado",
+    "changePctTooltip": "Evolución del PnL respecto al período anterior ({{previous}}).",
+    "changePctUnavailableTooltip": "Evolución no disponible: el período anterior no tiene PnL.",
+    "returnOnCapital": "{{pct}} sobre capital",
+    "returnOnCapitalTooltip": "Rendimiento del PnL del período respecto al capital inicial de la(s) cuenta(s) mostrada(s). Los importes usan la divisa predeterminada de Ajustes."
+  }
 }

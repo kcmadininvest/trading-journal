@@ -16,6 +16,19 @@ export interface ComplianceStats {
   next_badge: any;
 }
 
+export interface PeriodPerformanceEntry {
+  pnl: number;
+  previous_pnl: number;
+  change_pct: number | null;
+  return_on_capital_pct: number | null;
+}
+
+export interface PeriodPerformance {
+  day: PeriodPerformanceEntry;
+  week: PeriodPerformanceEntry;
+  month: PeriodPerformanceEntry;
+}
+
 export interface DashboardSummary {
   daily_aggregates: DailyAggregate[];
   trades: any[];
@@ -23,6 +36,7 @@ export interface DashboardSummary {
   compliance_stats: ComplianceStats | null;
   active_days?: number;
   count: number;
+  period_performance?: PeriodPerformance;
 }
 
 export interface DashboardActivitySummary {

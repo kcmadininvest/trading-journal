@@ -32,6 +32,7 @@ import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
 import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import { ModernMarketInfo } from '../components/market/ModernMarketInfo';
 import { GlobalStatsIndicators } from '../components/dashboard/GlobalStatsIndicators';
+import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformanceKpis';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import {
@@ -1976,6 +1977,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           error={dashboardError}
         />
       )}
+
+      <PeriodPerformanceKpis
+        className="mb-6"
+        data={dashboardData?.period_performance}
+        currencySymbol={currencySymbol}
+        pnlCurrencyMode={accountId ? 'single' : globalPnlCurrencyMode}
+        hideMoney={hideWeekdayChartMoneyValues}
+        loading={dashboardLoading && !dashboardData}
+      />
 
       {/* Message d'erreur */}
       {error && (

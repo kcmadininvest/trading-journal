@@ -5063,6 +5063,36 @@ def dashboard_summary(request):
         logger.error(f"Erreur lors du chargement des stratégies / compliance dashboard: {str(e)}")
         strategies_data = []
     
+    # 4. Rolling period KPIs (day / week / month) — independent of start_date/end_date filters
+    from .period_performance import (
+        compute_period_performance,
+        resolve_initial_capital_for_dashboard,
+    )
+
+    period_trades_qs = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+    if trading_account_id:
+        period_trades_qs = period_trades_qs.filter(trading_account_id=trading_account_id)
+    else:
+        period_trades_qs = period_trades_qs.filter(trading_account_id__in=active_accounts)
+    if position_strategy_id:
+        try:
+            pos_id = int(position_strategy_id)
+            family_ids = get_position_strategy_family_ids(request.user, pos_id)
+            period_trades_qs = period_trades_qs.filter(position_strategy_id__in=family_ids)
+        except (ValueError, TypeError):
+            pass
+
+    initial_capital = resolve_initial_capital_for_dashboard(
+        request.user,
+        trading_account_id,
+    )
+    period_performance = compute_period_performance(
+        period_trades_qs,
+        user_tz,
+        initial_capital,
+        _dash_pf,
+    )
+
     # Build response
     response_data = {
         'daily_aggregates': daily_data,
@@ -5070,7 +5100,8 @@ def dashboard_summary(request):
         'strategies': strategies_data,
         'compliance_stats': compliance_stats,
         'active_days': active_days_count,
-        'count': len(daily_data)
+        'count': len(daily_data),
+        'period_performance': period_performance,
     }
     
     return Response(response_data)
