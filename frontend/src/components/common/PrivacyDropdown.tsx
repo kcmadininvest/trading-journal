@@ -1,20 +1,57 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
-import { 
-  PrivacyOption, 
-  updatePrivacyOverrides, 
-  resetPrivacyOverrides, 
+import {
+  PrivacyOption,
+  updatePrivacyOverrides,
+  resetPrivacyOverrides,
   hideAllPrivacyOptions,
   countActiveOverrides,
   PAGE_CONTEXTS,
 } from '../../utils/privacyHelpers';
+import type { PrivacyOverrides } from '../../services/userService';
 import Tooltip from '../ui/Tooltip';
+import { SettingsStyleToggle } from '../ui/SettingsStyleToggle';
 
 interface PrivacyDropdownProps {
   pageContext: string;
   availableOptions: PrivacyOption[];
   className?: string;
+}
+
+function applyPrivacyOverridesPatch(
+  current: PrivacyOverrides | undefined,
+  pageContext: string,
+  updates: Record<string, boolean>
+): PrivacyOverrides {
+  const next: PrivacyOverrides = { ...(current || {}) };
+  const pageOverrides = { ...(next[pageContext] || {}) };
+
+  Object.entries(updates).forEach(([key, value]) => {
+    if (value) {
+      pageOverrides[key] = true;
+    } else {
+      delete pageOverrides[key];
+    }
+  });
+
+  if (Object.keys(pageOverrides).length === 0) {
+    delete next[pageContext];
+  } else {
+    next[pageContext] = pageOverrides;
+  }
+
+  return next;
+}
+
+function clearPagePrivacyOverrides(
+  current: PrivacyOverrides | undefined,
+  pageContext: string
+): PrivacyOverrides {
+  const next: PrivacyOverrides = { ...(current || {}) };
+  delete next[pageContext];
+  return next;
 }
 
 export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
@@ -23,51 +60,66 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
   className = '',
 }) => {
   const { t } = useTranslation();
-  const { preferences } = usePreferences();
+  const { preferences, mergePreferences } = usePreferences();
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(
+    null
+  );
 
-  // Récupérer les overrides actuels pour ce contexte
   const currentOverrides = preferences.privacy_overrides?.[pageContext] || {};
-  
-  // Compter les overrides actifs
   const activeOverridesCount = countActiveOverrides(pageContext, preferences.privacy_overrides);
 
-  // Calculer la position du dropdown
-  useEffect(() => {
-    if (isOpen && dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      const dropdownWidth = 320; // w-80 = 320px
-      const viewportWidth = window.innerWidth;
-      
-      // Calculer la position left pour que le dropdown ne dépasse pas de l'écran
-      let left = rect.left;
-      if (left + dropdownWidth > viewportWidth - 16) {
-        // Si le dropdown dépasse à droite, l'aligner à droite du bouton
-        left = rect.right - dropdownWidth;
-      }
-      // S'assurer qu'il ne dépasse pas à gauche
-      if (left < 16) {
-        left = 16;
-      }
-      
-      setDropdownPosition({
-        top: rect.bottom + 8,
-        left: left
-      });
-    } else {
-      setDropdownPosition(null);
-    }
-  }, [isOpen]);
+  const updateDropdownPosition = useCallback(() => {
+    if (!buttonRef.current) return;
 
-  // Fermer le dropdown au clic extérieur
+    const rect = buttonRef.current.getBoundingClientRect();
+    const dropdownWidth = 320;
+    const viewportWidth = window.innerWidth;
+
+    let left = rect.left;
+    if (left + dropdownWidth > viewportWidth - 16) {
+      left = rect.right - dropdownWidth;
+    }
+    if (left < 16) {
+      left = 16;
+    }
+
+    setDropdownPosition({
+      top: rect.bottom + 8,
+      left,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setDropdownPosition(null);
+      return;
+    }
+
+    updateDropdownPosition();
+    window.addEventListener('resize', updateDropdownPosition);
+    window.addEventListener('scroll', updateDropdownPosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updateDropdownPosition);
+      window.removeEventListener('scroll', updateDropdownPosition, true);
+    };
+  }, [isOpen, updateDropdownPosition]);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      if (
+        containerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
       }
+      setIsOpen(false);
     }
 
     if (isOpen) {
@@ -76,147 +128,182 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
     }
   }, [isOpen]);
 
-  // Obtenir l'état d'une option (true ou false)
   const getOptionState = (optionKey: string): boolean => {
     return currentOverrides[optionKey] ?? false;
   };
 
-  // Toggle une option
-  const handleToggleOption = async (optionKey: string) => {
-    const currentState = getOptionState(optionKey);
-    const newState = !currentState; // Simple toggle true/false
-
+  const runPrivacyUpdate = async (
+    optimisticOverrides: PrivacyOverrides,
+    persist: () => Promise<void>
+  ) => {
+    const previousOverrides = preferences.privacy_overrides;
+    mergePreferences({ privacy_overrides: optimisticOverrides });
     setIsSaving(true);
+
     try {
-      await updatePrivacyOverrides(pageContext, { [optionKey]: newState });
-      // Émettre un événement pour que le contexte se rafraîchisse (sans rechargement de page)
+      await persist();
       window.dispatchEvent(new Event('preferences:updated'));
     } catch (error) {
+      mergePreferences({ privacy_overrides: previousOverrides });
       console.error('Error updating privacy override:', error);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Tout masquer
+  const handleOptionChange = async (optionKey: string, newState: boolean) => {
+    if (isSaving || newState === getOptionState(optionKey)) return;
+
+    const optimisticOverrides = applyPrivacyOverridesPatch(
+      preferences.privacy_overrides,
+      pageContext,
+      { [optionKey]: newState }
+    );
+
+    await runPrivacyUpdate(optimisticOverrides, () =>
+      updatePrivacyOverrides(pageContext, { [optionKey]: newState })
+    );
+  };
+
   const handleHideAll = async () => {
-    setIsSaving(true);
-    try {
-      await hideAllPrivacyOptions(pageContext, availableOptions);
-      // Recharger les préférences depuis le contexte (sans rechargement de page)
-      window.dispatchEvent(new Event('preferences:updated'));
-    } catch (error) {
-      console.error('Error hiding all:', error);
-    } finally {
-      setIsSaving(false);
-    }
+    if (isSaving) return;
+
+    const updates = Object.fromEntries(
+      availableOptions.map((option) => [option.key, true])
+    ) as Record<string, boolean>;
+    const optimisticOverrides = applyPrivacyOverridesPatch(
+      preferences.privacy_overrides,
+      pageContext,
+      updates
+    );
+
+    await runPrivacyUpdate(optimisticOverrides, () =>
+      hideAllPrivacyOptions(pageContext, availableOptions)
+    );
   };
 
-  // Réinitialiser
   const handleReset = async () => {
-    setIsSaving(true);
-    try {
-      await resetPrivacyOverrides(pageContext);
-      // Recharger les préférences depuis le contexte (sans rechargement de page)
-      window.dispatchEvent(new Event('preferences:updated'));
-    } catch (error) {
-      console.error('Error resetting:', error);
-    } finally {
-      setIsSaving(false);
-    }
+    if (isSaving) return;
+
+    const optimisticOverrides = clearPagePrivacyOverrides(
+      preferences.privacy_overrides,
+      pageContext
+    );
+
+    await runPrivacyUpdate(optimisticOverrides, () => resetPrivacyOverrides(pageContext));
   };
 
+  const dropdownMenu =
+    isOpen &&
+    dropdownPosition &&
+    typeof document !== 'undefined' &&
+    createPortal(
+      <div
+        ref={menuRef}
+        className="fixed z-[9999] w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        style={{
+          top: `${dropdownPosition.top}px`,
+          left: `${dropdownPosition.left}px`,
+        }}
+      >
+        <div className="p-4">
+          <h3 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {t('dashboard:privacyControls', { defaultValue: 'Contrôles de Confidentialité' })}
+          </h3>
+          {pageContext === PAGE_CONTEXTS.DASHBOARD && (
+            <p className="mb-3 text-justify text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+              {t('dashboard:privacyControlsScopeHint', {
+                defaultValue:
+                  'Masquer le numéro de compte ou les soldes ici les masque aussi sur les autres pages. Masquer le MLL ou les profits/pertes ne concerne que le tableau de bord.',
+              })}
+            </p>
+          )}
+
+          <div className="mb-4 space-y-1">
+            {availableOptions.map((option) => (
+              <div
+                key={option.key}
+                className={`flex items-center justify-between gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/80 ${
+                  isSaving ? 'pointer-events-none' : ''
+                }`}
+              >
+                <span className="min-w-0 flex-1 text-sm leading-snug text-gray-700 dark:text-gray-300">
+                  {t(option.label)}
+                </span>
+                <SettingsStyleToggle
+                  pressed={getOptionState(option.key)}
+                  onPressedChange={(next) => void handleOptionChange(option.key, next)}
+                  disabled={isSaving}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => void handleHideAll()}
+              disabled={isSaving}
+              className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-wait"
+            >
+              {t('dashboard:hideAll', { defaultValue: 'Tout masquer' })}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleReset()}
+              disabled={isSaving || activeOverridesCount === 0}
+              className="flex-1 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            >
+              {t('dashboard:reset', { defaultValue: 'Réinitialiser' })}
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    );
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
-      <Tooltip content={t('dashboard:streamerModeTooltip', { defaultValue: 'Contrôles de confidentialité' })}>
+    <div className={`relative ${className}`} ref={containerRef}>
+      <Tooltip
+        content={t('dashboard:streamerModeTooltip', { defaultValue: 'Contrôles de confidentialité' })}
+      >
         <button
-          onClick={() => setIsOpen(!isOpen)}
-          disabled={isSaving}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+          ref={buttonRef}
+          type="button"
+          onClick={() => setIsOpen((open) => !open)}
+          disabled={isSaving && !isOpen}
+          className={`flex items-center gap-2 rounded-lg px-4 py-2 transition-colors ${
             activeOverridesCount > 0
-              ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-          } ${isSaving ? 'opacity-50 cursor-not-allowed' : ''}`}
+              ? 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+          } ${isSaving && !isOpen ? 'cursor-wait' : ''}`}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {activeOverridesCount > 0 ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              />
             )}
           </svg>
           {activeOverridesCount > 0 && (
-            <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400">
+            <span className="inline-flex items-center justify-center rounded-full bg-white px-2 py-0.5 text-xs font-bold text-blue-600 dark:bg-gray-800 dark:text-blue-400">
               {activeOverridesCount}
             </span>
           )}
         </button>
       </Tooltip>
 
-      {isOpen && dropdownPosition && (
-        <div 
-          className="fixed w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50" 
-          style={{ 
-            top: `${dropdownPosition.top}px`, 
-            left: `${dropdownPosition.left}px` 
-          }}
-        >
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
-              {t('dashboard:privacyControls', { defaultValue: 'Contrôles de Confidentialité' })}
-            </h3>
-            {pageContext === PAGE_CONTEXTS.DASHBOARD && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 leading-relaxed text-justify">
-                {t('dashboard:privacyControlsScopeHint', {
-                  defaultValue:
-                    'Masquer le numéro de compte ou les soldes ici les masque aussi sur les autres pages. Masquer le MLL ou les profits/pertes ne concerne que le tableau de bord.',
-                })}
-              </p>
-            )}
-            
-            {/* Options */}
-            <div className="space-y-2 mb-4">
-              {availableOptions.map((option) => (
-                <label
-                  key={option.key}
-                  className="w-full flex items-center gap-3 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={getOptionState(option.key)}
-                    onChange={() => handleToggleOption(option.key)}
-                    disabled={isSaving}
-                    className="h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 cursor-pointer disabled:opacity-50"
-                  />
-                  <span className="flex-1 text-sm text-gray-700 dark:text-gray-300">
-                    {t(option.label)}
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={handleHideAll}
-                disabled={isSaving}
-                className="flex-1 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {t('dashboard:hideAll', { defaultValue: 'Tout masquer' })}
-              </button>
-              <button
-                onClick={handleReset}
-                disabled={isSaving || activeOverridesCount === 0}
-                className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {t('dashboard:reset', { defaultValue: 'Réinitialiser' })}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {dropdownMenu}
     </div>
   );
 };
-
