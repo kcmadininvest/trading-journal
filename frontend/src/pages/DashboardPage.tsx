@@ -1909,8 +1909,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             </div>
           </div>
           
-          {/* Période, stratégie, sync, PnL — grille 2×2 (sm+) puis une ligne (≥1400px) */}
-          <div className="grid min-w-0 w-full grid-cols-1 gap-2.5 sm:grid-cols-2 min-[1400px]:grid-cols-[repeat(4,minmax(0,1fr))] items-center">
+          {/* Période + stratégie ; sync + PnL groupés (pas de colonnes vides quand sync = icône) */}
+          <div className="grid min-w-0 w-full grid-cols-1 gap-2.5 sm:grid-cols-2 min-[1400px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center">
             <div className="min-w-0">
               <PeriodSelector
                 value={selectedPeriod}
@@ -1927,15 +1927,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 disabled={loadingStrategies}
               />
             </div>
-            <div className="flex min-w-0 max-w-full items-center justify-center overflow-hidden sm:justify-start">
+            <div className="flex min-w-0 w-full items-center gap-2.5 sm:col-span-2 min-[1400px]:col-span-1 min-[1400px]:w-max">
               <TopStepSyncControls
                 accountId={accountId}
                 onSynced={() => void refetch()}
                 iconOnly="responsive"
+                className="shrink-0"
               />
-            </div>
-            <div className="min-w-0 overflow-hidden">
-              <PnlBasisToggle />
+              <div className="min-w-0 w-full min-[1400px]:w-52">
+                <PnlBasisToggle />
+              </div>
             </div>
           </div>
 
