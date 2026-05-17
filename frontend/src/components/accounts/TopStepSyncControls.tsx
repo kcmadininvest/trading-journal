@@ -17,7 +17,8 @@ interface TopStepSyncControlsProps {
   compact?: boolean;
   /**
    * true = icône seule ;
-   * responsive = libellé masqué entre 1400px et 2xl (grille 4 colonnes du dashboard) ;
+   * responsive = dashboard : icône en 4 col. (1400–2xl) et quand les stats globales
+   *   serrant la barre (1680–2000px, ex. 1683×713) ;
    * narrow = icône seule sous xl (barres flex compte + actions).
    */
   iconOnly?: boolean | 'responsive' | 'narrow';
@@ -184,7 +185,10 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
         forceIconOnly && 'w-10 min-w-10 px-0 gap-0',
         useNarrowIcon && 'max-xl:w-10 max-xl:min-w-10 max-xl:px-0 max-xl:gap-0',
         useResponsiveIcon &&
-          'min-[1400px]:max-2xl:w-10 min-[1400px]:max-2xl:min-w-10 min-[1400px]:max-2xl:max-w-10 min-[1400px]:max-2xl:px-0 min-[1400px]:max-2xl:gap-0',
+          [
+            'min-[1400px]:max-2xl:w-10 min-[1400px]:max-2xl:min-w-10 min-[1400px]:max-2xl:max-w-10 min-[1400px]:max-2xl:px-0 min-[1400px]:max-2xl:gap-0',
+            'min-[1680px]:max-[1999px]:w-10 min-[1680px]:max-[1999px]:min-w-10 min-[1680px]:max-[1999px]:max-w-10 min-[1680px]:max-[1999px]:px-0 min-[1680px]:max-[1999px]:gap-0',
+          ].join(' '),
       ]
         .filter(Boolean)
         .join(' ');
@@ -194,7 +198,7 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
     : useNarrowIcon
       ? 'inline max-xl:sr-only'
       : useResponsiveIcon
-        ? 'inline min-[1400px]:max-2xl:sr-only'
+        ? 'inline min-[1400px]:max-2xl:sr-only min-[1680px]:max-[1999px]:sr-only'
         : 'inline';
 
   const ariaLabel = collapsesLabel ? actionLabel : tooltipContent;

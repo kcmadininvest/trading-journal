@@ -1927,14 +1927,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 disabled={loadingStrategies}
               />
             </div>
-            <div className="flex min-w-0 max-w-full items-center justify-center sm:justify-start">
+            <div className="flex min-w-0 max-w-full items-center justify-center overflow-hidden sm:justify-start">
               <TopStepSyncControls
                 accountId={accountId}
                 onSynced={() => void refetch()}
                 iconOnly="responsive"
               />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 overflow-hidden">
               <PnlBasisToggle />
             </div>
           </div>
