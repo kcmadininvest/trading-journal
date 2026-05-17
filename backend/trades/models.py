@@ -1941,6 +1941,191 @@ class ExportTemplate(models.Model):
         super().save(*args, **kwargs)
 
 
+class TradingSession(models.Model):
+    """Session de trading reconstruite pour le replay (un jour / compte)."""
+
+    STATUS_CHOICES = [
+        ('pending', 'En attente'),
+        ('built', 'Construite'),
+        ('failed', 'Échec'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_sessions',
+        verbose_name='Utilisateur',
+    )
+    trading_account = models.ForeignKey(
+        'TradingAccount',
+        on_delete=models.CASCADE,
+        related_name='trading_sessions',
+        verbose_name='Compte de trading',
+    )
+    session_date = models.DateField(verbose_name='Date de session', db_index=True)
+    status = models.CharField(
+        max_length=16,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name='Statut',
+    )
+    started_at = models.DateTimeField(null=True, blank=True, verbose_name='Début')
+    ended_at = models.DateTimeField(null=True, blank=True, verbose_name='Fin')
+    trade_count = models.PositiveIntegerField(default=0, verbose_name='Nombre de trades')
+    net_pnl = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='PnL net session',
+    )
+    max_drawdown_intraday = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Drawdown intraday max',
+    )
+    build_error = models.TextField(blank=True, verbose_name='Erreur de construction')
+    built_at = models.DateTimeField(null=True, blank=True, verbose_name='Construite le')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créée le')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifiée le')
+
+    class Meta:
+        ordering = ['-session_date', '-created_at']
+        verbose_name = 'Session de trading'
+        verbose_name_plural = 'Sessions de trading'
+        unique_together = ['user', 'trading_account', 'session_date']
+        indexes = [
+            models.Index(fields=['user', 'trading_account', '-session_date']),
+            models.Index(fields=['trading_account', 'session_date']),
+        ]
+
+    def __str__(self):
+        return f'Session {self.session_date} ({self.trading_account})'  # type: ignore
+
+
+class SessionEvent(models.Model):
+    """Événement ordonné dans la timeline d'une session."""
+
+    EVENT_TYPE_CHOICES = [
+        ('order_created', 'Ordre créé'),
+        ('order_updated', 'Ordre modifié'),
+        ('fill', 'Fill'),
+        ('position_open', 'Position ouverte'),
+        ('position_close', 'Position fermée'),
+        ('pnl_tick', 'Tick PnL'),
+    ]
+    SOURCE_CHOICES = [
+        ('order', 'Ordre'),
+        ('fill', 'Fill'),
+        ('derived', 'Dérivé'),
+    ]
+
+    session = models.ForeignKey(
+        TradingSession,
+        on_delete=models.CASCADE,
+        related_name='events',
+        verbose_name='Session',
+    )
+    event_type = models.CharField(max_length=32, choices=EVENT_TYPE_CHOICES, verbose_name='Type')
+    source = models.CharField(max_length=16, choices=SOURCE_CHOICES, verbose_name='Source')
+    external_id = models.CharField(max_length=64, blank=True, verbose_name='ID externe')
+    sequence = models.PositiveIntegerField(verbose_name='Séquence')
+    occurred_at = models.DateTimeField(verbose_name='Horodatage', db_index=True)
+    payload = models.JSONField(default=dict, verbose_name='Données')
+    trade = models.ForeignKey(
+        'TopStepTrade',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='session_events',
+        verbose_name='Trade lié',
+    )
+
+    class Meta:
+        ordering = ['session', 'sequence']
+        verbose_name = 'Événement de session'
+        verbose_name_plural = 'Événements de session'
+        unique_together = ['session', 'source', 'external_id', 'event_type']
+        indexes = [
+            models.Index(fields=['session', 'sequence']),
+            models.Index(fields=['session', 'occurred_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.event_type} @ {self.occurred_at}'
+
+
+class SessionInsight(models.Model):
+    """Alerte / erreur détectée pendant la session."""
+
+    SEVERITY_CHOICES = [
+        ('info', 'Info'),
+        ('warning', 'Avertissement'),
+        ('error', 'Erreur'),
+    ]
+
+    session = models.ForeignKey(
+        TradingSession,
+        on_delete=models.CASCADE,
+        related_name='insights',
+        verbose_name='Session',
+    )
+    code = models.CharField(max_length=64, db_index=True, verbose_name='Code')
+    severity = models.CharField(
+        max_length=16,
+        choices=SEVERITY_CHOICES,
+        default='warning',
+        verbose_name='Sévérité',
+    )
+    message = models.TextField(verbose_name='Message')
+    occurred_at = models.DateTimeField(verbose_name='Horodatage')
+    context = models.JSONField(default=dict, blank=True, verbose_name='Contexte')
+
+    class Meta:
+        ordering = ['occurred_at', 'id']
+        verbose_name = 'Insight de session'
+        verbose_name_plural = 'Insights de session'
+        indexes = [
+            models.Index(fields=['session', 'occurred_at']),
+            models.Index(fields=['session', 'code']),
+        ]
+
+    def __str__(self):
+        return f'{self.code} ({self.severity})'
+
+
+class SessionJournalDraft(models.Model):
+    """Brouillon de journal généré automatiquement depuis une session."""
+
+    session = models.OneToOneField(
+        TradingSession,
+        on_delete=models.CASCADE,
+        related_name='journal_draft',
+        verbose_name='Session',
+    )
+    content = models.TextField(verbose_name='Contenu')
+    applied_entry = models.ForeignKey(
+        'daily_journal.DailyJournalEntry',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='session_replay_drafts',
+        verbose_name='Entrée journal appliquée',
+    )
+    applied_at = models.DateTimeField(null=True, blank=True, verbose_name='Appliqué le')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
+
+    class Meta:
+        verbose_name = 'Brouillon journal de session'
+        verbose_name_plural = 'Brouillons journal de session'
+
+    def __str__(self):
+        return f'Brouillon session {self.session_id}'
+
+
 from .models_statistics import (
     TradeProbabilityFactor,
     TradeTag,
@@ -1960,6 +2145,10 @@ __all__ = [
     'PositionStrategy',
     'TradingGoal',
     'DayStrategyCompliance',
+    'TradingSession',
+    'SessionEvent',
+    'SessionInsight',
+    'SessionJournalDraft',
     'ExportTemplate',
     'TradeProbabilityFactor',
     'TradeTag',

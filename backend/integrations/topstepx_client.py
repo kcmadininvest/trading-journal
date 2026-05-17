@@ -81,6 +81,35 @@ class TopStepXApiClient:
             return []
         return trades
 
+    def search_orders(
+        self,
+        auth_token: str,
+        account_id: int,
+        start_timestamp: datetime,
+        end_timestamp: datetime | None = None,
+    ) -> list[dict[str, Any]]:
+        body: dict[str, Any] = {
+            'accountId': int(account_id),
+            'startTimestamp': self._format_timestamp(start_timestamp),
+        }
+        if end_timestamp is not None:
+            body['endTimestamp'] = self._format_timestamp(end_timestamp)
+        payload = self._request_json(
+            'POST',
+            '/api/Order/search',
+            body=body,
+            auth_token=auth_token,
+        )
+        if not payload.get('success') or payload.get('errorCode', 0) != 0:
+            raise TopStepXApiError(
+                self._api_error_message(payload, 'Recherche d\'ordres TopStepX échouée.'),
+                error_code=str(payload.get('errorCode', 'order_search_failed')),
+            )
+        orders = payload.get('orders') or []
+        if not isinstance(orders, list):
+            return []
+        return orders
+
     def list_accounts(self, auth_token: str, user_id: int | None = None) -> list[dict[str, Any]]:
         from integrations.topstepx_accounts import list_projectx_accounts
 

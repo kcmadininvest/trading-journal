@@ -12,6 +12,10 @@ interface DateInputProps {
   min?: string;
   max?: string;
   size?: 'sm' | 'md';
+  /** Dates ISO (YYYY-MM-DD) à mettre en évidence dans le calendrier (ex. jours avec trades). */
+  markedDates?: Iterable<string>;
+  /** Infobulle sur les jours marqués. */
+  markedDatesTitle?: string;
 }
 
 /**
@@ -28,6 +32,8 @@ export const DateInput: React.FC<DateInputProps> = ({
   min,
   max,
   size = 'md',
+  markedDates,
+  markedDatesTitle,
 }) => {
   const { preferences } = usePreferences();
   const { t, i18n } = useTranslation();
@@ -46,6 +52,11 @@ export const DateInput: React.FC<DateInputProps> = ({
   const yearListRef = useRef<HTMLDivElement>(null);
   const [calendarStyle, setCalendarStyle] = useState<{ top?: string; bottom?: string; left?: string; width?: string }>({});
   const isCompact = size === 'sm';
+
+  const markedDateSet = useMemo(() => {
+    if (!markedDates) return new Set<string>();
+    return new Set(Array.from(markedDates));
+  }, [markedDates]);
 
   // Convertir ISO (YYYY-MM-DD) vers format préféré pour l'affichage
   const formatForDisplay = useCallback((isoDate: string): string => {
@@ -433,6 +444,11 @@ export const DateInput: React.FC<DateInputProps> = ({
     );
   };
 
+  const isoDateForDay = (day: number) =>
+    `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+  const isDateMarked = (day: number) => markedDateSet.has(isoDateForDay(day));
+
   return (
     <div ref={containerRef} className="relative">
       <div className="relative">
@@ -609,12 +625,15 @@ export const DateInput: React.FC<DateInputProps> = ({
                     type="button"
                     onClick={() => handleDateSelect(day, calendarMonth, calendarYear)}
                     disabled={isDateDisabled(day)}
+                    title={isDateMarked(day) ? markedDatesTitle : undefined}
                     className={`
                       w-full aspect-square ${isCompact ? 'text-sm' : 'text-base'} rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition
                       ${isDateSelected(day)
-                        ? 'bg-blue-100 text-blue-700 font-semibold shadow-inner'
+                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-semibold shadow-inner'
                         : isToday(day)
-                        ? 'border border-blue-500 text-blue-600 font-semibold'
+                        ? 'border border-blue-500 text-blue-600 dark:text-blue-400 font-semibold'
+                        : isDateMarked(day)
+                        ? 'bg-amber-100 dark:bg-amber-900/35 text-amber-950 dark:text-amber-100 font-medium ring-1 ring-inset ring-amber-200/90 dark:ring-amber-600/40 hover:bg-amber-200/90 dark:hover:bg-amber-900/50'
                         : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
                       }
                       ${isDateDisabled(day) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

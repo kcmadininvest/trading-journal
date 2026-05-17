@@ -19,6 +19,7 @@ import { usePreferences } from '../hooks/usePreferences';
 import userService from '../services/userService';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
+import { useTopStepSyncEligibility } from '../hooks/useTopStepSyncEligibility';
 
 const DEFAULT_TRADES_PAGE_SIZE = 20;
 const TRADES_PAGE_SIZE_OPTIONS = [5, 10, 20, 25, 50, 100];
@@ -52,6 +53,7 @@ const TradesPage: React.FC = () => {
     has_strategy: '' as '' | 'true' | 'false',
     position_strategy: '',
   });
+  const replayEligible = useTopStepSyncEligibility(filters.trading_account ?? selectedAccountId);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [selectAllPages, setSelectAllPages] = useState(false);
@@ -554,6 +556,25 @@ const TradesPage: React.FC = () => {
                 enablePolling
                 onSynced={() => void load()}
               />
+              {filters.start_date &&
+                filters.end_date &&
+                filters.start_date === filters.end_date &&
+                replayEligible.canSync && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const qs = new URLSearchParams();
+                      const acc = filters.trading_account ?? selectedAccountId;
+                      if (acc) qs.set('account', String(acc));
+                      qs.set('date', filters.start_date);
+                      qs.set('auto', '1');
+                      window.location.hash = `session-replay?${qs.toString()}`;
+                    }}
+                    className="px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center justify-center gap-2"
+                  >
+                    {t('replay:replayDay', { defaultValue: 'Rejouer la journée' })}
+                  </button>
+                )}
               <button
                 onClick={() => setShowImport(true)}
                 disabled={isLoading}

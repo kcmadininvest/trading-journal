@@ -7,6 +7,7 @@ import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { DailyJournalEditor } from '../dailyJournal/DailyJournalEditor';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
+import { useTopStepSyncEligibility } from '../../hooks/useTopStepSyncEligibility';
 
 interface DayTradesModalProps {
   open: boolean;
@@ -28,6 +29,7 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
   const { preferences } = usePreferences();
   const pnlMode = parsePnlDisplayMode(preferences.pnl_display);
   const { t } = useI18nTranslation();
+  const { canSync } = useTopStepSyncEligibility(tradingAccount);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -120,14 +122,32 @@ export const DayTradesModal: React.FC<DayTradesModalProps> = ({
               <p className="text-sm text-gray-600 dark:text-gray-400">{formatDate(date)}</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
+          <div className="flex items-center gap-2">
+            {canSync && trades.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const qs = new URLSearchParams();
+                  if (tradingAccount) qs.set('account', String(tradingAccount));
+                  qs.set('date', date);
+                  qs.set('auto', '1');
+                  window.location.hash = `session-replay?${qs.toString()}`;
+                  onClose();
+                }}
+                className="px-3 py-1.5 text-sm font-medium rounded-md bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+              >
+                {t('replay:replaySession')}
+              </button>
+            )}
+            <button
+              onClick={onClose}
             className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+          </div>
         </div>
 
         {/* Content */}

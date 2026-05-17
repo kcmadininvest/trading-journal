@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from .replay.views import TradingSessionReplayViewSet
 from .exports.views import ExportTemplateViewSet, PortfolioExportViewSet
 from . import calculator_views
 from . import protected_media_views
@@ -19,6 +20,7 @@ router.register(r'goals', views.TradingGoalViewSet, basename='trading-goal')
 router.register(r'account-transactions', views.AccountTransactionViewSet, basename='account-transaction')
 router.register(r'export-templates', ExportTemplateViewSet, basename='export-template')
 router.register(r'portfolio-export', PortfolioExportViewSet, basename='portfolio-export')
+router.register(r'replay/sessions', TradingSessionReplayViewSet, basename='session-replay')
 
 urlpatterns = [
     path(

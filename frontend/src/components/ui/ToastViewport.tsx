@@ -70,7 +70,7 @@ const ToastViewport: React.FC = () => {
   if (!toasts.length) return null;
 
   return (
-    <div className="pointer-events-none fixed top-4 left-0 right-0 z-[60] flex flex-col items-center gap-3 px-4 sm:items-end">
+    <div className="pointer-events-none fixed top-20 left-0 right-0 z-[60] flex flex-col items-center gap-3 px-4 sm:top-24 sm:items-end sm:pr-6">
       {toasts.map((toastItem) => {
         const body = resolveValue(toastItem.message, toastItem);
         const typeClass = typeStyles[toastItem.type] ?? typeStyles.blank;

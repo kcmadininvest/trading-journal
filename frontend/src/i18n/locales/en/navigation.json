@@ -1,6 +1,7 @@
 {
   "dashboard": "Dashboard",
   "calendar": "PnL Calendar",
+  "sessionReplay": "Session replay",
   "dailyJournal": "Journal",
   "strategies": "Strategies",
   "positionStrategies": "Strategy Management",
