@@ -50,6 +50,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { getChartColors, buildChartTooltipPlugin } from '../utils/chartConfig';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 import { getWaterfallBarBorder, getWaterfallBarFill } from '../utils/waterfallBarGradient';
+import { WIN_RATE_ROLLING_WINDOW } from '../utils/tradingSampleThresholds';
 
 // Lazy load heavy chart components for better performance
 const DurationDistributionChart = lazy(() => import('../components/charts/DurationDistributionChart'));
@@ -1576,7 +1577,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       : 0;
 
     let peakWinRateOnPeriod: number | null = null;
-    if (totalTrades > 0) {
+    if (totalTrades >= WIN_RATE_ROLLING_WINDOW) {
       const orderedDecided = [...trades]
         .filter((t) => t.is_profitable !== null)
         .sort((a, b) => {
@@ -1584,17 +1585,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           const tb = b.entered_at ? new Date(b.entered_at).getTime() : 0;
           return ta - tb;
         });
-      let winsInPrefix = 0;
-      const cumulativeRates: number[] = [];
-      let k = 0;
-      for (const t of orderedDecided) {
-        k += 1;
-        if (t.is_profitable === true && getTradeDisplayPnlValue(t, pnlDisplayMode) != null) {
-          winsInPrefix += 1;
-        }
-        cumulativeRates.push((winsInPrefix / k) * 100);
+      const rollingRates: number[] = [];
+      for (let i = WIN_RATE_ROLLING_WINDOW - 1; i < orderedDecided.length; i++) {
+        const slice = orderedDecided.slice(i - WIN_RATE_ROLLING_WINDOW + 1, i + 1);
+        const winsInWindow = slice.filter(
+          (t) => t.is_profitable === true && getTradeDisplayPnlValue(t, pnlDisplayMode) != null
+        ).length;
+        rollingRates.push((winsInWindow / WIN_RATE_ROLLING_WINDOW) * 100);
       }
-      peakWinRateOnPeriod = Math.max(...cumulativeRates);
+      peakWinRateOnPeriod =
+        rollingRates.length > 0 ? Math.max(...rollingRates) : null;
     }
 
     return {
@@ -2031,8 +2031,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         tradingMetrics.winRate + 1e-9
                     }
                     content={t('dashboard:winRatePeriodPeakTooltip', {
+                      count: WIN_RATE_ROLLING_WINDOW,
                       defaultValue:
-                        'Highest win rate reached at any point during the period, as trades accumulated in chronological order. The orange ring shows how far above your current period rate that peak was.',
+                        'Best win rate on a rolling window of {{count}} consecutive trades during the period. The orange ring shows how far above your current period rate that peak was.',
                     })}
                     position="bottom"
                     triggerDisplay="block"

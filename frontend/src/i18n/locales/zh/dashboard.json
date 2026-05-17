@@ -5,7 +5,7 @@
   "traderPerformanceTracker": "Trader Performance Tracker",
   "objectivesBasedOnHistory": "Objectifs basés sur vos performances historiques",
   "winRate": "Win Rate",
-  "winRatePeriodPeakTooltip": "Maximum win rate reached at any point during the period as trades accumulated in chronological order. The orange ring extends the gauge to that peak when it is above your current period rate.",
+  "winRatePeriodPeakTooltip": "期间内连续 {{count}} 笔交易的滚动窗口最佳胜率。当该峰值高于当前期间胜率时，橙色圆环会显示该峰值。",
   "avgWinning": "Avg Gagnant",
   "avgLosing": "Avg Perdant",
   "objective": "Objectif",

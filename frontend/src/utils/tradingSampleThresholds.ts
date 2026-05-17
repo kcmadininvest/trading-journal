@@ -5,3 +5,6 @@
  */
 export const SAMPLE_MODERATE_MIN = 30;
 export const SAMPLE_STRONG_MAX = 10;
+
+/** Fenêtre glissante pour le pic de win rate (trades consécutifs chronologiques). */
+export const WIN_RATE_ROLLING_WINDOW = 20;
