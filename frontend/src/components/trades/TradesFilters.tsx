@@ -1,11 +1,11 @@
-import React, { useMemo, useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { CustomMultiSelect } from '../common/CustomMultiSelect';
 import { DateInput } from '../common/DateInput';
 import { PositionStrategyPillBar } from '../common/PositionStrategyPillBar';
+import { TruncatingTooltipText } from '../common/TruncatingTooltipText';
 import { usePositionStrategiesForFilter } from '../../hooks/usePositionStrategiesForFilter';
-import { Tooltip } from '../ui';
 
 const FILTER_TOGGLE_ROOT_CLASS =
   'flex h-10 w-full min-w-0 items-stretch gap-0.5 rounded-md border border-gray-300 bg-white p-1 shadow-sm dark:border-gray-600 dark:bg-gray-700';
@@ -33,44 +33,6 @@ function FilterField({
       <span className={FILTER_LABEL_CLASS}>{label}</span>
       {children}
     </div>
-  );
-}
-
-/** Texte tronqué : tooltip au survol / focus uniquement si ellipses actives. */
-function FilterToggleTruncatingLabel({ label }: { label: string }) {
-  const textRef = useRef<HTMLSpanElement>(null);
-  const [isTruncated, setIsTruncated] = useState(false);
-
-  const measure = useCallback(() => {
-    const el = textRef.current;
-    if (!el) return;
-    setIsTruncated(el.scrollWidth > el.clientWidth + 0.5);
-  }, []);
-
-  useLayoutEffect(() => {
-    measure();
-  }, [measure, label]);
-
-  useEffect(() => {
-    const el = textRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => measure());
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [measure]);
-
-  return (
-    <Tooltip
-      content={label}
-      position="top"
-      disabled={!isTruncated}
-      triggerDisplay="block"
-      className="flex h-full min-w-0 w-full max-w-full items-center justify-center"
-    >
-      <span ref={textRef} className="block min-w-0 max-w-full truncate text-center">
-        {label}
-      </span>
-    </Tooltip>
   );
 }
 
@@ -170,7 +132,11 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
                 aria-label={item.label}
                 className={FILTER_TOGGLE_ITEM_CLASS}
               >
-                <FilterToggleTruncatingLabel label={item.label} />
+                <TruncatingTooltipText
+                  text={item.label}
+                  wrapperClassName="flex h-full min-w-0 w-full max-w-full items-center justify-center"
+                  className="block min-w-0 max-w-full truncate text-center"
+                />
               </ToggleGroup.Item>
             ))}
           </ToggleGroup.Root>
@@ -208,7 +174,11 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
                 aria-label={item.label}
                 className={FILTER_TOGGLE_ITEM_CLASS}
               >
-                <FilterToggleTruncatingLabel label={item.label} />
+                <TruncatingTooltipText
+                  text={item.label}
+                  wrapperClassName="flex h-full min-w-0 w-full max-w-full items-center justify-center"
+                  className="block min-w-0 max-w-full truncate text-center"
+                />
               </ToggleGroup.Item>
             ))}
           </ToggleGroup.Root>
@@ -232,7 +202,11 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
                 aria-label={item.label}
                 className={FILTER_TOGGLE_ITEM_CLASS}
               >
-                <FilterToggleTruncatingLabel label={item.label} />
+                <TruncatingTooltipText
+                  text={item.label}
+                  wrapperClassName="flex h-full min-w-0 w-full max-w-full items-center justify-center"
+                  className="block min-w-0 max-w-full truncate text-center"
+                />
               </ToggleGroup.Item>
             ))}
           </ToggleGroup.Root>

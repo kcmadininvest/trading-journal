@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import userService from '../../services/userService';
 import { Tooltip } from '../ui';
+import { TruncatingTooltipText } from './TruncatingTooltipText';
 import type { PnlDisplayMode } from '../../utils/pnlDisplay';
 import { parsePnlDisplayMode } from '../../utils/pnlDisplay';
 
@@ -125,7 +126,11 @@ export const PnlBasisToggle: React.FC<PnlBasisToggleProps> = ({
           aria-label={title}
         >
           {!hideLabel && (
-            <span className="min-w-0 flex-1 truncate pr-2 text-gray-900 dark:text-gray-100">{title}</span>
+            <TruncatingTooltipText
+              text={title}
+              wrapperClassName="min-w-0 flex-1"
+              className="block min-w-0 max-w-full truncate pr-2 text-gray-900 dark:text-gray-100"
+            />
           )}
           <span className="flex flex-shrink-0 items-center">{switchWithTooltip}</span>
         </div>

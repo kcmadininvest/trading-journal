@@ -15,10 +15,27 @@ interface TopStepSyncControlsProps {
   className?: string;
   /** Carte compte : bouton compact. Barre d'actions : aligné sur les autres boutons. */
   compact?: boolean;
+  /**
+   * true = icône seule ;
+   * responsive = libellé masqué entre 1400px et 2xl (grille 4 colonnes du dashboard) ;
+   * narrow = icône seule sous xl (barres flex compte + actions).
+   */
+  iconOnly?: boolean | 'responsive' | 'narrow';
 }
 
 const TOOLBAR_BUTTON_CLASS =
-  'px-3 sm:px-4 py-2 text-sm sm:text-base bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2';
+  'h-10 px-3 sm:px-4 text-sm sm:text-base bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 dark:hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap';
+
+const SYNC_ICON = (
+  <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+    />
+  </svg>
+);
 
 export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
   accountId,
@@ -26,6 +43,7 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
   onSynced,
   className = '',
   compact = false,
+  iconOnly = false,
 }) => {
   const { t } = useTranslation('accounts');
   const { preferences } = usePreferences();
@@ -107,11 +125,13 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
     return t('sync.lastSync', { date: formatted });
   }, [status?.last_sync_at, preferences.date_format, preferences.timezone, t]);
 
+  const actionLabel = syncing ? t('sync.syncing') : t('sync.button');
+
   const tooltipContent = useMemo(() => {
-    const lines = [lastLabel];
+    const lines = [actionLabel, lastLabel];
     if (toast) lines.push(toast);
     return lines.join('\n');
-  }, [lastLabel, toast]);
+  }, [actionLabel, lastLabel, toast]);
 
   if (loading || !accountId || account?.account_type !== 'topstep') {
     return null;
@@ -151,9 +171,33 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
     return null;
   }
 
+  const useResponsiveIcon = iconOnly === 'responsive';
+  const useNarrowIcon = iconOnly === 'narrow';
+  const forceIconOnly = iconOnly === true;
+  const collapsesLabel = forceIconOnly || useResponsiveIcon || useNarrowIcon;
+
   const buttonClass = compact
     ? 'px-3 py-1.5 text-sm bg-teal-600 dark:bg-teal-500 text-white rounded-md hover:bg-teal-700 disabled:opacity-50 flex items-center gap-2'
-    : TOOLBAR_BUTTON_CLASS;
+    : [
+        TOOLBAR_BUTTON_CLASS,
+        collapsesLabel && 'max-w-full shrink-0',
+        forceIconOnly && 'w-10 min-w-10 px-0 gap-0',
+        useNarrowIcon && 'max-xl:w-10 max-xl:min-w-10 max-xl:px-0 max-xl:gap-0',
+        useResponsiveIcon &&
+          'min-[1400px]:max-2xl:w-10 min-[1400px]:max-2xl:min-w-10 min-[1400px]:max-2xl:max-w-10 min-[1400px]:max-2xl:px-0 min-[1400px]:max-2xl:gap-0',
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+  const labelClass = forceIconOnly
+    ? 'sr-only'
+    : useNarrowIcon
+      ? 'inline max-xl:sr-only'
+      : useResponsiveIcon
+        ? 'inline min-[1400px]:max-2xl:sr-only'
+        : 'inline';
+
+  const ariaLabel = collapsesLabel ? actionLabel : tooltipContent;
 
   return (
     <Tooltip
@@ -167,17 +211,10 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
         onClick={() => void handleManualSync()}
         disabled={syncing}
         className={buttonClass}
-        aria-label={tooltipContent}
+        aria-label={ariaLabel}
       >
-        <svg className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-        {syncing ? t('sync.syncing') : t('sync.button')}
+        {SYNC_ICON}
+        <span className={labelClass}>{actionLabel}</span>
       </button>
     </Tooltip>
   );

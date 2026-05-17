@@ -172,6 +172,7 @@ const CalendarPage: React.FC = () => {
             </div>
             <div className="flex w-full flex-wrap items-end gap-2 lg:w-auto lg:flex-shrink-0">
               <TopStepSyncControls
+                iconOnly="narrow"
                 accountId={selectedAccount}
                 onSynced={() => {
                   if (viewType === 'daily') {
