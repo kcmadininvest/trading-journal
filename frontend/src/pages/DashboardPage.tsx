@@ -1909,9 +1909,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             </div>
           </div>
           
-          {/* Période + stratégie ; sync + PnL groupés (pas de colonnes vides quand sync = icône) */}
-          <div className="grid min-w-0 w-full grid-cols-1 gap-2.5 sm:grid-cols-2 min-[1400px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center">
-            <div className="min-w-0">
+          {/* Période, stratégie, sync, PnL — largeur fixe (w-52), pas d’étirement sur grands écrans */}
+          <div className="flex min-w-0 w-full flex-wrap items-center gap-2.5">
+            <div className="w-full min-w-0 sm:w-52 sm:shrink-0">
               <PeriodSelector
                 value={selectedPeriod}
                 onChange={(period) => {
@@ -1919,7 +1919,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 }}
               />
             </div>
-            <div className="min-w-0">
+            <div className="w-full min-w-0 sm:w-52 sm:shrink-0">
               <PositionStrategyPillBar
                 value={selectedPositionStrategy}
                 onChange={setSelectedPositionStrategy}
@@ -1927,14 +1927,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 disabled={loadingStrategies}
               />
             </div>
-            <div className="flex min-w-0 w-full items-center gap-2.5 sm:col-span-2 min-[1400px]:col-span-1 min-[1400px]:w-max">
+            <div className="flex min-w-0 w-full items-center gap-2.5 sm:w-auto sm:shrink-0">
               <TopStepSyncControls
                 accountId={accountId}
                 onSynced={() => void refetch()}
                 iconOnly="responsive"
                 className="shrink-0"
               />
-              <div className="min-w-0 w-full min-[1400px]:w-52">
+              <div className="min-w-0 w-full sm:w-52">
                 <PnlBasisToggle />
               </div>
             </div>
