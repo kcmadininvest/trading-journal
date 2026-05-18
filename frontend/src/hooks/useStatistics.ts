@@ -72,6 +72,9 @@ export interface PostLossSizingData {
   sample_size: number;
   median_lookback: number;
   median_sample_size: number;
+  skipped_cross_instrument?: number;
+  skipped_unknown_contract?: number;
+  comparison_basis?: string;
   vs_losing_trade: PostLossSizingBaseline;
   vs_median: PostLossSizingBaseline;
 }

@@ -7,6 +7,10 @@ from typing import Any
 
 from django.conf import settings
 
+from trades.contract_utils.contract_family import (
+    get_contract_family_key,
+    risk_units_from_values,
+)
 from trades.models import SessionEvent, SessionInsight, TopStepTrade, TradingAccount, TradingSession
 
 
@@ -81,18 +85,38 @@ def run_insight_rules(
                 next_payload = next_open.payload or {}
                 loss_size_raw = close_payload.get('size')
                 next_size_raw = next_payload.get('size')
+                loss_contract = close_payload.get('contract_name') or ''
+                next_contract = next_payload.get('contract_name') or ''
+                loss_family = get_contract_family_key(loss_contract)
+                next_family = get_contract_family_key(next_contract)
                 if loss_size_raw is not None and next_size_raw is not None:
                     try:
                         loss_size = Decimal(str(loss_size_raw))
                         next_size = Decimal(str(next_size_raw))
                         context['loss_size'] = str(loss_size)
                         context['next_size'] = str(next_size)
-                        if next_size > loss_size:
-                            context['size_change'] = 'larger'
-                        elif next_size < loss_size:
-                            context['size_change'] = 'smaller'
-                        else:
-                            context['size_change'] = 'equal'
+                        if (
+                            loss_family is not None
+                            and next_family is not None
+                            and loss_family == next_family
+                        ):
+                            loss_risk = risk_units_from_values(
+                                loss_size,
+                                loss_contract,
+                                close_payload.get('point_value'),
+                            )
+                            next_risk = risk_units_from_values(
+                                next_size,
+                                next_contract,
+                                next_payload.get('point_value'),
+                            )
+                            if loss_risk is not None and next_risk is not None:
+                                if next_risk > loss_risk:
+                                    context['size_change'] = 'larger'
+                                elif next_risk < loss_risk:
+                                    context['size_change'] = 'smaller'
+                                else:
+                                    context['size_change'] = 'equal'
                     except Exception:
                         pass
                 insights.append(

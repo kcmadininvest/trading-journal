@@ -698,11 +698,15 @@ def get_point_value_from_contract(contract_name: str) -> Optional[float]:
     """
     if not contract_name:
         return None
-    
+
+    from .contract_family import normalize_contract_symbol
+
+    contract_name = normalize_contract_symbol(contract_name)
+
     # Extraire le symbole de base (2-4 premières lettres)
     # Ex: NQM6 -> NQ, ESH24 -> ES, MCLZ23 -> MCL, BTCM24 -> BTC
     # Les contrats ont généralement 2-4 lettres suivies d'un mois (H,M,U,Z) et année
-    
+
     # Essayer différentes longueurs de symbole (du plus long au plus court)
     for length in range(min(4, len(contract_name)), 0, -1):
         base_symbol = contract_name[:length].upper()
@@ -725,11 +729,15 @@ def get_contract_specs(contract_name: str) -> Optional[dict]:
     """
     if not contract_name:
         return None
-    
+
+    from .contract_family import normalize_contract_symbol
+
+    contract_name = normalize_contract_symbol(contract_name)
+
     # Essayer différentes longueurs de symbole (du plus long au plus court)
     for length in range(min(4, len(contract_name)), 0, -1):
         base_symbol = contract_name[:length].upper()
         if base_symbol.isalpha() and base_symbol in FUTURES_CONTRACT_SPECS:
             return FUTURES_CONTRACT_SPECS[base_symbol]
-    
+
     return None

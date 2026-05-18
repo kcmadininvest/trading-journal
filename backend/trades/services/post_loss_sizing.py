@@ -6,6 +6,10 @@ from typing import Any, Literal
 
 from django.conf import settings
 
+from trades.contract_utils.contract_family import (
+    get_contract_family_key,
+    trade_risk_units,
+)
 from trades.pnl_basis import trade_pnl_as_float
 
 SizeCategory = Literal['larger', 'equal', 'smaller']
@@ -15,16 +19,6 @@ CATEGORIES: tuple[SizeCategory, ...] = ('larger', 'equal', 'smaller')
 
 def _median_lookback() -> int:
     return int(getattr(settings, 'SESSION_REPLAY_OVERSIZE_LOOKBACK', 20))
-
-
-def _trade_size(trade: Any) -> Decimal | None:
-    raw = getattr(trade, 'size', None)
-    if raw is None:
-        return None
-    try:
-        return raw if isinstance(raw, Decimal) else Decimal(str(raw))
-    except Exception:
-        return None
 
 
 def _compare_size(next_size: Decimal, reference: Decimal) -> SizeCategory:
@@ -85,7 +79,8 @@ def compute_post_loss_sizing(
 ) -> dict[str, Any]:
     """
     Pour chaque trade perdant ayant un trade suivant dans le queryset filtré,
-    classifie la taille du trade suivant vs le trade perdant et vs la médiane récente.
+    classifie l'exposition du trade suivant (size × point_value) vs le trade perdant
+    et vs la médiane récente (même famille de contrat).
     """
     lookback = _median_lookback()
     trades = list(trades_queryset.order_by('entered_at', 'id'))
@@ -97,6 +92,8 @@ def compute_post_loss_sizing(
 
     sample_size = 0
     median_sample_size = 0
+    skipped_cross_instrument = 0
+    skipped_unknown_contract = 0
 
     for i, losing_trade in enumerate(trades):
         pnl = trade_pnl_as_float(losing_trade, pnl_field)
@@ -106,33 +103,48 @@ def compute_post_loss_sizing(
             continue
 
         next_trade = trades[i + 1]
-        next_size = _trade_size(next_trade)
-        loss_size = _trade_size(losing_trade)
-        if next_size is None or loss_size is None:
+        loss_family = get_contract_family_key(losing_trade.contract_name or '')
+        next_family = get_contract_family_key(next_trade.contract_name or '')
+
+        if loss_family is None or next_family is None:
+            skipped_unknown_contract += 1
+            continue
+
+        if loss_family != next_family:
+            skipped_cross_instrument += 1
+            continue
+
+        next_risk = trade_risk_units(next_trade)
+        loss_risk = trade_risk_units(losing_trade)
+        if next_risk is None or loss_risk is None:
+            skipped_unknown_contract += 1
             continue
 
         next_pnl = trade_pnl_as_float(next_trade, pnl_field)
         sample_size += 1
 
-        cat_losing = _compare_size(next_size, loss_size)
+        cat_losing = _compare_size(next_risk, loss_risk)
         vs_losing_raw[cat_losing]['count'] += 1
         vs_losing_raw[cat_losing]['_pnls'].append(next_pnl)
 
-        prior_sizes: list[Decimal] = []
+        prior_risk_units: list[Decimal] = []
         account_id = next_trade.trading_account_id
         for prev in reversed(trades[:i + 1]):
             if prev.trading_account_id != account_id:
                 continue
-            prev_size = _trade_size(prev)
-            if prev_size is not None:
-                prior_sizes.append(prev_size)
-            if len(prior_sizes) >= lookback:
+            prev_family = get_contract_family_key(prev.contract_name or '')
+            if prev_family != next_family:
+                continue
+            prev_risk = trade_risk_units(prev)
+            if prev_risk is not None:
+                prior_risk_units.append(prev_risk)
+            if len(prior_risk_units) >= lookback:
                 break
 
-        median = _median_sizes(prior_sizes)
+        median = _median_sizes(prior_risk_units)
         if median is not None:
             median_sample_size += 1
-            cat_median = _compare_size(next_size, median)
+            cat_median = _compare_size(next_risk, median)
             vs_median_raw[cat_median]['count'] += 1
             vs_median_raw[cat_median]['_pnls'].append(next_pnl)
 
@@ -143,6 +155,9 @@ def compute_post_loss_sizing(
         'sample_size': sample_size,
         'median_lookback': lookback,
         'median_sample_size': median_sample_size,
+        'skipped_cross_instrument': skipped_cross_instrument,
+        'skipped_unknown_contract': skipped_unknown_contract,
+        'comparison_basis': 'risk_units',
         'vs_losing_trade': vs_losing,
         'vs_median': vs_median,
     }
@@ -156,6 +171,9 @@ def empty_post_loss_sizing() -> dict[str, Any]:
         'sample_size': 0,
         'median_lookback': lookback,
         'median_sample_size': 0,
+        'skipped_cross_instrument': 0,
+        'skipped_unknown_contract': 0,
+        'comparison_basis': 'risk_units',
         'vs_losing_trade': empty,
         'vs_median': empty,
     }

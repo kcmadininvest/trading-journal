@@ -308,7 +308,16 @@ export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
             </TooltipComponent>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{data.sample_size}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('postLossSizing.sampleSizeHint')}</p>
+          {(data.skipped_cross_instrument ?? 0) > 0 && (
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+              {t('postLossSizing.skippedCrossInstrument', { count: data.skipped_cross_instrument })}
+            </p>
+          )}
+          {(data.skipped_unknown_contract ?? 0) > 0 && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {t('postLossSizing.skippedUnknownContract', { count: data.skipped_unknown_contract })}
+            </p>
+          )}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">

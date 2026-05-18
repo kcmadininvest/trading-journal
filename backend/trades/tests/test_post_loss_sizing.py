@@ -8,6 +8,11 @@ from rest_framework.test import APITestCase
 
 from accounts.models import User, UserPreferences
 from trades.models import TopStepTrade, TradingAccount
+from trades.contract_utils.contract_family import (
+    get_base_symbol,
+    get_contract_family_key,
+    normalize_contract_symbol,
+)
 from trades.services.post_loss_sizing import compute_post_loss_sizing
 
 
@@ -39,14 +44,19 @@ class PostLossSizingServiceTests(APITestCase):
         size: str,
         pnl: str,
         net_pnl: Optional[str] = None,
+        contract_name: str = 'NQ',
+        point_value: Optional[str] = None,
     ) -> TopStepTrade:
         entered = self.base_time + timedelta(minutes=offset_minutes)
         net = net_pnl if net_pnl is not None else pnl
+        kwargs: dict = {}
+        if point_value is not None:
+            kwargs['point_value'] = Decimal(point_value)
         return TopStepTrade.objects.create(
             user=self.user,
             trading_account=self.account,
             topstep_id=topstep_id,
-            contract_name='NQ',
+            contract_name=contract_name,
             entered_at=entered,
             exited_at=entered + timedelta(minutes=5),
             entry_price=Decimal('100.000000000'),
@@ -56,6 +66,7 @@ class PostLossSizingServiceTests(APITestCase):
             trade_day=entered.date(),
             pnl=Decimal(pnl),
             net_pnl=Decimal(net),
+            **kwargs,
         )
 
     def test_classifies_larger_equal_smaller_vs_losing_trade(self) -> None:
@@ -106,6 +117,73 @@ class PostLossSizingServiceTests(APITestCase):
         result = compute_post_loss_sizing(qs, 'net_pnl')
 
         self.assertGreater(result['median_sample_size'], 0)
+        self.assertEqual(result['vs_median']['larger']['count'], 1)
+
+    def test_normalize_contract_symbol_formats(self) -> None:
+        self.assertEqual(get_base_symbol('NQM6'), 'NQ')
+        self.assertEqual(get_contract_family_key('NQM6'), 'NQ')
+        self.assertEqual(normalize_contract_symbol('CON.F.US.MNQ.M26'), 'MNQ')
+        self.assertEqual(get_base_symbol('CON.F.US.MNQ.M26'), 'MNQ')
+        self.assertEqual(get_contract_family_key('CON.F.US.MNQ.M26'), 'NQ')
+        self.assertEqual(get_contract_family_key('CON.NQ'), 'NQ')
+
+    def test_nq_loss_mnq_next_classified_smaller_not_larger(self) -> None:
+        self._create_trade('pl-nq', 0, '1', '-50', '-50', contract_name='NQM6')
+        self._create_trade('pl-mnq', 10, '5', '10', '10', contract_name='MNQM6')
+
+        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        result = compute_post_loss_sizing(qs, 'net_pnl')
+
+        self.assertEqual(result['sample_size'], 1)
+        self.assertEqual(result['comparison_basis'], 'risk_units')
+        self.assertEqual(result['vs_losing_trade']['smaller']['count'], 1)
+        self.assertEqual(result['vs_losing_trade']['larger']['count'], 0)
+
+    def test_con_f_us_nq_mnq_pair_classified_by_risk_units(self) -> None:
+        self._create_trade(
+            'pl-con-nq',
+            0,
+            '1',
+            '-50',
+            '-50',
+            contract_name='CON.F.US.NQ.M26',
+        )
+        self._create_trade(
+            'pl-con-mnq',
+            10,
+            '5',
+            '10',
+            '10',
+            contract_name='CON.F.US.MNQ.M26',
+        )
+
+        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        result = compute_post_loss_sizing(qs, 'net_pnl')
+
+        self.assertEqual(result['sample_size'], 1)
+        self.assertEqual(result['vs_losing_trade']['smaller']['count'], 1)
+
+    def test_nq_loss_cl_next_excluded_cross_instrument(self) -> None:
+        self._create_trade('pl-nq2', 0, '1', '-50', '-50', contract_name='NQM6')
+        self._create_trade('pl-cl', 10, '1', '10', '10', contract_name='CLZ5')
+
+        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        result = compute_post_loss_sizing(qs, 'net_pnl')
+
+        self.assertEqual(result['sample_size'], 0)
+        self.assertEqual(result['skipped_cross_instrument'], 1)
+
+    def test_median_uses_same_family_only(self) -> None:
+        self._create_trade('pl-h-nq', 0, '2', '10', '10', contract_name='NQM6')
+        self._create_trade('pl-h-mnq', 10, '10', '10', '10', contract_name='MNQM6')
+        self._create_trade('pl-h-loss', 20, '1', '-50', '-50', contract_name='NQM6')
+        self._create_trade('pl-h-next', 30, '3', '-10', '-10', contract_name='NQM6')
+
+        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        result = compute_post_loss_sizing(qs, 'net_pnl')
+
+        self.assertEqual(result['sample_size'], 1)
+        self.assertEqual(result['median_sample_size'], 1)
         self.assertEqual(result['vs_median']['larger']['count'], 1)
 
 
@@ -170,7 +248,9 @@ class PostLossSizingAnalyticsApiTests(APITestCase):
         pls = response.data.get('post_loss_sizing')
         self.assertIsNotNone(pls)
         self.assertEqual(pls['sample_size'], 1)
+        self.assertEqual(pls['comparison_basis'], 'risk_units')
         self.assertEqual(pls['vs_losing_trade']['larger']['count'], 1)
+        self.assertIn('skipped_cross_instrument', pls)
 
     def test_analytics_empty_post_loss_sizing_without_trades(self) -> None:
         TopStepTrade.objects.all().delete()
@@ -182,3 +262,4 @@ class PostLossSizingAnalyticsApiTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         pls = response.data['post_loss_sizing']
         self.assertEqual(pls['sample_size'], 0)
+        self.assertEqual(pls['skipped_cross_instrument'], 0)

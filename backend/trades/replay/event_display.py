@@ -28,17 +28,9 @@ ORDER_STATUS_LABELS: dict[int, str] = {
 
 
 def format_contract_label(contract_id: Any) -> str:
-    if contract_id is None:
-        return ''
-    cid = str(contract_id).strip()
-    if not cid:
-        return ''
-    parts = cid.split('.')
-    if len(parts) >= 4 and parts[0] == 'CON':
-        return parts[-2]
-    if len(parts) == 2 and parts[0] == 'CON':
-        return parts[1]
-    return cid
+    from trades.contract_utils.contract_family import normalize_contract_symbol
+
+    return normalize_contract_symbol(contract_id)
 
 
 def _enum_label(mapping: dict[int, str], raw: Any, default: str = 'unknown') -> str:
