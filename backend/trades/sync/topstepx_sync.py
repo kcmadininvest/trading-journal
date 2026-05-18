@@ -9,7 +9,12 @@ from django.utils import timezone
 
 from integrations.models import UserApiIntegration
 from integrations.topstepx_accounts import resolve_projectx_account_id
-from integrations.topstepx_auth import get_topstepx_integration, get_valid_session_token
+from integrations.topstepx_auth import (
+    call_with_valid_session_token,
+    get_topstepx_integration,
+    is_session_expired_error,
+)
+from integrations.services import apply_test_result
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 from trades.models import TradeSyncLog, TradingAccount
 
@@ -82,31 +87,30 @@ class TopStepXSyncService:
         if integration is None or not integration.secrets_encrypted:
             raise ValueError('Configurez l\'intégration TopStepX dans les paramètres.')
 
-        try:
-            token = get_valid_session_token(integration)
-        except TopStepXApiError as exc:
-            raise ValueError(str(exc)) from exc
-
-        try:
+        def _run_sync(token: str) -> tuple[list, datetime]:
             account_id, _needs_broker_id_update = resolve_projectx_account_id(
                 self.client, token, trading_account
             )
+            new_broker_id = str(account_id)
+            if (trading_account.broker_account_id or '').strip() != new_broker_id:
+                trading_account.broker_account_id = new_broker_id
+                trading_account.save(update_fields=['broker_account_id', 'updated_at'])
+
+            since = self._resolve_since(trading_account, full_resync)
+            sync_now = timezone.now()
+            trades = self.client.search_trades(token, account_id, since, sync_now)
+            return trades, sync_now
+
+        try:
+            api_trades, now = call_with_valid_session_token(integration, _run_sync)
         except ValueError as exc:
             raise exc
         except TopStepXApiError as exc:
-            raise ValueError(str(exc)) from exc
-
-        new_broker_id = str(account_id)
-        if (trading_account.broker_account_id or '').strip() != new_broker_id:
-            trading_account.broker_account_id = new_broker_id
-            trading_account.save(update_fields=['broker_account_id', 'updated_at'])
-
-        since = self._resolve_since(trading_account, full_resync)
-        now = timezone.now()
-
-        try:
-            api_trades = self.client.search_trades(token, account_id, since, now)
-        except TopStepXApiError as exc:
+            if is_session_expired_error(exc):
+                apply_test_result(integration, False)
+                raise ValueError(
+                    'Session TopStepX expirée. Testez à nouveau la connexion dans les paramètres.'
+                ) from exc
             raise ValueError(str(exc)) from exc
 
         parsed_rows = map_api_trades_to_parsed_rows(api_trades)
