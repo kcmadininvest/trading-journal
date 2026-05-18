@@ -838,6 +838,18 @@ class PositionStrategyVersionSerializer(serializers.ModelSerializer):
         read_only_fields = ['version', 'created_at', 'updated_at']
 
 
+def _normalize_position_strategy_screenshot(value, context):
+    request = context.get('request')
+    user = None
+    if request is not None:
+        user = getattr(request, 'user', None)
+        if user is None or not getattr(user, 'is_authenticated', False):
+            user = getattr(request, '_force_auth_user', None)
+    if user is None or not getattr(user, 'is_authenticated', False):
+        return value
+    return normalize_screenshot_url_for_storage(value, user.pk)
+
+
 class PositionStrategyCreateSerializer(serializers.ModelSerializer):
     """
     Serializer pour la création de nouvelles stratégies.
@@ -885,6 +897,12 @@ class PositionStrategyCreateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"Les règles de la section {i+1} doivent être une liste")
         
         return value
+
+    def validate_example_screenshot(self, value):
+        return _normalize_position_strategy_screenshot(value, self.context)
+
+    def validate_example_screenshot_thumbnail(self, value):
+        return _normalize_position_strategy_screenshot(value, self.context)
 
 
 class PositionStrategyUpdateSerializer(serializers.ModelSerializer):
@@ -940,6 +958,12 @@ class PositionStrategyUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"Les règles de la section {i+1} doivent être une liste")
         
         return value
+
+    def validate_example_screenshot(self, value):
+        return _normalize_position_strategy_screenshot(value, self.context)
+
+    def validate_example_screenshot_thumbnail(self, value):
+        return _normalize_position_strategy_screenshot(value, self.context)
 
 
 class TradingGoalSerializer(serializers.ModelSerializer):

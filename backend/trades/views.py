@@ -4420,7 +4420,10 @@ class PositionStrategyViewSet(viewsets.ModelViewSet):
             instance._prefetched_objects_cache = {}
         
         # Utiliser PositionStrategySerializer pour la réponse
-        response_serializer = PositionStrategySerializer(serializer.instance)
+        response_serializer = PositionStrategySerializer(
+            serializer.instance,
+            context={'request': request},
+        )
         return Response(response_serializer.data)
     
     def perform_update(self, serializer):
