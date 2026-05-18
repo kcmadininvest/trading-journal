@@ -3,6 +3,7 @@ import { Radar as ChartRadar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatNumber } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
@@ -264,7 +265,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
       {/* Graphique et légende */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_13rem] xl:grid-cols-[minmax(0,1fr)_14rem] gap-4 lg:gap-5 items-center">
         {/* Graphique radar */}
-        <div className="min-w-0" style={{ height: '300px', position: 'relative' }}>
+        <ChartTooltipResetContainer className="min-w-0" style={{ height: '300px', position: 'relative' }}>
           <div className="h-full w-full -translate-y-4">
             <ChartRadar
               data={optimizedData}
@@ -356,7 +357,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
               }}
             />
           </div>
-        </div>
+        </ChartTooltipResetContainer>
 
         {/* Légende détaillée */}
         <div className="lg:w-52 xl:w-56 flex-shrink-0">

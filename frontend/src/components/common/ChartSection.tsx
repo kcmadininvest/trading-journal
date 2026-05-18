@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { ChartSkeleton } from '../strategy/charts/ChartSkeleton';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import Tooltip from '../ui/Tooltip';
 
 interface ChartSectionProps {
@@ -36,7 +37,7 @@ export const ChartSection: React.FC<ChartSectionProps> = React.memo(({
         )}
       </div>
       <Suspense fallback={<ChartSkeleton />}>
-        {children}
+        <ChartTooltipResetContainer>{children}</ChartTooltipResetContainer>
       </Suspense>
     </div>
   );

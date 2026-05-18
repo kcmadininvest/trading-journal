@@ -3,6 +3,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface GainsVsLossesChartProps {
@@ -274,7 +275,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
             {t('analytics:charts.gainsVsLosses.gains', { defaultValue: 'Gains' })} ({data.totalGains} {t('analytics:common.trades', { defaultValue: 'trades' })})
           </h4>
-          <div style={{ height: '320px', position: 'relative' }}>
+          <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
             <ChartBar
               data={{
                 labels: data.gains.map(b => b.rangeLabel),
@@ -292,14 +293,14 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
               }}
               options={gainsChartOptions}
             />
-          </div>
+          </ChartTooltipResetContainer>
         </div>
 
         <div>
           <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
             {t('analytics:charts.gainsVsLosses.losses', { defaultValue: 'Pertes' })} ({data.totalLosses} {t('analytics:common.trades', { defaultValue: 'trades' })})
           </h4>
-          <div style={{ height: '320px', position: 'relative' }}>
+          <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
             <ChartBar
               data={{
                 labels: data.losses.map(b => b.rangeLabel),
@@ -317,7 +318,7 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
               }}
               options={lossesChartOptions}
             />
-          </div>
+          </ChartTooltipResetContainer>
         </div>
       </div>
     </div>

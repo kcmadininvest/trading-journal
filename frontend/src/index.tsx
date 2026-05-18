@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Chart } from 'chart.js';
+import { chartTooltipResetPlugin } from './plugins/chartTooltipResetPlugin';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
@@ -16,6 +17,8 @@ import './i18n/config'; // Initialiser i18n
 const initialFontStack = applyAppFontFamily(getStoredAppFontFamily());
 syncChartFontFamily(initialFontStack);
 Chart.defaults.font.family = initialFontStack;
+Chart.register(chartTooltipResetPlugin);
+Chart.defaults.events = ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove', 'touchend'];
 
 // Appliquer la taille de police depuis localStorage avant le premier rendu pour éviter le flash
 try {

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin, type ChartColors } from '../../utils/chartConfig';
 import type { PostLossSizingData } from '../../hooks/useStatistics';
 
@@ -215,9 +216,9 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div className="h-48 sm:h-56 mb-4" style={{ position: 'relative' }}>
+      <ChartTooltipResetContainer className="h-48 sm:h-56 mb-4" style={{ position: 'relative' }}>
         <Doughnut data={chartData} options={chartOptions} />
-      </div>
+      </ChartTooltipResetContainer>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

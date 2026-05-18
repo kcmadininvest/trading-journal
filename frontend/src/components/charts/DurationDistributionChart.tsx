@@ -9,6 +9,7 @@ import {
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar } from 'react-chartjs-2';
+import { ChartTooltipResetContainer } from './ChartTooltipResetContainer';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { CHART_FONT_FAMILY, getChartColors, buildChartTooltipPlugin } from '../../utils/chartConfig';
@@ -236,7 +237,9 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
             {t('dashboard:noData')}
           </div>
         ) : (
-          <Bar data={chartData} options={chartOptions} />
+          <ChartTooltipResetContainer className="h-full w-full">
+            <Bar data={chartData} options={chartOptions} />
+          </ChartTooltipResetContainer>
         )}
       </div>
     </div>

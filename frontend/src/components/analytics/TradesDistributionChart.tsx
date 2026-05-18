@@ -3,6 +3,7 @@ import { Doughnut as ChartDoughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface TradesDistributionChartProps {
@@ -57,7 +58,7 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
         </TooltipComponent>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        <div style={{ height: '320px', position: 'relative' }}>
+        <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
           <ChartDoughnut
             data={{
               labels: data.labels,
@@ -119,7 +120,7 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
               },
             }}
           />
-        </div>
+        </ChartTooltipResetContainer>
         <div className="space-y-4">
           {data.labels.map((label, index) => (
             <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 interface HourlyPerformanceBarsChartProps {
@@ -150,7 +151,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
         <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full mr-3"></div>
         {t('analytics:charts.hourlyPerformanceBars.title')}
       </h3>
-      <div className="relative flex-1 min-h-[320px]">
+      <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">
         <ChartBar
           data={{
             labels: data.map(d => d.hour),
@@ -167,7 +168,7 @@ export const HourlyPerformanceBarsChart: React.FC<HourlyPerformanceBarsChartProp
           }}
           options={chartOptions}
         />
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

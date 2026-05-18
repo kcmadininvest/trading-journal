@@ -3,6 +3,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
@@ -184,7 +185,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div style={{ height: '350px', position: 'relative' }}>
+      <ChartTooltipResetContainer style={{ height: '350px', position: 'relative' }}>
         <ChartBar
           data={{
             labels: data.map(d => formatCurrency(d.start, currencySymbol)),
@@ -204,7 +205,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
           }}
           options={chartOptions}
         />
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

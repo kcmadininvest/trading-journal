@@ -6,6 +6,7 @@ import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 ChartJS.register(BoxPlotController, BoxAndWiskers);
 
 const OUTLIER_GAIN_COLOR = '#3b82f6';
@@ -308,7 +309,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
           </div>
         </div>
       </div>
-      <div className="relative flex-1 min-h-[320px]">
+      <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">
         <Chart
           type="boxplot"
           plugins={[hourlyBoxPlotColoredOutliersPlugin]}
@@ -341,7 +342,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
           }}
           options={chartOptions}
         />
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

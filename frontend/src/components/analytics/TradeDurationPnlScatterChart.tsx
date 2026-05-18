@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Scatter as ChartScatter } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
@@ -137,7 +138,7 @@ export const TradeDurationPnlScatterChart: React.FC<TradeDurationPnlScatterChart
           </div>
         </TooltipComponent>
       </div>
-      <div style={{ height: '320px', position: 'relative' }}>
+      <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
         <ChartScatter
           data={{
             datasets: [
@@ -152,7 +153,7 @@ export const TradeDurationPnlScatterChart: React.FC<TradeDurationPnlScatterChart
           }}
           options={chartOptions}
         />
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

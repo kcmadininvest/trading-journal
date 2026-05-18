@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Scatter } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency } from '../../utils/numberFormat';
 import { formatDate } from '../../utils/dateFormat';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -254,7 +255,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         </p>
       )}
 
-      <div className="relative flex-1 min-h-[320px]">
+      <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">
         {data.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             <div className="text-center">
@@ -271,7 +272,7 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
         ) : (
           <Scatter data={chartData} options={chartOptions} />
         )}
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

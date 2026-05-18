@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Bubble as ChartBubble } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
@@ -141,7 +142,7 @@ export const PositionSizePnlBubbleChart: React.FC<PositionSizePnlBubbleChartProp
           </div>
         </TooltipComponent>
       </div>
-      <div className="relative flex-1 min-h-[320px]">
+      <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">
         <ChartBubble
           data={{
             datasets: [
@@ -154,7 +155,7 @@ export const PositionSizePnlBubbleChart: React.FC<PositionSizePnlBubbleChartProp
           }}
           options={chartOptions}
         />
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Scatter as ChartScatter } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 interface HourlyPerformanceScatterChartProps {
@@ -177,7 +178,7 @@ export const HourlyPerformanceScatterChart: React.FC<HourlyPerformanceScatterCha
         <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></div>
         {t('analytics:charts.hourlyPerformanceScatter.title')}
       </h3>
-      <div style={{ height: '320px', position: 'relative' }}>
+      <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
         <ChartScatter
           data={{
             datasets: [
@@ -198,7 +199,7 @@ export const HourlyPerformanceScatterChart: React.FC<HourlyPerformanceScatterCha
           }}
           options={chartOptions}
         />
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

@@ -11,6 +11,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { ChartTooltipResetContainer } from './ChartTooltipResetContainer';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -547,7 +548,11 @@ function AccountBalanceChart({
     );
   }
 
-  return <Line data={chartData} options={options} />;
+  return (
+    <ChartTooltipResetContainer>
+      <Line data={chartData} options={options} />
+    </ChartTooltipResetContainer>
+  );
 }
 
 export default AccountBalanceChart;

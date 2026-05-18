@@ -14,6 +14,7 @@ import { Chart } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 // Enregistrer les composants nécessaires pour le graphique mixte
@@ -108,7 +109,7 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
           </div>
         )}
       </div>
-      <div style={{ height: '350px', position: 'relative' }}>
+      <ChartTooltipResetContainer style={{ height: '350px', position: 'relative' }}>
         <Chart
           type="bar"
           data={{
@@ -237,7 +238,7 @@ export const TradingVolumeChart: React.FC<TradingVolumeChartProps> = ({
             },
           }}
         />
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

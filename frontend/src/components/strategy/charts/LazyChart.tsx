@@ -1,6 +1,7 @@
 import React from 'react';
 import { useIntersectionObserver } from '../../../hooks/useIntersectionObserver';
 import { ChartSkeleton } from './ChartSkeleton';
+import { ChartTooltipResetContainer } from '../../charts/ChartTooltipResetContainer';
 
 interface LazyChartProps {
   children: React.ReactNode;
@@ -20,7 +21,11 @@ export const LazyChart: React.FC<LazyChartProps> = ({ children, height = 'h-64 s
 
   return (
     <div ref={ref} className={height}>
-      {isVisible ? children : <ChartSkeleton />}
+      {isVisible ? (
+        <ChartTooltipResetContainer>{children}</ChartTooltipResetContainer>
+      ) : (
+        <ChartSkeleton />
+      )}
     </div>
   );
 };

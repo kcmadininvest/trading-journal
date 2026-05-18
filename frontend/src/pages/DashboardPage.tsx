@@ -48,6 +48,7 @@ import {
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Bar as ChartBar } from 'react-chartjs-2';
 import { getChartColors, buildChartTooltipPlugin } from '../utils/chartConfig';
+import { ChartTooltipResetContainer } from '../components/charts/ChartTooltipResetContainer';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 import { getWaterfallBarBorder, getWaterfallBarFill } from '../utils/waterfallBarGradient';
 import { WIN_RATE_ROLLING_WINDOW } from '../utils/tradingSampleThresholds';
@@ -2622,7 +2623,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 )}
               </div>
 
-              <div className="h-64 sm:h-80">
+              <ChartTooltipResetContainer className="h-64 sm:h-80">
                 <ChartBar
                   key={pnlDisplayMode}
                   data={weekdayChartData}
@@ -2769,7 +2770,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     }
                   }}
                 />
-              </div>
+              </ChartTooltipResetContainer>
             </div>
           )}
 
@@ -2804,7 +2805,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   )}
                 </div>
 
-                <div className="h-[280px] sm:h-[360px] md:h-[420px]">
+                <ChartTooltipResetContainer className="h-[280px] sm:h-[360px] md:h-[420px]">
                   <ChartBar
                     key={pnlDisplayMode}
                     data={waterfallChartData}
@@ -2928,7 +2929,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       }
                     }}
                   />
-                </div>
+                </ChartTooltipResetContainer>
             </div>
           )}
 

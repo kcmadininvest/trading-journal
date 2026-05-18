@@ -2,6 +2,7 @@ import React from 'react';
 import { Line as ChartLine } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatNumber, formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
@@ -36,7 +37,7 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div className="relative flex-1 min-h-[320px]">
+      <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">
         {data.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             <div className="text-center">
@@ -150,7 +151,7 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
             }}
           />
         )}
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };

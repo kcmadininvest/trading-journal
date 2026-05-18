@@ -5,6 +5,7 @@ import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 
 interface EquityCurveChartProps {
   data: any;
@@ -176,7 +177,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div style={{ height: '360px', position: 'relative' }}>
+      <ChartTooltipResetContainer style={{ height: '360px', position: 'relative' }}>
         <ChartLine
           data={{
             labels: data.labels,
@@ -208,7 +209,7 @@ export const EquityCurveChart: React.FC<EquityCurveChartProps> = ({
           }}
           options={chartOptions}
         />
-      </div>
+      </ChartTooltipResetContainer>
     </div>
   );
 };
