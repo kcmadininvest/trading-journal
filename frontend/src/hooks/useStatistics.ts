@@ -54,6 +54,28 @@ export interface StatisticsData {
   plan_respect_rate: number;
 }
 
+export interface PostLossSizingCategory {
+  count: number;
+  pct: number;
+  total_pnl: number;
+  avg_pnl: number;
+  win_rate: number;
+}
+
+export interface PostLossSizingBaseline {
+  larger: PostLossSizingCategory;
+  equal: PostLossSizingCategory;
+  smaller: PostLossSizingCategory;
+}
+
+export interface PostLossSizingData {
+  sample_size: number;
+  median_lookback: number;
+  median_sample_size: number;
+  vs_losing_trade: PostLossSizingBaseline;
+  vs_median: PostLossSizingBaseline;
+}
+
 export interface AnalyticsData {
   daily_stats: {
     avg_gain_per_day: number;
@@ -98,6 +120,7 @@ export interface AnalyticsData {
     month: string;
     pnl: number;
   }>;
+  post_loss_sizing?: PostLossSizingData;
 }
 
 export interface GlobalStrategyData {

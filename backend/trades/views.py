@@ -93,6 +93,7 @@ from .pnl_basis import (
     trade_pnl_as_float,
     trade_pnl_as_decimal,
 )
+from .services.post_loss_sizing import compute_post_loss_sizing, empty_post_loss_sizing
 
 
 class PnlPreferenceMixin:
@@ -2508,10 +2509,12 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     'long_count': 0,
                     'short_count': 0,
                 },
-                'monthly_performance': []
+                'monthly_performance': [],
+                'post_loss_sizing': empty_post_loss_sizing(),
             })
 
         pf = self.get_pnl_field()
+        post_loss_sizing = compute_post_loss_sizing(trades, pf)
         # Utiliser le timezone de l'utilisateur
         user_tz = get_user_timezone(request)
         # Agréger par jour
@@ -2706,7 +2709,8 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 'long_count': long_trades_count,
                 'short_count': short_trades_count,
             },
-            'monthly_performance': monthly_list
+            'monthly_performance': monthly_list,
+            'post_loss_sizing': post_loss_sizing,
         })
 
     @action(detail=False, methods=['get'])

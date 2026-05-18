@@ -211,7 +211,49 @@
     "overview": "Resumen",
     "riskCapital": "Riesgo y Capital",
     "timeAnalysis": "Análisis Temporal",
-    "patterns": "Correlaciones y Patrones"
+    "patterns": "Correlaciones y Patrones",
+    "behavior": "Comportamiento"
+  },
+  "postLossSizing": {
+    "title": "Tamaño tras una pérdida",
+    "subtitle": "Tras cada trade perdedor: ¿el siguiente se tomó con tamaño mayor, igual o menor? Señal habitual de revenge trading.",
+    "noData": "No hay suficientes casos pérdida y trade siguiente en el período seleccionado.",
+    "sampleSize": "Casos analizados",
+    "sampleSizeHint": "Período y filtros seleccionados",
+    "sampleSizeTooltip": "Número de pérdidas seguidas de un trade inmediato, entre los trades del período elegido arriba (cuenta, fechas, estrategia). No es una ventana móvil: cada pérdida cuenta como máximo una vez en ese intervalo.",
+    "medianLookback": "Mediana sobre los últimos {{count}} trades",
+    "vsLosingTrade": "Vs trade perdedor",
+    "vsLosingTradeTooltip": "Tamaño del trade siguiente comparado con el del trade perdedor.",
+    "vsMedian": "Vs mediana reciente",
+    "vsMedianTooltip": "Tamaño del trade siguiente comparado con la mediana de sus últimos {{count}} trades en la cuenta.",
+    "larger": "Mayor",
+    "equal": "Igual",
+    "smaller": "Menor",
+    "largerPctKpi": "Tamaño aumentado tras pérdida",
+    "largerPctKpiTooltip": "Parte de trades tras una pérdida donde el tamaño supera al del trade perdedor.",
+    "avgPnlAfterLarger": "PnL medio (tamaño ↑)",
+    "winRateAfterLarger": "Win rate (tamaño ↑)",
+    "recommendation": "Tomar una pausa tras una pérdida. Esperar al menos 30 minutos antes del siguiente trade.",
+    "count": "Ocurrencias",
+    "pct": "Parte",
+    "totalPnl": "PnL total",
+    "avgPnl": "PnL medio",
+    "winRate": "Win rate",
+    "viewInAnalytics": "Ver detalle en Análisis → Comportamiento",
+    "interpretationScale": {
+      "evaluationColumn": "Lectura",
+      "title": "Cómo leer los porcentajes",
+      "intro": "Cada parte muestra la proporción de casos tras una pérdida. Conviene que « Mayor » sea lo más bajo posible.",
+      "kpiHint": "Objetivo: mantener este porcentaje lo más bajo posible.",
+      "quality": {
+        "good": "Favorable",
+        "neutral": "Neutro",
+        "bad": "A evitar"
+      },
+      "largerDesc": "Tamaño mayor: señal típica de revenge trading y riesgo emocional.",
+      "equalDesc": "Mismo tamaño: disciplina media; vigile la frecuencia de trades.",
+      "smallerDesc": "Tamaño menor: buen reflejo de gestión del riesgo tras una pérdida."
+    }
   },
   "dashboard": {
     "title": "Análisis Estadístico de Operaciones",

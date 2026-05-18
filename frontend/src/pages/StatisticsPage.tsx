@@ -1022,6 +1022,39 @@ function StatisticsPage() {
                   />
                 </MetricCard>
 
+                {analyticsData.post_loss_sizing &&
+                  analyticsData.post_loss_sizing.sample_size > 0 && (
+                  <MetricCard
+                    title={t('analytics:postLossSizing.title')}
+                    icon={
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    }
+                  >
+                    <MetricItem
+                      label={t('analytics:postLossSizing.largerPctKpi')}
+                      value={`${formatNumber(analyticsData.post_loss_sizing.vs_losing_trade.larger.pct, 1)}%`}
+                      variant="danger"
+                      tooltip={t('analytics:postLossSizing.largerPctKpiTooltip')}
+                    />
+                    <MetricItem
+                      label={t('analytics:postLossSizing.sampleSize')}
+                      value={analyticsData.post_loss_sizing.sample_size}
+                      variant="info"
+                    />
+                    <MetricItem
+                      label={t('analytics:postLossSizing.avgPnlAfterLarger')}
+                      value={formatCurrency(
+                        analyticsData.post_loss_sizing.vs_losing_trade.larger.avg_pnl,
+                        currencySymbol
+                      )}
+                      variant="default"
+                      tooltip={t('analytics:postLossSizing.viewInAnalytics')}
+                    />
+                  </MetricCard>
+                )}
+
               </>
             )}
           </div>

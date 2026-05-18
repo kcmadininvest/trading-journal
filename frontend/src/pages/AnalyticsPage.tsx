@@ -38,7 +38,7 @@ import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
-import { useStatistics } from '../hooks/useStatistics';
+import { useStatistics, useAnalytics } from '../hooks/useStatistics';
 import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
@@ -60,6 +60,7 @@ import {
   GainsVsLossesChart,
   PnlDistributionChart,
   MaeMfeChart,
+  PostLossSizingPanel,
   createRadarAlternatingZonesPlugin,
   createRadarGradientPlugin,
 } from '../components/analytics';
@@ -281,6 +282,16 @@ const AnalyticsPage: React.FC = () => {
 
   // Récupérer les statistiques pour le graphique radar
   const { data: statisticsData, isLoading: statisticsLoading } = useStatistics(
+    accountLoading ? undefined : accountId,
+    selectedPeriod ? null : selectedYear,
+    selectedPeriod ? null : selectedMonth,
+    selectedPeriod?.start || null,
+    selectedPeriod?.end || null,
+    selectedPositionStrategy,
+    pnlDisplayMode,
+  );
+
+  const { data: analyticsData, isLoading: analyticsLoading } = useAnalytics(
     accountLoading ? undefined : accountId,
     selectedPeriod ? null : selectedYear,
     selectedPeriod ? null : selectedMonth,
@@ -1472,10 +1483,19 @@ const AnalyticsPage: React.FC = () => {
         </svg>
       )
     },
+    {
+      id: 'behavior',
+      label: t('analytics:tabs.behavior'),
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
   ];
 
   // Afficher le skeleton pendant le chargement initial pour une expérience uniforme
-  if (accountLoading || isLoading || statisticsLoading) {
+  if (accountLoading || isLoading || statisticsLoading || analyticsLoading) {
     return <AnalyticsPageSkeleton />;
   }
 
@@ -1669,6 +1689,16 @@ const AnalyticsPage: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Onglet Comportement */}
+      {activeTab === 'behavior' && (
+        <PostLossSizingPanel
+          data={analyticsData?.post_loss_sizing}
+          chartColors={chartColors}
+          isDark={isDark}
+          formatNumber={formatNumber}
+        />
       )}
 
       {/* Onglet Corrélations & Patterns */}

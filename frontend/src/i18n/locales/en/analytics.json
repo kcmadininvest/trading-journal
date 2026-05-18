@@ -211,7 +211,49 @@
     "overview": "Overview",
     "riskCapital": "Risk & Capital",
     "timeAnalysis": "Time Analysis",
-    "patterns": "Correlations & Patterns"
+    "patterns": "Correlations & Patterns",
+    "behavior": "Behavior"
+  },
+  "postLossSizing": {
+    "title": "Size after a loss",
+    "subtitle": "After each losing trade: was the next trade taken with a larger, equal, or smaller size? A common revenge-trading signal.",
+    "noData": "Not enough loss-then-next-trade cases for the selected period.",
+    "sampleSize": "Cases analyzed",
+    "sampleSizeHint": "Selected period and filters",
+    "sampleSizeTooltip": "Number of losses followed immediately by another trade, within the period chosen at the top of the page (account, dates, strategy). Not a rolling window: each loss counts at most once in that range.",
+    "medianLookback": "Median over last {{count}} trades",
+    "vsLosingTrade": "Vs losing trade",
+    "vsLosingTradeTooltip": "Next trade size compared to the losing trade size.",
+    "vsMedian": "Vs recent median",
+    "vsMedianTooltip": "Next trade size compared to the median of your last {{count}} trades on the account.",
+    "larger": "Larger",
+    "equal": "Equal",
+    "smaller": "Smaller",
+    "largerPctKpi": "Size increased after loss",
+    "largerPctKpiTooltip": "Share of post-loss trades where size is greater than the losing trade.",
+    "avgPnlAfterLarger": "Avg P/L (size up)",
+    "winRateAfterLarger": "Win rate (size up)",
+    "recommendation": "Take a break after a loss. Wait at least 30 minutes before the next trade.",
+    "count": "Occurrences",
+    "pct": "Share",
+    "totalPnl": "Total P/L",
+    "avgPnl": "Avg P/L",
+    "winRate": "Win rate",
+    "viewInAnalytics": "See details in Analytics → Behavior",
+    "interpretationScale": {
+      "evaluationColumn": "Reading",
+      "title": "How to read the percentages",
+      "intro": "Each share shows how often the next trade falls into that category after a loss. Aim for a low « Larger » share.",
+      "kpiHint": "Goal: keep this rate as low as possible.",
+      "quality": {
+        "good": "Favorable",
+        "neutral": "Neutral",
+        "bad": "Avoid"
+      },
+      "largerDesc": "Larger size: typical revenge-trading signal and emotional risk-taking.",
+      "equalDesc": "Same size: moderate discipline; watch your trade frequency.",
+      "smallerDesc": "Smaller size: good risk-management reflex after a loss."
+    }
   },
   "dashboard": {
     "title": "Trade Statistical Analysis",

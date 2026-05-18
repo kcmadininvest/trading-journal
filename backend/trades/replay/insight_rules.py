@@ -73,6 +73,28 @@ def run_insight_rules(
         if i + 1 < len(opens):
             next_open = opens[i + 1]
             if next_open.occurred_at - close_evt.occurred_at <= revenge_delta:
+                context: dict[str, Any] = {
+                    'loss_pnl': str(pnl),
+                    'minutes_after': REVENGE_MINUTES(),
+                }
+                close_payload = close_evt.payload or {}
+                next_payload = next_open.payload or {}
+                loss_size_raw = close_payload.get('size')
+                next_size_raw = next_payload.get('size')
+                if loss_size_raw is not None and next_size_raw is not None:
+                    try:
+                        loss_size = Decimal(str(loss_size_raw))
+                        next_size = Decimal(str(next_size_raw))
+                        context['loss_size'] = str(loss_size)
+                        context['next_size'] = str(next_size)
+                        if next_size > loss_size:
+                            context['size_change'] = 'larger'
+                        elif next_size < loss_size:
+                            context['size_change'] = 'smaller'
+                        else:
+                            context['size_change'] = 'equal'
+                    except Exception:
+                        pass
                 insights.append(
                     SessionInsight(
                         session=session,
@@ -83,10 +105,7 @@ def run_insight_rules(
                             f'({pnl}).'
                         ),
                         occurred_at=next_open.occurred_at,
-                        context={
-                            'loss_pnl': str(pnl),
-                            'minutes_after': REVENGE_MINUTES(),
-                        },
+                        context=context,
                     )
                 )
 

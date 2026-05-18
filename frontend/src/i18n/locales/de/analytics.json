@@ -211,7 +211,49 @@
     "overview": "Übersicht",
     "riskCapital": "Risiko & Kapital",
     "timeAnalysis": "Zeitanalyse",
-    "patterns": "Korrelationen & Muster"
+    "patterns": "Korrelationen & Muster",
+    "behavior": "Verhalten"
+  },
+  "postLossSizing": {
+    "title": "Größe nach einem Verlust",
+    "subtitle": "Nach jedem Verlust-Trade: War der Folgetrade größer, gleich oder kleiner? Typisches Zeichen für Revenge Trading.",
+    "noData": "Nicht genug Fälle Verlust mit Folgetrade für den gewählten Zeitraum.",
+    "sampleSize": "Analysierte Fälle",
+    "sampleSizeHint": "Gewählter Zeitraum und Filter",
+    "sampleSizeTooltip": "Anzahl Verluste mit unmittelbar folgendem Trade innerhalb des oben gewählten Zeitraums (Konto, Datum, Strategie). Kein gleitendes Fenster: jeder Verlust zählt höchstens einmal in diesem Intervall.",
+    "medianLookback": "Median der letzten {{count}} Trades",
+    "vsLosingTrade": "Vs Verlierer-Trade",
+    "vsLosingTradeTooltip": "Größe des Folgetrades im Vergleich zum verlierenden Trade.",
+    "vsMedian": "Vs aktueller Median",
+    "vsMedianTooltip": "Größe des Folgetrades im Vergleich zum Median Ihrer letzten {{count}} Trades auf dem Konto.",
+    "larger": "Größer",
+    "equal": "Gleich",
+    "smaller": "Kleiner",
+    "largerPctKpi": "Größe nach Verlust erhöht",
+    "largerPctKpiTooltip": "Anteil der Trades nach einem Verlust, bei denen die Größe über dem Verlierer-Trade liegt.",
+    "avgPnlAfterLarger": "Ø P/L (Größe ↑)",
+    "winRateAfterLarger": "Win Rate (Größe ↑)",
+    "recommendation": "Nach einem Verlust eine Pause einlegen. Mindestens 30 Minuten vor dem nächsten Trade warten.",
+    "count": "Vorkommen",
+    "pct": "Anteil",
+    "totalPnl": "Gesamt-P/L",
+    "avgPnl": "Ø P/L",
+    "winRate": "Win Rate",
+    "viewInAnalytics": "Details unter Analysen → Verhalten",
+    "interpretationScale": {
+      "evaluationColumn": "Bewertung",
+      "title": "Prozentwerte richtig lesen",
+      "intro": "Jeder Anteil zeigt, wie oft der Folgetrade nach einem Verlust in diese Kategorie fällt. Ziel: niedriger Anteil bei « Größer ».",
+      "kpiHint": "Ziel: diesen Wert so niedrig wie möglich halten.",
+      "quality": {
+        "good": "Günstig",
+        "neutral": "Neutral",
+        "bad": "Vermeiden"
+      },
+      "largerDesc": "Größere Positionsgröße: typisches Zeichen für Revenge Trading und emotionales Risiko.",
+      "equalDesc": "Gleiche Größe: mittlere Disziplin; Handelsfrequenz im Blick behalten.",
+      "smallerDesc": "Kleinere Größe: gutes Risikomanagement nach einem Verlust."
+    }
   },
   "dashboard": {
     "title": "Statistische Trade-Analyse",

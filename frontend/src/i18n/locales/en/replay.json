@@ -98,6 +98,12 @@
     "position_close": "Position closed",
     "pnl_tick": "Cumulative PnL"
   },
+  "insightDetail": {
+    "sizeChange": "Size: {{lossSize}} → {{nextSize}} ({{change}})",
+    "sizeChangeLarger": "increased",
+    "sizeChangeEqual": "unchanged",
+    "sizeChangeSmaller": "decreased"
+  },
   "insightCodes": {
     "revenge_trade": "Revenge trade",
     "oversize": "Oversize",
