@@ -126,6 +126,35 @@ class PostLossSizingServiceTests(APITestCase):
         self.assertEqual(get_base_symbol('CON.F.US.MNQ.M26'), 'MNQ')
         self.assertEqual(get_contract_family_key('CON.F.US.MNQ.M26'), 'NQ')
         self.assertEqual(get_contract_family_key('CON.NQ'), 'NQ')
+        self.assertEqual(normalize_contract_symbol('CON.F.US.ENQ.M26'), 'ENQ')
+        self.assertEqual(get_base_symbol('CON.F.US.ENQ.M26'), 'NQ')
+        self.assertEqual(get_contract_family_key('CON.F.US.ENQ.M26'), 'NQ')
+        self.assertEqual(get_base_symbol('CON.F.US.EP.M26'), 'ES')
+        self.assertEqual(get_contract_family_key('CON.F.US.EP.M26'), 'ES')
+
+    def test_enq_loss_mnq_next_same_nasdaq_family(self) -> None:
+        self._create_trade(
+            'pl-enq',
+            0,
+            '1',
+            '-50',
+            '-50',
+            contract_name='CON.F.US.ENQ.M26',
+        )
+        self._create_trade(
+            'pl-mnq-enq',
+            10,
+            '5',
+            '10',
+            '10',
+            contract_name='CON.F.US.MNQ.M26',
+        )
+
+        qs = TopStepTrade.objects.filter(user=self.user, trading_account=self.account)
+        result = compute_post_loss_sizing(qs, 'net_pnl')
+
+        self.assertEqual(result['sample_size'], 1)
+        self.assertEqual(result['vs_losing_trade']['smaller']['count'], 1)
 
     def test_nq_loss_mnq_next_classified_smaller_not_larger(self) -> None:
         self._create_trade('pl-nq', 0, '1', '-50', '-50', contract_name='NQM6')
