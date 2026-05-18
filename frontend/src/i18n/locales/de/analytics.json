@@ -241,7 +241,7 @@
     "totalPnl": "Gesamt-P/L",
     "avgPnl": "Ø P/L",
     "winRate": "Win Rate",
-    "viewInAnalytics": "Details unter Analysen → Verhalten",
+    "viewInAnalytics": "Details unter Trading → Verhalten",
     "interpretationScale": {
       "evaluationColumn": "Bewertung",
       "title": "Prozentwerte richtig lesen",

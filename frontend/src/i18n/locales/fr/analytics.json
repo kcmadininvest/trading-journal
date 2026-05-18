@@ -241,7 +241,7 @@
     "totalPnl": "PnL total",
     "avgPnl": "PnL moyen",
     "winRate": "Win rate",
-    "viewInAnalytics": "Voir le détail dans Analyses → Comportement",
+    "viewInAnalytics": "Voir le détail dans Trading → Comportement",
     "interpretationScale": {
       "evaluationColumn": "Lecture",
       "title": "Comment lire les pourcentages",

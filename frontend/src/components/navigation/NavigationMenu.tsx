@@ -53,6 +53,18 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
       badgeText: isLocked('statistics') ? premiumBadge : undefined,
     },
     {
+      id: 'behavior',
+      label: t('navigation:behavior', { defaultValue: 'Comportement' }),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+      visible: true,
+      disabled: isLocked('behavior'),
+      badgeText: isLocked('behavior') ? premiumBadge : undefined,
+    },
+    {
       id: 'trades',
       label: t('navigation:trades'),
       icon: (

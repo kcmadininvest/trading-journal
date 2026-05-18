@@ -241,7 +241,7 @@
     "totalPnl": "Total P/L",
     "avgPnl": "Avg P/L",
     "winRate": "Win rate",
-    "viewInAnalytics": "See details in Analytics → Behavior",
+    "viewInAnalytics": "See details in Trading → Behavior",
     "interpretationScale": {
       "evaluationColumn": "Reading",
       "title": "How to read the percentages",
