@@ -33,6 +33,8 @@ import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import { ModernMarketInfo } from '../components/market/ModernMarketInfo';
 import { GlobalStatsIndicators } from '../components/dashboard/GlobalStatsIndicators';
 import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformanceKpis';
+import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerformanceSection';
+import { useWeekdayPerformance } from '../hooks/useWeekdayPerformance';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
@@ -1382,182 +1384,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [waterfallData]);
 
-  // Calculer la performance par jour de la semaine
-  const weekdayPerformanceData = useMemo(() => {
-    const monday = t('dashboard:monday');
-    const tuesday = t('dashboard:tuesday');
-    const wednesday = t('dashboard:wednesday');
-    const thursday = t('dashboard:thursday');
-    const friday = t('dashboard:friday');
-    const saturday = t('dashboard:saturday');
-    const sunday = t('dashboard:sunday');
-    
-    const dayStats: { [day: string]: { total_pnl: number; trade_count: number; winning_trades: number } } = {
-      [monday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      [tuesday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      [wednesday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      [thursday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      [friday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      [saturday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-      [sunday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
-    };
-
-    const dayNames = [sunday, monday, tuesday, wednesday, thursday, friday, saturday];
-
-    trades.forEach(trade => {
-      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
-      if (trade.entered_at && pnl !== null) {
-        const date = new Date(trade.entered_at);
-        const dayName = dayNames[date.getDay()];
-        
-        if (dayStats[dayName]) {
-          dayStats[dayName].total_pnl += pnl;
-          dayStats[dayName].trade_count += 1;
-          if (trade.is_profitable === true) {
-            dayStats[dayName].winning_trades += 1;
-          }
-        }
-      }
-    });
-
-    // Convertir en tableau et calculer le win rate
-    return Object.entries(dayStats)
-      .map(([day, stats]) => ({
-        day,
-        total_pnl: stats.total_pnl,
-        trade_count: stats.trade_count,
-        win_rate: stats.trade_count > 0 ? (stats.winning_trades / stats.trade_count) * 100 : 0,
-        average_pnl: stats.trade_count > 0 ? stats.total_pnl / stats.trade_count : 0,
-      }))
-      .filter(d => d.day !== t('dashboard:saturday') && d.day !== t('dashboard:sunday')); // Filtrer les weekends
-  }, [trades, t, pnlDisplayMode]);
-
-  // Préparer les données pour le graphique de performance par jour
-  const weekdayChartData = useMemo(() => {
-    if (weekdayPerformanceData.length === 0) return null;
-
-    const labels = weekdayPerformanceData.map(d => d.day);
-    const totalPnlValues = weekdayPerformanceData.map(d => d.total_pnl);
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: t('dashboard:pnlTotalWithBasis', {
-            basis: t(pnlDisplayMode === 'net' ? 'common:pnlNetShort' : 'common:pnlGrossShort'),
-          }),
-          data: totalPnlValues,
-          backgroundColor: totalPnlValues.map(value => 
-            value >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)'
-          ),
-          borderColor: totalPnlValues.map(value => 
-            value >= 0 ? '#3b82f6' : '#ec4899'
-          ),
-          borderWidth: 0,
-          borderRadius: 0,
-          borderSkipped: false,
-        }
-      ]
-    };
-  }, [weekdayPerformanceData, t, pnlDisplayMode]);
-
-  // Calculer les limites intelligentes pour l'axe Y - toujours inclure 0 avec valeurs arrondies
-  const weekdayYAxisLimits = useMemo(() => {
-    if (weekdayPerformanceData.length === 0) return { min: 0, max: 100, stepSize: 20 };
-
-    const values = weekdayPerformanceData.map(d => d.total_pnl);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    
-    // Plage effective qui inclut toujours 0
-    const effectiveMin = Math.min(minValue, 0);
-    const effectiveMax = Math.max(maxValue, 0);
-    const effectiveRange = effectiveMax - effectiveMin;
-    
-    // Calculer le stepSize optimal - on veut environ 6-8 ticks
-    const targetTicks = 7;
-    let step = effectiveRange / targetTicks;
-    
-    // Arrondir le step à une valeur "ronde"
-    if (step === 0 || !isFinite(step)) {
-      step = Math.max(Math.abs(effectiveMax), Math.abs(effectiveMin), 100) / targetTicks;
-    }
-    
-    const magnitude = Math.pow(10, Math.floor(Math.log10(step)));
-    const normalized = step / magnitude;
-    
-    let niceStep: number;
-    if (normalized <= 1) niceStep = 1;
-    else if (normalized <= 2) niceStep = 2;
-    else if (normalized <= 5) niceStep = 5;
-    else niceStep = 10;
-    
-    const stepSize = niceStep * magnitude;
-    
-    // Calculer les limites minimales nécessaires pour inclure toutes les données
-    // Arrondir à la valeur inférieure pour min et supérieure pour max
-    let roundedMin = Math.floor(effectiveMin / stepSize) * stepSize;
-    let roundedMax = Math.ceil(effectiveMax / stepSize) * stepSize;
-    
-    // Ajuster si nécessaire pour inclure toutes les données exactes
-    while (roundedMin > minValue) {
-      roundedMin -= stepSize;
-    }
-    while (roundedMax < maxValue) {
-      roundedMax += stepSize;
-    }
-    
-    // S'assurer que 0 est toujours inclus
-    roundedMin = Math.min(roundedMin, 0);
-    roundedMax = Math.max(roundedMax, 0);
-    
-    // Ajouter une marge supplémentaire en haut (5% de la plage) pour les datalabels
-    const range = roundedMax - roundedMin;
-    const margin = range * 0.05;
-    const adjustedMax = roundedMax + margin;
-    
-    // Arrondir la limite ajustée au multiple du stepSize supérieur
-    const finalMax = Math.ceil(adjustedMax / stepSize) * stepSize;
-    
-    return {
-      min: roundedMin,
-      max: finalMax,
-      stepSize: stepSize
-    };
-  }, [weekdayPerformanceData]);
-
-  // Statistiques pour le graphique de performance par jour
-  const weekdayStats = useMemo(() => {
-    if (weekdayPerformanceData.length === 0) return null;
-
-    const bestDay = weekdayPerformanceData.reduce((max, day) => 
-      day.total_pnl > max.total_pnl ? day : max, 
-      weekdayPerformanceData[0]
-    );
-    const worstDay = weekdayPerformanceData.reduce((min, day) => 
-      day.total_pnl < min.total_pnl ? day : min, 
-      weekdayPerformanceData[0]
-    );
-    const mostActiveDay = weekdayPerformanceData.reduce((max, day) => 
-      day.trade_count > max.trade_count ? day : max, 
-      weekdayPerformanceData[0]
-    );
-    const leastActiveDay = weekdayPerformanceData.reduce((min, day) => 
-      day.trade_count < min.trade_count ? day : min, 
-      weekdayPerformanceData[0]
-    );
-    const totalTrades = weekdayPerformanceData.reduce((sum, day) => sum + day.trade_count, 0);
-    const totalPnl = weekdayPerformanceData.reduce((sum, day) => sum + day.total_pnl, 0);
-
-    return {
-      bestDay,
-      worstDay,
-      mostActiveDay,
-      leastActiveDay,
-      totalTrades,
-      totalPnl
-    };
-  }, [weekdayPerformanceData]);
+  const weekdayPerformanceData = useWeekdayPerformance(trades, t, pnlDisplayMode);
 
   // Calculer les métriques de trading pour les jauges circulaires
   const tradingMetrics = useMemo(() => {
@@ -2528,6 +2355,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           {/* Reste des graphiques en 2 colonnes à partir de lg */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {(accountBalanceData.length > 0 || (waterfallData.length > 0 && waterfallChartData)) && (
+            <div className="flex flex-col gap-6 min-h-0 lg:h-full">
           {/* Graphique 2: Solde du compte dans le temps */}
           {accountBalanceData.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -2602,182 +2431,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             </div>
           )}
 
-          {/* Graphique 4: Performance par jour de la semaine */}
-          {weekdayPerformanceData.length > 0 && weekdayChartData && weekdayPerformanceData.some(d => d.trade_count > 0) && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('dashboard:weeklyPerformanceTitle')}</h3>
-                </div>
-                {weekdayStats && (
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    <div className="flex items-center gap-1">
-                      <span>{t('dashboard:mostActive')} :</span>
-                      <span className="font-medium text-blue-500">{weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count} {t('trades:trades')})</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span>{t('dashboard:leastActive')} :</span>
-                      <span className="font-medium text-pink-500">{weekdayStats.leastActiveDay.day} ({weekdayStats.leastActiveDay.trade_count} {t('trades:trades')})</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <ChartTooltipResetContainer className="h-64 sm:h-80">
-                <ChartBar
-                  key={pnlDisplayMode}
-                  data={weekdayChartData}
-                  plugins={[{
-                    id: 'adjustAxis',
-                    beforeUpdate: (chart: any) => {
-                      // Ajuster les limites de l'axe Y après le calcul initial
-                      const yScale = chart.scales.y;
-                      if (yScale && weekdayYAxisLimits) {
-                        // Forcer les limites calculées
-                        yScale.min = weekdayYAxisLimits.min;
-                        yScale.max = weekdayYAxisLimits.max;
-                      }
-                    }
-                  }]}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: {
-                        display: false
-                      },
-                      tooltip: {
-                        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', {
-                          enabled: !hideWeekdayChartMoneyValues,
-                        }),
-                        callbacks: {
-                          label: function(context: any) {
-                            const index = context.dataIndex;
-                            const value = context.parsed.y;
-                            const dayData = weekdayPerformanceData[index];
-                            
-                            return [
-                              `${t('dashboard:pnlTotal')}: ${formatCurrency(value, currencySymbol)}`,
-                              `${t('dashboard:numberOfTrades')}: ${dayData.trade_count}`,
-                              `${t('dashboard:winRatePercentage')}: ${dayData.win_rate.toFixed(1)}%`
-                            ];
-                          }
-                        }
-                      },
-                      datalabels: {
-                        display: function(context: any) {
-                          // Ne pas afficher si privacy activé ou sur mobile
-                          if (hideWeekdayChartMoneyValues || windowWidth < 640) {
-                            return false;
-                          }
-                          // Ne pas afficher si la valeur est 0
-                          const value = context.dataset.data[context.dataIndex];
-                          return value !== 0 && Math.abs(value) >= 0.01;
-                        },
-                        anchor: function(context: any) {
-                          const value = context.dataset.data[context.dataIndex];
-                          // Positionner au-dessus si positif, en dessous si négatif
-                          return value >= 0 ? 'end' : 'start';
-                        } as any,
-                        align: function(context: any) {
-                          const value = context.dataset.data[context.dataIndex];
-                          // Aligner au-dessus si positif, en dessous si négatif
-                          return value >= 0 ? 'top' : 'bottom';
-                        } as any,
-                        color: isDark ? '#d1d5db' : '#374151',
-                        font: {
-                          weight: 700, // Plus gras pour meilleure lisibilité
-                          size: windowWidth < 640 ? 11 : 13,
-                        },
-                        backgroundColor: function(context: any) {
-                          // Ajouter un fond semi-transparent sur mobile pour améliorer la lisibilité
-                          if (windowWidth < 640) {
-                            return 'rgba(0, 0, 0, 0.4)';
-                          }
-                          return 'transparent';
-                        },
-                        padding: windowWidth < 640 ? 4 : 0,
-                        borderRadius: windowWidth < 640 ? 4 : 0,
-                        formatter: function(value: any, context: any) {
-                          // Accéder à la valeur de différentes manières pour être sûr
-                          const dataset = context.dataset;
-                          const dataIndex = context.dataIndex;
-                          const actualValue = dataset?.data?.[dataIndex] ?? value ?? 0;
-                          const numValue = typeof actualValue === 'number' ? actualValue : parseFloat(actualValue) || 0;
-                          return formatCurrency(numValue, currencySymbol);
-                        },
-                        clamp: true, // Empêcher les labels de sortir du graphique
-                      }
-                    },
-                    scales: {
-                      x: {
-                        grid: {
-                          display: false
-                        },
-                        ticks: {
-                          color: chartColors.textSecondary,
-                          font: {
-                            size: 12
-                          }
-                        },
-                        border: {
-                            color: chartColors.border,
-                        },
-                        title: {
-                          display: false,
-                        },
-                      },
-                      y: {
-                        type: 'linear' as const,
-                        display: true,
-                        position: 'left' as const,
-                        beginAtZero: false,
-                        min: weekdayYAxisLimits.min,
-                        max: weekdayYAxisLimits.max,
-                        grid: {
-                          color: function(context: any) {
-                            // Mettre en évidence la ligne à y=0 avec une couleur plus foncée
-                            if (Math.abs(context.tick.value) < 0.0001) {
-                                return isDark ? '#6b7280' : '#9ca3af';
-                            }
-                              return chartColors.grid;
-                          },
-                          lineWidth: 1,
-                        },
-                        ticks: {
-                          display: !hideWeekdayChartMoneyValues,
-                          callback: function(value: any) {
-                            return formatCurrency(value, currencySymbol);
-                          },
-                            color: chartColors.textSecondary,
-                          font: {
-                            size: 11
-                          },
-                          // Utiliser le stepSize calculé pour des valeurs cohérentes
-                          stepSize: weekdayYAxisLimits.stepSize,
-                          maxTicksLimit: 10,
-                          padding: 5,
-                        },
-                        border: {
-                            color: chartColors.border,
-                          display: false,
-                        },
-                      }
-                    },
-                    animation: {
-                      duration: 1000,
-                      easing: 'easeInOutQuart' as const
-                    }
-                  }}
-                />
-              </ChartTooltipResetContainer>
-            </div>
-          )}
-
-          {/* Graphique 5: Waterfall des gains et pertes journalière */}
+          {/* Graphique 5: Waterfall — colonne gauche, sous le solde */}
           {waterfallData.length > 0 && waterfallChartData && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col flex-1 min-h-0">
+                <div className="mb-4 flex-shrink-0">
                   <div className="flex items-center gap-2 mb-4">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('dashboard:dailyGainsLossesEvolution')}</h3>
                   </div>
@@ -2805,7 +2462,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   )}
                 </div>
 
-                <ChartTooltipResetContainer className="h-[280px] sm:h-[360px] md:h-[420px]">
+                <ChartTooltipResetContainer className="h-[240px] sm:h-[280px] lg:flex-1 lg:min-h-[240px] lg:h-auto">
                   <ChartBar
                     key={pnlDisplayMode}
                     data={waterfallChartData}
@@ -2933,9 +2590,26 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             </div>
           )}
 
-          {/* Graphique 6: Répartition des trades par durée */}
+            </div>
+          )}
+
+          <WeekdayPerformanceSection
+            weekdayPerformanceData={weekdayPerformanceData}
+            pnlDisplayMode={pnlDisplayMode}
+            chartColors={chartColors}
+            currencySymbol={currencySymbol}
+            formatCurrency={formatCurrency}
+            formatNumber={formatNumber}
+            hideWeekdayChartMoneyValues={hideWeekdayChartMoneyValues}
+            windowWidth={windowWidth}
+            isDark={isDark}
+          />
+
+          {/* Graphique 6: Répartition des trades par durée (pleine largeur) */}
           {durationDistributionBins.length > 0 && (
-            <DurationDistributionChart bins={durationDistributionBins} />
+            <div className="lg:col-span-2">
+              <DurationDistributionChart bins={durationDistributionBins} />
+            </div>
           )}
           </div>
         </div>

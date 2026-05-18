@@ -1,12 +1,27 @@
 import { useMemo } from 'react';
+import { getTradeDisplayPnlValue, type PnlDisplayMode } from '../utils/pnlDisplay';
 
-interface Trade {
+export interface WeekdayPerformanceTrade {
   entered_at?: string;
-  net_pnl: string | null;
-  is_profitable: boolean | null;
+  pnl?: string | null;
+  net_pnl?: string | null;
 }
 
-export function useWeekdayPerformance(trades: Trade[], t: (key: string) => string) {
+export interface WeekdayPerformanceDay {
+  day: string;
+  total_pnl: number;
+  trade_count: number;
+  win_rate: number;
+  average_pnl: number;
+}
+
+export const WEEKDAY_WIN_RATE_MIN_TRADES = 5;
+
+export function useWeekdayPerformance(
+  trades: WeekdayPerformanceTrade[],
+  t: (key: string) => string,
+  pnlDisplayMode: PnlDisplayMode,
+): WeekdayPerformanceDay[] {
   return useMemo(() => {
     const monday = t('dashboard:monday');
     const tuesday = t('dashboard:tuesday');
@@ -15,8 +30,8 @@ export function useWeekdayPerformance(trades: Trade[], t: (key: string) => strin
     const friday = t('dashboard:friday');
     const saturday = t('dashboard:saturday');
     const sunday = t('dashboard:sunday');
-    
-    const dayStats: { [day: string]: { total_pnl: number; trade_count: number; winning_trades: number } } = {
+
+    const dayStats: Record<string, { total_pnl: number; trade_count: number; winning_trades: number }> = {
       [monday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
       [tuesday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
       [wednesday]: { total_pnl: 0, trade_count: 0, winning_trades: 0 },
@@ -28,16 +43,16 @@ export function useWeekdayPerformance(trades: Trade[], t: (key: string) => strin
 
     const dayNames = [sunday, monday, tuesday, wednesday, thursday, friday, saturday];
 
-    trades.forEach(trade => {
-      if (trade.entered_at && trade.net_pnl !== null) {
+    trades.forEach((trade) => {
+      const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+      if (trade.entered_at && pnl !== null) {
         const date = new Date(trade.entered_at);
         const dayName = dayNames[date.getDay()];
-        const pnl = parseFloat(trade.net_pnl);
-        
+
         if (dayStats[dayName]) {
           dayStats[dayName].total_pnl += pnl;
           dayStats[dayName].trade_count += 1;
-          if (trade.is_profitable === true) {
+          if (pnl > 0) {
             dayStats[dayName].winning_trades += 1;
           }
         }
@@ -52,6 +67,6 @@ export function useWeekdayPerformance(trades: Trade[], t: (key: string) => strin
         win_rate: stats.trade_count > 0 ? (stats.winning_trades / stats.trade_count) * 100 : 0,
         average_pnl: stats.trade_count > 0 ? stats.total_pnl / stats.trade_count : 0,
       }))
-      .filter(d => d.day !== saturday && d.day !== sunday);
-  }, [trades, t]);
+      .filter((d) => d.day !== saturday && d.day !== sunday);
+  }, [trades, t, pnlDisplayMode]);
 }
