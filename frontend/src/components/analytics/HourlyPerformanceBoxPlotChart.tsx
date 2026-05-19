@@ -135,20 +135,45 @@ const calculateBoxPlotStats = (values: number[]): Omit<BoxPlotData, 'hour' | 'ho
   return { min, q1, median, q3, max, outliers };
 };
 
-/** Marge verticale pour que les outliers (rayon ~4px) restent dans la zone du graphique. */
-const computeYAxisBounds = (plots: BoxPlotData[]): { min: number; max: number } => {
+/** Bornes Y arrondies + pas régulier (évite des ticks comme -1832,67 en bord d'axe). */
+const computeNiceYAxisBounds = (
+  plots: BoxPlotData[],
+): { min: number; max: number; stepSize: number } => {
   const allValues = plots.flatMap(d => d.values);
   if (allValues.length === 0) {
-    return { min: -100, max: 100 };
+    return { min: -100, max: 100, stepSize: 50 };
   }
+
   const dataMin = Math.min(...allValues);
   const dataMax = Math.max(...allValues);
   const span = dataMax - dataMin;
   const padding = Math.max(span * 0.12, 50);
-  return {
-    min: dataMin - padding,
-    max: dataMax + padding,
-  };
+  const effectiveMin = dataMin - padding;
+  const effectiveMax = dataMax + padding;
+  const effectiveRange = effectiveMax - effectiveMin;
+
+  const targetTicks = 7;
+  let step = effectiveRange / targetTicks;
+  if (step === 0 || !Number.isFinite(step)) {
+    step = Math.max(Math.abs(effectiveMax), Math.abs(effectiveMin), 100) / targetTicks;
+  }
+
+  const magnitude = 10 ** Math.floor(Math.log10(step));
+  const normalized = step / magnitude;
+  let niceStep: number;
+  if (normalized <= 1) niceStep = 1;
+  else if (normalized <= 2) niceStep = 2;
+  else if (normalized <= 5) niceStep = 5;
+  else niceStep = 10;
+
+  const stepSize = niceStep * magnitude;
+  let roundedMin = Math.floor(effectiveMin / stepSize) * stepSize;
+  let roundedMax = Math.ceil(effectiveMax / stepSize) * stepSize;
+
+  while (roundedMin > effectiveMin) roundedMin -= stepSize;
+  while (roundedMax < effectiveMax) roundedMax += stepSize;
+
+  return { min: roundedMin, max: roundedMax, stepSize };
 };
 
 export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotChartProps> = ({
@@ -185,7 +210,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
     });
   }, [data]);
 
-  const yAxisBounds = useMemo(() => computeYAxisBounds(boxPlotData), [boxPlotData]);
+  const yAxisBounds = useMemo(() => computeNiceYAxisBounds(boxPlotData), [boxPlotData]);
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -256,6 +281,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         min: yAxisBounds.min,
         max: yAxisBounds.max,
         ticks: {
+          stepSize: yAxisBounds.stepSize,
           color: chartColors.textSecondary,
           font: {
             family: CHART_FONT_FAMILY,
