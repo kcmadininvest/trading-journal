@@ -2353,10 +2353,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           </div>
 
-          {/* Reste des graphiques en 2 colonnes à partir de lg */}
+          {/* Graphiques en 2 colonnes : ligne 1 = solde + perf. semaine ; ligne 2 = waterfall + taux de réussite */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {(accountBalanceData.length > 0 || (waterfallData.length > 0 && waterfallChartData)) && (
-            <div className="flex flex-col gap-6 min-h-0 lg:h-full">
           {/* Graphique 2: Solde du compte dans le temps */}
           {accountBalanceData.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -2431,9 +2429,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             </div>
           )}
 
-          {/* Graphique 5: Waterfall — colonne gauche, sous le solde */}
+          <WeekdayPerformanceSection
+            variant="pnl"
+            weekdayPerformanceData={weekdayPerformanceData}
+            pnlDisplayMode={pnlDisplayMode}
+            chartColors={chartColors}
+            currencySymbol={currencySymbol}
+            formatCurrency={formatCurrency}
+            formatNumber={formatNumber}
+            hideWeekdayChartMoneyValues={hideWeekdayChartMoneyValues}
+            windowWidth={windowWidth}
+            isDark={isDark}
+          />
+
+          {/* Graphique 5: Évolution des gains et pertes journalière */}
           {waterfallData.length > 0 && waterfallChartData && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex flex-col flex-1 min-h-0">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <div className="mb-4 flex-shrink-0">
                   <div className="flex items-center gap-2 mb-4">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('dashboard:dailyGainsLossesEvolution')}</h3>
@@ -2462,7 +2473,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   )}
                 </div>
 
-                <ChartTooltipResetContainer className="h-[240px] sm:h-[280px] lg:flex-1 lg:min-h-[240px] lg:h-auto">
+                <ChartTooltipResetContainer className="h-64 sm:h-80">
                   <ChartBar
                     key={pnlDisplayMode}
                     data={waterfallChartData}
@@ -2590,10 +2601,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             </div>
           )}
 
-            </div>
-          )}
-
           <WeekdayPerformanceSection
+            variant="winrate"
             weekdayPerformanceData={weekdayPerformanceData}
             pnlDisplayMode={pnlDisplayMode}
             chartColors={chartColors}

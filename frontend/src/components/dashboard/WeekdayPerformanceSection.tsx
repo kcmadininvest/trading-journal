@@ -19,6 +19,8 @@ export interface WeekdayPerformanceSectionProps {
   hideWeekdayChartMoneyValues: boolean;
   windowWidth: number;
   isDark: boolean;
+  /** 'pnl' = performance PnL par jour ; 'winrate' = taux de réussite par jour */
+  variant: 'pnl' | 'winrate';
 }
 
 function computePnlYAxisLimits(values: number[]) {
@@ -75,6 +77,7 @@ export function WeekdayPerformanceSection({
   hideWeekdayChartMoneyValues,
   windowWidth,
   isDark,
+  variant,
 }: WeekdayPerformanceSectionProps) {
   const { t } = useTranslation(['dashboard', 'trades', 'common']);
 
@@ -200,29 +203,150 @@ export function WeekdayPerformanceSection({
     return lines;
   };
 
+  if (variant === 'pnl') {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+              {t('dashboard:weeklyPerformanceTitle')}
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <div className="flex items-center gap-1">
+              <span>{t('dashboard:mostActive')} :</span>
+              <span className="font-medium text-blue-500">
+                {weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count}{' '}
+                {t('trades:trades')})
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span>{t('dashboard:leastActive')} :</span>
+              <span className="font-medium text-pink-500">
+                {weekdayStats.leastActiveDay.day} ({weekdayStats.leastActiveDay.trade_count}{' '}
+                {t('trades:trades')})
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <ChartTooltipResetContainer className="h-64 sm:h-80">
+          <ChartBar
+            key={`weekday-pnl-${pnlDisplayMode}`}
+            data={weekdayChartData}
+            plugins={[
+              {
+                id: 'adjustAxis',
+                beforeUpdate: (chart: any) => {
+                  const yScale = chart.scales.y;
+                  if (yScale && weekdayYAxisLimits) {
+                    yScale.min = weekdayYAxisLimits.min;
+                    yScale.max = weekdayYAxisLimits.max;
+                  }
+                },
+              },
+            ]}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  ...buildChartTooltipPlugin(chartColors, 'barStackedLike', {
+                    enabled: !hideWeekdayChartMoneyValues,
+                  }),
+                  callbacks: {
+                    label(context: any) {
+                      return pnlTooltipLines(context.dataIndex, context.parsed.y);
+                    },
+                  },
+                },
+                datalabels: {
+                  display(context: any) {
+                    if (hideWeekdayChartMoneyValues || windowWidth < 640) return false;
+                    const value = context.dataset.data[context.dataIndex];
+                    return value !== 0 && Math.abs(value) >= 0.01;
+                  },
+                  anchor(context: any) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? 'end' : 'start';
+                  },
+                  align(context: any) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 0 ? 'top' : 'bottom';
+                  },
+                  color: isDark ? '#d1d5db' : '#374151',
+                  font: {
+                    weight: 700,
+                    size: windowWidth < 640 ? 11 : 13,
+                  },
+                  backgroundColor() {
+                    if (windowWidth < 640) return 'rgba(0, 0, 0, 0.4)';
+                    return 'transparent';
+                  },
+                  padding: windowWidth < 640 ? 4 : 0,
+                  borderRadius: windowWidth < 640 ? 4 : 0,
+                  formatter(_value: any, context: any) {
+                    const actualValue = context.dataset.data[context.dataIndex] ?? 0;
+                    return formatCurrency(actualValue, currencySymbol);
+                  },
+                  clamp: true,
+                },
+              },
+              scales: {
+                x: {
+                  grid: { display: false },
+                  ticks: { color: chartColors.textSecondary, font: { size: 12 } },
+                  border: { color: chartColors.border },
+                  title: { display: false },
+                },
+                y: {
+                  type: 'linear',
+                  display: true,
+                  position: 'left',
+                  beginAtZero: false,
+                  min: weekdayYAxisLimits.min,
+                  max: weekdayYAxisLimits.max,
+                  grid: {
+                    color(context: any) {
+                      if (Math.abs(context.tick.value) < 0.0001) {
+                        return isDark ? '#6b7280' : '#9ca3af';
+                      }
+                      return chartColors.grid;
+                    },
+                    lineWidth: 1,
+                  },
+                  ticks: {
+                    display: !hideWeekdayChartMoneyValues,
+                    callback(value: number | string) {
+                      return formatCurrency(Number(value), currencySymbol);
+                    },
+                    color: chartColors.textSecondary,
+                    font: { size: 11 },
+                    stepSize: weekdayYAxisLimits.stepSize,
+                    maxTicksLimit: 10,
+                    padding: 5,
+                  },
+                  border: { color: chartColors.border, display: false },
+                },
+              },
+              animation: { duration: 1000, easing: 'easeInOutQuart' },
+            }}
+          />
+        </ChartTooltipResetContainer>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-4">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {t('dashboard:weeklyPerformanceTitle')}
+            {t('dashboard:winRateByWeekdayTitle')}
           </h3>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
-          <div className="flex items-center gap-1">
-            <span>{t('dashboard:mostActive')} :</span>
-            <span className="font-medium text-blue-500">
-              {weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count}{' '}
-              {t('trades:trades')})
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span>{t('dashboard:leastActive')} :</span>
-            <span className="font-medium text-pink-500">
-              {weekdayStats.leastActiveDay.day} ({weekdayStats.leastActiveDay.trade_count}{' '}
-              {t('trades:trades')})
-            </span>
-          </div>
           {weekdayStats.hasWinRateSample && weekdayStats.bestWinRateDay && (
             <div className="flex items-center gap-1">
               <span>{t('dashboard:bestWinRateDay')} :</span>
@@ -251,119 +375,6 @@ export function WeekdayPerformanceSection({
         </div>
       </div>
 
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        {t('dashboard:pnlTotalWithBasis', {
-          basis: t(pnlDisplayMode === 'net' ? 'common:pnlNetShort' : 'common:pnlGrossShort'),
-        })}
-      </p>
-      <ChartTooltipResetContainer className="h-64 sm:h-80 mb-8">
-        <ChartBar
-          key={`weekday-pnl-${pnlDisplayMode}`}
-          data={weekdayChartData}
-          plugins={[
-            {
-              id: 'adjustAxis',
-              beforeUpdate: (chart: any) => {
-                const yScale = chart.scales.y;
-                if (yScale && weekdayYAxisLimits) {
-                  yScale.min = weekdayYAxisLimits.min;
-                  yScale.max = weekdayYAxisLimits.max;
-                }
-              },
-            },
-          ]}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-              tooltip: {
-                ...buildChartTooltipPlugin(chartColors, 'barStackedLike', {
-                  enabled: !hideWeekdayChartMoneyValues,
-                }),
-                callbacks: {
-                  label(context: any) {
-                    return pnlTooltipLines(context.dataIndex, context.parsed.y);
-                  },
-                },
-              },
-              datalabels: {
-                display(context: any) {
-                  if (hideWeekdayChartMoneyValues || windowWidth < 640) return false;
-                  const value = context.dataset.data[context.dataIndex];
-                  return value !== 0 && Math.abs(value) >= 0.01;
-                },
-                anchor(context: any) {
-                  const value = context.dataset.data[context.dataIndex];
-                  return value >= 0 ? 'end' : 'start';
-                },
-                align(context: any) {
-                  const value = context.dataset.data[context.dataIndex];
-                  return value >= 0 ? 'top' : 'bottom';
-                },
-                color: isDark ? '#d1d5db' : '#374151',
-                font: {
-                  weight: 700,
-                  size: windowWidth < 640 ? 11 : 13,
-                },
-                backgroundColor() {
-                  if (windowWidth < 640) return 'rgba(0, 0, 0, 0.4)';
-                  return 'transparent';
-                },
-                padding: windowWidth < 640 ? 4 : 0,
-                borderRadius: windowWidth < 640 ? 4 : 0,
-                formatter(_value: any, context: any) {
-                  const actualValue = context.dataset.data[context.dataIndex] ?? 0;
-                  return formatCurrency(actualValue, currencySymbol);
-                },
-                clamp: true,
-              },
-            },
-            scales: {
-              x: {
-                grid: { display: false },
-                ticks: { color: chartColors.textSecondary, font: { size: 12 } },
-                border: { color: chartColors.border },
-                title: { display: false },
-              },
-              y: {
-                type: 'linear',
-                display: true,
-                position: 'left',
-                beginAtZero: false,
-                min: weekdayYAxisLimits.min,
-                max: weekdayYAxisLimits.max,
-                grid: {
-                  color(context: any) {
-                    if (Math.abs(context.tick.value) < 0.0001) {
-                      return isDark ? '#6b7280' : '#9ca3af';
-                    }
-                    return chartColors.grid;
-                  },
-                  lineWidth: 1,
-                },
-                ticks: {
-                  display: !hideWeekdayChartMoneyValues,
-                  callback(value: number | string) {
-                    return formatCurrency(Number(value), currencySymbol);
-                  },
-                  color: chartColors.textSecondary,
-                  font: { size: 11 },
-                  stepSize: weekdayYAxisLimits.stepSize,
-                  maxTicksLimit: 10,
-                  padding: 5,
-                },
-                border: { color: chartColors.border, display: false },
-              },
-            },
-            animation: { duration: 1000, easing: 'easeInOutQuart' },
-          }}
-        />
-      </ChartTooltipResetContainer>
-
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        {t('dashboard:winRateByWeekdayTitle')}
-      </p>
       <ChartTooltipResetContainer className="h-64 sm:h-80">
         <ChartBar
           key={`weekday-winrate-${pnlDisplayMode}`}
