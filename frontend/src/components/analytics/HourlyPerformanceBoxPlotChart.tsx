@@ -135,6 +135,22 @@ const calculateBoxPlotStats = (values: number[]): Omit<BoxPlotData, 'hour' | 'ho
   return { min, q1, median, q3, max, outliers };
 };
 
+/** Marge verticale pour que les outliers (rayon ~4px) restent dans la zone du graphique. */
+const computeYAxisBounds = (plots: BoxPlotData[]): { min: number; max: number } => {
+  const allValues = plots.flatMap(d => d.values);
+  if (allValues.length === 0) {
+    return { min: -100, max: 100 };
+  }
+  const dataMin = Math.min(...allValues);
+  const dataMax = Math.max(...allValues);
+  const span = dataMax - dataMin;
+  const padding = Math.max(span * 0.12, 50);
+  return {
+    min: dataMin - padding,
+    max: dataMax + padding,
+  };
+};
+
 export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotChartProps> = ({
   data,
   currencySymbol,
@@ -168,6 +184,8 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
       };
     });
   }, [data]);
+
+  const yAxisBounds = useMemo(() => computeYAxisBounds(boxPlotData), [boxPlotData]);
 
   const chartOptions = useMemo(() => ({
     responsive: true,
@@ -235,6 +253,8 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         },
       },
       y: {
+        min: yAxisBounds.min,
+        max: yAxisBounds.max,
         ticks: {
           color: chartColors.textSecondary,
           font: {
@@ -266,7 +286,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
         },
       },
     },
-  }), [chartColors, currencySymbol, t, boxPlotData]);
+  }), [chartColors, currencySymbol, t, boxPlotData, yAxisBounds]);
 
   if (!data || data.data.length === 0) {
     return (

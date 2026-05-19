@@ -14,7 +14,7 @@ from accounts.models import User
 from integrations.credentials_crypto import encrypt_json
 from integrations.models import UserApiIntegration
 from trades.models import TopStepTrade, TradeSyncLog, TradingAccount
-from trades.sync.topstepx_mapper import map_api_trades_to_parsed_rows
+from trades.sync.topstepx_mapper import map_api_trades_to_parsed_rows, parse_api_timestamp
 from integrations.topstepx_accounts import resolve_projectx_account_id
 from trades.sync.topstepx_sync import TopStepXSyncService, SyncResult
 from trades.sync.trade_upsert import create_trade_from_parsed, import_parsed_trades
@@ -53,6 +53,108 @@ class TopStepXMapperTests(TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]['topstep_id'], '1002')
         self.assertEqual(rows[0]['trade_type'], 'Long')
+
+    def test_exit_without_entry_is_skipped(self) -> None:
+        fills = [
+            {
+                'id': 2001,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-19T14:00:00.000Z',
+                'price': 25200.0,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': -100.0,
+                'fees': 2.0,
+                'voided': False,
+            },
+        ]
+        self.assertEqual(map_api_trades_to_parsed_rows(fills), [])
+
+    def test_partial_close_reuses_entry_fill(self) -> None:
+        fills = [
+            {
+                'id': 3001,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-19T15:00:00.000Z',
+                'price': 25250.0,
+                'size': 3,
+                'side': 0,
+                'profitAndLoss': None,
+                'fees': 4.0,
+                'voided': False,
+            },
+            {
+                'id': 3002,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-19T15:10:00.000Z',
+                'price': 25255.0,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': -50.0,
+                'fees': 2.0,
+                'voided': False,
+            },
+            {
+                'id': 3003,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-19T15:20:00.000Z',
+                'price': 25260.0,
+                'size': 2,
+                'side': 0,
+                'profitAndLoss': -120.0,
+                'fees': 3.0,
+                'voided': False,
+            },
+        ]
+        rows = map_api_trades_to_parsed_rows(fills)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]['topstep_id'], '3002')
+        self.assertEqual(rows[0]['entered_at'], parse_api_timestamp('2026-05-19T15:00:00.000Z'))
+        self.assertNotEqual(rows[0]['entered_at'], rows[0]['exited_at'])
+        self.assertEqual(rows[1]['topstep_id'], '3003')
+        self.assertEqual(rows[1]['entry_price'], Decimal('25250.0'))
+
+    def test_exit_after_prior_exit_still_finds_entry(self) -> None:
+        """Deux sorties consécutives : la 2e ne doit pas dupliquer entrée=sortie."""
+        fills = [
+            {
+                'id': 4001,
+                'contractId': 'CON.ES',
+                'creationTimestamp': '2026-05-19T16:00:00.000Z',
+                'price': 5800.0,
+                'size': 2,
+                'side': 0,
+                'profitAndLoss': None,
+                'fees': 4.0,
+                'voided': False,
+            },
+            {
+                'id': 4002,
+                'contractId': 'CON.ES',
+                'creationTimestamp': '2026-05-19T16:05:00.000Z',
+                'price': 5805.0,
+                'size': 2,
+                'side': 0,
+                'profitAndLoss': 50.0,
+                'fees': 4.0,
+                'voided': False,
+            },
+            {
+                'id': 4003,
+                'contractId': 'CON.ES',
+                'creationTimestamp': '2026-05-19T16:30:00.000Z',
+                'price': 5810.0,
+                'size': 1,
+                'side': 1,
+                'profitAndLoss': 25.0,
+                'fees': 2.0,
+                'voided': False,
+            },
+        ]
+        rows = map_api_trades_to_parsed_rows(fills)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[1]['entered_at'], parse_api_timestamp('2026-05-19T16:00:00.000Z'))
+        self.assertNotEqual(rows[1]['entered_at'], rows[1]['exited_at'])
 
 
 @override_settings(

@@ -98,8 +98,16 @@ def _build_parsed_round_trip(
     }
 
 
+def _find_entry_fill_for_exit(contract_fills: list[dict[str, Any]], exit_index: int) -> dict[str, Any] | None:
+    """Dernière entrée (PnL null) avant le fill de sortie — gère clôtures partielles."""
+    for j in range(exit_index - 1, -1, -1):
+        if contract_fills[j].get('profitAndLoss') is None:
+            return contract_fills[j]
+    return None
+
+
 def aggregate_fills_to_round_trips(fills: list[dict[str, Any]]) -> list[dict]:
-    """Apparie les fills en round-trips fermés."""
+    """Apparie les fills en round-trips fermés (entrée + sortie)."""
     active = [f for f in fills if not f.get('voided')]
     active.sort(key=lambda f: f.get('creationTimestamp') or '')
 
@@ -110,29 +118,16 @@ def aggregate_fills_to_round_trips(fills: list[dict[str, Any]]) -> list[dict]:
 
     parsed_rows: list[dict] = []
     for contract_fills in by_contract.values():
-        i = 0
-        while i < len(contract_fills):
-            fill = contract_fills[i]
-            pnl = fill.get('profitAndLoss')
-            if pnl is not None:
-                entry = None
-                if i > 0 and contract_fills[i - 1].get('profitAndLoss') is None:
-                    entry = contract_fills[i - 1]
-                try:
-                    parsed_rows.append(_build_parsed_round_trip(entry, fill))
-                except (ValueError, KeyError):
-                    pass
-                i += 1
+        for i, fill in enumerate(contract_fills):
+            if fill.get('profitAndLoss') is None:
                 continue
-
-            if i + 1 < len(contract_fills) and contract_fills[i + 1].get('profitAndLoss') is not None:
-                try:
-                    parsed_rows.append(_build_parsed_round_trip(fill, contract_fills[i + 1]))
-                except (ValueError, KeyError):
-                    pass
-                i += 2
-            else:
-                i += 1
+            entry = _find_entry_fill_for_exit(contract_fills, i)
+            if entry is None:
+                continue
+            try:
+                parsed_rows.append(_build_parsed_round_trip(entry, fill))
+            except (ValueError, KeyError):
+                pass
     return parsed_rows
 
 
