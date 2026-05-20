@@ -11,6 +11,7 @@ import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility'
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { PeriodSelector } from '../components/common/PeriodSelector';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
+import { tradesService, TradeListItem } from '../services/trades';
 import { currenciesService, Currency } from '../services/currencies';
 import { PositionStrategyFilterField } from '../components/common/PositionStrategyPillBar';
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
@@ -71,6 +72,8 @@ const BehaviorPage: React.FC = () => {
   const [selectedMonth] = useState<number | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
+  const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
 
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
 
@@ -85,6 +88,7 @@ const BehaviorPage: React.FC = () => {
     startDate: summaryStartDate,
     endDate: summaryEndDate,
     loading: accountLoading,
+    positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
   });
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
@@ -102,10 +106,74 @@ const BehaviorPage: React.FC = () => {
     pnlDisplayMode,
   );
 
+  useEffect(() => {
+    const loadAllTrades = async () => {
+      if (!accountId || accountLoading) {
+        setAllTrades([]);
+        return;
+      }
+      try {
+        const response = await tradesService.list({
+          trading_account: accountId,
+          page_size: 10000,
+        });
+        setAllTrades(response.results);
+      } catch (err) {
+        console.error('Erreur lors du chargement de tous les trades', err);
+        setAllTrades([]);
+      }
+    };
+    loadAllTrades();
+  }, [accountId, accountLoading]);
+
+  useEffect(() => {
+    const loadFilteredTrades = async () => {
+      if (!accountId || accountLoading) {
+        setFilteredTrades([]);
+        return;
+      }
+      try {
+        const params: Record<string, string | number> = {
+          trading_account: accountId,
+          page_size: 10000,
+        };
+
+        if (selectedPeriod) {
+          params.start_date = selectedPeriod.start;
+          params.end_date = selectedPeriod.end;
+        } else if (selectedYear) {
+          const startDate = selectedMonth
+            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+            : `${selectedYear}-01-01`;
+          const endDate = selectedMonth
+            ? (() => {
+                const lastDay = new Date(selectedYear, selectedMonth, 0);
+                return `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+              })()
+            : `${selectedYear}-12-31`;
+          params.start_date = startDate;
+          params.end_date = endDate;
+        }
+
+        if (selectedPositionStrategy) {
+          params.position_strategy = selectedPositionStrategy;
+        }
+
+        const response = await tradesService.list(params);
+        setFilteredTrades(response.results);
+      } catch (err) {
+        console.error('Erreur lors du chargement des trades filtrés', err);
+        setFilteredTrades([]);
+      }
+    };
+    loadFilteredTrades();
+  }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy]);
+
   const indicators = useAccountIndicators({
     selectedAccount,
-    allTrades: [],
-    filteredTrades: [],
+    allTrades,
+    filteredTrades,
+    analyticsData,
     activeDays: dashboardSummary?.active_days,
     pnlDisplay: pnlDisplayMode,
   });
