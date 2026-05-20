@@ -257,6 +257,49 @@
       "smallerDesc": "Smaller size: good risk-management reflex after a loss."
     }
   },
+  "postWinSizing": {
+    "title": "Size after a win",
+    "subtitle": "After each winning trade: was the next trade's exposure (contracts × point value) larger, equal, or smaller? Micro and e-mini in the same family (e.g. NQ / MNQ) are compared fairly.",
+    "noData": "Not enough win-then-next-trade cases for the selected period.",
+    "sampleSize": "Cases analyzed",
+    "sampleSizeHint": "Selected period and filters",
+    "sampleSizeTooltip": "Number of wins followed immediately by another trade, within the period chosen at the top of the page (account, dates, strategy). Not a rolling window: each win counts at most once in that range.",
+    "medianLookback": "Median over last {{count}} trades",
+    "vsWinningTrade": "Vs winning trade",
+    "vsWinningTradeTooltip": "Next trade exposure (contracts × point value) vs the winning trade, same underlying (micro and e-mini grouped).",
+    "vsMedian": "Vs recent median",
+    "vsMedianTooltip": "Next trade exposure vs the median of your last {{count}} trades in the same contract family on the account.",
+    "skippedCrossInstrument": "{{count}} case(s) skipped: different instrument after the win.",
+    "skippedUnknownContract": "{{count}} case(s) skipped: unrecognized contract.",
+    "larger": "Larger",
+    "equal": "Equal",
+    "smaller": "Smaller",
+    "largerPctKpi": "Size increased after win",
+    "largerPctKpiTooltip": "Share of post-win trades where size is greater than the winning trade.",
+    "avgPnlAfterLarger": "Avg P/L (size up)",
+    "winRateAfterLarger": "Win rate (size up)",
+    "recommendation": "After a win, keep size aligned with your plan. Avoid increasing size out of euphoria.",
+    "count": "Occurrences",
+    "pct": "Share",
+    "totalPnl": "Total P/L",
+    "avgPnl": "Avg P/L",
+    "winRate": "Win rate",
+    "viewInAnalytics": "See details in Trading → Behavior",
+    "interpretationScale": {
+      "evaluationColumn": "Reading",
+      "title": "How to read the percentages",
+      "intro": "Each share shows how often the next trade falls into that category after a win. Aim for a low « Larger » share.",
+      "kpiHint": "Goal: keep this rate as low as possible.",
+      "quality": {
+        "good": "Favorable",
+        "neutral": "Neutral",
+        "bad": "Avoid"
+      },
+      "largerDesc": "Larger size: typical overconfidence signal and excessive risk-taking after a winning streak.",
+      "equalDesc": "Same size: sound discipline; watch your trade frequency.",
+      "smallerDesc": "Smaller size: good risk-management reflex after a win."
+    }
+  },
   "dashboard": {
     "title": "Trade Statistical Analysis",
     "subtitle": "Discover your best setups, identify losing patterns and detect behavioral biases",

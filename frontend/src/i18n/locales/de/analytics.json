@@ -257,6 +257,49 @@
       "smallerDesc": "Kleinere Größe: gutes Risikomanagement nach einem Verlust."
     }
   },
+  "postWinSizing": {
+    "title": "Größe nach einem Gewinn",
+    "subtitle": "Nach jedem Gewinn-Trade: War die Exposition des Folgetrades (Kontrakte × Punktwert) größer, gleich oder kleiner? Micro und E-Mini derselben Familie (z. B. NQ / MNQ) werden fair verglichen.",
+    "noData": "Nicht genug Fälle Gewinn mit Folgetrade für den gewählten Zeitraum.",
+    "sampleSize": "Analysierte Fälle",
+    "sampleSizeHint": "Gewählter Zeitraum und Filter",
+    "sampleSizeTooltip": "Anzahl Gewinne mit unmittelbar folgendem Trade innerhalb des oben gewählten Zeitraums (Konto, Datum, Strategie). Kein gleitendes Fenster: jeder Gewinn zählt höchstens einmal in diesem Intervall.",
+    "medianLookback": "Median der letzten {{count}} Trades",
+    "vsWinningTrade": "Vs Gewinner-Trade",
+    "vsWinningTradeTooltip": "Exposition des Folgetrades (Kontrakte × Punktwert) vs Gewinner-Trade, gleicher Underlying (Micro und E-Mini gruppiert).",
+    "vsMedian": "Vs aktueller Median",
+    "vsMedianTooltip": "Exposition des Folgetrades vs Median Ihrer letzten {{count}} Trades derselben Kontraktfamilie auf dem Konto.",
+    "skippedCrossInstrument": "{{count}} Fall/Fälle übersprungen: anderes Instrument nach dem Gewinn.",
+    "skippedUnknownContract": "{{count}} Fall/Fälle übersprungen: Kontrakt nicht erkannt.",
+    "larger": "Größer",
+    "equal": "Gleich",
+    "smaller": "Kleiner",
+    "largerPctKpi": "Größe nach Gewinn erhöht",
+    "largerPctKpiTooltip": "Anteil der Trades nach einem Gewinn, bei denen die Größe über dem Gewinner-Trade liegt.",
+    "avgPnlAfterLarger": "Ø P/L (Größe ↑)",
+    "winRateAfterLarger": "Win Rate (Größe ↑)",
+    "recommendation": "Nach einem Gewinn die Größe am Plan orientieren. Größensteigerung aus Euphorie vermeiden.",
+    "count": "Vorkommen",
+    "pct": "Anteil",
+    "totalPnl": "Gesamt-P/L",
+    "avgPnl": "Ø P/L",
+    "winRate": "Win Rate",
+    "viewInAnalytics": "Details unter Trading → Verhalten",
+    "interpretationScale": {
+      "evaluationColumn": "Bewertung",
+      "title": "Prozentwerte richtig lesen",
+      "intro": "Jeder Anteil zeigt, wie oft der Folgetrade nach einem Gewinn in diese Kategorie fällt. Ziel: niedriger Anteil bei « Größer ».",
+      "kpiHint": "Ziel: diesen Wert so niedrig wie möglich halten.",
+      "quality": {
+        "good": "Günstig",
+        "neutral": "Neutral",
+        "bad": "Vermeiden"
+      },
+      "largerDesc": "Größere Positionsgröße: typisches Zeichen für Übermut und übermäßiges Risiko nach einer Gewinnserie.",
+      "equalDesc": "Gleiche Größe: solide Disziplin; Handelsfrequenz im Blick behalten.",
+      "smallerDesc": "Kleinere Größe: gutes Risikomanagement nach einem Gewinn."
+    }
+  },
   "dashboard": {
     "title": "Statistische Trade-Analyse",
     "subtitle": "Entdecken Sie Ihre besten Setups, identifizieren Sie Verlustmuster und erkennen Sie Verhaltensverzerrungen",

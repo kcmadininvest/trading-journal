@@ -4,7 +4,12 @@ import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin, type ChartColors } from '../../utils/chartConfig';
-import type { PostLossSizingData } from '../../hooks/useStatistics';
+import type {
+  PostLossSizingBaseline,
+  PostLossSizingData,
+  PostTradeSizingI18nPrefix,
+  PostWinSizingData,
+} from '../../hooks/useStatistics';
 
 type SizeCategory = 'larger' | 'equal' | 'smaller';
 
@@ -49,24 +54,35 @@ const DOUGHNUT_SEGMENT_STYLES = {
   },
 } as const;
 
-interface PostLossSizingPanelProps {
-  data: PostLossSizingData | null | undefined;
+type VsReferenceTitleKey = 'vsLosingTrade' | 'vsWinningTrade';
+type VsReferenceTooltipKey = 'vsLosingTradeTooltip' | 'vsWinningTradeTooltip';
+
+interface PostTradeSizingPanelProps {
+  data: PostLossSizingData | PostWinSizingData | null | undefined;
+  referenceBaseline: PostLossSizingBaseline;
+  i18nPrefix: PostTradeSizingI18nPrefix;
+  vsReferenceTitleKey: VsReferenceTitleKey;
+  vsReferenceTooltipKey: VsReferenceTooltipKey;
   chartColors: ChartColors;
   isDark: boolean;
   formatNumber: (value: number, digits?: number) => string;
   privacyMask?: (value: string) => string;
+  showHeader?: boolean;
 }
 
-const InterpretationScale: React.FC<{ isDark: boolean }> = ({ isDark }) => {
+const InterpretationScale: React.FC<{ isDark: boolean; i18nPrefix: PostTradeSizingI18nPrefix }> = ({
+  isDark,
+  i18nPrefix,
+}) => {
   const { t } = useTranslation('analytics');
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-4 sm:p-5">
       <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
-        {t('postLossSizing.interpretationScale.title')}
+        {t(`${i18nPrefix}.interpretationScale.title`)}
       </h3>
       <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
-        {t('postLossSizing.interpretationScale.intro')}
+        {t(`${i18nPrefix}.interpretationScale.intro`)}
       </p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {CATEGORIES.map((cat) => {
@@ -87,16 +103,16 @@ const InterpretationScale: React.FC<{ isDark: boolean }> = ({ isDark }) => {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {t(`postLossSizing.${cat}`)}
+                    {t(`${i18nPrefix}.${cat}`)}
                   </span>
                   <span
                     className={`inline-flex text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded border ${QUALITY_BADGE_CLASS[quality]}`}
                   >
-                    {t(`postLossSizing.interpretationScale.quality.${quality}`)}
+                    {t(`${i18nPrefix}.interpretationScale.quality.${quality}`)}
                   </span>
                 </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
-                  {t(`postLossSizing.interpretationScale.${INTERPRETATION_DESC_KEY[cat]}`)}
+                  {t(`${i18nPrefix}.interpretationScale.${INTERPRETATION_DESC_KEY[cat]}`)}
                 </p>
               </div>
             </div>
@@ -110,12 +126,13 @@ const InterpretationScale: React.FC<{ isDark: boolean }> = ({ isDark }) => {
 interface BaselineSectionProps {
   title: string;
   tooltip: string;
-  baseline: PostLossSizingData['vs_losing_trade'];
+  baseline: PostLossSizingBaseline;
   sampleSize: number;
+  i18nPrefix: PostTradeSizingI18nPrefix;
   chartColors: ChartColors;
   isDark: boolean;
-  formatNumber: PostLossSizingPanelProps['formatNumber'];
-  privacyMask?: PostLossSizingPanelProps['privacyMask'];
+  formatNumber: PostTradeSizingPanelProps['formatNumber'];
+  privacyMask?: PostTradeSizingPanelProps['privacyMask'];
 }
 
 const BaselineSection: React.FC<BaselineSectionProps> = ({
@@ -123,6 +140,7 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
   tooltip,
   baseline,
   sampleSize,
+  i18nPrefix,
   chartColors,
   isDark,
   formatNumber,
@@ -136,7 +154,7 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
   );
 
   const chartData = useMemo(() => {
-    const labels = CATEGORIES.map((cat) => t(`postLossSizing.${cat}`));
+    const labels = CATEGORIES.map((cat) => t(`${i18nPrefix}.${cat}`));
     const values = CATEGORIES.map((cat) => baseline[cat].count);
     return {
       labels,
@@ -153,7 +171,7 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
         },
       ],
     };
-  }, [baseline, isDark, t]);
+  }, [baseline, isDark, i18nPrefix, t]);
 
   const chartOptions = useMemo(
     () => ({
@@ -187,7 +205,7 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
                 const pct = percentages[context.dataIndex];
                 return [
                   `${label}: ${value}`,
-                  `${t('postLossSizing.pct')}: ${formatNumber(pct, 1)}%`,
+                  `${t(`${i18nPrefix}.pct`)}: ${formatNumber(pct, 1)}%`,
                 ];
               },
             },
@@ -195,7 +213,7 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
         },
       },
     }),
-    [chartColors, percentages, formatNumber, t]
+    [chartColors, percentages, formatNumber, i18nPrefix, t]
   );
 
   if (sampleSize === 0) {
@@ -223,10 +241,10 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-              <th className="pb-2 pr-2 font-medium">{t('postLossSizing.pct')}</th>
-              <th className="pb-2 pr-2 font-medium">{t('postLossSizing.count')}</th>
-              <th className="pb-2 pr-2 font-medium">{t('postLossSizing.avgPnl')}</th>
-              <th className="pb-2 font-medium">{t('postLossSizing.winRate')}</th>
+              <th className="pb-2 pr-2 font-medium">{t(`${i18nPrefix}.pct`)}</th>
+              <th className="pb-2 pr-2 font-medium">{t(`${i18nPrefix}.count`)}</th>
+              <th className="pb-2 pr-2 font-medium">{t(`${i18nPrefix}.avgPnl`)}</th>
+              <th className="pb-2 font-medium">{t(`${i18nPrefix}.winRate`)}</th>
             </tr>
           </thead>
           <tbody>
@@ -246,7 +264,7 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
                           : DOUGHNUT_SEGMENT_STYLES[cat].legend.light,
                       }}
                     />
-                    {t(`postLossSizing.${cat}`)} ({formatNumber(row.pct, 1)}%)
+                    {t(`${i18nPrefix}.${cat}`)} ({formatNumber(row.pct, 1)}%)
                   </td>
                   <td className="py-2 pr-2 text-gray-700 dark:text-gray-300">{row.count}</td>
                   <td className="py-2 pr-2 text-gray-700 dark:text-gray-300">
@@ -265,42 +283,49 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
   );
 };
 
-export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
+const PostTradeSizingPanel: React.FC<PostTradeSizingPanelProps> = ({
   data,
+  referenceBaseline,
+  i18nPrefix,
+  vsReferenceTitleKey,
+  vsReferenceTooltipKey,
   chartColors,
   isDark,
   formatNumber,
   privacyMask,
+  showHeader = true,
 }) => {
   const { t } = useTranslation('analytics');
 
   if (!data || data.sample_size === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-500 dark:text-gray-400">
-        {t('postLossSizing.noData')}
+        {t(`${i18nPrefix}.noData`)}
       </div>
     );
   }
 
-  const larger = data.vs_losing_trade.larger;
+  const larger = referenceBaseline.larger;
   const mask = (v: string) => (privacyMask ? privacyMask(v) : v);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {t('postLossSizing.title')}
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t('postLossSizing.subtitle')}</p>
-      </div>
+      {showHeader && (
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {t(`${i18nPrefix}.title`)}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t(`${i18nPrefix}.subtitle`)}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <div className="flex items-start gap-1">
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-1">
-              {t('postLossSizing.sampleSize')}
+              {t(`${i18nPrefix}.sampleSize`)}
             </p>
-            <TooltipComponent content={t('postLossSizing.sampleSizeTooltip')} position="top">
+            <TooltipComponent content={t(`${i18nPrefix}.sampleSizeTooltip`)} position="top">
               <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 cursor-help flex-shrink-0">
                 <svg className="w-3 h-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -311,18 +336,18 @@ export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{data.sample_size}</p>
           {(data.skipped_cross_instrument ?? 0) > 0 && (
             <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-              {t('postLossSizing.skippedCrossInstrument', { count: data.skipped_cross_instrument })}
+              {t(`${i18nPrefix}.skippedCrossInstrument`, { count: data.skipped_cross_instrument })}
             </p>
           )}
           {(data.skipped_unknown_contract ?? 0) > 0 && (
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {t('postLossSizing.skippedUnknownContract', { count: data.skipped_unknown_contract })}
+              {t(`${i18nPrefix}.skippedUnknownContract`, { count: data.skipped_unknown_contract })}
             </p>
           )}
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            {t('postLossSizing.largerPctKpi')}
+            {t(`${i18nPrefix}.largerPctKpi`)}
           </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
             {formatNumber(larger.pct, 1)}%
@@ -330,7 +355,7 @@ export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            {t('postLossSizing.avgPnlAfterLarger')}
+            {t(`${i18nPrefix}.avgPnlAfterLarger`)}
           </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
             {mask(formatNumber(larger.avg_pnl, 2))}
@@ -338,7 +363,7 @@ export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            {t('postLossSizing.winRateAfterLarger')}
+            {t(`${i18nPrefix}.winRateAfterLarger`)}
           </p>
           <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
             {formatNumber(larger.win_rate, 1)}%
@@ -346,24 +371,26 @@ export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
         </div>
       </div>
 
-      <InterpretationScale isDark={isDark} />
+      <InterpretationScale isDark={isDark} i18nPrefix={i18nPrefix} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <BaselineSection
-          title={t('postLossSizing.vsLosingTrade')}
-          tooltip={t('postLossSizing.vsLosingTradeTooltip')}
-          baseline={data.vs_losing_trade}
+          title={t(`${i18nPrefix}.${vsReferenceTitleKey}`)}
+          tooltip={t(`${i18nPrefix}.${vsReferenceTooltipKey}`)}
+          baseline={referenceBaseline}
           sampleSize={data.sample_size}
+          i18nPrefix={i18nPrefix}
           chartColors={chartColors}
           isDark={isDark}
           formatNumber={formatNumber}
           privacyMask={privacyMask}
         />
         <BaselineSection
-          title={t('postLossSizing.vsMedian')}
-          tooltip={t('postLossSizing.vsMedianTooltip', { count: data.median_lookback })}
+          title={t(`${i18nPrefix}.vsMedian`)}
+          tooltip={t(`${i18nPrefix}.vsMedianTooltip`, { count: data.median_lookback })}
           baseline={data.vs_median}
           sampleSize={data.median_sample_size}
+          i18nPrefix={i18nPrefix}
           chartColors={chartColors}
           isDark={isDark}
           formatNumber={formatNumber}
@@ -373,3 +400,54 @@ export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
     </div>
   );
 };
+
+interface PostLossSizingPanelProps {
+  data: PostLossSizingData | null | undefined;
+  chartColors: ChartColors;
+  isDark: boolean;
+  formatNumber: (value: number, digits?: number) => string;
+  privacyMask?: (value: string) => string;
+  showHeader?: boolean;
+}
+
+export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
+  data,
+  ...panelProps
+}) => (
+  <PostTradeSizingPanel
+    {...panelProps}
+    data={data}
+    referenceBaseline={data?.vs_losing_trade ?? emptyBaseline()}
+    i18nPrefix="postLossSizing"
+    vsReferenceTitleKey="vsLosingTrade"
+    vsReferenceTooltipKey="vsLosingTradeTooltip"
+  />
+);
+
+interface PostWinSizingPanelProps {
+  data: PostWinSizingData | null | undefined;
+  chartColors: ChartColors;
+  isDark: boolean;
+  formatNumber: (value: number, digits?: number) => string;
+  privacyMask?: (value: string) => string;
+  showHeader?: boolean;
+}
+
+export const PostWinSizingPanel: React.FC<PostWinSizingPanelProps> = ({
+  data,
+  ...panelProps
+}) => (
+  <PostTradeSizingPanel
+    {...panelProps}
+    data={data}
+    referenceBaseline={data?.vs_winning_trade ?? emptyBaseline()}
+    i18nPrefix="postWinSizing"
+    vsReferenceTitleKey="vsWinningTrade"
+    vsReferenceTooltipKey="vsWinningTradeTooltip"
+  />
+);
+
+function emptyBaseline(): PostLossSizingBaseline {
+  const empty = { count: 0, pct: 0, total_pnl: 0, avg_pnl: 0, win_rate: 0 };
+  return { larger: empty, equal: empty, smaller: empty };
+}

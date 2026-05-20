@@ -257,6 +257,49 @@
       "smallerDesc": "Tamaño menor: buen reflejo de gestión del riesgo tras una pérdida."
     }
   },
+  "postWinSizing": {
+    "title": "Tamaño tras una ganancia",
+    "subtitle": "Tras cada trade ganador: ¿la exposición del siguiente (lotes × valor del punto) fue mayor, igual o menor? Micro y e-mini de la misma familia (ej. NQ / MNQ) se comparan de forma equitativa.",
+    "noData": "No hay suficientes casos ganancia y trade siguiente en el período seleccionado.",
+    "sampleSize": "Casos analizados",
+    "sampleSizeHint": "Período y filtros seleccionados",
+    "sampleSizeTooltip": "Número de ganancias seguidas de un trade inmediato, entre los trades del período elegido arriba (cuenta, fechas, estrategia). No es una ventana móvil: cada ganancia cuenta como máximo una vez en ese intervalo.",
+    "medianLookback": "Mediana sobre los últimos {{count}} trades",
+    "vsWinningTrade": "Vs trade ganador",
+    "vsWinningTradeTooltip": "Exposición del trade siguiente (lotes × valor del punto) vs el trade ganador, mismo subyacente (micro y e-mini agrupados).",
+    "vsMedian": "Vs mediana reciente",
+    "vsMedianTooltip": "Exposición del trade siguiente vs la mediana de sus últimos {{count}} trades de la misma familia de contrato en la cuenta.",
+    "skippedCrossInstrument": "{{count}} caso(s) ignorado(s): instrumento distinto tras la ganancia.",
+    "skippedUnknownContract": "{{count}} caso(s) ignorado(s): contrato no reconocido.",
+    "larger": "Mayor",
+    "equal": "Igual",
+    "smaller": "Menor",
+    "largerPctKpi": "Tamaño aumentado tras ganancia",
+    "largerPctKpiTooltip": "Parte de trades tras una ganancia donde el tamaño supera al del trade ganador.",
+    "avgPnlAfterLarger": "PnL medio (tamaño ↑)",
+    "winRateAfterLarger": "Win rate (tamaño ↑)",
+    "recommendation": "Tras una ganancia, mantener un tamaño coherente con su plan. Evitar aumentar por euforia.",
+    "count": "Ocurrencias",
+    "pct": "Parte",
+    "totalPnl": "PnL total",
+    "avgPnl": "PnL medio",
+    "winRate": "Win rate",
+    "viewInAnalytics": "Ver detalle en Trading → Comportamiento",
+    "interpretationScale": {
+      "evaluationColumn": "Lectura",
+      "title": "Cómo leer los porcentajes",
+      "intro": "Cada parte muestra la proporción de casos tras una ganancia. Conviene que « Mayor » sea lo más bajo posible.",
+      "kpiHint": "Objetivo: mantener este porcentaje lo más bajo posible.",
+      "quality": {
+        "good": "Favorable",
+        "neutral": "Neutro",
+        "bad": "A evitar"
+      },
+      "largerDesc": "Tamaño mayor: señal típica de exceso de confianza y riesgo excesivo tras una racha ganadora.",
+      "equalDesc": "Mismo tamaño: buena disciplina; vigile la frecuencia de trades.",
+      "smallerDesc": "Tamaño menor: buen reflejo de gestión del riesgo tras una ganancia."
+    }
+  },
   "dashboard": {
     "title": "Análisis Estadístico de Operaciones",
     "subtitle": "Descubra sus mejores setups, identifique patrones perdedores y detecte sesgos conductuales",

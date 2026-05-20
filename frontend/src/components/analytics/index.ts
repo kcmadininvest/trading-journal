@@ -15,5 +15,5 @@ export { HeatmapChart } from './HeatmapChart';
 export { GainsVsLossesChart } from './GainsVsLossesChart';
 export { PnlDistributionChart } from './PnlDistributionChart';
 export { MaeMfeChart } from './MaeMfeChart';
-export { PostLossSizingPanel } from './PostLossSizingPanel';
+export { PostLossSizingPanel, PostWinSizingPanel } from './PostLossSizingPanel';
 export { createRadarAlternatingZonesPlugin, createRadarGradientPlugin } from './radarChartPlugins';

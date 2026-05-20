@@ -28,7 +28,8 @@ import { useAnalytics } from '../hooks/useStatistics';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
-import { PostLossSizingPanel } from '../components/analytics';
+import { PostLossSizingPanel, PostWinSizingPanel } from '../components/analytics';
+import { TabsFilter } from '../components/common/TabsFilter';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
@@ -37,7 +38,7 @@ const BehaviorPage: React.FC = () => {
   const { preferences } = usePreferences();
   const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const { theme } = useTheme();
-  const { t } = useI18nTranslation();
+  const { t } = useI18nTranslation(['analytics']);
   const hideAccountNumber = useAccountNumberVisibility();
   const privacySettings = usePrivacySettings('analytics');
   const isDark = theme === 'dark';
@@ -215,6 +216,45 @@ const BehaviorPage: React.FC = () => {
 
   const isLoading = accountLoading || analyticsLoading;
 
+  const behaviorTabs = useMemo(
+    () => [
+      {
+        id: 'post-loss',
+        label: t('analytics:postLossSizing.title'),
+        content: (
+          <PostLossSizingPanel
+            data={analyticsData?.post_loss_sizing}
+            chartColors={chartColors}
+            isDark={isDark}
+            formatNumber={formatNumber}
+            showHeader={false}
+          />
+        ),
+      },
+      {
+        id: 'post-win',
+        label: t('analytics:postWinSizing.title'),
+        content: (
+          <PostWinSizingPanel
+            data={analyticsData?.post_win_sizing}
+            chartColors={chartColors}
+            isDark={isDark}
+            formatNumber={formatNumber}
+            showHeader={false}
+          />
+        ),
+      },
+    ],
+    [
+      analyticsData?.post_loss_sizing,
+      analyticsData?.post_win_sizing,
+      chartColors,
+      isDark,
+      formatNumber,
+      t,
+    ],
+  );
+
   if (isLoading) {
     return (
       <PageShell>
@@ -285,11 +325,10 @@ const BehaviorPage: React.FC = () => {
         </div>
       )}
 
-      <PostLossSizingPanel
-        data={analyticsData?.post_loss_sizing}
-        chartColors={chartColors}
-        isDark={isDark}
-        formatNumber={formatNumber}
+      <TabsFilter
+        storageKey="behavior-active-tab"
+        defaultTab="post-loss"
+        tabs={behaviorTabs}
       />
     </PageShell>
   );

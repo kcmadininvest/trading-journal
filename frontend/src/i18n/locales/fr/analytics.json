@@ -257,6 +257,49 @@
       "smallerDesc": "Taille réduite : bon réflexe de gestion du risque après une perte."
     }
   },
+  "postWinSizing": {
+    "title": "Taille après un gain",
+    "subtitle": "Après chaque trade gagnant : l'exposition du trade suivant (lots × valeur du point) est-elle plus grande, identique ou plus petite ? Les micro et e-mini de la même famille (ex. NQ / MNQ) sont comparés équitablement.",
+    "noData": "Pas assez de cas gain puis trade suivant sur la période sélectionnée.",
+    "sampleSize": "Cas analysés",
+    "sampleSizeHint": "Période et filtres sélectionnés",
+    "sampleSizeTooltip": "Nombre de gains suivis d'un trade immédiat, sur les trades de la période choisie en haut de page (compte, dates, stratégie). Ce n'est pas une fenêtre glissante : chaque gain compte au plus une fois dans cet intervalle.",
+    "medianLookback": "Médiane sur les {{count}} derniers trades",
+    "vsWinningTrade": "Vs trade gagnant",
+    "vsWinningTradeTooltip": "Exposition du trade suivant (lots × valeur du point) comparée à celle du trade gagnant, sur le même sous-jacent (micro et e-mini regroupés).",
+    "vsMedian": "Vs médiane récente",
+    "vsMedianTooltip": "Exposition du trade suivant comparée à la médiane des {{count}} derniers trades de la même famille de contrat sur le compte.",
+    "skippedCrossInstrument": "{{count}} cas ignoré(s) : instrument différent après le gain.",
+    "skippedUnknownContract": "{{count}} cas ignoré(s) : contrat non reconnu.",
+    "larger": "Plus grande",
+    "equal": "Identique",
+    "smaller": "Plus petite",
+    "largerPctKpi": "Taille augmentée après gain",
+    "largerPctKpiTooltip": "Part des trades suivant un gain où la taille est supérieure au trade gagnant.",
+    "avgPnlAfterLarger": "PnL moyen (taille ↑)",
+    "winRateAfterLarger": "Win rate (taille ↑)",
+    "recommendation": "Après un gain, conserver une taille cohérente avec votre plan. Éviter d'augmenter la taille par euphorie.",
+    "count": "Occurrences",
+    "pct": "Part",
+    "totalPnl": "PnL total",
+    "avgPnl": "PnL moyen",
+    "winRate": "Win rate",
+    "viewInAnalytics": "Voir le détail dans Trading → Comportement",
+    "interpretationScale": {
+      "evaluationColumn": "Lecture",
+      "title": "Comment lire les pourcentages",
+      "intro": "Chaque part indique la proportion de cas après un gain. Viser une part faible sur « Plus grande ».",
+      "kpiHint": "Objectif : garder ce taux le plus bas possible.",
+      "quality": {
+        "good": "Favorable",
+        "neutral": "Neutre",
+        "bad": "À éviter"
+      },
+      "largerDesc": "Taille augmentée : signe typique de surconfiance et de prise de risque excessive après une série gagnante.",
+      "equalDesc": "Taille identique : discipline correcte ; restez vigilant sur la fréquence des trades.",
+      "smallerDesc": "Taille réduite : bon réflexe de gestion du risque après un gain."
+    }
+  },
   "dashboard": {
     "title": "Analyse Statistique des Trades",
     "subtitle": "Découvrez vos meilleurs setups, identifiez les patterns perdants et détectez les biais comportementaux",

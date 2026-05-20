@@ -79,6 +79,21 @@ export interface PostLossSizingData {
   vs_median: PostLossSizingBaseline;
 }
 
+export interface PostWinSizingData {
+  sample_size: number;
+  median_lookback: number;
+  median_sample_size: number;
+  skipped_cross_instrument?: number;
+  skipped_unknown_contract?: number;
+  comparison_basis?: string;
+  vs_winning_trade: PostLossSizingBaseline;
+  vs_median: PostLossSizingBaseline;
+}
+
+export type PostTradeSizingI18nPrefix = 'postLossSizing' | 'postWinSizing';
+
+export type PostTradeSizingData = PostLossSizingData | PostWinSizingData;
+
 export interface AnalyticsData {
   daily_stats: {
     avg_gain_per_day: number;
@@ -124,6 +139,7 @@ export interface AnalyticsData {
     pnl: number;
   }>;
   post_loss_sizing?: PostLossSizingData;
+  post_win_sizing?: PostWinSizingData;
 }
 
 export interface GlobalStrategyData {
