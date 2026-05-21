@@ -64,6 +64,51 @@ class SessionReplayBuilderUnitTests(TestCase):
         self.assertEqual(summary['order_type'], 'market')
         self.assertEqual(summary['order_status'], 'open')
 
+    def test_fill_events_dedupe_position_open_on_partial_close(self) -> None:
+        """Clôtures partielles : une seule ouverture par fill d'entrée."""
+        fills = [
+            {
+                'id': 3001,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-19T15:00:00.000Z',
+                'price': 25250.0,
+                'size': 3,
+                'side': 0,
+                'profitAndLoss': None,
+                'voided': False,
+            },
+            {
+                'id': 3002,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-19T15:10:00.000Z',
+                'price': 25255.0,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': -50.0,
+                'voided': False,
+            },
+            {
+                'id': 3003,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-19T15:20:00.000Z',
+                'price': 25260.0,
+                'size': 2,
+                'side': 0,
+                'profitAndLoss': -120.0,
+                'voided': False,
+            },
+        ]
+        events = _fill_events(fills, {})
+        open_events = [e for e in events if e['event_type'] == 'position_open']
+        close_events = [e for e in events if e['event_type'] == 'position_close']
+        self.assertEqual(len(open_events), 1)
+        self.assertEqual(open_events[0]['external_id'], 'open-3001')
+        self.assertEqual(len(close_events), 2)
+        self.assertEqual(
+            {e['external_id'] for e in close_events},
+            {'close-3002', 'close-3003'},
+        )
+
     def test_fill_events_include_position_open_close(self) -> None:
         fills = [
             {

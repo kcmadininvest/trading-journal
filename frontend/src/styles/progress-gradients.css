@@ -126,6 +126,17 @@
     rgb(191 219 254) 100%);
 }
 
+/* Larger % after loss/win (inverted): green (0) -> orange (20%) -> red (35%) */
+.gauge-bg-larger-pct-after-trade {
+  background: linear-gradient(to right,
+    rgb(191 219 254) 0%,
+    rgb(220 235 254) 18%,
+    rgb(254 215 170) 20%,
+    rgb(252 217 200) 33%,
+    rgb(251 207 232) 35%,
+    rgb(251 207 232) 100%);
+}
+
 /* Fees Ratio (inverted): green (0) -> orange (10%) -> red (20%) avec transitions douces */
 .gauge-bg-fees-ratio {
   background: linear-gradient(to right, 

@@ -10,6 +10,7 @@ import type {
   PostTradeSizingI18nPrefix,
   PostWinSizingData,
 } from '../../hooks/useStatistics';
+import { PostTradeSizingKpiBar } from './PostTradeSizingKpiBar';
 
 type SizeCategory = 'larger' | 'equal' | 'smaller';
 
@@ -306,7 +307,6 @@ const PostTradeSizingPanel: React.FC<PostTradeSizingPanelProps> = ({
   }
 
   const larger = referenceBaseline.larger;
-  const mask = (v: string) => (privacyMask ? privacyMask(v) : v);
 
   return (
     <div className="space-y-6">
@@ -319,57 +319,15 @@ const PostTradeSizingPanel: React.FC<PostTradeSizingPanelProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <div className="flex items-start gap-1">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide flex-1">
-              {t(`${i18nPrefix}.sampleSize`)}
-            </p>
-            <TooltipComponent content={t(`${i18nPrefix}.sampleSizeTooltip`)} position="top">
-              <div className="flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 cursor-help flex-shrink-0">
-                <svg className="w-3 h-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </TooltipComponent>
-          </div>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{data.sample_size}</p>
-          {(data.skipped_cross_instrument ?? 0) > 0 && (
-            <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-              {t(`${i18nPrefix}.skippedCrossInstrument`, { count: data.skipped_cross_instrument })}
-            </p>
-          )}
-          {(data.skipped_unknown_contract ?? 0) > 0 && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              {t(`${i18nPrefix}.skippedUnknownContract`, { count: data.skipped_unknown_contract })}
-            </p>
-          )}
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            {t(`${i18nPrefix}.largerPctKpi`)}
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-            {formatNumber(larger.pct, 1)}%
-          </p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            {t(`${i18nPrefix}.avgPnlAfterLarger`)}
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-            {mask(formatNumber(larger.avg_pnl, 2))}
-          </p>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-            {t(`${i18nPrefix}.winRateAfterLarger`)}
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-            {formatNumber(larger.win_rate, 1)}%
-          </p>
-        </div>
-      </div>
+      <PostTradeSizingKpiBar
+        i18nPrefix={i18nPrefix}
+        sampleSize={data.sample_size}
+        skippedCrossInstrument={data.skipped_cross_instrument}
+        skippedUnknownContract={data.skipped_unknown_contract}
+        larger={larger}
+        formatNumber={formatNumber}
+        privacyMask={privacyMask}
+      />
 
       <InterpretationScale isDark={isDark} i18nPrefix={i18nPrefix} />
 

@@ -231,6 +231,7 @@
     "larger": "Plus grande",
     "equal": "Identique",
     "smaller": "Plus petite",
+    "kpiSummaryTitle": "Synthèse",
     "largerPctKpi": "Taille augmentée après perte",
     "largerPctKpiTooltip": "Part des trades suivant une perte où la taille est supérieure au trade perdant.",
     "avgPnlAfterLarger": "PnL moyen (taille ↑)",
@@ -247,6 +248,13 @@
       "title": "Comment lire les pourcentages",
       "intro": "Chaque part indique la proportion de cas après une perte. Viser une part faible sur « Plus grande ».",
       "kpiHint": "Objectif : garder ce taux le plus bas possible.",
+      "kpiThresholds": "Repères : ≤ {{good}} % favorable · ≤ {{neutral}} % neutre · au-delà à éviter.",
+      "kpiVerdict": {
+        "good": "Bonne discipline : vous augmentez rarement la taille après une perte.",
+        "neutral": "À surveiller : tendance modérée à augmenter la taille après une perte.",
+        "bad": "Comportement à risque : augmentation fréquente de la taille (revenge trading probable)."
+      },
+      "limitedSample": "Échantillon limité ({{count}} cas) : interpréter avec prudence.",
       "quality": {
         "good": "Favorable",
         "neutral": "Neutre",
@@ -274,6 +282,7 @@
     "larger": "Plus grande",
     "equal": "Identique",
     "smaller": "Plus petite",
+    "kpiSummaryTitle": "Synthèse",
     "largerPctKpi": "Taille augmentée après gain",
     "largerPctKpiTooltip": "Part des trades suivant un gain où la taille est supérieure au trade gagnant.",
     "avgPnlAfterLarger": "PnL moyen (taille ↑)",
@@ -290,6 +299,13 @@
       "title": "Comment lire les pourcentages",
       "intro": "Chaque part indique la proportion de cas après un gain. Viser une part faible sur « Plus grande ».",
       "kpiHint": "Objectif : garder ce taux le plus bas possible.",
+      "kpiThresholds": "Repères : ≤ {{good}} % favorable · ≤ {{neutral}} % neutre · au-delà à éviter.",
+      "kpiVerdict": {
+        "good": "Bonne discipline : vous augmentez rarement la taille après un gain.",
+        "neutral": "À surveiller : tendance modérée à augmenter la taille après un gain.",
+        "bad": "Comportement à risque : augmentation fréquente de la taille (surconfiance probable)."
+      },
+      "limitedSample": "Échantillon limité ({{count}} cas) : interpréter avec prudence.",
       "quality": {
         "good": "Favorable",
         "neutral": "Neutre",

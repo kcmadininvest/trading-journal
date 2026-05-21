@@ -142,6 +142,7 @@ def _fill_events(fills: list[dict[str, Any]], trade_by_topstep_id: dict[str, Top
         })
 
     round_trips = aggregate_fills_to_round_trips(active)
+    seen_position_open_ids: set[str] = set()
     for row in round_trips:
         raw = row.get('raw_data') or {}
         entry = raw.get('entry_fill') or {}
@@ -150,19 +151,22 @@ def _fill_events(fills: list[dict[str, Any]], trade_by_topstep_id: dict[str, Top
         trade = trade_by_topstep_id.get(topstep_id)
 
         if entry.get('id') and entry.get('creationTimestamp'):
-            events.append({
-                'event_type': 'position_open',
-                'source': 'derived',
-                'external_id': f"open-{entry['id']}",
-                'occurred_at': parse_api_timestamp(str(entry['creationTimestamp'])),
-                'payload': {
-                    'contract_name': format_contract_label(row.get('contract_name')),
-                    'trade_type': row.get('trade_type'),
-                    'size': str(row.get('size')),
-                    'entry_price': str(row.get('entry_price')),
-                },
-                'trade': trade,
-            })
+            open_external_id = f"open-{entry['id']}"
+            if open_external_id not in seen_position_open_ids:
+                seen_position_open_ids.add(open_external_id)
+                events.append({
+                    'event_type': 'position_open',
+                    'source': 'derived',
+                    'external_id': open_external_id,
+                    'occurred_at': parse_api_timestamp(str(entry['creationTimestamp'])),
+                    'payload': {
+                        'contract_name': format_contract_label(row.get('contract_name')),
+                        'trade_type': row.get('trade_type'),
+                        'size': str(row.get('size')),
+                        'entry_price': str(row.get('entry_price')),
+                    },
+                    'trade': trade,
+                })
         if exit_fill.get('id') and exit_fill.get('creationTimestamp'):
             events.append({
                 'event_type': 'position_close',

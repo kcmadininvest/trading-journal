@@ -31,6 +31,7 @@ import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
+import { evaluateLargerPct, LARGER_PCT_THRESHOLDS } from '../utils/postTradeSizingEvaluation';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
@@ -1032,26 +1033,48 @@ function StatisticsPage() {
                       </svg>
                     }
                   >
-                    <MetricItem
-                      label={t('analytics:postLossSizing.largerPctKpi')}
-                      value={`${formatNumber(analyticsData.post_loss_sizing.vs_losing_trade.larger.pct, 1)}%`}
-                      variant="danger"
-                      tooltip={t('analytics:postLossSizing.largerPctKpiTooltip')}
-                    />
-                    <MetricItem
-                      label={t('analytics:postLossSizing.sampleSize')}
-                      value={analyticsData.post_loss_sizing.sample_size}
-                      variant="info"
-                    />
-                    <MetricItem
-                      label={t('analytics:postLossSizing.avgPnlAfterLarger')}
-                      value={formatCurrency(
-                        analyticsData.post_loss_sizing.vs_losing_trade.larger.avg_pnl,
-                        currencySymbol
-                      )}
-                      variant="default"
-                      tooltip={t('analytics:postLossSizing.viewInAnalytics')}
-                    />
+                    <div className="space-y-4">
+                      <MetricItem
+                        label={t('analytics:postLossSizing.sampleSize')}
+                        value={analyticsData.post_loss_sizing.sample_size}
+                        variant="info"
+                      />
+                      <MetricGauge
+                        label={t('analytics:postLossSizing.largerPctKpi')}
+                        value={analyticsData.post_loss_sizing.vs_losing_trade.larger.pct}
+                        config={GAUGE_CONFIGS.largerPctAfterTrade}
+                        tooltip={[
+                          t('analytics:postLossSizing.largerPctKpiTooltip'),
+                          t('analytics:postLossSizing.interpretationScale.kpiThresholds', {
+                            good: LARGER_PCT_THRESHOLDS.goodMax,
+                            neutral: LARGER_PCT_THRESHOLDS.neutralMax,
+                          }),
+                          t(
+                            `analytics:postLossSizing.interpretationScale.kpiVerdict.${evaluateLargerPct(
+                              analyticsData.post_loss_sizing.vs_losing_trade.larger.pct
+                            )}`
+                          ),
+                        ].join('\n\n')}
+                        formatValue={(val) => `${formatNumber(val, 1)}%`}
+                        showLabels={false}
+                        size="md"
+                      />
+                      <MetricItem
+                        label={t('analytics:postLossSizing.avgPnlAfterLarger')}
+                        value={formatCurrency(
+                          analyticsData.post_loss_sizing.vs_losing_trade.larger.avg_pnl,
+                          currencySymbol
+                        )}
+                        variant={
+                          analyticsData.post_loss_sizing.vs_losing_trade.larger.avg_pnl > 0
+                            ? 'success'
+                            : analyticsData.post_loss_sizing.vs_losing_trade.larger.avg_pnl < 0
+                              ? 'danger'
+                              : 'default'
+                        }
+                        tooltip={t('analytics:postLossSizing.viewInAnalytics')}
+                      />
+                    </div>
                   </MetricCard>
                 )}
 

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Area,
@@ -66,6 +66,28 @@ export const SessionPnlChart: React.FC<SessionPnlChartProps> = ({
   const axisColor = isDark ? '#9ca3af' : '#6b7280';
   const gridColor = isDark ? '#374151' : '#e5e7eb';
 
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const node = chartContainerRef.current;
+    if (!node) return;
+
+    const measure = () => {
+      const { width, height } = node.getBoundingClientRect();
+      const w = Math.floor(width);
+      const h = Math.floor(height);
+      if (w > 0 && h > 0) {
+        setChartSize((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+      }
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [chartRows.length]);
+
   if (events.length === 0) {
     return null;
   }
@@ -80,8 +102,9 @@ export const SessionPnlChart: React.FC<SessionPnlChartProps> = ({
           {t('pnlChartInsufficient')}
         </p>
       ) : (
-        <div className="h-36 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div ref={chartContainerRef} className="h-36 w-full min-w-0">
+          {chartSize.width > 0 && chartSize.height > 0 ? (
+          <ResponsiveContainer width={chartSize.width} height={chartSize.height} minWidth={0}>
             <AreaChart data={chartRows} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
               <XAxis
@@ -134,6 +157,7 @@ export const SessionPnlChart: React.FC<SessionPnlChartProps> = ({
               )}
             </AreaChart>
           </ResponsiveContainer>
+          ) : null}
         </div>
       )}
     </div>

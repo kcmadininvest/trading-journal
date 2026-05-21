@@ -231,6 +231,7 @@
     "larger": "Larger",
     "equal": "Equal",
     "smaller": "Smaller",
+    "kpiSummaryTitle": "Summary",
     "largerPctKpi": "Size increased after loss",
     "largerPctKpiTooltip": "Share of post-loss trades where size is greater than the losing trade.",
     "avgPnlAfterLarger": "Avg P/L (size up)",
@@ -247,6 +248,13 @@
       "title": "How to read the percentages",
       "intro": "Each share shows how often the next trade falls into that category after a loss. Aim for a low « Larger » share.",
       "kpiHint": "Goal: keep this rate as low as possible.",
+      "kpiThresholds": "Guide: ≤ {{good}}% favorable · ≤ {{neutral}}% neutral · above = avoid.",
+      "kpiVerdict": {
+        "good": "Strong discipline: you rarely increase size after a loss.",
+        "neutral": "Watch closely: moderate tendency to size up after a loss.",
+        "bad": "Risky behavior: frequent size increases (likely revenge trading)."
+      },
+      "limitedSample": "Limited sample ({{count}} cases): interpret with caution.",
       "quality": {
         "good": "Favorable",
         "neutral": "Neutral",
@@ -274,6 +282,7 @@
     "larger": "Larger",
     "equal": "Equal",
     "smaller": "Smaller",
+    "kpiSummaryTitle": "Summary",
     "largerPctKpi": "Size increased after win",
     "largerPctKpiTooltip": "Share of post-win trades where size is greater than the winning trade.",
     "avgPnlAfterLarger": "Avg P/L (size up)",
@@ -290,6 +299,13 @@
       "title": "How to read the percentages",
       "intro": "Each share shows how often the next trade falls into that category after a win. Aim for a low « Larger » share.",
       "kpiHint": "Goal: keep this rate as low as possible.",
+      "kpiThresholds": "Guide: ≤ {{good}}% favorable · ≤ {{neutral}}% neutral · above = avoid.",
+      "kpiVerdict": {
+        "good": "Strong discipline: you rarely increase size after a win.",
+        "neutral": "Watch closely: moderate tendency to size up after a win.",
+        "bad": "Risky behavior: frequent size increases (likely overconfidence)."
+      },
+      "limitedSample": "Limited sample ({{count}} cases): interpret with caution.",
       "quality": {
         "good": "Favorable",
         "neutral": "Neutral",

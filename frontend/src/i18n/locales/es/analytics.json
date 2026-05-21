@@ -231,6 +231,7 @@
     "larger": "Mayor",
     "equal": "Igual",
     "smaller": "Menor",
+    "kpiSummaryTitle": "Resumen",
     "largerPctKpi": "Tamaño aumentado tras pérdida",
     "largerPctKpiTooltip": "Parte de trades tras una pérdida donde el tamaño supera al del trade perdedor.",
     "avgPnlAfterLarger": "PnL medio (tamaño ↑)",
@@ -247,6 +248,13 @@
       "title": "Cómo leer los porcentajes",
       "intro": "Cada parte muestra la proporción de casos tras una pérdida. Conviene que « Mayor » sea lo más bajo posible.",
       "kpiHint": "Objetivo: mantener este porcentaje lo más bajo posible.",
+      "kpiThresholds": "Referencias: ≤ {{good}} % favorable · ≤ {{neutral}} % neutro · por encima, a evitar.",
+      "kpiVerdict": {
+        "good": "Buena disciplina: rara vez aumenta el tamaño tras una pérdida.",
+        "neutral": "A vigilar: tendencia moderada a aumentar el tamaño tras una pérdida.",
+        "bad": "Comportamiento de riesgo: aumentos frecuentes (posible revenge trading)."
+      },
+      "limitedSample": "Muestra limitada ({{count}} casos): interpretar con cautela.",
       "quality": {
         "good": "Favorable",
         "neutral": "Neutro",
@@ -274,6 +282,7 @@
     "larger": "Mayor",
     "equal": "Igual",
     "smaller": "Menor",
+    "kpiSummaryTitle": "Resumen",
     "largerPctKpi": "Tamaño aumentado tras ganancia",
     "largerPctKpiTooltip": "Parte de trades tras una ganancia donde el tamaño supera al del trade ganador.",
     "avgPnlAfterLarger": "PnL medio (tamaño ↑)",
@@ -290,6 +299,13 @@
       "title": "Cómo leer los porcentajes",
       "intro": "Cada parte muestra la proporción de casos tras una ganancia. Conviene que « Mayor » sea lo más bajo posible.",
       "kpiHint": "Objetivo: mantener este porcentaje lo más bajo posible.",
+      "kpiThresholds": "Referencias: ≤ {{good}} % favorable · ≤ {{neutral}} % neutro · por encima, a evitar.",
+      "kpiVerdict": {
+        "good": "Buena disciplina: rara vez aumenta el tamaño tras una ganancia.",
+        "neutral": "A vigilar: tendencia moderada a aumentar el tamaño tras una ganancia.",
+        "bad": "Comportamiento de riesgo: aumentos frecuentes (posible exceso de confianza)."
+      },
+      "limitedSample": "Muestra limitada ({{count}} casos): interpretar con cautela.",
       "quality": {
         "good": "Favorable",
         "neutral": "Neutro",

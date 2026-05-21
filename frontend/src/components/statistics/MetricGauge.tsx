@@ -1,5 +1,6 @@
 import React from 'react';
 import Tooltip from '../ui/Tooltip';
+import { LARGER_PCT_THRESHOLDS } from '../../utils/postTradeSizingEvaluation';
 
 export type GaugeType = 'ratio' | 'percentage' | 'inverted-percentage';
 
@@ -132,7 +133,15 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
     if (labelLower.includes('win/loss') || labelLower.includes('gain/perte')) return 'gauge-bg-win-loss-ratio';
     if (labelLower.includes('recovery') || labelLower.includes('récupération')) return 'gauge-bg-recovery-ratio';
     if (labelLower.includes('plan') || labelLower.includes('respect')) return 'gauge-bg-plan-respect-rate';
-    
+    if (
+      labelLower.includes('taille augmentée')
+      || labelLower.includes('size increased')
+      || labelLower.includes('größe nach')
+      || labelLower.includes('tamaño aumentado')
+    ) {
+      return 'gauge-bg-larger-pct-after-trade';
+    }
+
     // Si label vide, détecter par configuration (min, max, thresholds)
     if (!label || label === '') {
       // Profit Factor: min=0, max=3, thresholds=[0, 1.0, 2.0]
@@ -151,6 +160,14 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
         const sortedThresholds = [...thresholds].sort((a, b) => a.value - b.value);
         if (sortedThresholds[0].value === 0 && sortedThresholds[1].value === 40 && sortedThresholds[2].value === 50) {
           return 'gauge-bg-win-rate';
+        }
+        // Larger % after trade (inverted): thresholds=[0, 20, 35]
+        if (
+          sortedThresholds[0].value === 0
+          && sortedThresholds[1].value === LARGER_PCT_THRESHOLDS.goodMax
+          && sortedThresholds[2].value === LARGER_PCT_THRESHOLDS.neutralMax
+        ) {
+          return 'gauge-bg-larger-pct-after-trade';
         }
       }
     }
@@ -330,6 +347,17 @@ export const GAUGE_CONFIGS: Record<string, MetricGaugeConfig> = {
       { value: 0, label: 'Poor', color: 'red' },
       { value: 50, label: 'Average', color: 'orange' },
       { value: 70, label: 'Good', color: 'green' },
+    ],
+    unit: '%',
+  },
+  largerPctAfterTrade: {
+    type: 'inverted-percentage',
+    min: 0,
+    max: 100,
+    thresholds: [
+      { value: 0, label: 'Good', color: 'green' },
+      { value: LARGER_PCT_THRESHOLDS.goodMax, label: 'Average', color: 'orange' },
+      { value: LARGER_PCT_THRESHOLDS.neutralMax, label: 'Poor', color: 'red' },
     ],
     unit: '%',
   },

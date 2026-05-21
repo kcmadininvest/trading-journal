@@ -231,6 +231,7 @@
     "larger": "Größer",
     "equal": "Gleich",
     "smaller": "Kleiner",
+    "kpiSummaryTitle": "Übersicht",
     "largerPctKpi": "Größe nach Verlust erhöht",
     "largerPctKpiTooltip": "Anteil der Trades nach einem Verlust, bei denen die Größe über dem Verlierer-Trade liegt.",
     "avgPnlAfterLarger": "Ø P/L (Größe ↑)",
@@ -247,6 +248,13 @@
       "title": "Prozentwerte richtig lesen",
       "intro": "Jeder Anteil zeigt, wie oft der Folgetrade nach einem Verlust in diese Kategorie fällt. Ziel: niedriger Anteil bei « Größer ».",
       "kpiHint": "Ziel: diesen Wert so niedrig wie möglich halten.",
+      "kpiThresholds": "Richtwerte: ≤ {{good}} % günstig · ≤ {{neutral}} % neutral · darüber vermeiden.",
+      "kpiVerdict": {
+        "good": "Gute Disziplin: Sie erhöhen die Größe selten nach einem Verlust.",
+        "neutral": "Beobachten: mäßige Tendenz, die Größe nach einem Verlust zu erhöhen.",
+        "bad": "Risikoverhalten: häufige Größenerhöhungen (wahrscheinlich Revenge Trading)."
+      },
+      "limitedSample": "Kleine Stichprobe ({{count}} Fälle): vorsichtig interpretieren.",
       "quality": {
         "good": "Günstig",
         "neutral": "Neutral",
@@ -274,6 +282,7 @@
     "larger": "Größer",
     "equal": "Gleich",
     "smaller": "Kleiner",
+    "kpiSummaryTitle": "Übersicht",
     "largerPctKpi": "Größe nach Gewinn erhöht",
     "largerPctKpiTooltip": "Anteil der Trades nach einem Gewinn, bei denen die Größe über dem Gewinner-Trade liegt.",
     "avgPnlAfterLarger": "Ø P/L (Größe ↑)",
@@ -290,6 +299,13 @@
       "title": "Prozentwerte richtig lesen",
       "intro": "Jeder Anteil zeigt, wie oft der Folgetrade nach einem Gewinn in diese Kategorie fällt. Ziel: niedriger Anteil bei « Größer ».",
       "kpiHint": "Ziel: diesen Wert so niedrig wie möglich halten.",
+      "kpiThresholds": "Richtwerte: ≤ {{good}} % günstig · ≤ {{neutral}} % neutral · darüber vermeiden.",
+      "kpiVerdict": {
+        "good": "Gute Disziplin: Sie erhöhen die Größe selten nach einem Gewinn.",
+        "neutral": "Beobachten: mäßige Tendenz, die Größe nach einem Gewinn zu erhöhen.",
+        "bad": "Risikoverhalten: häufige Größenerhöhungen (wahrscheinlich Übermut)."
+      },
+      "limitedSample": "Kleine Stichprobe ({{count}} Fälle): vorsichtig interpretieren.",
       "quality": {
         "good": "Günstig",
         "neutral": "Neutral",
