@@ -183,7 +183,13 @@ class TradingAccountsService {
       throw new Error(body?.error || 'Trop de synchronisations. Réessayez dans une minute.');
     }
     if (!res.ok) {
-      throw new Error(body?.error || 'Erreur lors de la synchronisation.');
+      const err = new Error(body?.error || 'Erreur lors de la synchronisation.') as Error & {
+        errorCode?: string;
+      };
+      if (body?.error_code) {
+        err.errorCode = body.error_code;
+      }
+      throw err;
     }
     return body as TradeSyncResponse;
   }

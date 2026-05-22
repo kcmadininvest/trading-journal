@@ -7,7 +7,14 @@ from typing import TypeVar
 
 from django.utils import timezone
 
-from integrations.credentials_crypto import decrypt_json, encrypt_json
+from integrations.credentials_crypto import (
+    CREDENTIALS_DECRYPT_ERROR_CODE,
+    CREDENTIALS_DECRYPT_USER_MESSAGE,
+    CredentialsDecryptError,
+    IntegrationUserError,
+    decrypt_json,
+    encrypt_json,
+)
 from integrations.models import UserApiIntegration
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 
@@ -32,10 +39,22 @@ def is_session_expired_error(exc: TopStepXApiError) -> bool:
     return any(marker in msg for marker in SESSION_EXPIRED_MARKERS)
 
 
+def _secrets_or_raise(integration: UserApiIntegration) -> dict:
+    if not integration.secrets_encrypted:
+        return {}
+    try:
+        return decrypt_json(integration.secrets_encrypted)
+    except CredentialsDecryptError as exc:
+        raise TopStepXApiError(
+            CREDENTIALS_DECRYPT_USER_MESSAGE,
+            error_code=CREDENTIALS_DECRYPT_ERROR_CODE,
+        ) from exc
+
+
 def clear_session_token(integration: UserApiIntegration) -> None:
     if not integration.secrets_encrypted:
         return
-    secrets = decrypt_json(integration.secrets_encrypted)
+    secrets = _secrets_or_raise(integration)
     secrets.pop('session_token', None)
     secrets.pop('token_expires_at', None)
     integration.secrets_encrypted = encrypt_json(secrets)
@@ -43,7 +62,7 @@ def clear_session_token(integration: UserApiIntegration) -> None:
 
 
 def get_valid_session_token(integration: UserApiIntegration) -> str:
-    secrets = decrypt_json(integration.secrets_encrypted) if integration.secrets_encrypted else {}
+    secrets = _secrets_or_raise(integration)
     api_key = secrets.get('api_key', '')
     session_token = secrets.get('session_token', '')
     expires_raw = secrets.get('token_expires_at')

@@ -74,7 +74,11 @@ class IntegrationsService {
         body?.error ||
         body?.api_key?.[0] ||
         'Erreur lors de l\'enregistrement de l\'intégration.';
-      throw new Error(msg);
+      const err = new Error(msg) as Error & { errorCode?: string };
+      if (body?.error_code) {
+        err.errorCode = body.error_code;
+      }
+      throw err;
     }
     return body.integration as IntegrationStatus;
   }

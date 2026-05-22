@@ -8,7 +8,7 @@
   "refreshSuccess": "Sitzung aktualisiert",
   "building": "Erstellung…",
   "loading": "Laden…",
-  "noSession": "Keine Sitzung für dieses Datum erstellt. Klicken Sie auf « Sitzung erstellen ».",
+  "noSession": "Keine Sitzung für dieses Datum. Nutzen Sie « Synchronisieren », um Trades zu importieren und das Replay zu erstellen.",
   "loadError": "Sitzung konnte nicht geladen werden",
   "buildSuccess": "Sitzung neu aufgebaut",
   "preserveExistingData": "Vorhandene Daten wurden beibehalten (TopStep-API lieferte nichts).",

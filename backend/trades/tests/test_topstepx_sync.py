@@ -53,6 +53,68 @@ class TopStepXMapperTests(TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]['topstep_id'], '1002')
         self.assertEqual(rows[0]['trade_type'], 'Long')
+        self.assertEqual(rows[0]['fees'], Decimal('8.4'))
+        self.assertEqual(rows[0]['commissions'], Decimal('3'))
+
+    def test_fees_and_commissions_split_for_mini_round_trip(self) -> None:
+        """Frais API = exchange ; commissions = tarif TopStep RT (1$ mini / contrat)."""
+        fills = [
+            {
+                'id': 5001,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-22T15:30:00.000Z',
+                'price': 25200.0,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': None,
+                'fees': 1.4,
+                'voided': False,
+            },
+            {
+                'id': 5002,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2026-05-22T15:41:00.000Z',
+                'price': 25210.0,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': 200.0,
+                'fees': 1.4,
+                'voided': False,
+            },
+        ]
+        rows = map_api_trades_to_parsed_rows(fills)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['fees'], Decimal('2.8'))
+        self.assertEqual(rows[0]['commissions'], Decimal('1'))
+
+    def test_micro_contract_commission_rate(self) -> None:
+        fills = [
+            {
+                'id': 6001,
+                'contractId': 'CON.F.US.MNQ.M26',
+                'creationTimestamp': '2026-05-22T16:00:00.000Z',
+                'price': 25200.0,
+                'size': 2,
+                'side': 0,
+                'profitAndLoss': None,
+                'fees': 0.5,
+                'voided': False,
+            },
+            {
+                'id': 6002,
+                'contractId': 'CON.F.US.MNQ.M26',
+                'creationTimestamp': '2026-05-22T16:05:00.000Z',
+                'price': 25205.0,
+                'size': 2,
+                'side': 0,
+                'profitAndLoss': 20.0,
+                'fees': 0.5,
+                'voided': False,
+            },
+        ]
+        rows = map_api_trades_to_parsed_rows(fills)
+        self.assertEqual(rows[0]['fees'], Decimal('1'))
+        self.assertEqual(rows[0]['commissions'], Decimal('1'))
 
     def test_exit_without_entry_is_skipped(self) -> None:
         fills = [
@@ -111,8 +173,53 @@ class TopStepXMapperTests(TestCase):
         self.assertEqual(rows[0]['topstep_id'], '3002')
         self.assertEqual(rows[0]['entered_at'], parse_api_timestamp('2026-05-19T15:00:00.000Z'))
         self.assertNotEqual(rows[0]['entered_at'], rows[0]['exited_at'])
+        # Entrée size=3 fees=4 : prorata 1/3 sur la 1re sortie, pas la totalité des frais d'entrée
+        self.assertEqual(rows[0]['fees'], Decimal('4') * Decimal('1') / Decimal('3') + Decimal('2'))
         self.assertEqual(rows[1]['topstep_id'], '3003')
         self.assertEqual(rows[1]['entry_price'], Decimal('25250.0'))
+        self.assertEqual(rows[1]['fees'], Decimal('4') * Decimal('2') / Decimal('3') + Decimal('3'))
+
+    def test_partial_close_prorates_entry_fees_like_topstep(self) -> None:
+        """Cas réel : ouverture 2 lots (fees 2.8), clôtures 1+1 lot (fees 1.4 chacune)."""
+        fills = [
+            {
+                'id': 7001,
+                'contractId': 'CON.F.US.ENQ.M26',
+                'creationTimestamp': '2026-05-22T15:41:30.000Z',
+                'price': 29683.25,
+                'size': 2,
+                'side': 1,
+                'profitAndLoss': None,
+                'fees': 2.8,
+                'voided': False,
+            },
+            {
+                'id': 7002,
+                'contractId': 'CON.F.US.ENQ.M26',
+                'creationTimestamp': '2026-05-22T15:49:54.000Z',
+                'price': 29661.0,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': 445.0,
+                'fees': 1.4,
+                'voided': False,
+            },
+            {
+                'id': 7003,
+                'contractId': 'CON.F.US.ENQ.M26',
+                'creationTimestamp': '2026-05-22T15:51:08.000Z',
+                'price': 29680.25,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': 60.0,
+                'fees': 1.4,
+                'voided': False,
+            },
+        ]
+        rows = map_api_trades_to_parsed_rows(fills)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]['fees'], Decimal('2.8'))
+        self.assertEqual(rows[1]['fees'], Decimal('2.8'))
 
     def test_exit_after_prior_exit_still_finds_entry(self) -> None:
         """Deux sorties consécutives : la 2e ne doit pas dupliquer entrée=sortie."""

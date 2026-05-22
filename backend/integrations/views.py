@@ -67,7 +67,13 @@ class IntegrationDetailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        public, secrets = resolve_credentials(integration, public_input, secrets_input)
+        try:
+            public, secrets = resolve_credentials(integration, public_input, secrets_input)
+        except ValueError as exc:
+            payload = {'error': str(exc)}
+            if code := getattr(exc, 'error_code', None):
+                payload['error_code'] = code
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
 
         if not secrets.get('api_key'):
             return Response(
@@ -118,7 +124,13 @@ class IntegrationTestConnectionView(APIView):
         public_input = serializer.to_public_input()
         secrets_input = serializer.to_secrets_input()
 
-        public, secrets = resolve_credentials(integration, public_input, secrets_input)
+        try:
+            public, secrets = resolve_credentials(integration, public_input, secrets_input)
+        except ValueError as exc:
+            payload: dict = {'success': False, 'message': str(exc)}
+            if code := getattr(exc, 'error_code', None):
+                payload['error_code'] = code
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
 
         if not secrets.get('api_key'):
             return Response(

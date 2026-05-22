@@ -8,7 +8,7 @@
   "refreshSuccess": "Session actualisée",
   "building": "Construction…",
   "loading": "Chargement…",
-  "noSession": "Aucune session construite pour cette date. Cliquez sur « Construire la session ».",
+  "noSession": "Aucune session pour cette date. Utilisez « Synchroniser » pour importer les trades et reconstruire le replay.",
   "loadError": "Impossible de charger la session",
   "buildSuccess": "Session reconstruite",
   "preserveExistingData": "Les données existantes ont été conservées (l'API TopStep n'a rien renvoyé).",

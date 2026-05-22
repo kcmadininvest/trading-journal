@@ -27,7 +27,6 @@ import {
   getReplayPnlTextClass,
   replayCardClass,
   replayDateInputClass,
-  replayPrimaryButtonClass,
   replaySecondaryButtonClass,
 } from '../components/replay/replayStyles';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
@@ -385,10 +384,8 @@ const SessionReplayPage: React.FC = () => {
   const handleAfterSync = useCallback(() => {
     void loadActiveDates();
     if (!accountId || !canSync || !sessionDate) return;
-    if (session?.session_date === sessionDate && session.status === 'built') {
-      void handleBuild({ refresh: true });
-    }
-  }, [loadActiveDates, accountId, canSync, sessionDate, session, handleBuild]);
+    void handleBuild({ refresh: true });
+  }, [loadActiveDates, accountId, canSync, sessionDate, handleBuild]);
 
   const applyJournalToSession = async (overwrite: boolean) => {
     if (!session) return;
@@ -622,27 +619,9 @@ const SessionReplayPage: React.FC = () => {
               <TopStepSyncControls
                 iconOnly="narrow"
                 accountId={accountId}
+                enablePolling
                 onSynced={handleAfterSync}
               />
-            )}
-            {hasBuiltSession ? (
-              <button
-                type="button"
-                onClick={() => void handleBuild({ refresh: true })}
-                disabled={busy || !accountId || !canSync || eligibilityLoading}
-                className={replaySecondaryButtonClass}
-              >
-                {building ? t('building') : t('refreshSession')}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void handleBuild()}
-                disabled={busy || !accountId || !canSync || eligibilityLoading}
-                className={replayPrimaryButtonClass}
-              >
-                {building ? t('building') : t('buildSession')}
-              </button>
             )}
           </div>
         </div>

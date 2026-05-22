@@ -92,7 +92,10 @@
     "lastSync": "最終同期: {{date}}",
     "neverSynced": "未同期",
     "brokerIdRequired": "TopStepXの口座名（口座メニュー）を正確に入力するか、有効なProjectX IDを指定してください。名前が一致すればIDは自動設定されます。",
-    "integrationRequired": "設定 → トレードでTopStepX連携を設定してください。"
+    "integrationRequired": "設定 → トレードでTopStepX連携を設定してください。",
+    "errors": {
+      "credentialsDecryptFailed": "保存された認証情報を読み取れません。設定 → トレードでTopStepXを再接続し、APIキーを再入力してください。"
+    }
   }
 }
 

@@ -8,7 +8,7 @@
   "refreshSuccess": "Sesión actualizada",
   "building": "Construyendo…",
   "loading": "Cargando…",
-  "noSession": "No hay sesión construida para esta fecha. Haga clic en « Construir sesión ».",
+  "noSession": "No hay sesión para esta fecha. Use « Sincronizar » para importar operaciones y reconstruir el replay.",
   "loadError": "No se pudo cargar la sesión",
   "buildSuccess": "Sesión reconstruida",
   "preserveExistingData": "Se conservaron los datos existentes (la API de TopStep no devolvió nada).",

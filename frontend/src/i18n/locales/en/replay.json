@@ -8,7 +8,7 @@
   "refreshSuccess": "Session refreshed",
   "building": "Building…",
   "loading": "Loading…",
-  "noSession": "No session built for this date. Click « Build session ».",
+  "noSession": "No session for this date. Use « Sync » to import trades and rebuild the replay.",
   "loadError": "Unable to load session",
   "buildSuccess": "Session rebuilt",
   "preserveExistingData": "Existing data was kept (TopStep API returned nothing).",

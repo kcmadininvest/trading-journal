@@ -259,7 +259,11 @@ class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 'status': status_payload,
             })
         except ValueError as exc:
-            return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            payload: dict = {'error': str(exc)}
+            error_code = getattr(exc, 'error_code', None)
+            if error_code:
+                payload['error_code'] = error_code
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
         except Exception as exc:
             logger.exception('Erreur sync TopStepX compte %s', pk)
             return Response(

@@ -92,7 +92,10 @@
     "lastSync": "Última sync: {{date}}",
     "neverSynced": "Ainda não sincronizado",
     "brokerIdRequired": "Use o nome exato da conta TopStepX (menu de contas) ou um ID ProjectX válido. O ID é definido automaticamente quando o nome coincide.",
-    "integrationRequired": "Configure a integração TopStepX em Definições → Trading."
+    "integrationRequired": "Configure a integração TopStepX em Definições → Trading.",
+    "errors": {
+      "credentialsDecryptFailed": "Não foi possível ler as credenciais guardadas. Volte a ligar o TopStepX em Definições → Trading e introduza novamente a chave API."
+    }
   }
 }
 

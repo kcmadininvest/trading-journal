@@ -92,7 +92,10 @@
     "lastSync": "마지막 동기화: {{date}}",
     "neverSynced": "아직 동기화되지 않음",
     "brokerIdRequired": "TopStepX 계정 이름(계정 메뉴)을 정확히 입력하거나 유효한 ProjectX ID를 사용하세요. 이름이 일치하면 ID가 자동으로 설정됩니다.",
-    "integrationRequired": "설정 → 트레이딩에서 TopStepX 연동을 구성하세요."
+    "integrationRequired": "설정 → 트레이딩에서 TopStepX 연동을 구성하세요.",
+    "errors": {
+      "credentialsDecryptFailed": "저장된 인증 정보를 읽을 수 없습니다. 설정 → 트레이딩에서 TopStepX를 다시 연결하고 API 키를 다시 입력하세요."
+    }
   }
 }
 

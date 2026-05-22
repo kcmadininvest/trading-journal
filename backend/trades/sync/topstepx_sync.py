@@ -106,6 +106,14 @@ class TopStepXSyncService:
         except ValueError as exc:
             raise exc
         except TopStepXApiError as exc:
+            from integrations.credentials_crypto import (
+                CREDENTIALS_DECRYPT_ERROR_CODE,
+                IntegrationUserError,
+            )
+
+            if exc.error_code == CREDENTIALS_DECRYPT_ERROR_CODE:
+                apply_test_result(integration, False)
+                raise IntegrationUserError(str(exc), CREDENTIALS_DECRYPT_ERROR_CODE) from exc
             if is_session_expired_error(exc):
                 apply_test_result(integration, False)
                 raise ValueError(

@@ -99,7 +99,10 @@
     "lastSync": "上次同步：{{date}}",
     "neverSynced": "尚未同步",
     "brokerIdRequired": "请使用与 TopStepX 完全一致的账户名称（账户菜单）或有效的 ProjectX ID。名称匹配时将自动填写 ID。",
-    "integrationRequired": "请在设置 → 交易中配置 TopStepX 集成。"
+    "integrationRequired": "请在设置 → 交易中配置 TopStepX 集成。",
+    "errors": {
+      "credentialsDecryptFailed": "无法读取已保存的凭据。请在设置 → 交易中重新连接 TopStepX 并再次输入 API 密钥。"
+    }
   }
 }
 

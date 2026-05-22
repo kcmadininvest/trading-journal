@@ -6,6 +6,7 @@ import { useTopStepSyncPolling } from '../../hooks/useTopStepSyncPolling';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatDateTimeShort, type DateFormatType } from '../../utils/dateFormat';
 import Tooltip from '../ui/Tooltip';
+import { translateIntegrationError } from '../../utils/integrationErrors';
 
 interface TopStepSyncControlsProps {
   accountId: number | null | undefined;
@@ -109,7 +110,13 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
       );
       handleSynced();
     } catch (err) {
-      setToast(err instanceof Error ? err.message : t('sync.error'));
+      const apiErr = err as Error & { errorCode?: string };
+      setToast(
+        translateIntegrationError(t, {
+          message: apiErr instanceof Error ? apiErr.message : t('sync.error'),
+          errorCode: apiErr.errorCode,
+        }),
+      );
     } finally {
       setSyncing(false);
     }

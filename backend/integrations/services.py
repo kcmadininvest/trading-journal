@@ -4,7 +4,13 @@ from typing import Any
 
 from django.utils import timezone
 
-from .credentials_crypto import build_secrets_hint, decrypt_json, encrypt_json
+from .credentials_crypto import (
+    CREDENTIALS_DECRYPT_USER_MESSAGE,
+    CredentialsDecryptError,
+    build_secrets_hint,
+    decrypt_json,
+    encrypt_json,
+)
 from .models import UserApiIntegration
 from .providers.base import BaseIntegrationProvider
 from .providers.registry import get_provider
@@ -36,6 +42,26 @@ def get_user_integration(user, provider_slug: str) -> UserApiIntegration | None:
     return UserApiIntegration.objects.filter(user=user, provider=provider_slug).first()
 
 
+def _has_fresh_secret(secrets_input: dict[str, str], field: str = 'api_key') -> bool:
+    value = secrets_input.get(field)
+    return value is not None and bool(str(value).strip())
+
+
+def _load_stored_secrets(
+    integration: UserApiIntegration | None,
+    secrets_input: dict[str, str],
+) -> dict[str, str]:
+    """Charge les secrets chiffrés, ou {} si une nouvelle clé API permet de repartir à zéro."""
+    if not integration or not integration.secrets_encrypted:
+        return {}
+    try:
+        return {k: str(v) for k, v in decrypt_json(integration.secrets_encrypted).items()}
+    except CredentialsDecryptError as exc:
+        if _has_fresh_secret(secrets_input):
+            return {}
+        raise exc
+
+
 def resolve_credentials(
     integration: UserApiIntegration | None,
     public_input: dict[str, Any],
@@ -46,8 +72,7 @@ def resolve_credentials(
 
     if integration:
         public['external_username'] = integration.external_username
-        if integration.secrets_encrypted:
-            secrets = {k: str(v) for k, v in decrypt_json(integration.secrets_encrypted).items()}
+        secrets = _load_stored_secrets(integration, secrets_input)
     else:
         public['external_username'] = ''
         secrets = {}

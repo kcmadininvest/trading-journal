@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import integrationsService, { IntegrationStatus } from '../../services/integrationsService';
 import { SettingsInput } from './SettingsInput';
 import { INTEGRATION_HELP_URLS } from './integrationUiConfig';
+import { translateIntegrationError } from '../../utils/integrationErrors';
 
 interface IntegrationCardProps {
   integration: IntegrationStatus;
@@ -18,6 +19,7 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
   onMessage,
 }) => {
   const { t } = useTranslation('settings');
+  const { t: tAccounts } = useTranslation('accounts');
   const provider = integration.provider;
   const providerKey = `integrations.providers.${provider}`;
 
@@ -65,7 +67,14 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
       setIsEditingApiKey(false);
       onMessage('success', t('integrations.saved'));
     } catch (err: unknown) {
-      onMessage('error', err instanceof Error ? err.message : t('integrations.saveError'));
+      const apiErr = err as Error & { errorCode?: string };
+      onMessage(
+        'error',
+        translateIntegrationError(tAccounts, {
+          message: apiErr instanceof Error ? apiErr.message : t('integrations.saveError'),
+          errorCode: apiErr.errorCode,
+        }),
+      );
     } finally {
       setSaving(false);
     }
@@ -88,10 +97,23 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
       if (result.success) {
         onMessage('success', result.message || t('integrations.testSuccess'));
       } else {
-        onMessage('error', result.message || t('integrations.testFailed'));
+        onMessage(
+          'error',
+          translateIntegrationError(tAccounts, {
+            message: result.message || t('integrations.testFailed'),
+            errorCode: result.error_code,
+          }),
+        );
       }
     } catch (err: unknown) {
-      onMessage('error', err instanceof Error ? err.message : t('integrations.testFailed'));
+      const apiErr = err as Error & { errorCode?: string };
+      onMessage(
+        'error',
+        translateIntegrationError(tAccounts, {
+          message: apiErr instanceof Error ? apiErr.message : t('integrations.testFailed'),
+          errorCode: apiErr.errorCode,
+        }),
+      );
     } finally {
       setTesting(false);
     }
