@@ -12,18 +12,18 @@ interface GlyphProps {
 /** Bougie haussière — même forme que sur le graphique. */
 export const TapeGlyphBullCandle: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <line x1={11} y1={3} x2={11} y2={7} stroke={theme.wickFill} strokeWidth={1} strokeLinecap="round" />
+    <line x1={11} y1={3} x2={11} y2={7} stroke={theme.wickFill} strokeWidth={0.5} strokeLinecap="round" />
     <rect x={7.5} y={7} width={7} height={9} rx={2} fill={theme.bullFill} />
-    <line x1={11} y1={16} x2={11} y2={19} stroke={theme.wickFill} strokeWidth={1} strokeLinecap="round" />
+    <line x1={11} y1={16} x2={11} y2={19} stroke={theme.wickFill} strokeWidth={0.5} strokeLinecap="round" />
   </svg>
 );
 
 /** Bougie baissière — même forme que sur le graphique. */
 export const TapeGlyphBearCandle: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <line x1={11} y1={3} x2={11} y2={6} stroke={theme.wickFill} strokeWidth={1} strokeLinecap="round" />
+    <line x1={11} y1={3} x2={11} y2={6} stroke={theme.wickFill} strokeWidth={0.5} strokeLinecap="round" />
     <rect x={7.5} y={6} width={7} height={9} rx={2} fill={theme.bearFill} />
-    <line x1={11} y1={15} x2={11} y2={19} stroke={theme.wickFill} strokeWidth={1} strokeLinecap="round" />
+    <line x1={11} y1={15} x2={11} y2={19} stroke={theme.wickFill} strokeWidth={0.5} strokeLinecap="round" />
   </svg>
 );
 
@@ -60,12 +60,6 @@ export const TapeGlyphExitLoss: React.FC<GlyphProps> = ({ theme, size = ICON }) 
     <text x={11} y={14} textAnchor="middle" fontSize={7} fill="#fff" fontWeight="700">
       ✕
     </text>
-  </svg>
-);
-
-export const TapeGlyphFill: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
-  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <circle cx={11} cy={11} r={3.5} fill={theme.fillDot} stroke="#fff" strokeWidth={1} />
   </svg>
 );
 
@@ -140,7 +134,6 @@ interface MarketTapeLegendProps {
     entryShort: string;
     exitWin: string;
     exitLoss: string;
-    fill: string;
     stopLossPlanned: string;
     stopLossBroker: string;
     cursor: string;
@@ -159,7 +152,6 @@ export const MarketTapeLegend: React.FC<MarketTapeLegendProps> = ({ theme, label
     <MarketTapeLegendItem Glyph={TapeGlyphEntryShort} theme={theme} label={labels.entryShort} />
     <MarketTapeLegendItem Glyph={TapeGlyphExitWin} theme={theme} label={labels.exitWin} />
     <MarketTapeLegendItem Glyph={TapeGlyphExitLoss} theme={theme} label={labels.exitLoss} />
-    <MarketTapeLegendItem Glyph={TapeGlyphFill} theme={theme} label={labels.fill} />
     <MarketTapeLegendItem Glyph={TapeGlyphStopLossPlanned} theme={theme} label={labels.stopLossPlanned} />
     <MarketTapeLegendItem Glyph={TapeGlyphStopLossBroker} theme={theme} label={labels.stopLossBroker} />
     <MarketTapeLegendItem Glyph={TapeGlyphCursor} theme={theme} label={labels.cursor} />

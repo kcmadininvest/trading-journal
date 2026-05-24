@@ -1,6 +1,6 @@
 import { SessionEventItem, SessionMarketBar, SessionMarketContract, SessionMarketData } from '../../services/sessionReplay';
 
-export type TapeMarkerKind = 'entry' | 'exit' | 'fill';
+export type TapeMarkerKind = 'entry' | 'exit';
 
 export type TapePriceLineKind = 'planned_stop_loss' | 'broker_stop';
 
@@ -22,6 +22,8 @@ export interface TapeMarker {
   /** Événement source (ordres) pour tooltip détaillé. */
   sourceEvent?: SessionEventItem;
   markerKey?: string;
+  /** Décalage vertical viewBox (px, négatif = vers le haut) si plusieurs marqueurs sur la même bougie. */
+  offsetY?: number;
 }
 
 export interface TapeRenderBar {
@@ -280,24 +282,55 @@ export function buildMarkersForContract(
           markerKey: `${evt.event_type}-${evt.id}`,
         });
       }
-    } else if (evt.event_type === 'fill') {
-      const fillPayload = (payload.fill as Record<string, unknown>) || payload;
-      const price = priceFromPayload(payload, ['price']) ?? priceFromPayload(fillPayload, ['price']);
-      if (price != null) {
-        markers.push({
-          kind: 'fill',
-          barIndex,
-          price,
-          occurredAt,
-          side: String(payload.trade_type || ''),
-          sourceEvent: evt,
-          markerKey: `${evt.event_type}-${evt.external_id}-${evt.id}`,
-        });
-      }
     }
   }
 
   return markers;
+}
+
+const MARKER_VERTICAL_STACK_STEP_PX = 18;
+
+const MARKER_KIND_STACK_ORDER: Record<TapeMarkerKind, number> = {
+  entry: 0,
+  exit: 1,
+};
+
+/**
+ * Sur une même bougie, empile les marqueurs vers le haut sans décaler horizontalement
+ * (le prix / la bougie restent alignés sur l’axe X).
+ */
+function applyMarkerVerticalStackOffsets(markers: TapeMarker[]): TapeMarker[] {
+  if (markers.length <= 1) return markers;
+
+  const byBar = new Map<number, number[]>();
+  markers.forEach((m, i) => {
+    const list = byBar.get(m.barIndex) ?? [];
+    list.push(i);
+    byBar.set(m.barIndex, list);
+  });
+
+  const result = [...markers];
+
+  for (const indices of Array.from(byBar.values())) {
+    if (indices.length <= 1) continue;
+
+    const sorted = [...indices].sort((a, b) => {
+      const ka = MARKER_KIND_STACK_ORDER[markers[a].kind];
+      const kb = MARKER_KIND_STACK_ORDER[markers[b].kind];
+      if (ka !== kb) return ka - kb;
+      return parseTimeMs(markers[a].occurredAt) - parseTimeMs(markers[b].occurredAt);
+    });
+
+    sorted.forEach((markerIdx, slot) => {
+      if (slot === 0) return;
+      result[markerIdx] = {
+        ...result[markerIdx],
+        offsetY: -slot * MARKER_VERTICAL_STACK_STEP_PX,
+      };
+    });
+  }
+
+  return result;
 }
 
 function computeOpenPositionBand(
@@ -419,11 +452,13 @@ export function buildTapeRenderModel(
     yMax = Math.max(yMax, line.price);
   }
 
+  const markersStacked = applyMarkerVerticalStackOffsets(markers);
+
   return {
     contractId: contract.contract_id,
     label: contract.label,
     bars: renderBars,
-    markers,
+    markers: markersStacked,
     priceLines,
     cursorBarIndex,
     yMin,

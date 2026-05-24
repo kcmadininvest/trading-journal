@@ -57,7 +57,7 @@ function barSlotWidth(index: number, model: TapeRenderModel): number {
   return Math.max(isFuture ? 4 : 6, Math.min(maxW, slot * 0.72));
 }
 
-const WICK_W = 1;
+const WICK_W = 0.5;
 const BODY_RX = 3;
 
 const ModernCandle: React.FC<{
@@ -142,18 +142,6 @@ const MarkerGlyph: React.FC<{
       </g>
     );
   }
-  if (marker.kind === 'fill') {
-    return (
-      <circle
-        cx={x}
-        cy={y}
-        r={3.5}
-        fill={theme.fillDot}
-        stroke="#fff"
-        strokeWidth={1}
-      />
-    );
-  }
   return null;
 };
 
@@ -170,14 +158,23 @@ function markerPositionPercent(x: number, y: number): { left: string; top: strin
   };
 }
 
+function markerDisplayCoords(
+  marker: TapeMarker,
+  model: TapeRenderModel,
+  barCount: number,
+): { x: number; y: number } {
+  return {
+    x: xForBarIndex(marker.barIndex, barCount),
+    y: yForPrice(marker.price, model) + (marker.offsetY ?? 0),
+  };
+}
+
 function hitPxClassForKind(kind: TapeMarker['kind']): string {
   switch (kind) {
     case 'entry':
       return 'h-5 w-5';
     case 'exit':
       return 'h-4 w-4';
-    case 'fill':
-      return 'h-3.5 w-3.5';
     default:
       return 'h-4 w-4';
   }
@@ -251,8 +248,7 @@ const TapeMarkerHitLayer: React.FC<{
   return (
     <>
       {interactiveMarkers.map((marker) => {
-        const x = xForBarIndex(marker.barIndex, barCount);
-        const y = yForPrice(marker.price, model);
+        const { x, y } = markerDisplayCoords(marker, model, barCount);
         const tooltip = getOrderMarkerTooltipText(marker.sourceEvent!, t, numberFormat);
         const pos = markerPositionPercent(x, y);
 
@@ -426,15 +422,18 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
         );
       })}
 
-      {model.markers.map((m, i) => (
-        <MarkerGlyph
-          key={`${m.kind}-${m.occurredAt}-${i}`}
-          marker={m}
-          x={xForBarIndex(m.barIndex, barCount)}
-          y={yForPrice(m.price, model)}
-          theme={theme}
-        />
-      ))}
+      {model.markers.map((m, i) => {
+        const { x, y } = markerDisplayCoords(m, model, barCount);
+        return (
+          <MarkerGlyph
+            key={m.markerKey || `${m.kind}-${m.occurredAt}-${i}`}
+            marker={m}
+            x={x}
+            y={y}
+            theme={theme}
+          />
+        );
+      })}
 
     </svg>
   );
@@ -555,7 +554,6 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
             entryShort: t('marketTapeLegendEntryShort'),
             exitWin: t('marketTapeLegendExitWin'),
             exitLoss: t('marketTapeLegendExitLoss'),
-            fill: t('marketTapeLegendFill'),
             stopLossPlanned: t('marketTapeLegendStopLossPlanned'),
             stopLossBroker: t('marketTapeLegendStopLossBroker'),
             cursor: t('marketTapeLegendCursor'),
