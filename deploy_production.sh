@@ -816,6 +816,22 @@ _wait_market_quotes_active() {
     return 1
 }
 
+MARKET_QUOTES_SCRIPT="$BACKEND_DIR/start-market-quotes.sh"
+if [ -f "$MARKET_QUOTES_SCRIPT" ]; then
+    sudo chmod +x "$MARKET_QUOTES_SCRIPT" 2>/dev/null || \
+        warn "Impossible de chmod +x start-market-quotes.sh"
+    sudo chown apache:apache "$MARKET_QUOTES_SCRIPT" 2>/dev/null || true
+else
+    warn "Script de démarrage manquant: $MARKET_QUOTES_SCRIPT"
+fi
+
+if [ ! -f "$BACKEND_DIR/venv/bin/activate" ]; then
+    warn "venv Python absent ($BACKEND_DIR/venv) — le worker bandeau cours ne pourra pas démarrer (203/EXEC)"
+    warn "   cd $BACKEND_DIR && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+elif ! sudo -u apache bash -lc "cd '$BACKEND_DIR' && source venv/bin/activate && python -c 'import django'" 2>/dev/null; then
+    warn "Test venv en tant qu'utilisateur apache échoué — risque 203/EXEC au démarrage systemd"
+fi
+
 if [ -f "$MARKET_QUOTES_UNIT" ]; then
     if sudo cp "$MARKET_QUOTES_UNIT" /etc/systemd/system/ 2>/dev/null; then
         info "✅ Unité systemd trading-journal-market-quotes installée"

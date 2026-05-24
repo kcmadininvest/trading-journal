@@ -13,7 +13,7 @@ Environment="VIRTUAL_ENV=/var/www/html/trading_journal/backend/venv"
 Environment="DJANGO_SETTINGS_MODULE=trading_journal_api.settings"
 Environment="MPLCONFIGDIR=/var/www/html/trading_journal/backend/var/mplconfig"
 Environment="MARKET_QUOTES_DATA_DIR=/var/www/html/trading_journal/backend/var"
-ExecStart=/var/www/html/trading_journal/backend/venv/bin/python manage.py run_market_quotes_hub
+ExecStart=/bin/bash /var/www/html/trading_journal/backend/start-market-quotes.sh
 Restart=always
 RestartSec=15
 StandardOutput=append:/var/log/trading-journal/market-quotes.log
