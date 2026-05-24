@@ -5,8 +5,8 @@ import Tooltip from '../ui/Tooltip';
 import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import { SessionEventItem, SessionMarketData } from '../../services/sessionReplay';
-import { getOrderMarkerTooltipText } from './eventDetail';
-import { buildTapeRenderModel, TapeMarker, TapeRenderModel } from './marketTapeData';
+import { getOrderMarkerTooltipText, getStopLossLineTooltipText } from './eventDetail';
+import { buildTapeRenderModel, TapeMarker, TapePriceLine, TapeRenderModel } from './marketTapeData';
 import { MarketTapeLegend } from './marketTapeGlyphs';
 import { getMarketTapeTheme, MarketTapeTheme, replayCardClass } from './replayStyles';
 import { NumberFormatType } from '../../utils/numberFormat';
@@ -154,16 +154,7 @@ const MarkerGlyph: React.FC<{
       />
     );
   }
-  return (
-    <circle
-      cx={x}
-      cy={y}
-      r={4.5}
-      fill={theme.background}
-      stroke={theme.orderRing}
-      strokeWidth={1.5}
-    />
-  );
+  return null;
 };
 
 function computeMeetSize(containerW: number, containerH: number): { width: number; height: number } {
@@ -191,6 +182,63 @@ function hitPxClassForKind(kind: TapeMarker['kind']): string {
       return 'h-4 w-4';
   }
 }
+
+function lineSegmentBounds(
+  line: TapePriceLine,
+  model: TapeRenderModel,
+  barCount: number,
+): { x1: number; x2: number; y: number } {
+  const xStart = xForBarIndex(line.barStart, barCount);
+  const xEnd = xForBarIndex(line.barEnd, barCount);
+  const halfStart = barSlotWidth(line.barStart, model) / 2;
+  const halfEnd = barSlotWidth(line.barEnd, model) / 2;
+  return {
+    x1: xStart - halfStart,
+    x2: xEnd + halfEnd,
+    y: yForPrice(line.price, model),
+  };
+}
+
+const TapeStopLossHitLayer: React.FC<{
+  model: TapeRenderModel;
+  barCount: number;
+  t: TFunction;
+  numberFormat: NumberFormatType;
+}> = ({ model, barCount, t, numberFormat }) => (
+  <>
+    {model.priceLines.map((line, i) => {
+      const { x1, x2, y } = lineSegmentBounds(line, model, barCount);
+      const tooltip = getStopLossLineTooltipText(line.price, line.kind, t, numberFormat);
+      const leftPct = (x1 / VIEW_W) * 100;
+      const widthPct = ((x2 - x1) / VIEW_W) * 100;
+      const topPct = (y / VIEW_H) * 100;
+
+      return (
+        <div
+          key={`sl-hit-${line.kind}-${line.barStart}-${line.barEnd}-${i}`}
+          className="absolute pointer-events-auto"
+          style={{
+            left: `${leftPct}%`,
+            width: `${Math.max(widthPct, 2)}%`,
+            top: `${topPct}%`,
+            height: '12px',
+            transform: 'translateY(-50%)',
+          }}
+        >
+          <Tooltip
+            content={tooltip}
+            position="top"
+            delay={200}
+            contentClassName="whitespace-pre-line block max-w-[240px]"
+            triggerDisplay="block"
+          >
+            <div className="h-full w-full cursor-help" aria-label={tooltip} />
+          </Tooltip>
+        </div>
+      );
+    })}
+  </>
+);
 
 const TapeMarkerHitLayer: React.FC<{
   model: TapeRenderModel;
@@ -274,6 +322,7 @@ const TapeChart: React.FC<{
       >
         <TapeSvg model={model} theme={theme} />
         <div className="pointer-events-none absolute inset-0 z-10">
+          <TapeStopLossHitLayer model={model} barCount={barCount} t={t} numberFormat={numberFormat} />
           <TapeMarkerHitLayer model={model} barCount={barCount} t={t} numberFormat={numberFormat} />
         </div>
       </div>
@@ -353,6 +402,26 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
             up={up}
             future={bar.isFuture}
             theme={theme}
+          />
+        );
+      })}
+
+      {model.priceLines.map((line, i) => {
+        const { x1, x2, y } = lineSegmentBounds(line, model, barCount);
+        const stroke = line.kind === 'planned_stop_loss' ? theme.stopLossPlannedLine : theme.stopLossBrokerLine;
+        const strokeWidth = line.kind === 'planned_stop_loss' ? 2.25 : 2;
+        return (
+          <line
+            key={`sl-line-${line.kind}-${line.barStart}-${line.barEnd}-${i}`}
+            x1={x1}
+            y1={y}
+            x2={x2}
+            y2={y}
+            stroke={stroke}
+            strokeWidth={strokeWidth}
+            strokeDasharray={line.kind === 'planned_stop_loss' ? '6 3' : '4 3'}
+            strokeLinecap="round"
+            strokeOpacity={1}
           />
         );
       })}
@@ -487,8 +556,8 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
             exitWin: t('marketTapeLegendExitWin'),
             exitLoss: t('marketTapeLegendExitLoss'),
             fill: t('marketTapeLegendFill'),
-            order: t('marketTapeLegendOrder'),
-            orderTooltip: t('marketTapeLegendOrderTooltip'),
+            stopLossPlanned: t('marketTapeLegendStopLossPlanned'),
+            stopLossBroker: t('marketTapeLegendStopLossBroker'),
             cursor: t('marketTapeLegendCursor'),
           }}
         />

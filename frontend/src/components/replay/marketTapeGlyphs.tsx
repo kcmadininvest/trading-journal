@@ -69,16 +69,40 @@ export const TapeGlyphFill: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   </svg>
 );
 
-export const TapeGlyphOrder: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
-  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <circle cx={11} cy={11} r={4.5} fill={theme.background} stroke={theme.orderRing} strokeWidth={1.5} />
-  </svg>
-);
-
 export const TapeGlyphCursor: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
     <polygon points="11,9 7,3 15,3" fill={theme.cursor} />
     <rect x={3} y={9} width={16} height={10} fill={theme.background} stroke={theme.border} strokeWidth={0.75} rx={1} />
+  </svg>
+);
+
+export const TapeGlyphStopLossPlanned: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
+  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
+    <line
+      x1={3}
+      y1={11}
+      x2={19}
+      y2={11}
+      stroke={theme.stopLossPlannedLine}
+      strokeWidth={2.5}
+      strokeDasharray="5 2"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+export const TapeGlyphStopLossBroker: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
+  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
+    <line
+      x1={3}
+      y1={11}
+      x2={19}
+      y2={11}
+      stroke={theme.stopLossBrokerLine}
+      strokeWidth={2.25}
+      strokeDasharray="4 2"
+      strokeLinecap="round"
+    />
   </svg>
 );
 
@@ -117,8 +141,8 @@ interface MarketTapeLegendProps {
     exitWin: string;
     exitLoss: string;
     fill: string;
-    order: string;
-    orderTooltip: string;
+    stopLossPlanned: string;
+    stopLossBroker: string;
     cursor: string;
   };
 }
@@ -136,12 +160,8 @@ export const MarketTapeLegend: React.FC<MarketTapeLegendProps> = ({ theme, label
     <MarketTapeLegendItem Glyph={TapeGlyphExitWin} theme={theme} label={labels.exitWin} />
     <MarketTapeLegendItem Glyph={TapeGlyphExitLoss} theme={theme} label={labels.exitLoss} />
     <MarketTapeLegendItem Glyph={TapeGlyphFill} theme={theme} label={labels.fill} />
-    <MarketTapeLegendItem
-      Glyph={TapeGlyphOrder}
-      theme={theme}
-      label={labels.order}
-      tooltip={labels.orderTooltip}
-    />
+    <MarketTapeLegendItem Glyph={TapeGlyphStopLossPlanned} theme={theme} label={labels.stopLossPlanned} />
+    <MarketTapeLegendItem Glyph={TapeGlyphStopLossBroker} theme={theme} label={labels.stopLossBroker} />
     <MarketTapeLegendItem Glyph={TapeGlyphCursor} theme={theme} label={labels.cursor} />
   </div>
 );

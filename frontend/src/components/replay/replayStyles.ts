@@ -43,6 +43,8 @@ export interface MarketTapeTheme {
   exitLoss: string;
   fillDot: string;
   orderRing: string;
+  stopLossPlannedLine: string;
+  stopLossBrokerLine: string;
 }
 
 export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
@@ -70,6 +72,8 @@ export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
       exitLoss: pnl.negative,
       fillDot,
       orderRing: '#94a3b8',
+      stopLossPlannedLine: '#fbbf24',
+      stopLossBrokerLine: '#c084fc',
     };
   }
   return {
@@ -91,6 +95,8 @@ export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
     exitLoss: pnl.negative,
     fillDot,
     orderRing: '#6b7280',
+    stopLossPlannedLine: '#ea580c',
+    stopLossBrokerLine: '#7c3aed',
   };
 }
 

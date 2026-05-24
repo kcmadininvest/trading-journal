@@ -13,7 +13,8 @@ from accounts.models import User
 from billing.models import CustomerSubscription
 from integrations.credentials_crypto import encrypt_json
 from integrations.models import UserApiIntegration
-from trades.models import SessionJournalDraft, TopStepTrade, TradingAccount, TradingSession
+from trades.models import SessionEvent, SessionJournalDraft, TopStepTrade, TradingAccount, TradingSession
+from trades.replay.serializers import SessionEventSerializer
 from trades.replay.session_builder import SessionBuildResult
 
 
@@ -158,3 +159,67 @@ class SessionReplayApiTests(TestCase):
         res = self.client.post(url, {}, format='json')
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertTrue(res.data.get('created'))
+
+    def test_timeline_planned_stop_loss_from_linked_trade(self) -> None:
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        tz = ZoneInfo('UTC')
+        trade = TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='sl-trade-1',
+            contract_name='NQ',
+            entered_at=datetime(2025, 8, 10, 14, 0, tzinfo=tz),
+            exited_at=datetime(2025, 8, 10, 15, 0, tzinfo=tz),
+            entry_price=Decimal('21000'),
+            exit_price=Decimal('21050'),
+            fees=Decimal('0'),
+            size=Decimal('1'),
+            trade_type='Long',
+            trade_day=date(2025, 8, 10),
+            pnl=Decimal('50'),
+            planned_stop_loss=Decimal('20950.5'),
+        )
+        SessionEvent.objects.create(
+            session=self.session,
+            event_type='position_open',
+            source='derived',
+            external_id='open-1',
+            sequence=1,
+            occurred_at=datetime(2025, 8, 10, 14, 0, tzinfo=tz),
+            payload={'contract_name': 'NQ', 'entry_price': '21000', 'trade_type': 'Long'},
+            trade=trade,
+        )
+        SessionEvent.objects.create(
+            session=self.session,
+            event_type='fill',
+            source='fill',
+            external_id='fill-1',
+            sequence=2,
+            occurred_at=datetime(2025, 8, 10, 14, 1, tzinfo=tz),
+            payload={'price': '21000'},
+        )
+
+        events = self.session.events.select_related('trade').order_by('sequence')
+        serialized = SessionEventSerializer(events, many=True).data
+        open_evt = next(e for e in serialized if e['event_type'] == 'position_open')
+        self.assertEqual(float(open_evt['planned_stop_loss']), 20950.5)
+        fill_evt = next(e for e in serialized if e['event_type'] == 'fill')
+        self.assertIsNone(fill_evt['planned_stop_loss'])
+
+    def test_session_event_serializer_planned_stop_loss_without_trade(self) -> None:
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        evt = SessionEvent.objects.create(
+            session=self.session,
+            event_type='order_created',
+            source='order',
+            external_id='ord-1',
+            sequence=99,
+            occurred_at=datetime(2025, 8, 10, 12, 0, tzinfo=ZoneInfo('UTC')),
+            payload={'stop_price': '20900'},
+        )
+        data = SessionEventSerializer(evt).data
+        self.assertIsNone(data['planned_stop_loss'])

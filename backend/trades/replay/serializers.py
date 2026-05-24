@@ -1,3 +1,5 @@
+from typing import Optional
+
 from rest_framework import serializers
 
 from trades.models import (
@@ -9,6 +11,8 @@ from trades.models import (
 
 
 class SessionEventSerializer(serializers.ModelSerializer):
+    planned_stop_loss = serializers.SerializerMethodField()
+
     class Meta:
         model = SessionEvent
         fields = [
@@ -20,7 +24,14 @@ class SessionEventSerializer(serializers.ModelSerializer):
             'occurred_at',
             'payload',
             'trade_id',
+            'planned_stop_loss',
         ]
+
+    def get_planned_stop_loss(self, obj: SessionEvent) -> Optional[str]:
+        trade = obj.trade
+        if trade is None or trade.planned_stop_loss is None:
+            return None
+        return str(trade.planned_stop_loss)
 
 
 class SessionInsightSerializer(serializers.ModelSerializer):

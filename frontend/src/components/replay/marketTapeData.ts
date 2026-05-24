@@ -1,6 +1,16 @@
 import { SessionEventItem, SessionMarketBar, SessionMarketContract, SessionMarketData } from '../../services/sessionReplay';
 
-export type TapeMarkerKind = 'entry' | 'exit' | 'fill' | 'order';
+export type TapeMarkerKind = 'entry' | 'exit' | 'fill';
+
+export type TapePriceLineKind = 'planned_stop_loss' | 'broker_stop';
+
+export interface TapePriceLine {
+  price: number;
+  barStart: number;
+  barEnd: number;
+  kind: TapePriceLineKind;
+  sourceEventId?: number;
+}
 
 export interface TapeMarker {
   kind: TapeMarkerKind;
@@ -29,6 +39,7 @@ export interface TapeRenderModel {
   label: string;
   bars: TapeRenderBar[];
   markers: TapeMarker[];
+  priceLines: TapePriceLine[];
   cursorBarIndex: number;
   yMin: number;
   yMax: number;
@@ -90,6 +101,133 @@ function priceFromPayload(payload: Record<string, unknown>, keys: string[]): num
   return null;
 }
 
+const BROKER_STOP_ORDER_TYPES = new Set(['stop', 'stop_limit', 'trailing_stop']);
+
+function isBrokerStopOrderType(orderType: unknown): boolean {
+  if (orderType == null) return false;
+  return BROKER_STOP_ORDER_TYPES.has(String(orderType).toLowerCase());
+}
+
+function plannedStopLossFromEvent(evt: SessionEventItem): number | null {
+  const raw = evt.planned_stop_loss;
+  if (raw == null || raw === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function brokerStopPriceFromEvent(evt: SessionEventItem): number | null {
+  if (evt.event_type !== 'order_created' && evt.event_type !== 'order_updated') return null;
+  const payload = evt.payload || {};
+  const order = (payload.order as Record<string, unknown>) || {};
+  const orderType = payload.order_type ?? order.orderType ?? order.type;
+  if (!isBrokerStopOrderType(orderType)) return null;
+  return (
+    priceFromPayload(payload, ['stop_price']) ??
+    priceFromPayload(order, ['stopPrice', 'stop_price'])
+  );
+}
+
+interface RoundTripStopLoss {
+  openBar: number;
+  openEventId: number;
+  openIndex: number;
+  closeBar: number | null;
+  closeIndex: number | null;
+  plannedSl: number | null;
+  brokerSl: number | null;
+}
+
+function collectRoundTripsStopLoss(
+  events: SessionEventItem[],
+  contractId: string,
+  label: string,
+  bars: SessionMarketBar[],
+): RoundTripStopLoss[] {
+  const trips: RoundTripStopLoss[] = [];
+  let current: RoundTripStopLoss | null = null;
+
+  for (let i = 0; i < events.length; i++) {
+    const evt = events[i];
+    if (!eventMatchesContract(evt, contractId, label)) continue;
+
+    if (evt.event_type === 'position_open') {
+      if (current) {
+        trips.push(current);
+      }
+      current = {
+        openBar: barIndexAtOrBefore(bars, evt.occurred_at),
+        openEventId: evt.id,
+        openIndex: i,
+        closeBar: null,
+        closeIndex: null,
+        plannedSl: plannedStopLossFromEvent(evt),
+        brokerSl: null,
+      };
+      continue;
+    }
+
+    if (!current) continue;
+
+    if (current.plannedSl == null) {
+      const planned = plannedStopLossFromEvent(evt);
+      if (planned != null) {
+        current.plannedSl = planned;
+      }
+    }
+
+    const brokerStop = brokerStopPriceFromEvent(evt);
+    if (brokerStop != null && current.plannedSl == null) {
+      current.brokerSl = brokerStop;
+    }
+
+    if (evt.event_type === 'position_close') {
+      current.closeBar = barIndexAtOrBefore(bars, evt.occurred_at);
+      current.closeIndex = i;
+      trips.push(current);
+      current = null;
+    }
+  }
+
+  if (current) {
+    trips.push(current);
+  }
+
+  return trips;
+}
+
+export function buildStopLossLines(
+  events: SessionEventItem[],
+  currentIndex: number,
+  contractId: string,
+  label: string,
+  bars: SessionMarketBar[],
+  cursorBarIndex: number,
+): TapePriceLine[] {
+  const trips = collectRoundTripsStopLoss(events, contractId, label, bars);
+  const lines: TapePriceLine[] = [];
+
+  for (const trip of trips) {
+    if (trip.openIndex > currentIndex) continue;
+
+    const price = trip.plannedSl ?? trip.brokerSl;
+    if (price == null) continue;
+
+    const tradeClosed =
+      trip.closeIndex != null && trip.closeBar != null && trip.closeIndex <= currentIndex;
+    const barEnd = tradeClosed ? trip.closeBar! : cursorBarIndex;
+
+    lines.push({
+      price,
+      barStart: trip.openBar,
+      barEnd,
+      kind: trip.plannedSl != null ? 'planned_stop_loss' : 'broker_stop',
+      sourceEventId: trip.openEventId,
+    });
+  }
+
+  return lines;
+}
+
 export function buildMarkersForContract(
   events: SessionEventItem[],
   currentIndex: number,
@@ -144,20 +282,6 @@ export function buildMarkersForContract(
           price,
           occurredAt,
           side: String(payload.trade_type || ''),
-          sourceEvent: evt,
-          markerKey: `${evt.event_type}-${evt.external_id}-${evt.id}`,
-        });
-      }
-    } else if (evt.event_type === 'order_created' || evt.event_type === 'order_updated') {
-      const price =
-        priceFromPayload(payload, ['limit_price', 'stop_price', 'filled_price']) ??
-        priceFromPayload((payload.order as Record<string, unknown>) || {}, ['limitPrice', 'stopPrice']);
-      if (price != null) {
-        markers.push({
-          kind: 'order',
-          barIndex,
-          price,
-          occurredAt,
           sourceEvent: evt,
           markerKey: `${evt.event_type}-${evt.external_id}-${evt.id}`,
         });
@@ -273,11 +397,26 @@ export function buildTapeRenderModel(
     cursorBarIndex,
   );
 
+  const priceLines = buildStopLossLines(
+    events,
+    currentIndex,
+    contract.contract_id,
+    contract.label,
+    bars,
+    cursorBarIndex,
+  );
+
+  for (const line of priceLines) {
+    yMin = Math.min(yMin, line.price);
+    yMax = Math.max(yMax, line.price);
+  }
+
   return {
     contractId: contract.contract_id,
     label: contract.label,
     bars: renderBars,
     markers,
+    priceLines,
     cursorBarIndex,
     yMin,
     yMax,

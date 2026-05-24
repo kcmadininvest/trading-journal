@@ -1,5 +1,6 @@
 import { TFunction } from 'i18next';
 import { SessionEventItem } from '../../services/sessionReplay';
+import { TapePriceLineKind } from './marketTapeData';
 import { formatCurrencyWithSign, formatNumber, NumberFormatType } from '../../utils/numberFormat';
 
 const ORDER_TYPE_KEYS: Record<string, string> = {
@@ -260,6 +261,24 @@ export function getEventDetailText(
     default:
       return null;
   }
+}
+
+/** Tooltip d'une ligne stop loss sur le bandeau marché. */
+export function getStopLossLineTooltipText(
+  price: number,
+  kind: TapePriceLineKind,
+  t: TFunction,
+  numberFormat: NumberFormatType = 'comma',
+): string {
+  const labelKey =
+    kind === 'planned_stop_loss'
+      ? 'marketTapeStopLossPlannedTooltip'
+      : 'marketTapeStopLossBrokerTooltip';
+  const priceStr = formatNumber(price, price % 1 === 0 ? 0 : 2, numberFormat);
+  return t(labelKey, {
+    defaultValue: kind === 'planned_stop_loss' ? 'Stop loss planifié @ {{price}}' : 'Stop broker @ {{price}}',
+    price: priceStr,
+  });
 }
 
 /** Tooltip du marqueur ordre sur le bandeau marché (type, sens, prix…). */

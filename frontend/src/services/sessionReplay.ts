@@ -57,6 +57,8 @@ export interface SessionEventItem {
   occurred_at: string;
   payload: Record<string, unknown>;
   trade_id: number | null;
+  /** SL planifié du trade journal lié (timeline replay). */
+  planned_stop_loss?: string | null;
 }
 
 /** Levée lorsque apply-journal renvoie 409 (entrée existante). */
