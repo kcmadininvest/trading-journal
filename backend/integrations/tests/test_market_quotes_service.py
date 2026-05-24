@@ -7,6 +7,7 @@ from integrations.market_quotes_service import (
     load_snapshot,
     normalize_gateway_quote,
     save_snapshot,
+    snapshot_cache_key,
     update_quote_in_snapshot,
 )
 
@@ -16,7 +17,8 @@ from integrations.market_quotes_service import (
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         }
-    }
+    },
+    CHANNEL_LAYERS={'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}},
 )
 class MarketQuotesServiceTests(TestCase):
     def test_format_price_respects_tick(self) -> None:
@@ -40,8 +42,9 @@ class MarketQuotesServiceTests(TestCase):
         self.assertEqual(quote['last_price_display'], '21000.5')
         self.assertEqual(quote['change_percent'], 0.24)
 
-    def test_snapshot_roundtrip(self) -> None:
-        save_snapshot(build_empty_snapshot(connected=True))
+    def test_snapshot_roundtrip_per_user(self) -> None:
+        user_a, user_b = 101, 202
+        save_snapshot(build_empty_snapshot(connected=True), user_a)
         update_quote_in_snapshot(
             normalize_gateway_quote(
                 {'lastPrice': 100, 'change': 1, 'changePercent': 1.0},
@@ -49,9 +52,24 @@ class MarketQuotesServiceTests(TestCase):
                 contract_id='CON.F.US.ENQ.U25',
                 label='Nasdaq',
                 tick_size=0.25,
-            )
+            ),
+            user_a,
         )
-        snapshot = load_snapshot()
-        nasdaq = next(q for q in snapshot['quotes'] if q['key'] == 'nasdaq')
-        self.assertEqual(nasdaq['last_price'], 100)
-        self.assertTrue(snapshot['connected'])
+        save_snapshot(build_empty_snapshot(connected=True), user_b)
+        update_quote_in_snapshot(
+            normalize_gateway_quote(
+                {'lastPrice': 200, 'change': 2, 'changePercent': 2.0},
+                instrument_key='nasdaq',
+                contract_id='CON.F.US.ENQ.U25',
+                label='Nasdaq',
+                tick_size=0.25,
+            ),
+            user_b,
+        )
+        snap_a = load_snapshot(user_a)
+        snap_b = load_snapshot(user_b)
+        nasdaq_a = next(q for q in snap_a['quotes'] if q['key'] == 'nasdaq')
+        nasdaq_b = next(q for q in snap_b['quotes'] if q['key'] == 'nasdaq')
+        self.assertEqual(nasdaq_a['last_price'], 100)
+        self.assertEqual(nasdaq_b['last_price'], 200)
+        self.assertNotEqual(snapshot_cache_key(user_a), snapshot_cache_key(user_b))

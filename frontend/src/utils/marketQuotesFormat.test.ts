@@ -1,3 +1,5 @@
+import { getPriceFlashDirection } from './marketQuoteFlash';
+
 function formatChangePercent(value: number | null): string {
   if (value === null || Number.isNaN(value)) {
     return '—';
@@ -17,5 +19,19 @@ describe('marketQuotes format', () => {
 
   it('returns dash for null', () => {
     expect(formatChangePercent(null)).toBe('—');
+  });
+});
+
+describe('marketQuote flash', () => {
+  it('detects price increase', () => {
+    expect(getPriceFlashDirection(100, 101)).toBe('up');
+  });
+
+  it('detects price decrease', () => {
+    expect(getPriceFlashDirection(100, 99)).toBe('down');
+  });
+
+  it('ignores first render', () => {
+    expect(getPriceFlashDirection(undefined, 100)).toBe(null);
   });
 });

@@ -57,6 +57,7 @@ if not ALLOWED_HOSTS and not DEBUG:
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -79,6 +80,7 @@ INSTALLED_APPS = [
     'billing',
     'trading_activity',
     'integrations',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -95,6 +97,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'trading_journal_api.urls'
+
+ASGI_APPLICATION = 'trading_journal_api.asgi.application'
 
 TEMPLATES = [
     {
@@ -289,8 +293,17 @@ TOPSTEPX_RTC_MARKET_HUB_URL = config(
     'TOPSTEPX_RTC_MARKET_HUB_URL',
     default='https://rtc.topstepx.com/hubs/market',
 )
+# Déprécié : préférer l'intégration TopStep par utilisateur (Paramètres → Intégrations).
 TOPSTEPX_QUOTES_USERNAME = config('TOPSTEPX_QUOTES_USERNAME', default='')
 TOPSTEPX_QUOTES_API_KEY = config('TOPSTEPX_QUOTES_API_KEY', default='')
+MARKET_QUOTES_ENV_FALLBACK = config('MARKET_QUOTES_ENV_FALLBACK', default=DEBUG, cast=bool)
+MARKET_QUOTES_WS_DEBOUNCE_MS = config('MARKET_QUOTES_WS_DEBOUNCE_MS', default=300, cast=int)
+MARKET_QUOTES_HUB_IDLE_TTL_SECONDS = config('MARKET_QUOTES_HUB_IDLE_TTL_SECONDS', default=180, cast=int)
+MARKET_QUOTES_CONTROL_REDIS_URL = config(
+    'MARKET_QUOTES_CONTROL_REDIS_URL',
+    default=config('CELERY_BROKER_URL', default='redis://localhost:6379/0'),
+)
+CHANNEL_LAYER_REDIS_URL = config('CHANNEL_LAYER_REDIS_URL', default='redis://localhost:6379/2')
 
 # JWT Settings - Configuration sécurisée avec déconnexion automatique et blacklist
 SIMPLE_JWT = {
@@ -413,6 +426,26 @@ else:
                 'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             }
         }
+    }
+
+try:
+    import redis as _redis_channel_probe
+
+    _channel_redis = _redis_channel_probe.Redis.from_url(CHANNEL_LAYER_REDIS_URL)
+    _channel_redis.ping()
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [CHANNEL_LAYER_REDIS_URL],
+            },
+        },
+    }
+except Exception:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
     }
 
 # Logging Configuration

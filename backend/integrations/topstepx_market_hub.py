@@ -11,12 +11,16 @@ from django.conf import settings
 from integrations.market_quotes_config import ResolvedMarketContract
 from integrations.market_quotes_service import (
     build_empty_snapshot,
+    get_quotes_credentials_env,
+    get_user_quotes_integration,
     load_snapshot,
     normalize_gateway_quote,
     save_snapshot,
     update_quote_in_snapshot,
+    user_has_quotes_credentials,
 )
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
+from integrations.topstepx_auth import get_valid_session_token
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +33,14 @@ class TopStepXMarketHubRunner:
     def __init__(
         self,
         *,
+        user_id: int,
         auth_token: str,
         contracts: list[ResolvedMarketContract],
         hub_url: str | None = None,
         on_connected: Callable[[], None] | None = None,
         on_disconnected: Callable[[], None] | None = None,
     ) -> None:
+        self.user_id = user_id
         self.auth_token = auth_token
         self.contracts = contracts
         self.hub_url = hub_url or getattr(
@@ -115,27 +121,27 @@ class TopStepXMarketHubRunner:
             label=contract.label,
             tick_size=contract.tick_size,
         )
-        update_quote_in_snapshot(quote)
+        update_quote_in_snapshot(quote, self.user_id)
 
     def _on_open(self) -> None:
-        logger.info('Market Hub TopStepX connecté')
+        logger.info('Market Hub TopStepX connecté user_id=%s', self.user_id)
         if self._hub is None:
             return
         for contract in self.contracts:
             try:
                 self._hub.send('SubscribeContractQuotes', [contract.contract_id])
-                logger.debug('Subscribed quotes %s', contract.contract_id)
+                logger.debug('Subscribed quotes %s user_id=%s', contract.contract_id, self.user_id)
             except Exception:
                 logger.exception('Échec subscribe %s', contract.contract_id)
-        snapshot = load_snapshot_with_connected(True)
-        save_snapshot(snapshot)
+        snapshot = load_snapshot_with_connected(self.user_id, True)
+        save_snapshot(snapshot, self.user_id)
         if self.on_connected:
             self.on_connected()
 
     def _on_close(self) -> None:
-        logger.warning('Market Hub TopStepX déconnecté')
-        snapshot = load_snapshot_with_connected(False)
-        save_snapshot(snapshot)
+        logger.warning('Market Hub TopStepX déconnecté user_id=%s', self.user_id)
+        snapshot = load_snapshot_with_connected(self.user_id, False)
+        save_snapshot(snapshot, self.user_id)
         if self.on_disconnected:
             self.on_disconnected()
 
@@ -146,7 +152,7 @@ class TopStepXMarketHubRunner:
                 if row['key'] == contract.key:
                     row['contract_id'] = contract.contract_id
                     row['label'] = contract.label
-        save_snapshot(initial)
+        save_snapshot(initial, self.user_id)
 
         self._hub = self._build_hub()
         self._hub.start()
@@ -164,12 +170,12 @@ class TopStepXMarketHubRunner:
                         pass
                 self._hub.stop()
             except Exception:
-                logger.exception('Erreur arrêt Market Hub')
+                logger.exception('Erreur arrêt Market Hub user_id=%s', self.user_id)
             self._hub = None
 
 
-def load_snapshot_with_connected(connected: bool) -> dict[str, Any]:
-    snapshot = load_snapshot()
+def load_snapshot_with_connected(user_id: int, connected: bool) -> dict[str, Any]:
+    snapshot = load_snapshot(user_id)
     snapshot['connected'] = connected
     if not connected:
         snapshot['message'] = 'market_quotes_disconnected'
@@ -178,14 +184,35 @@ def load_snapshot_with_connected(connected: bool) -> dict[str, Any]:
     return snapshot
 
 
-def login_quotes_session() -> str:
-    creds = None
-    from integrations.market_quotes_service import get_quotes_credentials
+def login_quotes_session_for_user(user) -> str:
+    integration = get_user_quotes_integration(user)
+    if integration is not None:
+        return get_valid_session_token(integration)
 
-    creds = get_quotes_credentials()
+    if getattr(settings, 'MARKET_QUOTES_ENV_FALLBACK', False):
+        creds = get_quotes_credentials_env()
+        if creds is None:
+            raise TopStepXApiError(
+                'Identifiants TopStep manquants.',
+                error_code='missing_quotes_credentials',
+            )
+        username, api_key = creds
+        client = TopStepXApiClient()
+        auth = client.login_key(username, api_key)
+        return auth.token
+
+    raise TopStepXApiError(
+        'Configurez TopStep dans Paramètres → Intégrations.',
+        error_code='missing_credentials',
+    )
+
+
+def login_quotes_session() -> str:
+    """Déprécié : utiliser login_quotes_session_for_user."""
+    creds = get_quotes_credentials_env()
     if creds is None:
         raise TopStepXApiError(
-            'Identifiants TOPSTEPX_QUOTES_USERNAME / TOPSTEPX_QUOTES_API_KEY manquants.',
+            'Identifiants TOPSTEPX_QUOTES manquants.',
             error_code='missing_quotes_credentials',
         )
     username, api_key = creds

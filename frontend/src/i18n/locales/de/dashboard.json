@@ -212,8 +212,9 @@
     "unavailable": "Preise nicht verfügbar",
     "market_quotes_unavailable": "Kursfeed nicht gestartet",
     "market_quotes_disconnected": "Marktverbindung unterbrochen",
-    "missing_credentials": "TopStep-Konfiguration fehlt",
+    "missing_credentials": "TopStep unter Einstellungen → Integrationen einrichten",
     "connecting": "Verbindung wird hergestellt…",
+    "awaitingQuotes": "Warte auf Kurse…",
     "instruments": {
       "nasdaq": "Nasdaq",
       "sp500": "S&P 500",

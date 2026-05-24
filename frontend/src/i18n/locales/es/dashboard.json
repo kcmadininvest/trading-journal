@@ -212,8 +212,9 @@
     "unavailable": "Precios no disponibles",
     "market_quotes_unavailable": "Servicio de precios no iniciado",
     "market_quotes_disconnected": "Conexión de mercado interrumpida",
-    "missing_credentials": "Configuración TopStep faltante",
+    "missing_credentials": "Configure TopStep en Ajustes → Integraciones",
     "connecting": "Conectando…",
+    "awaitingQuotes": "Esperando cotizaciones…",
     "instruments": {
       "nasdaq": "Nasdaq",
       "sp500": "S&P 500",

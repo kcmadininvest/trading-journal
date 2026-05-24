@@ -1,11 +1,11 @@
-"""Cache et normalisation des cours marché TopStepX pour le bandeau dashboard."""
+"""Cache et normalisation des cours marché TopStepX pour le bandeau dashboard (par utilisateur)."""
 from __future__ import annotations
 
 import json
 import logging
 import os
 from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 from typing import Any
 
@@ -13,15 +13,55 @@ from django.conf import settings
 from django.core.cache import cache
 
 from integrations.market_quotes_config import MARKET_QUOTE_INSTRUMENTS, ResolvedMarketContract
+from integrations.models import UserApiIntegration
 
 logger = logging.getLogger(__name__)
 
-CACHE_KEY_SNAPSHOT = 'market_quotes:snapshot'
-CACHE_KEY_CONTRACTS = 'market_quotes:contracts'
+CACHE_KEY_SNAPSHOT_PREFIX = 'market_quotes:snapshot'
+CACHE_KEY_CONTRACTS_PREFIX = 'market_quotes:contracts'
 CACHE_TTL_SNAPSHOT = 120
 CACHE_TTL_CONTRACTS = 60 * 60 * 12
 
 _INSTRUMENT_LABELS = {item.key: item.label for item in MARKET_QUOTE_INSTRUMENTS}
+
+
+def channel_group_name(user_id: int) -> str:
+    return f'market_quotes.user_{user_id}'
+
+
+def snapshot_cache_key(user_id: int) -> str:
+    return f'{CACHE_KEY_SNAPSHOT_PREFIX}:{user_id}'
+
+
+def contracts_cache_key(user_id: int) -> str:
+    return f'{CACHE_KEY_CONTRACTS_PREFIX}:{user_id}'
+
+
+def get_user_quotes_integration(user) -> UserApiIntegration | None:
+    """Intégration TopStepX configurée par l'utilisateur (clés en base chiffrées)."""
+    from integrations.topstepx_auth import get_topstepx_integration
+
+    integration = get_topstepx_integration(user)
+    if integration is None or not integration.secrets_encrypted:
+        return None
+    return integration
+
+
+def get_quotes_credentials_env() -> tuple[str, str] | None:
+    """Repli dev/local uniquement si MARKET_QUOTES_ENV_FALLBACK est activé."""
+    username = getattr(settings, 'TOPSTEPX_QUOTES_USERNAME', '') or ''
+    api_key = getattr(settings, 'TOPSTEPX_QUOTES_API_KEY', '') or ''
+    if username.strip() and api_key.strip():
+        return username.strip(), api_key.strip()
+    return None
+
+
+def user_has_quotes_credentials(user) -> bool:
+    if get_user_quotes_integration(user) is not None:
+        return True
+    if getattr(settings, 'MARKET_QUOTES_ENV_FALLBACK', False):
+        return get_quotes_credentials_env() is not None
+    return False
 
 
 def _var_dir() -> Path:
@@ -58,18 +98,20 @@ def _var_dir() -> Path:
     return fallback
 
 
-def _snapshot_file_path() -> Path:
+def _snapshot_file_path(user_id: int) -> Path:
     configured = getattr(settings, 'MARKET_QUOTES_SNAPSHOT_FILE', None)
     if configured:
-        return Path(configured)
-    return _var_dir() / 'market_quotes_snapshot.json'
+        base = Path(configured)
+        return base.parent / f'{base.stem}_{user_id}{base.suffix}'
+    return _var_dir() / f'market_quotes_snapshot_{user_id}.json'
 
 
-def _contracts_file_path() -> Path:
+def _contracts_file_path(user_id: int) -> Path:
     configured = getattr(settings, 'MARKET_QUOTES_CONTRACTS_FILE', None)
     if configured:
-        return Path(configured)
-    return _var_dir() / 'market_quotes_contracts.json'
+        base = Path(configured)
+        return base.parent / f'{base.stem}_{user_id}{base.suffix}'
+    return _var_dir() / f'market_quotes_contracts_{user_id}.json'
 
 
 def _write_json_file(path: Path, payload: Any) -> None:
@@ -173,7 +215,7 @@ def build_empty_snapshot(*, connected: bool = False, message: str | None = None)
     }
 
 
-def save_contracts_resolved(contracts: list[ResolvedMarketContract]) -> None:
+def save_contracts_resolved(contracts: list[ResolvedMarketContract], user_id: int) -> None:
     payload = [
         {
             'key': c.key,
@@ -185,14 +227,14 @@ def save_contracts_resolved(contracts: list[ResolvedMarketContract]) -> None:
         }
         for c in contracts
     ]
-    cache.set(CACHE_KEY_CONTRACTS, payload, CACHE_TTL_CONTRACTS)
-    _write_json_file(_contracts_file_path(), payload)
+    cache.set(contracts_cache_key(user_id), payload, CACHE_TTL_CONTRACTS)
+    _write_json_file(_contracts_file_path(user_id), payload)
 
 
-def load_contracts_resolved() -> list[ResolvedMarketContract]:
-    raw = cache.get(CACHE_KEY_CONTRACTS)
+def load_contracts_resolved(user_id: int) -> list[ResolvedMarketContract]:
+    raw = cache.get(contracts_cache_key(user_id))
     if not raw:
-        raw = _read_json_file(_contracts_file_path())
+        raw = _read_json_file(_contracts_file_path(user_id))
     if not raw:
         return []
     out: list[ResolvedMarketContract] = []
@@ -212,12 +254,22 @@ def load_contracts_resolved() -> list[ResolvedMarketContract]:
     return out
 
 
-def load_snapshot() -> dict[str, Any]:
-    raw = cache.get(CACHE_KEY_SNAPSHOT)
+def load_snapshot(user_id: int) -> dict[str, Any]:
+    raw = cache.get(snapshot_cache_key(user_id))
     if not raw:
-        raw = _read_json_file(_snapshot_file_path())
+        raw = _read_json_file(_snapshot_file_path(user_id))
     if not raw:
-        return build_empty_snapshot(connected=False, message='market_quotes_unavailable')
+        message = 'missing_credentials'
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        try:
+            user = User.objects.get(pk=user_id)
+            if user_has_quotes_credentials(user):
+                message = 'connecting'
+        except User.DoesNotExist:
+            message = 'market_quotes_unavailable'
+        return build_empty_snapshot(connected=False, message=message)
     if isinstance(raw, str):
         try:
             return json.loads(raw)
@@ -226,14 +278,20 @@ def load_snapshot() -> dict[str, Any]:
     return raw
 
 
-def save_snapshot(snapshot: dict[str, Any]) -> None:
+def save_snapshot(snapshot: dict[str, Any], user_id: int) -> None:
     snapshot['updated_at'] = datetime.now(timezone.utc).isoformat()
-    cache.set(CACHE_KEY_SNAPSHOT, snapshot, CACHE_TTL_SNAPSHOT)
-    _write_json_file(_snapshot_file_path(), snapshot)
+    cache.set(snapshot_cache_key(user_id), snapshot, CACHE_TTL_SNAPSHOT)
+    _write_json_file(_snapshot_file_path(user_id), snapshot)
+    try:
+        from integrations.market_quotes_broadcast import schedule_snapshot_broadcast
+
+        schedule_snapshot_broadcast(user_id, snapshot)
+    except Exception:
+        logger.exception('Broadcast snapshot user_id=%s échoué', user_id)
 
 
-def update_quote_in_snapshot(quote: dict[str, Any]) -> None:
-    snapshot = load_snapshot()
+def update_quote_in_snapshot(quote: dict[str, Any], user_id: int) -> None:
+    snapshot = load_snapshot(user_id)
     quotes = snapshot.get('quotes') or []
     if not quotes:
         snapshot = build_empty_snapshot(connected=True)
@@ -252,12 +310,9 @@ def update_quote_in_snapshot(quote: dict[str, Any]) -> None:
     snapshot['quotes'] = quotes
     snapshot['connected'] = True
     snapshot['message'] = None
-    save_snapshot(snapshot)
+    save_snapshot(snapshot, user_id)
 
 
+# Rétrocompat tests / migration : alias sans user_id interdit en prod
 def get_quotes_credentials() -> tuple[str, str] | None:
-    username = getattr(settings, 'TOPSTEPX_QUOTES_USERNAME', '') or ''
-    api_key = getattr(settings, 'TOPSTEPX_QUOTES_API_KEY', '') or ''
-    if username.strip() and api_key.strip():
-        return username.strip(), api_key.strip()
-    return None
+    return get_quotes_credentials_env()

@@ -212,8 +212,9 @@
     "unavailable": "Cours indisponibles",
     "market_quotes_unavailable": "Service de cours non démarré",
     "market_quotes_disconnected": "Connexion marché interrompue",
-    "missing_credentials": "Configuration TopStep manquante",
+    "missing_credentials": "Configurez TopStep dans Paramètres → Intégrations",
     "connecting": "Connexion en cours…",
+    "awaitingQuotes": "En attente des cotations…",
     "instruments": {
       "nasdaq": "Nasdaq",
       "sp500": "S&P 500",

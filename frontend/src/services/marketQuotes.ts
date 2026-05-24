@@ -21,6 +21,19 @@ export interface MarketQuotesSnapshot {
 class MarketQuotesService {
   private readonly baseUrl = getApiBaseUrl();
 
+  getWebSocketBaseUrl(): string {
+    if (this.baseUrl.startsWith('http://') || this.baseUrl.startsWith('https://')) {
+      const parsed = new URL(this.baseUrl);
+      parsed.protocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+      return parsed.origin;
+    }
+    if (typeof window !== 'undefined') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      return `${protocol}//${window.location.host}`;
+    }
+    return 'ws://127.0.0.1:8000';
+  }
+
   async getSnapshot(): Promise<MarketQuotesSnapshot> {
     const token = localStorage.getItem('access_token');
     const response = await fetch(`${this.baseUrl}/api/trades/market-quotes/`, {

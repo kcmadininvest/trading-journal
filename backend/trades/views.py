@@ -5420,6 +5420,8 @@ def market_quotes(request):
     """
     Snapshot des cours temps réel (cache Redis alimenté par run_market_quotes_hub).
     """
+    from integrations.market_quotes_activation import bootstrap_market_quotes_for_user
     from integrations.market_quotes_service import load_snapshot
 
-    return Response(load_snapshot())
+    bootstrap_market_quotes_for_user(request.user)
+    return Response(load_snapshot(request.user.id))

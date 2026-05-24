@@ -758,17 +758,7 @@ ENV_BACKEND="$BACKEND_DIR/.env"
 LOG_DIR_MARKET="/var/log/trading-journal"
 VAR_DIR_MARKET="$BACKEND_DIR/var"
 
-if [ -f "$ENV_BACKEND" ]; then
-    if ! grep -qE '^TOPSTEPX_QUOTES_USERNAME=.+' "$ENV_BACKEND" 2>/dev/null || \
-       ! grep -qE '^TOPSTEPX_QUOTES_API_KEY=.+' "$ENV_BACKEND" 2>/dev/null; then
-        warn "TOPSTEPX_QUOTES_USERNAME / TOPSTEPX_QUOTES_API_KEY manquants dans backend/.env"
-        warn "Le bandeau cours restera indisponible tant que ces variables ne sont pas définies"
-    else
-        info "✅ Variables TopStep bandeau cours présentes dans backend/.env"
-    fi
-else
-    warn "backend/.env introuvable — impossible de vérifier TOPSTEPX_QUOTES_*"
-fi
+info "ℹ️  Bandeau cours : chaque utilisateur configure TopStep dans Paramètres → Intégrations (plus de clé TOPSTEPX_QUOTES_* dans .env)"
 
 if redis-cli ping >/dev/null 2>&1; then
     info "✅ Redis actif (PONG)"
@@ -789,19 +779,17 @@ else
     warn "Impossible de créer $LOG_DIR_MARKET ou $VAR_DIR_MARKET"
 fi
 
-MARKET_QUOTES_ENV_OK=0
-if [ -f "$ENV_BACKEND" ] && \
-   grep -qE '^TOPSTEPX_QUOTES_USERNAME=.+' "$ENV_BACKEND" 2>/dev/null && \
-   grep -qE '^TOPSTEPX_QUOTES_API_KEY=.+' "$ENV_BACKEND" 2>/dev/null; then
-    MARKET_QUOTES_ENV_OK=1
-fi
-
 MARKET_VENV_PYTHON="$BACKEND_DIR/venv/bin/python"
 if [ -f "$MARKET_VENV_PYTHON" ]; then
     if ! "$MARKET_VENV_PYTHON" -c "import signalrcore" 2>/dev/null; then
         warn "Paquet signalrcore absent — installation pour le bandeau cours…"
         "$BACKEND_DIR/venv/bin/pip" install signalrcore websocket-client --quiet 2>/dev/null || \
             warn "Impossible d'installer signalrcore (pip install signalrcore websocket-client)"
+    fi
+    if ! "$MARKET_VENV_PYTHON" -c "import channels" 2>/dev/null; then
+        warn "Paquets channels absents — installation pour WebSocket bandeau cours…"
+        "$BACKEND_DIR/venv/bin/pip" install channels channels-redis --quiet 2>/dev/null || \
+            warn "Impossible d'installer channels (pip install channels channels-redis)"
     fi
 fi
 
@@ -838,9 +826,7 @@ if [ -f "$MARKET_QUOTES_UNIT" ]; then
         sudo systemctl daemon-reload 2>/dev/null || true
         sudo systemctl enable trading-journal-market-quotes.service 2>/dev/null || \
             warn "Impossible d'activer trading-journal-market-quotes au démarrage"
-        if [ "$MARKET_QUOTES_ENV_OK" -eq 0 ]; then
-            warn "Démarrage du worker bandeau cours ignoré (TOPSTEPX_QUOTES_* manquants dans backend/.env)"
-        elif sudo systemctl restart trading-journal-market-quotes.service 2>/dev/null || \
+        if sudo systemctl restart trading-journal-market-quotes.service 2>/dev/null || \
              sudo systemctl start trading-journal-market-quotes.service 2>/dev/null; then
             info "Attente du démarrage trading-journal-market-quotes (jusqu'à 30 s)…"
             if _wait_market_quotes_active; then
@@ -867,9 +853,11 @@ if redis-cli ping >/dev/null 2>&1; then
     if [ "$MARKET_KEYS_COUNT" -gt 0 ] 2>/dev/null; then
         info "✅ Cache Redis bandeau cours: ${MARKET_KEYS_COUNT} clé(s)"
     else
-        warn "Aucune clé market_quotes dans Redis (le worker peut encore initialiser le cache)"
+        warn "Aucune clé market_quotes dans Redis (normal tant qu'aucun utilisateur n'ouvre le dashboard)"
     fi
 fi
+
+info "ℹ️  WebSocket bandeau : vérifier ProxyPass /ws/ → ws://127.0.0.1:8001/ws/ dans la config Apache (voir apache/trading-journal.conf)"
 
 # 12e. 🔄 Redémarrage du service Daphne (après migrations, collectstatic et bandeau cours)
 info "Redémarrage du service trading-journal-daphne..."
