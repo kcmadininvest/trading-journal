@@ -85,7 +85,11 @@
     "calmarRatioTooltip": "年間リターン / 最大ドローダウン。> 1.0 = リスクに対する良好なリターン。計算には少なくとも30日のトレードが必要",
     "riskAdjustedPerformance": "リスク調整パフォーマンス",
     "tradeEfficiency": "トレード効率",
-    "tradeEfficiencyTooltip": "テイクプロフィットが達成されたトレードの割合。高い = より良い実行"
+    "tradeEfficiencyTooltip": "テイクプロフィットが達成されたトレードの割合。高い = より良い実行",
+    "avgTimeBetweenTrades": "2取引間の平均時間",
+    "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
+    "avgDailyExposureTime": "1日のエクスポージャー時間",
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
   },
   "tradesAnalysis": {
     "title": "トレード分析",
@@ -201,5 +205,29 @@
     "modelDeleteError": "モデルの削除中にエラーが発生しました。",
     "exportErrorMessage": "エクスポート中にエラーが発生しました。もう一度お試しください。",
     "reportFilePrefix": "レポート"
+  },
+  "tabs": {
+    "overview": "概要",
+    "performance": "パフォーマンスとリスク",
+    "trades": "トレード分析",
+    "advanced": "詳細分析"
+  },
+  "charts": {
+    "noData": "データがありません",
+    "avgWinVsLoss": {
+      "title": "平均利益 vs 平均損失",
+      "tooltip": "期間中の勝ちトレードの平均利益と負けトレードの平均損失の比較。"
+    }
+  },
+  "performanceTab": {
+    "verdict": {
+      "good": "良好",
+      "average": "平均",
+      "poor": "低い"
+    },
+    "details": {
+      "efficiency": "効率",
+      "resilience": "回復力とリスク調整"
+    }
   }
 }

@@ -14,6 +14,29 @@ function buildWebSocketUrl(): string | null {
   return `${base}/ws/market-quotes/?token=${encodeURIComponent(token)}`;
 }
 
+function releaseWebSocket(ws: WebSocket) {
+  ws.onmessage = null;
+  ws.onerror = null;
+
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.onopen = null;
+    ws.onclose = null;
+    ws.close(1000, 'Client disconnect');
+    return;
+  }
+
+  if (ws.readyState === WebSocket.CONNECTING) {
+    // Ne pas appeler close() pendant CONNECTING : le navigateur loggue une erreur
+    // même si la fermeture est volontaire (React Strict Mode, remontage rapide).
+    ws.onopen = () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, 'Superseded');
+      }
+    };
+    ws.onclose = null;
+  }
+}
+
 export function useMarketQuotes(enabled = true) {
   const [snapshot, setSnapshot] = useState<MarketQuotesSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +49,7 @@ export function useMarketQuotes(enabled = true) {
   const pollIntervalRef = useRef<number | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
-  const usePollingFallbackRef = useRef(false);
+  const connectGenerationRef = useRef(0);
 
   const stopPolling = useCallback(() => {
     if (pollIntervalRef.current !== null) {
@@ -65,20 +88,16 @@ export function useMarketQuotes(enabled = true) {
   }, [refresh, stopPolling]);
 
   const closeWebSocket = useCallback(() => {
-    if (wsRef.current) {
-      wsRef.current.onopen = null;
-      wsRef.current.onclose = null;
-      wsRef.current.onerror = null;
-      wsRef.current.onmessage = null;
-      wsRef.current.close();
-      wsRef.current = null;
+    connectGenerationRef.current += 1;
+    const ws = wsRef.current;
+    wsRef.current = null;
+    if (ws) {
+      releaseWebSocket(ws);
     }
   }, []);
 
   useEffect(() => {
     mountedRef.current = true;
-    usePollingFallbackRef.current = false;
-    reconnectAttemptRef.current = 0;
 
     if (!enabled) {
       setLoading(false);
@@ -89,22 +108,28 @@ export function useMarketQuotes(enabled = true) {
 
     const connect = () => {
       if (!mountedRef.current) return;
+
+      closeWebSocket();
+      const generation = connectGenerationRef.current;
+
       const url = buildWebSocketUrl();
       if (!url) {
-        usePollingFallbackRef.current = true;
         startPolling();
         return;
       }
 
-      closeWebSocket();
       try {
         const ws = new WebSocket(url);
         wsRef.current = ws;
 
         ws.onopen = () => {
-          if (!mountedRef.current) return;
+          if (generation !== connectGenerationRef.current || !mountedRef.current) {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.close(1000, 'Superseded');
+            }
+            return;
+          }
           reconnectAttemptRef.current = 0;
-          usePollingFallbackRef.current = false;
           stopPolling();
           setTransport('websocket');
           setWsConnected(true);
@@ -113,7 +138,7 @@ export function useMarketQuotes(enabled = true) {
         };
 
         ws.onmessage = (event) => {
-          if (!mountedRef.current) return;
+          if (generation !== connectGenerationRef.current || !mountedRef.current) return;
           try {
             const data = JSON.parse(event.data as string) as MarketQuotesSnapshot;
             setSnapshot(data);
@@ -125,16 +150,15 @@ export function useMarketQuotes(enabled = true) {
         };
 
         ws.onerror = () => {
-          if (!mountedRef.current) return;
-          usePollingFallbackRef.current = true;
+          if (generation !== connectGenerationRef.current || !mountedRef.current) return;
           startPolling();
         };
 
         ws.onclose = () => {
-          if (!mountedRef.current) return;
+          if (generation !== connectGenerationRef.current || !mountedRef.current) return;
           setWsConnected(false);
-          usePollingFallbackRef.current = true;
           startPolling();
+
           const attempt = reconnectAttemptRef.current;
           const delay = Math.min(WS_RECONNECT_BASE_MS * 2 ** attempt, WS_RECONNECT_MAX_MS);
           reconnectAttemptRef.current += 1;
@@ -143,19 +167,15 @@ export function useMarketQuotes(enabled = true) {
           }
           reconnectTimerRef.current = window.setTimeout(() => {
             reconnectTimerRef.current = null;
-            if (!usePollingFallbackRef.current) {
-              connect();
-            } else {
-              connect();
-            }
+            connect();
           }, delay);
         };
       } catch {
-        usePollingFallbackRef.current = true;
         startPolling();
       }
     };
 
+    reconnectAttemptRef.current = 0;
     connect();
 
     const onVisibility = () => {
@@ -175,6 +195,7 @@ export function useMarketQuotes(enabled = true) {
       closeWebSocket();
       if (reconnectTimerRef.current !== null) {
         window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
       }
       document.removeEventListener('visibilitychange', onVisibility);
     };

@@ -84,7 +84,11 @@
     "calmarRatioTooltip": "年回报率 / 最大回撤。> 1.0 = 相对于风险的良好回报。计算需要至少30天的交易",
     "riskAdjustedPerformance": "风险调整表现",
     "tradeEfficiency": "交易效率",
-    "tradeEfficiencyTooltip": "达到止盈的交易百分比。越高 = 更好的执行"
+    "tradeEfficiencyTooltip": "达到止盈的交易百分比。越高 = 更好的执行",
+    "avgTimeBetweenTrades": "两笔交易间平均时间",
+    "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
+    "avgDailyExposureTime": "每日暴露时间",
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
   },
   "tradesAnalysis": {
     "title": "交易分析",
@@ -200,5 +204,29 @@
     "modelDeleteError": "删除模型时出错。",
     "exportErrorMessage": "导出时发生错误。请重试。",
     "reportFilePrefix": "report"
+  },
+  "tabs": {
+    "overview": "概览",
+    "performance": "绩效与风险",
+    "trades": "交易分析",
+    "advanced": "高级分析"
+  },
+  "charts": {
+    "noData": "暂无数据",
+    "avgWinVsLoss": {
+      "title": "平均盈利 vs 平均亏损",
+      "tooltip": "比较所选期间内盈利交易的平均收益与亏损交易的平均损失。"
+    }
+  },
+  "performanceTab": {
+    "verdict": {
+      "good": "良好",
+      "average": "一般",
+      "poor": "较弱"
+    },
+    "details": {
+      "efficiency": "效率",
+      "resilience": "韧性与风险调整"
+    }
   }
 }

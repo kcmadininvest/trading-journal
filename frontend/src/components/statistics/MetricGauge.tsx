@@ -221,7 +221,7 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
   );
 
   if (compactBar) {
-    return <div className="w-full">{barContent}</div>;
+    return <div className={`w-full${showLabels ? ' pb-5' : ''}`}>{barContent}</div>;
   }
 
   return (
@@ -241,7 +241,11 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
                 </span>
               </Tooltip>
               {tooltip && (
-                <Tooltip content={tooltip} className="shrink-0 items-center leading-none">
+                <Tooltip
+                  content={tooltip}
+                  className="shrink-0 items-center leading-none"
+                  contentClassName="whitespace-pre-line block"
+                >
                   <svg
                     className="block h-4 w-4 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
                     fill="currentColor"

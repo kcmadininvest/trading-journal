@@ -84,7 +84,11 @@
     "calmarRatioTooltip": "Rendimento annuo / Drawdown Massimo. > 1.0 = buon rendimento rispetto al rischio. Richiede almeno 30 giorni di trading per essere calcolato",
     "riskAdjustedPerformance": "Performance Aggiustata al Rischio",
     "tradeEfficiency": "Efficienza delle Operazioni",
-    "tradeEfficiencyTooltip": "Percentuale di operazioni dove il Take Profit è stato raggiunto. Più alto = migliore esecuzione"
+    "tradeEfficiencyTooltip": "Percentuale di operazioni dove il Take Profit è stato raggiunto. Più alto = migliore esecuzione",
+    "avgTimeBetweenTrades": "Tempo medio tra due trade",
+    "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
+    "avgDailyExposureTime": "Tempo di esposizione giornaliero",
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
   },
   "tradesAnalysis": {
     "title": "Analisi delle Operazioni",
@@ -200,5 +204,29 @@
     "modelDeleteError": "Errore durante l'eliminazione del modello.",
     "exportErrorMessage": "Si è verificato un errore durante l'esportazione. Riprova.",
     "reportFilePrefix": "report"
+  },
+  "tabs": {
+    "overview": "Panoramica",
+    "performance": "Performance e rischio",
+    "trades": "Analisi dei trade",
+    "advanced": "Analisi avanzata"
+  },
+  "charts": {
+    "noData": "Nessun dato disponibile",
+    "avgWinVsLoss": {
+      "title": "Guadagno vs perdita media",
+      "tooltip": "Confronto tra guadagno medio per trade vincente e perdita media per trade perdente nel periodo."
+    }
+  },
+  "performanceTab": {
+    "verdict": {
+      "good": "Buono",
+      "average": "Medio",
+      "poor": "Debole"
+    },
+    "details": {
+      "efficiency": "Efficienza",
+      "resilience": "Resilienza e rischio aggiustato"
+    }
   }
 }

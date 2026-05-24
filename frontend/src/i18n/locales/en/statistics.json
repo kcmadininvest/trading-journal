@@ -89,7 +89,11 @@
     "calmarRatioTooltip": "Annual return / Maximum Drawdown. > 1.0 = good return relative to risk. Requires at least 30 days of trading to be calculated",
     "riskAdjustedPerformance": "Risk-Adjusted Performance",
     "tradeEfficiency": "Trade Efficiency",
-    "tradeEfficiencyTooltip": "Percentage of trades where Take Profit was reached. Higher = better execution"
+    "tradeEfficiencyTooltip": "Percentage of trades where Take Profit was reached. Higher = better execution",
+    "avgTimeBetweenTrades": "Avg. time between trades",
+    "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
+    "avgDailyExposureTime": "Daily exposure time",
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
   },
   "tradesAnalysis": {
     "title": "Trades Analysis",
@@ -232,6 +236,29 @@
     "average": "Average",
     "poor": "Poor",
     "target": "Target"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "performance": "Performance & risk",
+    "trades": "Trade analysis",
+    "advanced": "Advanced analysis"
+  },
+  "charts": {
+    "noData": "No data available",
+    "avgWinVsLoss": {
+      "title": "Average win vs loss",
+      "tooltip": "Comparison of average gain per winning trade and average loss per losing trade for the period."
+    }
+  },
+  "performanceTab": {
+    "verdict": {
+      "good": "Good",
+      "average": "Average",
+      "poor": "Poor"
+    },
+    "details": {
+      "efficiency": "Efficiency",
+      "resilience": "Resilience & risk-adjusted"
+    }
   }
 }
-

@@ -85,7 +85,11 @@
     "calmarRatioTooltip": "연간 수익률 / 최대 드로우다운。> 1.0 = 리스크 대비 양호한 수익률。계산에는 최소 30일의 거래가 필요",
     "riskAdjustedPerformance": "리스크 조정 성과",
     "tradeEfficiency": "거래 효율성",
-    "tradeEfficiencyTooltip": "테이크 프로핏이 달성된 거래의 비율。높을수록 = 더 나은 실행"
+    "tradeEfficiencyTooltip": "테이크 프로핏이 달성된 거래의 비율。높을수록 = 더 나은 실행",
+    "avgTimeBetweenTrades": "두 거래 사이 평균 시간",
+    "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
+    "avgDailyExposureTime": "일일 노출 시간",
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
   },
   "tradesAnalysis": {
     "title": "거래 분석",
@@ -201,5 +205,29 @@
     "modelDeleteError": "모델 삭제 중 오류가 발생했습니다.",
     "exportErrorMessage": "내보내는 중 오류가 발생했습니다. 다시 시도해 주세요.",
     "reportFilePrefix": "report"
+  },
+  "tabs": {
+    "overview": "개요",
+    "performance": "성과 및 리스크",
+    "trades": "거래 분석",
+    "advanced": "고급 분석"
+  },
+  "charts": {
+    "noData": "데이터 없음",
+    "avgWinVsLoss": {
+      "title": "평균 이익 vs 손실",
+      "tooltip": "기간 동안 승리 거래의 평균 이익과 패배 거래의 평균 손실 비교."
+    }
+  },
+  "performanceTab": {
+    "verdict": {
+      "good": "양호",
+      "average": "보통",
+      "poor": "낮음"
+    },
+    "details": {
+      "efficiency": "효율",
+      "resilience": "회복력 및 위험 조정"
+    }
   }
 }

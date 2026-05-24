@@ -128,6 +128,10 @@ from .serializers import (
     AccountDailyMetricsSerializer,
 )
 from .utils import TopStepCSVImporter
+from .statistics_temporal import (
+    compute_avg_daily_exposure_time,
+    compute_avg_time_between_trades,
+)
 from .compliance_streaks import (
     compute_dashboard_next_badge,
     compute_strategy_compliance_context,
@@ -849,6 +853,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         Retourne les statistiques globales des trades.
         """
         trades = self.get_queryset()
+        user_tz = get_user_timezone(request)
         
         if not trades.exists():
             return Response({
@@ -876,6 +881,8 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 'volume_pnl_ratio': 0,
                 'frequency_ratio': 0,
                 'duration_ratio': 0,
+                'avg_time_between_trades': '00:00:00',
+                'avg_daily_exposure_time': '00:00:00',
                 'recovery_time': 0,
                 'max_drawdown': 0.0,
                 'max_drawdown_pct': 0.0,
@@ -986,11 +993,14 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         if aggregates['total_volume'] and aggregates['total_volume'] != 0:
             volume_pnl_ratio = aggregates['total_pnl'] / aggregates['total_volume']
         
-        # 8. Ratio de Fréquence (trades par jour)
+        # 8. Ratio de Fréquence (trades par jour, fuseau horaire utilisateur)
         frequency_ratio = 0
         if total_trades > 0:
-            # Calculer le nombre de jours uniques de trading
-            unique_days = trades.values('entered_at__date').distinct().count()
+            unique_days = len({
+                entered_at.astimezone(user_tz).date()
+                for entered_at in trades.values_list('entered_at', flat=True)
+                if entered_at
+            })
             if unique_days > 0:
                 frequency_ratio = total_trades / unique_days
         
@@ -1008,7 +1018,11 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             losing_seconds = losing_trades_duration.total_seconds()
             if losing_seconds > 0:
                 duration_ratio = winning_seconds / losing_seconds
-        
+
+        temporal_rows = list(trades.values('entered_at', 'exited_at', 'trade_day', 'trade_duration'))
+        avg_time_between_trades = compute_avg_time_between_trades(temporal_rows, user_tz)
+        avg_daily_exposure_time = compute_avg_daily_exposure_time(temporal_rows, user_tz)
+
         # 10. Recovery Time (temps moyen de récupération en trades)
         # Calcul du temps nécessaire pour revenir au niveau précédent après un drawdown
         recovery_time = 0
@@ -1419,9 +1433,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         # Cette série compte depuis le jour le plus récent jusqu'à trouver une perte
         current_winning_streak_days = 0
         if trades.exists():
-            # Utiliser le timezone de l'utilisateur pour les agrégations
-            user_tz = get_user_timezone(request)
-            # Agréger les trades par jour
+            # Agréger les trades par jour (fuseau horaire utilisateur)
             daily_data = defaultdict(lambda: {'pnl': Decimal('0.0')})
             for trade in trades:
                 day_key = trade.entered_at.astimezone(user_tz).date()
@@ -1496,6 +1508,8 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'volume_pnl_ratio': round(float(volume_pnl_ratio), 6),
             'frequency_ratio': round(frequency_ratio, 2),
             'duration_ratio': round(duration_ratio, 2),
+            'avg_time_between_trades': avg_time_between_trades,
+            'avg_daily_exposure_time': avg_daily_exposure_time,
             'recovery_time': round(recovery_time, 1),
             'max_drawdown': round(max_drawdown, 2),
             'max_drawdown_pct': round(max_drawdown_pct, 2),
@@ -2662,10 +2676,10 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     worst_day_pnl = day_pnl
                     worst_day = day_key.isoformat()
         
-        # Monthly Performance
+        # Monthly Performance (mois calendaire dans le fuseau utilisateur)
         monthly_performance = {}
         for trade in trades:
-            month_key = trade.entered_at.strftime('%Y-%m')
+            month_key = trade.entered_at.astimezone(user_tz).strftime('%Y-%m')
             if month_key not in monthly_performance:
                 monthly_performance[month_key] = 0.0
             monthly_performance[month_key] += trade_pnl_as_float(trade, pf)

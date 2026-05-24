@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import clsx from 'clsx';
 import { Radar as ChartRadar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -14,6 +15,7 @@ interface RadarChartProps {
   createRadarAlternatingZonesPlugin: (isDark: boolean) => any;
   createRadarGradientPlugin: (isDark: boolean) => any;
   chartColors: any;
+  variant?: 'full' | 'compact';
 }
 
 // Meilleures pratiques pour les graphiques radar:
@@ -30,10 +32,19 @@ export const RadarChart: React.FC<RadarChartProps> = ({
   createRadarAlternatingZonesPlugin,
   createRadarGradientPlugin,
   chartColors,
+  variant = 'full',
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const isCompact = variant === 'compact';
+  const shellClassName = clsx(
+    'bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300',
+    isCompact ? 'p-4 sm:p-6 min-h-[340px]' : 'p-6 min-h-[450px]'
+  );
+  const chartHeight = isCompact ? '240px' : '300px';
+  const headerTitleClass = isCompact ? 'text-lg font-bold' : 'text-xl font-bold';
+  const globalScoreClass = isCompact ? 'text-2xl font-bold' : 'text-3xl font-bold';
 
   // Recalculer les données avec une normalisation optimisée
   const optimizedData = useMemo(() => {
@@ -199,14 +210,14 @@ export const RadarChart: React.FC<RadarChartProps> = ({
 
   if (!optimizedData || !statisticsData) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
+      <div className={shellClassName}>
         <div className="flex items-center gap-2 mb-6">
           <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></div>
-          <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+          <h3 className={clsx(headerTitleClass, 'text-gray-800 dark:text-gray-100')}>
             {t('analytics:radar.title', { defaultValue: 'Performance Globale' })}
           </h3>
         </div>
-        <div className="flex items-center justify-center h-[350px]">
+        <div className="flex items-center justify-center" style={{ height: chartHeight }}>
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
         </div>
       </div>
@@ -214,13 +225,13 @@ export const RadarChart: React.FC<RadarChartProps> = ({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
+    <div className={shellClassName}>
       {/* En-tête avec score global */}
-      <div className="flex items-start justify-between mb-6">
+      <div className={clsx('flex items-start justify-between', isCompact ? 'mb-4' : 'mb-6')}>
         <div className="flex items-center gap-2">
           <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3"></div>
           <div>
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+            <h3 className={clsx(headerTitleClass, 'text-gray-800 dark:text-gray-100')}>
               {t('analytics:radar.title', { defaultValue: 'Performance Globale' })}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -242,7 +253,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
         {/* Score global */}
         <div className="text-right">
           <div className="flex items-center justify-end gap-2">
-            <div className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+            <div className={clsx(globalScoreClass, 'text-gray-800 dark:text-gray-100')}>
               {globalScore}<span className="text-lg text-gray-500">/100</span>
             </div>
             <TooltipComponent
@@ -265,7 +276,7 @@ export const RadarChart: React.FC<RadarChartProps> = ({
       {/* Graphique et légende */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_13rem] xl:grid-cols-[minmax(0,1fr)_14rem] gap-4 lg:gap-5 items-center">
         {/* Graphique radar */}
-        <ChartTooltipResetContainer className="min-w-0" style={{ height: '300px', position: 'relative' }}>
+        <ChartTooltipResetContainer className="min-w-0" style={{ height: chartHeight, position: 'relative' }}>
           <div className="h-full w-full -translate-y-4">
             <ChartRadar
               data={optimizedData}

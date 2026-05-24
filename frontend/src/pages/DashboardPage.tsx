@@ -1703,6 +1703,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     filteredBalanceData,
     activeDays: dashboardData?.active_days,
     pnlDisplay: pnlDisplayMode,
+    timezone: preferences.timezone,
   });
 
 

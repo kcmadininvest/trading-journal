@@ -197,6 +197,25 @@ export function buildChartTooltipPlugin<TChartType extends ChartType = ChartType
   } as Partial<TooltipOptions<TChartType>>;
 }
 
+/** Barres horizontales : sans axe Y, Chart.js associe le mauvais index au survol. */
+export const horizontalBarChartInteraction = {
+  mode: 'index' as const,
+  axis: 'y' as const,
+  intersect: false,
+};
+
+/** Tooltip Chart.js pour barres horizontales (aligné GainsVsLossesChart). */
+export function buildHorizontalBarChartTooltipPlugin<TChartType extends ChartType = ChartType>(
+  chartColors: ChartColors,
+  overrides?: Record<string, unknown>
+): Partial<TooltipOptions<TChartType>> {
+  return buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
+    axis: 'y' as const,
+    padding: 12,
+    ...(overrides as object),
+  });
+}
+
 interface WindowSize {
   isMobile: boolean;
   isTablet: boolean;

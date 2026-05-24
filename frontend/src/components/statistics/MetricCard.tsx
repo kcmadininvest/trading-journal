@@ -19,11 +19,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   children,
 }) => {
   const baseClasses = 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700';
-  
+
   const variantClasses = {
-    hero: 'p-8',
-    standard: 'p-6',
-    compact: 'p-4',
+    hero: 'p-6 sm:p-8',
+    standard: 'p-4 sm:p-6',
+    compact: 'p-3 sm:p-4',
   };
 
   const iconSizeClasses = {
@@ -33,32 +33,28 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   const titleSizeClasses = {
-    hero: 'text-lg font-semibold',
-    standard: 'text-base font-medium',
+    hero: 'text-base sm:text-lg font-semibold',
+    standard: 'text-sm sm:text-base font-medium',
     compact: 'text-sm font-medium',
   };
 
   return (
     <div className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
       {(title || icon) && (
-        <div className="flex items-center gap-3 mb-4">
+        <div className="mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3">
           {icon && (
-            <div className={`${iconSizeClasses[variant]} bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center flex-shrink-0`}>
-              <div className="w-6 h-6 text-blue-600 dark:text-blue-400">
-                {icon}
-              </div>
+            <div
+              className={`${iconSizeClasses[variant]} flex flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30`}
+            >
+              <div className="h-6 w-6 text-blue-600 dark:text-blue-400">{icon}</div>
             </div>
           )}
           {title && (
-            <h3 className={`${titleSizeClasses[variant]} text-gray-500 dark:text-gray-400`}>
-              {title}
-            </h3>
+            <h3 className={`${titleSizeClasses[variant]} text-gray-500 dark:text-gray-400`}>{title}</h3>
           )}
         </div>
       )}
-      <div className={variant === 'hero' ? 'space-y-3' : 'space-y-2'}>
-        {children}
-      </div>
+      <div className={variant === 'hero' ? 'space-y-3' : 'space-y-2'}>{children}</div>
     </div>
   );
 };
@@ -66,6 +62,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 interface MetricItemProps {
   label: string;
   value: React.ReactNode;
+  subValue?: React.ReactNode;
   tooltip?: string;
   variant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
   size?: 'sm' | 'md' | 'lg';
@@ -74,6 +71,7 @@ interface MetricItemProps {
 export const MetricItem: React.FC<MetricItemProps> = ({
   label,
   value,
+  subValue,
   tooltip,
   variant = 'default',
   size = 'md',
@@ -93,21 +91,35 @@ export const MetricItem: React.FC<MetricItemProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex flex-row items-center justify-between gap-3">
       <div className="inline-flex min-w-0 flex-1 items-center gap-1 leading-tight">
         <span className="break-words text-sm text-gray-500 dark:text-gray-400">{label}</span>
         {tooltip && (
-          <Tooltip content={tooltip} className="shrink-0 items-center leading-none">
-            <svg className="block h-4 w-4 shrink-0 cursor-help text-gray-400 dark:text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          <Tooltip
+            content={tooltip}
+            className="shrink-0 items-center leading-none"
+            contentClassName="whitespace-pre-line block"
+          >
+            <svg
+              className="block h-4 w-4 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                clipRule="evenodd"
+              />
             </svg>
           </Tooltip>
         )}
       </div>
-      <div className={`shrink-0 ${sizeClasses[size]} font-semibold tabular-nums ${variantColors[variant]} flex items-center`}>
-        {value}
+      <div className={`flex shrink-0 flex-col items-end ${variantColors[variant]}`}>
+        <div className={`${sizeClasses[size]} flex items-center font-semibold tabular-nums`}>{value}</div>
+        {subValue && (
+          <div className="text-xs tabular-nums text-gray-500 dark:text-gray-400">{subValue}</div>
+        )}
       </div>
     </div>
   );
 };
-

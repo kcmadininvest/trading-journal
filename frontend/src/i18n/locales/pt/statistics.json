@@ -85,7 +85,11 @@
     "calmarRatioTooltip": "Retorno anual / Drawdown Máximo. > 1.0 = bom retorno relativo ao risco. Requer pelo menos 30 dias de trading para ser calculado",
     "riskAdjustedPerformance": "Desempenho Ajustado ao Risco",
     "tradeEfficiency": "Eficiência das Operações",
-    "tradeEfficiencyTooltip": "Percentual de operações onde o Take Profit foi alcançado. Maior = melhor execução"
+    "tradeEfficiencyTooltip": "Percentual de operações onde o Take Profit foi alcançado. Maior = melhor execução",
+    "avgTimeBetweenTrades": "Tempo médio entre dois trades",
+    "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
+    "avgDailyExposureTime": "Tempo de exposição diário",
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
   },
   "tradesAnalysis": {
     "title": "Análise de Operações",
@@ -201,5 +205,29 @@
     "modelDeleteError": "Erro ao excluir o modelo.",
     "exportErrorMessage": "Ocorreu um erro ao exportar. Tente novamente.",
     "reportFilePrefix": "relatorio"
+  },
+  "tabs": {
+    "overview": "Visão geral",
+    "performance": "Performance e risco",
+    "trades": "Análise de trades",
+    "advanced": "Análise avançada"
+  },
+  "charts": {
+    "noData": "Nenhum dado disponível",
+    "avgWinVsLoss": {
+      "title": "Ganho vs perda média",
+      "tooltip": "Comparação do ganho médio por trade vencedor e da perda média por trade perdedor no período."
+    }
+  },
+  "performanceTab": {
+    "verdict": {
+      "good": "Bom",
+      "average": "Médio",
+      "poor": "Fraco"
+    },
+    "details": {
+      "efficiency": "Eficiência",
+      "resilience": "Resiliência e risco ajustado"
+    }
   }
 }

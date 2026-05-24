@@ -277,6 +277,7 @@ const AnalyticsPage: React.FC = () => {
     filteredTrades: trades,
     activeDays: dashboardSummary?.active_days,
     pnlDisplay: pnlDisplayMode,
+    timezone: preferences.timezone,
   });
 
   // Récupérer les statistiques pour le graphique radar

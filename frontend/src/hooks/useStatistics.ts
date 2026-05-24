@@ -28,6 +28,8 @@ export interface StatisticsData {
   volume_pnl_ratio: number;
   frequency_ratio: number;
   duration_ratio: number;
+  avg_time_between_trades: string;
+  avg_daily_exposure_time: string;
   recovery_time: number;
   max_drawdown: number;
   max_drawdown_pct: number;
@@ -179,6 +181,8 @@ export function useStatistics(
         // S'assurer que toutes les propriétés requises sont présentes avec des valeurs par défaut
         setData({
           ...result,
+          avg_time_between_trades: result.avg_time_between_trades ?? '00:00:00',
+          avg_daily_exposure_time: result.avg_daily_exposure_time ?? '00:00:00',
           max_runup: result.max_runup ?? 0,
           max_runup_pct: result.max_runup_pct ?? 0,
           max_runup_global: result.max_runup_global ?? 0,

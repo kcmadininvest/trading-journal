@@ -391,6 +391,7 @@ const StrategiesPage: React.FC = () => {
     filteredTrades,
     activeDays: dashboardSummary?.active_days,
     pnlDisplay: pnlDisplayMode,
+    timezone: preferences.timezone,
   });
 
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({

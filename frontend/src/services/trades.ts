@@ -307,6 +307,8 @@ class TradesService {
     volume_pnl_ratio: number;
     frequency_ratio: number;
     duration_ratio: number;
+    avg_time_between_trades: string;
+    avg_daily_exposure_time: string;
     recovery_time: number;
     max_drawdown: number;
     max_drawdown_pct: number;

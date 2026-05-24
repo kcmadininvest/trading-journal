@@ -177,6 +177,7 @@ const BehaviorPage: React.FC = () => {
     analyticsData,
     activeDays: dashboardSummary?.active_days,
     pnlDisplay: pnlDisplayMode,
+    timezone: preferences.timezone,
   });
 
   useEffect(() => {

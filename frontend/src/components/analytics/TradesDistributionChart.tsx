@@ -1,8 +1,9 @@
 import React from 'react';
+import clsx from 'clsx';
 import { Doughnut as ChartDoughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
-import TooltipComponent from '../ui/Tooltip';
+import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
@@ -13,52 +14,65 @@ interface TradesDistributionChartProps {
     percentages: string[];
   } | null;
   chartColors: any;
+  variant?: 'full' | 'compact';
 }
 
 export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = ({
   data,
   chartColors,
+  variant = 'full',
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const isCompact = variant === 'compact';
+
+  const shellClass = clsx(
+    'rounded-xl border border-gray-100 bg-white shadow-lg transition-shadow duration-300 dark:border-gray-700 dark:bg-gray-800',
+    isCompact ? 'min-h-[280px] p-4 sm:p-6' : 'min-h-[450px] p-6 hover:shadow-xl'
+  );
+  const titleClass = clsx(
+    'font-bold text-gray-800 dark:text-gray-100',
+    isCompact ? 'text-base sm:text-lg' : 'text-xl'
+  );
+  const chartHeight = isCompact ? 200 : 320;
+  const emptyHeight = isCompact ? 200 : 350;
+  const datalabelSize = isCompact ? 12 : 14;
+
+  const title = t('analytics:charts.tradesDistribution.title', {
+    defaultValue: 'Répartition des Trades par Résultat',
+  });
 
   if (!data) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-1 h-6 bg-gradient-to-b from-pink-500 to-pink-600 rounded-full mr-3"></div>
-          <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-            {t('analytics:charts.tradesDistribution.title', { defaultValue: 'Répartition des Trades par Résultat' })}
-          </h3>
+      <div className={shellClass}>
+        <div className="mb-4 flex items-center gap-2 sm:mb-6">
+          <div className="mr-2 h-6 w-1 rounded-full bg-gradient-to-b from-pink-500 to-pink-600" />
+          <h3 className={titleClass}>{title}</h3>
         </div>
-        <div className="flex items-center justify-center h-[350px]">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
+        <div className="flex items-center justify-center" style={{ height: emptyHeight }}>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex items-center gap-2 mb-6">
-        <div className="w-1 h-6 bg-gradient-to-b from-pink-500 to-pink-600 rounded-full mr-3"></div>
-        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-          {t('analytics:charts.tradesDistribution.title', { defaultValue: 'Répartition des Trades par Résultat' })}
-        </h3>
-        <TooltipComponent
-          content={t('analytics:charts.tradesDistribution.tooltip', { defaultValue: 'Ce graphique montre la répartition de vos trades entre gagnants, perdants et break-even. Cela permet de visualiser rapidement le ratio de trades gagnants vs perdants.' })}
-          position="top"
-        >
-          <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
-            <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </TooltipComponent>
+    <div className={shellClass}>
+      <div className={clsx('mb-4 flex items-center gap-2', !isCompact && 'sm:mb-6')}>
+        <div className="mr-2 h-6 w-1 rounded-full bg-gradient-to-b from-pink-500 to-pink-600" />
+        <h3 className={titleClass}>{title}</h3>
+        <ChartHelpTooltip
+          content={t('analytics:charts.tradesDistribution.tooltip', {
+            defaultValue:
+              'Ce graphique montre la répartition de vos trades entre gagnants, perdants et break-even.',
+          })}
+        />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
+      <div className={clsx('grid items-center gap-4', isCompact ? 'grid-cols-1' : 'grid-cols-1 gap-6 md:grid-cols-2')}>
+        <ChartTooltipResetContainer style={{ height: chartHeight, position: 'relative' }}>
           <ChartDoughnut
             data={{
               labels: data.labels,
@@ -70,11 +84,7 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
                     isDark ? 'rgba(236, 72, 153, 0.8)' : 'rgba(236, 72, 153, 0.7)',
                     isDark ? 'rgba(156, 163, 175, 0.8)' : 'rgba(156, 163, 175, 0.7)',
                   ],
-                  borderColor: [
-                    isDark ? '#60a5fa' : '#3b82f6',
-                    isDark ? '#f472b6' : '#ec4899',
-                    isDark ? '#9ca3af' : '#6b7280',
-                  ],
+                  borderColor: [isDark ? '#60a5fa' : '#3b82f6', isDark ? '#f472b6' : '#ec4899', isDark ? '#9ca3af' : '#6b7280'],
                   borderWidth: 0,
                 },
               ],
@@ -85,65 +95,66 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
               plugins: {
                 datalabels: {
                   display: true,
-                  color: function(context: any) {
-                    return '#ffffff';
-                  },
+                  color: () => '#ffffff',
                   font: {
                     family: CHART_FONT_FAMILY,
                     weight: 600,
-                    size: 14,
+                    size: datalabelSize,
                   },
-                  formatter: function(value: number, context: any) {
-                    const percentage = data.percentages[context.dataIndex];
-                    return `${percentage}%`;
+                  formatter: (_value: number, context: { dataIndex: number }) => {
+                    return `${data.percentages[context.dataIndex]}%`;
                   },
                 },
-                legend: {
-                  display: false,
-                },
+                legend: { display: false },
                 tooltip: {
                   ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
-                  padding: 12,
-                  callbacks: {
-                    label: (context: any) => {
-                      const label = context.label || '';
-                      const value = context.parsed;
-                      const percentage = data.percentages[context.dataIndex];
-                      return [
-                        `${label}: ${value}`,
-                        `${t('analytics:charts.tradesDistribution.percentage', { defaultValue: 'Pourcentage' })}: ${percentage}%`,
-                      ];
+                    padding: 12,
+                    callbacks: {
+                      label: (context: { label?: string; parsed: number; dataIndex: number }) => {
+                        const label = context.label || '';
+                        const value = context.parsed;
+                        const percentage = data.percentages[context.dataIndex];
+                        return [
+                          `${label}: ${value}`,
+                          `${t('analytics:charts.tradesDistribution.percentage', { defaultValue: 'Pourcentage' })}: ${percentage}%`,
+                        ];
+                      },
                     },
-                  },
                   }),
                 },
               },
             }}
           />
         </ChartTooltipResetContainer>
-        <div className="space-y-4">
+        <div className={clsx('space-y-3', isCompact && 'sm:space-y-2')}>
           {data.labels.map((label, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div
+              key={label}
+              className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50"
+            >
               <div className="flex items-center gap-3">
                 <div
-                  className="w-4 h-4 rounded-full"
+                  className="h-4 w-4 rounded-full"
                   style={{
-                    backgroundColor: index === 0
-                      ? (isDark ? 'rgba(59, 130, 246, 0.8)' : 'rgba(59, 130, 246, 0.7)')
-                      : index === 1
-                      ? (isDark ? 'rgba(236, 72, 153, 0.8)' : 'rgba(236, 72, 153, 0.7)')
-                      : (isDark ? 'rgba(156, 163, 175, 0.8)' : 'rgba(156, 163, 175, 0.7)'),
+                    backgroundColor:
+                      index === 0
+                        ? isDark
+                          ? 'rgba(59, 130, 246, 0.8)'
+                          : 'rgba(59, 130, 246, 0.7)'
+                        : index === 1
+                          ? isDark
+                            ? 'rgba(236, 72, 153, 0.8)'
+                            : 'rgba(236, 72, 153, 0.7)'
+                          : isDark
+                            ? 'rgba(156, 163, 175, 0.8)'
+                            : 'rgba(156, 163, 175, 0.7)',
                   }}
-                ></div>
+                />
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
               </div>
               <div className="text-right">
-                <div className="text-sm font-bold text-gray-800 dark:text-gray-200">
-                  {data.data[index]}
-                </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {data.percentages[index]}%
-                </div>
+                <div className="text-sm font-bold text-gray-800 dark:text-gray-200">{data.data[index]}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{data.percentages[index]}%</div>
               </div>
             </div>
           ))}
@@ -152,4 +163,3 @@ export const TradesDistributionChart: React.FC<TradesDistributionChartProps> = (
     </div>
   );
 };
-

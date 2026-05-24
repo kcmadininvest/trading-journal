@@ -88,7 +88,11 @@
     "calmarRatioTooltip": "Rendement annuel / Maximum Drawdown. > 1.0 = bon rendement par rapport au risque. Nécessite au moins 30 jours de trading pour être calculé",
     "riskAdjustedPerformance": "Performance Ajustée au Risque",
     "tradeEfficiency": "Efficacité des Trades",
-    "tradeEfficiencyTooltip": "Pourcentage de trades où le Take Profit a été atteint. Plus élevé = meilleure exécution"
+    "tradeEfficiencyTooltip": "Pourcentage de trades où le Take Profit a été atteint. Plus élevé = meilleure exécution",
+    "avgTimeBetweenTrades": "Temps moyen entre deux trades",
+    "avgTimeBetweenTradesTooltip": "Délai moyen entre deux entrées consécutives le même jour de trading, selon votre fuseau horaire (Réglages).\n\nUtile pour détecter le revenge trading, la suractivité après une perte, ou une perte de patience après une longue attente.",
+    "avgDailyExposureTime": "Temps d'exposition journalier",
+    "avgDailyExposureTimeTooltip": "Moyenne du temps cumulé passé en position par jour de trading actif sur la période, calculée selon votre fuseau horaire (Réglages). Les positions simultanées sont fusionnées.\n\nUtile pour évaluer la fatigue mentale, l'exposition émotionnelle et le risque global."
   },
   "tradesAnalysis": {
     "title": "Analyse des Trades",
@@ -231,5 +235,29 @@
     "average": "Moyen",
     "poor": "Faible",
     "target": "Objectif"
+  },
+  "tabs": {
+    "overview": "Vue d'ensemble",
+    "performance": "Performance & risque",
+    "trades": "Analyse des trades",
+    "advanced": "Analyse avancée"
+  },
+  "charts": {
+    "noData": "Aucune donnée disponible",
+    "avgWinVsLoss": {
+      "title": "Gain vs perte moyen",
+      "tooltip": "Comparaison du gain moyen par trade gagnant et de la perte moyenne par trade perdant sur la période."
+    }
+  },
+  "performanceTab": {
+    "verdict": {
+      "good": "Bon",
+      "average": "Moyen",
+      "poor": "Faible"
+    },
+    "details": {
+      "efficiency": "Efficacité",
+      "resilience": "Résilience & risque ajusté"
+    }
   }
 }

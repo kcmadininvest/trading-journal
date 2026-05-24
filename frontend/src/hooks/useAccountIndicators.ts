@@ -4,6 +4,29 @@ import { TradingAccount } from '../services/tradingAccounts';
 import { accountTransactionsService, AccountBalance as AccountBalanceData } from '../services/accountTransactions';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
 import { getTradeDisplayPnlValue } from '../utils/pnlDisplay';
+import { toIsoCalendarDateInTimezone } from '../utils/dateFormat';
+
+function groupTradesPnlByDay(
+  trades: TradeListItem[],
+  pnlDisplay: PnlDisplayMode,
+  timezone: string,
+): Record<string, number> {
+  const dailyData: Record<string, number> = {};
+  for (const trade of trades) {
+    const v = getTradeDisplayPnlValue(trade, pnlDisplay);
+    if (v == null) {
+      continue;
+    }
+    const date = trade.entered_at
+      ? toIsoCalendarDateInTimezone(trade.entered_at, timezone)
+      : trade.trade_day;
+    if (!date) {
+      continue;
+    }
+    dailyData[date] = (dailyData[date] || 0) + v;
+  }
+  return dailyData;
+}
 
 export interface DailyBalanceData {
   date: string;
@@ -62,6 +85,8 @@ interface UseAccountIndicatorsParams {
   } | null;
   activeDays?: number;
   pnlDisplay?: PnlDisplayMode;
+  /** Fuseau horaire utilisateur (Réglages) pour l'agrégation journalière */
+  timezone?: string;
 }
 
 /**
@@ -76,6 +101,7 @@ export function useAccountIndicators({
   analyticsData,
   activeDays,
   pnlDisplay = 'net',
+  timezone = 'Europe/Paris',
 }: UseAccountIndicatorsParams): AccountIndicators {
   // État pour le solde avec transactions
   const [balanceWithTransactions, setBalanceWithTransactions] = useState<AccountBalanceData | null>(null);
@@ -205,16 +231,7 @@ export function useAccountIndicators({
       return { bestDay: null, worstDay: null };
     }
 
-    // Grouper les trades par date
-    const dailyData: { [date: string]: number } = {};
-    filteredTrades.forEach(trade => {
-      const v = getTradeDisplayPnlValue(trade, pnlDisplay);
-      if (v != null && trade.trade_day) {
-        const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + v;
-      }
-    });
-
+    const dailyData = groupTradesPnlByDay(filteredTrades, pnlDisplay, timezone);
     const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
 
     if (dailyEntries.length === 0) {
@@ -235,7 +252,7 @@ export function useAccountIndicators({
       bestDay: bestDay.pnl > 0 ? { date: bestDay.date, pnl: bestDay.pnl } : null,
       worstDay: worstDay.pnl < 0 ? { date: worstDay.date, pnl: worstDay.pnl } : null,
     };
-  }, [filteredBalanceData, analyticsData, filteredTrades, pnlDisplay]);
+  }, [filteredBalanceData, analyticsData, filteredTrades, pnlDisplay, timezone]);
 
   // Calculer le Consistency Target pour les comptes TopStep
   // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
@@ -254,16 +271,7 @@ export function useAccountIndicators({
       return null;
     }
 
-    // Grouper les trades par date pour trouver le meilleur jour
-    const dailyData: { [date: string]: number } = {};
-    allTrades.forEach(trade => {
-      const v = getTradeDisplayPnlValue(trade, pnlDisplay);
-      if (v != null && trade.trade_day) {
-        const date = trade.trade_day;
-        dailyData[date] = (dailyData[date] || 0) + v;
-      }
-    });
-
+    const dailyData = groupTradesPnlByDay(allTrades, pnlDisplay, timezone);
     const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
     if (dailyEntries.length === 0) {
       return null;
@@ -297,7 +305,7 @@ export function useAccountIndicators({
       requiredTotalProfit,
       additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
     };
-  }, [selectedAccount, accountBalance, allTrades, pnlDisplay]);
+  }, [selectedAccount, accountBalance, allTrades, pnlDisplay, timezone]);
 
   // Total trades pour la période filtrée
   const totalTrades = filteredTrades.length;

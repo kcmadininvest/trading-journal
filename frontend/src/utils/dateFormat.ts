@@ -5,6 +5,23 @@
 export type DateFormatType = 'US' | 'EU';
 export type LanguageType = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
 
+const ISO_DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** Formate une date calendaire YYYY-MM-DD sans décalage de fuseau horaire. */
+function formatIsoCalendarDate(
+  isoDate: string,
+  dateFormat: DateFormatType,
+  includeTime: boolean,
+): string {
+  const match = isoDate.trim().match(ISO_DATE_ONLY);
+  if (!match) {
+    return '';
+  }
+  const [, year, month, day] = match;
+  const formatted = dateFormat === 'US' ? `${month}/${day}/${year}` : `${day}/${month}/${year}`;
+  return includeTime ? `${formatted} 00:00:00` : formatted;
+}
+
 /**
  * Formate une date selon les préférences utilisateur
  * @param date - Date à formater (string ISO, Date, ou timestamp)
@@ -21,6 +38,13 @@ export const formatDate = (
 ): string => {
   if (!date) {
     return '';
+  }
+
+  if (typeof date === 'string' && !includeTime) {
+    const calendar = formatIsoCalendarDate(date, dateFormat, false);
+    if (calendar) {
+      return calendar;
+    }
   }
 
   let dateObj: Date;

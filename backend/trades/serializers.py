@@ -399,6 +399,8 @@ class TradeStatisticsSerializer(serializers.Serializer):
     volume_pnl_ratio = serializers.FloatField()
     frequency_ratio = serializers.FloatField()
     duration_ratio = serializers.FloatField()
+    avg_time_between_trades = serializers.CharField()
+    avg_daily_exposure_time = serializers.CharField()
     recovery_time = serializers.FloatField()
     max_drawdown = serializers.FloatField()
     max_drawdown_pct = serializers.FloatField()

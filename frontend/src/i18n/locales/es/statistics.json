@@ -88,7 +88,11 @@
     "calmarRatioTooltip": "Retorno anual / Drawdown Máximo. > 1.0 = buen retorno relativo al riesgo. Requiere al menos 30 días de trading para ser calculado",
     "riskAdjustedPerformance": "Rendimiento Ajustado al Riesgo",
     "tradeEfficiency": "Eficiencia de Operaciones",
-    "tradeEfficiencyTooltip": "Porcentaje de operaciones donde se alcanzó el Take Profit. Más alto = mejor ejecución"
+    "tradeEfficiencyTooltip": "Porcentaje de operaciones donde se alcanzó el Take Profit. Más alto = mejor ejecución",
+    "avgTimeBetweenTrades": "Tiempo medio entre dos trades",
+    "avgTimeBetweenTradesTooltip": "Average delay between two consecutive entries on the same trading day, using your Settings timezone.\n\nUseful to detect revenge trading, overactivity after a loss, or impatience after a long wait.",
+    "avgDailyExposureTime": "Tiempo de exposición diario",
+    "avgDailyExposureTimeTooltip": "Average cumulative time spent in position per active trading day over the selected period, using your Settings timezone. Overlapping positions are merged.\n\nUseful to assess mental fatigue, emotional exposure, and overall risk."
   },
   "tradesAnalysis": {
     "title": "Análisis de Operaciones",
@@ -224,5 +228,29 @@
     "modelDeleteError": "Error al eliminar el modelo.",
     "exportErrorMessage": "Se produjo un error al exportar. Inténtalo de nuevo.",
     "reportFilePrefix": "informe"
+  },
+  "tabs": {
+    "overview": "Resumen",
+    "performance": "Rendimiento y riesgo",
+    "trades": "Análisis de trades",
+    "advanced": "Análisis avanzado"
+  },
+  "charts": {
+    "noData": "No hay datos disponibles",
+    "avgWinVsLoss": {
+      "title": "Ganancia vs pérdida media",
+      "tooltip": "Comparación de la ganancia media por trade ganador y la pérdida media por trade perdedor en el período."
+    }
+  },
+  "performanceTab": {
+    "verdict": {
+      "good": "Bueno",
+      "average": "Medio",
+      "poor": "Débil"
+    },
+    "details": {
+      "efficiency": "Eficiencia",
+      "resilience": "Resiliencia y riesgo ajustado"
+    }
   }
 }
