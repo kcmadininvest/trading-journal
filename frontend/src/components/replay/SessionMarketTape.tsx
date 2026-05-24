@@ -1,0 +1,498 @@
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
+import Tooltip from '../ui/Tooltip';
+import { useTheme } from '../../hooks/useTheme';
+import { usePreferences } from '../../hooks/usePreferences';
+import { SessionEventItem, SessionMarketData } from '../../services/sessionReplay';
+import { getOrderMarkerTooltipText } from './eventDetail';
+import { buildTapeRenderModel, TapeMarker, TapeRenderModel } from './marketTapeData';
+import { MarketTapeLegend } from './marketTapeGlyphs';
+import { getMarketTapeTheme, MarketTapeTheme, replayCardClass } from './replayStyles';
+import { NumberFormatType } from '../../utils/numberFormat';
+
+const VIEW_W = 400;
+const VIEW_H = 228;
+const PAD_LEFT = 10;
+const PAD_RIGHT = 10;
+const CURSOR_RAIL_H = 14;
+const PAD_TOP = 10 + CURSOR_RAIL_H;
+const PAD_BOTTOM = 18;
+const CURSOR_ARROW_HALF_W = 6;
+const CURSOR_ARROW_TOP = 2;
+
+function cursorArrowPoints(x: number): string {
+  const tipY = PAD_TOP - 1;
+  return `${x},${tipY} ${x - CURSOR_ARROW_HALF_W},${CURSOR_ARROW_TOP} ${x + CURSOR_ARROW_HALF_W},${CURSOR_ARROW_TOP}`;
+}
+const CHART_W = VIEW_W - PAD_LEFT - PAD_RIGHT;
+const CHART_H = VIEW_H - PAD_TOP - PAD_BOTTOM;
+
+interface SessionMarketTapeProps {
+  marketData: SessionMarketData | null | undefined;
+  events: SessionEventItem[];
+  currentIndex: number;
+  loading?: boolean;
+  onRefresh?: () => void;
+}
+
+function yForPrice(price: number, model: TapeRenderModel): number {
+  const range = model.yMax - model.yMin || 1;
+  const ratio = (price - model.yMin) / range;
+  return PAD_TOP + CHART_H * (1 - ratio);
+}
+
+function xForBarIndex(index: number, barCount: number): number {
+  if (barCount <= 1) return PAD_LEFT + CHART_W / 2;
+  const slot = CHART_W / barCount;
+  return PAD_LEFT + index * slot + slot / 2;
+}
+
+function barSlotWidth(index: number, model: TapeRenderModel): number {
+  const barCount = model.bars.length;
+  if (barCount <= 0) return 10;
+  const slot = CHART_W / barCount;
+  const isFuture = model.bars[index]?.isFuture ?? false;
+  const maxW = isFuture ? 12 : 18;
+  return Math.max(isFuture ? 4 : 6, Math.min(maxW, slot * 0.72));
+}
+
+const WICK_W = 1;
+const BODY_RX = 3;
+
+const ModernCandle: React.FC<{
+  x: number;
+  slotW: number;
+  yO: number;
+  yC: number;
+  yH: number;
+  yL: number;
+  up: boolean;
+  future?: boolean;
+  theme: MarketTapeTheme;
+}> = ({ x, slotW, yO, yC, yH, yL, up, future = false, theme }) => {
+  const bodyTop = Math.min(yO, yC);
+  const bodyBottom = Math.max(yO, yC);
+  const bodyH = Math.max(2.5, bodyBottom - bodyTop);
+  const bodyColor = future ? theme.futureFill : up ? theme.bullFill : theme.bearFill;
+
+  return (
+    <g>
+      {yH < bodyTop - 0.5 && (
+        <line
+          x1={x}
+          y1={yH}
+          x2={x}
+          y2={bodyTop}
+          stroke={theme.wickFill}
+          strokeWidth={WICK_W}
+          strokeLinecap="round"
+        />
+      )}
+      <rect
+        x={x - slotW / 2}
+        y={bodyTop}
+        width={slotW}
+        height={bodyH}
+        rx={BODY_RX}
+        fill={bodyColor}
+      />
+      {bodyBottom < yL - 0.5 && (
+        <line
+          x1={x}
+          y1={bodyBottom}
+          x2={x}
+          y2={yL}
+          stroke={theme.wickFill}
+          strokeWidth={WICK_W}
+          strokeLinecap="round"
+        />
+      )}
+    </g>
+  );
+};
+
+const MarkerGlyph: React.FC<{
+  marker: TapeMarker;
+  x: number;
+  y: number;
+  theme: MarketTapeTheme;
+}> = ({ marker, x, y, theme }) => {
+  if (marker.kind === 'entry') {
+    const isLong = (marker.side || '').toLowerCase() === 'long';
+    const fill = isLong ? theme.entryLong : theme.entryShort;
+    return (
+      <g transform={`translate(${x}, ${y})`}>
+        <circle r={8} fill={fill} stroke="#fff" strokeWidth={1.5} opacity={0.95} />
+        <text y={3.5} textAnchor="middle" fontSize={8} fill="#fff" fontWeight="700">
+          {isLong ? '▲' : '▼'}
+        </text>
+      </g>
+    );
+  }
+  if (marker.kind === 'exit') {
+    const win = marker.pnl != null && marker.pnl >= 0;
+    const fill = win ? theme.exitWin : theme.exitLoss;
+    return (
+      <g transform={`translate(${x}, ${y})`}>
+        <circle r={6} fill={fill} stroke="#fff" strokeWidth={1.25} />
+        <text y={3} textAnchor="middle" fontSize={7} fill="#fff" fontWeight="700">
+          ✕
+        </text>
+      </g>
+    );
+  }
+  if (marker.kind === 'fill') {
+    return (
+      <circle
+        cx={x}
+        cy={y}
+        r={3.5}
+        fill={theme.fillDot}
+        stroke="#fff"
+        strokeWidth={1}
+      />
+    );
+  }
+  return (
+    <circle
+      cx={x}
+      cy={y}
+      r={4.5}
+      fill={theme.background}
+      stroke={theme.orderRing}
+      strokeWidth={1.5}
+    />
+  );
+};
+
+function computeMeetSize(containerW: number, containerH: number): { width: number; height: number } {
+  if (containerW <= 0 || containerH <= 0) return { width: 0, height: 0 };
+  const scale = Math.min(containerW / VIEW_W, containerH / VIEW_H);
+  return { width: VIEW_W * scale, height: VIEW_H * scale };
+}
+
+function markerPositionPercent(x: number, y: number): { left: string; top: string } {
+  return {
+    left: `${(x / VIEW_W) * 100}%`,
+    top: `${(y / VIEW_H) * 100}%`,
+  };
+}
+
+function hitPxClassForKind(kind: TapeMarker['kind']): string {
+  switch (kind) {
+    case 'entry':
+      return 'h-5 w-5';
+    case 'exit':
+      return 'h-4 w-4';
+    case 'fill':
+      return 'h-3.5 w-3.5';
+    default:
+      return 'h-4 w-4';
+  }
+}
+
+const TapeMarkerHitLayer: React.FC<{
+  model: TapeRenderModel;
+  barCount: number;
+  t: TFunction;
+  numberFormat: NumberFormatType;
+}> = ({ model, barCount, t, numberFormat }) => {
+  const interactiveMarkers = model.markers.filter((m) => m.sourceEvent);
+
+  return (
+    <>
+      {interactiveMarkers.map((marker) => {
+        const x = xForBarIndex(marker.barIndex, barCount);
+        const y = yForPrice(marker.price, model);
+        const tooltip = getOrderMarkerTooltipText(marker.sourceEvent!, t, numberFormat);
+        const pos = markerPositionPercent(x, y);
+
+        return (
+          <div
+            key={marker.markerKey || `${marker.kind}-${marker.occurredAt}-${marker.price}`}
+            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+            style={pos}
+          >
+            <Tooltip
+              content={tooltip}
+              position="top"
+              delay={200}
+              contentClassName="whitespace-pre-line block max-w-[240px]"
+              triggerDisplay="block"
+            >
+              <div
+                className={`${hitPxClassForKind(marker.kind)} cursor-help rounded-full`}
+                aria-label={tooltip}
+              />
+            </Tooltip>
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
+const TapeChart: React.FC<{
+  model: TapeRenderModel;
+  theme: MarketTapeTheme;
+  t: TFunction;
+  numberFormat: NumberFormatType;
+}> = ({ model, theme, t, numberFormat }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [meetSize, setMeetSize] = useState({ width: 0, height: 0 });
+  const barCount = model.bars.length;
+
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      setMeetSize(computeMeetSize(el.clientWidth, el.clientHeight));
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative flex h-full w-full items-center justify-center"
+      style={{
+        background: `linear-gradient(to bottom, ${theme.chartBgTop}, ${theme.chartBgBottom})`,
+      }}
+    >
+      <div
+        className="relative shrink-0"
+        style={{
+          width: meetSize.width > 0 ? meetSize.width : '100%',
+          height: meetSize.height > 0 ? meetSize.height : '100%',
+        }}
+      >
+        <TapeSvg model={model} theme={theme} />
+        <div className="pointer-events-none absolute inset-0 z-10">
+          <TapeMarkerHitLayer model={model} barCount={barCount} t={t} numberFormat={numberFormat} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({ model, theme }) => {
+  const barCount = model.bars.length;
+  const cursorX = xForBarIndex(model.cursorBarIndex, barCount);
+  const bandStartSlot = model.openPositionBand
+    ? barSlotWidth(model.openPositionBand.barStart, model)
+    : 0;
+
+  return (
+    <svg
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+      className="absolute inset-0 h-full w-full block"
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="tapeChartBg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={theme.chartBgTop} />
+          <stop offset="100%" stopColor={theme.chartBgBottom} />
+        </linearGradient>
+      </defs>
+
+      <rect x={0} y={0} width={VIEW_W} height={VIEW_H} fill="url(#tapeChartBg)" />
+
+      <polygon points={cursorArrowPoints(cursorX)} fill={theme.cursor} />
+
+      {model.openPositionBand && (
+        <rect
+          x={xForBarIndex(model.openPositionBand.barStart, barCount) - bandStartSlot * 0.5}
+          y={yForPrice(model.openPositionBand.topPrice, model)}
+          width={
+            Math.max(
+              bandStartSlot,
+              xForBarIndex(model.openPositionBand.barEnd, barCount) -
+                xForBarIndex(model.openPositionBand.barStart, barCount) +
+                bandStartSlot,
+            )
+          }
+          height={Math.max(
+            3,
+            yForPrice(model.openPositionBand.bottomPrice, model) -
+              yForPrice(model.openPositionBand.topPrice, model),
+          )}
+          fill={theme.positionBand}
+          stroke={theme.cursor}
+          strokeWidth={0.5}
+          strokeOpacity={0.35}
+          rx={3}
+        />
+      )}
+
+      {model.bars.map((bar) => {
+        const x = xForBarIndex(bar.index, barCount);
+        const slotW = barSlotWidth(bar.index, model);
+        const yO = yForPrice(bar.o, model);
+        const yC = yForPrice(bar.c, model);
+        const yH = yForPrice(bar.h, model);
+        const yL = yForPrice(bar.l, model);
+        const up = bar.c >= bar.o;
+
+        return (
+          <ModernCandle
+            key={bar.index}
+            x={x}
+            slotW={slotW}
+            yO={yO}
+            yC={yC}
+            yH={yH}
+            yL={yL}
+            up={up}
+            future={bar.isFuture}
+            theme={theme}
+          />
+        );
+      })}
+
+      {model.markers.map((m, i) => (
+        <MarkerGlyph
+          key={`${m.kind}-${m.occurredAt}-${i}`}
+          marker={m}
+          x={xForBarIndex(m.barIndex, barCount)}
+          y={yForPrice(m.price, model)}
+          theme={theme}
+        />
+      ))}
+
+    </svg>
+  );
+};
+
+export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
+  marketData,
+  events,
+  currentIndex,
+  loading = false,
+  onRefresh,
+}) => {
+  const { t } = useTranslation('replay');
+  const { preferences } = usePreferences();
+  const { theme: colorMode } = useTheme();
+  const isDark = colorMode === 'dark';
+  const tapeTheme = useMemo(() => getMarketTapeTheme(isDark), [isDark]);
+
+  const contracts = marketData?.contracts ?? [];
+  const [activeTab, setActiveTab] = useState(0);
+
+  const safeTab = contracts.length ? Math.min(activeTab, contracts.length - 1) : 0;
+  const activeContract = contracts[safeTab];
+
+  const model = useMemo(() => {
+    if (!activeContract) return null;
+    return buildTapeRenderModel(activeContract, events, currentIndex);
+  }, [activeContract, events, currentIndex]);
+
+  if (loading) {
+    return (
+      <div
+        className={`flex h-[220px] sm:h-[240px] items-center justify-center rounded-lg border border-dashed border-gray-300 dark:border-gray-600 lg:h-auto lg:min-h-[240px] lg:flex-1 ${replayCardClass}`}
+      >
+        <p className="text-sm text-gray-500 dark:text-gray-400 animate-pulse">{t('marketTapeLoading')}</p>
+      </div>
+    );
+  }
+
+  const status = marketData?.status;
+  if (!contracts.length) {
+    if (status === 'no_contracts') return null;
+    return (
+      <div
+        className={`flex h-[220px] sm:h-[240px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-4 lg:h-auto lg:min-h-[240px] lg:flex-1 ${replayCardClass}`}
+      >
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center">{t('marketTapeUnavailable')}</p>
+        {onRefresh && (
+          <button type="button" onClick={onRefresh} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+            {t('marketTapeRefresh')}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (!model) {
+    return (
+      <div className="flex h-[220px] sm:h-[240px] items-center justify-center lg:h-auto lg:min-h-[240px] lg:flex-1">
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('marketTapeNoBars')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 lg:min-h-0 lg:flex-1">
+      <div className="flex shrink-0 items-center justify-between gap-2">
+        <p className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
+          {t('marketTapeTitle')}
+        </p>
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            {t('marketTapeRefresh')}
+          </button>
+        )}
+      </div>
+
+      {contracts.length > 1 && (
+        <div className="flex flex-wrap gap-1.5">
+          {contracts.map((c, idx) => (
+            <button
+              key={c.contract_id}
+              type="button"
+              onClick={() => setActiveTab(idx)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ${
+                idx === safeTab
+                  ? 'bg-blue-600 dark:bg-blue-500 text-white border-blue-600 dark:border-blue-500'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div
+        className={`flex flex-col overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 lg:min-h-0 lg:flex-1 ${replayCardClass}`}
+      >
+        <div className="h-[220px] shrink-0 sm:h-[240px] lg:h-auto lg:flex-1 lg:min-h-[240px]">
+          <TapeChart
+            model={model}
+            theme={tapeTheme}
+            t={t}
+            numberFormat={preferences.number_format}
+          />
+        </div>
+        <MarketTapeLegend
+          theme={tapeTheme}
+          labels={{
+            bull: t('marketTapeLegendBull'),
+            bear: t('marketTapeLegendBear'),
+            entryLong: t('marketTapeLegendEntryLong'),
+            entryShort: t('marketTapeLegendEntryShort'),
+            exitWin: t('marketTapeLegendExitWin'),
+            exitLoss: t('marketTapeLegendExitLoss'),
+            fill: t('marketTapeLegendFill'),
+            order: t('marketTapeLegendOrder'),
+            orderTooltip: t('marketTapeLegendOrderTooltip'),
+            cursor: t('marketTapeLegendCursor'),
+          }}
+        />
+      </div>
+    </div>
+  );
+};

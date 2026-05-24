@@ -21,6 +21,10 @@ from .serializers import (
     SessionJournalDraftSerializer,
     TradingSessionSerializer,
 )
+from integrations.topstepx_auth import get_topstepx_integration, get_valid_session_token
+from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
+
+from .market_data_fetcher import refresh_session_market_data
 from .session_builder import SessionReplayBuilder
 
 
@@ -172,3 +176,33 @@ class TradingSessionReplayViewSet(viewsets.ReadOnlyModelViewSet):
         if draft is None:
             return Response({'content': ''})
         return Response(SessionJournalDraftSerializer(draft).data)
+
+    @action(detail=True, methods=['post'], url_path='refresh-market-data')
+    def refresh_market_data(self, request, pk=None):
+        session = self.get_object()
+        if session.trading_account.account_type != 'topstep':
+            return Response(
+                {'detail': 'Le replay marché est réservé aux comptes TopStep.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        integration = get_topstepx_integration(request.user)
+        if integration is None or not integration.secrets_encrypted:
+            return Response(
+                {'detail': 'Configurez l\'intégration TopStepX dans les paramètres.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            token = get_valid_session_token(integration)
+            market_data = refresh_session_market_data(
+                session,
+                TopStepXApiClient(),
+                token,
+            )
+        except TopStepXApiError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        payload = TradingSessionSerializer(session).data
+        payload['market_data'] = market_data
+        return Response(payload, status=status.HTTP_200_OK)

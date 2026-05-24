@@ -1,6 +1,7 @@
 """Construction d'une session de replay à partir des APIs TopStepX."""
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
@@ -26,6 +27,9 @@ from trades.sync.topstepx_mapper import aggregate_fills_to_round_trips, parse_ap
 from .event_display import fill_summary, format_contract_label, order_summary
 from .insight_rules import run_insight_rules
 from .journal_generator import generate_journal_draft
+from .market_data_fetcher import fetch_market_data_for_session
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -346,6 +350,24 @@ class SessionReplayBuilder:
 
             draft_content = generate_journal_draft(session, event_objs, insights)
             SessionJournalDraft.objects.create(session=session, content=draft_content)
+
+            try:
+                market_data = fetch_market_data_for_session(
+                    self.client,
+                    token,
+                    raw_events,
+                    started_at=started_at,
+                    ended_at=ended_at,
+                )
+            except Exception:
+                logger.exception('Échec fetch market_data session_id=%s', session.pk)
+                market_data = {
+                    'status': 'unavailable',
+                    'fetched_at': timezone.now().isoformat(),
+                    'contracts': [],
+                }
+            session.market_data = market_data
+            session.save(update_fields=['market_data', 'updated_at'])
 
         return SessionBuildResult(
             session=session,

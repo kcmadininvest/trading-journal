@@ -1988,6 +1988,11 @@ class TradingSession(models.Model):
     )
     build_error = models.TextField(blank=True, verbose_name='Erreur de construction')
     built_at = models.DateTimeField(null=True, blank=True, verbose_name='Construite le')
+    market_data = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Données marché (barres OHLC)',
+    )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créée le')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifiée le')
 

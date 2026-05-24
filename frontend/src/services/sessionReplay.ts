@@ -1,5 +1,27 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 
+export interface SessionMarketBar {
+  t: string;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  v?: number | null;
+}
+
+export interface SessionMarketContract {
+  contract_id: string;
+  label: string;
+  interval?: { unit: number; unit_number: number };
+  bars: SessionMarketBar[];
+}
+
+export interface SessionMarketData {
+  status: 'ok' | 'unavailable' | 'partial' | 'no_contracts' | string;
+  fetched_at?: string;
+  contracts: SessionMarketContract[];
+}
+
 export interface TradingSessionReplay {
   id: number;
   trading_account: number;
@@ -13,6 +35,7 @@ export interface TradingSessionReplay {
   max_drawdown_intraday: string | null;
   build_error: string;
   built_at: string | null;
+  market_data?: SessionMarketData | null;
   event_count: number;
   insight_count: number;
   /** true si le build a conservé une session existante (API vide / indisponible). */
@@ -181,6 +204,25 @@ class SessionReplayService {
       { signal: options.signal },
     );
     this.ensureOk(res, 'Timeline indisponible');
+    return res.json();
+  }
+
+  async refreshMarketData(
+    sessionId: number,
+    options: ReplayRequestOptions = {},
+  ): Promise<TradingSessionReplay> {
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/replay/sessions/${sessionId}/refresh-market-data/`,
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+        signal: options.signal,
+      },
+    );
+    if (!res.ok) {
+      const msg = await this.parseErrorResponse(res, 'Impossible de charger les données marché');
+      throw new ReplayApiError(msg, res.status);
+    }
     return res.json();
   }
 

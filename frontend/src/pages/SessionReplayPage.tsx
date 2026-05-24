@@ -14,6 +14,7 @@ import {
   TIMELINE_FILTER_KEYS,
   type TimelineFilterKey,
 } from '../components/replay/timelineFilters';
+import { needsMarketDataRefresh } from '../components/replay/marketTapeData';
 import { SessionStatePanel } from '../components/replay/SessionStatePanel';
 import { InsightsPanel } from '../components/replay/InsightsPanel';
 import { JournalDraftPanel } from '../components/replay/JournalDraftPanel';
@@ -111,10 +112,12 @@ const SessionReplayPage: React.FC = () => {
   const [timelineFilters, setTimelineFilters] = useState<Set<TimelineFilterKey>>(
     () => new Set(TIMELINE_FILTER_KEYS),
   );
+  const [marketDataLoading, setMarketDataLoading] = useState(false);
 
   const playRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const silentRefreshAbortRef = useRef<AbortController | null>(null);
   const generationRef = useRef(0);
   const autoBuildPendingRef = useRef(hashParams.autoBuild ?? false);
   const activeDatesRef = useRef(activeDates);
@@ -132,6 +135,12 @@ const SessionReplayPage: React.FC = () => {
   buildingRef.current = building;
   const sessionRef = useRef(session);
   sessionRef.current = session;
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
 
   const cancelPendingRequests = useCallback(() => {
     if (debounceTimerRef.current) {
@@ -181,20 +190,75 @@ const SessionReplayPage: React.FC = () => {
     [accountId, sessionDate],
   );
 
-  const hydrateSession = useCallback(
+  const refreshMarketDataForSession = useCallback(
     async (built: TradingSessionReplay, signal: AbortSignal) => {
+      setMarketDataLoading(true);
+      try {
+        const updated = await sessionReplayService.refreshMarketData(built.id, { signal });
+        if (!signal.aborted) {
+          setSession(updated);
+        }
+        return updated;
+      } catch (error: unknown) {
+        if (!isAbortError(error)) {
+          toastReplayError(error, t('marketTapeRefreshError'));
+        }
+        return built;
+      } finally {
+        if (!signal.aborted) {
+          setMarketDataLoading(false);
+        }
+      }
+    },
+    [t],
+  );
+
+  const hydrateSession = useCallback(
+    async (
+      built: TradingSessionReplay,
+      signal: AbortSignal,
+      options?: { preservePlayback?: boolean },
+    ) => {
+      const anchorExternalId = options?.preservePlayback
+        ? eventsRef.current[currentIndexRef.current]?.external_id
+        : null;
+      const resumePlaying = options?.preservePlayback ? playingRef.current : false;
+
       const [timeline, insightList] = await Promise.all([
         sessionReplayService.getTimeline(built.id, { signal }),
         sessionReplayService.getInsights(built.id, { signal }),
       ]);
+      if (signal.aborted) return;
       setSession(built);
       setEvents(timeline);
       setInsights(insightList);
-      setCurrentIndex(0);
-      setPlaying(false);
+
+      if (options?.preservePlayback && timeline.length > 0) {
+        let nextIndex = currentIndexRef.current;
+        if (anchorExternalId) {
+          const matched = timeline.findIndex((e) => e.external_id === anchorExternalId);
+          if (matched >= 0) nextIndex = matched;
+        }
+        nextIndex = Math.max(0, Math.min(nextIndex, timeline.length - 1));
+        setCurrentIndex(nextIndex);
+        setPlaying(resumePlaying);
+      } else {
+        setCurrentIndex(0);
+        setPlaying(false);
+      }
+
+      if (needsMarketDataRefresh(built.market_data)) {
+        await refreshMarketDataForSession(built, signal);
+      }
     },
-    [],
+    [refreshMarketDataForSession],
   );
+
+  const handleRefreshMarketData = useCallback(() => {
+    if (!session) return;
+    const controller = new AbortController();
+    void refreshMarketDataForSession(session, controller.signal);
+  }, [session, refreshMarketDataForSession]);
 
   const clearSessionState = useCallback(() => {
     setSession(null);
@@ -381,11 +445,41 @@ const SessionReplayPage: React.FC = () => {
     tryAutoBuildForSelection,
   ]);
 
+  const refreshSessionQuiet = useCallback(async () => {
+    if (!accountId || !sessionDate || !canSync) return;
+    if (sessionRef.current?.session_date !== sessionDate) return;
+
+    silentRefreshAbortRef.current?.abort();
+    const controller = new AbortController();
+    silentRefreshAbortRef.current = controller;
+
+    try {
+      const built = await sessionReplayService.build(accountId, sessionDate, {
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
+      await hydrateSession(built, controller.signal, { preservePlayback: true });
+    } catch (error: unknown) {
+      if (!isAbortError(error)) {
+        console.error('[SessionReplayPage] quiet refresh failed', error);
+      }
+    } finally {
+      if (silentRefreshAbortRef.current === controller) {
+        silentRefreshAbortRef.current = null;
+      }
+    }
+  }, [accountId, sessionDate, canSync, hydrateSession]);
+
   const handleAfterSync = useCallback(() => {
     void loadActiveDates();
     if (!accountId || !canSync || !sessionDate) return;
     void handleBuild({ refresh: true });
   }, [loadActiveDates, accountId, canSync, sessionDate, handleBuild]);
+
+  const handlePollingAfterSync = useCallback(() => {
+    void loadActiveDates();
+    void refreshSessionQuiet();
+  }, [loadActiveDates, refreshSessionQuiet]);
 
   const applyJournalToSession = async (overwrite: boolean) => {
     if (!session) return;
@@ -475,6 +569,11 @@ const SessionReplayPage: React.FC = () => {
   const handlePlayPause = useCallback(() => {
     setPlaying((p) => !p);
   }, []);
+
+  const handleReplay = useCallback(() => {
+    handlePlaybackSeek(0);
+    setPlaying(true);
+  }, [handlePlaybackSeek]);
 
   useReplayKeyboard({
     enabled: hasBuiltSession && visibleEventIndices.length > 0,
@@ -621,6 +720,7 @@ const SessionReplayPage: React.FC = () => {
                 accountId={accountId}
                 enablePolling
                 onSynced={handleAfterSync}
+                onPollingSynced={handlePollingAfterSync}
               />
             )}
           </div>
@@ -672,7 +772,7 @@ const SessionReplayPage: React.FC = () => {
           </div>
 
           <div className={`${replayCardClass} overflow-hidden`}>
-            <div className="grid lg:grid-cols-3 gap-0">
+            <div className="grid lg:grid-cols-5 lg:items-stretch gap-0">
               <div className="lg:col-span-2 p-4 space-y-4 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700">
                 <PlaybackControls
                   playing={playing}
@@ -680,6 +780,7 @@ const SessionReplayPage: React.FC = () => {
                   currentIndex={playbackPosition}
                   maxIndex={maxPlaybackIndex}
                   onPlayPause={handlePlayPause}
+                  onReplay={handleReplay}
                   onSpeedChange={setSpeed}
                   onSeek={handlePlaybackSeek}
                 />
@@ -703,8 +804,14 @@ const SessionReplayPage: React.FC = () => {
                   numberFormat={preferences.number_format}
                 />
               </div>
-              <div className="p-4 bg-gray-50 dark:bg-gray-900/30">
-                <SessionStatePanel events={events} currentIndex={currentIndex} />
+              <div className="lg:col-span-3 flex flex-col p-4 bg-gray-50 dark:bg-gray-900/30 lg:min-h-0 lg:h-full">
+                <SessionStatePanel
+                  events={events}
+                  currentIndex={currentIndex}
+                  marketData={session?.market_data}
+                  marketDataLoading={marketDataLoading}
+                  onRefreshMarketData={session ? handleRefreshMarketData : undefined}
+                />
               </div>
             </div>
           </div>

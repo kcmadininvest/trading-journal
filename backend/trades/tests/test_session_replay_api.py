@@ -113,6 +113,31 @@ class SessionReplayApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(len(res.data), 1)
 
+    def test_detail_includes_market_data(self) -> None:
+        self.session.market_data = {
+            'status': 'ok',
+            'contracts': [{'contract_id': 'CON.F.US.GC.Z25', 'label': 'GC', 'bars': []}],
+        }
+        self.session.save(update_fields=['market_data'])
+        url = reverse('session-replay-detail', kwargs={'pk': self.session.pk})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['market_data']['status'], 'ok')
+        self.assertEqual(res.data['market_data']['contracts'][0]['label'], 'GC')
+
+    @patch('trades.replay.views.refresh_session_market_data')
+    def test_refresh_market_data(self, mock_refresh) -> None:
+        mock_refresh.return_value = {
+            'status': 'ok',
+            'fetched_at': timezone.now().isoformat(),
+            'contracts': [],
+        }
+        url = reverse('session-replay-refresh-market-data', kwargs={'pk': self.session.pk})
+        res = self.client.post(url, {}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data['market_data']['status'], 'ok')
+        mock_refresh.assert_called_once()
+
     @patch('trades.replay.views.SessionReplayBuilder.build')
     def test_build_session(self, mock_build) -> None:
         mock_build.return_value = SessionBuildResult(

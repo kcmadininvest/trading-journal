@@ -261,3 +261,14 @@ export function getEventDetailText(
       return null;
   }
 }
+
+/** Tooltip du marqueur ordre sur le bandeau marché (type, sens, prix…). */
+export function getOrderMarkerTooltipText(
+  evt: SessionEventItem,
+  t: TFunction,
+  numberFormat: NumberFormatType = 'comma',
+): string {
+  const title = t(`eventTypes.${evt.event_type}`, { defaultValue: evt.event_type });
+  const detail = getEventDetailText(evt, t, numberFormat);
+  return detail ? `${title} — ${detail}` : title;
+}

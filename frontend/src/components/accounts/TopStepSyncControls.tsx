@@ -99,12 +99,14 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
     enabled: enablePolling && canSync,
     onStatusUpdate: setStatus,
     onSynced: (result) => {
-      setToast(
-        t('sync.result', {
-          created: result.created,
-          skipped: result.skipped,
-        }),
-      );
+      if (!onPollingSynced || result.created > 0) {
+        setToast(
+          t('sync.result', {
+            created: result.created,
+            skipped: result.skipped,
+          }),
+        );
+      }
       handlePollingSynced();
     },
   });

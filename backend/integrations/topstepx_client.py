@@ -139,6 +139,66 @@ class TopStepXApiClient:
             return []
         return contracts
 
+    def retrieve_bars(
+        self,
+        auth_token: str,
+        *,
+        contract_id: str,
+        live: bool,
+        start_time: datetime,
+        end_time: datetime,
+        unit: int,
+        unit_number: int,
+        limit: int,
+        include_partial_bar: bool = False,
+    ) -> list[dict[str, Any]]:
+        """POST /api/History/retrieveBars — bougies OHLC historiques."""
+        payload = self._request_json(
+            'POST',
+            '/api/History/retrieveBars',
+            body={
+                'contractId': contract_id,
+                'live': bool(live),
+                'startTime': self._format_timestamp(start_time),
+                'endTime': self._format_timestamp(end_time),
+                'unit': int(unit),
+                'unitNumber': int(unit_number),
+                'limit': int(limit),
+                'includePartialBar': bool(include_partial_bar),
+            },
+            auth_token=auth_token,
+        )
+        if not payload.get('success') or payload.get('errorCode', 0) != 0:
+            raise TopStepXApiError(
+                self._api_error_message(payload, 'Récupération des barres TopStepX échouée.'),
+                error_code=str(payload.get('errorCode', 'retrieve_bars_failed')),
+            )
+        bars = payload.get('bars') or []
+        if not isinstance(bars, list):
+            return []
+        return [self._normalize_bar_row(row) for row in bars if isinstance(row, dict)]
+
+    @staticmethod
+    def _normalize_bar_row(row: dict[str, Any]) -> dict[str, Any]:
+        def _float(key: str) -> float | None:
+            raw = row.get(key)
+            if raw is None:
+                return None
+            try:
+                return float(raw)
+            except (TypeError, ValueError):
+                return None
+
+        timestamp = row.get('t') or row.get('timestamp')
+        return {
+            't': str(timestamp) if timestamp is not None else '',
+            'o': _float('o'),
+            'h': _float('h'),
+            'l': _float('l'),
+            'c': _float('c'),
+            'v': _float('v'),
+        }
+
     def list_available_contracts(
         self,
         auth_token: str,

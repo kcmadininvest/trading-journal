@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SessionEventItem } from '../../services/sessionReplay';
+import { SessionEventItem, SessionMarketData } from '../../services/sessionReplay';
+import { SessionMarketTape } from './SessionMarketTape';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { usePreferences } from '../../hooks/usePreferences';
 import { getReplayPnlTextClass } from './replayStyles';
@@ -8,6 +9,9 @@ import { getReplayPnlTextClass } from './replayStyles';
 interface SessionStatePanelProps {
   events: SessionEventItem[];
   currentIndex: number;
+  marketData?: SessionMarketData | null;
+  marketDataLoading?: boolean;
+  onRefreshMarketData?: () => void;
 }
 
 function cumulativePnlAtIndex(events: SessionEventItem[], currentIndex: number): number {
@@ -45,7 +49,13 @@ function openPositionsAtIndex(events: SessionEventItem[], currentIndex: number) 
   return Object.values(positions);
 }
 
-export const SessionStatePanel: React.FC<SessionStatePanelProps> = ({ events, currentIndex }) => {
+export const SessionStatePanel: React.FC<SessionStatePanelProps> = ({
+  events,
+  currentIndex,
+  marketData,
+  marketDataLoading = false,
+  onRefreshMarketData,
+}) => {
   const { t } = useTranslation('replay');
   const { preferences } = usePreferences();
 
@@ -58,9 +68,9 @@ export const SessionStatePanel: React.FC<SessionStatePanelProps> = ({ events, cu
   );
 
   return (
-    <div className="space-y-4 h-full">
-      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">{t('stateAtTime')}</h3>
-      <div className="bg-white dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700 p-4">
+    <div className="flex flex-col gap-4 lg:h-full lg:min-h-0">
+      <h3 className="shrink-0 text-sm font-semibold text-gray-800 dark:text-gray-200">{t('stateAtTime')}</h3>
+      <div className="shrink-0 rounded-md border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
         <p className="text-xs text-gray-500 dark:text-gray-400">{t('cumulativePnl')}</p>
         <p className={`text-2xl font-bold ${getReplayPnlTextClass(state.cumulativePnl)}`}>
           {formatCurrencyWithSign(
@@ -71,7 +81,7 @@ export const SessionStatePanel: React.FC<SessionStatePanelProps> = ({ events, cu
           )}
         </p>
       </div>
-      <div>
+      <div className="shrink-0">
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t('openPositions')}</p>
         {state.positions.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('flat')}</p>
@@ -87,6 +97,15 @@ export const SessionStatePanel: React.FC<SessionStatePanelProps> = ({ events, cu
             ))}
           </ul>
         )}
+      </div>
+      <div className="flex flex-col lg:min-h-0 lg:flex-1">
+        <SessionMarketTape
+          marketData={marketData}
+          events={events}
+          currentIndex={currentIndex}
+          loading={marketDataLoading}
+          onRefresh={onRefreshMarketData}
+        />
       </div>
     </div>
   );

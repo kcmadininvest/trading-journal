@@ -195,6 +195,16 @@ class SessionReplayBuildIntegrationTests(TestCase):
     ) -> None:
         mock_client = MagicMock()
         mock_client.search_orders.return_value = []
+        mock_client.retrieve_bars.return_value = [
+            {
+                't': '2025-08-10T16:20:00+00:00',
+                'o': 25250.0,
+                'h': 25270.0,
+                'l': 25240.0,
+                'c': 25260.0,
+                'v': 10,
+            },
+        ]
         mock_client.search_trades.return_value = [
             {
                 'id': 1001,
@@ -225,10 +235,23 @@ class SessionReplayBuildIntegrationTests(TestCase):
         self.assertGreater(result.event_count, 0)
         self.assertTrue(SessionEvent.objects.filter(session=result.session).exists())
         self.assertTrue(hasattr(result.session, 'journal_draft'))
+        result.session.refresh_from_db()
+        self.assertIn(result.session.market_data.get('status'), ('ok', 'partial', 'unavailable'))
+        mock_client.retrieve_bars.assert_called()
 
     def _build_with_mock_fills(self, mock_client_cls):
         mock_client = MagicMock()
         mock_client.search_orders.return_value = []
+        mock_client.retrieve_bars.return_value = [
+            {
+                't': '2025-08-10T16:20:00+00:00',
+                'o': 25250.0,
+                'h': 25270.0,
+                'l': 25240.0,
+                'c': 25260.0,
+                'v': 10,
+            },
+        ]
         mock_client.search_trades.return_value = [
             {
                 'id': 1001,

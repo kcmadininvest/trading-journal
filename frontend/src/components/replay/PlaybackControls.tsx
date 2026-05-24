@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { replayPrimaryButtonClass } from './replayStyles';
+import { PauseIcon, PlayIcon, ReplayIcon } from './replayPlaybackIcons';
+import { replayPrimaryButtonClass, replaySecondaryButtonClass } from './replayStyles';
 
 interface PlaybackControlsProps {
   playing: boolean;
@@ -8,6 +9,7 @@ interface PlaybackControlsProps {
   currentIndex: number;
   maxIndex: number;
   onPlayPause: () => void;
+  onReplay: () => void;
   onSpeedChange: (speed: number) => void;
   onSeek: (index: number) => void;
 }
@@ -18,10 +20,12 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   currentIndex,
   maxIndex,
   onPlayPause,
+  onReplay,
   onSpeedChange,
   onSeek,
 }) => {
   const { t } = useTranslation('replay');
+  const iconButtonClass = '!w-10 !min-w-[2.5rem] !px-0';
 
   return (
     <div className="flex flex-col gap-3 w-full">
@@ -30,9 +34,21 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           type="button"
           onClick={onPlayPause}
           disabled={maxIndex <= 0}
-          className={replayPrimaryButtonClass}
+          className={`${replayPrimaryButtonClass} ${iconButtonClass}`}
+          aria-label={playing ? t('pause') : t('play')}
+          title={playing ? t('pause') : t('play')}
         >
-          {playing ? t('pause') : t('play')}
+          {playing ? <PauseIcon /> : <PlayIcon />}
+        </button>
+        <button
+          type="button"
+          onClick={onReplay}
+          disabled={maxIndex <= 0}
+          className={`${replaySecondaryButtonClass} ${iconButtonClass}`}
+          aria-label={t('replay')}
+          title={t('replay')}
+        >
+          <ReplayIcon />
         </button>
         <div className="inline-flex rounded-md shadow-sm" role="group">
           {[1, 2, 4].map((s, i) => (

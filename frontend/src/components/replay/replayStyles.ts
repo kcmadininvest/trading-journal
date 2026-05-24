@@ -1,5 +1,7 @@
 /** Classes partagées alignées sur le calendrier (CalendarPage / DailyView). */
 
+import { getReplayPnlColors } from './replayPnlColors';
+
 export const replayCardClass =
   'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700';
 
@@ -19,6 +21,77 @@ export function getReplayPnlTextClass(value: number): string {
   if (value > 0) return 'text-green-600 dark:text-green-400';
   if (value < 0) return 'text-red-600 dark:text-red-400';
   return 'text-gray-500 dark:text-gray-400';
+}
+
+/** Palette SVG du bandeau marché replay (bleu haussier / rose baissier + gris futur). */
+export interface MarketTapeTheme {
+  background: string;
+  chartBgTop: string;
+  chartBgBottom: string;
+  border: string;
+  gridLine: string;
+  bullFill: string;
+  bearFill: string;
+  wickFill: string;
+  futureFill: string;
+  cursor: string;
+  cursorMuted: string;
+  positionBand: string;
+  entryLong: string;
+  entryShort: string;
+  exitWin: string;
+  exitLoss: string;
+  fillDot: string;
+  orderRing: string;
+}
+
+export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
+  const pnl = getReplayPnlColors(isDark);
+  const cursor = isDark ? '#06b6d4' : '#2563eb';
+  const fillDot = isDark ? '#22d3ee' : '#2563eb';
+
+  if (isDark) {
+    return {
+      background: '#0B1020',
+      chartBgTop: '#0F172A',
+      chartBgBottom: '#0B1020',
+      border: 'rgba(255,255,255,0.1)',
+      gridLine: '#ffffff',
+      bullFill: '#3b82f6',
+      bearFill: '#f472b6',
+      wickFill: '#334155',
+      futureFill: '#64748b',
+      cursor,
+      cursorMuted: 'rgba(6, 182, 212, 0.25)',
+      positionBand: 'rgba(6, 182, 212, 0.15)',
+      entryLong: pnl.positive,
+      entryShort: pnl.negative,
+      exitWin: pnl.positive,
+      exitLoss: pnl.negative,
+      fillDot,
+      orderRing: '#94a3b8',
+    };
+  }
+  return {
+    background: '#ffffff',
+    chartBgTop: '#f8fafc',
+    chartBgBottom: '#ffffff',
+    border: '#e5e7eb',
+    gridLine: '#64748b',
+    bullFill: '#3b82f6',
+    bearFill: '#f472b6',
+    wickFill: '#1e293b',
+    futureFill: '#d1d5db',
+    cursor,
+    cursorMuted: 'rgba(37, 99, 235, 0.12)',
+    positionBand: 'rgba(37, 99, 235, 0.1)',
+    entryLong: pnl.positive,
+    entryShort: pnl.negative,
+    exitWin: pnl.positive,
+    exitLoss: pnl.negative,
+    fillDot,
+    orderRing: '#6b7280',
+  };
 }
 
 export function getReplayPnlBgClass(value: number, isSelected = false): string {
