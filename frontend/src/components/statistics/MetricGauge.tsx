@@ -226,40 +226,45 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
 
   return (
     <div className={showLabels ? 'mb-4' : ''}>
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-      {/* Label (côté gauche) */}
-      <div className="w-full min-w-0 sm:w-[35%] sm:flex-shrink-0">
-        <div className="inline-flex items-center gap-1 min-w-0 leading-tight">
-          <Tooltip content={label} delay={0} disabled={!isLabelTruncated}>
-            <span
-              ref={labelRef}
-              className={`inline-block max-w-full text-sm text-gray-500 dark:text-gray-400 whitespace-normal break-words sm:truncate ${
-                isLabelTruncated ? 'cursor-help' : ''
-              }`}
-            >
-              {label}
-            </span>
-          </Tooltip>
-          {tooltip && (
-            <Tooltip content={tooltip} className="items-center leading-none">
-              <svg className="block w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-              </svg>
-            </Tooltip>
-          )}
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+          <div className="min-w-0 flex-1 basis-[min(100%,10rem)]">
+            <div className="inline-flex max-w-full items-center gap-1 leading-tight">
+              <Tooltip content={label} delay={0} disabled={!isLabelTruncated}>
+                <span
+                  ref={labelRef}
+                  className={`inline-block max-w-full text-sm text-gray-500 dark:text-gray-400 break-words ${
+                    isLabelTruncated ? 'cursor-help' : ''
+                  }`}
+                >
+                  {label}
+                </span>
+              </Tooltip>
+              {tooltip && (
+                <Tooltip content={tooltip} className="shrink-0 items-center leading-none">
+                  <svg
+                    className="block h-4 w-4 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </Tooltip>
+              )}
+            </div>
+          </div>
+          <span
+            className={`shrink-0 text-base font-semibold tabular-nums ${textColorClasses[currentColor]} text-right`}
+          >
+            {displayValue}
+          </span>
         </div>
+        <div className="relative min-w-0 w-full">{barContent}</div>
       </div>
-
-      {/* Valeur (avant la jauge) */}
-      <span className={`text-base font-semibold ${textColorClasses[currentColor]} text-left min-w-[4rem] sm:flex-shrink-0 sm:text-right`}>
-        {displayValue}
-      </span>
-
-      {/* Jauge (côté droit) */}
-      <div className="flex-1 min-w-0 relative">
-        {barContent}
-      </div>
-    </div>
     </div>
   );
 };

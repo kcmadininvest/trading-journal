@@ -1,4 +1,5 @@
 import React from 'react';
+import clsx from 'clsx';
 import { TradeListItem } from '../../services/trades';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
@@ -8,9 +9,26 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import Tooltip from '../ui/Tooltip';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
 
+const TableRefreshSpinner: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <svg
+    className={clsx('h-5 w-5 animate-spin text-blue-600 dark:text-blue-400', className)}
+    fill="none"
+    viewBox="0 0 24 24"
+    aria-hidden
+  >
+    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path
+      className="opacity-75"
+      fill="currentColor"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+    />
+  </svg>
+);
+
 interface TradesTableProps {
   items: TradeListItem[];
-  isLoading: boolean;
+  isInitialLoading: boolean;
+  isRefreshing: boolean;
   page: number;
   pageSize: number;
   total: number;
@@ -26,7 +44,24 @@ interface TradesTableProps {
   hideAccountNumber?: boolean;
 }
 
-export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page, pageSize, total, onPageChange, onSelect, hideFooter, selectedIds = [], onToggleRow, onToggleAll, totals, onDelete, onRowClick, hideAccountNumber = false }) => {
+export const TradesTable: React.FC<TradesTableProps> = ({
+  items,
+  isInitialLoading,
+  isRefreshing,
+  page,
+  pageSize,
+  total,
+  onPageChange,
+  onSelect,
+  hideFooter,
+  selectedIds = [],
+  onToggleRow,
+  onToggleAll,
+  totals,
+  onDelete,
+  onRowClick,
+  hideAccountNumber = false,
+}) => {
   const { preferences } = usePreferences();
   const pnlMode = parsePnlDisplayMode(preferences.pnl_display);
   const { t } = useI18nTranslation();
@@ -34,6 +69,9 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const visibleIds = items.map(i => i.id);
   const allSelectedOnPage = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
+  const showStaleOverlay = isRefreshing && items.length > 0;
+  const showInitialLoading = isInitialLoading && items.length === 0;
+  const showEmptyState = !isInitialLoading && !isRefreshing && items.length === 0;
 
   const fmtCurrency = (v?: string | null) => {
     return formatCurrencyWithSign(v, '', preferences.number_format, 2);
@@ -107,11 +145,22 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
   };
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+    <div className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow dark:border-gray-700 dark:bg-gray-800">
+      {showStaleOverlay && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0 z-10 bg-white/50 dark:bg-gray-900/40"
+            aria-hidden
+          />
+          <div className="absolute top-3 right-3 z-20 flex items-center justify-center rounded-full bg-white/90 p-1.5 shadow dark:bg-gray-800/90">
+            <TableRefreshSpinner />
+          </div>
+        </>
+      )}
       {/* Vue cartes pour mobile */}
-      <div className="block md:hidden">
+      <div className={clsx('block md:hidden', showStaleOverlay && 'opacity-60')}>
         {/* Header avec sélection pour mobile */}
-        {!isLoading && items.length > 0 && (
+        {items.length > 0 && (
           <div className="p-3 border-b border-gray-200 dark:border-gray-700">
             <label className="flex items-center gap-3 cursor-pointer select-none">
               <input
@@ -126,11 +175,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
             </label>
           </div>
         )}
-        {isLoading ? (
+        {showInitialLoading ? (
           <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">{t('common:loading')}</div>
-        ) : items.length === 0 ? (
+        ) : showEmptyState ? (
           <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</div>
-        ) : (
+        ) : items.length > 0 ? (
           <div className="space-y-3 p-3">
             {items.map((trade) => (
               <div
@@ -333,10 +382,15 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               </div>
             ))}
           </div>
-        )}
+        ) : null}
         {/* Totaux pour mobile */}
-        {!isLoading && items.length > 0 && totals && (
-          <div className="p-4 border-t-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+        {items.length > 0 && totals && (
+          <div
+            className={clsx(
+              'p-4 border-t-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 transition-opacity',
+              showStaleOverlay && 'opacity-60'
+            )}
+          >
             <div className="flex items-center gap-2 mb-3">
               <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -377,7 +431,7 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
       </div>
 
       {/* Vue tableau pour desktop */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className={clsx('hidden md:block overflow-x-auto', showStaleOverlay && 'opacity-60')}>
         <table className="min-w-full table-fixed divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700/50">
             <tr>
@@ -415,11 +469,11 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {isLoading ? (
+            {showInitialLoading ? (
               <tr>
                 <td colSpan={14} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('common:loading')}</td>
               </tr>
-            ) : items.length === 0 ? (
+            ) : showEmptyState ? (
               <tr>
                 <td colSpan={14} className="px-3 sm:px-4 py-4 sm:py-6 text-center text-sm sm:text-base text-gray-500 dark:text-gray-400">{t('trades:noTrades')}</td>
               </tr>
@@ -609,8 +663,13 @@ export const TradesTable: React.FC<TradesTableProps> = ({ items, isLoading, page
               ))
             )}
           </tbody>
-          {(!isLoading && items.length > 0 && totals) && (
-            <tfoot className="bg-gray-50 dark:bg-gray-700/50">
+          {items.length > 0 && totals && (
+            <tfoot
+              className={clsx(
+                'bg-gray-50 dark:bg-gray-700/50 transition-opacity',
+                showStaleOverlay && 'opacity-60'
+              )}
+            >
               <tr className="border-t-2 border-gray-200 dark:border-gray-600">
                 <td colSpan={9} className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
                   <span className="inline-flex items-center gap-1 sm:gap-2 font-medium">

@@ -158,16 +158,16 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
         })}
       </span>
 
-      <span
-        className={clsx(
-          'text-xl font-semibold tabular-nums sm:text-2xl',
-          hideMoney ? 'text-gray-700 dark:text-gray-300' : getPnLTextClasses(entry.pnl)
-        )}
-      >
-        {formatPnLValue(entry.pnl)}
-      </span>
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <span
+          className={clsx(
+            'text-xl font-semibold tabular-nums sm:text-2xl',
+            hideMoney ? 'text-gray-700 dark:text-gray-300' : getPnLTextClasses(entry.pnl)
+          )}
+        >
+          {formatPnLValue(entry.pnl)}
+        </span>
 
-      <div className="flex flex-col gap-1">
         {showChangeBadge ? (
           <Tooltip
             disabled={hideMoney}
@@ -187,7 +187,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
           >
             <span
               className={clsx(
-                'inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                'inline-flex w-fit shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
                 hideMoney
                   ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                   : getChangeBadgeClasses(changePct)
@@ -231,15 +231,16 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
                   })
             }
           >
-            <span className="inline-flex w-fit max-w-full items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium leading-snug text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+            <span className="inline-flex w-fit max-w-full shrink-0 items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium leading-snug text-gray-600 dark:bg-gray-700 dark:text-gray-400">
               {hideMoney ? '***' : yearUnavailableHint ?? `— ${vsLabel}`}
             </span>
           </Tooltip>
         ) : null}
+      </div>
 
-        {entry.return_on_capital_pct !== null &&
-          entry.return_on_capital_pct !== undefined &&
-          entry.return_on_capital_pct !== 0 && (
+      {entry.return_on_capital_pct !== null &&
+        entry.return_on_capital_pct !== undefined &&
+        entry.return_on_capital_pct !== 0 && (
           <Tooltip
             disabled={hideMoney}
             content={t('dashboard:periodPerformance.returnOnCapitalTooltip', {
@@ -261,7 +262,6 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
             </span>
           </Tooltip>
         )}
-      </div>
     </div>
   );
 };
@@ -312,8 +312,10 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
               className="animate-pulse rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50"
             >
             <div className="mb-3 h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="mb-2 h-8 w-32 rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="h-4 w-28 rounded bg-gray-100 dark:bg-gray-700/80" />
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="h-8 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="h-5 w-36 rounded bg-gray-100 dark:bg-gray-700/80" />
+            </div>
           </div>
         ))}
       </div>

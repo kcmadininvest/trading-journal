@@ -13,6 +13,8 @@ interface TopStepSyncControlsProps {
   /** Polling auto (GET + POST si besoin) — uniquement page Trades, 5 min */
   enablePolling?: boolean;
   onSynced?: () => void;
+  /** Si défini, utilisé par le polling auto à la place de `onSynced` (refresh plus discret). */
+  onPollingSynced?: () => void;
   className?: string;
   /** Carte compte : bouton compact. Barre d'actions : aligné sur les autres boutons. */
   compact?: boolean;
@@ -43,6 +45,7 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
   accountId,
   enablePolling = false,
   onSynced,
+  onPollingSynced,
   className = '',
   compact = false,
   iconOnly = false,
@@ -83,6 +86,15 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
     onSynced?.();
   }, [onSynced, refreshStatus]);
 
+  const handlePollingSynced = useCallback(() => {
+    void refreshStatus();
+    if (onPollingSynced) {
+      onPollingSynced();
+    } else {
+      onSynced?.();
+    }
+  }, [onPollingSynced, onSynced, refreshStatus]);
+
   useTopStepSyncPolling(accountId, {
     enabled: enablePolling && canSync,
     onStatusUpdate: setStatus,
@@ -93,7 +105,7 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
           skipped: result.skipped,
         }),
       );
-      handleSynced();
+      handlePollingSynced();
     },
   });
 

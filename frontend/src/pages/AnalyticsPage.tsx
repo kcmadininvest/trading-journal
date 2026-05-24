@@ -1574,7 +1574,7 @@ const AnalyticsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <RadarChart
-              key={pnlDisplayMode}
+              key={`radar-${pnlDisplayMode}`}
               data={null}
               statisticsData={statisticsData}
               currencySymbol={currencySymbol}
@@ -1583,20 +1583,20 @@ const AnalyticsPage: React.FC = () => {
               chartColors={chartColors}
             />
             <EquityCurveChart
-              key={pnlDisplayMode}
+              key={`equity-${pnlDisplayMode}`}
               data={equityCurveData}
               riskRewardData={riskRewardData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
             <MonthlyPerformanceChart
-              key={pnlDisplayMode}
+              key={`monthly-${pnlDisplayMode}`}
               data={monthlyPerformanceData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
             <TradesDistributionChart
-              key={pnlDisplayMode}
+              key={`trades-dist-${pnlDisplayMode}`}
               data={tradesDistributionData}
               chartColors={chartColors}
             />
@@ -1609,14 +1609,14 @@ const AnalyticsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <DrawdownChart
-              key={pnlDisplayMode}
+              key={`drawdown-${pnlDisplayMode}`}
               data={drawdownData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
               tradesCount={trades.length}
             />
             <MaeMfeChart
-              key={pnlDisplayMode}
+              key={`mae-mfe-${pnlDisplayMode}`}
               data={maeMfeData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
@@ -1624,14 +1624,14 @@ const AnalyticsPage: React.FC = () => {
             />
             {gainsVsLossesDistribution && (
               <GainsVsLossesChart
-                key={pnlDisplayMode}
+                key={`gains-losses-${pnlDisplayMode}`}
                 data={gainsVsLossesDistribution}
                 chartColors={chartColors}
                 windowWidth={windowWidth}
               />
             )}
             <PnlDistributionChart
-              key={pnlDisplayMode}
+              key={`pnl-dist-${pnlDisplayMode}`}
               data={pnlDistribution}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
@@ -1646,20 +1646,20 @@ const AnalyticsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <HourlyPerformanceBoxPlotChart
-              key={pnlDisplayMode}
+              key={`hourly-box-${pnlDisplayMode}`}
               data={hourlyPerformanceScatter}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
             <HourlyPerformanceBarsChart
-              key={pnlDisplayMode}
+              key={`hourly-bars-${pnlDisplayMode}`}
               data={hourlyPerformanceBars}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
               windowWidth={windowWidth}
             />
             <HeatmapChart
-              key={pnlDisplayMode}
+              key={`heatmap-${pnlDisplayMode}`}
               data={heatmapData}
               currencySymbol={currencySymbol}
               getHeatmapColor={getHeatmapColor}
@@ -1677,25 +1677,25 @@ const AnalyticsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <CorrelationChart
-              key={pnlDisplayMode}
+              key={`correlation-${pnlDisplayMode}`}
               data={correlationData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
             <TradeDurationPnlScatterChart
-              key={pnlDisplayMode}
+              key={`duration-pnl-${pnlDisplayMode}`}
               data={tradeDurationVsPnlData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
             <PositionSizePnlBubbleChart
-              key={pnlDisplayMode}
+              key={`size-pnl-${pnlDisplayMode}`}
               data={positionSizeVsPnlData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
             <FeatureCorrelationMatrixChart
-              key={pnlDisplayMode}
+              key={`feature-matrix-${pnlDisplayMode}`}
               data={featureCorrelationMatrixData}
               chartColors={chartColors}
               isDark={isDark}

@@ -37,7 +37,6 @@ import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerfor
 import { useWeekdayPerformance } from '../hooks/useWeekdayPerformance';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
-import { TopStepSyncControls } from '../components/accounts/TopStepSyncControls';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -1737,7 +1736,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             </div>
           </div>
           
-          {/* Période, stratégie, sync, PnL — largeur fixe (w-52), pas d’étirement sur grands écrans */}
+          {/* Période, stratégie, PnL — largeur fixe (w-52), pas d’étirement sur grands écrans */}
           <div className="flex min-w-0 w-full flex-wrap items-center gap-2.5">
             <div className="w-full min-w-0 sm:w-52 sm:shrink-0">
               <PeriodSelector
@@ -1755,16 +1754,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 disabled={loadingStrategies}
               />
             </div>
-            <div className="flex min-w-0 w-full items-center gap-2.5 sm:w-auto sm:shrink-0">
-              <TopStepSyncControls
-                accountId={accountId}
-                onSynced={() => void refetch()}
-                iconOnly="responsive"
-                className="shrink-0"
-              />
-              <div className="min-w-0 w-full sm:w-52">
-                <PnlBasisToggle />
-              </div>
+            <div className="w-full min-w-0 sm:w-52 sm:shrink-0">
+              <PnlBasisToggle />
             </div>
           </div>
 
