@@ -1711,6 +1711,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   return (
     <PageShell>
+      <div className="mb-4 overflow-hidden rounded-lg shadow px-4 py-0.5 border border-blue-500/20 bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 dark:border-blue-800/50 dark:from-blue-950 dark:via-indigo-950 dark:to-blue-950">
+        <MarketQuotesTicker />
+      </div>
+
       {/* Market Info - Toujours visible */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-4">
         <ModernMarketInfo 
@@ -1719,8 +1723,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           marketTodayByCode={marketTodayByCode}
         />
       </div>
-
-      <MarketQuotesTicker />
 
       {/* Filtres */}
       <div className="min-w-0 bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-6">
