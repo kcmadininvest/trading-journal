@@ -31,6 +31,7 @@ import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
 import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import { ModernMarketInfo } from '../components/market/ModernMarketInfo';
+import { MarketQuotesTicker } from '../components/dashboard/MarketQuotesTicker';
 import { GlobalStatsIndicators } from '../components/dashboard/GlobalStatsIndicators';
 import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformanceKpis';
 import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerformanceSection';
@@ -1718,6 +1719,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           marketTodayByCode={marketTodayByCode}
         />
       </div>
+
+      <MarketQuotesTicker />
 
       {/* Filtres */}
       <div className="min-w-0 bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-6">

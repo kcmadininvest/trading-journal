@@ -205,5 +205,21 @@
     "changePctUnavailableTooltip": "Entwicklung nicht berechenbar: Vorperiode ohne PnL.",
     "returnOnCapital": "{{pct}} auf Kapital",
     "returnOnCapitalTooltip": "Perioden-PnL in Prozent des Anfangskapitals der angezeigten Konten. Beträge nutzen die Standardwährung aus den Einstellungen."
+  },
+  "marketQuotes": {
+    "title": "Live-Marktpreise",
+    "loading": "Preise werden geladen…",
+    "unavailable": "Preise nicht verfügbar",
+    "market_quotes_unavailable": "Kursfeed nicht gestartet",
+    "market_quotes_disconnected": "Marktverbindung unterbrochen",
+    "missing_credentials": "TopStep-Konfiguration fehlt",
+    "connecting": "Verbindung wird hergestellt…",
+    "instruments": {
+      "nasdaq": "Nasdaq",
+      "sp500": "S&P 500",
+      "gold": "Gold",
+      "eurusd": "EUR/USD",
+      "bitcoin": "Bitcoin"
+    }
   }
 }

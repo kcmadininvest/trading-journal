@@ -285,6 +285,12 @@ REST_FRAMEWORK = {
 INTEGRATIONS_CREDENTIALS_KEY = config('INTEGRATIONS_CREDENTIALS_KEY', default='')
 TOPSTEPX_API_BASE_URL = config('TOPSTEPX_API_BASE_URL', default='https://api.topstepx.com')
 TOPSTEPX_API_TIMEOUT_SECONDS = config('TOPSTEPX_API_TIMEOUT_SECONDS', default=10, cast=int)
+TOPSTEPX_RTC_MARKET_HUB_URL = config(
+    'TOPSTEPX_RTC_MARKET_HUB_URL',
+    default='https://rtc.topstepx.com/hubs/market',
+)
+TOPSTEPX_QUOTES_USERNAME = config('TOPSTEPX_QUOTES_USERNAME', default='')
+TOPSTEPX_QUOTES_API_KEY = config('TOPSTEPX_QUOTES_API_KEY', default='')
 
 # JWT Settings - Configuration sécurisée avec déconnexion automatique et blacklist
 SIMPLE_JWT = {

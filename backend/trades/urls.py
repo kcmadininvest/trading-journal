@@ -38,6 +38,7 @@ urlpatterns = [
     path('dashboard-activity-summary/', views.dashboard_activity_summary, name='dashboard-activity-summary'),
     path('market-holidays/', views.market_holidays, name='market-holidays'),
     path('market-holidays/today/', views.market_holidays_today, name='market-holidays-today'),
+    path('market-quotes/', views.market_quotes, name='market-quotes'),
     path('calculator/position-size/', calculator_views.calculate_position_size, name='calculate-position-size'),
     path('calculator/fixed-risk/', calculator_views.calculate_fixed_risk, name='calculate-fixed-risk'),
     path('calculator/risk-reward/', calculator_views.calculate_risk_reward, name='calculate-risk-reward'),

@@ -751,7 +751,78 @@ fi
 
 info "✅ Fichiers statiques synchronisés"
 
-# 12c. 🔄 Redémarrage du service Daphne (après migrations et collectstatic)
+# 12d. 📈 Bandeau cours TopStep (worker Market Hub + cache Redis)
+info "Configuration du bandeau cours TopStep..."
+MARKET_QUOTES_UNIT="$PROJECT_ROOT/systemd/trading-journal-market-quotes.service"
+ENV_BACKEND="$BACKEND_DIR/.env"
+LOG_DIR_MARKET="/var/log/trading-journal"
+VAR_DIR_MARKET="$BACKEND_DIR/var"
+
+if [ -f "$ENV_BACKEND" ]; then
+    if ! grep -qE '^TOPSTEPX_QUOTES_USERNAME=.+' "$ENV_BACKEND" 2>/dev/null || \
+       ! grep -qE '^TOPSTEPX_QUOTES_API_KEY=.+' "$ENV_BACKEND" 2>/dev/null; then
+        warn "TOPSTEPX_QUOTES_USERNAME / TOPSTEPX_QUOTES_API_KEY manquants dans backend/.env"
+        warn "Le bandeau cours restera indisponible tant que ces variables ne sont pas définies"
+    else
+        info "✅ Variables TopStep bandeau cours présentes dans backend/.env"
+    fi
+else
+    warn "backend/.env introuvable — impossible de vérifier TOPSTEPX_QUOTES_*"
+fi
+
+if redis-cli ping >/dev/null 2>&1; then
+    info "✅ Redis actif (PONG)"
+else
+    warn "Redis ne répond pas — vérifiez: sudo systemctl status redis"
+fi
+
+if sudo mkdir -p "$LOG_DIR_MARKET" "$VAR_DIR_MARKET" 2>/dev/null; then
+    sudo chown apache:apache "$LOG_DIR_MARKET" "$VAR_DIR_MARKET" 2>/dev/null || \
+        warn "Impossible de chown apache sur logs/var (peut nécessiter sudo)"
+    sudo chmod 755 "$LOG_DIR_MARKET" 2>/dev/null || true
+    sudo chmod 775 "$VAR_DIR_MARKET" 2>/dev/null || true
+    info "✅ Répertoires logs/var bandeau cours configurés"
+else
+    warn "Impossible de créer $LOG_DIR_MARKET ou $VAR_DIR_MARKET"
+fi
+
+if [ -f "$MARKET_QUOTES_UNIT" ]; then
+    if sudo cp "$MARKET_QUOTES_UNIT" /etc/systemd/system/ 2>/dev/null; then
+        info "✅ Unité systemd trading-journal-market-quotes installée"
+        sudo systemctl daemon-reload 2>/dev/null || true
+        sudo systemctl enable trading-journal-market-quotes.service 2>/dev/null || \
+            warn "Impossible d'activer trading-journal-market-quotes au démarrage"
+        if sudo systemctl restart trading-journal-market-quotes.service 2>/dev/null || \
+           sudo systemctl start trading-journal-market-quotes.service 2>/dev/null; then
+            sleep 2
+            if sudo systemctl is-active --quiet trading-journal-market-quotes.service 2>/dev/null; then
+                info "✅ Service trading-journal-market-quotes actif"
+            else
+                warn "Service trading-journal-market-quotes inactif après démarrage"
+                warn "   sudo journalctl -u trading-journal-market-quotes.service -n 50"
+                warn "   sudo tail -f $LOG_DIR_MARKET/market-quotes.log"
+            fi
+        else
+            warn "Impossible de démarrer trading-journal-market-quotes"
+            warn "   sudo systemctl start trading-journal-market-quotes.service"
+        fi
+    else
+        warn "Impossible de copier $MARKET_QUOTES_UNIT vers /etc/systemd/system/"
+    fi
+else
+    warn "Fichier systemd manquant: $MARKET_QUOTES_UNIT"
+fi
+
+if redis-cli ping >/dev/null 2>&1; then
+    MARKET_KEYS_COUNT=$(redis-cli -n 1 KEYS '*market*' 2>/dev/null | grep -c . || echo "0")
+    if [ "${MARKET_KEYS_COUNT:-0}" -gt 0 ]; then
+        info "✅ Cache Redis bandeau cours: ${MARKET_KEYS_COUNT} clé(s)"
+    else
+        warn "Aucune clé market_quotes dans Redis (le worker peut encore initialiser le cache)"
+    fi
+fi
+
+# 12e. 🔄 Redémarrage du service Daphne (après migrations, collectstatic et bandeau cours)
 info "Redémarrage du service trading-journal-daphne..."
 if [ -f "/etc/systemd/system/trading-journal-daphne.service" ]; then
     if sudo systemctl restart trading-journal-daphne.service 2>/dev/null; then
@@ -912,6 +983,14 @@ else
     warn "⚠️  Service Daphne n'est pas actif (vérifiez les logs si nécessaire)"
 fi
 
+# Vérifier le bandeau cours TopStep
+if sudo systemctl is-active --quiet trading-journal-market-quotes.service 2>/dev/null; then
+    info "✅ Service trading-journal-market-quotes est actif"
+else
+    warn "⚠️  Service trading-journal-market-quotes inactif (bandeau cours indisponible)"
+    warn "   sudo tail -f /var/log/trading-journal/market-quotes.log"
+fi
+
 # Vérifier le build
 if [ -f "$FRONTEND_DIR/build/index.html" ]; then
     info "✅ Frontend compilé correctement"
@@ -958,6 +1037,8 @@ Commit court: ${CURRENT_COMMIT_SHORT:-"N/A"}
 ## Vérifications
 Apache: $(systemctl is-active httpd 2>/dev/null || systemctl is-active apache2 2>/dev/null || echo "inactif")
 Daphne: $(sudo systemctl is-active trading-journal-daphne.service 2>/dev/null || echo "inactif")
+Market quotes: $(sudo systemctl is-active trading-journal-market-quotes.service 2>/dev/null || echo "inactif")
+Redis: $(redis-cli ping 2>/dev/null || echo "inactif")
 Build: $([ -f "$FRONTEND_DIR/build/index.html" ] && echo "OK" || echo "ERREUR")
 Template: $([ -f "$BACKEND_DIR/trading_journal_api/templates/index.html" ] && echo "OK" || echo "ERREUR")
 EOF
@@ -995,6 +1076,10 @@ if [ ! -z "$JS_FILE" ] && [ ! -z "$CSS_FILE" ]; then
     echo "   - CSS: $CSS_FILE"
 fi
 echo "   - Configuration: $ENV_PRODUCTION"
+echo ""
+echo "📈 Bandeau cours TopStep:"
+echo "   - Worker: $(sudo systemctl is-active trading-journal-market-quotes.service 2>/dev/null || echo 'inactif')"
+echo "   - Logs: /var/log/trading-journal/market-quotes.log"
 echo ""
 
 # Afficher le chemin du fichier d'information

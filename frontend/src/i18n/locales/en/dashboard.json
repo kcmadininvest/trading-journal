@@ -204,6 +204,22 @@
     "changePctUnavailableTooltip": "Change not available: previous period had no PnL.",
     "returnOnCapital": "{{pct}} on capital",
     "returnOnCapitalTooltip": "Period PnL as a percentage of initial capital for the displayed account(s). Amounts use the default currency from Settings."
+  },
+  "marketQuotes": {
+    "title": "Live market prices",
+    "loading": "Loading prices…",
+    "unavailable": "Prices unavailable",
+    "market_quotes_unavailable": "Price feed not running",
+    "market_quotes_disconnected": "Market connection lost",
+    "missing_credentials": "TopStep configuration missing",
+    "connecting": "Connecting…",
+    "instruments": {
+      "nasdaq": "Nasdaq",
+      "sp500": "S&P 500",
+      "gold": "Gold",
+      "eurusd": "EUR/USD",
+      "bitcoin": "Bitcoin"
+    }
   }
 }
 

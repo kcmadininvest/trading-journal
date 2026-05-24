@@ -115,6 +115,30 @@ class TopStepXApiClient:
 
         return list_projectx_accounts(self, auth_token, user_id=user_id)
 
+    def search_contracts(
+        self,
+        auth_token: str,
+        *,
+        search_text: str,
+        live: bool = True,
+    ) -> list[dict[str, Any]]:
+        """POST /api/Contract/search — recherche de contrats par texte."""
+        payload = self._request_json(
+            'POST',
+            '/api/Contract/search',
+            body={'live': bool(live), 'searchText': search_text},
+            auth_token=auth_token,
+        )
+        if not payload.get('success') or payload.get('errorCode', 0) != 0:
+            raise TopStepXApiError(
+                self._api_error_message(payload, 'Recherche de contrats TopStepX échouée.'),
+                error_code=str(payload.get('errorCode', 'contract_search_failed')),
+            )
+        contracts = payload.get('contracts') or []
+        if not isinstance(contracts, list):
+            return []
+        return contracts
+
     def list_available_contracts(
         self,
         auth_token: str,

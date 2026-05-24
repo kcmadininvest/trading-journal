@@ -5412,3 +5412,14 @@ def market_holidays_today(request):
     Équivalent à GET market-holidays/?today=1
     """
     return _market_holidays_today_response(request)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def market_quotes(request):
+    """
+    Snapshot des cours temps réel (cache Redis alimenté par run_market_quotes_hub).
+    """
+    from integrations.market_quotes_service import load_snapshot
+
+    return Response(load_snapshot())
