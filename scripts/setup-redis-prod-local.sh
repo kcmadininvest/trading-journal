@@ -24,10 +24,13 @@ systemctl start redis
 redis-cli ping
 
 echo "==> Répertoires partagés"
-mkdir -p "$LOG_DIR" "$VAR_DIR"
+mkdir -p "$LOG_DIR" "$VAR_DIR" "$VAR_DIR/mplconfig"
 chown apache:apache "$LOG_DIR" "$VAR_DIR"
 chmod 755 "$LOG_DIR"
 chmod 775 "$VAR_DIR"
+touch "$LOG_DIR/market-quotes.log" "$LOG_DIR/market-quotes_error.log"
+chown apache:apache "$LOG_DIR/market-quotes.log" "$LOG_DIR/market-quotes_error.log"
+chmod 664 "$LOG_DIR/market-quotes.log" "$LOG_DIR/market-quotes_error.log"
 
 echo "==> Services systemd"
 MARKET_QUOTES_UNIT="${ROOT}/systemd/trading-journal-market-quotes.service"

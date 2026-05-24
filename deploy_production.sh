@@ -781,10 +781,40 @@ if sudo mkdir -p "$LOG_DIR_MARKET" "$VAR_DIR_MARKET" 2>/dev/null; then
         warn "Impossible de chown apache sur logs/var (peut nécessiter sudo)"
     sudo chmod 755 "$LOG_DIR_MARKET" 2>/dev/null || true
     sudo chmod 775 "$VAR_DIR_MARKET" 2>/dev/null || true
+    sudo touch "$LOG_DIR_MARKET/market-quotes.log" "$LOG_DIR_MARKET/market-quotes_error.log" 2>/dev/null || true
+    sudo chown apache:apache "$LOG_DIR_MARKET/market-quotes.log" "$LOG_DIR_MARKET/market-quotes_error.log" 2>/dev/null || true
+    sudo chmod 664 "$LOG_DIR_MARKET/market-quotes.log" "$LOG_DIR_MARKET/market-quotes_error.log" 2>/dev/null || true
     info "✅ Répertoires logs/var bandeau cours configurés"
 else
     warn "Impossible de créer $LOG_DIR_MARKET ou $VAR_DIR_MARKET"
 fi
+
+MARKET_QUOTES_ENV_OK=0
+if [ -f "$ENV_BACKEND" ] && \
+   grep -qE '^TOPSTEPX_QUOTES_USERNAME=.+' "$ENV_BACKEND" 2>/dev/null && \
+   grep -qE '^TOPSTEPX_QUOTES_API_KEY=.+' "$ENV_BACKEND" 2>/dev/null; then
+    MARKET_QUOTES_ENV_OK=1
+fi
+
+MARKET_VENV_PYTHON="$BACKEND_DIR/venv/bin/python"
+if [ -f "$MARKET_VENV_PYTHON" ]; then
+    if ! "$MARKET_VENV_PYTHON" -c "import signalrcore" 2>/dev/null; then
+        warn "Paquet signalrcore absent — installation pour le bandeau cours…"
+        "$BACKEND_DIR/venv/bin/pip" install signalrcore websocket-client --quiet 2>/dev/null || \
+            warn "Impossible d'installer signalrcore (pip install signalrcore websocket-client)"
+    fi
+fi
+
+_wait_market_quotes_active() {
+    local attempt
+    for attempt in 1 2 3 4 5 6; do
+        if sudo systemctl is-active --quiet trading-journal-market-quotes.service 2>/dev/null; then
+            return 0
+        fi
+        sleep 5
+    done
+    return 1
+}
 
 if [ -f "$MARKET_QUOTES_UNIT" ]; then
     if sudo cp "$MARKET_QUOTES_UNIT" /etc/systemd/system/ 2>/dev/null; then
@@ -792,15 +822,17 @@ if [ -f "$MARKET_QUOTES_UNIT" ]; then
         sudo systemctl daemon-reload 2>/dev/null || true
         sudo systemctl enable trading-journal-market-quotes.service 2>/dev/null || \
             warn "Impossible d'activer trading-journal-market-quotes au démarrage"
-        if sudo systemctl restart trading-journal-market-quotes.service 2>/dev/null || \
-           sudo systemctl start trading-journal-market-quotes.service 2>/dev/null; then
-            sleep 2
-            if sudo systemctl is-active --quiet trading-journal-market-quotes.service 2>/dev/null; then
+        if [ "$MARKET_QUOTES_ENV_OK" -eq 0 ]; then
+            warn "Démarrage du worker bandeau cours ignoré (TOPSTEPX_QUOTES_* manquants dans backend/.env)"
+        elif sudo systemctl restart trading-journal-market-quotes.service 2>/dev/null || \
+             sudo systemctl start trading-journal-market-quotes.service 2>/dev/null; then
+            info "Attente du démarrage trading-journal-market-quotes (jusqu'à 30 s)…"
+            if _wait_market_quotes_active; then
                 info "✅ Service trading-journal-market-quotes actif"
             else
                 warn "Service trading-journal-market-quotes inactif après démarrage"
                 warn "   sudo journalctl -u trading-journal-market-quotes.service -n 50"
-                warn "   sudo tail -f $LOG_DIR_MARKET/market-quotes.log"
+                warn "   sudo tail -f $LOG_DIR_MARKET/market-quotes_error.log"
             fi
         else
             warn "Impossible de démarrer trading-journal-market-quotes"
@@ -814,8 +846,9 @@ else
 fi
 
 if redis-cli ping >/dev/null 2>&1; then
-    MARKET_KEYS_COUNT=$(redis-cli -n 1 KEYS '*market*' 2>/dev/null | grep -c . || echo "0")
-    if [ "${MARKET_KEYS_COUNT:-0}" -gt 0 ]; then
+    MARKET_KEYS_COUNT=$(redis-cli -n 1 --scan --pattern '*market*' 2>/dev/null | wc -l | tr -d '[:space:]')
+    MARKET_KEYS_COUNT=${MARKET_KEYS_COUNT:-0}
+    if [ "$MARKET_KEYS_COUNT" -gt 0 ] 2>/dev/null; then
         info "✅ Cache Redis bandeau cours: ${MARKET_KEYS_COUNT} clé(s)"
     else
         warn "Aucune clé market_quotes dans Redis (le worker peut encore initialiser le cache)"

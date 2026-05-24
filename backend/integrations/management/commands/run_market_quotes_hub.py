@@ -40,7 +40,7 @@ class Command(BaseCommand):
                 )
             )
             save_snapshot(build_empty_snapshot(connected=False, message='missing_credentials'))
-            return
+            raise SystemExit(1)
 
         signal.signal(signal.SIGINT, self._shutdown)
         signal.signal(signal.SIGTERM, self._shutdown)

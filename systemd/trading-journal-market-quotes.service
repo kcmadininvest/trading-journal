@@ -11,6 +11,8 @@ WorkingDirectory=/var/www/html/trading_journal/backend
 Environment="PATH=/var/www/html/trading_journal/backend/venv/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="VIRTUAL_ENV=/var/www/html/trading_journal/backend/venv"
 Environment="DJANGO_SETTINGS_MODULE=trading_journal_api.settings"
+Environment="MPLCONFIGDIR=/var/www/html/trading_journal/backend/var/mplconfig"
+Environment="MARKET_QUOTES_DATA_DIR=/var/www/html/trading_journal/backend/var"
 ExecStart=/var/www/html/trading_journal/backend/venv/bin/python manage.py run_market_quotes_hub
 Restart=always
 RestartSec=15
