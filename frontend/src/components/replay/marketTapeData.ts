@@ -176,7 +176,7 @@ function collectRoundTripsStopLoss(
     }
 
     const brokerStop = brokerStopPriceFromEvent(evt);
-    if (brokerStop != null && current.plannedSl == null) {
+    if (brokerStop != null) {
       current.brokerSl = brokerStop;
     }
 
@@ -209,20 +209,28 @@ export function buildStopLossLines(
   for (const trip of trips) {
     if (trip.openIndex > currentIndex) continue;
 
-    const price = trip.plannedSl ?? trip.brokerSl;
-    if (price == null) continue;
-
     const tradeClosed =
       trip.closeIndex != null && trip.closeBar != null && trip.closeIndex <= currentIndex;
     const barEnd = tradeClosed ? trip.closeBar! : cursorBarIndex;
 
-    lines.push({
-      price,
-      barStart: trip.openBar,
-      barEnd,
-      kind: trip.plannedSl != null ? 'planned_stop_loss' : 'broker_stop',
-      sourceEventId: trip.openEventId,
-    });
+    if (trip.plannedSl != null) {
+      lines.push({
+        price: trip.plannedSl,
+        barStart: trip.openBar,
+        barEnd,
+        kind: 'planned_stop_loss',
+        sourceEventId: trip.openEventId,
+      });
+    }
+    if (trip.brokerSl != null) {
+      lines.push({
+        price: trip.brokerSl,
+        barStart: trip.openBar,
+        barEnd,
+        kind: 'broker_stop',
+        sourceEventId: trip.openEventId,
+      });
+    }
   }
 
   return lines;
