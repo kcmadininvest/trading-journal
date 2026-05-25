@@ -1,8 +1,43 @@
 import React from 'react';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
+import { TAPE_EXIT_DOT_R, TAPE_EXIT_TICK_R } from './marketTapeChartMetrics';
+import type { TapeExitMarkerLayout } from './marketTapeMarkerLayout';
+import type { TapeMarker } from './marketTapeData';
 import { MarketTapeTheme } from './replayStyles';
 
 const ICON = 22;
+
+/** Décalage vertical viewBox : entrées décalées sous/sur le prix ; sorties centrées sur le prix (+ empilement). */
+export function getTapeMarkerAnchorOffset(
+  marker: Pick<TapeMarker, 'kind' | 'side' | 'pnl' | 'offsetY'>,
+): number {
+  const stack = marker.offsetY ?? 0;
+  if (marker.kind === 'entry') {
+    const isLong = (marker.side || '').toLowerCase() === 'long';
+    return (isLong ? 14 : -14) + stack;
+  }
+  if (marker.kind === 'exit') {
+    return stack;
+  }
+  return stack;
+}
+
+const ARROW_STROKE = 'rgba(0,0,0,0.2)';
+
+/** Flèche entrée long (arrowUp) — repère : pointe en haut vers le prix. */
+const TapeArrowUp: React.FC<{ fill: string; d: string }> = ({ fill, d }) => (
+  <path d={d} fill={fill} stroke={ARROW_STROKE} strokeWidth={0.65} strokeLinejoin="round" />
+);
+
+/** Flèche entrée short (arrowDown). */
+const TapeArrowDown: React.FC<{ fill: string; d: string }> = ({ fill, d }) => (
+  <path d={d} fill={fill} stroke={ARROW_STROKE} strokeWidth={0.65} strokeLinejoin="round" />
+);
+
+const LEGEND_ARROW_UP = 'M11 5 L15.5 15.5 H6.5 Z';
+const LEGEND_ARROW_DOWN = 'M11 17 L15.5 6.5 H6.5 Z';
+const CHART_ARROW_UP = 'M0 -5.5 L4.25 4.5 H-4.25 Z';
+const CHART_ARROW_DOWN = 'M0 5.5 L4.25 -4.5 H-4.25 Z';
 
 interface GlyphProps {
   theme: MarketTapeTheme;
@@ -29,39 +64,80 @@ export const TapeGlyphBearCandle: React.FC<GlyphProps> = ({ theme, size = ICON }
 
 export const TapeGlyphEntryLong: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <circle cx={11} cy={11} r={8} fill={theme.entryLong} stroke="#fff" strokeWidth={1.5} />
-    <text x={11} y={14.5} textAnchor="middle" fontSize={8} fill="#fff" fontWeight="700">
-      ▲
-    </text>
+    <TapeArrowUp fill={theme.entryLong} d={LEGEND_ARROW_UP} />
   </svg>
 );
 
 export const TapeGlyphEntryShort: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <circle cx={11} cy={11} r={8} fill={theme.entryShort} stroke="#fff" strokeWidth={1.5} />
-    <text x={11} y={14.5} textAnchor="middle" fontSize={8} fill="#fff" fontWeight="700">
-      ▼
-    </text>
+    <TapeArrowDown fill={theme.entryShort} d={LEGEND_ARROW_DOWN} />
   </svg>
+);
+
+const LEGEND_EXIT_BAR_X = 14;
+const LEGEND_EXIT_DOT_X = 6;
+const LEGEND_EXIT_Y = 11;
+
+const TapeExitLegendGraphic: React.FC<{ fill: string }> = ({ fill }) => (
+  <>
+    <circle cx={LEGEND_EXIT_BAR_X} cy={LEGEND_EXIT_Y} r={2} fill={fill} />
+    <line
+      x1={LEGEND_EXIT_BAR_X}
+      y1={LEGEND_EXIT_Y}
+      x2={LEGEND_EXIT_DOT_X}
+      y2={LEGEND_EXIT_Y}
+      stroke={fill}
+      strokeWidth={1.25}
+      strokeLinecap="round"
+      opacity={0.9}
+    />
+    <circle cx={LEGEND_EXIT_DOT_X} cy={LEGEND_EXIT_Y} r={4} fill={fill} />
+  </>
 );
 
 export const TapeGlyphExitWin: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <circle cx={11} cy={11} r={6} fill={theme.exitWin} stroke="#fff" strokeWidth={1.25} />
-    <text x={11} y={14} textAnchor="middle" fontSize={7} fill="#fff" fontWeight="700">
-      ✕
-    </text>
+    <TapeExitLegendGraphic fill={theme.exitWin} />
   </svg>
 );
 
 export const TapeGlyphExitLoss: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <circle cx={11} cy={11} r={6} fill={theme.exitLoss} stroke="#fff" strokeWidth={1.25} />
-    <text x={11} y={14} textAnchor="middle" fontSize={7} fill="#fff" fontWeight="700">
-      ✕
-    </text>
+    <TapeExitLegendGraphic fill={theme.exitLoss} />
   </svg>
 );
+
+/** Sortie sur le bandeau : tick au prix sur la bougie + trait + pastille décalée. */
+export const TapeExitMarkerGraphic: React.FC<{ layout: TapeExitMarkerLayout }> = ({ layout }) => (
+  <g>
+    <line
+      x1={layout.barX}
+      y1={layout.priceY}
+      x2={layout.dotX}
+      y2={layout.priceY}
+      stroke={layout.fill}
+      strokeWidth={1.25}
+      strokeLinecap="round"
+      opacity={0.9}
+    />
+    <circle cx={layout.barX} cy={layout.priceY} r={TAPE_EXIT_TICK_R} fill={layout.fill} />
+    <circle cx={layout.dotX} cy={layout.dotY} r={TAPE_EXIT_DOT_R} fill={layout.fill} />
+  </g>
+);
+
+/** Marqueur entrée sur le bandeau (flèche, décalage vertical géré par le parent). */
+export const TapeChartEntryMarkerGlyph: React.FC<{
+  marker: Pick<TapeMarker, 'side'>;
+  theme: MarketTapeTheme;
+}> = ({ marker, theme }) => {
+  const isLong = (marker.side || '').toLowerCase() === 'long';
+  const fill = isLong ? theme.entryLong : theme.entryShort;
+  return isLong ? (
+    <TapeArrowUp fill={fill} d={CHART_ARROW_UP} />
+  ) : (
+    <TapeArrowDown fill={fill} d={CHART_ARROW_DOWN} />
+  );
+};
 
 export const TapeGlyphStopLossPlanned: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>

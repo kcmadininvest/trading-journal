@@ -7,18 +7,25 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { SessionEventItem, SessionMarketData } from '../../services/sessionReplay';
 import { getOrderMarkerTooltipText, getStopLossLineTooltipText } from './eventDetail';
 import { buildTapeRenderModel, TapeMarker, TapePriceLine, TapeRenderModel } from './marketTapeData';
-import { MarketTapeLegend } from './marketTapeGlyphs';
+import {
+  TAPE_VIEW_H,
+  TAPE_VIEW_W,
+  tapeSlotWidth,
+  tapeXForBarIndex,
+  tapeYForPrice,
+} from './marketTapeChartMetrics';
+import {
+  computeTapeExitMarkerLayout,
+  computeTapeMarkerHitCoords,
+} from './marketTapeMarkerLayout';
+import {
+  getTapeMarkerAnchorOffset,
+  MarketTapeLegend,
+  TapeChartEntryMarkerGlyph,
+  TapeExitMarkerGraphic,
+} from './marketTapeGlyphs';
 import { getMarketTapeTheme, MarketTapeTheme, replayCardClass } from './replayStyles';
 import { NumberFormatType } from '../../utils/numberFormat';
-
-const VIEW_W = 400;
-const VIEW_H = 228;
-const PAD_LEFT = 10;
-const PAD_RIGHT = 10;
-const PAD_TOP = 10;
-const PAD_BOTTOM = 18;
-const CHART_W = VIEW_W - PAD_LEFT - PAD_RIGHT;
-const CHART_H = VIEW_H - PAD_TOP - PAD_BOTTOM;
 
 interface SessionMarketTapeProps {
   marketData: SessionMarketData | null | undefined;
@@ -29,21 +36,17 @@ interface SessionMarketTapeProps {
 }
 
 function yForPrice(price: number, model: TapeRenderModel): number {
-  const range = model.yMax - model.yMin || 1;
-  const ratio = (price - model.yMin) / range;
-  return PAD_TOP + CHART_H * (1 - ratio);
+  return tapeYForPrice(price, model.yMin, model.yMax);
 }
 
 function xForBarIndex(index: number, barCount: number): number {
-  if (barCount <= 1) return PAD_LEFT + CHART_W / 2;
-  const slot = CHART_W / barCount;
-  return PAD_LEFT + index * slot + slot / 2;
+  return tapeXForBarIndex(index, barCount);
 }
 
 function barSlotWidth(index: number, model: TapeRenderModel): number {
   const barCount = model.bars.length;
   if (barCount <= 0) return 10;
-  const slot = CHART_W / barCount;
+  const slot = tapeSlotWidth(barCount);
   const isFuture = model.bars[index]?.isFuture ?? false;
   const maxW = isFuture ? 12 : 18;
   return Math.max(isFuture ? 4 : 6, Math.min(maxW, slot * 0.72));
@@ -104,67 +107,49 @@ const ModernCandle: React.FC<{
   );
 };
 
-const MarkerGlyph: React.FC<{
-  marker: TapeMarker;
-  x: number;
-  y: number;
-  theme: MarketTapeTheme;
-}> = ({ marker, x, y, theme }) => {
-  if (marker.kind === 'entry') {
-    const isLong = (marker.side || '').toLowerCase() === 'long';
-    const fill = isLong ? theme.entryLong : theme.entryShort;
-    return (
-      <g transform={`translate(${x}, ${y})`}>
-        <circle r={8} fill={fill} stroke="#fff" strokeWidth={1.5} opacity={0.95} />
-        <text y={3.5} textAnchor="middle" fontSize={8} fill="#fff" fontWeight="700">
-          {isLong ? '▲' : '▼'}
-        </text>
-      </g>
-    );
-  }
-  if (marker.kind === 'exit') {
-    const win = marker.pnl != null && marker.pnl >= 0;
-    const fill = win ? theme.exitWin : theme.exitLoss;
-    return (
-      <g transform={`translate(${x}, ${y})`}>
-        <circle r={6} fill={fill} stroke="#fff" strokeWidth={1.25} />
-        <text y={3} textAnchor="middle" fontSize={7} fill="#fff" fontWeight="700">
-          ✕
-        </text>
-      </g>
-    );
-  }
-  return null;
-};
-
 function computeMeetSize(containerW: number, containerH: number): { width: number; height: number } {
   if (containerW <= 0 || containerH <= 0) return { width: 0, height: 0 };
-  const scale = Math.min(containerW / VIEW_W, containerH / VIEW_H);
-  return { width: VIEW_W * scale, height: VIEW_H * scale };
+  const scale = Math.min(containerW / TAPE_VIEW_W, containerH / TAPE_VIEW_H);
+  return { width: TAPE_VIEW_W * scale, height: TAPE_VIEW_H * scale };
 }
 
 function markerPositionPercent(x: number, y: number): { left: string; top: string } {
   return {
-    left: `${(x / VIEW_W) * 100}%`,
-    top: `${(y / VIEW_H) * 100}%`,
+    left: `${(x / TAPE_VIEW_W) * 100}%`,
+    top: `${(y / TAPE_VIEW_H) * 100}%`,
   };
 }
 
-function markerDisplayCoords(
+function markerEntryDisplayCoords(
   marker: TapeMarker,
   model: TapeRenderModel,
   barCount: number,
 ): { x: number; y: number } {
   return {
     x: xForBarIndex(marker.barIndex, barCount),
-    y: yForPrice(marker.price, model) + (marker.offsetY ?? 0),
+    y: yForPrice(marker.price, model) + getTapeMarkerAnchorOffset(marker),
   };
+}
+
+function markerHitCoords(
+  marker: TapeMarker,
+  model: TapeRenderModel,
+  barCount: number,
+  theme: MarketTapeTheme,
+): { x: number; y: number } {
+  return computeTapeMarkerHitCoords(
+    marker,
+    model,
+    barCount,
+    theme,
+    getTapeMarkerAnchorOffset(marker),
+  );
 }
 
 function hitPxClassForKind(kind: TapeMarker['kind']): string {
   switch (kind) {
     case 'entry':
-      return 'h-5 w-5';
+      return 'h-7 w-5';
     case 'exit':
       return 'h-4 w-4';
     default:
@@ -198,9 +183,9 @@ const TapeStopLossHitLayer: React.FC<{
     {model.priceLines.map((line, i) => {
       const { x1, x2, y } = lineSegmentBounds(line, model, barCount);
       const tooltip = getStopLossLineTooltipText(line.price, line.kind, t, numberFormat);
-      const leftPct = (x1 / VIEW_W) * 100;
-      const widthPct = ((x2 - x1) / VIEW_W) * 100;
-      const topPct = (y / VIEW_H) * 100;
+      const leftPct = (x1 / TAPE_VIEW_W) * 100;
+      const widthPct = ((x2 - x1) / TAPE_VIEW_W) * 100;
+      const topPct = (y / TAPE_VIEW_H) * 100;
 
       return (
         <div
@@ -232,15 +217,16 @@ const TapeStopLossHitLayer: React.FC<{
 const TapeMarkerHitLayer: React.FC<{
   model: TapeRenderModel;
   barCount: number;
+  theme: MarketTapeTheme;
   t: TFunction;
   numberFormat: NumberFormatType;
-}> = ({ model, barCount, t, numberFormat }) => {
+}> = ({ model, barCount, theme, t, numberFormat }) => {
   const interactiveMarkers = model.markers.filter((m) => m.sourceEvent);
 
   return (
     <>
       {interactiveMarkers.map((marker) => {
-        const { x, y } = markerDisplayCoords(marker, model, barCount);
+        const { x, y } = markerHitCoords(marker, model, barCount, theme);
         const tooltip = getOrderMarkerTooltipText(marker.sourceEvent!, t, numberFormat);
         const pos = markerPositionPercent(x, y);
 
@@ -311,7 +297,13 @@ const TapeChart: React.FC<{
         <TapeSvg model={model} theme={theme} />
         <div className="pointer-events-none absolute inset-0 z-10">
           <TapeStopLossHitLayer model={model} barCount={barCount} t={t} numberFormat={numberFormat} />
-          <TapeMarkerHitLayer model={model} barCount={barCount} t={t} numberFormat={numberFormat} />
+          <TapeMarkerHitLayer
+            model={model}
+            barCount={barCount}
+            theme={theme}
+            t={t}
+            numberFormat={numberFormat}
+          />
         </div>
       </div>
     </div>
@@ -326,7 +318,7 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
 
   return (
     <svg
-      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+      viewBox={`0 0 ${TAPE_VIEW_W} ${TAPE_VIEW_H}`}
       className="absolute inset-0 h-full w-full block"
       preserveAspectRatio="xMidYMid meet"
       role="img"
@@ -339,7 +331,7 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
         </linearGradient>
       </defs>
 
-      <rect x={0} y={0} width={VIEW_W} height={VIEW_H} fill="url(#tapeChartBg)" />
+      <rect x={0} y={0} width={TAPE_VIEW_W} height={TAPE_VIEW_H} fill="url(#tapeChartBg)" />
 
       {model.openPositionBand && (
         <rect
@@ -411,18 +403,32 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
         );
       })}
 
-      {model.markers.map((m, i) => {
-        const { x, y } = markerDisplayCoords(m, model, barCount);
-        return (
-          <MarkerGlyph
-            key={m.markerKey || `${m.kind}-${m.occurredAt}-${i}`}
-            marker={m}
-            x={x}
-            y={y}
-            theme={theme}
-          />
-        );
-      })}
+      {model.markers
+        .filter((m) => m.kind === 'exit')
+        .map((m, i) => {
+          const layout = computeTapeExitMarkerLayout(m, model, barCount, theme);
+          if (!layout) return null;
+          return (
+            <TapeExitMarkerGraphic
+              key={m.markerKey || `exit-${m.occurredAt}-${i}`}
+              layout={layout}
+            />
+          );
+        })}
+
+      {model.markers
+        .filter((m) => m.kind === 'entry')
+        .map((m, i) => {
+          const { x, y } = markerEntryDisplayCoords(m, model, barCount);
+          return (
+            <g
+              key={m.markerKey || `entry-${m.occurredAt}-${i}`}
+              transform={`translate(${x}, ${y})`}
+            >
+              <TapeChartEntryMarkerGlyph marker={m} theme={theme} />
+            </g>
+          );
+        })}
 
     </svg>
   );

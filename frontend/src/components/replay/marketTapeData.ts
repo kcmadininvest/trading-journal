@@ -24,6 +24,8 @@ export interface TapeMarker {
   markerKey?: string;
   /** Décalage vertical viewBox (px, négatif = vers le haut) si plusieurs marqueurs sur la même bougie. */
   offsetY?: number;
+  /** Décalage horizontal viewBox (px, négatif = plus à gauche, positif = côté droit de la bougie). */
+  offsetX?: number;
 }
 
 export interface TapeRenderBar {
@@ -288,7 +290,9 @@ export function buildMarkersForContract(
   return markers;
 }
 
-const MARKER_VERTICAL_STACK_STEP_PX = 18;
+const MARKER_VERTICAL_STACK_STEP_PX = 22;
+const MARKER_EXIT_STACK_EXTRA_LEFT_PX = 22;
+const MARKER_EXIT_STACK_RIGHT_PX = 20;
 
 const MARKER_KIND_STACK_ORDER: Record<TapeMarkerKind, number> = {
   entry: 0,
@@ -323,10 +327,20 @@ function applyMarkerVerticalStackOffsets(markers: TapeMarker[]): TapeMarker[] {
 
     sorted.forEach((markerIdx, slot) => {
       if (slot === 0) return;
-      result[markerIdx] = {
-        ...result[markerIdx],
+      const stacked = markers[markerIdx];
+      const patch: Partial<TapeMarker> = {
         offsetY: -slot * MARKER_VERTICAL_STACK_STEP_PX,
       };
+      if (stacked.kind === 'exit') {
+        if (slot === 1) {
+          patch.offsetX = -MARKER_EXIT_STACK_EXTRA_LEFT_PX;
+        } else if (slot === 2) {
+          patch.offsetX = MARKER_EXIT_STACK_RIGHT_PX;
+        } else if (slot >= 3) {
+          patch.offsetX = -MARKER_EXIT_STACK_EXTRA_LEFT_PX - (slot - 2) * 14;
+        }
+      }
+      result[markerIdx] = { ...result[markerIdx], ...patch };
     });
   }
 

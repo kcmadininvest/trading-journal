@@ -51,6 +51,9 @@ export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
   const pnl = getReplayPnlColors(isDark);
   const cursor = isDark ? '#06b6d4' : '#2563eb';
   const fillDot = isDark ? '#22d3ee' : '#2563eb';
+  /** Orange / ambre : contrastent avec les bougies baissières rose (#f472b6), contrairement au rouge PnL. */
+  const entryShort = isDark ? '#fb923c' : '#ea580c';
+  const exitLoss = isDark ? '#eab308' : '#ca8a04';
 
   if (isDark) {
     return {
@@ -67,9 +70,9 @@ export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
       cursorMuted: 'rgba(6, 182, 212, 0.25)',
       positionBand: 'rgba(6, 182, 212, 0.15)',
       entryLong: pnl.positive,
-      entryShort: pnl.negative,
+      entryShort,
       exitWin: pnl.positive,
-      exitLoss: pnl.negative,
+      exitLoss,
       fillDot,
       orderRing: '#94a3b8',
       stopLossPlannedLine: '#fbbf24',
@@ -90,9 +93,9 @@ export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
     cursorMuted: 'rgba(37, 99, 235, 0.12)',
     positionBand: 'rgba(37, 99, 235, 0.1)',
     entryLong: pnl.positive,
-    entryShort: pnl.negative,
+    entryShort,
     exitWin: pnl.positive,
-    exitLoss: pnl.negative,
+    exitLoss,
     fillDot,
     orderRing: '#6b7280',
     stopLossPlannedLine: '#ea580c',
