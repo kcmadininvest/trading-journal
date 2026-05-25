@@ -319,6 +319,35 @@
       "smallerDesc": "Kleinere Größe: gutes Risikomanagement nach einem Gewinn."
     }
   },
+  "behaviorDiscipline": {
+    "tabTitle": "Disziplin-Signale",
+    "noData": "Zu wenig Daten in der gewählten Periode für diesen Indikator.",
+    "revenge": {
+      "title": "Disziplin-Signal — Revenge Trading",
+      "subtitle": "Durchschnittliche Anzahl Trades am Handelstag nach einem Verlust- vs Gewinntag (nur Tage mit Aktivität). Unterscheidet sich vom Tab « Größe nach Verlust », der den unmittelbar folgenden Trade analysiert.",
+      "tradesAfterNegativeDay": "Trades nach negativem Tag",
+      "tradesAfterPositiveDay": "Trades nach positivem Tag",
+      "tradesPerDay": "Trades/Tag",
+      "alert": "+{{pct}} % mehr Trades nach einem Verlusttag — mögliches Revenge-Trading-Signal.",
+      "alertFavorable": "{{pct}} % weniger Trades nach einem Verlusttag — gute Frequenz-Disziplin."
+    },
+    "sizing": {
+      "title": "Positionsgröße — Sizing-Disziplin",
+      "subtitle": "Durchschnittliche Exposition (Kontrakte × Punktwert) bei Gewinn- vs Verlusttrades. Micro und E-Mini derselben Familie werden fair verglichen.",
+      "avgWinningSize": "Ø Größe — Gewinn-Trades",
+      "avgLosingSize": "Ø Größe — Verlust-Trades",
+      "badge": "+{{pct}} %",
+      "alert": "+{{pct}} % größere Größe bei Verlust- als bei Gewinntrades — riskantes Überzeugungs-Bias.",
+      "alertFavorable": "{{pct}} % kleinere Größe bei Verlusttrades — gute Sizing-Disziplin."
+    },
+    "alerts": {
+      "title": "Verhaltens-Warnsignale",
+      "intro": "Zwei Punkte verdienen Aufmerksamkeit.",
+      "introOne": "Ein Punkt verdient Aufmerksamkeit.",
+      "revengeSummary": "Revenge Trading: im Schnitt {{afterLoss}} Trades/Tag nach einem Verlusttag vs {{afterWin}} nach einem Gewinntag (+{{pct}} %), was große negative Tage verstärken kann.",
+      "sizingSummary": "Invertiertes Sizing: Verlustpositionen sind im Schnitt {{pct}} % größer als Gewinner — Tendenz zur Überzeugung bei schlechten Setups."
+    }
+  },
   "dashboard": {
     "title": "Statistische Trade-Analyse",
     "subtitle": "Entdecken Sie Ihre besten Setups, identifizieren Sie Verlustmuster und erkennen Sie Verhaltensverzerrungen",

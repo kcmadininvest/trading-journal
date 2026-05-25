@@ -319,6 +319,35 @@
       "smallerDesc": "Smaller size: good risk-management reflex after a win."
     }
   },
+  "behaviorDiscipline": {
+    "tabTitle": "Discipline signals",
+    "noData": "Not enough data in the selected period to compute this indicator.",
+    "revenge": {
+      "title": "Discipline signal — revenge trading",
+      "subtitle": "Average number of trades on the trading day after a losing vs winning day (days with activity only). Distinct from the « Size after a loss » tab, which analyzes the trade immediately after a loss.",
+      "tradesAfterNegativeDay": "Trades after a negative day",
+      "tradesAfterPositiveDay": "Trades after a positive day",
+      "tradesPerDay": "trades/day",
+      "alert": "+{{pct}}% more trades after a losing day — possible revenge trading signal.",
+      "alertFavorable": "{{pct}}% fewer trades after a losing day — good frequency discipline."
+    },
+    "sizing": {
+      "title": "Position size — sizing discipline",
+      "subtitle": "Average exposure (contracts × point value) on winning vs losing trades. Micro and e-mini in the same family are compared fairly.",
+      "avgWinningSize": "Avg size — winning trades",
+      "avgLosingSize": "Avg size — losing trades",
+      "badge": "+{{pct}}%",
+      "alert": "+{{pct}}% larger size on losing trades than winners — risky overconviction bias.",
+      "alertFavorable": "{{pct}}% smaller size on losing trades — sound sizing discipline."
+    },
+    "alerts": {
+      "title": "Behavioral alert signals",
+      "intro": "Two points deserve attention.",
+      "introOne": "One point deserves attention.",
+      "revengeSummary": "Revenge trading: on average {{afterLoss}} trades/day after a losing day vs {{afterWin}} after a winning day (+{{pct}}%), which can amplify large negative days.",
+      "sizingSummary": "Inverted sizing: losing positions are on average {{pct}}% larger than winners — tendency to overcommit on setups that turn out wrong."
+    }
+  },
   "dashboard": {
     "title": "Trade Statistical Analysis",
     "subtitle": "Discover your best setups, identify losing patterns and detect behavioral biases",

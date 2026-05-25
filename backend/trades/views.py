@@ -93,6 +93,10 @@ from .pnl_basis import (
     trade_pnl_as_float,
     trade_pnl_as_decimal,
 )
+from .services.behavior_discipline import (
+    compute_behavior_discipline,
+    empty_behavior_discipline,
+)
 from .services.post_loss_sizing import compute_post_loss_sizing, empty_post_loss_sizing
 from .services.post_win_sizing import compute_post_win_sizing, empty_post_win_sizing
 
@@ -2531,6 +2535,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 'monthly_performance': [],
                 'post_loss_sizing': empty_post_loss_sizing(),
                 'post_win_sizing': empty_post_win_sizing(),
+                'behavior_discipline': empty_behavior_discipline(),
             })
 
         pf = self.get_pnl_field()
@@ -2733,6 +2738,9 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'monthly_performance': monthly_list,
             'post_loss_sizing': post_loss_sizing,
             'post_win_sizing': post_win_sizing,
+            'behavior_discipline': compute_behavior_discipline(
+                daily_data, trades, pf
+            ),
         })
 
     @action(detail=False, methods=['get'])

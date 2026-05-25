@@ -96,6 +96,35 @@ export type PostTradeSizingI18nPrefix = 'postLossSizing' | 'postWinSizing';
 
 export type PostTradeSizingData = PostLossSizingData | PostWinSizingData;
 
+export type BehaviorAlertLevel = 'none' | 'warning';
+
+export interface RevengeTradingData {
+  avg_trades_after_negative_day: number;
+  avg_trades_after_positive_day: number;
+  pct_increase: number | null;
+  days_after_negative: number;
+  days_after_positive: number;
+  has_sufficient_data: boolean;
+  alert_level: BehaviorAlertLevel;
+}
+
+export interface SizingDisciplineData {
+  avg_size_winning_trades: number;
+  avg_size_losing_trades: number;
+  pct_larger_on_losers: number | null;
+  winning_trades_count: number;
+  losing_trades_count: number;
+  skipped_unknown_contract: number;
+  comparison_basis: string;
+  has_sufficient_data: boolean;
+  alert_level: BehaviorAlertLevel;
+}
+
+export interface BehaviorDisciplineData {
+  revenge_trading: RevengeTradingData;
+  sizing_discipline: SizingDisciplineData;
+}
+
 export interface AnalyticsData {
   daily_stats: {
     avg_gain_per_day: number;
@@ -142,6 +171,7 @@ export interface AnalyticsData {
   }>;
   post_loss_sizing?: PostLossSizingData;
   post_win_sizing?: PostWinSizingData;
+  behavior_discipline?: BehaviorDisciplineData;
 }
 
 export interface GlobalStrategyData {

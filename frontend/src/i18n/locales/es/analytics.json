@@ -319,6 +319,35 @@
       "smallerDesc": "Tamaño menor: buen reflejo de gestión del riesgo tras una ganancia."
     }
   },
+  "behaviorDiscipline": {
+    "tabTitle": "Señales de disciplina",
+    "noData": "Datos insuficientes en el período seleccionado para este indicador.",
+    "revenge": {
+      "title": "Señal de disciplina — revenge trading",
+      "subtitle": "Número medio de trades el día de trading tras un día perdedor o ganador (solo días con actividad). Distinto de la pestaña « Tamaño tras una pérdida », que analiza el trade inmediatamente siguiente.",
+      "tradesAfterNegativeDay": "Trades tras día negativo",
+      "tradesAfterPositiveDay": "Trades tras día positivo",
+      "tradesPerDay": "trades/día",
+      "alert": "+{{pct}} % más trades tras un día perdedor — posible señal de revenge trading.",
+      "alertFavorable": "{{pct}} % menos trades tras un día perdedor — buena disciplina de frecuencia."
+    },
+    "sizing": {
+      "title": "Tamaño de posición — disciplina de sizing",
+      "subtitle": "Exposición media (lotes × valor del punto) en trades ganadores vs perdedores. Micro y e-mini de la misma familia se comparan de forma equitativa.",
+      "avgWinningSize": "Tamaño medio — ganadores",
+      "avgLosingSize": "Tamaño medio — perdedores",
+      "badge": "+{{pct}} %",
+      "alert": "+{{pct}} % más tamaño en trades perdedores que en ganadores — sesgo de sobreconvicción arriesgado.",
+      "alertFavorable": "{{pct}} % menos tamaño en trades perdedores — buena disciplina de sizing."
+    },
+    "alerts": {
+      "title": "Señales de alerta conductual",
+      "intro": "Dos puntos merecen atención.",
+      "introOne": "Un punto merece atención.",
+      "revengeSummary": "Revenge trading: de media {{afterLoss}} trades/día tras un día perdedor frente a {{afterWin}} tras un día ganador (+{{pct}} %), lo que puede amplificar grandes días negativos.",
+      "sizingSummary": "Sizing invertido: las posiciones perdedoras son de media un {{pct}} % más grandes que las ganadoras — tendencia a sobreconvicción en setups fallidos."
+    }
+  },
   "dashboard": {
     "title": "Análisis Estadístico de Operaciones",
     "subtitle": "Descubra sus mejores setups, identifique patrones perdedores y detecte sesgos conductuales",

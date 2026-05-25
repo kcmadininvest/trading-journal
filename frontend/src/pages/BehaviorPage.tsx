@@ -28,7 +28,11 @@ import { useAnalytics } from '../hooks/useStatistics';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
-import { PostLossSizingPanel, PostWinSizingPanel } from '../components/analytics';
+import {
+  BehaviorDisciplinePanel,
+  PostLossSizingPanel,
+  PostWinSizingPanel,
+} from '../components/analytics';
 import { TabsFilter } from '../components/common/TabsFilter';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 
@@ -220,6 +224,16 @@ const BehaviorPage: React.FC = () => {
   const behaviorTabs = useMemo(
     () => [
       {
+        id: 'discipline',
+        label: t('analytics:behaviorDiscipline.tabTitle'),
+        content: (
+          <BehaviorDisciplinePanel
+            data={analyticsData?.behavior_discipline}
+            formatNumber={formatNumber}
+          />
+        ),
+      },
+      {
         id: 'post-loss',
         label: t('analytics:postLossSizing.title'),
         content: (
@@ -247,6 +261,7 @@ const BehaviorPage: React.FC = () => {
       },
     ],
     [
+      analyticsData?.behavior_discipline,
       analyticsData?.post_loss_sizing,
       analyticsData?.post_win_sizing,
       chartColors,
@@ -328,7 +343,7 @@ const BehaviorPage: React.FC = () => {
 
       <TabsFilter
         storageKey="behavior-active-tab"
-        defaultTab="post-loss"
+        defaultTab="discipline"
         tabs={behaviorTabs}
       />
     </PageShell>

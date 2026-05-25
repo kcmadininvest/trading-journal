@@ -319,6 +319,35 @@
       "smallerDesc": "Taille réduite : bon réflexe de gestion du risque après un gain."
     }
   },
+  "behaviorDiscipline": {
+    "tabTitle": "Signaux de discipline",
+    "noData": "Pas assez de données sur la période sélectionnée pour calculer cet indicateur.",
+    "revenge": {
+      "title": "Signal de discipline — revenge trading",
+      "subtitle": "Nombre moyen de trades le jour de trading suivant une journée perdante ou gagnante (jours avec activité uniquement). Distinct de l’onglet « Taille après une perte », qui analyse le trade immédiatement suivant une perte.",
+      "tradesAfterNegativeDay": "Trades après journée négative",
+      "tradesAfterPositiveDay": "Trades après journée positive",
+      "tradesPerDay": "trades/jour",
+      "alert": "+{{pct}} % de trades en plus après une journée perdante — signal de revenge trading possible.",
+      "alertFavorable": "{{pct}} % de trades en moins après une journée perdante — bonne discipline sur la fréquence."
+    },
+    "sizing": {
+      "title": "Taille de position — discipline de sizing",
+      "subtitle": "Exposition moyenne (lots × valeur du point) sur les trades gagnants vs perdants. Les micro et e-mini de la même famille sont comparés équitablement.",
+      "avgWinningSize": "Taille moy. trades gagnants",
+      "avgLosingSize": "Taille moy. trades perdants",
+      "badge": "+{{pct}} %",
+      "alert": "+{{pct}} % de taille en plus sur les trades perdants que sur les gagnants — biais de sur-conviction risqué.",
+      "alertFavorable": "{{pct}} % de taille en moins sur les trades perdants — bonne discipline de sizing."
+    },
+    "alerts": {
+      "title": "Signaux d'alerte comportementaux",
+      "intro": "Deux points méritent attention.",
+      "introOne": "Un point mérite attention.",
+      "revengeSummary": "Revenge trading : en moyenne {{afterLoss}} trades/jour après une journée perdante contre {{afterWin}} après une journée gagnante (+{{pct}} %), ce qui peut amplifier les grosses journées négatives.",
+      "sizingSummary": "Sizing inversé : les positions perdantes sont en moyenne {{pct}} % plus grosses que les gagnantes — tendance à sur-conviction sur des setups qui s'avèrent mauvais."
+    }
+  },
   "dashboard": {
     "title": "Analyse Statistique des Trades",
     "subtitle": "Découvrez vos meilleurs setups, identifiez les patterns perdants et détectez les biais comportementaux",
