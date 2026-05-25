@@ -271,7 +271,7 @@ const MARKET_CLOCK_TIMEZONES: Array<[string, string]> = [
   ['XNYS', 'America/New_York'],
   ['XPAR', 'Europe/Paris'],
   ['XLON', 'Europe/London'],
-  // ['XTKS', 'Asia/Tokyo'], — horloge / calendrier Tokyo non affichés sur le dashboard
+  ['XTKS', 'Asia/Tokyo'],
 ];
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
@@ -630,8 +630,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     const loadMarketHolidaysBundle = async () => {
       setHolidaysLoading(true);
       try {
-        // Une seule requête (bundle) : statut du jour + prochains fériés — XTKS exclu (Tokyo non affiché).
-        const response = await marketCalendarService.getMarketHolidaysBundle(1, 'XNYS,XPAR,XLON');
+        // count = 1 prochain événement par marché (le suivant s'affiche une fois la date passée)
+        const response = await marketCalendarService.getMarketHolidaysBundle(1, 'XNYS,XPAR,XLON,XTKS');
         const next: Partial<Record<string, MarketTodaySnapshot>> = {};
         for (const code of Object.keys(response.markets)) {
           const entry = response.markets[code];
@@ -1717,8 +1717,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       </div>
 
       {/* Market Info - Toujours visible */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-4">
-        <ModernMarketInfo 
+      <div className="mb-4 min-w-0">
+        <ModernMarketInfo
           marketHolidays={marketHolidays}
           holidaysLoading={holidaysLoading}
           marketTodayByCode={marketTodayByCode}

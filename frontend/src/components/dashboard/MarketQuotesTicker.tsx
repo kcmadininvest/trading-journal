@@ -9,6 +9,7 @@ import {
   formatMarketQuotePrice,
 } from '../../utils/marketQuotesFormat';
 import { MarketQuoteInstrumentIcon, quoteIconContainerClass } from './marketQuoteIcons';
+import { TickerShell } from './tickerShell';
 
 const FATAL_MESSAGES = new Set([
   'market_quotes_unavailable',
@@ -19,25 +20,8 @@ const FATAL_MESSAGES = new Set([
   'no_contracts',
 ]);
 
-const TICKER_SHELL_CLASS =
-  'font-sans flex min-h-[3.25rem] w-full min-w-0 items-center justify-center gap-4 overflow-x-auto rounded-xl border border-white/10 bg-gradient-to-r from-[#0f172a] via-[#172554] to-[#0f172a] px-4 py-2.5 shadow-lg shadow-blue-950/30 text-white backdrop-blur-xl dark:from-slate-950 dark:via-blue-950 dark:to-slate-950 sm:px-5 sm:py-3';
-
 const TICKER_ROW_CLASS =
   'mx-auto flex w-max min-w-full items-center justify-center gap-4 sm:gap-6';
-
-function TickerShell({
-  children,
-  ariaLabel,
-}: {
-  children: React.ReactNode;
-  ariaLabel: string;
-}) {
-  return (
-    <div className="w-full min-w-0" role="region" aria-label={ariaLabel}>
-      <div className={TICKER_SHELL_CLASS}>{children}</div>
-    </div>
-  );
-}
 
 function VerticalRule() {
   return <div className="h-6 w-px shrink-0 bg-white/10" aria-hidden />;

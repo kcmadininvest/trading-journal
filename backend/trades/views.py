@@ -5366,7 +5366,7 @@ def _market_holidays_bundle_response(request):
     Une seule requête : statut « aujourd’hui » par marché + prochains jours fériés.
     Évite deux allers-retours HTTP et réutilise les calendriers mis en cache côté serveur.
     """
-    markets_param = request.GET.get('markets', 'XNYS,XPAR,XLON')
+    markets_param = request.GET.get('markets', 'XNYS,XPAR,XLON,XTKS')
     markets = [m.strip() for m in markets_param.split(',') if m.strip()]
     count = _parse_market_holidays_count(request)
     out_today = {}

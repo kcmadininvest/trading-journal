@@ -228,7 +228,7 @@ class CalendarService {
    */
   async getMarketHolidaysBundle(
     count: number = 1,
-    markets: string = 'XNYS,XPAR,XLON'
+    markets: string = 'XNYS,XPAR,XLON,XTKS'
   ): Promise<MarketHolidaysBundleResponse> {
     const params = new URLSearchParams({
       bundle: '1',
