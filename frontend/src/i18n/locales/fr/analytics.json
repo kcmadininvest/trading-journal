@@ -39,7 +39,18 @@
       "xAxis": "Nombre de trades",
       "yAxis": "PnL total",
       "regressionLine": "Ligne de régression",
-      "rSquaredTooltip": "Le coefficient de détermination (R²) mesure la force de la corrélation entre le nombre de trades et le PnL. R² proche de 1 indique une forte corrélation, R² proche de 0 indique une faible corrélation. La ligne de régression montre la tendance générale."
+      "densityLegend": "Densité relative (par colonne)",
+      "columnDayCount": "{{formattedCount}} j.",
+      "hexbinTooltip": {
+        "days_one": "{{formattedCount}} jour",
+        "days_other": "{{formattedCount}} jours",
+        "avgTrades": "~{{value}} trades en moyenne",
+        "avgPnl": "PnL moyen : {{value}}"
+      },
+      "densityTooltip": {
+        "tradesPerDay": "{{formattedCount}} trades ce jour-là"
+      },
+      "rSquaredTooltip": "Le coefficient de détermination (R²) mesure la force de la corrélation entre le nombre de trades et le PnL. La carte en couleur indique combien de jours se situent dans chaque zone (plus intense = plus de jours). La ligne de régression montre la tendance générale."
     },
     "durationPerformance": {
       "title": "Performance par durée de trade",

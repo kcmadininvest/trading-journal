@@ -39,7 +39,15 @@
       "xAxis": "Número de operaciones",
       "yAxis": "PnL Total",
       "regressionLine": "Línea de regresión",
-      "rSquaredTooltip": "El coeficiente de determinación (R²) mide la fuerza de la correlación entre el número de operaciones y el PnL. R² cercano a 1 indica una correlación fuerte, R² cercano a 0 indica una correlación débil. La línea de regresión muestra la tendencia general."
+      "densityLegend": "Densidad relativa (por columna)",
+      "columnDayCount": "{{formattedCount}} d.",
+      "hexbinTooltip": {
+        "days_one": "{{formattedCount}} día",
+        "days_other": "{{formattedCount}} días",
+        "avgTrades": "~{{value}} operaciones de media",
+        "avgPnl": "PnL medio: {{value}}"
+      },
+      "rSquaredTooltip": "El coeficiente de determinación (R²) mide la fuerza de la correlación entre el número de operaciones y el PnL. Los hexágonos muestran la densidad de días de trading (color más intenso = más días en la zona). La línea de regresión muestra la tendencia general."
     },
     "featureCorrelationMatrix": {
       "title": "Matriz de correlación de variables",

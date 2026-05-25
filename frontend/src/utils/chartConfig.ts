@@ -122,6 +122,18 @@ export const syncChartFontFamily = (fontFamily: string): void => {
   CHART_FONT_FAMILY = fontFamily;
 };
 
+export type ChartFontSizePreference = 'small' | 'medium' | 'large';
+
+/** Tailles SVG alignées sur Paramètres → Taille (graphiques hors Chart.js). */
+export const getChartSvgFontSizes = (fontSize: ChartFontSizePreference = 'medium') => {
+  const sizes: Record<ChartFontSizePreference, { tick: number; axis: number; title: number; caption: number }> = {
+    small: { tick: 10, axis: 11, title: 12, caption: 9 },
+    medium: { tick: 12, axis: 13, title: 13, caption: 10 },
+    large: { tick: 14, axis: 15, title: 15, caption: 11 },
+  };
+  return sizes[fontSize] ?? sizes.medium;
+};
+
 export interface ChartColors {
   text: string;
   textSecondary: string;

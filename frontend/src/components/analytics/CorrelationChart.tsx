@@ -1,11 +1,22 @@
-import React, { useMemo } from 'react';
-import { Scatter as ChartScatter } from 'react-chartjs-2';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { usePreferences } from '../../hooks/usePreferences';
 import TooltipComponent from '../ui/Tooltip';
-import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
-import { formatCurrency } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { formatCurrency, formatNumber } from '../../utils/numberFormat';
+import { CHART_FONT_FAMILY, getChartSvgFontSizes } from '../../utils/chartConfig';
+import {
+  computeDayTotalsByTrades,
+  computeMaxCountByTrades,
+  computeNiceYBounds,
+  computeTradePnlDensityGrid,
+  computeXTickValues,
+  computeYTickValues,
+  buildTradeSlots,
+  densityIntensity,
+  TRADE_COLUMN_FILL_RATIO,
+  type DensityGridCell,
+} from '../../utils/correlationDensityGrid';
 
 interface CorrelationChartProps {
   data: {
@@ -18,8 +29,17 @@ interface CorrelationChartProps {
     rSquared: number;
   };
   currencySymbol: string;
-  chartColors: any;
+  chartColors: {
+    text: string;
+    textSecondary: string;
+    grid: string;
+    border: string;
+  };
 }
+
+const MARGIN = { top: 16, right: 16, bottom: 58, left: 72 };
+
+type HoveredCell = DensityGridCell & { clientX: number; clientY: number };
 
 export const CorrelationChart: React.FC<CorrelationChartProps> = ({
   data,
@@ -28,130 +48,103 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
 }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const { preferences } = usePreferences();
+  const chartFonts = useMemo(
+    () => getChartSvgFontSizes(preferences.font_size),
+    [preferences.font_size],
+  );
+  const clipPathId = useId();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const [hovered, setHovered] = useState<HoveredCell | null>(null);
 
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-      duration: 0,
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return undefined;
+
+    const measure = () => {
+      const rect = el.getBoundingClientRect();
+      setSize({ width: Math.floor(rect.width), height: Math.floor(rect.height) });
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const plotWidth = Math.max(size.width - MARGIN.left - MARGIN.right, 0);
+  const plotHeight = Math.max(size.height - MARGIN.top - MARGIN.bottom, 0);
+
+  const chartModel = useMemo(() => {
+    if (!data?.dataPoints.length) {
+      return null;
+    }
+
+    const points = data.dataPoints.map((d) => ({ x: d.trades, y: d.pnl }));
+    const { yMin, yMax } = computeNiceYBounds(points.map((p) => p.y));
+    const tradeSlots = buildTradeSlots(data.minTrades, data.maxTrades);
+    const cells = computeTradePnlDensityGrid(
+      points,
+      { yMin, yMax, minTrades: data.minTrades, maxTrades: data.maxTrades },
+    );
+
+    return {
+      cells,
+      tradeSlots,
+      maxCountByTrades: computeMaxCountByTrades(cells),
+      dayTotalsByTrades: computeDayTotalsByTrades(points),
+      yMin,
+      yMax,
+      xTicks: computeXTickValues(data.minTrades, data.maxTrades),
+      yTicks: computeYTickValues(yMin, yMax, 5),
+    };
+  }, [data]);
+
+  const scales = useMemo(() => {
+    if (!chartModel || plotWidth <= 0 || plotHeight <= 0 || chartModel.tradeSlots.length === 0) {
+      return null;
+    }
+    const { tradeSlots, yMin, yMax } = chartModel;
+    const slotWidth = plotWidth / tradeSlots.length;
+    const columnWidthPx = slotWidth * TRADE_COLUMN_FILL_RATIO;
+    const slotBase = tradeSlots[0];
+
+    const xScaleTrades = (trades: number) => {
+      const rounded = Math.round(trades);
+      const index = rounded - slotBase;
+      const clampedIndex = Math.max(0, Math.min(tradeSlots.length - 1, index));
+      return MARGIN.left + slotWidth * (clampedIndex + 0.5);
+    };
+
+    const yScale = (y: number) => MARGIN.top + plotHeight - ((y - yMin) / (yMax - yMin)) * plotHeight;
+
+    return { xScaleTrades, yScale, columnWidthPx, slotWidth };
+  }, [chartModel, plotWidth, plotHeight]);
+
+  const densityColor = useCallback(
+    (count: number, maxInColumn: number) => {
+      const alpha = densityIntensity(count, maxInColumn);
+      return theme === 'dark'
+        ? `rgba(16, 185, 129, ${alpha})`
+        : `rgba(5, 150, 105, ${alpha})`;
     },
-    plugins: {
-      datalabels: {
-        display: false,
-      },
-      legend: {
-        display: data.regressionLine.length > 0,
-        position: 'top' as const,
-        labels: {
-          color: chartColors.text,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 12,
-          },
-          usePointStyle: true,
-          padding: 12,
-          filter: (legendItem: any) => {
-            return legendItem.text === t('analytics:charts.correlation.regressionLine');
-          },
-        },
-      },
-      tooltip: {
-        ...buildChartTooltipPlugin(chartColors, 'barStackedLike', undefined, {
-        callbacks: {
-          title: (items: any) => {
-            const item = items[0];
-            const raw = item.raw as { x: number; y: number };
-            const trades = raw.x;
-            return `${trades} ${trades > 1 ? t('analytics:common.trades') : t('analytics:common.trade')}`;
-          },
-          label: (context: any) => {
-            const raw = context.raw as { x: number; y: number };
-            const pnl = raw.y;
-            return formatCurrency(pnl, currencySymbol);
-          },
-        },
-        }),
-      },
-    },
-    scales: {
-      x: {
-        type: 'linear' as const,
-        position: 'bottom' as const,
-        min: data.minTrades - 0.25,
-        max: data.maxTrades + 0.25,
-        ticks: {
-          stepSize: 0.5,
-          color: chartColors.textSecondary,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 12,
-          },
-          callback: function(value: any) {
-            const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-            const roundedValue = Math.round(numValue * 2) / 2;
-            const remainder = Math.abs(roundedValue % 1);
-            
-            if (remainder < 0.001 || Math.abs(remainder - 0.5) < 0.001) {
-              if (roundedValue % 1 === 0) {
-                return Math.round(roundedValue).toString();
-              } else {
-                return roundedValue.toFixed(1);
-              }
-            }
-            return '';
-          },
-        },
-        grid: {
-          color: chartColors.grid,
-          lineWidth: 1,
-        },
-        border: {
-          color: chartColors.border,
-        },
-        title: {
-          display: true,
-          text: t('analytics:charts.correlation.xAxis'),
-          color: chartColors.text,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 13,
-            weight: 600,
-          },
-        },
-      },
-      y: {
-        ticks: {
-          color: chartColors.textSecondary,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 12,
-          },
-          callback: function(value: any) {
-            const numValue = typeof value === 'number' ? value : parseFloat(String(value));
-            return formatCurrency(numValue, currencySymbol);
-          },
-        },
-        grid: {
-          color: chartColors.grid,
-          lineWidth: 1,
-        },
-        border: {
-          color: chartColors.border,
-          display: false,
-        },
-        title: {
-          display: true,
-          text: t('analytics:charts.correlation.yAxis'),
-          color: chartColors.text,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 13,
-            weight: 600,
-          },
-        },
-      },
-    },
-  }), [chartColors, currencySymbol, t, data.minTrades, data.maxTrades, data.regressionLine.length]);
+    [theme],
+  );
+
+  const regressionStroke = theme === 'dark' ? '#fbbf24' : '#d97706';
+
+  const handleCellEnter = useCallback((cell: DensityGridCell, event: React.MouseEvent) => {
+    setHovered({
+      ...cell,
+      clientX: event.clientX,
+      clientY: event.clientY,
+    });
+  }, []);
+
+  const handleCellLeave = useCallback(() => {
+    setHovered(null);
+  }, []);
 
   if (!data || data.dataPoints.length === 0) {
     return (
@@ -168,14 +161,14 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
   return (
     <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-        <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full mr-3"></div>
+        <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full mr-3" />
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
           {t('analytics:charts.correlation.title')}
         </h3>
         {data.dataPoints.length > 1 && (
           <>
             <span className="ml-3 text-sm font-normal text-gray-600 dark:text-gray-400">
-              (R² = {data.rSquared.toFixed(3)})
+              (R² = {formatNumber(data.rSquared, 3, preferences.number_format)})
             </span>
             <TooltipComponent
               content={t('analytics:charts.correlation.rSquaredTooltip')}
@@ -190,41 +183,237 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
           </>
         )}
       </div>
-      <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">
-        <ChartScatter
-          data={{
-            datasets: [
-              {
-                label: t('analytics:charts.correlation.label'),
-                data: data.dataPoints.map(d => ({
-                  x: d.trades,
-                  y: d.pnl,
-                })),
-                backgroundColor: data.dataPoints.map(d => 
-                  d.pnl >= 0 ? '#3b82f6' : '#ec4899'
-                ),
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                pointBorderWidth: 0,
-                hidden: false,
-              },
-              ...(data.regressionLine.length > 0 ? [{
-                label: t('analytics:charts.correlation.regressionLine'),
-                data: data.regressionLine,
-                borderColor: theme === 'dark' ? '#10b981' : '#059669',
-                backgroundColor: 'transparent',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                pointRadius: 0,
-                pointHoverRadius: 0,
-                showLine: true,
-                fill: false,
-              }] : []),
-            ],
-          }}
-          options={chartOptions}
-        />
-      </ChartTooltipResetContainer>
+
+      <div className="flex flex-wrap items-center gap-4 mb-3 text-xs text-gray-600 dark:text-gray-400">
+        <div className="flex items-center gap-2">
+          <span>{t('analytics:charts.correlation.densityLegend')}</span>
+          <div
+            className="h-2.5 w-20 rounded-full"
+            style={{
+              background: theme === 'dark'
+                ? 'linear-gradient(90deg, rgba(16,185,129,0.25), rgba(16,185,129,1))'
+                : 'linear-gradient(90deg, rgba(5,150,105,0.25), rgba(5,150,105,1))',
+            }}
+          />
+        </div>
+        {data.regressionLine.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-block w-6 border-t-2 border-dashed"
+              style={{ borderColor: regressionStroke }}
+            />
+            <span>{t('analytics:charts.correlation.regressionLine')}</span>
+          </div>
+        )}
+      </div>
+
+      <div ref={containerRef} className="relative flex-1 min-h-[320px]">
+        {size.width > 0 && size.height > 0 && chartModel && scales && (
+          <svg
+            width={size.width}
+            height={size.height}
+            role="img"
+            aria-label={t('analytics:charts.correlation.title')}
+          >
+            {chartModel.yTicks.map((tick) => {
+              const y = scales.yScale(tick);
+              return (
+                <line
+                  key={`y-grid-${tick}`}
+                  x1={MARGIN.left}
+                  x2={MARGIN.left + plotWidth}
+                  y1={y}
+                  y2={y}
+                  stroke={chartColors.grid}
+                  strokeWidth={1}
+                />
+              );
+            })}
+
+            {chartModel.tradeSlots.map((tick) => {
+              const x = scales.xScaleTrades(tick);
+              return (
+                <line
+                  key={`x-grid-${tick}`}
+                  x1={x}
+                  x2={x}
+                  y1={MARGIN.top}
+                  y2={MARGIN.top + plotHeight}
+                  stroke={chartColors.grid}
+                  strokeWidth={1}
+                />
+              );
+            })}
+
+            <defs>
+              <clipPath id={clipPathId}>
+                <rect
+                  x={MARGIN.left}
+                  y={MARGIN.top}
+                  width={plotWidth}
+                  height={plotHeight}
+                />
+              </clipPath>
+            </defs>
+
+            <g clipPath={`url(#${clipPathId})`}>
+              {chartModel.cells.map((cell) => {
+                const cx = scales.xScaleTrades(cell.trades);
+                const halfW = scales.columnWidthPx / 2;
+                const top = scales.yScale(cell.yMax);
+                const height = Math.max(scales.yScale(cell.yMin) - top, 1);
+                const isHovered =
+                  hovered?.trades === cell.trades
+                  && hovered?.yMin === cell.yMin
+                  && hovered?.yMax === cell.yMax;
+
+                return (
+                  <rect
+                    key={`${cell.trades}-${cell.yMin}`}
+                    x={cx - halfW}
+                    y={top}
+                    width={scales.columnWidthPx}
+                    height={height}
+                    rx={2}
+                    fill={densityColor(
+                      cell.count,
+                      chartModel.maxCountByTrades.get(cell.trades) ?? 1,
+                    )}
+                    stroke={isHovered ? regressionStroke : 'transparent'}
+                    strokeWidth={isHovered ? 1.5 : 0}
+                    onMouseEnter={(e) => handleCellEnter(cell, e)}
+                    onMouseLeave={handleCellLeave}
+                  />
+                );
+              })}
+
+              {data.regressionLine.length === 2 && (
+                <line
+                  x1={scales.xScaleTrades(data.regressionLine[0].x)}
+                  y1={scales.yScale(data.regressionLine[0].y)}
+                  x2={scales.xScaleTrades(data.regressionLine[1].x)}
+                  y2={scales.yScale(data.regressionLine[1].y)}
+                  stroke={regressionStroke}
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  pointerEvents="none"
+                />
+              )}
+            </g>
+
+            <line
+              x1={MARGIN.left}
+              x2={MARGIN.left + plotWidth}
+              y1={MARGIN.top + plotHeight}
+              y2={MARGIN.top + plotHeight}
+              stroke={chartColors.border}
+            />
+            <line
+              x1={MARGIN.left}
+              x2={MARGIN.left}
+              y1={MARGIN.top}
+              y2={MARGIN.top + plotHeight}
+              stroke={chartColors.border}
+            />
+
+            {chartModel.xTicks.map((tick) => {
+              const dayTotal = chartModel.dayTotalsByTrades.get(tick) ?? 0;
+              return (
+                <g key={`x-label-${tick}`}>
+                  <text
+                    x={scales.xScaleTrades(tick)}
+                    y={MARGIN.top + plotHeight + 20}
+                    textAnchor="middle"
+                    fill={chartColors.textSecondary}
+                    fontFamily={CHART_FONT_FAMILY}
+                    fontSize={chartFonts.tick}
+                  >
+                    {formatNumber(tick, 0, preferences.number_format)}
+                  </text>
+                  {dayTotal > 0 && (
+                    <text
+                      x={scales.xScaleTrades(tick)}
+                      y={MARGIN.top + plotHeight + 34}
+                      textAnchor="middle"
+                      fill={chartColors.textSecondary}
+                      fontFamily={CHART_FONT_FAMILY}
+                      fontSize={chartFonts.caption}
+                      opacity={0.75}
+                    >
+                      {t('analytics:charts.correlation.columnDayCount', {
+                        formattedCount: formatNumber(dayTotal, 0, preferences.number_format),
+                      })}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+            <text
+              x={MARGIN.left + plotWidth / 2}
+              y={size.height - 6}
+              textAnchor="middle"
+              fill={chartColors.text}
+              fontFamily={CHART_FONT_FAMILY}
+              fontSize={chartFonts.axis}
+              fontWeight={600}
+            >
+              {t('analytics:charts.correlation.xAxis')}
+            </text>
+
+            {chartModel.yTicks.map((tick) => (
+              <text
+                key={`y-label-${tick}`}
+                x={MARGIN.left - 10}
+                y={scales.yScale(tick) + 4}
+                textAnchor="end"
+                fill={chartColors.textSecondary}
+                fontFamily={CHART_FONT_FAMILY}
+                fontSize={chartFonts.tick}
+              >
+                {formatCurrency(tick, currencySymbol, preferences.number_format)}
+              </text>
+            ))}
+            <text
+              transform={`translate(14 ${MARGIN.top + plotHeight / 2}) rotate(-90)`}
+              textAnchor="middle"
+              fill={chartColors.text}
+              fontFamily={CHART_FONT_FAMILY}
+              fontSize={chartFonts.axis}
+              fontWeight={600}
+            >
+              {t('analytics:charts.correlation.yAxis')}
+            </text>
+          </svg>
+        )}
+
+        {hovered && (
+          <div
+            className="pointer-events-none fixed z-50 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm shadow-lg"
+            style={{
+              left: hovered.clientX + 12,
+              top: hovered.clientY + 12,
+            }}
+          >
+            <p className="font-semibold text-gray-800 dark:text-gray-100">
+              {t('analytics:charts.correlation.densityTooltip.tradesPerDay', {
+                count: hovered.trades,
+                formattedCount: formatNumber(hovered.trades, 0, preferences.number_format),
+              })}
+            </p>
+            <p className="text-gray-600 dark:text-gray-300">
+              {t('analytics:charts.correlation.hexbinTooltip.days', {
+                count: hovered.count,
+                formattedCount: formatNumber(hovered.count, 0, preferences.number_format),
+              })}
+            </p>
+            <p className="text-gray-600 dark:text-gray-300">
+              {t('analytics:charts.correlation.hexbinTooltip.avgPnl', {
+                value: formatCurrency(hovered.avgPnl, currencySymbol, preferences.number_format),
+              })}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

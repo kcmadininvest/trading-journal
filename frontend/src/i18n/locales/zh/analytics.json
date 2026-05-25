@@ -27,10 +27,18 @@
       "outliersDescription": "点：异常值（蓝色=盈利，粉色=亏损）"
     },
     "correlation": {
-      "title": "Corrélation PnL vs Nombre de Trades",
-      "label": "Corrélation",
-      "xAxis": "Nombre de trades",
-      "yAxis": "PnL total"
+      "title": "PnL 与交易笔数相关性",
+      "label": "相关性",
+      "xAxis": "交易笔数",
+      "yAxis": "总 PnL",
+      "regressionLine": "回归线",
+      "densityLegend": "密度（天）",
+      "hexbinTooltip": {
+        "days_other": "{{count}} 天",
+        "avgTrades": "平均约 {{value}} 笔交易",
+        "avgPnl": "平均 PnL：{{value}}"
+      },
+      "rSquaredTooltip": "决定系数 (R²) 衡量交易笔数与 PnL 的相关强度。六边形表示交易日密度（颜色越深 = 该区域天数越多）。回归线显示总体趋势。"
     },
     "drawdown": {
       "title": "Drawdown par jour",

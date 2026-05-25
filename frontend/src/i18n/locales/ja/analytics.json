@@ -50,10 +50,18 @@
       "densityHint": "トレード数が多い場合はマーカーを小さく薄く表示し、密集している領域が分かりやすくなります。"
     },
     "correlation": {
-      "title": "Corrélation PnL vs Nombre de Trades",
-      "label": "Corrélation",
-      "xAxis": "Nombre de trades",
-      "yAxis": "PnL total"
+      "title": "PnL vs トレード数の相関",
+      "label": "相関",
+      "xAxis": "トレード数",
+      "yAxis": "合計 PnL",
+      "regressionLine": "回帰線",
+      "densityLegend": "密度（日）",
+      "hexbinTooltip": {
+        "days_other": "{{count}}日",
+        "avgTrades": "平均 ~{{value}} トレード",
+        "avgPnl": "平均 PnL: {{value}}"
+      },
+      "rSquaredTooltip": "決定係数 (R²) はトレード数と PnL の相関の強さを示します。六角形は取引日の密度です（色が濃いほどそのゾーンの日数が多い）。回帰線は全体的な傾向を示します。"
     },
     "drawdown": {
       "title": "Drawdown par jour",

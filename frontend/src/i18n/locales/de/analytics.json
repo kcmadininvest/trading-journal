@@ -39,7 +39,15 @@
       "xAxis": "Anzahl der Trades",
       "yAxis": "Gesamt-PnL",
       "regressionLine": "Regressionslinie",
-      "rSquaredTooltip": "Der Bestimmtheitskoeffizient (R²) misst die Stärke der Korrelation zwischen der Anzahl der Trades und dem PnL. R² nahe 1 deutet auf eine starke Korrelation hin, R² nahe 0 auf eine schwache Korrelation. Die Regressionslinie zeigt den allgemeinen Trend."
+      "densityLegend": "Relative Dichte (pro Spalte)",
+      "columnDayCount": "{{formattedCount}} T.",
+      "hexbinTooltip": {
+        "days_one": "{{formattedCount}} Tag",
+        "days_other": "{{formattedCount}} Tage",
+        "avgTrades": "~{{value}} Trades im Durchschnitt",
+        "avgPnl": "Ø PnL: {{value}}"
+      },
+      "rSquaredTooltip": "Der Bestimmtheitskoeffizient (R²) misst die Stärke der Korrelation zwischen der Anzahl der Trades und dem PnL. Hexagone zeigen die Dichte der Handelstage (intensivere Farbe = mehr Tage in der Zone). Die Regressionslinie zeigt den allgemeinen Trend."
     },
     "featureCorrelationMatrix": {
       "title": "Feature-Korrelationsmatrix",

@@ -1664,7 +1664,7 @@ const AnalyticsPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <CorrelationChart
-              key={`correlation-${pnlDisplayMode}`}
+              key={`correlation-${pnlDisplayMode}-${preferences.number_format}-${preferences.font_size}-${preferences.language}`}
               data={correlationData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}

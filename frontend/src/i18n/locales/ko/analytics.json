@@ -50,10 +50,18 @@
       "densityHint": "거래가 많을 때는 마커를 더 작고 투명하게 표시해 밀집 구간이 잘 보이도록 합니다."
     },
     "correlation": {
-      "title": "Corrélation PnL vs Nombre de Trades",
-      "label": "Corrélation",
-      "xAxis": "Nombre de trades",
-      "yAxis": "PnL total"
+      "title": "PnL vs 거래 수 상관관계",
+      "label": "상관관계",
+      "xAxis": "거래 수",
+      "yAxis": "총 PnL",
+      "regressionLine": "회귀선",
+      "densityLegend": "밀도(일)",
+      "hexbinTooltip": {
+        "days_other": "{{count}}일",
+        "avgTrades": "평균 ~{{value}}건",
+        "avgPnl": "평균 PnL: {{value}}"
+      },
+      "rSquaredTooltip": "결정계수(R²)는 거래 수와 PnL 간 상관 강도를 나타냅니다. 육각형은 거래일 밀도를 보여줍니다(색이 진할수록 해당 구간의 일수가 많음). 회귀선은 전반적 추세를 나타냅니다."
     },
     "drawdown": {
       "title": "Drawdown par jour",

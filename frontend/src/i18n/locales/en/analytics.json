@@ -39,7 +39,18 @@
       "xAxis": "Number of trades",
       "yAxis": "Total PnL",
       "regressionLine": "Regression line",
-      "rSquaredTooltip": "The coefficient of determination (R²) measures the strength of the correlation between the number of trades and PnL. R² close to 1 indicates a strong correlation, R² close to 0 indicates a weak correlation. The regression line shows the general trend."
+      "densityLegend": "Relative density (per column)",
+      "columnDayCount": "{{formattedCount}} d.",
+      "hexbinTooltip": {
+        "days_one": "{{formattedCount}} day",
+        "days_other": "{{formattedCount}} days",
+        "avgTrades": "~{{value}} trades on average",
+        "avgPnl": "Avg. PnL: {{value}}"
+      },
+      "densityTooltip": {
+        "tradesPerDay": "{{formattedCount}} trades that day"
+      },
+      "rSquaredTooltip": "The coefficient of determination (R²) measures the strength of the correlation between the number of trades and PnL. The heatmap shows how many trading days fall in each zone (brighter = more days). The regression line shows the general trend."
     },
     "durationPerformance": {
       "title": "Performance by trade duration",
