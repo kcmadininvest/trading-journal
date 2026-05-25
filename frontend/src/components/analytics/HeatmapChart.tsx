@@ -99,31 +99,31 @@ export const HeatmapChart: React.FC<HeatmapChartProps> = ({
       <div className="overflow-x-auto -mx-2 px-2 flex-1">
         <div className="inline-block min-w-full">
           <div className="mb-2">
-            <div className="flex ml-14">
+            <div className="flex ml-14 gap-1.5">
               {data.hoursWithData.map((hour) => (
                 <div
                   key={hour}
-                  className="flex-1 text-xs text-gray-600 dark:text-gray-400 text-center font-semibold min-w-[22px]"
+                  className="flex-1 text-xs text-gray-600 dark:text-gray-400 text-center font-semibold min-w-[20px]"
                 >
                   {hour.toString().padStart(2, '0')}
                 </div>
               ))}
             </div>
           </div>
-          <div className="space-y-1" ref={heatmapContainerRef}>
+          <div className="flex flex-col gap-1.5" ref={heatmapContainerRef}>
             {data.daysOfWeek.map((day, dayIndex) => (
               <div key={day} className="flex items-center">
                 <div className="w-14 text-sm font-semibold text-gray-700 dark:text-gray-300 text-right pr-2">
                   {day}
                 </div>
-                <div className="flex flex-1">
+                <div className="flex flex-1 gap-1.5">
                   {data.hoursWithData.map((hour) => {
                     const value = data.data[dayIndex][hour];
                     const color = getHeatmapColor(value, data.maxAbs);
                     return (
                       <div
                         key={hour}
-                        className="flex-1 h-7 border-2 border-white dark:border-gray-700 rounded-md hover:border-gray-300 dark:hover:border-gray-600 hover:scale-110 transition-all duration-200 cursor-pointer relative min-w-[22px] shadow-sm"
+                        className="flex-1 h-7 rounded-md hover:scale-105 hover:ring-1 hover:ring-gray-300 dark:hover:ring-gray-500 transition-all duration-200 cursor-pointer relative min-w-[20px]"
                         style={{ backgroundColor: color }}
                         onMouseEnter={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
