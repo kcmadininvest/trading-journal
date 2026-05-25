@@ -305,10 +305,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const complianceStats = useMemo(() => dashboardData?.compliance_stats || null, [dashboardData]);
   
   // Charger les statistiques globales seulement si l'écran est assez grand (lazy loading)
+  const globalStatsLoadStateRef = useRef<'idle' | 'loading' | 'done' | 'failed'>('idle');
+
   useEffect(() => {
-    if (!shouldLoadGlobalStats || globalStatsLoading || globalStrategyStats) {
+    if (!shouldLoadGlobalStats) {
       return;
     }
+    if (
+      globalStatsLoadStateRef.current === 'loading' ||
+      globalStatsLoadStateRef.current === 'done' ||
+      globalStatsLoadStateRef.current === 'failed'
+    ) {
+      return;
+    }
+
+    globalStatsLoadStateRef.current = 'loading';
+    let cancelled = false;
 
     const loadGlobalStrategyStats = async () => {
       setGlobalStatsLoading(true);
@@ -322,17 +334,30 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           end_date: now.toISOString().split('T')[0],
         });
 
+        if (cancelled) {
+          return;
+        }
         setGlobalStrategyStats(stats);
+        globalStatsLoadStateRef.current = 'done';
       } catch (err) {
+        if (cancelled) {
+          return;
+        }
         console.error('Erreur lors du chargement des statistiques globales de stratégie:', err);
-        setGlobalStrategyStats(null);
+        globalStatsLoadStateRef.current = 'failed';
       } finally {
-        setGlobalStatsLoading(false);
+        if (!cancelled) {
+          setGlobalStatsLoading(false);
+        }
       }
     };
 
     loadGlobalStrategyStats();
-  }, [shouldLoadGlobalStats, globalStatsLoading, globalStrategyStats]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [shouldLoadGlobalStats]);
 
   // Statistiques globales (tous comptes, toutes périodes confondues)
   const globalStats = useMemo(() => {

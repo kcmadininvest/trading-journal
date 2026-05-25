@@ -319,6 +319,7 @@ class TradesService {
     break_even_zero_trades: number;
     break_even_positive_trades: number;
     sharpe_ratio: number;
+    sharpe_ratio_annualized: number;
     sortino_ratio: number;
     calmar_ratio: number;
     trade_efficiency: number;

@@ -306,6 +306,17 @@ export const GAUGE_CONFIGS: Record<string, MetricGaugeConfig> = {
       { value: 1.0, label: 'Good', color: 'green' },
     ],
   },
+  /** Sharpe annualisé (√252) : < 0,5 faible · 0,5–1 moyen · ≥ 1 bon (≥ 2 excellent en sous-texte) */
+  sharpeRatioAnnualized: {
+    type: 'ratio',
+    min: -2,
+    max: 3,
+    thresholds: [
+      { value: 0, label: 'Poor', color: 'red' },
+      { value: 0.5, label: 'Average', color: 'orange' },
+      { value: 1.0, label: 'Good', color: 'green' },
+    ],
+  },
   tradeEfficiency: {
     type: 'percentage',
     min: 0,

@@ -453,7 +453,7 @@ function StatisticsPage() {
         )}
 
         {statisticsData && activeTab === 'performance' && (
-          <StatisticsPerformanceTab {...tabSharedProps} chartColors={chartColors} />
+          <StatisticsPerformanceTab {...tabSharedProps} />
         )}
 
         {statisticsData && activeTab === 'trades' && (

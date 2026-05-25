@@ -44,6 +44,7 @@ export interface StatisticsData {
   break_even_zero_trades: number;
   break_even_positive_trades: number;
   sharpe_ratio: number;
+  sharpe_ratio_annualized: number;
   sortino_ratio: number;
   calmar_ratio: number;
   trade_efficiency: number;
@@ -225,6 +226,7 @@ export function useStatistics(
           plan_respect_rate: result.plan_respect_rate ?? 0,
           break_even_zero_trades: result.break_even_zero_trades ?? 0,
           break_even_positive_trades: result.break_even_positive_trades ?? 0,
+          sharpe_ratio_annualized: result.sharpe_ratio_annualized ?? 0,
         } as StatisticsData);
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Erreur lors du chargement des statistiques'));

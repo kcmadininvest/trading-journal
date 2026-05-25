@@ -415,6 +415,7 @@ class TradeStatisticsSerializer(serializers.Serializer):
     break_even_zero_trades = serializers.IntegerField()
     break_even_positive_trades = serializers.IntegerField()
     sharpe_ratio = serializers.FloatField()
+    sharpe_ratio_annualized = serializers.FloatField()
     sortino_ratio = serializers.FloatField()
     calmar_ratio = serializers.FloatField()
     trade_efficiency = serializers.FloatField()

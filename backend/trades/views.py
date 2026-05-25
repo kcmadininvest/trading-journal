@@ -136,6 +136,10 @@ from .statistics_temporal import (
     compute_avg_daily_exposure_time,
     compute_avg_time_between_trades,
 )
+from .risk_metrics import (
+    compute_sharpe_annualized_from_trades,
+    compute_sharpe_per_trade,
+)
 from .compliance_streaks import (
     compute_dashboard_next_badge,
     compute_strategy_compliance_context,
@@ -901,6 +905,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 'break_even_zero_trades': 0,
                 'break_even_positive_trades': 0,
                 'sharpe_ratio': 0.0,
+                'sharpe_ratio_annualized': 0.0,
                 'sortino_ratio': 0.0,
                 'calmar_ratio': 0.0,
                 'trade_efficiency': 0.0,
@@ -1359,16 +1364,20 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         winning_break_even_count = winning_trades_without_tp.count()
         break_even_trades = zero_break_even_count + winning_break_even_count
         
-        # 14. Sharpe Ratio (rendement ajusté à la volatilité)
-        sharpe_ratio = 0.0
-        if total_trades > 1:
-            pnl_values = list(trades.values_list(pf, flat=True))
-            if len(pnl_values) > 1:
-                import statistics
-                mean_pnl = statistics.mean([float(v) for v in pnl_values])
-                std_pnl = statistics.stdev([float(v) for v in pnl_values])
-                if std_pnl > 0:
-                    sharpe_ratio = mean_pnl / std_pnl
+        # 14. Sharpe Ratio — par trade et annualisé (rendements journaliers, √252)
+        trades_ordered = list(trades.order_by('entered_at'))
+        pnl_values_ordered = [
+            float(trade_pnl_as_decimal(trade, pf))
+            for trade in trades_ordered
+        ]
+        sharpe_ratio = compute_sharpe_per_trade(pnl_values_ordered)
+        period_start_balance = float(period_start_capital)
+        sharpe_ratio_annualized = compute_sharpe_annualized_from_trades(
+            period_start_balance,
+            trades_ordered,
+            lambda trade: float(trade_pnl_as_decimal(trade, pf)),
+            user_tz,
+        )
         
         # 15. Sortino Ratio (similaire au Sharpe mais ne pénalise que la volatilité négative)
         sortino_ratio = 0.0
@@ -1528,6 +1537,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'break_even_zero_trades': zero_break_even_count,
             'break_even_positive_trades': winning_break_even_count,
             'sharpe_ratio': round(sharpe_ratio, 2),
+            'sharpe_ratio_annualized': round(sharpe_ratio_annualized, 2),
             'sortino_ratio': round(sortino_ratio, 2),
             'calmar_ratio': round(calmar_ratio, 2),
             'trade_efficiency': round(trade_efficiency, 2),

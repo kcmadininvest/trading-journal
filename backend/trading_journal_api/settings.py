@@ -285,6 +285,10 @@ REST_FRAMEWORK = {
     },
 }
 
+if DEBUG:
+    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES']['user'] = '10000/hour'
+    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES']['anon'] = '1000/hour'
+
 # Intégrations API broker (TopStepX, futurs fournisseurs)
 INTEGRATIONS_CREDENTIALS_KEY = config('INTEGRATIONS_CREDENTIALS_KEY', default='')
 TOPSTEPX_API_BASE_URL = config('TOPSTEPX_API_BASE_URL', default='https://api.topstepx.com')
