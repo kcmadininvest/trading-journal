@@ -132,7 +132,16 @@ export const PostTradeSizingKpiBar: React.FC<PostTradeSizingKpiBarProps> = ({
 
         {/* PnL moyen */}
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className={labelClass}>{t(`${i18nPrefix}.avgPnlAfterLarger`)}</span>
+          <span className={labelClass}>
+            {t(`${i18nPrefix}.avgPnlAfterLarger`)}
+            <TooltipComponent content={t(`${i18nPrefix}.avgPnlAfterLargerTooltip`)} position="top">
+              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-200/80 dark:bg-gray-600 cursor-help">
+                <svg className="h-3 w-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+            </TooltipComponent>
+          </span>
           <span className={`text-xl font-semibold tabular-nums ${avgPnlValueClass(larger.avg_pnl)}`}>
             {mask(formatNumber(larger.avg_pnl, 2))}
           </span>
