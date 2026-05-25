@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { tradingAccountsService, TradingAccount } from '../../services/tradingAccounts';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { bandAccountTriggerClass } from '../dashboard/filterBarStyles';
 
 interface AccountSelectorProps {
   value?: number | null;
@@ -8,6 +10,7 @@ interface AccountSelectorProps {
   allowAllActive?: boolean;
   hideLabel?: boolean;
   hideAccountNumber?: boolean;
+  variant?: 'default' | 'band';
   /**
    * undefined : charge via list() comme avant.
    * null : parent pas encore prêt (affichage chargement, pas d'init compte défaut).
@@ -70,6 +73,7 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
   hideLabel = false,
   hideAccountNumber = false,
   prefetchedAccounts,
+  variant = 'default',
 }) => {
   const { t } = useI18nTranslation();
   const [accounts, setAccounts] = useState<TradingAccount[]>([]);
@@ -77,6 +81,7 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
   const [open, setOpen] = useState(false);
   const selectedId = value ?? null;
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [dropdownWidth, setDropdownWidth] = useState<number | undefined>(undefined);
   const [minWidth, setMinWidth] = useState<number | undefined>(undefined);
@@ -359,14 +364,34 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (open && dropdownRef.current && !dropdownRef.current.contains(t)) setOpen(false);
+      if (
+        open &&
+        !dropdownRef.current?.contains(t) &&
+        !menuRef.current?.contains(t)
+      ) {
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
   }, [open]);
 
+  const isBand = variant === 'band';
+  const triggerClass = isBand
+    ? bandAccountTriggerClass
+    : 'flex-1 inline-flex h-10 items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+  const labelTextClass = isBand
+    ? 'text-white truncate transition-all duration-200'
+    : 'text-gray-900 dark:text-gray-100 truncate transition-all duration-200';
+  const defaultBadgeClass = isBand
+    ? 'inline-flex items-center rounded-full border border-white/20 bg-white/15 px-2 py-0.5 text-xs text-white flex-shrink-0'
+    : 'inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0';
+  const chevronClass = isBand
+    ? `h-4 w-4 text-white/50 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`
+    : `h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`;
+
   return (
-    <div className={hideLabel ? "max-w-sm" : "mb-4 max-w-sm"}>
+    <div className={hideLabel ? (isBand ? 'min-w-0' : 'max-w-sm') : 'mb-4 max-w-sm'}>
       {!hideLabel && (
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common:tradingAccount')}</label>
       )}
@@ -376,65 +401,74 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
           type="button"
           disabled={loading}
           onClick={() => setOpen(v => !v)}
-          className="flex-1 inline-flex h-10 items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className={triggerClass}
           style={{ minWidth: buttonMinWidth ? `${buttonMinWidth}px` : undefined }}
         >
           <span className="inline-flex items-center gap-2 min-w-0 flex-1">
-            <span className="text-gray-900 dark:text-gray-100 truncate transition-all duration-200">
+            <span className={labelTextClass}>
               {renderAccountName(currentOption?.label || t('common:allActiveAccounts'), hideAccountNumber)}
             </span>
             {currentOption && (currentOption as any).isDefault && (
-              <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0">{t('common:default')}</span>
+              <span className={defaultBadgeClass}>{t('common:default')}</span>
             )}
           </span>
-          <svg className={`h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+          <svg className={chevronClass} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
         </button>
-        {open && dropdownTop !== undefined && dropdownLeft !== undefined && (
-          <div 
-            className="fixed z-50 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg overflow-auto"
-            style={{ 
-              width: dropdownWidth ? `${dropdownWidth}px` : (minWidth ? `${minWidth}px` : '200px'),
-              minWidth: buttonMinWidth ? `${buttonMinWidth}px` : (minWidth ? `${minWidth}px` : undefined),
-              maxHeight: maxDropdownHeight ? `${maxDropdownHeight}px` : '288px',
-              top: `${dropdownTop}px`,
-              left: `${dropdownLeft}px`,
-              ...(dropdownPosition === 'top'
-                ? { transform: 'translateY(-100%)' }
-                : {}
-              )
-            }}
-          >
-            <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">
-              {options.map(opt => (
-                <li key={opt.value}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (opt.value === 0) onChange && onChange(null); else onChange && onChange(opt.value as number);
-                      setOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${
-                      opt.value === currentValue
-                        ? 'bg-blue-50/90 font-medium text-blue-900 dark:bg-blue-950/45 dark:text-blue-100'
-                        : 'text-gray-800 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <span
-                      className={`whitespace-nowrap flex-1 text-left transition-all duration-200 ${
+        {open &&
+          dropdownTop !== undefined &&
+          dropdownLeft !== undefined &&
+          typeof document !== 'undefined' &&
+          createPortal(
+            <div
+              ref={menuRef}
+              role="listbox"
+              className="fixed z-[9999] rounded-md border border-gray-200 bg-white shadow-lg overflow-auto dark:border-gray-700 dark:bg-gray-800"
+              style={{
+                width: dropdownWidth ? `${dropdownWidth}px` : minWidth ? `${minWidth}px` : '200px',
+                minWidth: buttonMinWidth ? `${buttonMinWidth}px` : minWidth ? `${minWidth}px` : undefined,
+                maxHeight: maxDropdownHeight ? `${maxDropdownHeight}px` : '288px',
+                top: `${dropdownTop}px`,
+                left: `${dropdownLeft}px`,
+                ...(dropdownPosition === 'top' ? { transform: 'translateY(-100%)' } : {}),
+              }}
+            >
+              <ul className="py-1 text-sm text-gray-700 dark:text-gray-300">
+                {options.map((opt) => (
+                  <li key={opt.value}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (opt.value === 0) onChange && onChange(null);
+                        else onChange && onChange(opt.value as number);
+                        setOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between px-3 py-2 text-left transition-colors ${
                         opt.value === currentValue
-                          ? 'text-blue-900 dark:text-blue-100'
-                          : 'text-gray-900 dark:text-gray-100'
+                          ? 'bg-blue-50/90 font-medium text-blue-900 dark:bg-blue-950/45 dark:text-blue-100'
+                          : 'text-gray-800 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
-                      {renderAccountName(opt.label, hideAccountNumber)}
-                    </span>
-                    {(opt as any).isDefault && <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 text-xs flex-shrink-0 ml-2">{t('common:default')}</span>}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+                      <span
+                        className={`flex-1 whitespace-nowrap text-left transition-all duration-200 ${
+                          opt.value === currentValue
+                            ? 'text-blue-900 dark:text-blue-100'
+                            : 'text-gray-900 dark:text-gray-100'
+                        }`}
+                      >
+                        {renderAccountName(opt.label, hideAccountNumber)}
+                      </span>
+                      {(opt as any).isDefault && (
+                        <span className="ml-2 inline-flex flex-shrink-0 items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                          {t('common:default')}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>,
+            document.body
+          )}
       </div>
     </div>
   );
@@ -447,7 +481,8 @@ export const AccountSelector = React.memo(AccountSelectorComponent, (prevProps, 
     prevProps.allowAllActive === nextProps.allowAllActive &&
     prevProps.hideLabel === nextProps.hideLabel &&
     prevProps.hideAccountNumber === nextProps.hideAccountNumber &&
-    prevProps.prefetchedAccounts === nextProps.prefetchedAccounts
+    prevProps.prefetchedAccounts === nextProps.prefetchedAccounts &&
+    prevProps.variant === nextProps.variant
   );
 });
 

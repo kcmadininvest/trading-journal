@@ -38,6 +38,9 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           region="US"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}
+          language={preferences.language}
+          dateFormat={preferences.date_format}
+          numberFormat={preferences.number_format}
         />
 
         <MarketClockCard
@@ -54,6 +57,9 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           region="EU"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}
+          language={preferences.language}
+          dateFormat={preferences.date_format}
+          numberFormat={preferences.number_format}
         />
 
         <MarketClockCard
@@ -70,6 +76,9 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           region="EU"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}
+          language={preferences.language}
+          dateFormat={preferences.date_format}
+          numberFormat={preferences.number_format}
         />
 
         <MarketClockCard
@@ -86,6 +95,9 @@ export const ModernMarketInfo: React.FC<ModernMarketInfoProps> = ({
           region="EU"
           userTimezone={preferences.timezone}
           showPreMarket={preferences.show_pre_market}
+          language={preferences.language}
+          dateFormat={preferences.date_format}
+          numberFormat={preferences.number_format}
         />
       </div>
     </div>

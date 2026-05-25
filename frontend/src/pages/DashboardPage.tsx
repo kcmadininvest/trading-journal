@@ -2,9 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, lazy } from 'react';
 import { useWindowWidth } from '../hooks/useWindowWidth';
 import clsx from 'clsx';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
-import { AccountSelector } from '../components/accounts/AccountSelector';
 import { DateInput } from '../components/common/DateInput';
-import { PeriodSelector } from '../components/common/PeriodSelector';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday, MarketTodaySnapshot } from '../services/calendar';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -13,7 +11,6 @@ import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../s
 import { currenciesService, Currency } from '../services/currencies';
 import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
 import { tradeStrategiesService } from '../services/tradeStrategies';
-import { PositionStrategyPillBar } from '../components/common/PositionStrategyPillBar';
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import ModernStatCard from '../components/common/ModernStatCard';
 import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
@@ -28,16 +25,13 @@ import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPerio
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
-import { PrivacyDropdown } from '../components/common/PrivacyDropdown';
-import { PAGE_PRIVACY_OPTIONS, PAGE_CONTEXTS } from '../utils/privacyHelpers';
 import { ModernMarketInfo } from '../components/market/ModernMarketInfo';
 import { MarketQuotesTicker } from '../components/dashboard/MarketQuotesTicker';
-import { GlobalStatsIndicators } from '../components/dashboard/GlobalStatsIndicators';
+import { DashboardFilterBar } from '../components/dashboard/DashboardFilterBar';
 import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformanceKpis';
 import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerformanceSection';
 import { useWeekdayPerformance } from '../hooks/useWeekdayPerformance';
 import { PageShell } from '../components/layout';
-import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -54,6 +48,7 @@ import { ChartTooltipResetContainer } from '../components/charts/ChartTooltipRes
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 import { getWaterfallBarBorder, getWaterfallBarFill } from '../utils/waterfallBarGradient';
 import { WIN_RATE_ROLLING_WINDOW } from '../utils/tradingSampleThresholds';
+import { buildGlobalStatsSparklines } from '../utils/globalStatsSparklines';
 
 // Lazy load heavy chart components for better performance
 const DurationDistributionChart = lazy(() => import('../components/charts/DurationDistributionChart'));
@@ -313,7 +308,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     pnlDisplay: pnlDisplayMode,
   });
 
-  // Données globales all-time (tous comptes) — chargées sur tous les écrans pour les stats dans la carte Total trades < 2000px
+  // Données globales all-time (tous comptes) — KPI du bandeau sur grands écrans
   const { data: globalDashboardData, isLoading: globalDashboardLoading } = useDashboardData({
     accountId: null,
     startDate: undefined,
@@ -349,24 +344,21 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Charger les statistiques globales seulement si l'écran est assez grand (lazy loading)
   useEffect(() => {
     if (!shouldLoadGlobalStats || globalStatsLoading || globalStrategyStats) {
-      return; // Ne pas charger si déjà chargé ou si écran trop petit
+      return;
     }
-    
+
     const loadGlobalStrategyStats = async () => {
       setGlobalStatsLoading(true);
       try {
         const now = new Date();
-        
-        // Charger les 12 derniers mois avec données agrégées mensuellement
         const twelveMonthsAgo = new Date();
         twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
-        
+
         const stats = await tradeStrategiesService.statistics({
           start_date: twelveMonthsAgo.toISOString().split('T')[0],
           end_date: now.toISOString().split('T')[0],
-          // Ne pas spécifier year/month pour obtenir des données agrégées par mois
         });
-        
+
         setGlobalStrategyStats(stats);
       } catch (err) {
         console.error('Erreur lors du chargement des statistiques globales de stratégie:', err);
@@ -375,69 +367,58 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         setGlobalStatsLoading(false);
       }
     };
-    
+
     loadGlobalStrategyStats();
   }, [shouldLoadGlobalStats, globalStatsLoading, globalStrategyStats]);
-  
+
   // Statistiques globales (tous comptes, toutes périodes confondues)
   const globalStats = useMemo(() => {
-    if (!globalStrategyStats || !globalDashboardData) {
+    if (globalDashboardLoading || !globalStrategyStats || !globalDashboardData) {
       return null;
     }
-    
-    // Utiliser le taux de discipline all-time (tous comptes, toutes périodes)
+
     const disciplineRate = globalStrategyStats.all_time?.respect_percentage || 0;
-    
-    // PnL all-time (tous comptes, toutes périodes)
-    const totalPnL = globalDashboardData.daily_aggregates?.reduce((sum: number, day: any) => sum + (day.pnl || 0), 0) || 0;
-    
-    // Préparer les données pour les sparklines
-    // Discipline sparkline : données mensuelles des 12 derniers mois
-    const periodData = (globalStrategyStats.statistics?.period_data || [])
-      .sort((a: any, b: any) => a.date.localeCompare(b.date))
-      // Inclure aussi les mois/jours sans trades mais avec discipline (DayStrategyCompliance)
-      .filter((item: any) => (item.total_with_strategy ?? item.total ?? 0) > 0);
-    
-    const disciplineSparkline = periodData.map((item: any) => item.respect_percentage || 0);
-    
-    // PnL sparkline : utiliser les 30 derniers jours pour voir la tendance récente
+
+    const totalPnL =
+      globalDashboardData.daily_aggregates?.reduce(
+        (sum: number, day: any) => sum + (day.pnl || 0),
+        0
+      ) || 0;
+
+    const periodData = globalStrategyStats.statistics?.period_data || [];
+    const { disciplineSparkline, winRateSparkline } = buildGlobalStatsSparklines({
+      disciplinePeriodData: periodData,
+      dailyAggregates: globalDashboardData.daily_aggregates || [],
+    });
+
     const recentAggregates = (globalDashboardData.daily_aggregates || [])
       .sort((a: any, b: any) => a.date.localeCompare(b.date))
       .slice(-30);
-    
+
     let cumulativePnL = 0;
     const pnlSparkline = recentAggregates.map((day: any) => {
       cumulativePnL += day.pnl || 0;
       return cumulativePnL;
     });
-    
-    // Win Rate all-time (tous comptes, toutes périodes)
-    const totalWinning = globalDashboardData.daily_aggregates?.reduce(
-      (sum: number, day: any) => sum + (day.winning_count || 0), 0
-    ) || 0;
-    const totalLosing = globalDashboardData.daily_aggregates?.reduce(
-      (sum: number, day: any) => sum + (day.losing_count || 0), 0
-    ) || 0;
+
+    const totalWinning =
+      globalDashboardData.daily_aggregates?.reduce(
+        (sum: number, day: any) => sum + (day.winning_count || 0),
+        0
+      ) || 0;
+    const totalLosing =
+      globalDashboardData.daily_aggregates?.reduce(
+        (sum: number, day: any) => sum + (day.losing_count || 0),
+        0
+      ) || 0;
     const totalTrades = totalWinning + totalLosing;
     const winRate = totalTrades > 0 ? (totalWinning / totalTrades) * 100 : 0;
-    
-    // Win Rate sparkline : 30 derniers jours (cumulatif)
-    let cumulativeWinning = 0;
-    let cumulativeLosing = 0;
-    const winRateSparkline = recentAggregates.map((day: any) => {
-      cumulativeWinning += day.winning_count || 0;
-      cumulativeLosing += day.losing_count || 0;
-      const total = cumulativeWinning + cumulativeLosing;
-      return total > 0 ? (cumulativeWinning / total) * 100 : 0;
-    });
 
-    // Positions totales (somme des trade_count) — même périmètre que le dashboard global
     const totalPositions =
       globalDashboardData.daily_aggregates?.reduce(
         (sum: number, day: any) => sum + (day.trade_count || 0),
         0
       ) || 0;
-    // Jours actifs : champ API (jours avec trades + jours avec suivi discipline), comme sous le solde actuel
     const globalActiveDays = globalDashboardData.active_days ?? 0;
 
     return {
@@ -450,7 +431,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       totalPositions,
       globalActiveDays,
     };
-  }, [globalDashboardData, globalStrategyStats]);
+  }, [globalDashboardData, globalDashboardLoading, globalStrategyStats]);
 
   /** Cumul tous comptes / toute période — pour la carte Total trades */
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
@@ -1725,73 +1706,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         />
       </div>
 
-      {/* Filtres */}
-      <div className="min-w-0 bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-3 mb-6">
-        {/* Colonne si largeur inférieure à 900px ; dès 900px : iPad paysage, Surface Pro 7 portrait (~912px avec mise à l’échelle Windows), etc. */}
-        <div className="grid min-w-0 gap-3 grid-cols-1 min-[900px]:grid-cols-[auto_minmax(0,1fr)] min-[1680px]:grid-cols-[auto_minmax(0,1fr)_auto] items-center">
-          {/* Compte : largeur au contenu (pas flex-1 / w-full — évite la barre vide entre badge et chevron) */}
-          <div className="flex min-w-0 w-full max-w-full items-center gap-2 min-[900px]:w-max">
-            <div className="min-w-0">
-              <AccountSelector value={accountId} onChange={setAccountId} hideLabel hideAccountNumber={privacySettings.hideAccountNumber} />
-            </div>
-            <div className="flex-shrink-0">
-              <PrivacyDropdown 
-                pageContext={PAGE_CONTEXTS.DASHBOARD}
-                availableOptions={PAGE_PRIVACY_OPTIONS[PAGE_CONTEXTS.DASHBOARD]}
-              />
-            </div>
-          </div>
-          
-          {/* Période, stratégie, PnL — largeur fixe (w-52), pas d’étirement sur grands écrans */}
-          <div className="flex min-w-0 w-full flex-wrap items-center gap-2.5">
-            <div className="w-full min-w-0 sm:w-52 sm:shrink-0">
-              <PeriodSelector
-                value={selectedPeriod}
-                onChange={(period) => {
-                  setSelectedPeriod(period);
-                }}
-              />
-            </div>
-            <div className="w-full min-w-0 sm:w-52 sm:shrink-0">
-              <PositionStrategyPillBar
-                value={selectedPositionStrategy}
-                onChange={setSelectedPositionStrategy}
-                strategies={positionStrategies}
-                disabled={loadingStrategies}
-              />
-            </div>
-            <div className="w-full min-w-0 sm:w-52 sm:shrink-0">
-              <PnlBasisToggle />
-            </div>
-          </div>
-
-          {/* Indicateurs globaux — scroll horizontal local si la ligne 2xl reste trop étroite */}
-          <div className="hidden min-w-0 max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain pb-0.5 [-webkit-overflow-scrolling:touch] touch-pan-x 2xl:flex 2xl:flex-shrink-0 2xl:items-center 2xl:ml-auto">
-            {(globalStatsLoading || globalDashboardLoading || !globalStats) ? (
-              <div className="flex gap-2">
-                <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
-                <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
-                <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-12 w-32 rounded-lg"></div>
-                <div className="hidden min-[2000px]:block h-12 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
-              </div>
-            ) : (
-              <GlobalStatsIndicators
-                disciplineRate={globalStats.disciplineRate}
-                disciplineSparkline={globalStats.disciplineSparkline}
-                totalPnL={globalStats.totalPnL}
-                pnlSparkline={globalStats.pnlSparkline}
-                winRate={globalStats.winRate}
-                winRateSparkline={globalStats.winRateSparkline}
-                totalPositions={globalStats.totalPositions}
-                globalActiveDays={globalStats.globalActiveDays}
-                currencySymbol={currencySymbol}
-                pnlCurrencyMode={globalPnlCurrencyMode}
-                hideCurrentBalance={privacySettings.hideCurrentBalance}
-              />
-            )}
-          </div>
-        </div>
-      </div>
+      <DashboardFilterBar
+        className="mb-6"
+        accountId={accountId}
+        onAccountChange={setAccountId}
+        hideAccountNumber={privacySettings.hideAccountNumber}
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+        selectedPositionStrategy={selectedPositionStrategy}
+        onPositionStrategyChange={setSelectedPositionStrategy}
+        positionStrategies={positionStrategies}
+        loadingStrategies={loadingStrategies}
+        globalStatsLoading={globalStatsLoading}
+        globalDashboardLoading={globalDashboardLoading}
+        globalStats={globalStats}
+        currencySymbol={currencySymbol}
+        globalPnlCurrencyMode={globalPnlCurrencyMode}
+        hideCurrentBalance={privacySettings.hideCurrentBalance}
+        numberFormat={preferences.number_format}
+      />
 
       {/* Soldes du compte */}
       {selectedAccount && (

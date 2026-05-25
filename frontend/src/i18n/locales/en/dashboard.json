@@ -173,6 +173,9 @@
   "visible": "Visible",
   "badgeInDays": "{{badgeName}} in {{days}} days",
   "filters": "View",
+  "filterBar": {
+    "regionLabel": "Dashboard filters"
+  },
   "marketInfo": "Market Info",
   "globalDiscipline": "Discipline",
   "globalPnL": "Global PnL",

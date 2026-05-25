@@ -2,10 +2,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import Tooltip from '../ui/Tooltip';
 import { maskValue } from '../../hooks/usePrivacySettings';
+import { formatNumber, type NumberFormatType } from '../../utils/numberFormat';
 
 interface GlobalStatsIndicatorsProps {
   disciplineRate: number;
-  disciplineTrend?: number;
   disciplineSparkline?: number[];
   totalPnL: number;
   pnlTrend?: number;
@@ -23,12 +23,12 @@ interface GlobalStatsIndicatorsProps {
    * En multi-devises, ne pas suffixer le PnL global d’un symbole unique (valeur trompeuse).
    */
   pnlCurrencyMode?: 'single' | 'mixed';
+  numberFormat?: NumberFormatType;
   className?: string;
 }
 
 export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   disciplineRate,
-  disciplineTrend,
   disciplineSparkline = [],
   totalPnL,
   pnlTrend,
@@ -38,6 +38,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   currencySymbol,
   hideCurrentBalance = false,
   pnlCurrencyMode = 'single',
+  numberFormat = 'comma',
   className = '',
 }) => {
   const { t } = useTranslation();
@@ -61,15 +62,14 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   };
 
   const formatPnL = (value: number) => {
-    const absValue = Math.abs(value);
-    const formatted = new Intl.NumberFormat('fr-FR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(absValue);
+    const formatted = formatNumber(Math.abs(value), 2, numberFormat);
     const suffix =
       pnlCurrencyMode === 'mixed' || !currencySymbol ? '' : currencySymbol;
     return `${value >= 0 ? '+' : '-'}${formatted}${suffix}`;
   };
+
+  const formatPercent = (value: number) =>
+    `${formatNumber(value, 2, numberFormat)}%`;
 
   const renderTrend = (trend: number | undefined, isPositive: boolean) => {
     if (trend === undefined || trend === 0) return null;
@@ -133,7 +133,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
     </div>
   );
 
-  const cardShell = 'flex h-full min-h-[3.25rem] items-center gap-2 px-3 py-2 rounded-lg border transition-colors';
+  const cardShell = 'flex h-10 min-h-10 items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors';
 
   return (
     <div className={`flex items-stretch gap-2 ${className}`}>
@@ -154,9 +154,8 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
             </div>
             <div className="flex items-center gap-1">
               <span className="text-lg font-bold leading-none">
-                {disciplineRate.toFixed(2)}%
+                {formatPercent(disciplineRate)}
               </span>
-              {renderTrend(disciplineTrend, true)}
             </div>
           </div>
           {renderSparklineSlot(disciplineSparkline)}
@@ -220,7 +219,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-lg font-bold leading-none">
-                  {winRate.toFixed(2)}%
+                  {formatPercent(winRate)}
                 </span>
               </div>
             </div>

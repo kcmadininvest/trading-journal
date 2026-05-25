@@ -6,14 +6,15 @@ import { Tooltip } from '../ui';
 import { TruncatingTooltipText } from './TruncatingTooltipText';
 import type { PnlDisplayMode } from '../../utils/pnlDisplay';
 import { parsePnlDisplayMode } from '../../utils/pnlDisplay';
+import { bandFrameClass } from '../dashboard/filterBarStyles';
 
 export interface PnlBasisToggleProps {
   /** Mode formulaire Paramètres : pas d’appel API immédiat */
   persistImmediately?: boolean;
   value?: PnlDisplayMode;
   onControlledChange?: (mode: PnlDisplayMode) => void;
-  /** header = fond sombre (barre du haut), default = fond clair/sombre page */
-  variant?: 'default' | 'header';
+  /** band = barre filtres dashboard ; header = switch seul (legacy) */
+  variant?: 'default' | 'header' | 'band';
   className?: string;
   /**
    * Masque le titre (mode `above` : pas de label au-dessus ; mode `inside` : cadre avec switch seul).
@@ -70,10 +71,12 @@ export const PnlBasisToggle: React.FC<PnlBasisToggleProps> = ({
   };
 
   const isHeader = variant === 'header';
+  const isBand = variant === 'band';
+  const isOnDarkBand = isHeader || isBand;
   const help = t('settings:pnlDisplayHelp');
   const title = t('settings:pnlDisplayTitle');
 
-  const trackClass = isHeader
+  const trackClass = isOnDarkBand
     ? `relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-950 disabled:opacity-50 disabled:cursor-not-allowed ${
         isGross ? 'bg-blue-500' : 'bg-white/20'
       }`
@@ -114,6 +117,27 @@ export const PnlBasisToggle: React.FC<PnlBasisToggleProps> = ({
       <Tooltip content={help} position="bottom">
         {switchButton(className)}
       </Tooltip>
+    );
+  }
+
+  if (isBand && labelPosition === 'inside') {
+    return (
+      <div className={`min-w-0 ${className}`.trim()}>
+        <div
+          className={`${bandFrameClass} ${hideLabel ? 'justify-end' : 'justify-between sm:justify-start'}`}
+          role="group"
+          aria-label={title}
+        >
+          {!hideLabel && (
+            <TruncatingTooltipText
+              text={title}
+              wrapperClassName="min-w-0 flex-1"
+              className="block min-w-0 max-w-full truncate pr-2 text-white/80"
+            />
+          )}
+          <span className="flex flex-shrink-0 items-center">{switchWithTooltip}</span>
+        </div>
+      </div>
     );
   }
 

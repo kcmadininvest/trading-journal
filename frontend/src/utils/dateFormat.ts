@@ -115,6 +115,16 @@ export const formatDate = (
  * Jour calendaire YYYY-MM-DD dans le fuseau donné (ex. alignement dépôts/retraits avec trade_day).
  * Évite le décalage d’un jour causé par `toISOString().split('T')[0]` (jour UTC).
  */
+/** Date de référence « aujourd’hui » en jour calendaire du fuseau (préréglages de période). */
+export function getCalendarTodayInTimezone(timeZone: string): Date {
+  const iso = toIsoCalendarDateInTimezone(new Date(), timeZone);
+  const [y, m, d] = iso.split('-').map(Number);
+  if (!y || !m || !d) {
+    return new Date();
+  }
+  return new Date(y, m - 1, d, 12, 0, 0);
+}
+
 export function toIsoCalendarDateInTimezone(date: string | Date, timeZone: string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   if (Number.isNaN(dateObj.getTime())) {
@@ -310,6 +320,49 @@ export const formatTime = (
   };
 
   return dateObj.toLocaleTimeString(locale, options);
+};
+
+/**
+ * Horloge marché (HH:mm:ss) selon la langue des paramètres et le fuseau du marché.
+ */
+export const formatClockTime = (
+  date: Date,
+  timezone: string,
+  language: LanguageType = 'fr',
+): string => {
+  if (isNaN(date.getTime())) {
+    return '';
+  }
+
+  const localeMap: Record<LanguageType, string> = {
+    fr: 'fr-FR',
+    en: 'en-US',
+    es: 'es-ES',
+    de: 'de-DE',
+    it: 'it-IT',
+    pt: 'pt-PT',
+    ja: 'ja-JP',
+    ko: 'ko-KR',
+    zh: 'zh-CN',
+  };
+  const locale = localeMap[language] || 'fr-FR';
+
+  try {
+    return date.toLocaleTimeString(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: timezone,
+    });
+  } catch {
+    return date.toLocaleTimeString(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+  }
 };
 
 /**

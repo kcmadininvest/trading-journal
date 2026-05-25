@@ -8,6 +8,7 @@ import {
   type PeriodRange,
   computePeriodPresetRanges,
 } from '../../utils/periodPresetRanges';
+import { getPillTriggerClasses } from '../dashboard/filterBarStyles';
 
 export type { PeriodPreset, PeriodRange };
 
@@ -15,6 +16,7 @@ interface PeriodSelectorProps {
   value: PeriodRange | null;
   onChange: (range: PeriodRange) => void;
   className?: string;
+  variant?: 'default' | 'band';
 }
 
 /** Ordre logique : horizons courts → mois → années / historique ; personnalisé à part. */
@@ -37,17 +39,14 @@ const PERIOD_MENU_GROUPS: ReadonlyArray<{
 
 const ALL_PRESET_KEYS: PeriodPreset[] = PERIOD_MENU_GROUPS.flatMap((g) => [...g.presets]);
 
-const pillTrigger =
-  'inline-flex w-full min-w-0 h-10 items-center gap-2 truncate rounded-lg border px-3 text-sm font-medium shadow-sm transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500/25 focus:ring-offset-0 dark:focus:ring-blue-400/30';
-const pillTriggerStyle =
-  'border-gray-200 bg-white text-gray-900 hover:border-gray-300 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:border-gray-500 dark:hover:bg-gray-700/70';
-
 export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
   value,
   onChange,
   className = '',
+  variant = 'default',
 }) => {
   const { t, i18n } = useI18nTranslation();
+  const pillClasses = getPillTriggerClasses(variant);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -356,11 +355,11 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
           aria-expanded={open}
           aria-haspopup="listbox"
           onClick={() => setOpen((o) => !o)}
-          className={`${pillTrigger} ${pillTriggerStyle}`}
+          className={`${pillClasses.trigger} ${pillClasses.style}`}
         >
           <span className="min-w-0 flex-1 truncate text-left">{displayLabel}</span>
           <svg
-            className={`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform dark:text-gray-500 ${open ? 'rotate-180' : ''}`}
+            className={`${pillClasses.chevron} ${open ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

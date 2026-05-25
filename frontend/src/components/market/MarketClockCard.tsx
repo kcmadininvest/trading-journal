@@ -9,6 +9,8 @@ import {
   isHolidayUrgent,
   sortUpcomingHolidays,
 } from '../../utils/marketHolidayDisplay';
+import { formatClockTime, type DateFormatType, type LanguageType } from '../../utils/dateFormat';
+import { formatNumber, type NumberFormatType } from '../../utils/numberFormat';
 
 export type ApiMarketCode = 'XNYS' | 'XPAR' | 'XLON' | 'XTKS';
 
@@ -27,6 +29,9 @@ interface MarketClockCardProps {
   userTimezone: string;
   showPreMarket?: boolean;
   maxUpcomingEvents?: number;
+  language?: LanguageType;
+  dateFormat?: DateFormatType;
+  numberFormat?: NumberFormatType;
 }
 
 const colorClasses = {
@@ -93,6 +98,9 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   userTimezone,
   showPreMarket,
   maxUpcomingEvents = 1,
+  language = 'fr',
+  dateFormat = 'EU',
+  numberFormat = 'comma',
 }) => {
   const { t, i18n } = useI18nTranslation();
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -170,17 +178,10 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
     showPreMarket,
   ]);
 
-  const formattedTime = useMemo(() => {
-    return new Date(currentTime.toLocaleString('en-US', { timeZone: timezone })).toLocaleTimeString(
-      'en-US',
-      {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      },
-    );
-  }, [timezone, currentTime]);
+  const formattedTime = useMemo(
+    () => formatClockTime(currentTime, timezone, language),
+    [timezone, currentTime, language],
+  );
 
   const timezoneOffset = useMemo(
     () => getTimezoneOffsetFromUser(timezone, userTimezone, currentTime),
@@ -227,7 +228,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
     if (dstEvent.isTomorrow) {
       return `${season} ${t('common:dstChange.tomorrow', { defaultValue: 'Demain' })}`;
     }
-    return `${season} +${dstEvent.daysUntil}j`;
+    return `${season} +${formatNumber(dstEvent.daysUntil, 0, numberFormat)}j`;
   };
 
   return (
@@ -258,7 +259,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
               UTC{timezoneOffset.formatted}
             </span>
           ) : null}
-          <span className="font-mono text-base font-bold tabular-nums leading-none text-white">
+          <span className="text-base font-bold tabular-nums leading-none text-white">
             {formattedTime}
           </span>
           <span className="truncate text-[10px] text-white/50">
@@ -292,7 +293,13 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
             <ul className="space-y-0.5">
               {upcomingEvents.map((event) => {
                 const urgent = isHolidayUrgent(event.date);
-                const relativeDate = formatHolidayRelativeDate(event.date, t, locale);
+                const relativeDate = formatHolidayRelativeDate(
+                  event.date,
+                  t,
+                  locale,
+                  dateFormat,
+                  numberFormat,
+                );
                 const isEarlyClose = event.type === 'early_close';
 
                 return (

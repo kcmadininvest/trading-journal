@@ -1,5 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { MarketHoliday } from '../services/calendar';
+import { formatDate, type DateFormatType } from './dateFormat';
+import { formatNumber, type NumberFormatType } from './numberFormat';
 
 /** Aujourd'hui en YYYY-MM-DD (fuseau local). */
 export function localTodayYyyyMmDd(): string {
@@ -34,6 +36,8 @@ export function formatHolidayRelativeDate(
   dateStr: string,
   t: TFunction,
   locale: string,
+  dateFormat: DateFormatType = 'EU',
+  numberFormat: NumberFormatType = 'comma',
 ): string {
   const eventDate = parseYmdLocal(dateStr);
   const today = new Date();
@@ -48,7 +52,11 @@ export function formatHolidayRelativeDate(
     return t('common:dstChange.tomorrow', { defaultValue: 'Demain' });
   }
   if (diffDays <= 7) {
-    return `${t('common:dstChange.in', { defaultValue: 'dans' })} ${diffDays} ${t('common:dstChange.days', { defaultValue: 'jours' })}`;
+    return `${t('common:dstChange.in', { defaultValue: 'dans' })} ${formatNumber(diffDays, 0, numberFormat)} ${t('common:dstChange.days', { defaultValue: 'jours' })}`;
+  }
+  const formatted = formatDate(dateStr, dateFormat, false);
+  if (formatted) {
+    return formatted;
   }
   return eventDate.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
