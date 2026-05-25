@@ -63,13 +63,6 @@ export const TapeGlyphExitLoss: React.FC<GlyphProps> = ({ theme, size = ICON }) 
   </svg>
 );
 
-export const TapeGlyphCursor: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
-  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <polygon points="11,9 7,3 15,3" fill={theme.cursor} />
-    <rect x={3} y={9} width={16} height={10} fill={theme.background} stroke={theme.border} strokeWidth={0.75} rx={1} />
-  </svg>
-);
-
 export const TapeGlyphStopLossPlanned: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
     <line
@@ -136,7 +129,6 @@ interface MarketTapeLegendProps {
     exitLoss: string;
     stopLossPlanned: string;
     stopLossBroker: string;
-    cursor: string;
   };
 }
 
@@ -154,6 +146,5 @@ export const MarketTapeLegend: React.FC<MarketTapeLegendProps> = ({ theme, label
     <MarketTapeLegendItem Glyph={TapeGlyphExitLoss} theme={theme} label={labels.exitLoss} />
     <MarketTapeLegendItem Glyph={TapeGlyphStopLossPlanned} theme={theme} label={labels.stopLossPlanned} />
     <MarketTapeLegendItem Glyph={TapeGlyphStopLossBroker} theme={theme} label={labels.stopLossBroker} />
-    <MarketTapeLegendItem Glyph={TapeGlyphCursor} theme={theme} label={labels.cursor} />
   </div>
 );

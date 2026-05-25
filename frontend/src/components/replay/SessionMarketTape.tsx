@@ -15,16 +15,8 @@ const VIEW_W = 400;
 const VIEW_H = 228;
 const PAD_LEFT = 10;
 const PAD_RIGHT = 10;
-const CURSOR_RAIL_H = 14;
-const PAD_TOP = 10 + CURSOR_RAIL_H;
+const PAD_TOP = 10;
 const PAD_BOTTOM = 18;
-const CURSOR_ARROW_HALF_W = 6;
-const CURSOR_ARROW_TOP = 2;
-
-function cursorArrowPoints(x: number): string {
-  const tipY = PAD_TOP - 1;
-  return `${x},${tipY} ${x - CURSOR_ARROW_HALF_W},${CURSOR_ARROW_TOP} ${x + CURSOR_ARROW_HALF_W},${CURSOR_ARROW_TOP}`;
-}
 const CHART_W = VIEW_W - PAD_LEFT - PAD_RIGHT;
 const CHART_H = VIEW_H - PAD_TOP - PAD_BOTTOM;
 
@@ -328,7 +320,6 @@ const TapeChart: React.FC<{
 
 const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({ model, theme }) => {
   const barCount = model.bars.length;
-  const cursorX = xForBarIndex(model.cursorBarIndex, barCount);
   const bandStartSlot = model.openPositionBand
     ? barSlotWidth(model.openPositionBand.barStart, model)
     : 0;
@@ -350,8 +341,6 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
 
       <rect x={0} y={0} width={VIEW_W} height={VIEW_H} fill="url(#tapeChartBg)" />
 
-      <polygon points={cursorArrowPoints(cursorX)} fill={theme.cursor} />
-
       {model.openPositionBand && (
         <rect
           x={xForBarIndex(model.openPositionBand.barStart, barCount) - bandStartSlot * 0.5}
@@ -370,7 +359,7 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
               yForPrice(model.openPositionBand.topPrice, model),
           )}
           fill={theme.positionBand}
-          stroke={theme.cursor}
+          stroke={theme.border}
           strokeWidth={0.5}
           strokeOpacity={0.35}
           rx={3}
@@ -556,7 +545,6 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
             exitLoss: t('marketTapeLegendExitLoss'),
             stopLossPlanned: t('marketTapeLegendStopLossPlanned'),
             stopLossBroker: t('marketTapeLegendStopLossBroker'),
-            cursor: t('marketTapeLegendCursor'),
           }}
         />
       </div>
