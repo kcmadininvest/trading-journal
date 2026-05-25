@@ -44,6 +44,25 @@ MARKET_QUOTE_INSTRUMENTS: tuple[MarketQuoteInstrument, ...] = (
     MarketQuoteInstrument('bitcoin', 'Bitcoin', 'MBT', 'F.US.MBT', 'MBT'),
 )
 
+# Décimales minimales à l'affichage (bandeau dashboard).
+DEFAULT_MIN_DISPLAY_DECIMALS = 2
+
+INSTRUMENT_MIN_DISPLAY_DECIMALS: dict[str, int] = {
+    'eurusd': 4,
+}
+
+INSTRUMENT_DEFAULT_TICK_SIZE: dict[str, float] = {
+    'eurusd': 0.0001,
+}
+
+
+def min_display_decimals_for_instrument(instrument_key: str) -> int:
+    return INSTRUMENT_MIN_DISPLAY_DECIMALS.get(instrument_key, DEFAULT_MIN_DISPLAY_DECIMALS)
+
+
+def default_tick_size_for_instrument(instrument_key: str) -> float:
+    return INSTRUMENT_DEFAULT_TICK_SIZE.get(instrument_key, 0.01)
+
 
 @dataclass
 class ResolvedMarketContract:

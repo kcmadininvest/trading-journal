@@ -1,8 +1,13 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMarketQuotes } from '../../hooks/useMarketQuotes';
+import { usePreferences } from '../../hooks/usePreferences';
 import type { MarketQuoteItem } from '../../services/marketQuotes';
 import { getPriceFlashDirection, type PriceFlashDirection } from '../../utils/marketQuoteFlash';
+import {
+  formatMarketQuoteChangePercent,
+  formatMarketQuotePrice,
+} from '../../utils/marketQuotesFormat';
 
 const TICKER_HEIGHT_CLASS = 'h-7 w-full min-w-0';
 
@@ -14,14 +19,6 @@ const FATAL_MESSAGES = new Set([
   'api_error',
   'no_contracts',
 ]);
-
-function formatChangePercent(value: number | null): string {
-  if (value === null || Number.isNaN(value)) {
-    return '—';
-  }
-  const sign = value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
-}
 
 function TickerStatus({
   message,
@@ -50,7 +47,13 @@ function TickerStatus({
   );
 }
 
-function QuoteChip({ quote }: { quote: MarketQuoteItem }) {
+function QuoteChip({
+  quote,
+  numberFormat,
+}: {
+  quote: MarketQuoteItem;
+  numberFormat: 'point' | 'comma';
+}) {
   const { t } = useTranslation();
   const prevPriceRef = useRef<number | null | undefined>(undefined);
   const [flash, setFlash] = useState<PriceFlashDirection>(null);
@@ -69,7 +72,7 @@ function QuoteChip({ quote }: { quote: MarketQuoteItem }) {
   const label =
     t(`dashboard:marketQuotes.instruments.${quote.key}`, { defaultValue: quote.label }) ||
     quote.label;
-  const price = quote.last_price_display ?? '—';
+  const price = formatMarketQuotePrice(quote.last_price, quote.key, numberFormat);
   const changePct = quote.change_percent;
   const isUp = changePct !== null && changePct >= 0;
   const changeClass =
@@ -90,7 +93,7 @@ function QuoteChip({ quote }: { quote: MarketQuoteItem }) {
       <span className="font-semibold text-blue-50/95">{label}</span>
       <span className={`font-mono text-white tabular-nums ${priceFlashClass}`}>{price}</span>
       <span className={`font-mono text-xs tabular-nums ${changeClass}`}>
-        {formatChangePercent(changePct)}
+        {formatMarketQuoteChangePercent(changePct, numberFormat)}
       </span>
     </span>
   );
@@ -98,7 +101,9 @@ function QuoteChip({ quote }: { quote: MarketQuoteItem }) {
 
 export const MarketQuotesTicker: React.FC = () => {
   const { t } = useTranslation();
+  const { preferences } = usePreferences();
   const { snapshot, loading } = useMarketQuotes(true);
+  const numberFormat = preferences.number_format;
 
   const quotes = useMemo(
     () => snapshot?.quotes ?? [],
@@ -204,7 +209,7 @@ export const MarketQuotesTicker: React.FC = () => {
         aria-hidden
       >
         {quotes.map((quote) => (
-          <QuoteChip key={`measure-${quote.key}`} quote={quote} />
+          <QuoteChip key={`measure-${quote.key}`} quote={quote} numberFormat={numberFormat} />
         ))}
       </div>
       <div
@@ -218,6 +223,7 @@ export const MarketQuotesTicker: React.FC = () => {
           <QuoteChip
             key={loopMarquee ? `${quote.key}-${index}` : quote.key}
             quote={quote}
+            numberFormat={numberFormat}
           />
         ))}
       </div>

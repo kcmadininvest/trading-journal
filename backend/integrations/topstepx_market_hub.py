@@ -27,6 +27,34 @@ logger = logging.getLogger(__name__)
 QuoteHandler = Callable[[dict[str, Any]], None]
 
 
+def extract_gateway_quote_payload(*args: Any) -> tuple[dict[str, Any] | None, str | None]:
+    """Extrait le dict quote depuis les arguments SignalR TopStepX.
+
+    Formats observés :
+    - (dict,) — payload seul
+    - ([contract_id, dict],) — format actuel du hub Market
+    - (contract_id, dict) — variante deux arguments
+    """
+    contract_id_hint: str | None = None
+    if len(args) == 1:
+        first = args[0]
+        if isinstance(first, dict):
+            return first, None
+        if isinstance(first, (list, tuple)) and len(first) >= 2:
+            if isinstance(first[0], str):
+                contract_id_hint = first[0]
+            if isinstance(first[1], dict):
+                return first[1], contract_id_hint
+    if len(args) >= 2:
+        if isinstance(args[0], str):
+            contract_id_hint = args[0]
+        if isinstance(args[1], dict):
+            return args[1], contract_id_hint
+        if isinstance(args[0], dict):
+            return args[0], None
+    return None, None
+
+
 class TopStepXMarketHubRunner:
     """Maintient une connexion Market Hub et met à jour le cache des quotes."""
 
@@ -89,9 +117,16 @@ class TopStepXMarketHubRunner:
         hub.on_close(self._on_close)
         return hub
 
-    def _resolve_contract_for_quote(self, payload: dict[str, Any]) -> ResolvedMarketContract | None:
+    def _resolve_contract_for_quote(
+        self,
+        payload: dict[str, Any],
+        *,
+        contract_id_hint: str | None = None,
+    ) -> ResolvedMarketContract | None:
         symbol = str(payload.get('symbol') or payload.get('symbolId') or '').upper()
-        contract_id = str(payload.get('contractId') or '')
+        contract_id = str(
+            payload.get('contractId') or payload.get('contract') or contract_id_hint or ''
+        )
         if contract_id and contract_id in self._contract_by_id:
             return self._contract_by_id[contract_id]
         if symbol and symbol in self._symbol_to_key:
@@ -102,15 +137,11 @@ class TopStepXMarketHubRunner:
         return None
 
     def _on_gateway_quote(self, *args: Any) -> None:
-        payload: dict[str, Any] | None = None
-        if len(args) == 1 and isinstance(args[0], dict):
-            payload = args[0]
-        elif len(args) >= 2 and isinstance(args[1], dict):
-            payload = args[1]
+        payload, contract_id_hint = extract_gateway_quote_payload(*args)
         if not payload:
             return
 
-        contract = self._resolve_contract_for_quote(payload)
+        contract = self._resolve_contract_for_quote(payload, contract_id_hint=contract_id_hint)
         if contract is None:
             return
 
@@ -140,13 +171,22 @@ class TopStepXMarketHubRunner:
 
     def _on_close(self) -> None:
         logger.warning('Market Hub TopStepX déconnecté user_id=%s', self.user_id)
-        snapshot = load_snapshot_with_connected(self.user_id, False)
-        save_snapshot(snapshot, self.user_id)
+        # Pas de diffusion « disconnected » : reconnexion SignalR fréquente ; conserver
+        # les derniers cours évite le clignotement « en attente des cotations ».
         if self.on_disconnected:
             self.on_disconnected()
 
     def start(self) -> None:
-        initial = build_empty_snapshot(connected=False, message='connecting')
+        existing = load_snapshot(self.user_id)
+        has_prices = any(
+            q.get('last_price_display') for q in (existing.get('quotes') or [])
+        )
+        if has_prices:
+            initial = existing
+            initial['connected'] = False
+            initial['message'] = 'connecting'
+        else:
+            initial = build_empty_snapshot(connected=False, message='connecting')
         for contract in self.contracts:
             for row in initial['quotes']:
                 if row['key'] == contract.key:
@@ -172,6 +212,11 @@ class TopStepXMarketHubRunner:
             except Exception:
                 logger.exception('Erreur arrêt Market Hub user_id=%s', self.user_id)
             self._hub = None
+        snapshot = load_snapshot(self.user_id)
+        snapshot['connected'] = False
+        if snapshot.get('message') == 'connecting':
+            snapshot['message'] = 'market_quotes_disconnected'
+        save_snapshot(snapshot, self.user_id)
 
 
 def load_snapshot_with_connected(user_id: int, connected: bool) -> dict[str, Any]:

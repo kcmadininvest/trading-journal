@@ -12,7 +12,12 @@ from typing import Any
 from django.conf import settings
 from django.core.cache import cache
 
-from integrations.market_quotes_config import MARKET_QUOTE_INSTRUMENTS, ResolvedMarketContract
+from integrations.market_quotes_config import (
+    MARKET_QUOTE_INSTRUMENTS,
+    ResolvedMarketContract,
+    default_tick_size_for_instrument,
+    min_display_decimals_for_instrument,
+)
 from integrations.models import UserApiIntegration
 
 logger = logging.getLogger(__name__)
@@ -133,6 +138,25 @@ def _read_json_file(path: Path) -> Any | None:
         return None
 
 
+def change_percent_from_topstep_ratio(raw: float) -> float:
+    """TopStep envoie changePercent en fraction (0.0137 → 1,37 %)."""
+    return float(raw) * 100
+
+
+def compute_change_percent(
+    change: float | None,
+    open_price: float | None,
+    *,
+    change_percent_ratio: float | None = None,
+) -> float | None:
+    """Calcule la variation % ; privilégie change/open (fiable) puis changePercent TopStep."""
+    if change is not None and open_price is not None and open_price > 0:
+        return (change / open_price) * 100
+    if change_percent_ratio is not None:
+        return change_percent_from_topstep_ratio(change_percent_ratio)
+    return None
+
+
 def _decimal_places_from_tick(tick_size: float) -> int:
     if tick_size <= 0:
         return 2
@@ -142,18 +166,40 @@ def _decimal_places_from_tick(tick_size: float) -> int:
     return max(0, -exponent)
 
 
-def format_price(value: float | None, tick_size: float) -> str | None:
+def format_price(
+    value: float | None,
+    tick_size: float,
+    *,
+    min_decimal_places: int = 0,
+) -> str | None:
     if value is None:
         return None
-    places = _decimal_places_from_tick(tick_size)
+    places = max(_decimal_places_from_tick(tick_size), min_decimal_places)
     quant = Decimal(str(value)).quantize(
         Decimal(10) ** -places,
         rounding=ROUND_HALF_UP,
     )
-    formatted = f'{quant:.{places}f}'
-    if '.' in formatted:
-        formatted = formatted.rstrip('0').rstrip('.')
-    return formatted
+    # Toujours garder toutes les décimales du tick (ex. EUR/USD 1.1650, pas 1.165).
+    return f'{quant:.{places}f}'
+
+
+def refresh_quote_display_fields(row: dict[str, Any]) -> dict[str, Any]:
+    """Recalcule last_price_display (ne pas reconvertir change_percent : risque de ×100 en double)."""
+    key = str(row.get('key') or '')
+    last = row.get('last_price')
+    if last is None:
+        return row
+    try:
+        tick_size = float(row.get('tick_size') or default_tick_size_for_instrument(key))
+    except (TypeError, ValueError):
+        tick_size = default_tick_size_for_instrument(key)
+    min_places = min_display_decimals_for_instrument(key)
+    row['last_price_display'] = format_price(
+        float(last),
+        tick_size,
+        min_decimal_places=min_places,
+    )
+    return row
 
 
 def normalize_gateway_quote(
@@ -181,17 +227,38 @@ def normalize_gateway_quote(
         change_pct_f = float(change_percent) if change_percent is not None else None
     except (TypeError, ValueError):
         change_pct_f = None
+    open_raw = payload.get('open')
+    try:
+        open_f = float(open_raw) if open_raw is not None else None
+    except (TypeError, ValueError):
+        open_f = None
+    if open_f is not None and open_f <= 0:
+        open_f = None
 
-    return {
+    # Ne renvoyer que les champs présents dans le payload : TopStep envoie souvent
+    # des mises à jour partielles (bid/ask seuls) qui ne doivent pas effacer le dernier cours.
+    quote: dict[str, Any] = {
         'key': instrument_key,
         'label': label,
         'contract_id': contract_id,
-        'last_price': last_f,
-        'last_price_display': format_price(last_f, tick_size),
-        'change': change_f,
-        'change_percent': change_pct_f,
-        'timestamp': str(timestamp) if timestamp else None,
     }
+    min_places = min_display_decimals_for_instrument(instrument_key)
+    quote['tick_size'] = tick_size
+    if last_price is not None and last_f is not None:
+        quote['last_price'] = last_f
+        quote['last_price_display'] = format_price(
+            last_f,
+            tick_size,
+            min_decimal_places=min_places,
+        )
+    if change is not None and change_f is not None:
+        quote['change'] = change_f
+    change_pct = compute_change_percent(change_f, open_f, change_percent_ratio=change_pct_f)
+    if change_pct is not None:
+        quote['change_percent'] = change_pct
+    if timestamp is not None:
+        quote['timestamp'] = str(timestamp)
+    return quote
 
 
 def build_empty_snapshot(*, connected: bool = False, message: str | None = None) -> dict[str, Any]:
@@ -272,9 +339,16 @@ def load_snapshot(user_id: int) -> dict[str, Any]:
         return build_empty_snapshot(connected=False, message=message)
     if isinstance(raw, str):
         try:
-            return json.loads(raw)
+            raw = json.loads(raw)
         except json.JSONDecodeError:
             return build_empty_snapshot(connected=False, message='market_quotes_invalid_cache')
+    if isinstance(raw, dict):
+        quotes = raw.get('quotes')
+        if quotes:
+            raw = {
+                **raw,
+                'quotes': [refresh_quote_display_fields(dict(q)) for q in quotes],
+            }
     return raw
 
 
@@ -301,11 +375,11 @@ def update_quote_in_snapshot(quote: dict[str, Any], user_id: int) -> None:
     updated = False
     for idx, existing in enumerate(quotes):
         if existing.get('key') == key:
-            quotes[idx] = {**existing, **quote}
+            quotes[idx] = refresh_quote_display_fields({**existing, **quote})
             updated = True
             break
     if not updated:
-        quotes.append(quote)
+        quotes.append(refresh_quote_display_fields(dict(quote)))
 
     snapshot['quotes'] = quotes
     snapshot['connected'] = True

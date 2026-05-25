@@ -32,7 +32,7 @@ def bootstrap_market_quotes_for_user(user) -> None:
         'market_quotes_disconnected',
         None,
     )
-    if stale and message != 'missing_credentials':
+    if stale and message != 'missing_credentials' and not has_prices:
         save_snapshot(build_empty_snapshot(connected=False, message='connecting'), user_id)
 
     ensure_market_quotes_hub(user_id)

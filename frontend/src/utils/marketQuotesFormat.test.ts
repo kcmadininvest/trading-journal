@@ -1,24 +1,32 @@
 import { getPriceFlashDirection } from './marketQuoteFlash';
+import {
+  formatMarketQuoteChangePercent,
+  formatMarketQuotePrice,
+  quotePriceDecimalPlaces,
+} from './marketQuotesFormat';
 
-function formatChangePercent(value: number | null): string {
-  if (value === null || Number.isNaN(value)) {
-    return '—';
-  }
-  const sign = value > 0 ? '+' : '';
-  return `${sign}${value.toFixed(2)}%`;
-}
-
-describe('marketQuotes format', () => {
-  it('formats positive change with plus sign', () => {
-    expect(formatChangePercent(0.42)).toBe('+0.42%');
+describe('marketQuotesFormat', () => {
+  it('uses four decimals for eurusd', () => {
+    expect(quotePriceDecimalPlaces('eurusd')).toBe(4);
+    expect(formatMarketQuotePrice(1.165, 'eurusd', 'comma')).toBe('1,1650');
+    expect(formatMarketQuotePrice(1.165, 'eurusd', 'point')).toBe('1.1650');
   });
 
-  it('formats negative change', () => {
-    expect(formatChangePercent(-1.5)).toBe('-1.50%');
+  it('uses two decimals for other instruments', () => {
+    expect(formatMarketQuotePrice(29975.25, 'nasdaq', 'comma')).toBe('29 975,25');
+    expect(formatMarketQuotePrice(29975.25, 'nasdaq', 'point')).toBe('29,975.25');
+    expect(formatMarketQuotePrice(77405, 'bitcoin', 'comma')).toBe('77 405,00');
   });
 
-  it('returns dash for null', () => {
-    expect(formatChangePercent(null)).toBe('—');
+  it('formats change percent with user number format', () => {
+    expect(formatMarketQuoteChangePercent(1.37, 'comma')).toBe('+1,37%');
+    expect(formatMarketQuoteChangePercent(1.37, 'point')).toBe('+1.37%');
+    expect(formatMarketQuoteChangePercent(-0.92, 'comma')).toBe('-0,92%');
+  });
+
+  it('returns dash for null price or percent', () => {
+    expect(formatMarketQuotePrice(null, 'nasdaq', 'comma')).toBe('—');
+    expect(formatMarketQuoteChangePercent(null, 'comma')).toBe('—');
   });
 });
 
