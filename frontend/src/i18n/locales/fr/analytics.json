@@ -41,13 +41,12 @@
       "regressionLine": "Ligne de régression",
       "rSquaredTooltip": "Le coefficient de détermination (R²) mesure la force de la corrélation entre le nombre de trades et le PnL. R² proche de 1 indique une forte corrélation, R² proche de 0 indique une faible corrélation. La ligne de régression montre la tendance générale."
     },
-    "durationVsPnl": {
-      "title": "Durée du trade vs P/L",
-      "tooltip": "Visualisez l’impact de la durée de chaque trade sur le P/L net. Permet d’identifier si les trades courts ou longs sont les plus rentables.",
-      "duration": "Durée : {{value}}",
-      "pnl": "P/L : {{value}}",
-      "xAxis": "Durée du trade",
-      "yAxis": "P/L net"
+    "durationPerformance": {
+      "title": "Performance par durée de trade",
+      "tooltip": "P&L moyen et taux de réussite par tranche de durée (mêmes intervalles que la répartition par durée du dashboard). Comparez rapidement quelles durées sont les plus rentables et les plus fiables.",
+      "avgPnl": "P&L moyen ({{symbol}})",
+      "winRate": "Win rate (%)",
+      "tradeCount": "Nombre de trades : {{countDisplay}}"
     },
     "sizeVsPnl": {
       "title": "Taille de position vs P/L",

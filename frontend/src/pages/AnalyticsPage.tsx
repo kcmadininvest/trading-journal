@@ -52,7 +52,7 @@ import {
   TradesDistributionChart,
   HourlyPerformanceBoxPlotChart,
   CorrelationChart,
-  TradeDurationPnlScatterChart,
+  TradeDurationPerformanceChart,
   PositionSizePnlBubbleChart,
   FeatureCorrelationMatrixChart,
   HourlyPerformanceBarsChart,
@@ -64,6 +64,7 @@ import {
   createRadarGradientPlugin,
 } from '../components/analytics';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
+import { aggregateDurationPerformance } from '../utils/tradeDurationBuckets';
 
 
 // Enregistrer les composants Chart.js nécessaires
@@ -353,25 +354,10 @@ const AnalyticsPage: React.FC = () => {
     return null;
   }, []);
 
-  const tradeDurationVsPnlData = useMemo(() => {
-    return trades
-      .map((trade) => {
-        const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
-        if (pnl === null) return null;
-
-        const durationMinutes = parseDurationToMinutes(trade);
-
-        if (!Number.isFinite(pnl) || !durationMinutes || durationMinutes <= 0) {
-          return null;
-        }
-
-        return {
-          durationMinutes,
-          pnl,
-        };
-      })
-      .filter((point): point is { durationMinutes: number; pnl: number } => point !== null);
-  }, [trades, parseDurationToMinutes, pnlDisplayMode]);
+  const tradeDurationPerformanceData = useMemo(
+    () => aggregateDurationPerformance(trades, pnlDisplayMode),
+    [trades, pnlDisplayMode]
+  );
 
   const positionSizeVsPnlData = useMemo(() => {
     return trades
@@ -1683,9 +1669,9 @@ const AnalyticsPage: React.FC = () => {
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
-            <TradeDurationPnlScatterChart
-              key={`duration-pnl-${pnlDisplayMode}`}
-              data={tradeDurationVsPnlData}
+            <TradeDurationPerformanceChart
+              key={`duration-performance-${pnlDisplayMode}-${preferences.number_format}`}
+              data={tradeDurationPerformanceData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />

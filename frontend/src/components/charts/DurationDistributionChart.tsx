@@ -12,6 +12,8 @@ import { Bar } from 'react-chartjs-2';
 import { ChartTooltipResetContainer } from './ChartTooltipResetContainer';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatNumber } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, getChartColors, buildChartTooltipPlugin } from '../../utils/chartConfig';
 
 // Register Chart.js components
@@ -37,7 +39,9 @@ interface DurationDistributionChartProps {
 function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
   const { t } = useI18nTranslation();
   const { theme } = useTheme();
+  const { preferences } = usePreferences();
   const isDark = theme === 'dark';
+  const numberFormat = preferences.number_format;
   
   const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
 
@@ -140,14 +144,14 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
             label: (context: any) => {
               const label = context.dataset?.label || '';
               const value = context.parsed?.y ?? 0;
-              return `${label}: ${value}`;
+              return `${label}: ${formatNumber(value, 0, numberFormat)}`;
             },
             // Utiliser afterBody plutôt que footer : le bloc « footer » de Chart.js laisse souvent
             // une marge / une ligne vide visible même quand le rendu est minimal.
             afterBody: (items: any[]) => {
               if (!items?.length) return '';
               const total = items.reduce((sum, item) => sum + (item.parsed?.y ?? 0), 0);
-              return `${t('dashboard:numberOfTrades')}: ${total}`;
+              return `${t('dashboard:numberOfTrades')}: ${formatNumber(total, 0, numberFormat)}`;
             },
           },
         }),
@@ -166,7 +170,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
           size: 13,
         },
         formatter: function(value: number) {
-          return value > 0 ? value.toString() : '';
+          return value > 0 ? formatNumber(value, 0, numberFormat) : '';
         },
       }
     },
@@ -200,6 +204,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         ticks: {
           stepSize: yAxisConfig.stepSize,
           precision: 0,
+          callback: (value: string | number) => formatNumber(Number(value), 0, numberFormat),
           color: chartColors.textSecondary,
           font: {
             family: CHART_FONT_FAMILY,
@@ -221,7 +226,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
       duration: 1000,
       easing: 'easeInOutQuart' as const
     }
-  }), [chartColors, yAxisConfig, isDark, t]);
+  }), [chartColors, yAxisConfig, isDark, numberFormat, t]);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

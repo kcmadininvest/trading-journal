@@ -46,6 +46,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { getChartColors, buildChartTooltipPlugin } from '../utils/chartConfig';
 import { ChartTooltipResetContainer } from '../components/charts/ChartTooltipResetContainer';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
+import { aggregateDurationDistribution } from '../utils/tradeDurationBuckets';
 import { getWaterfallBarBorder, getWaterfallBarFill } from '../utils/waterfallBarGradient';
 import { WIN_RATE_ROLLING_WINDOW } from '../utils/tradingSampleThresholds';
 import { buildGlobalStatsSparklines } from '../utils/globalStatsSparklines';
@@ -160,45 +161,7 @@ const getPerformanceBadgeClasses = (color?: string) => {
   }
 };
 
-// Fonction pour parser la durée ISO (ex: "PT7M34S" ou "00:07:34")
-const parseDuration = (durationStr: string | null): number => {
-  if (!durationStr) return 0;
-  
-  // Si c'est au format HH:MM:SS
-  if (durationStr.includes(':')) {
-    const parts = durationStr.split(':');
-    if (parts.length === 3) {
-      const hours = parseInt(parts[0]) || 0;
-      const minutes = parseInt(parts[1]) || 0;
-      const seconds = parseFloat(parts[2]) || 0;
-      return hours * 60 + minutes + seconds / 60;
-    }
-  }
-  
-  // Sinon, parser le format ISO duration (PT7M34S)
-  const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:([\d.]+)S)?/);
-  if (match) {
-    const hours = parseInt(match[1] || '0');
-    const minutes = parseInt(match[2] || '0');
-    const seconds = parseFloat(match[3] || '0');
-    return hours * 60 + minutes + seconds / 60;
-  }
-  
-  return 0;
-};
-
-// Fonction pour catégoriser la durée
-const categorizeDuration = (minutes: number): string => {
-  if (minutes < 5) return '5m';
-  if (minutes < 10) return '5-10m';
-  if (minutes < 20) return '10-20m';
-  if (minutes < 30) return '20-30m';
-  if (minutes < 45) return '30-45m';
-  if (minutes < 60) return '45-60m';
-  return '60m+';
-};
-
-/** Seuils d’agrégation automatique pour le graphique waterfall (affichage uniquement). */
+/** Seuils d'agrégation automatique pour le graphique waterfall (affichage uniquement). */
 const WATERFALL_DAILY_BAR_MAX = 90;
 const WATERFALL_WEEKLY_AGGREGATE_MAX_DAYS = 730;
 const BALANCE_DAILY_POINT_MAX = 180;
@@ -1027,40 +990,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   }, [filteredBalanceData]);
 
 
-  // Calculer la répartition des trades par durée (gagnants et perdants)
-  const durationDistribution = useMemo(() => {
-    const categories = {
-      '5m': { winning: 0, losing: 0 },
-      '5-10m': { winning: 0, losing: 0 },
-      '10-20m': { winning: 0, losing: 0 },
-      '20-30m': { winning: 0, losing: 0 },
-      '30-45m': { winning: 0, losing: 0 },
-      '45-60m': { winning: 0, losing: 0 },
-      '60m+': { winning: 0, losing: 0 },
-    };
-
-    trades.forEach(trade => {
-      if (trade.trade_duration) {
-        const minutes = parseDuration(trade.trade_duration);
-        const category = categorizeDuration(minutes);
-        const isWinning = trade.is_profitable === true;
-        if (isWinning) {
-          categories[category as keyof typeof categories].winning++;
-        } else if (trade.is_profitable === false) {
-          categories[category as keyof typeof categories].losing++;
-        }
-      }
-    });
-
-    return Object.entries(categories)
-      .map(([label, data]) => ({
-        label,
-        winning: data.winning,
-        losing: data.losing,
-        total: data.winning + data.losing,
-      }))
-      .filter(item => item.total > 0); // Filtrer les catégories vides
-  }, [trades]);
+  // Répartition par durée : même périmètre et même P/L affiché que le graphique Analytics
+  const durationDistribution = useMemo(
+    () => aggregateDurationDistribution(trades, pnlDisplayMode),
+    [trades, pnlDisplayMode]
+  );
 
   // Préparer les données pour le graphique de répartition par durée
   const durationDistributionBins = useMemo(() => {

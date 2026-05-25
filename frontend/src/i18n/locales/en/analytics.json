@@ -41,13 +41,12 @@
       "regressionLine": "Regression line",
       "rSquaredTooltip": "The coefficient of determination (R²) measures the strength of the correlation between the number of trades and PnL. R² close to 1 indicates a strong correlation, R² close to 0 indicates a weak correlation. The regression line shows the general trend."
     },
-    "durationVsPnl": {
-      "title": "Trade Duration vs P/L",
-      "tooltip": "Visualize how the duration of each trade impacts the net P/L. Helps identify whether shorter or longer trades are more profitable.",
-      "duration": "Duration: {{value}}",
-      "pnl": "P/L: {{value}}",
-      "xAxis": "Trade duration",
-      "yAxis": "Net P/L"
+    "durationPerformance": {
+      "title": "Performance by trade duration",
+      "tooltip": "Average P&L and win rate per duration bucket (same intervals as the dashboard duration distribution). Quickly see which holding times are most profitable and most consistent.",
+      "avgPnl": "Avg. P&L ({{symbol}})",
+      "winRate": "Win rate (%)",
+      "tradeCount": "Number of trades: {{countDisplay}}"
     },
     "sizeVsPnl": {
       "title": "Position Size vs P/L",

@@ -53,13 +53,12 @@
       },
       "description": "Los coeficientes van de -1 (relación inversa fuerte) a +1 (relación directa fuerte). Valores cercanos a 0 indican poca o ninguna correlación lineal."
     },
-    "durationVsPnl": {
-      "title": "Duración de la operación vs P/L",
-      "tooltip": "Visualiza cómo la duración de cada operación impacta el P/L neto. Ayuda a identificar si las operaciones cortas o largas son más rentables.",
-      "duration": "Duración: {{value}}",
-      "pnl": "P/L: {{value}}",
-      "xAxis": "Duración de la operación",
-      "yAxis": "P/L neto"
+    "durationPerformance": {
+      "title": "Rendimiento por duración de operación",
+      "tooltip": "P&L medio y tasa de acierto por tramo de duración (mismos intervalos que la distribución por duración del dashboard). Compare qué duraciones son más rentables y más fiables.",
+      "avgPnl": "P&L medio ({{symbol}})",
+      "winRate": "Tasa de acierto (%)",
+      "tradeCount": "Número de operaciones: {{countDisplay}}"
     },
     "sizeVsPnl": {
       "title": "Tamaño de posición vs P/L",

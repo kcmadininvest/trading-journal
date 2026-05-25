@@ -53,13 +53,12 @@
       },
       "description": "Koeffizienten liegen zwischen -1 (starker negativer Zusammenhang) und +1 (starker positiver Zusammenhang). Werte nahe 0 bedeuten wenig oder keine lineare Korrelation."
     },
-    "durationVsPnl": {
-      "title": "Trade-Dauer vs P/L",
-      "tooltip": "Visualisieren Sie, wie sich die Dauer jedes Trades auf den Netto-P/L auswirkt. Hilft dabei zu erkennen, ob kürzere oder längere Trades profitabler sind.",
-      "duration": "Dauer: {{value}}",
-      "pnl": "P/L: {{value}}",
-      "xAxis": "Trade-Dauer",
-      "yAxis": "Netto-P/L"
+    "durationPerformance": {
+      "title": "Performance nach Trade-Dauer",
+      "tooltip": "Durchschnittlicher P&L und Trefferquote je Dauer-Intervall (gleiche Tranchen wie die Dauerverteilung im Dashboard). Zeigt schnell, welche Haltedauern am profitabelsten und konstantesten sind.",
+      "avgPnl": "Ø P&L ({{symbol}})",
+      "winRate": "Trefferquote (%)",
+      "tradeCount": "Anzahl Trades: {{countDisplay}}"
     },
     "sizeVsPnl": {
       "title": "Positionsgröße vs P/L",
