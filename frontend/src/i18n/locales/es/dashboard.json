@@ -208,6 +208,8 @@
   },
   "marketQuotes": {
     "title": "Precios de mercado en vivo",
+    "live": "EN DIRECTO",
+    "offline": "DESCONECTADO",
     "loading": "Cargando precios…",
     "unavailable": "Precios no disponibles",
     "market_quotes_unavailable": "Servicio de precios no iniciado",

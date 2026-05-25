@@ -207,6 +207,8 @@
   },
   "marketQuotes": {
     "title": "Live market prices",
+    "live": "LIVE",
+    "offline": "OFFLINE",
     "loading": "Loading prices…",
     "unavailable": "Prices unavailable",
     "market_quotes_unavailable": "Price feed not running",

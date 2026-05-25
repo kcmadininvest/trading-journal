@@ -208,6 +208,8 @@
   },
   "marketQuotes": {
     "title": "Live-Marktpreise",
+    "live": "LIVE",
+    "offline": "OFFLINE",
     "loading": "Preise werden geladen…",
     "unavailable": "Preise nicht verfügbar",
     "market_quotes_unavailable": "Kursfeed nicht gestartet",

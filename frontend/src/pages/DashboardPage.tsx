@@ -1712,7 +1712,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   return (
     <PageShell>
-      <div className="mb-4 overflow-hidden rounded-lg shadow px-4 py-0.5 border border-blue-500/20 bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 dark:border-blue-800/50 dark:from-blue-950 dark:via-indigo-950 dark:to-blue-950">
+      <div className="mb-4 min-w-0">
         <MarketQuotesTicker />
       </div>
 

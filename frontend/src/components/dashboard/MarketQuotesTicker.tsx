@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMarketQuotes } from '../../hooks/useMarketQuotes';
 import { usePreferences } from '../../hooks/usePreferences';
@@ -8,8 +8,7 @@ import {
   formatMarketQuoteChangePercent,
   formatMarketQuotePrice,
 } from '../../utils/marketQuotesFormat';
-
-const TICKER_HEIGHT_CLASS = 'h-7 w-full min-w-0';
+import { MarketQuoteInstrumentIcon, quoteIconContainerClass } from './marketQuoteIcons';
 
 const FATAL_MESSAGES = new Set([
   'market_quotes_unavailable',
@@ -20,39 +19,63 @@ const FATAL_MESSAGES = new Set([
   'no_contracts',
 ]);
 
-function TickerStatus({
-  message,
-  pulse = false,
+const TICKER_SHELL_CLASS =
+  'font-sans flex min-h-[3.25rem] w-full min-w-0 items-center justify-center gap-4 overflow-x-auto rounded-xl border border-white/10 bg-gradient-to-r from-[#0f172a] via-[#172554] to-[#0f172a] px-4 py-2.5 shadow-lg shadow-blue-950/30 text-white backdrop-blur-xl dark:from-slate-950 dark:via-blue-950 dark:to-slate-950 sm:px-5 sm:py-3';
+
+const TICKER_ROW_CLASS =
+  'mx-auto flex w-max min-w-full items-center justify-center gap-4 sm:gap-6';
+
+function TickerShell({
+  children,
   ariaLabel,
 }: {
-  message: string;
-  pulse?: boolean;
+  children: React.ReactNode;
   ariaLabel: string;
 }) {
   return (
+    <div className="w-full min-w-0" role="region" aria-label={ariaLabel}>
+      <div className={TICKER_SHELL_CLASS}>{children}</div>
+    </div>
+  );
+}
+
+function VerticalRule() {
+  return <div className="h-6 w-px shrink-0 bg-white/10" aria-hidden />;
+}
+
+function LiveStatus({ live }: { live: boolean }) {
+  const { t } = useTranslation();
+
+  return (
     <div
-      className={`${TICKER_HEIGHT_CLASS} flex items-center justify-center px-4`}
-      role="status"
-      aria-live="polite"
-      aria-label={ariaLabel}
+      className={`flex shrink-0 items-center gap-2 rounded-full px-2.5 py-1 sm:px-3 ${
+        live ? 'bg-emerald-500/10' : 'bg-white/5'
+      }`}
     >
+      <div
+        className={`h-2 w-2 rounded-full ${
+          live ? 'animate-pulse bg-emerald-400' : 'bg-white/30'
+        }`}
+      />
       <span
-        className={`max-w-full text-center text-xs leading-tight text-blue-50/95 ${
-          pulse ? 'animate-pulse' : ''
+        className={`text-xs font-semibold sm:text-sm ${
+          live ? 'text-emerald-400' : 'text-white/50'
         }`}
       >
-        {message}
+        {live ? t('dashboard:marketQuotes.live') : t('dashboard:marketQuotes.offline')}
       </span>
     </div>
   );
 }
 
-function QuoteChip({
+function QuoteRow({
   quote,
   numberFormat,
+  showSeparator,
 }: {
   quote: MarketQuoteItem;
   numberFormat: 'point' | 'comma';
+  showSeparator: boolean;
 }) {
   const { t } = useTranslation();
   const prevPriceRef = useRef<number | null | undefined>(undefined);
@@ -75,12 +98,7 @@ function QuoteChip({
   const price = formatMarketQuotePrice(quote.last_price, quote.key, numberFormat);
   const changePct = quote.change_percent;
   const isUp = changePct !== null && changePct >= 0;
-  const changeClass =
-    changePct === null
-      ? 'text-blue-200/70'
-      : isUp
-        ? 'text-emerald-300'
-        : 'text-red-300';
+  const changeText = formatMarketQuoteChangePercent(changePct, numberFormat);
   const priceFlashClass =
     flash === 'up'
       ? 'market-quote-flash-up rounded px-0.5'
@@ -89,12 +107,46 @@ function QuoteChip({
         : '';
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 shrink-0 text-xs whitespace-nowrap">
-      <span className="font-semibold text-blue-50/95">{label}</span>
-      <span className={`font-mono text-white tabular-nums ${priceFlashClass}`}>{price}</span>
-      <span className={`font-mono text-xs tabular-nums ${changeClass}`}>
-        {formatMarketQuoteChangePercent(changePct, numberFormat)}
-      </span>
+    <div className="flex shrink-0 items-center gap-3">
+      <div className={quoteIconContainerClass(quote.key)}>
+        <MarketQuoteInstrumentIcon instrumentKey={quote.key} className="h-4 w-4" />
+      </div>
+      <div className="flex items-center gap-2 whitespace-nowrap">
+        <span className="text-sm font-semibold text-white/90">{label}</span>
+        <span className={`text-sm tabular-nums text-white ${priceFlashClass}`}>
+          {price}
+        </span>
+        <span
+          className={`text-sm font-semibold tabular-nums ${
+            changePct === null
+              ? 'text-white/50'
+              : isUp
+                ? 'text-emerald-400'
+                : 'text-red-400'
+          }`}
+        >
+          {changeText}
+        </span>
+      </div>
+      {showSeparator ? <div className="ml-1 hidden h-5 w-px bg-white/10 sm:block" aria-hidden /> : null}
+    </div>
+  );
+}
+
+function StatusContent({
+  message,
+  pulse,
+}: {
+  message: string;
+  pulse: boolean;
+}) {
+  return (
+    <span
+      className={`whitespace-nowrap text-center text-sm text-white/80 ${pulse ? 'animate-pulse' : ''}`}
+      role="status"
+      aria-live="polite"
+    >
+      {message}
     </span>
   );
 }
@@ -102,18 +154,14 @@ function QuoteChip({
 export const MarketQuotesTicker: React.FC = () => {
   const { t } = useTranslation();
   const { preferences } = usePreferences();
-  const { snapshot, loading } = useMarketQuotes(true);
+  const { snapshot, loading, wsConnected } = useMarketQuotes(true);
   const numberFormat = preferences.number_format;
 
   const quotes = useMemo(
-    () => snapshot?.quotes ?? [],
+    () => (snapshot?.quotes ?? []).filter((q) => q.last_price != null),
     [snapshot?.quotes],
   );
-  const hasPrices = quotes.some((q) => q.last_price_display != null);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const measureRef = useRef<HTMLDivElement>(null);
-  const [loopMarquee, setLoopMarquee] = useState(false);
+  const hasPrices = quotes.length > 0;
 
   const tickerTitle = t('dashboard:marketQuotes.title');
 
@@ -121,9 +169,7 @@ export const MarketQuotesTicker: React.FC = () => {
     if (hasPrices) {
       return null;
     }
-
     const message = snapshot?.message;
-
     if (loading && !snapshot) {
       return t('dashboard:marketQuotes.loading');
     }
@@ -144,86 +190,31 @@ export const MarketQuotesTicker: React.FC = () => {
   const statusPulse =
     (loading && !snapshot) || snapshot?.message === 'connecting';
 
-  useLayoutEffect(() => {
-    if (!hasPrices) {
-      setLoopMarquee(false);
-      return;
-    }
-
-    const container = containerRef.current;
-    const measure = measureRef.current;
-    if (!container || !measure || quotes.length === 0) {
-      setLoopMarquee(false);
-      return;
-    }
-
-    const update = () => {
-      setLoopMarquee(measure.scrollWidth > container.clientWidth + 1);
-    };
-
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(container);
-    observer.observe(measure);
-    return () => observer.disconnect();
-  }, [hasPrices, quotes]);
-
-  const trackItems = useMemo(() => {
-    if (!hasPrices || quotes.length === 0) return [];
-    return loopMarquee ? [...quotes, ...quotes] : quotes;
-  }, [hasPrices, quotes, loopMarquee]);
+  const isLive = hasPrices && (snapshot?.connected === true || wsConnected);
 
   if (statusMessage) {
     return (
-      <TickerStatus
-        message={statusMessage}
-        pulse={statusPulse}
-        ariaLabel={tickerTitle}
-      />
+      <TickerShell ariaLabel={tickerTitle}>
+        <div className={TICKER_ROW_CLASS}>
+          <LiveStatus live={false} />
+          <VerticalRule />
+          <StatusContent message={statusMessage} pulse={statusPulse} />
+        </div>
+      </TickerShell>
     );
   }
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative overflow-hidden ${TICKER_HEIGHT_CLASS}`}
-      aria-live="polite"
-      role="region"
-      aria-label={tickerTitle}
-    >
-      {loopMarquee && (
-        <>
-          <div
-            className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-gradient-to-r from-blue-700 dark:from-blue-950 to-transparent"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-y-0 right-0 z-[1] w-8 bg-gradient-to-l from-blue-700 dark:from-blue-950 to-transparent"
-            aria-hidden
-          />
-        </>
-      )}
-      <div
-        ref={measureRef}
-        className="absolute left-0 top-0 flex h-full items-center invisible pointer-events-none"
-        aria-hidden
-      >
-        {quotes.map((quote) => (
-          <QuoteChip key={`measure-${quote.key}`} quote={quote} numberFormat={numberFormat} />
-        ))}
-      </div>
-      <div
-        className={
-          loopMarquee
-            ? 'market-quotes-ticker-track relative z-0 flex h-full items-center'
-            : 'relative z-0 flex h-full w-full items-center justify-center'
-        }
-      >
-        {trackItems.map((quote, index) => (
-          <QuoteChip
-            key={loopMarquee ? `${quote.key}-${index}` : quote.key}
+    <TickerShell ariaLabel={tickerTitle}>
+      <div className={TICKER_ROW_CLASS} aria-live="polite">
+        <LiveStatus live={isLive} />
+        <VerticalRule />
+        {quotes.map((quote, index) => (
+          <QuoteRow
+            key={quote.key}
             quote={quote}
             numberFormat={numberFormat}
+            showSeparator={index < quotes.length - 1}
           />
         ))}
       </div>
@@ -242,24 +233,8 @@ export const MarketQuotesTicker: React.FC = () => {
         .market-quote-flash-down {
           animation: marketQuoteFlashDown 0.5s ease-out;
         }
-        ${
-          loopMarquee
-            ? `
-        @keyframes marketQuotesMarquee {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .market-quotes-ticker-track {
-          width: max-content;
-          animation: marketQuotesMarquee 45s linear infinite;
-        }
-        .market-quotes-ticker-track:hover {
-          animation-play-state: paused;
-        }`
-            : ''
-        }
       `}</style>
-    </div>
+    </TickerShell>
   );
 };
 

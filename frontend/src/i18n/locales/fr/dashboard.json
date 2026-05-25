@@ -208,6 +208,8 @@
   },
   "marketQuotes": {
     "title": "Cours marché en direct",
+    "live": "EN DIRECT",
+    "offline": "HORS LIGNE",
     "loading": "Chargement des cours…",
     "unavailable": "Cours indisponibles",
     "market_quotes_unavailable": "Service de cours non démarré",
