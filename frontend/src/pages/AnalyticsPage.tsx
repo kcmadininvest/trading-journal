@@ -16,7 +16,6 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  BubbleController,
   LineElement,
   PointElement,
   Title,
@@ -53,7 +52,6 @@ import {
   HourlyPerformanceBoxPlotChart,
   CorrelationChart,
   TradeDurationPerformanceChart,
-  PositionSizePnlBubbleChart,
   FeatureCorrelationMatrixChart,
   HourlyPerformanceBarsChart,
   HeatmapChart,
@@ -65,6 +63,7 @@ import {
 } from '../components/analytics';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 import { aggregateDurationPerformance } from '../utils/tradeDurationBuckets';
+import { aggregatePositionSizePerformance } from '../utils/positionSizePerformance';
 
 
 // Enregistrer les composants Chart.js nécessaires
@@ -72,7 +71,6 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  BubbleController,
   LineElement,
   PointElement,
   Title,
@@ -359,31 +357,10 @@ const AnalyticsPage: React.FC = () => {
     [trades, pnlDisplayMode]
   );
 
-  const positionSizeVsPnlData = useMemo(() => {
-    return trades
-      .map((trade) => {
-        const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
-        if (pnl === null) return null;
-
-        const size = parseFloat(String(trade.size));
-        const entryPrice = parseFloat(String(trade.entry_price));
-        const pointValue = trade.point_value ? parseFloat(String(trade.point_value)) : 1;
-
-        if (!Number.isFinite(size) || size <= 0 || !Number.isFinite(pnl)) {
-          return null;
-        }
-
-        const notionalBase = Number.isFinite(entryPrice) && entryPrice > 0 ? entryPrice : 1;
-        const notional = Math.abs(size * pointValue * notionalBase);
-
-        return {
-          size,
-          pnl,
-          notional: Number.isFinite(notional) && notional > 0 ? notional : Math.abs(size),
-        };
-      })
-      .filter((point): point is { size: number; pnl: number; notional: number } => point !== null);
-  }, [trades, pnlDisplayMode]);
+  const positionSizePerformanceData = useMemo(
+    () => aggregatePositionSizePerformance(trades, pnlDisplayMode),
+    [trades, pnlDisplayMode]
+  );
 
   const featureCorrelationMatrixData = useMemo(() => {
     const rows = trades
@@ -1670,14 +1647,15 @@ const AnalyticsPage: React.FC = () => {
               chartColors={chartColors}
             />
             <TradeDurationPerformanceChart
-              key={`duration-performance-${pnlDisplayMode}-${preferences.number_format}`}
+              key={`duration-performance-${pnlDisplayMode}-${preferences.number_format}-${preferences.font_size}-${preferences.language}`}
               data={tradeDurationPerformanceData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />
-            <PositionSizePnlBubbleChart
-              key={`size-pnl-${pnlDisplayMode}`}
-              data={positionSizeVsPnlData}
+            <TradeDurationPerformanceChart
+              key={`size-performance-${pnlDisplayMode}-${preferences.number_format}-${preferences.font_size}-${preferences.language}`}
+              chartKey="sizePerformance"
+              data={positionSizePerformanceData}
               currencySymbol={currencySymbol}
               chartColors={chartColors}
             />

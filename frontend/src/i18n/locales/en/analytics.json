@@ -59,14 +59,12 @@
       "winRate": "Win rate (%)",
       "tradeCount": "Number of trades: {{countDisplay}}"
     },
-    "sizeVsPnl": {
-      "title": "Position Size vs P/L",
-      "tooltip": "Compare position size (and exposure) against net P/L. Bubble size reflects exposure to highlight which trades move the needle most.",
-      "size": "Size: {{value}}",
-      "pnl": "P/L: {{value}}",
-      "notional": "Exposure: {{value}}",
-      "xAxis": "Position size",
-      "yAxis": "Net P/L"
+    "sizePerformance": {
+      "title": "Performance by position size",
+      "tooltip": "Average P&L and win rate per position size. Quickly see which sizes are most profitable and most consistent.",
+      "avgPnl": "Avg. P&L ({{symbol}})",
+      "winRate": "Win rate (%)",
+      "tradeCount": "Number of trades: {{countDisplay}}"
     },
     "featureCorrelationMatrix": {
       "title": "Feature Correlation Matrix",

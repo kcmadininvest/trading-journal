@@ -68,14 +68,12 @@
       "winRate": "Tasa de acierto (%)",
       "tradeCount": "Número de operaciones: {{countDisplay}}"
     },
-    "sizeVsPnl": {
-      "title": "Tamaño de posición vs P/L",
-      "tooltip": "Compara el tamaño de la posición (y la exposición) con el P/L neto. El tamaño de la burbuja refleja la exposición para resaltar las operaciones más impactantes.",
-      "size": "Tamaño: {{value}}",
-      "pnl": "P/L: {{value}}",
-      "notional": "Exposición: {{value}}",
-      "xAxis": "Tamaño de posición",
-      "yAxis": "P/L neto"
+    "sizePerformance": {
+      "title": "Rendimiento por tamaño de posición",
+      "tooltip": "P&L medio y tasa de acierto por tamaño de posición. Compare qué tamaños son más rentables y más fiables.",
+      "avgPnl": "P&L medio ({{symbol}})",
+      "winRate": "Tasa de acierto (%)",
+      "tradeCount": "Número de operaciones: {{countDisplay}}"
     },
     "drawdown": {
       "title": "Drawdown Diario",

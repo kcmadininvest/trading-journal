@@ -68,14 +68,12 @@
       "winRate": "Trefferquote (%)",
       "tradeCount": "Anzahl Trades: {{countDisplay}}"
     },
-    "sizeVsPnl": {
-      "title": "Positionsgröße vs P/L",
-      "tooltip": "Vergleichen Sie die Positionsgröße (und Exposition) mit dem Netto-P/L. Die Blasengröße spiegelt die Exposition wider und hebt die impactstärksten Trades hervor.",
-      "size": "Größe: {{value}}",
-      "pnl": "P/L: {{value}}",
-      "notional": "Exposition: {{value}}",
-      "xAxis": "Positionsgröße",
-      "yAxis": "Netto-P/L"
+    "sizePerformance": {
+      "title": "Performance nach Positionsgröße",
+      "tooltip": "Durchschnittlicher P&L und Trefferquote je Positionsgröße. Zeigt schnell, welche Größen am profitabelsten und konstantesten sind.",
+      "avgPnl": "Ø P&L ({{symbol}})",
+      "winRate": "Trefferquote (%)",
+      "tradeCount": "Anzahl Trades: {{countDisplay}}"
     },
     "drawdown": {
       "title": "Täglicher Drawdown",

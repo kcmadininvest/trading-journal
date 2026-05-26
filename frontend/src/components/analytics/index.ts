@@ -8,8 +8,10 @@ export { HourlyPerformanceScatterChart } from './HourlyPerformanceScatterChart';
 export { HourlyPerformanceBoxPlotChart } from './HourlyPerformanceBoxPlotChart';
 export { CorrelationChart } from './CorrelationChart';
 export { TradeDurationPerformanceChart } from './TradeDurationPerformanceChart';
-export type { TradeDurationPerformancePoint } from './TradeDurationPerformanceChart';
-export { PositionSizePnlBubbleChart } from './PositionSizePnlBubbleChart';
+export type {
+  TradeDurationPerformancePoint,
+  BucketedPerformanceChartKey,
+} from './TradeDurationPerformanceChart';
 export { FeatureCorrelationMatrixChart } from './FeatureCorrelationMatrixChart';
 export { HourlyPerformanceBarsChart } from './HourlyPerformanceBarsChart';
 export { HeatmapChart } from './HeatmapChart';

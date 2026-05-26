@@ -16,7 +16,12 @@ import { useTheme } from '../../hooks/useTheme';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency, formatNumber, type NumberFormatType } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY, buildChartTooltipPlugin, type ChartColors } from '../../utils/chartConfig';
+import {
+  CHART_FONT_FAMILY,
+  buildChartTooltipPlugin,
+  getChartSvgFontSizes,
+  type ChartColors,
+} from '../../utils/chartConfig';
 
 ChartJS.register(
   CategoryScale,
@@ -35,10 +40,13 @@ export interface TradeDurationPerformancePoint {
   tradeCount: number;
 }
 
+export type BucketedPerformanceChartKey = 'durationPerformance' | 'sizePerformance';
+
 interface TradeDurationPerformanceChartProps {
   data: TradeDurationPerformancePoint[];
   currencySymbol: string;
   chartColors: ChartColors;
+  chartKey?: BucketedPerformanceChartKey;
 }
 
 function computeNiceAxisMax(maxValue: number, targetTicks = 6): { max: number; stepSize: number } {
@@ -62,14 +70,34 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
   data,
   currencySymbol,
   chartColors,
+  chartKey = 'durationPerformance',
 }) => {
   const { t } = useTranslation();
+  const i18nPrefix = `analytics:charts.${chartKey}`;
   const { preferences } = usePreferences();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const numberFormat: NumberFormatType = preferences.number_format;
+  const chartFontSizes = useMemo(
+    () => getChartSvgFontSizes(preferences.font_size),
+    [preferences.font_size],
+  );
+  /** Aligné sur la ligne de régression de Corrélation PnL vs Nombre de Trades */
+  const winRateStroke = isDark ? '#fbbf24' : '#d97706';
 
-  const labels = useMemo(() => data.map((point) => point.label), [data]);
+  const labels = useMemo(() => {
+    if (chartKey !== 'sizePerformance') {
+      return data.map((point) => point.label);
+    }
+    return data.map((point) => {
+      const size = parseFloat(point.label);
+      if (!Number.isFinite(size)) {
+        return point.label;
+      }
+      const decimals = Number.isInteger(size) ? 0 : 2;
+      return formatNumber(size, decimals, numberFormat);
+    });
+  }, [chartKey, data, numberFormat]);
   const avgPnlValues = useMemo(() => data.map((point) => point.avgPnl), [data]);
   const winRateValues = useMemo(() => data.map((point) => point.winRate), [data]);
 
@@ -106,14 +134,6 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
     () => ({
       responsive: true,
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 14,
-          right: 0,
-          bottom: 5,
-          left: 0,
-        },
-      },
       animation: { duration: 0 },
       interaction: { mode: 'index' as const, intersect: false },
       plugins: {
@@ -138,7 +158,7 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
                 const index = items[0]?.dataIndex;
                 if (index == null) return '';
                 const count = data[index]?.tradeCount ?? 0;
-                return t('analytics:charts.durationPerformance.tradeCount', {
+                return t(`${i18nPrefix}.tradeCount`, {
                   count,
                   countDisplay: formatNumber(count, 0, numberFormat),
                 });
@@ -149,13 +169,13 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
       },
       scales: {
         x: {
-          grid: { display: false },
           ticks: {
             color: chartColors.textSecondary,
-            font: { family: CHART_FONT_FAMILY, size: 11 },
+            font: { family: CHART_FONT_FAMILY, size: chartFontSizes.tick },
             maxRotation: 0,
             minRotation: 0,
           },
+          grid: { display: false },
           border: { color: chartColors.border },
         },
         y: {
@@ -171,7 +191,7 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
           ticks: {
             stepSize: pnlAxis.stepSize,
             color: chartColors.textSecondary,
-            font: { family: CHART_FONT_FAMILY, size: 11 },
+            font: { family: CHART_FONT_FAMILY, size: chartFontSizes.tick },
             callback: (value: string | number) =>
               formatCurrency(Number(value), currencySymbol, numberFormat, 0),
           },
@@ -179,6 +199,7 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
             color: chartColors.border,
             display: false,
           },
+          title: { display: false },
         },
         y1: {
           type: 'linear' as const,
@@ -191,7 +212,7 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
             stepSize: 20,
             maxTicksLimit: 6,
             color: chartColors.textSecondary,
-            font: { family: CHART_FONT_FAMILY, size: 11 },
+            font: { family: CHART_FONT_FAMILY, size: chartFontSizes.tick },
             callback: (value: string | number) => {
               const num = Number(value);
               if (num > 100) return '';
@@ -199,6 +220,7 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
             },
           },
           border: { display: false },
+          title: { display: false },
         },
       },
       elements: {
@@ -213,7 +235,18 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
         },
       },
     }),
-    [chartColors, currencySymbol, data, numberFormat, pnlAxis.max, pnlAxis.min, pnlAxis.stepSize, t]
+    [
+      chartColors,
+      chartFontSizes.tick,
+      currencySymbol,
+      data,
+      i18nPrefix,
+      numberFormat,
+      pnlAxis.max,
+      pnlAxis.min,
+      pnlAxis.stepSize,
+      t,
+    ]
   );
 
   if (!data.length) {
@@ -229,28 +262,35 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
+    <div className="flex h-full min-h-[450px] flex-col rounded-xl border border-gray-100 bg-white p-6 shadow-lg transition-shadow duration-300 hover:shadow-xl dark:border-gray-700 dark:bg-gray-800">
       <div className="mb-3 flex items-center gap-2">
-        <div className="mr-1 h-6 w-1 rounded-full bg-gradient-to-b from-teal-500 to-teal-600" />
+        <div
+          className={`mr-1 h-6 w-1 rounded-full bg-gradient-to-b ${
+            chartKey === 'sizePerformance'
+              ? 'from-indigo-500 to-indigo-600'
+              : 'from-teal-500 to-teal-600'
+          }`}
+        />
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-          {t('analytics:charts.durationPerformance.title')}
+          {t(`${i18nPrefix}.title`)}
         </h3>
-        <ChartHelpTooltip content={t('analytics:charts.durationPerformance.tooltip')} />
+        <ChartHelpTooltip content={t(`${i18nPrefix}.tooltip`)} />
       </div>
       <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: chartColors.text }}>
         <span className="inline-flex items-center gap-1.5">
           <span
-            className="inline-block h-2.5 w-2.5 rounded-full border-2 border-[#22c55e] bg-white"
+            className="inline-block h-2.5 w-2.5 rounded-full border-2 bg-white"
+            style={{ borderColor: winRateStroke }}
             aria-hidden
           />
-          {t('analytics:charts.durationPerformance.winRate')}
+          {t(`${i18nPrefix}.winRate`)}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#3b82f6]" aria-hidden />
-          {t('analytics:charts.durationPerformance.avgPnl', { symbol: currencySymbol })}
+          {t(`${i18nPrefix}.avgPnl`, { symbol: currencySymbol })}
         </span>
       </div>
-      <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
+      <ChartTooltipResetContainer className="relative min-h-[320px] flex-1">
         <Chart
           type="bar"
           data={{
@@ -258,7 +298,7 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
             datasets: [
               {
                 type: 'bar' as const,
-                label: t('analytics:charts.durationPerformance.avgPnl', { symbol: currencySymbol }),
+                label: t(`${i18nPrefix}.avgPnl`, { symbol: currencySymbol }),
                 data: avgPnlValues,
                 backgroundColor: avgPnlBarStyles.map((s) => s.backgroundColor),
                 borderColor: avgPnlBarStyles.map((s) => s.borderColor),
@@ -270,15 +310,15 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
               },
               {
                 type: 'line' as const,
-                label: t('analytics:charts.durationPerformance.winRate'),
+                label: t(`${i18nPrefix}.winRate`),
                 data: winRateValues,
-                borderColor: '#22c55e',
+                borderColor: winRateStroke,
                 backgroundColor: '#ffffff',
                 borderWidth: 2,
                 pointRadius: 5,
                 pointHoverRadius: 7,
                 pointBorderWidth: 2,
-                pointBorderColor: '#22c55e',
+                pointBorderColor: winRateStroke,
                 pointBackgroundColor: '#ffffff',
                 spanGaps: false,
                 tension: 0.35,
