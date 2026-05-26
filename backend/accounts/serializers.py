@@ -5,7 +5,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 import re
 from datetime import datetime, timedelta
-from .models import User, UserPreferences
+from .models import AppSettings, User, UserPreferences
 
 # Aligné sur trading_activity.constants.COMMON_CURRENCY_CODES (éviter import cross-app au chargement)
 _ALLOWED_DEFAULT_CURRENCIES = frozenset(
@@ -470,6 +470,13 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         )
         read_only_fields = ('created_at', 'updated_at')
+
+
+class AppSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppSettings
+        fields = ('premium_restrictions_enabled', 'updated_at')
+        read_only_fields = ('updated_at',)
 
 
 class ActiveSessionSerializer(serializers.Serializer):

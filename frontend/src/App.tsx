@@ -30,6 +30,7 @@ import OrganizationSchema from './components/SEO/OrganizationSchema';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
 import { billingService, SubscriptionStatus } from './services/billing';
+import userService, { AppSettings } from './services/userService';
 import { useTheme } from './hooks/useTheme';
 import { goalsService, TradingGoal } from './services/goals';
 import { tradingAccountsService } from './services/tradingAccounts';
@@ -70,6 +71,7 @@ function App() {
   const [billingStatus, setBillingStatus] = useState<SubscriptionStatus | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState<string | null>(null);
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   useTheme();
   const notifiedGoalsRef = useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
   
@@ -158,21 +160,55 @@ function App() {
     refreshBillingStatus();
   }, [refreshBillingStatus]);
 
+  const refreshAppSettings = React.useCallback(async () => {
+    if (!currentUser) {
+      setAppSettings(null);
+      return;
+    }
+    try {
+      const data = await userService.getAppSettings();
+      setAppSettings(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des paramètres application:', error);
+      setAppSettings({ premium_restrictions_enabled: true });
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    refreshAppSettings();
+  }, [refreshAppSettings]);
+
+  useEffect(() => {
+    const handleAppSettingsUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ appSettings?: AppSettings }>).detail;
+      if (detail?.appSettings) {
+        setAppSettings(detail.appSettings);
+      } else {
+        refreshAppSettings();
+      }
+    };
+    window.addEventListener('app:settings-updated', handleAppSettingsUpdated);
+    return () => window.removeEventListener('app:settings-updated', handleAppSettingsUpdated);
+  }, [refreshAppSettings]);
+
+  const premiumRestrictionsEnabled = appSettings?.premium_restrictions_enabled ?? true;
+
   const hasPremiumAccess = React.useMemo(() => {
     if (!currentUser) return false;
+    if (!premiumRestrictionsEnabled) return true;
     if (currentUser.is_admin) return true;
     return billingStatus?.access_state === 'trialing' || billingStatus?.access_state === 'active';
-  }, [currentUser, billingStatus]);
+  }, [currentUser, billingStatus, premiumRestrictionsEnabled]);
 
   const lockedPremiumPages = React.useMemo(() => {
-    if (!currentUser || hasPremiumAccess) return new Set<string>();
+    if (!currentUser || !premiumRestrictionsEnabled || hasPremiumAccess) return new Set<string>();
     return new Set(
       Array.from(PREMIUM_LOCKED_PAGES).filter((page) => !ALWAYS_ACCESSIBLE_PAGES.has(page))
     );
-  }, [currentUser, hasPremiumAccess]);
+  }, [currentUser, hasPremiumAccess, premiumRestrictionsEnabled]);
 
   const billingStatusLabel = React.useMemo(() => {
-    if (!currentUser || !billingStatus || billingStatus.access_state === 'admin_bypass') {
+    if (!premiumRestrictionsEnabled || !currentUser || !billingStatus || billingStatus.access_state === 'admin_bypass') {
       return null;
     }
     if (billingStatus.access_state === 'trialing') {
@@ -182,7 +218,7 @@ function App() {
       return t('billing:header.activeBadge');
     }
     return t('billing:header.inactiveBadge');
-  }, [currentUser, billingStatus, t]);
+  }, [currentUser, billingStatus, premiumRestrictionsEnabled, t]);
 
   // Vérification globale des objectifs récemment atteints (même si pas sur la page Goals)
   useEffect(() => {
@@ -498,7 +534,20 @@ function App() {
           case 'users':
             return <UserManagementPage />;
           case 'settings':
-            return <SettingsPage />;
+            return (
+              <SettingsPage
+                premiumRestrictionsEnabled={premiumRestrictionsEnabled}
+                onPremiumRestrictionsChange={async (enabled) => {
+                  const updated = await userService.updateAppSettings({
+                    premium_restrictions_enabled: enabled,
+                  });
+                  setAppSettings(updated);
+                  window.dispatchEvent(
+                    new CustomEvent('app:settings-updated', { detail: { appSettings: updated } })
+                  );
+                }}
+              />
+            );
           case 'legal-notice':
             return <LegalNoticePage />;
           case 'dashboard':
@@ -559,8 +608,9 @@ function App() {
           onLogout={handleLogout}
           lockedPremiumPages={lockedPremiumPages}
           billingStatusLabel={billingStatusLabel}
+          premiumRestrictionsEnabled={premiumRestrictionsEnabled}
           topBanner={
-            billingStatus && !currentUser.is_admin ? (
+            premiumRestrictionsEnabled && billingStatus && !currentUser.is_admin ? (
               <div
                 className="w-full border-b border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/30 px-3 sm:px-6 py-2.5"
                 aria-live="polite"

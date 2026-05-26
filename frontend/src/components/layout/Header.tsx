@@ -14,6 +14,7 @@ interface HeaderProps {
   onLogout: () => void;
   lockedPremiumPages?: Set<string>;
   billingStatusLabel?: string | null;
+  premiumRestrictionsEnabled?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -23,6 +24,7 @@ const Header: React.FC<HeaderProps> = ({
   onLogout,
   lockedPremiumPages = new Set(),
   billingStatusLabel = null,
+  premiumRestrictionsEnabled = true,
 }) => {
   const { t, i18n } = useI18nTranslation();
   const { mergePreferences } = usePreferences();
@@ -105,6 +107,7 @@ const Header: React.FC<HeaderProps> = ({
             currentPage={currentPage}
             onNavigate={onNavigate}
             lockedPremiumPages={lockedPremiumPages}
+            premiumRestrictionsEnabled={premiumRestrictionsEnabled}
           />
         </div>
 

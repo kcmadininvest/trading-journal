@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 from django.utils import timezone
@@ -276,6 +277,46 @@ class UserPreferences(models.Model):
     
     def __str__(self):
         return f"Préférences de {self.user.email}"
+
+
+class AppSettings(models.Model):
+    """
+    Paramètres globaux de l'application (singleton, pk=1).
+    """
+    premium_restrictions_enabled = models.BooleanField(
+        default=True,
+        verbose_name=_('Restrictions premium activées'),
+        help_text=_(
+            'Si désactivé, toutes les fonctionnalités premium sont accessibles '
+            'à tous les utilisateurs authentifiés.'
+        ),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('Paramètres application')
+        verbose_name_plural = _('Paramètres application')
+        db_table = 'accounts_appsettings'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError(_('Les paramètres application ne peuvent pas être supprimés.'))
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(
+            pk=1,
+            defaults={'premium_restrictions_enabled': True},
+        )
+        return obj
+
+    def __str__(self):
+        state = 'on' if self.premium_restrictions_enabled else 'off'
+        return f'AppSettings (premium restrictions: {state})'
 
 
 class LoginHistory(models.Model):

@@ -25,7 +25,7 @@ from trades.protected_screenshot_urls import transform_screenshot_url_for_respon
 logger = logging.getLogger(__name__)
 security_logger = logging.getLogger('security')
 
-from .models import User, UserPreferences, LoginHistory, EmailActivationToken
+from .models import AppSettings, User, UserPreferences, LoginHistory, EmailActivationToken
 from .utils import send_activation_email, create_activation_token
 from .throttling import (
     LoginThrottle,
@@ -45,6 +45,7 @@ from .serializers import (
     AdminUserUpdateSerializer,
     CustomTokenObtainPairSerializer,
     UserPreferencesSerializer,
+    AppSettingsSerializer,
     ActiveSessionSerializer,
     LoginHistorySerializer
 )
@@ -1303,6 +1304,34 @@ class UserPreferencesView(APIView):
             return Response({
                 'message': 'Préférences mises à jour avec succès',
                 'preferences': serializer.data
+            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AppSettingsView(APIView):
+    """
+    Paramètres globaux de l'application (lecture pour tout utilisateur authentifié,
+    écriture réservée aux administrateurs).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        settings_obj = AppSettings.get_solo()
+        return Response(AppSettingsSerializer(settings_obj).data)
+
+    def put(self, request):
+        if not getattr(request.user, 'is_admin', False):
+            return Response(
+                {'detail': 'Administration requise.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        settings_obj = AppSettings.get_solo()
+        serializer = AppSettingsSerializer(settings_obj, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'message': 'Paramètres application mis à jour.',
+                'app_settings': serializer.data,
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

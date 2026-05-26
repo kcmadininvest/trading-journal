@@ -11,6 +11,7 @@ interface LayoutProps {
   topBanner?: React.ReactNode;
   lockedPremiumPages?: Set<string>;
   billingStatusLabel?: string | null;
+  premiumRestrictionsEnabled?: boolean;
   children: React.ReactNode;
 }
 
@@ -22,6 +23,7 @@ const Layout: React.FC<LayoutProps> = ({
   topBanner,
   lockedPremiumPages,
   billingStatusLabel,
+  premiumRestrictionsEnabled = true,
   children,
 }) => {
   return (
@@ -34,6 +36,7 @@ const Layout: React.FC<LayoutProps> = ({
         onLogout={onLogout}
         lockedPremiumPages={lockedPremiumPages}
         billingStatusLabel={billingStatusLabel}
+        premiumRestrictionsEnabled={premiumRestrictionsEnabled}
       />
 
       {topBanner}

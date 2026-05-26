@@ -7,6 +7,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from accounts.models import AppSettings
 from billing.models import BillingPlatformSettings, CustomerSubscription
 from billing.permissions import user_has_premium_access
 
@@ -38,6 +39,29 @@ class BillingPermissionTests(TestCase):
             status=CustomerSubscription.STATUS_TRIALING,
             current_period_end=timezone.now() + timedelta(days=10),
         )
+        self.assertTrue(user_has_premium_access(user))
+
+    def test_user_without_subscription_has_no_access_when_restrictions_enabled(self):
+        user = User.objects.create_user(
+            email='free@example.com',
+            username='free',
+            password='test1234',
+            role='user',
+        )
+        AppSettings.get_solo().premium_restrictions_enabled = True
+        AppSettings.get_solo().save()
+        self.assertFalse(user_has_premium_access(user))
+
+    def test_user_without_subscription_has_access_when_restrictions_disabled(self):
+        user = User.objects.create_user(
+            email='free2@example.com',
+            username='free2',
+            password='test1234',
+            role='user',
+        )
+        settings_obj = AppSettings.get_solo()
+        settings_obj.premium_restrictions_enabled = False
+        settings_obj.save()
         self.assertTrue(user_has_premium_access(user))
 
 

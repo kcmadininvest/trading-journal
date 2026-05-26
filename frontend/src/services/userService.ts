@@ -56,6 +56,11 @@ export interface JournalPeriodStored {
 /** Clés = id de compte en chaîne ou `"all"` ; valeurs = id stratégie ou `null` (toutes) */
 export type JournalPositionStrategiesMap = Record<string, number | null>;
 
+export interface AppSettings {
+  premium_restrictions_enabled: boolean;
+  updated_at?: string;
+}
+
 export interface UserPreferences {
   language: 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
   timezone: string;
@@ -336,6 +341,31 @@ class UserService {
     }
 
     return response.json();
+  }
+
+  async getAppSettings(): Promise<AppSettings> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/app-settings/`);
+
+    if (!response.ok) {
+      throw new Error('Erreur lors de la récupération des paramètres application');
+    }
+
+    return response.json();
+  }
+
+  async updateAppSettings(data: Partial<AppSettings>): Promise<AppSettings> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/app-settings/`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Erreur lors de la mise à jour des paramètres application');
+    }
+
+    const result = await response.json();
+    return result.app_settings || result;
   }
 
   // Mettre à jour les préférences de l'utilisateur

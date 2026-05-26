@@ -10,9 +10,16 @@ interface NavigationMenuProps {
   currentPage: string;
   onNavigate: (page: string) => void;
   lockedPremiumPages?: Set<string>;
+  premiumRestrictionsEnabled?: boolean;
 }
 
-const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPage, onNavigate, lockedPremiumPages = new Set() }) => {
+const NavigationMenu: React.FC<NavigationMenuProps> = ({
+  currentUser,
+  currentPage,
+  onNavigate,
+  lockedPremiumPages = new Set(),
+  premiumRestrictionsEnabled = true,
+}) => {
   const { t } = useI18nTranslation();
   const premiumBadge = t('billing:labels.premium');
   const isLocked = (pageId: string) => lockedPremiumPages.has(pageId);
@@ -206,7 +213,7 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a5 5 0 10-10 0v2m-2 0h14a1 1 0 011 1v10a1 1 0 01-1 1H5a1 1 0 01-1-1V10a1 1 0 011-1z" />
         </svg>
       ),
-      visible: !currentUser.is_admin,
+      visible: !currentUser.is_admin && premiumRestrictionsEnabled,
     },
     {
       id: 'settings',
@@ -300,17 +307,8 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
           }
         />
 
-        {/* Settings - direct link */}
-        <NavItem
-          id={currentUser.is_admin ? 'settings' : 'billing'}
-          label={currentUser.is_admin ? t('navigation:settings') : t('navigation:billing', { defaultValue: 'Abonnement' })}
-          icon={currentUser.is_admin ? systemItems[1].icon : systemItems[0].icon}
-          badgeText={!currentUser.is_admin ? premiumBadge : undefined}
-          isActive={currentUser.is_admin ? currentPage === 'settings' : currentPage === 'billing'}
-          onClick={onNavigate}
-        />
-
-        {!currentUser.is_admin && (
+        {/* Paramètres / Abonnement */}
+        {currentUser.is_admin || !premiumRestrictionsEnabled ? (
           <NavItem
             id="settings"
             label={t('navigation:settings')}
@@ -318,6 +316,24 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({ currentUser, currentPag
             isActive={currentPage === 'settings'}
             onClick={onNavigate}
           />
+        ) : (
+          <>
+            <NavItem
+              id="billing"
+              label={t('navigation:billing', { defaultValue: 'Abonnement' })}
+              icon={systemItems[0].icon}
+              badgeText={premiumBadge}
+              isActive={currentPage === 'billing'}
+              onClick={onNavigate}
+            />
+            <NavItem
+              id="settings"
+              label={t('navigation:settings')}
+              icon={systemItems[1].icon}
+              isActive={currentPage === 'settings'}
+              onClick={onNavigate}
+            />
+          </>
         )}
 
         {/* Users - admin only, direct link */}

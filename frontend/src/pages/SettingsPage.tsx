@@ -148,7 +148,15 @@ type SettingsInitialSnapshot = {
   preferences: UserPreferences;
 };
 
-const SettingsPage: React.FC = () => {
+type SettingsPageProps = {
+  premiumRestrictionsEnabled: boolean;
+  onPremiumRestrictionsChange: (enabled: boolean) => Promise<void>;
+};
+
+const SettingsPage: React.FC<SettingsPageProps> = ({
+  premiumRestrictionsEnabled,
+  onPremiumRestrictionsChange,
+}) => {
   const { t } = useI18nTranslation();
   const { theme } = useTheme();
   const { mergePreferences } = usePreferences();
@@ -196,6 +204,8 @@ const SettingsPage: React.FC = () => {
   const [revokeSessionJti, setRevokeSessionJti] = useState<string | null>(null);
   const [showRevokeAllSessionsModal, setShowRevokeAllSessionsModal] = useState(false);
   const [revokeLoading, setRevokeLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [premiumToggleLoading, setPremiumToggleLoading] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -208,6 +218,7 @@ const SettingsPage: React.FC = () => {
         username: userProfile.username || '',
       };
       setProfile(profileData);
+      setIsAdmin(Boolean(userProfile.is_admin));
 
       try {
         const prefs = await userService.getPreferences();
@@ -270,6 +281,21 @@ const SettingsPage: React.FC = () => {
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
+  };
+
+  const handlePremiumRestrictionsToggle = async () => {
+    if (!isAdmin || premiumToggleLoading) return;
+    setPremiumToggleLoading(true);
+    try {
+      await onPremiumRestrictionsChange(!premiumRestrictionsEnabled);
+      showMessage('success', t('settings:premiumRestrictionsUpdated'));
+    } catch (error: unknown) {
+      const messageText =
+        error instanceof Error ? error.message : t('settings:premiumRestrictionsUpdateError');
+      showMessage('error', messageText);
+    } finally {
+      setPremiumToggleLoading(false);
+    }
   };
 
   const applyPreferencesServerResponse = (updatedPreferences: UserPreferences) => {
@@ -1099,6 +1125,43 @@ const SettingsPage: React.FC = () => {
                   </button>
                 </div>
               </div>
+              {isAdmin && (
+                <div className="col-span-full border-t border-gray-200 pt-5 dark:border-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('settings:premiumRestrictionsEnabled')}
+                  </label>
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <svg className="h-5 w-5 flex-shrink-0 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                      <div className="min-w-0">
+                        <span className="block text-sm text-gray-700 dark:text-gray-300">
+                          {t('settings:premiumRestrictionsEnabled')}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                          {t('settings:premiumRestrictionsEnabledDesc')}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handlePremiumRestrictionsToggle}
+                      disabled={premiumToggleLoading}
+                      aria-pressed={premiumRestrictionsEnabled}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
+                        premiumRestrictionsEnabled ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          premiumRestrictionsEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </SettingsSection>
         )}

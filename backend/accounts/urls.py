@@ -22,6 +22,7 @@ urlpatterns = [
     
     # Préférences utilisateur
     path('preferences/', views.UserPreferencesView.as_view(), name='user_preferences'),
+    path('app-settings/', views.AppSettingsView.as_view(), name='app_settings'),
 
     # Intégrations API multi-fournisseurs
     path('integrations/', include(('integrations.urls', 'integrations'))),
