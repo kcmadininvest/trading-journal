@@ -99,6 +99,13 @@ from .services.behavior_discipline import (
 )
 from .services.post_loss_sizing import compute_post_loss_sizing, empty_post_loss_sizing
 from .services.post_win_sizing import compute_post_win_sizing, empty_post_win_sizing
+from .fx_conversion import (
+    aggregate_monetary_from_trades,
+    combined_initial_capital_in_base,
+    make_pnl_getters,
+    resolve_fx_pnl_resolver,
+    sum_converted_pnl_for_queryset,
+)
 
 
 class PnlPreferenceMixin:
@@ -919,13 +926,10 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             })
         
         pf = self.get_pnl_field()
-        # Statistiques de base
-        total_trades = trades.count()
-        winning_trades = trades.filter(**{f'{pf}__gt': 0}).count()
-        losing_trades = trades.filter(**{f'{pf}__lt': 0}).count()
-        win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
-        
-        # Agrégations (total_fees = frais plateforme + commissions, aligné sur exports/stats_calculator)
+        fx_resolver = resolve_fx_pnl_resolver(request, trades)
+        pnl_dec, pnl_flt = make_pnl_getters(fx_resolver, pf)
+
+        # Agrégations frais/volume (non convertis en FX ; PnL converti ci-dessous si multi-devises)
         _zero_money = Value(Decimal('0'), output_field=DecimalField(max_digits=20, decimal_places=9))
         _effective_fees = ExpressionWrapper(
             Coalesce(F('fees'), _zero_money) + Coalesce(F('commissions'), _zero_money),
@@ -939,29 +943,40 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             total_raw_pnl=Sum('pnl'),
             total_net_pnl=Sum('net_pnl'),
         )
-        
-        # Meilleur trade : le plus gros gain parmi les trades gagnants uniquement
-        # Si aucun trade gagnant, best_trade = 0 (ne pas afficher)
-        best_trade = trades.filter(**{f'{pf}__gt': 0}).aggregate(best=Max(pf))['best']
-        if best_trade is None:
-            best_trade = Decimal('0')
-        
-        # Pire trade : le plus gros loss parmi les trades perdants uniquement
-        # Si aucun trade perdant, worst_trade = 0 (ne pas afficher)
-        worst_trade = trades.filter(**{f'{pf}__lt': 0}).aggregate(worst=Min(pf))['worst']
-        if worst_trade is None:
-            worst_trade = Decimal('0')
-        
-        # Calculs séparés pour gains et pertes
-        winning_trades_aggregate = trades.filter(**{f'{pf}__gt': 0}).aggregate(
-            total_gains=Sum(pf)
-        )
-        losing_trades_aggregate = trades.filter(**{f'{pf}__lt': 0}).aggregate(
-            total_losses=Sum(pf)
-        )
-        
-        total_gains = winning_trades_aggregate['total_gains'] or Decimal('0')
-        total_losses = losing_trades_aggregate['total_losses'] or Decimal('0')
+
+        if fx_resolver:
+            trades_list = list(trades.select_related('trading_account'))
+            monetary = aggregate_monetary_from_trades(trades_list, pnl_dec)
+            total_trades = monetary['total_trades']
+            winning_trades = monetary['winning_trades']
+            losing_trades = monetary['losing_trades']
+            total_gains = monetary['total_gains']
+            total_losses = monetary['total_losses']
+            best_trade = monetary['best_trade']
+            worst_trade = monetary['worst_trade']
+            aggregates['total_pnl'] = monetary['total_pnl']
+            aggregates['average_pnl'] = monetary['average_pnl']
+        else:
+            total_trades = trades.count()
+            winning_trades = trades.filter(**{f'{pf}__gt': 0}).count()
+            losing_trades = trades.filter(**{f'{pf}__lt': 0}).count()
+            best_trade = trades.filter(**{f'{pf}__gt': 0}).aggregate(best=Max(pf))['best']
+            if best_trade is None:
+                best_trade = Decimal('0')
+            worst_trade = trades.filter(**{f'{pf}__lt': 0}).aggregate(worst=Min(pf))['worst']
+            if worst_trade is None:
+                worst_trade = Decimal('0')
+            winning_trades_aggregate = trades.filter(**{f'{pf}__gt': 0}).aggregate(
+                total_gains=Sum(pf)
+            )
+            losing_trades_aggregate = trades.filter(**{f'{pf}__lt': 0}).aggregate(
+                total_losses=Sum(pf)
+            )
+            total_gains = winning_trades_aggregate['total_gains'] or Decimal('0')
+            total_losses = losing_trades_aggregate['total_losses'] or Decimal('0')
+
+        win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+        trades_ordered = list(trades.select_related('trading_account').order_by('entered_at'))
         
         # Calculs des ratios
         # 1. Profit Factor
@@ -1045,7 +1060,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             current_drawdown_start = None
             
             for idx, trade in enumerate(trades_ordered):
-                cumulative_capital += trade_pnl_as_decimal(trade, pf)
+                cumulative_capital += pnl_dec(trade)
                 
                 # Si on dépasse ou égale le pic précédent, on a récupéré
                 if cumulative_capital >= peak_capital:
@@ -1121,7 +1136,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 peak_capital = initial_capital  # Le pic commence au capital initial
                 
                 for trade in trades_ordered:
-                    cumulative_pnl += trade_pnl_as_decimal(trade, pf)
+                    cumulative_pnl += pnl_dec(trade)
                     current_capital = initial_capital + cumulative_pnl
                     
                     # Mettre à jour le pic si on dépasse le pic précédent
@@ -1172,7 +1187,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 peak_since_trough = initial_capital  # Le pic depuis le dernier creux
                 
                 for trade in trades_ordered:
-                    cumulative_pnl += trade_pnl_as_decimal(trade, pf)
+                    cumulative_pnl += pnl_dec(trade)
                     current_capital = initial_capital + cumulative_pnl
                     
                     # Si on descend en dessous du creux actuel, c'est un nouveau creux
@@ -1223,7 +1238,17 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         # Récupérer le capital initial du compte si un compte est sélectionné
         trading_account_id = request.query_params.get('trading_account', None)
         initial_capital = None
-        if trading_account_id:
+        if fx_resolver:
+            account_id_int = None
+            if trading_account_id:
+                try:
+                    account_id_int = int(trading_account_id)
+                except (ValueError, TypeError):
+                    account_id_int = None
+            initial_capital = combined_initial_capital_in_base(
+                request.user, account_id_int, fx_resolver
+            )
+        elif trading_account_id:
             try:
                 account = TradingAccount.objects.get(id=trading_account_id, user=request.user)  # type: ignore
                 initial_capital = account.initial_capital
@@ -1290,7 +1315,14 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                         trades_before_period = trades_before_period.filter(trading_account_id=trading_account_id)
                     trades_before_period = trades_before_period.filter(entered_at__lt=start_datetime)
                     
-                    pnl_before_period = trades_before_period.aggregate(total=Sum(pf))['total'] or Decimal('0')
+                    if fx_resolver:
+                        pnl_before_period = sum_converted_pnl_for_queryset(
+                            trades_before_period, pnl_dec
+                        )
+                    else:
+                        pnl_before_period = (
+                            trades_before_period.aggregate(total=Sum(pf))['total'] or Decimal('0')
+                        )
                     period_start_capital = initial_capital + pnl_before_period
                 except (ValueError, TypeError) as e:
                     logger.warning(f"Erreur lors du calcul du capital de début de période: {str(e)}")
@@ -1344,7 +1376,13 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         from django.db.models import Q, Exists, OuterRef
         
         # Trades avec P/L = 0 (break-even classique)
-        trades_with_zero_pnl = trades.filter(**{pf: 0})
+        if fx_resolver:
+            zero_break_even_count = sum(
+                1 for trade in trades_ordered if pnl_dec(trade) == 0
+            )
+        else:
+            trades_with_zero_pnl = trades.filter(**{pf: 0})
+            zero_break_even_count = trades_with_zero_pnl.count()
         
         # Trades gagnants (P/L > 0) sans TP atteint (tp1_reached = False et tp2_plus_reached = False)
         winning_trades_without_tp = trades.filter(
@@ -1359,30 +1397,24 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             )
         )
         
-        # Compter les deux types de break-even
-        zero_break_even_count = trades_with_zero_pnl.count()
         winning_break_even_count = winning_trades_without_tp.count()
         break_even_trades = zero_break_even_count + winning_break_even_count
         
         # 14. Sharpe Ratio — par trade et annualisé (rendements journaliers, √252)
-        trades_ordered = list(trades.order_by('entered_at'))
-        pnl_values_ordered = [
-            float(trade_pnl_as_decimal(trade, pf))
-            for trade in trades_ordered
-        ]
+        pnl_values_ordered = [float(pnl_dec(trade)) for trade in trades_ordered]
         sharpe_ratio = compute_sharpe_per_trade(pnl_values_ordered)
         period_start_balance = float(period_start_capital)
         sharpe_ratio_annualized = compute_sharpe_annualized_from_trades(
             period_start_balance,
             trades_ordered,
-            lambda trade: float(trade_pnl_as_decimal(trade, pf)),
+            lambda trade: float(pnl_dec(trade)),
             user_tz,
         )
         
         # 15. Sortino Ratio (similaire au Sharpe mais ne pénalise que la volatilité négative)
         sortino_ratio = 0.0
         if total_trades > 1:
-            pnl_values = list(trades.values_list(pf, flat=True))
+            pnl_values = pnl_values_ordered if fx_resolver else list(trades.values_list(pf, flat=True))
             if len(pnl_values) > 1:
                 import statistics
                 mean_pnl = statistics.mean([float(v) for v in pnl_values])
@@ -1450,7 +1482,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             daily_data = defaultdict(lambda: {'pnl': Decimal('0.0')})
             for trade in trades:
                 day_key = trade.entered_at.astimezone(user_tz).date()
-                daily_data[day_key]['pnl'] += trade_pnl_as_decimal(trade, pf)
+                daily_data[day_key]['pnl'] += pnl_dec(trade)
             
             # Trier les jours par date (du plus récent au plus ancien)
             sorted_days = sorted(daily_data.keys(), reverse=True)
@@ -2549,15 +2581,19 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             })
 
         pf = self.get_pnl_field()
-        post_loss_sizing = compute_post_loss_sizing(trades, pf)
-        post_win_sizing = compute_post_win_sizing(trades, pf)
+        fx_resolver = resolve_fx_pnl_resolver(request, trades)
+        pnl_dec, pnl_flt = make_pnl_getters(fx_resolver, pf)
+        pnl_float_fn = pnl_flt if fx_resolver else None
+        post_loss_sizing = compute_post_loss_sizing(trades, pf, pnl_float_fn=pnl_float_fn)
+        post_win_sizing = compute_post_win_sizing(trades, pf, pnl_float_fn=pnl_float_fn)
         # Utiliser le timezone de l'utilisateur
         user_tz = get_user_timezone(request)
+        trades_list = list(trades.select_related('trading_account'))
         # Agréger par jour
         daily_data = defaultdict(lambda: {'pnl': 0.0, 'trade_count': 0, 'trades': []})  # type: ignore
-        for trade in trades:
+        for trade in trades_list:
             day_key = trade.entered_at.astimezone(user_tz).date()
-            daily_data[day_key]['pnl'] += trade_pnl_as_float(trade, pf)  # type: ignore
+            daily_data[day_key]['pnl'] += pnl_flt(trade)  # type: ignore
             daily_data[day_key]['trade_count'] += 1  # type: ignore
             daily_data[day_key]['trades'].append(trade)  # type: ignore
 
@@ -2568,17 +2604,26 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         daily_trade_counts = [data['trade_count'] for data in daily_data.values()]  # type: ignore
 
         # Statistiques par trade
-        winning_trades = [trade_pnl_as_float(trade, pf) for trade in trades if trade_pnl_as_float(trade, pf) > 0]
-        losing_trades = [trade_pnl_as_float(trade, pf) for trade in trades if trade_pnl_as_float(trade, pf) < 0]
-        all_trade_pnls = [trade_pnl_as_float(trade, pf) for trade in trades]
+        winning_trades = [pnl_flt(trade) for trade in trades_list if pnl_flt(trade) > 0]
+        losing_trades = [pnl_flt(trade) for trade in trades_list if pnl_flt(trade) < 0]
+        all_trade_pnls = [pnl_flt(trade) for trade in trades_list]
         
         # Calculer les durées moyennes des trades gagnants et perdants
-        winning_trades_duration = trades.filter(**{f'{pf}__gt': 0}, trade_duration__isnull=False).aggregate(
-            avg_duration=Avg('trade_duration')
-        )['avg_duration']
-        losing_trades_duration = trades.filter(**{f'{pf}__lt': 0}, trade_duration__isnull=False).aggregate(
-            avg_duration=Avg('trade_duration')
-        )['avg_duration']
+        def _avg_duration_for_sign(positive: bool):
+            durations = [
+                t.trade_duration
+                for t in trades_list
+                if t.trade_duration is not None
+                and ((pnl_flt(t) > 0) if positive else (pnl_flt(t) < 0))
+            ]
+            if not durations:
+                return None
+            total_seconds = sum(d.total_seconds() for d in durations)
+            from datetime import timedelta
+            return timedelta(seconds=total_seconds / len(durations))
+
+        winning_trades_duration = _avg_duration_for_sign(True)
+        losing_trades_duration = _avg_duration_for_sign(False)
         
         # Convertir les durées en format HH:MM:SS
         def format_duration(timedelta_obj):
@@ -2633,14 +2678,14 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     current_consecutive_losses_days = 0
 
         # Calculer les séquences consécutives globales (tous les trades)
-        trades_sorted = sorted(trades, key=lambda t: t.entered_at)
+        trades_sorted = sorted(trades_list, key=lambda t: t.entered_at)
         max_consecutive_wins = 0
         max_consecutive_losses = 0
         current_consecutive_wins = 0
         current_consecutive_losses = 0
         
         for trade in trades_sorted:
-            tpv = trade_pnl_as_float(trade, pf)
+            tpv = pnl_flt(trade)
             if tpv > 0:
                 # Trade gagnant
                 current_consecutive_wins += 1
@@ -2693,11 +2738,11 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         
         # Monthly Performance (mois calendaire dans le fuseau utilisateur)
         monthly_performance = {}
-        for trade in trades:
+        for trade in trades_list:
             month_key = trade.entered_at.astimezone(user_tz).strftime('%Y-%m')
             if month_key not in monthly_performance:
                 monthly_performance[month_key] = 0.0
-            monthly_performance[month_key] += trade_pnl_as_float(trade, pf)
+            monthly_performance[month_key] += pnl_flt(trade)
         
         # Convertir en liste triée
         monthly_list = [
@@ -2749,7 +2794,7 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'post_loss_sizing': post_loss_sizing,
             'post_win_sizing': post_win_sizing,
             'behavior_discipline': compute_behavior_discipline(
-                daily_data, trades, pf
+                daily_data, trades, pf, pnl_float_fn=pnl_float_fn
             ),
         })
 
@@ -5457,3 +5502,48 @@ def market_quotes(request):
 
     bootstrap_market_quotes_for_user(request.user)
     return Response(load_snapshot(request.user.id))
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def fx_rates(request):
+    """
+    Taux de change récents (Frankfurter) pour normaliser les montants multi-comptes.
+    Query: base=USD&symbols=EUR,GBP
+    """
+    from integrations.fx_rates_service import fetch_latest_rates
+
+    base = (request.query_params.get('base') or 'USD').strip().upper()
+    symbols_param = request.query_params.get('symbols') or ''
+    symbol_list = [s.strip().upper() for s in symbols_param.split(',') if s.strip()]
+    symbol_list = [s for s in symbol_list if s != base]
+
+    if not symbol_list:
+        return Response(
+            {
+                'available': True,
+                'base_currency': base,
+                'rates': {},
+                'fx_conversion_applied': False,
+            }
+        )
+
+    rates = fetch_latest_rates(base, symbol_list)
+    if rates is None:
+        return Response(
+            {
+                'available': False,
+                'base_currency': base,
+                'rates': {},
+                'fx_conversion_applied': False,
+            }
+        )
+
+    return Response(
+        {
+            'available': True,
+            'base_currency': base,
+            'rates': rates,
+            'fx_conversion_applied': True,
+        }
+    )

@@ -328,10 +328,28 @@
       "smallerDesc": "Taille réduite : bon réflexe de gestion du risque après un gain."
     }
   },
+  "multiCurrency": {
+    "noConversionWarning": "Plusieurs devises actives sans conversion FX : les montants agrégés sont masqués. Sélectionnez un compte unique ou vérifiez la devise par défaut dans les paramètres.",
+    "partialTabNote": "Sans conversion FX : pourcentages, effectifs et répartitions de taille restent affichés ; seuls les montants agrégés (PnL moyen) sont masqués."
+  },
   "behaviorNarrative": {
     "tabTitle": "Synthèse",
+    "ui": {
+      "kpiWinRate": "Win rate",
+      "kpiProfitFactor": "Profit factor",
+      "kpiSharpe": "Sharpe (annualisé)",
+      "alertRevenge": "Revenge trading",
+      "alertSizing": "Sizing inversé",
+      "toneBadge": {
+        "excellent": "Excellente période",
+        "positive": "Belle dynamique",
+        "mixed": "Période contrastée",
+        "challenging": "Période exigeante"
+      }
+    },
     "intro": {
       "heading": "Vue d'ensemble",
+      "tradeCount": "{{count}} trades analysés sur la période sélectionnée.",
       "excellent": "Excellente période : vos métriques et votre discipline confirment un vrai edge. Félicitations pour ce niveau de constance.",
       "positive": "Belle dynamique : vous avez de solides bases sur cette période. Continuez sur cette lancée en capitalisant sur ce qui fonctionne.",
       "mixed": "Période contrastée : des points forts à capitaliser et quelques réflexes à ajuster. Vous êtes sur la bonne voie en restant lucide.",
@@ -356,8 +374,65 @@
       "sharpeExcellent": "Votre Sharpe annualisé de {{sharpe}} est exceptionnel : bravo pour cette régularité.",
       "sharpeAverage": "Votre Sharpe annualisé de {{sharpe}} est correct — en lissant la volatilité, vous pouvez encore gagner en constance.",
       "sharpePoor": "Votre Sharpe annualisé de {{sharpe}} reflète une période instable — privilégiez la régularité du risque pris trade après trade.",
+      "winRateGood": "Votre win rate de {{winRate}} % est solide sur la période.",
+      "winRateAverage": "Votre win rate de {{winRate}} % est dans une zone intermédiaire — la qualité d'exécution peut faire la différence.",
+      "winRatePoor": "Votre win rate de {{winRate}} % est bas — privilégiez la sélectivité et le respect du plan.",
+      "expectancyPositive": "Votre espérance par trade est positive ({{expectancy}}) : chaque trade rapporte en moyenne.",
+      "expectancyNegative": "Votre espérance par trade est négative ({{expectancy}}) sur la période — resserrez le risque.",
       "streaks": "Votre série gagnante maximale de {{maxWins}} trades consécutifs, pour seulement {{maxLosses}} perdants d'affilée, témoigne d'une vraie consistance.",
       "encourageNoMetrics": "Les chiffres globaux sont exigeants sur cette période, mais chaque session est une nouvelle chance : ancrez-vous sur votre plan et la taille de position."
+    },
+    "risk": {
+      "title": {
+        "celebrate": "Risque maîtrisé",
+        "excellent": "Résilience",
+        "positive": "Profil de risque",
+        "mixed": "Risque et drawdown",
+        "challenging": "Risque à surveiller"
+      },
+      "drawdownHigh": "Drawdown max de {{drawdownPct}} % ({{drawdownAmount}}) — protégez le capital avant d'augmenter la taille.",
+      "drawdownModerate": "Drawdown max de {{drawdownPct}} % ({{drawdownAmount}}) : reste gérable si vous tenez votre plan.",
+      "recoveryGood": "Facteur de récupération de {{recovery}} : vous regagnez efficacement après les creux.",
+      "recoveryLow": "Facteur de récupération de {{recovery}} : les pertes mettent plus de temps à être regagnées."
+    },
+    "rhythm": {
+      "title": {
+        "excellent": "Rythme journalier",
+        "positive": "Cadence de trading",
+        "mixed": "Rythme sur la période",
+        "challenging": "Rythme à calmer"
+      },
+      "overtrading": "En moyenne {{count}} trades par jour actif — au-delà de 10, la qualité des décisions baisse souvent.",
+      "healthyPace": "Rythme sain : environ {{count}} trades par jour actif (zone 3–5 idéale pour le day trading).",
+      "worstDay": "Votre journée la plus difficile : {{day}} ({{pnl}}).",
+      "worstDayNoMoney": "Journée la plus difficile observée : {{day}} (montants masqués — plusieurs devises)."
+    },
+    "habits": {
+      "title": "Habitudes post-trade",
+      "postLoss": {
+        "larger": "Après une perte, vous augmentez souvent la taille — détail dans l'onglet « {{tab}} ».",
+        "equal": "Après une perte, vous garnez globalement la même taille — bon réflexe (voir « {{tab}} »).",
+        "smaller": "Après une perte, vous réduisez souvent la taille — discipline prudente (voir « {{tab}} »).",
+        "insufficient": "Pas assez de cas post-perte pour résumer une habitude de sizing."
+      },
+      "postWin": {
+        "larger": "Après un gain, vous augmentez souvent la taille — surveillez la surconfiance (onglet « {{tab}} »).",
+        "equal": "Après un gain, vous conservez la taille — bonne discipline (onglet « {{tab}} »).",
+        "smaller": "Après un gain, vous réduisez souvent la taille (onglet « {{tab}} »)."
+      }
+    },
+    "process": {
+      "title": {
+        "excellent": "Exécution du plan",
+        "positive": "Processus",
+        "mixed": "Plan et direction",
+        "challenging": "Processus à renforcer"
+      },
+      "planRespectGood": "Sur {{comparableCount}} trades comparables (R/R prévu et réel renseignés), {{rate}} % ont un R/R réalisé supérieur ou égal au R/R prévu.",
+      "planRespectLow": "Sur {{comparableCount}} trades comparables (R/R prévu et réel), seulement {{rate}} % ont atteint le R/R prévu — souvent une sortie trop tôt ou un stop élargi par rapport au plan initial.",
+      "rrGap": "R/R planifié {{planned}} vs réalisé {{actual}} en moyenne.",
+      "biasLong": "Forte orientation long ({{longPct}} % long / {{shortPct}} % short).",
+      "biasShort": "Forte orientation short ({{longPct}} % long / {{shortPct}} % short)."
     },
     "alerts": {
       "title": {
@@ -371,7 +446,7 @@
           "challenging": "Discipline à préserver"
         }
       },
-      "revengeEncourage": "Après une journée perdante, vous passez en moyenne de {{afterWin}} à {{afterLoss}} trades le lendemain (+{{pct}} %) — un réflexe à surveiller pour protéger votre capital.",
+      "revengeEncourage": "Après une journée perdante, vous passez en moyenne de {{afterWin}} à {{afterLoss}} trades le lendemain — un réflexe à surveiller pour protéger votre capital.",
       "revengeWorstMonth": "Cela peut expliquer en partie les pertes concentrées en {{month}}.",
       "sizingEncourage": "Vos positions perdantes sont en moyenne {{pct}} % plus grosses que les gagnantes — essayez de garder la même conviction, quelle que soit l'issue attendue.",
       "congratulateClean": "Bravo : aucun signal majeur de revenge trading ni de sizing inversé sur cette période. Votre discipline tient la route.",
@@ -390,7 +465,8 @@
       "bestHoursCelebrate": "Bravo : vos meilleures performances se concentrent vers {{hours}} (fuseau {{timezone}}).",
       "worstHourEncourage": "La plage {{hour}} est moins favorable ({{pnl}} sur la période) — vous performez mieux ailleurs ; à éviter pour l'instant (fuseau {{timezone}}).",
       "weekdays": "{{bestDay}} est votre meilleur jour (win rate {{bestWinRate}} %, {{bestPnl}}), {{worstDay}} le plus délicat.",
-      "weekdaysCelebrate": "Félicitations : {{bestDay}} est votre jour le plus fort ({{bestWinRate}} % de win rate, {{bestPnl}}), alors que {{worstDay}} demande plus de prudence."
+      "weekdaysCelebrate": "Félicitations : {{bestDay}} est votre jour le plus fort ({{bestWinRate}} % de win rate, {{bestPnl}}), alors que {{worstDay}} demande plus de prudence.",
+      "weekdaysNoMoney": "{{bestDay}} est votre meilleur jour (win rate {{bestWinRate}} %), {{worstDay}} le plus délicat — montants agrégés masqués (devises multiples)."
     },
     "duration": {
       "title": {
@@ -417,6 +493,7 @@
       },
       "bestWeek": "Votre semaine {{week}} ({{year}}) ressort comme la meilleure ({{pnl}}, {{winRate}} % de win rate).",
       "bestWeekCelebrate": "Félicitations : la semaine {{week}} ({{year}}) est votre pic de performance ({{pnl}}, {{winRate}} % de win rate).",
+      "bestWeekNoMoney": "Meilleure semaine en win rate : S{{week}} {{year}} ({{winRate}} %).",
       "progression": "Globalement, vous progressez sur la seconde moitié de la période — continuez dans cette direction.",
       "progressionCelebrate": "Belle progression sur la seconde moitié de la période : votre courbe va dans le bon sens.",
       "volatile": "La trajectoire reste contrastée — identifiez les semaines difficiles pour mieux les anticiper.",

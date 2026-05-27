@@ -85,7 +85,8 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [dropdownWidth, setDropdownWidth] = useState<number | undefined>(undefined);
   const [minWidth, setMinWidth] = useState<number | undefined>(undefined);
-  const [buttonMinWidth, setButtonMinWidth] = useState<number | undefined>(undefined);
+  const [dropdownTop, setDropdownTop] = useState<number | undefined>(undefined);
+  const [dropdownLeft, setDropdownLeft] = useState<number | undefined>(undefined);
   const [dropdownPosition, setDropdownPosition] = useState<'bottom' | 'top'>('bottom');
   const [maxDropdownHeight, setMaxDropdownHeight] = useState<number | undefined>(undefined);
   const isMountedRef = useRef(false);
@@ -191,69 +192,6 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
 
   const currentOption = useMemo(() => options.find(o => o.value === currentValue) || options[0], [options, currentValue]);
 
-  // Calculer la largeur minimale nécessaire pour tous les contenus possibles
-  useEffect(() => {
-    if (buttonRef.current && options.length > 0) {
-      const calculateMinWidth = () => {
-        if (!buttonRef.current) return;
-        
-        // Créer un élément temporaire pour mesurer le texte
-        const tempElement = document.createElement('span');
-        tempElement.style.visibility = 'hidden';
-        tempElement.style.position = 'absolute';
-        tempElement.style.whiteSpace = 'nowrap';
-        const buttonStyle = window.getComputedStyle(buttonRef.current);
-        tempElement.style.fontSize = buttonStyle.fontSize;
-        tempElement.style.fontFamily = buttonStyle.fontFamily;
-        tempElement.style.fontWeight = buttonStyle.fontWeight;
-        document.body.appendChild(tempElement);
-        
-          // Calculer la largeur pour chaque option
-          let maxContentWidth = 0;
-          options.forEach(opt => {
-            const label = opt.label;
-            tempElement.textContent = label;
-          const contentWidth = tempElement.offsetWidth;
-          // Ajouter de l'espace pour le badge "default" si présent
-          const hasBadge = (opt as any).isDefault;
-          const badgeWidth = hasBadge ? 80 : 0; // Estimation de la largeur du badge
-          const totalWidth = contentWidth + badgeWidth;
-          if (totalWidth > maxContentWidth) {
-            maxContentWidth = totalWidth;
-          }
-        });
-        
-        document.body.removeChild(tempElement);
-        
-        // Ajouter le padding du bouton (px-3 = 12px de chaque côté) + icône flèche (16px) + gap (8px)
-        const buttonPadding = 24; // 12px * 2
-        const iconWidth = 16;
-        const gap = 8;
-        const minButtonWidth = maxContentWidth + buttonPadding + iconWidth + gap;
-        const containerWidth = dropdownRef.current?.parentElement?.clientWidth;
-        const availableWidth = containerWidth || undefined;
-        const cappedMinWidth = availableWidth ? Math.min(minButtonWidth, availableWidth) : minButtonWidth;
-        
-        setButtonMinWidth(cappedMinWidth);
-      };
-      
-      // Calculer une fois que le composant est monté
-      const timer = setTimeout(calculateMinWidth, 0);
-      
-      // Recalculer si les options changent
-      window.addEventListener('resize', calculateMinWidth);
-      
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('resize', calculateMinWidth);
-      };
-    }
-  }, [options]);
-
-  // State pour stocker la position calculée du dropdown
-  const [dropdownTop, setDropdownTop] = useState<number | undefined>(undefined);
-  const [dropdownLeft, setDropdownLeft] = useState<number | undefined>(undefined);
-
   // Réinitialiser les positions quand on ferme le dropdown
   useEffect(() => {
     if (!open) {
@@ -271,8 +209,7 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
           const buttonWidth = buttonRef.current.offsetWidth;
           const buttonRect = buttonRef.current.getBoundingClientRect();
           setMinWidth(buttonWidth);
-          setDropdownLeft(buttonRect.left);
-          
+
           // Calculer l'espace disponible au-dessus et en dessous du bouton
           const spaceBelow = window.innerHeight - buttonRect.bottom;
           const spaceAbove = buttonRect.top;
@@ -298,9 +235,11 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
             if (spaceBelow > spaceAbove) {
               position = 'bottom';
               maxHeight = spaceBelow - marginSafety;
+              setDropdownTop(buttonRect.bottom + 4);
             } else {
               position = 'top';
               maxHeight = spaceAbove - marginSafety;
+              setDropdownTop(buttonRect.top - 4);
             }
           }
           
@@ -331,10 +270,18 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
           });
           
           document.body.removeChild(tempElement);
-          
-          // Utiliser le maximum entre la largeur minimale (bouton) et la largeur du contenu
-          const finalWidth = Math.max(buttonWidth, maxContentWidth);
+
+          const viewportMargin = 16;
+          const maxViewportWidth = Math.max(
+            buttonWidth,
+            window.innerWidth - buttonRect.left - viewportMargin,
+          );
+          const idealWidth = Math.max(buttonWidth, maxContentWidth);
+          const finalWidth = Math.min(idealWidth, maxViewportWidth);
           setDropdownWidth(finalWidth);
+          setDropdownLeft(
+            Math.max(viewportMargin, Math.min(buttonRect.left, window.innerWidth - finalWidth - viewportMargin)),
+          );
         }
       };
       
@@ -379,7 +326,7 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
   const isBand = variant === 'band';
   const triggerClass = isBand
     ? bandAccountTriggerClass
-    : 'flex-1 inline-flex h-10 items-center justify-between rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+    : 'flex-1 inline-flex h-10 items-center gap-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
   const labelTextClass = isBand
     ? 'text-white truncate transition-all duration-200'
     : 'text-gray-900 dark:text-gray-100 truncate transition-all duration-200';
@@ -391,18 +338,17 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
     : `h-4 w-4 text-gray-400 dark:text-gray-500 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`;
 
   return (
-    <div className={hideLabel ? (isBand ? 'min-w-0' : 'max-w-sm') : 'mb-4 max-w-sm'}>
+    <div className={hideLabel ? 'min-w-0 w-full max-w-full' : 'mb-4 w-full max-w-sm'}>
       {!hideLabel && (
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common:tradingAccount')}</label>
       )}
-      <div ref={dropdownRef} className="relative flex items-center gap-2">
+      <div ref={dropdownRef} className="relative flex w-full min-w-0 items-center gap-2">
         <button
           ref={buttonRef}
           type="button"
           disabled={loading}
           onClick={() => setOpen(v => !v)}
-          className={triggerClass}
-          style={{ minWidth: buttonMinWidth ? `${buttonMinWidth}px` : undefined }}
+          className={`${triggerClass} w-full min-w-0`}
         >
           <span className="inline-flex items-center gap-2 min-w-0 flex-1">
             <span className={labelTextClass}>
@@ -422,10 +368,9 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
             <div
               ref={menuRef}
               role="listbox"
-              className="fixed z-[9999] rounded-md border border-gray-200 bg-white shadow-lg overflow-auto dark:border-gray-700 dark:bg-gray-800"
+              className="fixed z-[9999] rounded-md border border-gray-200 bg-white shadow-lg overflow-y-auto overflow-x-hidden dark:border-gray-700 dark:bg-gray-800"
               style={{
                 width: dropdownWidth ? `${dropdownWidth}px` : minWidth ? `${minWidth}px` : '200px',
-                minWidth: buttonMinWidth ? `${buttonMinWidth}px` : minWidth ? `${minWidth}px` : undefined,
                 maxHeight: maxDropdownHeight ? `${maxDropdownHeight}px` : '288px',
                 top: `${dropdownTop}px`,
                 left: `${dropdownLeft}px`,
@@ -442,14 +387,14 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
                         else onChange && onChange(opt.value as number);
                         setOpen(false);
                       }}
-                      className={`flex w-full items-center justify-between px-3 py-2 text-left transition-colors ${
+                      className={`flex w-full min-w-0 items-center gap-2 px-3 py-2 text-left transition-colors ${
                         opt.value === currentValue
                           ? 'bg-blue-50/90 font-medium text-blue-900 dark:bg-blue-950/45 dark:text-blue-100'
                           : 'text-gray-800 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'
                       }`}
                     >
                       <span
-                        className={`flex-1 whitespace-nowrap text-left transition-all duration-200 ${
+                        className={`min-w-0 flex-1 truncate text-left transition-all duration-200 ${
                           opt.value === currentValue
                             ? 'text-blue-900 dark:text-blue-100'
                             : 'text-gray-900 dark:text-gray-100'
@@ -458,7 +403,7 @@ const AccountSelectorComponent: React.FC<AccountSelectorProps> = ({
                         {renderAccountName(opt.label, hideAccountNumber)}
                       </span>
                       {(opt as any).isDefault && (
-                        <span className="ml-2 inline-flex flex-shrink-0 items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                        <span className="inline-flex flex-shrink-0 items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
                           {t('common:default')}
                         </span>
                       )}

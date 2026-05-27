@@ -104,6 +104,7 @@ export function classifyTradeOutcomeFromPnl(pnl: number): TradeOutcome {
 export interface TradeForDurationAggregate extends TradeDurationSource {
   pnl?: string | null;
   net_pnl?: string | null;
+  convertedPnl?: number | null;
 }
 
 export interface DurationBucketPerformanceRow {
@@ -142,12 +143,16 @@ function emptyBucketCounters(): Record<
 function accumulateTradeInBuckets(
   buckets: ReturnType<typeof emptyBucketCounters>,
   trade: TradeForDurationAggregate,
-  pnlDisplayMode: PnlDisplayMode
+  pnlDisplayMode: PnlDisplayMode,
+  useConvertedPnl = false,
 ): void {
   const minutes = getTradeDurationMinutesForBucket(trade);
   if (minutes == null) return;
 
-  const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+  const pnl =
+    useConvertedPnl && trade.convertedPnl != null
+      ? trade.convertedPnl
+      : getTradeDisplayPnlValue(trade, pnlDisplayMode);
   if (pnl === null || !Number.isFinite(pnl)) return;
 
   const bucketKey = categorizeDuration(minutes);
@@ -164,10 +169,13 @@ function accumulateTradeInBuckets(
 /** Agrégation performance (P/L moyen + win rate) par tranche — source unique pour Analytics. */
 export function aggregateDurationPerformance(
   trades: TradeForDurationAggregate[],
-  pnlDisplayMode: PnlDisplayMode
+  pnlDisplayMode: PnlDisplayMode,
+  useConvertedPnl = false,
 ): DurationBucketPerformanceRow[] {
   const buckets = emptyBucketCounters();
-  trades.forEach((trade) => accumulateTradeInBuckets(buckets, trade, pnlDisplayMode));
+  trades.forEach((trade) =>
+    accumulateTradeInBuckets(buckets, trade, pnlDisplayMode, useConvertedPnl),
+  );
 
   return DURATION_BUCKET_ORDER.flatMap((key) => {
     const bucket = buckets[key];

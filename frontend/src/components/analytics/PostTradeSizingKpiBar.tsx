@@ -44,6 +44,7 @@ interface PostTradeSizingKpiBarProps {
   larger: PostLossSizingCategory;
   formatNumber: (value: number, digits?: number) => string;
   privacyMask?: (value: string) => string;
+  hideAggregatedMoney?: boolean;
 }
 
 export const PostTradeSizingKpiBar: React.FC<PostTradeSizingKpiBarProps> = ({
@@ -54,6 +55,7 @@ export const PostTradeSizingKpiBar: React.FC<PostTradeSizingKpiBarProps> = ({
   larger,
   formatNumber,
   privacyMask,
+  hideAggregatedMoney = false,
 }) => {
   const { t } = useTranslation('analytics');
   const mask = (v: string) => (privacyMask ? privacyMask(v) : v);
@@ -127,28 +129,37 @@ export const PostTradeSizingKpiBar: React.FC<PostTradeSizingKpiBarProps> = ({
           />
         </div>
 
-        <BarSeparator className="hidden xl:block xl:mx-4" />
-        <div className="border-t border-gray-200 dark:border-gray-600 xl:hidden" aria-hidden />
+        {hideAggregatedMoney ? (
+          <>
+            <BarSeparator className="hidden xl:block xl:mx-4" />
+            <div className="border-t border-gray-200 dark:border-gray-600 xl:hidden" aria-hidden />
+          </>
+        ) : (
+          <>
+            <BarSeparator className="hidden xl:block xl:mx-4" />
+            <div className="border-t border-gray-200 dark:border-gray-600 xl:hidden" aria-hidden />
 
-        {/* PnL moyen */}
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className={labelClass}>
-            {t(`${i18nPrefix}.avgPnlAfterLarger`)}
-            <TooltipComponent content={t(`${i18nPrefix}.avgPnlAfterLargerTooltip`)} position="top">
-              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-200/80 dark:bg-gray-600 cursor-help">
-                <svg className="h-3 w-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            {/* PnL moyen */}
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className={labelClass}>
+                {t(`${i18nPrefix}.avgPnlAfterLarger`)}
+                <TooltipComponent content={t(`${i18nPrefix}.avgPnlAfterLargerTooltip`)} position="top">
+                  <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-200/80 dark:bg-gray-600 cursor-help">
+                    <svg className="h-3 w-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </span>
+                </TooltipComponent>
               </span>
-            </TooltipComponent>
-          </span>
-          <span className={`text-xl font-semibold tabular-nums ${avgPnlValueClass(larger.avg_pnl)}`}>
-            {mask(formatNumber(larger.avg_pnl, 2))}
-          </span>
-        </div>
+              <span className={`text-xl font-semibold tabular-nums ${avgPnlValueClass(larger.avg_pnl)}`}>
+                {mask(formatNumber(larger.avg_pnl, 2))}
+              </span>
+            </div>
 
-        <BarSeparator className="hidden xl:block xl:mx-4" />
-        <div className="border-t border-gray-200 dark:border-gray-600 xl:hidden" aria-hidden />
+            <BarSeparator className="hidden xl:block xl:mx-4" />
+            <div className="border-t border-gray-200 dark:border-gray-600 xl:hidden" aria-hidden />
+          </>
+        )}
 
         {/* Win rate */}
         <div className="flex min-w-0 flex-1 flex-col gap-1">

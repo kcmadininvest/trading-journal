@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any, Literal
+from collections.abc import Callable
+from typing import Any, Literal, Optional
 
 from django.conf import settings
 
@@ -76,6 +77,7 @@ def _finalize_buckets(
 def compute_post_loss_sizing(
     trades_queryset,
     pnl_field: str,
+    pnl_float_fn: Optional[Callable[[Any], float]] = None,
 ) -> dict[str, Any]:
     """
     Pour chaque trade perdant ayant un trade suivant dans le queryset filtré,
@@ -83,6 +85,7 @@ def compute_post_loss_sizing(
     et vs la médiane récente (même famille de contrat).
     """
     lookback = _median_lookback()
+    pnl_of = pnl_float_fn or (lambda trade: trade_pnl_as_float(trade, pnl_field))
     trades = list(trades_queryset.order_by('entered_at', 'id'))
 
     vs_losing_raw: dict[str, dict[str, Any]] = _empty_category_buckets()
@@ -96,7 +99,7 @@ def compute_post_loss_sizing(
     skipped_unknown_contract = 0
 
     for i, losing_trade in enumerate(trades):
-        pnl = trade_pnl_as_float(losing_trade, pnl_field)
+        pnl = pnl_of(losing_trade)
         if pnl >= 0:
             continue
         if i + 1 >= len(trades):
@@ -120,7 +123,7 @@ def compute_post_loss_sizing(
             skipped_unknown_contract += 1
             continue
 
-        next_pnl = trade_pnl_as_float(next_trade, pnl_field)
+        next_pnl = pnl_of(next_trade)
         sample_size += 1
 
         cat_losing = _compare_size(next_risk, loss_risk)

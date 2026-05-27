@@ -69,6 +69,7 @@ interface PostTradeSizingPanelProps {
   formatNumber: (value: number, digits?: number) => string;
   privacyMask?: (value: string) => string;
   showHeader?: boolean;
+  hideAggregatedMoney?: boolean;
 }
 
 const InterpretationScale: React.FC<{ isDark: boolean; i18nPrefix: PostTradeSizingI18nPrefix }> = ({
@@ -134,6 +135,7 @@ interface BaselineSectionProps {
   isDark: boolean;
   formatNumber: PostTradeSizingPanelProps['formatNumber'];
   privacyMask?: PostTradeSizingPanelProps['privacyMask'];
+  hideAggregatedMoney?: boolean;
 }
 
 const BaselineSection: React.FC<BaselineSectionProps> = ({
@@ -146,6 +148,7 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
   isDark,
   formatNumber,
   privacyMask,
+  hideAggregatedMoney = false,
 }) => {
   const { t } = useTranslation('analytics');
 
@@ -244,18 +247,20 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
             <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
               <th className="pb-2 pr-2 font-medium">{t(`${i18nPrefix}.pct`)}</th>
               <th className="pb-2 pr-2 font-medium">{t(`${i18nPrefix}.count`)}</th>
-              <th className="pb-2 pr-2 font-medium">
-                <span className="inline-flex items-center gap-1">
-                  {t(`${i18nPrefix}.avgPnl`)}
-                  <TooltipComponent content={t(`${i18nPrefix}.avgPnlTooltip`)} position="top">
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200/80 dark:bg-gray-600 cursor-help">
-                      <svg className="h-3 w-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </span>
-                  </TooltipComponent>
-                </span>
-              </th>
+              {!hideAggregatedMoney ? (
+                <th className="pb-2 pr-2 font-medium">
+                  <span className="inline-flex items-center gap-1">
+                    {t(`${i18nPrefix}.avgPnl`)}
+                    <TooltipComponent content={t(`${i18nPrefix}.avgPnlTooltip`)} position="top">
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-gray-200/80 dark:bg-gray-600 cursor-help">
+                        <svg className="h-3 w-3 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </span>
+                    </TooltipComponent>
+                  </span>
+                </th>
+              ) : null}
               <th className="pb-2 font-medium">{t(`${i18nPrefix}.winRate`)}</th>
             </tr>
           </thead>
@@ -279,9 +284,11 @@ const BaselineSection: React.FC<BaselineSectionProps> = ({
                     {t(`${i18nPrefix}.${cat}`)} ({formatNumber(row.pct, 1)}%)
                   </td>
                   <td className="py-2 pr-2 text-gray-700 dark:text-gray-300">{row.count}</td>
-                  <td className="py-2 pr-2 text-gray-700 dark:text-gray-300">
-                    {mask(formatNumber(row.avg_pnl, 2))}
-                  </td>
+                  {!hideAggregatedMoney ? (
+                    <td className="py-2 pr-2 text-gray-700 dark:text-gray-300">
+                      {mask(formatNumber(row.avg_pnl, 2))}
+                    </td>
+                  ) : null}
                   <td className="py-2 text-gray-700 dark:text-gray-300">
                     {formatNumber(row.win_rate, 1)}%
                   </td>
@@ -306,6 +313,7 @@ const PostTradeSizingPanel: React.FC<PostTradeSizingPanelProps> = ({
   formatNumber,
   privacyMask,
   showHeader = true,
+  hideAggregatedMoney = false,
 }) => {
   const { t } = useTranslation('analytics');
 
@@ -330,6 +338,12 @@ const PostTradeSizingPanel: React.FC<PostTradeSizingPanelProps> = ({
         </div>
       )}
 
+      {hideAggregatedMoney ? (
+        <p className="text-sm text-amber-800 dark:text-amber-200/90">
+          {t('multiCurrency.partialTabNote')}
+        </p>
+      ) : null}
+
       <PostTradeSizingKpiBar
         i18nPrefix={i18nPrefix}
         sampleSize={data.sample_size}
@@ -338,6 +352,7 @@ const PostTradeSizingPanel: React.FC<PostTradeSizingPanelProps> = ({
         larger={larger}
         formatNumber={formatNumber}
         privacyMask={privacyMask}
+        hideAggregatedMoney={hideAggregatedMoney}
       />
 
       <InterpretationScale isDark={isDark} i18nPrefix={i18nPrefix} />
@@ -353,6 +368,7 @@ const PostTradeSizingPanel: React.FC<PostTradeSizingPanelProps> = ({
           isDark={isDark}
           formatNumber={formatNumber}
           privacyMask={privacyMask}
+          hideAggregatedMoney={hideAggregatedMoney}
         />
         <BaselineSection
           title={t(`${i18nPrefix}.vsMedian`)}
@@ -364,6 +380,7 @@ const PostTradeSizingPanel: React.FC<PostTradeSizingPanelProps> = ({
           isDark={isDark}
           formatNumber={formatNumber}
           privacyMask={privacyMask}
+          hideAggregatedMoney={hideAggregatedMoney}
         />
       </div>
     </div>
@@ -377,6 +394,7 @@ interface PostLossSizingPanelProps {
   formatNumber: (value: number, digits?: number) => string;
   privacyMask?: (value: string) => string;
   showHeader?: boolean;
+  hideAggregatedMoney?: boolean;
 }
 
 export const PostLossSizingPanel: React.FC<PostLossSizingPanelProps> = ({
@@ -400,6 +418,7 @@ interface PostWinSizingPanelProps {
   formatNumber: (value: number, digits?: number) => string;
   privacyMask?: (value: string) => string;
   showHeader?: boolean;
+  hideAggregatedMoney?: boolean;
 }
 
 export const PostWinSizingPanel: React.FC<PostWinSizingPanelProps> = ({

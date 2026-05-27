@@ -47,6 +47,20 @@ export function resolveSectionTitle(
       }
       return `behaviorNarrative.trajectory.title.${tone}`;
 
+    case 'risk':
+      return tone === 'excellent' || tone === 'positive'
+        ? 'behaviorNarrative.risk.title.celebrate'
+        : `behaviorNarrative.risk.title.${tone}`;
+
+    case 'rhythm':
+      return `behaviorNarrative.rhythm.title.${tone}`;
+
+    case 'habits':
+      return 'behaviorNarrative.habits.title';
+
+    case 'process':
+      return `behaviorNarrative.process.title.${tone}`;
+
     default:
       return `behaviorNarrative.${sectionId}.title`;
   }

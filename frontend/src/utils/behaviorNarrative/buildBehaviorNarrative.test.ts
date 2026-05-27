@@ -13,6 +13,7 @@ const t = (key: string, options?: Record<string, unknown>): string => {
 
 const formatNumber = (value: number, digits = 2) => value.toFixed(digits);
 const formatCurrency = (value: number, symbol = '') => `${symbol}${value.toFixed(0)}`;
+const formatDate = (iso: string) => iso;
 
 function baseContext(overrides: Partial<BehaviorNarrativeContext> = {}): BehaviorNarrativeContext {
   const partial = {
@@ -21,6 +22,24 @@ function baseContext(overrides: Partial<BehaviorNarrativeContext> = {}): Behavio
     sharpeAnnualized: 2.5,
     expectancy: 100,
     winRate: 65,
+    monetaryNarrativesEnabled: true,
+    aggregationMode: 'single_account' as const,
+    maxDrawdownPct: 8,
+    maxDrawdownGlobal: -500,
+    recoveryRatio: 1.8,
+    calmarRatio: 1.2,
+    dailyRhythm: null,
+    postLossDominantCategory: null,
+    postLossSampleSize: 0,
+    postWinDominantCategory: null,
+    postWinSampleSize: 0,
+    planRespectRate: null,
+    avgPlannedRr: null,
+    avgActualRr: null,
+    tradesWithPlannedRr: 0,
+    tradesWithBothRr: 0,
+    longPercentage: null,
+    shortPercentage: null,
     maxConsecutiveWins: 14,
     maxConsecutiveLosses: 3,
     revenge: {
@@ -83,10 +102,14 @@ function baseContext(overrides: Partial<BehaviorNarrativeContext> = {}): Behavio
       profitFactor: partial.profitFactor ?? null,
       sharpeAnnualized: partial.sharpeAnnualized ?? null,
       expectancy: partial.expectancy ?? 0,
+      winRate: partial.winRate ?? 0,
+      maxDrawdownPct: partial.maxDrawdownPct ?? null,
+      recoveryRatio: partial.recoveryRatio ?? null,
       revenge: partial.revenge ?? null,
       sizing: partial.sizing ?? null,
       trajectoryProgression: partial.trajectoryProgression ?? false,
       trajectoryVolatile: partial.trajectoryVolatile ?? false,
+      monetaryNarrativesEnabled: partial.monetaryNarrativesEnabled ?? true,
     });
 
   return { ...partial, tone };
@@ -99,6 +122,7 @@ describe('buildBehaviorNarrative', () => {
       t,
       formatNumber,
       formatCurrency,
+      formatDate,
       currencySymbol: '$',
     });
 
@@ -112,6 +136,7 @@ describe('buildBehaviorNarrative', () => {
       t,
       formatNumber,
       formatCurrency,
+      formatDate,
       currencySymbol: '$',
     });
 
@@ -149,6 +174,7 @@ describe('buildBehaviorNarrative', () => {
       t,
       formatNumber,
       formatCurrency,
+      formatDate,
       currencySymbol: '$',
     });
 
@@ -172,12 +198,33 @@ describe('buildBehaviorNarrative', () => {
       t,
       formatNumber,
       formatCurrency,
+      formatDate,
       currencySymbol: '$',
     });
 
     const strengths = sections.find((s) => s.id === 'strengths');
     expect(strengths?.paragraphs.some((p) => p.includes('profitFactorAverage'))).toBe(true);
     expect(strengths?.paragraphs.some((p) => p.includes('profitFactorGood'))).toBe(false);
+  });
+
+  it('omet les sections monétaires en mode multi-devises sans conversion', () => {
+    const sections = buildBehaviorNarrative({
+      context: baseContext({
+        monetaryNarrativesEnabled: false,
+        aggregationMode: 'multi_mixed_no_money',
+      }),
+      t,
+      formatNumber,
+      formatCurrency,
+      formatDate,
+      currencySymbol: '',
+    });
+
+    expect(sections.find((s) => s.id === 'duration')).toBeUndefined();
+    expect(sections.find((s) => s.id === 'risk')).toBeUndefined();
+    expect(sections.find((s) => s.id === 'timeWindows')).toBeDefined();
+    const strengths = sections.find((s) => s.id === 'strengths');
+    expect(strengths?.paragraphs.some((p) => p.includes('expectancyPositive'))).toBe(false);
   });
 });
 

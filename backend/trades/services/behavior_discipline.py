@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from collections.abc import Callable
 from typing import Any, Literal, Optional
 
 from trades.contract_utils.contract_family import trade_risk_units
@@ -81,18 +82,23 @@ def compute_revenge_trading(daily_data: dict[date, dict[str, Any]]) -> dict[str,
     }
 
 
-def compute_sizing_discipline(trades_queryset, pnl_field: str) -> dict[str, Any]:
+def compute_sizing_discipline(
+    trades_queryset,
+    pnl_field: str,
+    pnl_float_fn: Optional[Callable[[Any], float]] = None,
+) -> dict[str, Any]:
     """Moyenne d'exposition (risk_units) sur trades gagnants vs perdants."""
     winning_units: list[Decimal] = []
     losing_units: list[Decimal] = []
     skipped_unknown_contract = 0
 
+    pnl_of = pnl_float_fn or (lambda trade: trade_pnl_as_float(trade, pnl_field))
     for trade in trades_queryset:
         units = trade_risk_units(trade)
         if units is None:
             skipped_unknown_contract += 1
             continue
-        pnl = trade_pnl_as_float(trade, pnl_field)
+        pnl = pnl_of(trade)
         if pnl > 0:
             winning_units.append(units)
         elif pnl < 0:
@@ -174,8 +180,11 @@ def compute_behavior_discipline(
     daily_data: dict[date, dict[str, Any]],
     trades_queryset,
     pnl_field: str,
+    pnl_float_fn: Optional[Callable[[Any], float]] = None,
 ) -> dict[str, Any]:
     return {
         'revenge_trading': compute_revenge_trading(daily_data),
-        'sizing_discipline': compute_sizing_discipline(trades_queryset, pnl_field),
+        'sizing_discipline': compute_sizing_discipline(
+            trades_queryset, pnl_field, pnl_float_fn=pnl_float_fn
+        ),
     }

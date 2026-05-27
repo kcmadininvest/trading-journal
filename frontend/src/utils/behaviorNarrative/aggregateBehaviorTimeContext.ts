@@ -10,10 +10,23 @@ import type {
 } from './types';
 
 export interface TradeForTimeAggregate {
+  trading_account?: number;
   entered_at?: string;
   trade_day?: string | null;
   pnl?: string | null;
   net_pnl?: string | null;
+  convertedPnl?: number | null;
+}
+
+function resolveTradePnl(
+  trade: TradeForTimeAggregate,
+  pnlDisplayMode: PnlDisplayMode,
+  useConvertedPnl: boolean,
+): number | null {
+  if (useConvertedPnl && trade.convertedPnl != null) {
+    return trade.convertedPnl;
+  }
+  return getTradeDisplayPnlValue(trade, pnlDisplayMode);
 }
 
 function getHourInTimezone(isoDate: string, timeZone: string): number {
@@ -31,11 +44,12 @@ export function aggregateHourlyPerformance(
   trades: TradeForTimeAggregate[],
   timeZone: string,
   pnlDisplayMode: PnlDisplayMode,
+  useConvertedPnl = false,
 ): HourlyPerformanceRow[] {
   const buckets: Record<number, { totalPnl: number; tradeCount: number }> = {};
 
   trades.forEach((trade) => {
-    const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+    const pnl = resolveTradePnl(trade, pnlDisplayMode, useConvertedPnl);
     if (!trade.entered_at || pnl === null) return;
 
     const hour = getHourInTimezone(trade.entered_at, timeZone);
@@ -60,6 +74,7 @@ export function aggregateWeekdayPerformance(
   dayNames: string[],
   timeZone: string,
   pnlDisplayMode: PnlDisplayMode,
+  useConvertedPnl = false,
 ): WeekdayPerformanceRow[] {
   const sunday = dayNames[0];
   const saturday = dayNames[6];
@@ -70,7 +85,7 @@ export function aggregateWeekdayPerformance(
   });
 
   trades.forEach((trade) => {
-    const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+    const pnl = resolveTradePnl(trade, pnlDisplayMode, useConvertedPnl);
     if (pnl === null) return;
 
     const calendarKey =
@@ -107,6 +122,7 @@ export function aggregateWeeklyPerformance(
   trades: TradeForTimeAggregate[],
   timeZone: string,
   pnlDisplayMode: PnlDisplayMode,
+  useConvertedPnl = false,
 ): WeeklyPerformanceRow[] {
   const buckets: Record<
     string,
@@ -114,7 +130,7 @@ export function aggregateWeeklyPerformance(
   > = {};
 
   trades.forEach((trade) => {
-    const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+    const pnl = resolveTradePnl(trade, pnlDisplayMode, useConvertedPnl);
     if (pnl === null) return;
 
     const calendarKey =

@@ -325,10 +325,28 @@
       "smallerDesc": "Tamaño menor: buen reflejo de gestión del riesgo tras una ganancia."
     }
   },
+  "multiCurrency": {
+    "noConversionWarning": "Varias divisas activas sin conversión FX: los importes agregados están ocultos. Seleccione una cuenta única o revise la divisa predeterminada en Ajustes.",
+    "partialTabNote": "Sin conversión FX: porcentajes, recuentos y distribuciones de tamaño siguen visibles; solo se ocultan importes agregados (P/L medio)."
+  },
   "behaviorNarrative": {
     "tabTitle": "Resumen",
+    "ui": {
+      "kpiWinRate": "Win rate",
+      "kpiProfitFactor": "Profit factor",
+      "kpiSharpe": "Sharpe (anualizado)",
+      "alertRevenge": "Revenge trading",
+      "alertSizing": "Sizing invertido",
+      "toneBadge": {
+        "excellent": "Período excelente",
+        "positive": "Buena dinámica",
+        "mixed": "Período contrastado",
+        "challenging": "Período exigente"
+      }
+    },
     "intro": {
       "heading": "Panorama general",
+      "tradeCount": "{{count}} operaciones analizadas en el período seleccionado.",
       "excellent": "Excelente período: sus métricas y su disciplina confirman un edge real. Felicitaciones por este nivel de constancia.",
       "positive": "Buena dinámica: tiene bases sólidas en este período. Siga capitalizando lo que funciona.",
       "mixed": "Período contrastado: puntos fuertes que aprovechar y algunos hábitos que ajustar. Mantener la lucidez le mantiene en el buen camino.",
@@ -354,7 +372,64 @@
       "sharpeAverage": "Su Sharpe anualizado de {{sharpe}} es correcto — suavizar la volatilidad puede mejorar aún la constancia.",
       "sharpePoor": "Su Sharpe anualizado de {{sharpe}} refleja un período inestable — priorice un riesgo regular operación a operación.",
       "streaks": "Su racha ganadora máxima de {{maxWins}} operaciones seguidas, con solo {{maxLosses}} perdedoras seguidas, demuestra consistencia real.",
-      "encourageNoMetrics": "Las cifras globales son exigentes en este período, pero cada sesión es un nuevo comienzo: ancle su plan y el tamaño de posición."
+      "encourageNoMetrics": "Las cifras globales son exigentes en este período, pero cada sesión es un nuevo comienzo: ancle su plan y el tamaño de posición.",
+      "winRateGood": "Su win rate del {{winRate}} % es sólido en el período.",
+      "winRateAverage": "Su win rate del {{winRate}} % es intermedio.",
+      "winRatePoor": "Su win rate del {{winRate}} % es bajo — priorice selectividad y plan.",
+      "expectancyPositive": "Expectativa positiva por operación ({{expectancy}}).",
+      "expectancyNegative": "Expectativa negativa ({{expectancy}}) — reduzca el riesgo."
+    },
+    "risk": {
+      "title": {
+        "celebrate": "Riesgo controlado",
+        "excellent": "Resiliencia",
+        "positive": "Perfil de riesgo",
+        "mixed": "Riesgo y drawdown",
+        "challenging": "Riesgo a vigilar"
+      },
+      "drawdownHigh": "Drawdown máx. {{drawdownPct}} % ({{drawdownAmount}}).",
+      "drawdownModerate": "Drawdown máx. {{drawdownPct}} % ({{drawdownAmount}}).",
+      "recoveryGood": "Factor de recuperación {{recovery}}.",
+      "recoveryLow": "Factor de recuperación {{recovery}}."
+    },
+    "rhythm": {
+      "title": {
+        "excellent": "Ritmo diario",
+        "positive": "Ritmo de trading",
+        "mixed": "Ritmo del período",
+        "challenging": "Calmar el ritmo"
+      },
+      "overtrading": "Media de {{count}} operaciones por día activo.",
+      "healthyPace": "Ritmo sano: unas {{count}} operaciones por día activo.",
+      "worstDay": "Peor día: {{day}} ({{pnl}}).",
+      "worstDayNoMoney": "Peor día: {{day}} (importes ocultos)."
+    },
+    "habits": {
+      "title": "Hábitos post-operación",
+      "postLoss": {
+        "larger": "Tras una pérdida suele aumentar el tamaño — pestaña « {{tab}} ».",
+        "equal": "Tras una pérdida mantiene el tamaño (ver « {{tab}} »).",
+        "smaller": "Tras una pérdida suele reducir el tamaño (ver « {{tab}} »).",
+        "insufficient": "Muestra insuficiente post-pérdida."
+      },
+      "postWin": {
+        "larger": "Tras una ganancia suele aumentar el tamaño (pestaña « {{tab}} »).",
+        "equal": "Tras una ganancia mantiene el tamaño (pestaña « {{tab}} »).",
+        "smaller": "Tras una ganancia suele reducir el tamaño (pestaña « {{tab}} »)."
+      }
+    },
+    "process": {
+      "title": {
+        "excellent": "Ejecución del plan",
+        "positive": "Proceso",
+        "mixed": "Plan y dirección",
+        "challenging": "Reforzar el proceso"
+      },
+      "planRespectGood": "En {{comparableCount}} operaciones comparables (R/R planificado y real), el {{rate}} % alcanzó R/R real ≥ R/R planificado.",
+      "planRespectLow": "En {{comparableCount}} operaciones comparables, solo el {{rate}} % cumplió el R/R planificado — a menudo salida anticipada o stop más amplio.",
+      "rrGap": "R/R planificado {{planned}} vs realizado {{actual}}.",
+      "biasLong": "Sesgo long ({{longPct}} % / {{shortPct}} %).",
+      "biasShort": "Sesgo short ({{longPct}} % / {{shortPct}} %)."
     },
     "alerts": {
       "title": {
@@ -368,7 +443,7 @@
           "challenging": "Disciplina a preservar"
         }
       },
-      "revengeEncourage": "Tras un día perdedor, pasa de {{afterWin}} a {{afterLoss}} operaciones de media al día siguiente (+{{pct}} %) — un reflejo a vigilar para proteger su capital.",
+      "revengeEncourage": "Tras un día perdedor, pasa de {{afterWin}} a {{afterLoss}} operaciones de media al día siguiente — un reflejo a vigilar para proteger su capital.",
       "revengeWorstMonth": "Esto puede explicar en parte las pérdidas concentradas en {{month}}.",
       "sizingEncourage": "Sus posiciones perdedoras son de media un {{pct}} % más grandes que las ganadoras — intente mantener la misma convicción sea cual sea el resultado esperado.",
       "congratulateClean": "Enhorabuena: sin señales mayores de revenge trading ni sizing invertido en este período. Su disciplina se sostiene.",
@@ -387,7 +462,8 @@
       "bestHoursCelebrate": "Enhorabuena: sus mejores resultados se concentran hacia {{hours}} (zona horaria {{timezone}}).",
       "worstHourEncourage": "La franja {{hour}} es menos favorable ({{pnl}} en el período) — rinde mejor en otros horarios; conviene evitarla por ahora (zona horaria {{timezone}}).",
       "weekdays": "{{bestDay}} es su mejor día ({{bestWinRate}} % de acierto, {{bestPnl}}), {{worstDay}} el más delicado.",
-      "weekdaysCelebrate": "Felicitaciones: {{bestDay}} es su día más fuerte ({{bestWinRate}} % de acierto, {{bestPnl}}), mientras {{worstDay}} pide más prudencia."
+      "weekdaysCelebrate": "Felicitaciones: {{bestDay}} es su día más fuerte ({{bestWinRate}} % de acierto, {{bestPnl}}), mientras {{worstDay}} pide más prudencia.",
+      "weekdaysNoMoney": "{{bestDay}} mejor día ({{bestWinRate}} %), {{worstDay}} más débil — importes ocultos."
     },
     "duration": {
       "title": {
@@ -414,6 +490,7 @@
       },
       "bestWeek": "Su semana {{week}} ({{year}}) destaca como la mejor ({{pnl}}, {{winRate}} % de acierto).",
       "bestWeekCelebrate": "Felicitaciones: la semana {{week}} ({{year}}) es su pico de rendimiento ({{pnl}}, {{winRate}} % de acierto).",
+      "bestWeekNoMoney": "Mejor semana por win rate: S{{week}} {{year}} ({{winRate}} %).",
       "progression": "En conjunto, progresa en la segunda mitad del período — siga en esa dirección.",
       "progressionCelebrate": "Buena progresión en la segunda mitad del período: su curva va en la dirección correcta.",
       "volatile": "La trayectoria sigue siendo contrastada — identifique las semanas difíciles para anticiparlas mejor.",

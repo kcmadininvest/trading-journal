@@ -46,4 +46,4 @@ export const bandFrameClass =
   `${BAND_CONTROL_HEIGHT} w-full min-w-0 inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-medium shadow-sm text-white sm:text-sm`;
 
 export const bandAccountTriggerClass =
-  `${BAND_CONTROL_HEIGHT} flex-1 inline-flex items-center justify-between rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-medium text-white shadow-sm transition-colors hover:border-white/25 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:ring-offset-0 focus:ring-offset-transparent disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm`;
+  `${BAND_CONTROL_HEIGHT} flex-1 inline-flex items-center gap-3 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-medium text-white shadow-sm transition-colors hover:border-white/25 hover:bg-white/15 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:ring-offset-0 focus:ring-offset-transparent disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm`;

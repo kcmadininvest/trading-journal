@@ -33,10 +33,14 @@ type ToneInput = Pick<
   | 'profitFactor'
   | 'sharpeAnnualized'
   | 'expectancy'
+  | 'winRate'
+  | 'maxDrawdownPct'
+  | 'recoveryRatio'
   | 'revenge'
   | 'sizing'
   | 'trajectoryProgression'
   | 'trajectoryVolatile'
+  | 'monetaryNarrativesEnabled'
 >;
 
 export function classifyNarrativeTone(input: ToneInput): NarrativeTone {
@@ -58,6 +62,19 @@ export function classifyNarrativeTone(input: ToneInput): NarrativeTone {
     else score -= 1;
   }
 
+  if (input.winRate >= 55) score += 1;
+  else if (input.winRate < 40) score -= 1;
+
+  if (input.monetaryNarrativesEnabled) {
+    if (input.maxDrawdownPct != null && input.maxDrawdownPct > 15) score -= 1;
+    if (input.recoveryRatio != null) {
+      if (input.recoveryRatio >= 1.5) score += 1;
+      else if (input.recoveryRatio < 0.8) score -= 1;
+    }
+    if (input.expectancy > 0) score += 1;
+    else if (input.expectancy < 0) score -= 1;
+  }
+
   const revengeWarning = input.revenge?.alertLevel === 'warning';
   const sizingWarning = input.sizing?.alertLevel === 'warning';
   const alertCount = (revengeWarning ? 1 : 0) + (sizingWarning ? 1 : 0);
@@ -73,9 +90,6 @@ export function classifyNarrativeTone(input: ToneInput): NarrativeTone {
 
   if (input.trajectoryProgression) score += 1;
   if (input.trajectoryVolatile) score -= 1;
-
-  if (input.expectancy > 0) score += 1;
-  else if (input.expectancy < 0) score -= 1;
 
   if (score >= 5) return 'excellent';
   if (score >= 2) return 'positive';

@@ -17,8 +17,15 @@ import { PositionStrategyFilterField } from '../components/common/PositionStrate
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
-import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
-import type { LanguageType } from '../utils/dateFormat';
+import {
+  formatCurrency as formatCurrencyUtil,
+  formatNumber as formatNumberUtil,
+  getCurrencySymbolForCode,
+} from '../utils/numberFormat';
+import { formatDate as formatDateUtil, type LanguageType } from '../utils/dateFormat';
+import { useFinancialAggregationMode } from '../hooks/useFinancialAggregationMode';
+import { applyConvertedPnlToTrades } from '../utils/convertTradePnl';
+import { MultiCurrencyWarningBanner } from '../components/analytics/MultiCurrencyWarningBanner';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
@@ -100,6 +107,19 @@ const BehaviorPage: React.FC = () => {
     selectedMonth,
   });
 
+  const financialAggregation = useFinancialAggregationMode(
+    accountId,
+    preferences.default_currency || 'USD',
+    selectedAccount?.currency,
+  );
+
+  const statsConvertTo = useMemo(() => {
+    if (accountId != null || financialAggregation.mode !== 'multi_mixed_converted') {
+      return null;
+    }
+    return financialAggregation.baseCurrency;
+  }, [accountId, financialAggregation.mode, financialAggregation.baseCurrency]);
+
   const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
     accountId,
     startDate: summaryStartDate,
@@ -121,6 +141,7 @@ const BehaviorPage: React.FC = () => {
     selectedPeriod?.end || null,
     selectedPositionStrategy,
     pnlDisplayMode,
+    statsConvertTo,
   );
 
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(
@@ -131,6 +152,7 @@ const BehaviorPage: React.FC = () => {
     selectedPeriod?.end || null,
     selectedPositionStrategy,
     pnlDisplayMode,
+    statsConvertTo,
   );
 
   useEffect(() => {
@@ -239,12 +261,39 @@ const BehaviorPage: React.FC = () => {
   }, [accountId]);
 
   const currencySymbol = useMemo(() => {
-    if (!selectedAccount || !currencies.length) return '';
-    const currency = currencies.find((c) => c.code === selectedAccount.currency);
-    return currency?.symbol || '';
-  }, [selectedAccount, currencies]);
+    const code =
+      financialAggregation.displayCurrencyCode || selectedAccount?.currency || '';
+    if (!code || !currencies.length) return '';
+    return getCurrencySymbolForCode(code, currencies);
+  }, [financialAggregation.displayCurrencyCode, selectedAccount?.currency, currencies]);
 
-  const isLoading = accountLoading || analyticsLoading || statisticsLoading;
+  const formatDate = useCallback(
+    (isoDate: string) =>
+      formatDateUtil(isoDate, preferences.date_format, false, preferences.timezone),
+    [preferences.date_format, preferences.timezone],
+  );
+
+  const tradesForNarrative = useMemo(() => {
+    if (financialAggregation.mode !== 'multi_mixed_converted') {
+      return filteredTrades;
+    }
+    return applyConvertedPnlToTrades(
+      filteredTrades,
+      financialAggregation.accountCurrencyById,
+      financialAggregation.baseCurrency,
+      financialAggregation.fxRates,
+      pnlDisplayMode,
+    );
+  }, [
+    filteredTrades,
+    financialAggregation.mode,
+    financialAggregation.accountCurrencyById,
+    financialAggregation.baseCurrency,
+    financialAggregation.fxRates,
+    pnlDisplayMode,
+  ]);
+
+  const useConvertedPnl = financialAggregation.mode === 'multi_mixed_converted';
 
   const weekdayDayNames = useMemo(
     () => [
@@ -281,37 +330,48 @@ const BehaviorPage: React.FC = () => {
     [i18n.language, preferences.timezone],
   );
 
-  const narrativeSections = useMemo(() => {
-    const context = buildBehaviorNarrativeContext({
+  const narrativeContext = useMemo(() => {
+    return buildBehaviorNarrativeContext({
       statisticsData,
       analyticsData,
-      trades: filteredTrades,
+      trades: tradesForNarrative,
       timezone: preferences.timezone,
       pnlDisplayMode,
       weekdayDayNames,
       formatMonthLabel,
-    });
-
-    return buildBehaviorNarrative({
-      context,
-      t,
-      formatNumber,
-      formatCurrency: (value, symbol) => formatCurrency(value, symbol ?? currencySymbol),
-      currencySymbol,
+      monetaryNarrativesEnabled: financialAggregation.monetaryNarrativesEnabled,
+      aggregationMode: financialAggregation.mode,
+      useConvertedPnl,
     });
   }, [
     statisticsData,
     analyticsData,
-    filteredTrades,
+    tradesForNarrative,
     preferences.timezone,
     pnlDisplayMode,
     weekdayDayNames,
     formatMonthLabel,
-    t,
-    formatNumber,
-    formatCurrency,
-    currencySymbol,
+    financialAggregation.monetaryNarrativesEnabled,
+    financialAggregation.mode,
+    useConvertedPnl,
   ]);
+
+  const isLoading =
+    accountLoading ||
+    analyticsLoading ||
+    statisticsLoading ||
+    (accountId == null && financialAggregation.fxLoading);
+
+  const narrativeSections = useMemo(() => {
+    return buildBehaviorNarrative({
+      context: narrativeContext,
+      t,
+      formatNumber,
+      formatCurrency: (value, symbol) => formatCurrency(value, symbol ?? currencySymbol),
+      formatDate,
+      currencySymbol,
+    });
+  }, [narrativeContext, t, formatNumber, formatCurrency, formatDate, currencySymbol]);
 
   const behaviorTabs = useMemo(
     () => [
@@ -321,7 +381,12 @@ const BehaviorPage: React.FC = () => {
         content: (
           <BehaviorNarrativePanel
             sections={narrativeSections}
+            context={narrativeContext}
             error={statisticsError ?? analyticsError}
+            hideMoney={privacySettings.hideProfitLoss}
+            currencySymbol={currencySymbol}
+            showMultiCurrencyWarning={financialAggregation.maskAggregatedMoney}
+            formatNumber={formatNumber}
           />
         ),
       },
@@ -332,6 +397,7 @@ const BehaviorPage: React.FC = () => {
           <BehaviorDisciplinePanel
             data={analyticsData?.behavior_discipline}
             formatNumber={formatNumber}
+            showMultiCurrencyNote={financialAggregation.maskAggregatedMoney}
           />
         ),
       },
@@ -345,6 +411,7 @@ const BehaviorPage: React.FC = () => {
             isDark={isDark}
             formatNumber={formatNumber}
             showHeader={false}
+            hideAggregatedMoney={financialAggregation.maskAggregatedMoney}
           />
         ),
       },
@@ -358,20 +425,25 @@ const BehaviorPage: React.FC = () => {
             isDark={isDark}
             formatNumber={formatNumber}
             showHeader={false}
+            hideAggregatedMoney={financialAggregation.maskAggregatedMoney}
           />
         ),
       },
     ],
     [
       narrativeSections,
+      narrativeContext,
       statisticsError,
       analyticsError,
+      privacySettings.hideProfitLoss,
+      currencySymbol,
+      financialAggregation.maskAggregatedMoney,
+      formatNumber,
       analyticsData?.behavior_discipline,
       analyticsData?.post_loss_sizing,
       analyticsData?.post_win_sizing,
       chartColors,
       isDark,
-      formatNumber,
       t,
     ],
   );
@@ -447,6 +519,11 @@ const BehaviorPage: React.FC = () => {
           </p>
         </div>
       )}
+
+      <MultiCurrencyWarningBanner
+        show={financialAggregation.maskAggregatedMoney}
+        className="mb-4"
+      />
 
       <TabsFilter
         storageKey="behavior-active-tab"

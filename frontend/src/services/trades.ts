@@ -278,7 +278,8 @@ class TradesService {
     month?: number | null,
     startDate?: string | null,
     endDate?: string | null,
-    positionStrategy?: number | null
+    positionStrategy?: number | null,
+    convertTo?: string | null,
   ): Promise<{
     total_trades: number;
     winning_trades: number;
@@ -364,6 +365,9 @@ class TradesService {
     if (positionStrategy) {
       queryParams.append('position_strategy', String(positionStrategy));
     }
+    if (convertTo && !tradingAccountId) {
+      queryParams.append('convert_to', convertTo);
+    }
     
     const qs = queryParams.toString();
     const url = `${this.BASE_URL}/api/trades/topstep/statistics/${qs ? `?${qs}` : ''}`;
@@ -378,7 +382,8 @@ class TradesService {
     month?: number | null,
     startDate?: string | null,
     endDate?: string | null,
-    positionStrategy?: number | null
+    positionStrategy?: number | null,
+    convertTo?: string | null,
   ): Promise<{
     daily_stats: {
       avg_gain_per_day: number;
@@ -456,6 +461,9 @@ class TradesService {
     
     if (positionStrategy) {
       queryParams.append('position_strategy', String(positionStrategy));
+    }
+    if (convertTo && !tradingAccountId) {
+      queryParams.append('convert_to', convertTo);
     }
     
     const qs = queryParams.toString();

@@ -5,11 +5,17 @@ import { resolveSectionTitle } from './resolveSectionTitle';
 import type { BuildBehaviorNarrativeInput, NarrativeSection, NarrativeTone } from './types';
 import {
   BEHAVIOR_NARRATIVE_LOW_VOLUME_BUCKET,
+  BEHAVIOR_NARRATIVE_MIN_PLANNED_RR_TRADES,
   BEHAVIOR_NARRATIVE_MIN_STREAK_WINS,
   BEHAVIOR_NARRATIVE_MIN_TRADES,
   BEHAVIOR_NARRATIVE_MIN_TRADES_PER_HOUR,
+  BEHAVIOR_NARRATIVE_POST_SIZING_MIN_SAMPLE,
   BEHAVIOR_NARRATIVE_SWEET_SPOT_MIN_TRADES,
+  HEALTHY_TRADES_PER_DAY_MAX,
+  HEALTHY_TRADES_PER_DAY_MIN,
+  OVERTRADING_TRADES_PER_DAY_THRESHOLD,
 } from './types';
+import type { NarrativeHighlight } from './types';
 
 function formatHourLabel(hour: number): string {
   return `${hour}h`;
@@ -44,17 +50,36 @@ function buildIntroSection(input: BuildBehaviorNarrativeInput): NarrativeSection
   return {
     id: 'intro',
     titleKey: 'behaviorNarrative.intro.heading',
-    paragraphs: [t(`analytics:behaviorNarrative.intro.${context.tone}`)],
+    paragraphs: [
+      t(`analytics:behaviorNarrative.intro.${context.tone}`),
+      t('analytics:behaviorNarrative.intro.tradeCount', { count: context.tradeCount }),
+    ],
     toneVariant: context.tone,
+    kind: 'prose',
   };
 }
 
 function buildStrengthsSection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
-  const { context, t, formatNumber } = input;
+  const { context, t, formatNumber, formatCurrency, currencySymbol } = input;
   const paragraphs: string[] = [];
+  const highlights: NarrativeHighlight[] = [];
   const tone = context.tone;
 
+  highlights.push({
+    labelKey: 'behaviorNarrative.ui.kpiWinRate',
+    value: `${formatNumber(context.winRate, 1)}%`,
+    tone: context.winRate >= 50 ? 'positive' : context.winRate < 40 ? 'negative' : 'neutral',
+  });
+
   if (context.profitFactor != null) {
+    highlights.push({
+      labelKey: 'behaviorNarrative.ui.kpiProfitFactor',
+      value: formatNumber(context.profitFactor, 2),
+      tone:
+        getGaugeVerdict(context.profitFactor, GAUGE_CONFIGS.profitFactor) === 'good'
+          ? 'positive'
+          : 'neutral',
+    });
     const verdict = getGaugeVerdict(context.profitFactor, GAUGE_CONFIGS.profitFactor);
     if (verdict === 'good') {
       paragraphs.push(
@@ -78,6 +103,14 @@ function buildStrengthsSection(input: BuildBehaviorNarrativeInput): NarrativeSec
   }
 
   if (context.sharpeAnnualized != null) {
+    highlights.push({
+      labelKey: 'behaviorNarrative.ui.kpiSharpe',
+      value: formatNumber(context.sharpeAnnualized, 2),
+      tone:
+        getGaugeVerdict(context.sharpeAnnualized, GAUGE_CONFIGS.sharpeRatioAnnualized) === 'good'
+          ? 'positive'
+          : 'neutral',
+    });
     const verdict = getGaugeVerdict(context.sharpeAnnualized, GAUGE_CONFIGS.sharpeRatioAnnualized);
     if (verdict === 'good') {
       const key =
@@ -99,6 +132,28 @@ function buildStrengthsSection(input: BuildBehaviorNarrativeInput): NarrativeSec
       paragraphs.push(
         t('analytics:behaviorNarrative.strengths.sharpePoor', {
           sharpe: formatNumber(context.sharpeAnnualized, 2),
+        }),
+      );
+    }
+  }
+
+  const winVerdict =
+    context.winRate >= 55 ? 'good' : context.winRate >= 45 ? 'average' : 'poor';
+  paragraphs.push(
+    t(`analytics:behaviorNarrative.strengths.winRate${winVerdict === 'good' ? 'Good' : winVerdict === 'average' ? 'Average' : 'Poor'}`, {
+      winRate: formatNumber(context.winRate, 1),
+    }),
+  );
+
+  if (context.monetaryNarrativesEnabled) {
+    if (context.expectancy !== 0) {
+      const expKey =
+        context.expectancy > 0
+          ? 'analytics:behaviorNarrative.strengths.expectancyPositive'
+          : 'analytics:behaviorNarrative.strengths.expectancyNegative';
+      paragraphs.push(
+        t(expKey, {
+          expectancy: formatCurrency(context.expectancy, currencySymbol),
         }),
       );
     }
@@ -126,6 +181,8 @@ function buildStrengthsSection(input: BuildBehaviorNarrativeInput): NarrativeSec
     id: 'strengths',
     titleKey: resolveSectionTitle('strengths', tone),
     paragraphs,
+    highlights,
+    kind: 'highlight',
     toneVariant: tone,
   };
 }
@@ -145,11 +202,12 @@ function buildAlertsSection(input: BuildBehaviorNarrativeInput): NarrativeSectio
     context.sizing.hasSufficientData &&
     context.sizing.pctLargerOnLosers != null;
 
+  const alertHighlights: NarrativeHighlight[] = [];
+
   if (revengeWarning && context.revenge) {
     let text = t('analytics:behaviorNarrative.alerts.revengeEncourage', {
       afterLoss: formatNumber(context.revenge.avgAfterLoss, 1),
       afterWin: formatNumber(context.revenge.avgAfterWin, 1),
-      pct: formatNumber(context.revenge.pctIncrease!, 0),
     });
     if (context.worstMonthLabel) {
       text += ` ${t('analytics:behaviorNarrative.alerts.revengeWorstMonth', {
@@ -157,6 +215,11 @@ function buildAlertsSection(input: BuildBehaviorNarrativeInput): NarrativeSectio
       })}`;
     }
     paragraphs.push(text);
+    alertHighlights.push({
+      labelKey: 'behaviorNarrative.ui.alertRevenge',
+      value: `+${formatNumber(context.revenge.pctIncrease!, 0)}%`,
+      tone: 'negative',
+    });
   }
 
   if (sizingWarning && context.sizing) {
@@ -165,6 +228,11 @@ function buildAlertsSection(input: BuildBehaviorNarrativeInput): NarrativeSectio
         pct: formatNumber(context.sizing.pctLargerOnLosers!, 0),
       }),
     );
+    alertHighlights.push({
+      labelKey: 'behaviorNarrative.ui.alertSizing',
+      value: `+${formatNumber(context.sizing.pctLargerOnLosers!, 0)}%`,
+      tone: 'negative',
+    });
   }
 
   if (paragraphs.length === 0) {
@@ -183,6 +251,7 @@ function buildAlertsSection(input: BuildBehaviorNarrativeInput): NarrativeSectio
       titleKey: resolveSectionTitle('alerts', tone, { alertsState: 'clean' }),
       paragraphs: [t(cleanKey)],
       toneVariant: tone,
+      kind: 'prose',
     };
   }
 
@@ -190,6 +259,8 @@ function buildAlertsSection(input: BuildBehaviorNarrativeInput): NarrativeSectio
     id: 'alerts',
     titleKey: resolveSectionTitle('alerts', tone, { alertsState: 'warnings' }),
     paragraphs,
+    highlights: alertHighlights.length > 0 ? alertHighlights : undefined,
+    kind: alertHighlights.length > 0 ? 'alert' : 'prose',
     toneVariant: tone,
   };
 }
@@ -197,6 +268,7 @@ function buildAlertsSection(input: BuildBehaviorNarrativeInput): NarrativeSectio
 function buildTimeWindowsSection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
   const { context, t, formatNumber, formatCurrency, currencySymbol } = input;
   const tone = context.tone;
+  const monetary = context.monetaryNarrativesEnabled;
   const { best, worst } = pickTopHours(context.hourly, BEHAVIOR_NARRATIVE_MIN_TRADES_PER_HOUR);
   const { best: bestDay, worst: worstDay } = pickWeekdayExtremes(context.weekday);
 
@@ -217,7 +289,7 @@ function buildTimeWindowsSection(input: BuildBehaviorNarrativeInput): NarrativeS
     );
   }
 
-  if (worst) {
+  if (worst && monetary) {
     paragraphs.push(
       t('analytics:behaviorNarrative.timeWindows.worstHourEncourage', {
         hour: formatHourLabel(worst.hour),
@@ -228,17 +300,27 @@ function buildTimeWindowsSection(input: BuildBehaviorNarrativeInput): NarrativeS
   }
 
   if (bestDay && worstDay && bestDay.day !== worstDay.day) {
-    const key = isCelebrateTone(tone)
-      ? 'analytics:behaviorNarrative.timeWindows.weekdaysCelebrate'
-      : 'analytics:behaviorNarrative.timeWindows.weekdays';
-    paragraphs.push(
-      t(key, {
-        bestDay: bestDay.day,
-        bestWinRate: formatNumber(bestDay.winRate, 0),
-        bestPnl: formatCurrency(bestDay.totalPnl, currencySymbol),
-        worstDay: worstDay.day,
-      }),
-    );
+    if (monetary) {
+      const key = isCelebrateTone(tone)
+        ? 'analytics:behaviorNarrative.timeWindows.weekdaysCelebrate'
+        : 'analytics:behaviorNarrative.timeWindows.weekdays';
+      paragraphs.push(
+        t(key, {
+          bestDay: bestDay.day,
+          bestWinRate: formatNumber(bestDay.winRate, 0),
+          bestPnl: formatCurrency(bestDay.totalPnl, currencySymbol),
+          worstDay: worstDay.day,
+        }),
+      );
+    } else {
+      paragraphs.push(
+        t('analytics:behaviorNarrative.timeWindows.weekdaysNoMoney', {
+          bestDay: bestDay.day,
+          bestWinRate: formatNumber(bestDay.winRate, 0),
+          worstDay: worstDay.day,
+        }),
+      );
+    }
   }
 
   if (paragraphs.length === 0) return null;
@@ -253,6 +335,7 @@ function buildTimeWindowsSection(input: BuildBehaviorNarrativeInput): NarrativeS
 
 function buildDurationSection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
   const { context, t, formatNumber, formatCurrency, currencySymbol } = input;
+  if (!context.monetaryNarrativesEnabled) return null;
   const tone = context.tone;
   const buckets = context.durationBuckets;
   if (buckets.length === 0) return null;
@@ -314,13 +397,202 @@ function buildDurationSection(input: BuildBehaviorNarrativeInput): NarrativeSect
   };
 }
 
-function buildTrajectorySection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
+function buildRiskSection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
   const { context, t, formatNumber, formatCurrency, currencySymbol } = input;
+  if (!context.monetaryNarrativesEnabled) return null;
   const tone = context.tone;
   const paragraphs: string[] = [];
 
+  if (context.maxDrawdownPct != null) {
+    const ddKey =
+      context.maxDrawdownPct > 15
+        ? 'analytics:behaviorNarrative.risk.drawdownHigh'
+        : 'analytics:behaviorNarrative.risk.drawdownModerate';
+    paragraphs.push(
+      t(ddKey, {
+        drawdownPct: formatNumber(context.maxDrawdownPct, 1),
+        drawdownAmount:
+          context.maxDrawdownGlobal != null
+            ? formatCurrency(context.maxDrawdownGlobal, currencySymbol)
+            : '—',
+      }),
+    );
+  }
+
+  if (context.recoveryRatio != null) {
+    const recKey =
+      context.recoveryRatio >= 1
+        ? 'analytics:behaviorNarrative.risk.recoveryGood'
+        : 'analytics:behaviorNarrative.risk.recoveryLow';
+    paragraphs.push(
+      t(recKey, {
+        recovery: formatNumber(context.recoveryRatio, 2),
+      }),
+    );
+  }
+
+  if (paragraphs.length === 0) return null;
+
+  return {
+    id: 'risk',
+    titleKey: resolveSectionTitle('risk', tone),
+    paragraphs,
+    toneVariant: tone,
+  };
+}
+
+function buildRhythmSection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
+  const { context, t, formatNumber, formatCurrency, currencySymbol, formatDate } = input;
+  const rhythm = context.dailyRhythm;
+  if (!rhythm) return null;
+
+  const paragraphs: string[] = [];
+  const tone = context.tone;
+  const avg = rhythm.avgTradesPerDay;
+
+  if (avg > OVERTRADING_TRADES_PER_DAY_THRESHOLD) {
+    paragraphs.push(
+      t('analytics:behaviorNarrative.rhythm.overtrading', {
+        count: formatNumber(avg, 1),
+      }),
+    );
+  } else if (avg >= HEALTHY_TRADES_PER_DAY_MIN && avg <= HEALTHY_TRADES_PER_DAY_MAX) {
+    paragraphs.push(
+      t('analytics:behaviorNarrative.rhythm.healthyPace', {
+        count: formatNumber(avg, 1),
+      }),
+    );
+  }
+
+  if (context.monetaryNarrativesEnabled && rhythm.worstDay && rhythm.worstDayPnl != null && rhythm.worstDayPnl < 0) {
+    paragraphs.push(
+      t('analytics:behaviorNarrative.rhythm.worstDay', {
+        day: formatDate(rhythm.worstDay),
+        pnl: formatCurrency(rhythm.worstDayPnl, currencySymbol),
+      }),
+    );
+  } else if (!context.monetaryNarrativesEnabled && rhythm.worstDay) {
+    paragraphs.push(
+      t('analytics:behaviorNarrative.rhythm.worstDayNoMoney', {
+        day: formatDate(rhythm.worstDay),
+      }),
+    );
+  }
+
+  if (paragraphs.length === 0) return null;
+
+  return {
+    id: 'rhythm',
+    titleKey: resolveSectionTitle('rhythm', tone),
+    paragraphs,
+    toneVariant: tone,
+  };
+}
+
+function buildHabitsSection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
+  const { context, t } = input;
+  const paragraphs: string[] = [];
+
+  if (
+    context.postLossSampleSize >= BEHAVIOR_NARRATIVE_POST_SIZING_MIN_SAMPLE &&
+    context.postLossDominantCategory
+  ) {
+    paragraphs.push(
+      t(`analytics:behaviorNarrative.habits.postLoss.${context.postLossDominantCategory}`, {
+        tab: t('analytics:postLossSizing.title'),
+      }),
+    );
+  } else if (context.postLossSampleSize > 0) {
+    paragraphs.push(t('analytics:behaviorNarrative.habits.postLoss.insufficient'));
+  }
+
+  if (
+    context.postWinSampleSize >= BEHAVIOR_NARRATIVE_POST_SIZING_MIN_SAMPLE &&
+    context.postWinDominantCategory
+  ) {
+    paragraphs.push(
+      t(`analytics:behaviorNarrative.habits.postWin.${context.postWinDominantCategory}`, {
+        tab: t('analytics:postWinSizing.title'),
+      }),
+    );
+  }
+
+  if (paragraphs.length === 0) return null;
+
+  return {
+    id: 'habits',
+    titleKey: resolveSectionTitle('habits', context.tone),
+    paragraphs,
+    toneVariant: context.tone,
+  };
+}
+
+function buildProcessSection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
+  const { context, t, formatNumber } = input;
+  const paragraphs: string[] = [];
+  const tone = context.tone;
+
+  if (context.tradesWithBothRr >= BEHAVIOR_NARRATIVE_MIN_PLANNED_RR_TRADES && context.planRespectRate != null) {
+    const respectKey =
+      context.planRespectRate >= 70
+        ? 'analytics:behaviorNarrative.process.planRespectGood'
+        : 'analytics:behaviorNarrative.process.planRespectLow';
+    paragraphs.push(
+      t(respectKey, {
+        rate: formatNumber(context.planRespectRate, 0),
+        comparableCount: context.tradesWithBothRr,
+      }),
+    );
+  }
+
+  if (
+    context.tradesWithPlannedRr >= BEHAVIOR_NARRATIVE_MIN_PLANNED_RR_TRADES &&
+    context.avgPlannedRr != null &&
+    context.avgActualRr != null
+  ) {
+    paragraphs.push(
+      t('analytics:behaviorNarrative.process.rrGap', {
+        planned: formatNumber(context.avgPlannedRr, 2),
+        actual: formatNumber(context.avgActualRr, 2),
+      }),
+    );
+  }
+
+  if (context.longPercentage != null && context.shortPercentage != null) {
+    const dominant =
+      context.longPercentage >= 75
+        ? 'long'
+        : context.shortPercentage >= 75
+          ? 'short'
+          : null;
+    if (dominant) {
+      paragraphs.push(
+        t(`analytics:behaviorNarrative.process.bias${dominant === 'long' ? 'Long' : 'Short'}`, {
+          longPct: formatNumber(context.longPercentage, 0),
+          shortPct: formatNumber(context.shortPercentage, 0),
+        }),
+      );
+    }
+  }
+
+  if (paragraphs.length === 0) return null;
+
+  return {
+    id: 'process',
+    titleKey: resolveSectionTitle('process', tone),
+    paragraphs,
+    toneVariant: tone,
+  };
+}
+
+function buildTrajectorySection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
+  const { context, t, formatNumber, formatCurrency, currencySymbol } = input;
+  const tone = context.tone;
+  const monetary = context.monetaryNarrativesEnabled;
+  const paragraphs: string[] = [];
+
   const eligibleWeeks = context.weekly.filter((w) => w.tradeCount >= BEHAVIOR_NARRATIVE_SWEET_SPOT_MIN_TRADES);
-  if (eligibleWeeks.length > 0) {
+  if (monetary && eligibleWeeks.length > 0) {
     const bestWeek = [...eligibleWeeks].sort((a, b) => b.totalPnl - a.totalPnl)[0];
     const key = isCelebrateTone(tone)
       ? 'analytics:behaviorNarrative.trajectory.bestWeekCelebrate'
@@ -330,6 +602,15 @@ function buildTrajectorySection(input: BuildBehaviorNarrativeInput): NarrativeSe
         week: bestWeek.isoWeek,
         year: bestWeek.isoYear,
         pnl: formatCurrency(bestWeek.totalPnl, currencySymbol),
+        winRate: formatNumber(bestWeek.winRate, 0),
+      }),
+    );
+  } else if (!monetary && eligibleWeeks.length > 0) {
+    const bestWeek = [...eligibleWeeks].sort((a, b) => b.winRate - a.winRate)[0];
+    paragraphs.push(
+      t('analytics:behaviorNarrative.trajectory.bestWeekNoMoney', {
+        week: bestWeek.isoWeek,
+        year: bestWeek.isoYear,
         winRate: formatNumber(bestWeek.winRate, 0),
       }),
     );
@@ -389,11 +670,23 @@ export function buildBehaviorNarrative(input: BuildBehaviorNarrativeInput): Narr
   const alerts = buildAlertsSection(input);
   if (alerts) sections.push(alerts);
 
+  const risk = buildRiskSection(input);
+  if (risk) sections.push(risk);
+
+  const rhythm = buildRhythmSection(input);
+  if (rhythm) sections.push(rhythm);
+
   const timeWindows = buildTimeWindowsSection(input);
   if (timeWindows) sections.push(timeWindows);
 
   const duration = buildDurationSection(input);
   if (duration) sections.push(duration);
+
+  const habits = buildHabitsSection(input);
+  if (habits) sections.push(habits);
+
+  const process = buildProcessSection(input);
+  if (process) sections.push(process);
 
   const trajectory = buildTrajectorySection(input);
   if (trajectory) sections.push(trajectory);

@@ -189,6 +189,7 @@ export function useStatistics(
   endDate?: string | null,
   positionStrategy?: number | null,
   _pnlDisplay: PnlDisplayMode = 'net',
+  convertTo?: string | null,
 ) {
   const [data, setData] = useState<StatisticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -207,7 +208,8 @@ export function useStatistics(
           startDate && endDate ? undefined : (month || undefined),
           startDate || undefined,
           endDate || undefined,
-          positionStrategy || undefined
+          positionStrategy || undefined,
+          convertTo || undefined,
         );
         // S'assurer que toutes les propriétés requises sont présentes avec des valeurs par défaut
         setData({
@@ -240,7 +242,7 @@ export function useStatistics(
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy, _pnlDisplay]);
+  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy, _pnlDisplay, convertTo]);
 
   return { data, isLoading, error };
 }
@@ -253,6 +255,7 @@ export function useAnalytics(
   endDate?: string | null,
   positionStrategy?: number | null,
   _pnlDisplay: PnlDisplayMode = 'net',
+  convertTo?: string | null,
 ) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -271,7 +274,8 @@ export function useAnalytics(
           startDate && endDate ? undefined : (month || undefined),
           startDate || undefined,
           endDate || undefined,
-          positionStrategy || undefined
+          positionStrategy || undefined,
+          convertTo || undefined,
         );
         setData(result);
       } catch (err) {
@@ -286,7 +290,7 @@ export function useAnalytics(
     } else {
       setIsLoading(false);
     }
-  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy, _pnlDisplay]);
+  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy, _pnlDisplay, convertTo]);
 
   return { data, isLoading, error };
 }
