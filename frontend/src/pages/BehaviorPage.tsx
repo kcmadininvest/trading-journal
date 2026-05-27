@@ -135,13 +135,13 @@ const BehaviorPage: React.FC = () => {
 
   useEffect(() => {
     const loadAllTrades = async () => {
-      if (!accountId || accountLoading) {
+      if (accountLoading) {
         setAllTrades([]);
         return;
       }
       try {
         const response = await tradesService.list({
-          trading_account: accountId,
+          ...(accountId != null ? { trading_account: accountId } : {}),
           page_size: 10000,
         });
         setAllTrades(response.results);
@@ -155,15 +155,18 @@ const BehaviorPage: React.FC = () => {
 
   useEffect(() => {
     const loadFilteredTrades = async () => {
-      if (!accountId || accountLoading) {
+      if (accountLoading) {
         setFilteredTrades([]);
         return;
       }
       try {
         const params: Record<string, string | number> = {
-          trading_account: accountId,
           page_size: 10000,
         };
+
+        if (accountId != null) {
+          params.trading_account = accountId;
+        }
 
         if (selectedPeriod) {
           params.start_date = selectedPeriod.start;
