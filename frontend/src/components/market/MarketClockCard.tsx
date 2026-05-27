@@ -338,7 +338,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
                       {event.name}
                     </span>
                     <span
-                      className={`shrink-0 text-[11px] ${
+                      className={`shrink-0 text-xs ${
                         urgent ? 'font-medium text-amber-300' : 'text-white/50'
                       }`}
                     >

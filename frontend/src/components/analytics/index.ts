@@ -18,6 +18,7 @@ export { HeatmapChart } from './HeatmapChart';
 export { GainsVsLossesChart } from './GainsVsLossesChart';
 export { PnlDistributionChart } from './PnlDistributionChart';
 export { MaeMfeChart } from './MaeMfeChart';
+export { BehaviorNarrativePanel } from './BehaviorNarrativePanel';
 export { BehaviorDisciplineAlerts } from './BehaviorDisciplineAlerts';
 export { BehaviorDisciplinePanel } from './BehaviorDisciplinePanel';
 export { BehaviorDisciplineSection } from './BehaviorDisciplineSection';

@@ -82,8 +82,8 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
     () => getChartSvgFontSizes(preferences.font_size),
     [preferences.font_size],
   );
-  /** Aligné sur la ligne de régression de Corrélation PnL vs Nombre de Trades */
-  const winRateStroke = isDark ? '#fbbf24' : '#d97706';
+  /** Win rate — durée et taille de position (Analytics) */
+  const winRateStroke = '#4AA3A2';
 
   const labels = useMemo(() => {
     if (chartKey !== 'sizePerformance') {

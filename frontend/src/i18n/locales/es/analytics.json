@@ -325,6 +325,101 @@
       "smallerDesc": "Tamaño menor: buen reflejo de gestión del riesgo tras una ganancia."
     }
   },
+  "behaviorNarrative": {
+    "tabTitle": "Resumen",
+    "intro": {
+      "heading": "Panorama general",
+      "excellent": "Excelente período: sus métricas y su disciplina confirman un edge real. Felicitaciones por este nivel de constancia.",
+      "positive": "Buena dinámica: tiene bases sólidas en este período. Siga capitalizando lo que funciona.",
+      "mixed": "Período contrastado: puntos fuertes que aprovechar y algunos hábitos que ajustar. Mantener la lucidez le mantiene en el buen camino.",
+      "challenging": "Período exigente — reenfóquese en la disciplina y el tamaño de posición. El progreso suele pasar por ahí."
+    },
+    "insufficientData": {
+      "title": "Resumen",
+      "body": "No hay suficientes operaciones en el período seleccionado (mínimo {{min}}) para generar un resumen conductual.",
+      "partial": "Los datos disponibles aún no permiten un resumen detallado en este período."
+    },
+    "strengths": {
+      "title": {
+        "excellent": "Felicitaciones — su edge es sólido",
+        "positive": "Lo que le funciona bien",
+        "mixed": "Sus puntos fuertes en el período",
+        "challenging": "Lo que conviene reforzar"
+      },
+      "profitFactorGood": "Su profit factor de {{profitFactor}} es excelente: cada dólar perdido genera casi {{profitFactor}} dólares brutos ganados.",
+      "profitFactorAverage": "Su profit factor de {{profitFactor}} muestra un edge positivo: consolide lo que funciona y elimine los setups más costosos.",
+      "profitFactorPoor": "Su profit factor de {{profitFactor}} está tenso en este período — priorice la calidad de ejecución y el tamaño antes del volumen.",
+      "sharpeGood": "Su Sharpe anualizado de {{sharpe}} es bueno: rendimiento sólido para el riesgo asumido.",
+      "sharpeExcellent": "Su Sharpe anualizado de {{sharpe}} es excepcional: enhorabuena por esta regularidad.",
+      "sharpeAverage": "Su Sharpe anualizado de {{sharpe}} es correcto — suavizar la volatilidad puede mejorar aún la constancia.",
+      "sharpePoor": "Su Sharpe anualizado de {{sharpe}} refleja un período inestable — priorice un riesgo regular operación a operación.",
+      "streaks": "Su racha ganadora máxima de {{maxWins}} operaciones seguidas, con solo {{maxLosses}} perdedoras seguidas, demuestra consistencia real.",
+      "encourageNoMetrics": "Las cifras globales son exigentes en este período, pero cada sesión es un nuevo comienzo: ancle su plan y el tamaño de posición."
+    },
+    "alerts": {
+      "title": {
+        "warnings": "Puntos de vigilancia",
+        "warningsChallenging": "Prioridades de mejora",
+        "cleanCelebrate": "Disciplina: mantiene el rumbo",
+        "clean": {
+          "excellent": "Disciplina ejemplar",
+          "positive": "Buena disciplina conductual",
+          "mixed": "Disciplina globalmente correcta",
+          "challenging": "Disciplina a preservar"
+        }
+      },
+      "revengeEncourage": "Tras un día perdedor, pasa de {{afterWin}} a {{afterLoss}} operaciones de media al día siguiente (+{{pct}} %) — un reflejo a vigilar para proteger su capital.",
+      "revengeWorstMonth": "Esto puede explicar en parte las pérdidas concentradas en {{month}}.",
+      "sizingEncourage": "Sus posiciones perdedoras son de media un {{pct}} % más grandes que las ganadoras — intente mantener la misma convicción sea cual sea el resultado esperado.",
+      "congratulateClean": "Enhorabuena: sin señales mayores de revenge trading ni sizing invertido en este período. Su disciplina se sostiene.",
+      "neutralClean": "Sin alertas mayores de frecuencia o sizing — mantenga la prudencia en los días difíciles.",
+      "none": "Sin alertas importantes de frecuencia o sizing en este período."
+    },
+    "timeWindows": {
+      "title": {
+        "celebrate": "Sus franjas ganadoras",
+        "excellent": "Cuándo rinde mejor",
+        "positive": "Sus ventanas favorables",
+        "mixed": "Ventanas horarias y diarias",
+        "challenging": "Dónde recuperar el control"
+      },
+      "bestHours": "Rinde claramente mejor hacia {{hours}} (zona horaria {{timezone}}).",
+      "bestHoursCelebrate": "Enhorabuena: sus mejores resultados se concentran hacia {{hours}} (zona horaria {{timezone}}).",
+      "worstHourEncourage": "La franja {{hour}} es menos favorable ({{pnl}} en el período) — rinde mejor en otros horarios; conviene evitarla por ahora (zona horaria {{timezone}}).",
+      "weekdays": "{{bestDay}} es su mejor día ({{bestWinRate}} % de acierto, {{bestPnl}}), {{worstDay}} el más delicado.",
+      "weekdaysCelebrate": "Felicitaciones: {{bestDay}} es su día más fuerte ({{bestWinRate}} % de acierto, {{bestPnl}}), mientras {{worstDay}} pide más prudencia."
+    },
+    "duration": {
+      "title": {
+        "celebrate": "Su duración ideal",
+        "excellent": "Duración óptima",
+        "positive": "Duración que le conviene",
+        "mixed": "Duración de las operaciones",
+        "challenging": "Duración a ajustar"
+      },
+      "bestAvg": "Su mejor P&L medio está en el tramo {{label}} ({{avgPnl}}).",
+      "bestAvgLowVolume": "Su mejor P&L medio está en {{label}} ({{avgPnl}}), con solo {{count}} operaciones — confirmar con más muestra.",
+      "sweetSpot": "Su punto óptimo es {{label}} — buen compromiso tasa de acierto ({{winRate}} %) y rendimiento ({{avgPnl}}, {{count}} operaciones).",
+      "sweetSpotCelebrate": "Enhorabuena: el tramo {{label}} es su zona ideal ({{winRate}} % de acierto, {{avgPnl}} de media, {{count}} operaciones).",
+      "onlyBucket": "El tramo {{label}} concentra su mejor equilibrio ({{winRate}} % de acierto, P&L medio {{avgPnl}})."
+    },
+    "trajectory": {
+      "title": {
+        "celebrate": "Buena trayectoria",
+        "encourage": "Retomar el control",
+        "excellent": "Su progresión",
+        "positive": "Trayectoria alentadora",
+        "mixed": "Trayectoria",
+        "challenging": "Mirada hacia adelante"
+      },
+      "bestWeek": "Su semana {{week}} ({{year}}) destaca como la mejor ({{pnl}}, {{winRate}} % de acierto).",
+      "bestWeekCelebrate": "Felicitaciones: la semana {{week}} ({{year}}) es su pico de rendimiento ({{pnl}}, {{winRate}} % de acierto).",
+      "progression": "En conjunto, progresa en la segunda mitad del período — siga en esa dirección.",
+      "progressionCelebrate": "Buena progresión en la segunda mitad del período: su curva va en la dirección correcta.",
+      "volatile": "La trayectoria sigue siendo contrastada — identifique las semanas difíciles para anticiparlas mejor.",
+      "volatileEncourage": "El período fue volátil — es normal. Reenfóquese en su proceso: la regularidad acaba pagando."
+    }
+  },
   "behaviorDiscipline": {
     "tabTitle": "Señales de disciplina",
     "noData": "Datos insuficientes en el período seleccionado para este indicador.",

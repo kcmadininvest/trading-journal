@@ -328,6 +328,101 @@
       "smallerDesc": "Smaller size: good risk-management reflex after a win."
     }
   },
+  "behaviorNarrative": {
+    "tabTitle": "Summary",
+    "intro": {
+      "heading": "Overview",
+      "excellent": "Excellent period: your metrics and discipline confirm a real edge. Congratulations on this level of consistency.",
+      "positive": "Strong momentum: you have solid foundations on this period. Keep building on what works.",
+      "mixed": "Mixed period: strengths to capitalize on and a few habits to adjust. Staying aware keeps you on track.",
+      "challenging": "A demanding period — refocus on discipline and position size. Progress often starts there."
+    },
+    "insufficientData": {
+      "title": "Summary",
+      "body": "Not enough trades in the selected period (minimum {{min}}) to generate a behavioral summary.",
+      "partial": "Available data is not yet sufficient for a detailed summary on this period."
+    },
+    "strengths": {
+      "title": {
+        "excellent": "Congratulations — your edge is solid",
+        "positive": "What is working well for you",
+        "mixed": "Your strengths this period",
+        "challenging": "What to strengthen"
+      },
+      "profitFactorGood": "Your profit factor of {{profitFactor}} is excellent — each dollar lost earns almost {{profitFactor}} dollars in gross gains.",
+      "profitFactorAverage": "Your profit factor of {{profitFactor}} shows a positive edge: consolidate what works and cut the costliest setups.",
+      "profitFactorPoor": "Your profit factor of {{profitFactor}} is tight on this period — refocus on execution quality and size before volume.",
+      "sharpeGood": "Your annualized Sharpe of {{sharpe}} is good — solid return for the risk taken.",
+      "sharpeExcellent": "Your annualized Sharpe of {{sharpe}} is exceptional: well done on this consistency.",
+      "sharpeAverage": "Your annualized Sharpe of {{sharpe}} is fair — smoothing volatility can still improve consistency.",
+      "sharpePoor": "Your annualized Sharpe of {{sharpe}} reflects an unstable period — prioritize steady risk trade by trade.",
+      "streaks": "Your maximum winning streak of {{maxWins}} trades in a row, with only {{maxLosses}} losers in a row, shows real consistency.",
+      "encourageNoMetrics": "Overall numbers are demanding on this period, but each session is a fresh start: anchor on your plan and position size."
+    },
+    "alerts": {
+      "title": {
+        "warnings": "Points to watch",
+        "warningsChallenging": "Priority focus areas",
+        "cleanCelebrate": "Discipline: you are holding the line",
+        "clean": {
+          "excellent": "Exemplary discipline",
+          "positive": "Good behavioral discipline",
+          "mixed": "Generally sound discipline",
+          "challenging": "Discipline to protect"
+        }
+      },
+      "revengeEncourage": "After a losing day, you average {{afterWin}} to {{afterLoss}} trades the next day (+{{pct}} %) — a habit to watch to protect your capital.",
+      "revengeWorstMonth": "This may partly explain losses concentrated in {{month}}.",
+      "sizingEncourage": "Your losing positions are on average {{pct}} % larger than winners — try to keep the same conviction regardless of expected outcome.",
+      "congratulateClean": "Well done: no major revenge trading or inverted sizing signals on this period. Your discipline is holding up.",
+      "neutralClean": "No major frequency or sizing alerts — stay mindful on tougher days.",
+      "none": "No major frequency or sizing discipline alerts on this period."
+    },
+    "timeWindows": {
+      "title": {
+        "celebrate": "Your winning time slots",
+        "excellent": "When you perform best",
+        "positive": "Your favorable windows",
+        "mixed": "Hourly and daily windows",
+        "challenging": "Where to regain control"
+      },
+      "bestHours": "You perform clearly better around {{hours}} ({{timezone}} timezone).",
+      "bestHoursCelebrate": "Well done: your best results cluster around {{hours}} ({{timezone}} timezone).",
+      "worstHourEncourage": "The {{hour}} slot is weaker ({{pnl}} on the period) — you perform better elsewhere; worth avoiding for now ({{timezone}} timezone).",
+      "weekdays": "{{bestDay}} is your best day ({{bestWinRate}} % win rate, {{bestPnl}}), {{worstDay}} the trickiest.",
+      "weekdaysCelebrate": "Congratulations: {{bestDay}} is your strongest day ({{bestWinRate}} % win rate, {{bestPnl}}), while {{worstDay}} needs more caution."
+    },
+    "duration": {
+      "title": {
+        "celebrate": "Your ideal duration",
+        "excellent": "Optimal duration",
+        "positive": "Duration that suits you",
+        "mixed": "Trade duration",
+        "challenging": "Duration to adjust"
+      },
+      "bestAvg": "Your best average P&L is on the {{label}} bucket ({{avgPnl}}).",
+      "bestAvgLowVolume": "Your best average P&L is on {{label}} ({{avgPnl}}), with only {{count}} trades — confirm on a larger sample.",
+      "sweetSpot": "Your sweet spot is {{label}} — good win rate ({{winRate}} %) and return ({{avgPnl}}, {{count}} trades).",
+      "sweetSpotCelebrate": "Well done: the {{label}} bucket is your ideal zone ({{winRate}} % win rate, {{avgPnl}} on average, {{count}} trades).",
+      "onlyBucket": "The {{label}} bucket offers your best balance ({{winRate}} % win rate, {{avgPnl}} average P&L)."
+    },
+    "trajectory": {
+      "title": {
+        "celebrate": "Strong trajectory",
+        "encourage": "Getting back on track",
+        "excellent": "Your progress",
+        "positive": "Encouraging trajectory",
+        "mixed": "Trajectory",
+        "challenging": "Focus ahead"
+      },
+      "bestWeek": "Your week {{week}} ({{year}}) stands out as the best ({{pnl}}, {{winRate}} % win rate).",
+      "bestWeekCelebrate": "Congratulations: week {{week}} ({{year}}) is your performance peak ({{pnl}}, {{winRate}} % win rate).",
+      "progression": "Overall, you are progressing in the second half of the period — keep going in that direction.",
+      "progressionCelebrate": "Nice progress in the second half of the period: your curve is heading the right way.",
+      "volatile": "The trajectory remains mixed — spot tougher weeks to anticipate them better.",
+      "volatileEncourage": "The period was volatile — that is normal. Refocus on your process: consistency pays off over time."
+    }
+  },
   "behaviorDiscipline": {
     "tabTitle": "Discipline signals",
     "noData": "Not enough data in the selected period to compute this indicator.",

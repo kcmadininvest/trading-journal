@@ -17,19 +17,25 @@ import { PositionStrategyFilterField } from '../components/common/PositionStrate
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
-import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
+import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
+import type { LanguageType } from '../utils/dateFormat';
 import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
-import { useAnalytics } from '../hooks/useStatistics';
+import { useAnalytics, useStatistics } from '../hooks/useStatistics';
+import {
+  buildBehaviorNarrative,
+  buildBehaviorNarrativeContext,
+} from '../utils/behaviorNarrative';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import {
   BehaviorDisciplinePanel,
+  BehaviorNarrativePanel,
   PostLossSizingPanel,
   PostWinSizingPanel,
 } from '../components/analytics';
@@ -42,7 +48,7 @@ const BehaviorPage: React.FC = () => {
   const { preferences } = usePreferences();
   const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const { theme } = useTheme();
-  const { t } = useI18nTranslation(['analytics']);
+  const { t, i18n } = useI18nTranslation(['analytics', 'dashboard']);
   const hideAccountNumber = useAccountNumberVisibility();
   const privacySettings = usePrivacySettings('analytics');
   const isDark = theme === 'dark';
@@ -50,6 +56,12 @@ const BehaviorPage: React.FC = () => {
   const formatNumber = useCallback(
     (value: number, digits: number = 2): string =>
       formatNumberUtil(value, digits, preferences.number_format),
+    [preferences.number_format],
+  );
+
+  const formatCurrency = useCallback(
+    (value: number, symbol: string = ''): string =>
+      formatCurrencyUtil(value, symbol, preferences.number_format),
     [preferences.number_format],
   );
 
@@ -100,6 +112,16 @@ const BehaviorPage: React.FC = () => {
     loading: accountLoading,
     pnlDisplay: pnlDisplayMode,
   });
+
+  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(
+    accountLoading ? undefined : accountId,
+    selectedPeriod ? null : selectedYear,
+    selectedPeriod ? null : selectedMonth,
+    selectedPeriod?.start || null,
+    selectedPeriod?.end || null,
+    selectedPositionStrategy,
+    pnlDisplayMode,
+  );
 
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(
     accountLoading ? undefined : accountId,
@@ -219,10 +241,87 @@ const BehaviorPage: React.FC = () => {
     return currency?.symbol || '';
   }, [selectedAccount, currencies]);
 
-  const isLoading = accountLoading || analyticsLoading;
+  const isLoading = accountLoading || analyticsLoading || statisticsLoading;
+
+  const weekdayDayNames = useMemo(
+    () => [
+      t('dashboard:sunday'),
+      t('dashboard:monday'),
+      t('dashboard:tuesday'),
+      t('dashboard:wednesday'),
+      t('dashboard:thursday'),
+      t('dashboard:friday'),
+      t('dashboard:saturday'),
+    ],
+    [t],
+  );
+
+  const formatMonthLabel = useCallback(
+    (monthKey: string) => {
+      const [year, month] = monthKey.split('-').map(Number);
+      if (!year || !month) return monthKey;
+      const localeMap: Record<string, string> = {
+        fr: 'fr-FR',
+        en: 'en-US',
+        es: 'es-ES',
+        de: 'de-DE',
+      };
+      const lang = (i18n.language?.split('-')[0] || 'fr') as LanguageType;
+      const locale = localeMap[lang] || 'fr-FR';
+      const tz = preferences.timezone?.trim() || 'Europe/Paris';
+      return new Date(year, month - 1, 15, 12, 0, 0).toLocaleDateString(locale, {
+        month: 'long',
+        year: 'numeric',
+        timeZone: tz,
+      });
+    },
+    [i18n.language, preferences.timezone],
+  );
+
+  const narrativeSections = useMemo(() => {
+    const context = buildBehaviorNarrativeContext({
+      statisticsData,
+      analyticsData,
+      trades: filteredTrades,
+      timezone: preferences.timezone,
+      pnlDisplayMode,
+      weekdayDayNames,
+      formatMonthLabel,
+    });
+
+    return buildBehaviorNarrative({
+      context,
+      t,
+      formatNumber,
+      formatCurrency: (value, symbol) => formatCurrency(value, symbol ?? currencySymbol),
+      currencySymbol,
+    });
+  }, [
+    statisticsData,
+    analyticsData,
+    filteredTrades,
+    preferences.timezone,
+    pnlDisplayMode,
+    weekdayDayNames,
+    formatMonthLabel,
+    t,
+    formatNumber,
+    formatCurrency,
+    currencySymbol,
+  ]);
 
   const behaviorTabs = useMemo(
     () => [
+      {
+        id: 'synthesis',
+        label: t('analytics:behaviorNarrative.tabTitle'),
+        content: (
+          <BehaviorNarrativePanel
+            sections={narrativeSections}
+            error={statisticsError ?? analyticsError}
+          />
+        ),
+      },
       {
         id: 'discipline',
         label: t('analytics:behaviorDiscipline.tabTitle'),
@@ -261,6 +360,9 @@ const BehaviorPage: React.FC = () => {
       },
     ],
     [
+      narrativeSections,
+      statisticsError,
+      analyticsError,
       analyticsData?.behavior_discipline,
       analyticsData?.post_loss_sizing,
       analyticsData?.post_win_sizing,
@@ -335,15 +437,17 @@ const BehaviorPage: React.FC = () => {
         />
       )}
 
-      {analyticsError && (
+      {(analyticsError || statisticsError) && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-800 dark:text-red-300">{analyticsError.message}</p>
+          <p className="text-red-800 dark:text-red-300">
+            {(analyticsError ?? statisticsError)?.message}
+          </p>
         </div>
       )}
 
       <TabsFilter
         storageKey="behavior-active-tab"
-        defaultTab="discipline"
+        defaultTab="synthesis"
         tabs={behaviorTabs}
       />
     </PageShell>

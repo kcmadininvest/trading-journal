@@ -1,0 +1,44 @@
+import { classifyNarrativeTone } from './classifyNarrativeTone';
+
+describe('classifyNarrativeTone', () => {
+  it('retourne excellent pour de très bonnes métriques sans alerte', () => {
+    expect(
+      classifyNarrativeTone({
+        profitFactor: 2.5,
+        sharpeAnnualized: 2.2,
+        expectancy: 50,
+        revenge: { alertLevel: 'none', hasSufficientData: true, pctIncrease: 0, avgAfterLoss: 2, avgAfterWin: 2 },
+        sizing: { alertLevel: 'none', hasSufficientData: true, pctLargerOnLosers: 0 },
+        trajectoryProgression: true,
+        trajectoryVolatile: false,
+      }),
+    ).toBe('excellent');
+  });
+
+  it('retourne challenging pour PF faible et alertes', () => {
+    expect(
+      classifyNarrativeTone({
+        profitFactor: 0.8,
+        sharpeAnnualized: 0.2,
+        expectancy: -20,
+        revenge: { alertLevel: 'warning', hasSufficientData: true, pctIncrease: 20, avgAfterLoss: 5, avgAfterWin: 3 },
+        sizing: { alertLevel: 'warning', hasSufficientData: true, pctLargerOnLosers: 15 },
+        trajectoryProgression: false,
+        trajectoryVolatile: true,
+      }),
+    ).toBe('challenging');
+  });
+
+  it('retourne mixed pour un profil intermédiaire', () => {
+    const tone = classifyNarrativeTone({
+      profitFactor: 1.3,
+      sharpeAnnualized: 0.8,
+      expectancy: 5,
+      revenge: { alertLevel: 'none', hasSufficientData: true, pctIncrease: 5, avgAfterLoss: 3, avgAfterWin: 3 },
+      sizing: { alertLevel: 'none', hasSufficientData: true, pctLargerOnLosers: 5 },
+      trajectoryProgression: false,
+      trajectoryVolatile: false,
+    });
+    expect(['mixed', 'positive']).toContain(tone);
+  });
+});
