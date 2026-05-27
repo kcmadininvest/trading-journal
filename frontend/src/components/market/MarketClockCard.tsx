@@ -55,7 +55,7 @@ function MarketStatusPill({ status }: { status: MarketStatus }) {
 
   return (
     <div
-      className={`flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 ${
+      className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 ${
         isOpen ? 'bg-emerald-500/10' : isPreMarket ? 'bg-amber-500/10' : 'bg-white/5'
       }`}
     >
@@ -74,7 +74,7 @@ function MarketStatusPill({ status }: { status: MarketStatus }) {
         />
       </span>
       <span
-        className={`text-[9px] font-semibold ${
+        className={`text-[11px] font-semibold ${
           isOpen ? 'text-emerald-400' : isPreMarket ? 'text-amber-400' : 'text-white/50'
         }`}
       >
@@ -234,41 +234,41 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   return (
     <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[#0f172a] via-[#172554] to-[#0f172a] shadow-md shadow-blue-950/25 dark:from-slate-950 dark:via-blue-950 dark:to-slate-950">
       <div
-        className={`flex items-center justify-between px-2 py-1 ring-1 ring-inset ${classes.ring} bg-white/5`}
+        className={`flex items-center justify-between px-2.5 py-1.5 ring-1 ring-inset ${classes.ring} bg-white/5`}
       >
-        <div className="flex min-w-0 items-center gap-1">
+        <div className="flex min-w-0 items-center gap-1.5">
           <img
             src={`https://flagcdn.com/16x12/${flagCode}.png`}
             srcSet={`https://flagcdn.com/32x24/${flagCode}.png 2x`}
-            width="14"
-            height="10"
+            width="16"
+            height="12"
             alt={flagCode.toUpperCase()}
             className="inline-block shrink-0"
           />
-          <span className={`truncate text-[10px] font-bold uppercase tracking-wide ${classes.text}`}>
+          <span className={`truncate text-xs font-bold uppercase tracking-wide ${classes.text}`}>
             {getMarketLabel(marketCode)}
           </span>
         </div>
         <MarketStatusPill status={marketStatus} />
       </div>
 
-      <div className="flex items-center justify-between gap-1 px-2 py-1">
-        <div className="flex min-w-0 flex-1 items-baseline gap-1.5">
+      <div className="flex items-center justify-between gap-1.5 px-2.5 py-1.5">
+        <div className="flex min-w-0 flex-1 items-baseline gap-2">
           {timezoneOffset ? (
-            <span className="shrink-0 text-[9px] font-medium text-white/50">
+            <span className="shrink-0 text-[11px] font-medium text-white/50">
               UTC{timezoneOffset.formatted}
             </span>
           ) : null}
-          <span className="text-base font-bold tabular-nums leading-none text-white">
+          <span className="text-lg font-bold tabular-nums leading-none text-white">
             {formattedTime}
           </span>
-          <span className="truncate text-[10px] text-white/50">
+          <span className="truncate text-xs text-white/50">
             {tradingHours.open}–{sessionClose}
           </span>
         </div>
         {showDstBadge ? (
           <span
-            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-medium whitespace-nowrap ${
+            className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap ${
               isDSTUrgent
                 ? 'border-amber-400/30 bg-amber-500/10 text-amber-300'
                 : 'border-white/10 bg-white/5 text-white/50'
@@ -280,15 +280,15 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
       </div>
 
       {marketToday?.isEarlyCloseDay && !marketToday.isFullDayHoliday ? (
-        <div className="px-2 pb-0.5 text-[9px] font-medium text-amber-400">
+        <div className="px-2.5 pb-1 text-[11px] font-medium text-amber-400">
           {t('common:marketHours.earlyClose', { defaultValue: 'Fermeture anticipée' })}
         </div>
       ) : null}
 
       {showHolidaysSection ? (
-        <div className="mt-1 border-t border-white/10 px-2 pt-1 pb-1.5">
+        <div className="mt-1 border-t border-white/10 px-2.5 pt-1.5 pb-2">
           {holidaysLoading ? (
-            <div className="h-3 animate-pulse rounded bg-white/10" aria-hidden />
+            <div className="h-4 animate-pulse rounded bg-white/10" aria-hidden />
           ) : (
             <ul className="space-y-0.5">
               {upcomingEvents.map((event) => {
@@ -305,7 +305,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
                 return (
                   <li
                     key={`${event.market}-${event.date}-${event.name}`}
-                    className={`flex min-h-[1.125rem] items-center gap-1 rounded px-0.5 ${
+                    className={`flex min-h-[1.375rem] items-center gap-1 rounded px-0.5 ${
                       urgent
                         ? 'animate-pulse border border-amber-400/40 bg-amber-500/15'
                         : ''
@@ -326,19 +326,19 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
                       </svg>
                     ) : null}
                     {isEarlyClose ? (
-                      <span className="shrink-0 text-[9px] font-bold text-white/50" title={t('common:marketHours.earlyClose')}>
+                      <span className="shrink-0 text-[11px] font-bold text-white/50" title={t('common:marketHours.earlyClose')}>
                         ½
                       </span>
                     ) : null}
                     <span
-                      className={`min-w-0 flex-1 truncate text-[10px] ${
+                      className={`min-w-0 flex-1 truncate text-xs ${
                         urgent ? 'font-medium text-white' : 'text-white/80'
                       }`}
                     >
                       {event.name}
                     </span>
                     <span
-                      className={`shrink-0 text-[9px] ${
+                      className={`shrink-0 text-[11px] ${
                         urgent ? 'font-medium text-amber-300' : 'text-white/50'
                       }`}
                     >
