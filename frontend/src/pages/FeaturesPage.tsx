@@ -89,7 +89,7 @@ const FeaturesPage: React.FC = () => {
   const finalLang = currentLang;
   
   const currentUrl = `${baseUrl}${urlMap[finalLang] || urlMap.fr}`;
-  const homeUrl = `/?lang=${finalLang}`;
+  const homeUrl = '/';
 
   // Attendre que la langue soit appliquée et que i18n soit synchronisé
   const currentI18nLang = i18nHook.language?.split('-')[0] || 'fr';

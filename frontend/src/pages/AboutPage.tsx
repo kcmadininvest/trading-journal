@@ -80,7 +80,7 @@ const AboutPage: React.FC = () => {
   const finalLang = isLangApplied ? currentLang : savedLang;
   
   const currentUrl = `${baseUrl}${urlMap[finalLang] || urlMap.fr}`;
-  const homeUrl = `/?lang=${finalLang}`;
+  const homeUrl = '/';
 
   // Traductions SEO selon la langue
   const seoData: Record<string, { title: string; description: string; keywords: string; name: string }> = {
