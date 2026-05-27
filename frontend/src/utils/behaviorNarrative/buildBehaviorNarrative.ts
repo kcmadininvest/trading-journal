@@ -62,24 +62,9 @@ function buildIntroSection(input: BuildBehaviorNarrativeInput): NarrativeSection
 function buildStrengthsSection(input: BuildBehaviorNarrativeInput): NarrativeSection | null {
   const { context, t, formatNumber, formatCurrency, currencySymbol } = input;
   const paragraphs: string[] = [];
-  const highlights: NarrativeHighlight[] = [];
   const tone = context.tone;
 
-  highlights.push({
-    labelKey: 'behaviorNarrative.ui.kpiWinRate',
-    value: `${formatNumber(context.winRate, 1)}%`,
-    tone: context.winRate >= 50 ? 'positive' : context.winRate < 40 ? 'negative' : 'neutral',
-  });
-
   if (context.profitFactor != null) {
-    highlights.push({
-      labelKey: 'behaviorNarrative.ui.kpiProfitFactor',
-      value: formatNumber(context.profitFactor, 2),
-      tone:
-        getGaugeVerdict(context.profitFactor, GAUGE_CONFIGS.profitFactor) === 'good'
-          ? 'positive'
-          : 'neutral',
-    });
     const verdict = getGaugeVerdict(context.profitFactor, GAUGE_CONFIGS.profitFactor);
     if (verdict === 'good') {
       paragraphs.push(
@@ -103,14 +88,6 @@ function buildStrengthsSection(input: BuildBehaviorNarrativeInput): NarrativeSec
   }
 
   if (context.sharpeAnnualized != null) {
-    highlights.push({
-      labelKey: 'behaviorNarrative.ui.kpiSharpe',
-      value: formatNumber(context.sharpeAnnualized, 2),
-      tone:
-        getGaugeVerdict(context.sharpeAnnualized, GAUGE_CONFIGS.sharpeRatioAnnualized) === 'good'
-          ? 'positive'
-          : 'neutral',
-    });
     const verdict = getGaugeVerdict(context.sharpeAnnualized, GAUGE_CONFIGS.sharpeRatioAnnualized);
     if (verdict === 'good') {
       const key =
@@ -181,8 +158,7 @@ function buildStrengthsSection(input: BuildBehaviorNarrativeInput): NarrativeSec
     id: 'strengths',
     titleKey: resolveSectionTitle('strengths', tone),
     paragraphs,
-    highlights,
-    kind: 'highlight',
+    kind: 'prose',
     toneVariant: tone,
   };
 }

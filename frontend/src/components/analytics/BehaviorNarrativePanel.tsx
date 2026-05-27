@@ -4,7 +4,18 @@ import { useTranslation } from 'react-i18next';
 import type { BehaviorNarrativeContext, NarrativeSection, NarrativeTone } from '../../utils/behaviorNarrative';
 import type { NarrativeHighlight } from '../../utils/behaviorNarrative/types';
 import { maskValue } from '../../hooks/usePrivacySettings';
+import { GAUGE_CONFIGS } from '../statistics/MetricGauge';
+import {
+  getGaugeVerdict,
+  VERDICT_CARD_CLASSES,
+  VERDICT_TEXT_CLASSES,
+  type GaugeVerdictLevel,
+} from '../../utils/getGaugeVerdict';
 import { MultiCurrencyWarningBanner } from './MultiCurrencyWarningBanner';
+
+const NEUTRAL_KPI_CARD_CLASS =
+  'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800/90';
+const NEUTRAL_KPI_TEXT_CLASS = 'text-gray-900 dark:text-gray-100';
 
 interface BehaviorNarrativePanelProps {
   sections: NarrativeSection[];
@@ -95,11 +106,20 @@ function KpiStrip({
 }) {
   const { t } = useTranslation('analytics');
 
-  const items = [
+  type KpiItem = {
+    key: string;
+    label: string;
+    value: string;
+    verdict: GaugeVerdictLevel | null;
+    alwaysShow: boolean;
+  };
+
+  const items: KpiItem[] = [
     {
       key: 'winRate',
       label: t('behaviorNarrative.ui.kpiWinRate'),
       value: `${formatNumber(context.winRate, 1)}%`,
+      verdict: getGaugeVerdict(context.winRate, GAUGE_CONFIGS.winRate),
       alwaysShow: true,
     },
     {
@@ -107,6 +127,10 @@ function KpiStrip({
       label: t('behaviorNarrative.ui.kpiProfitFactor'),
       value:
         context.profitFactor != null ? formatNumber(context.profitFactor, 2) : '—',
+      verdict:
+        context.profitFactor != null
+          ? getGaugeVerdict(context.profitFactor, GAUGE_CONFIGS.profitFactor)
+          : null,
       alwaysShow: false,
     },
     {
@@ -116,25 +140,39 @@ function KpiStrip({
         context.sharpeAnnualized != null
           ? formatNumber(context.sharpeAnnualized, 2)
           : '—',
+      verdict:
+        context.sharpeAnnualized != null
+          ? getGaugeVerdict(context.sharpeAnnualized, GAUGE_CONFIGS.sharpeRatioAnnualized)
+          : null,
       alwaysShow: false,
     },
   ];
 
   return (
     <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-3">
-      {items.map((item) => (
-        <div
-          key={item.key}
-          className="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-600 dark:bg-gray-800/90"
-        >
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{item.label}</p>
-          <p className="mt-1 text-xl font-bold tabular-nums text-gray-900 dark:text-gray-100">
-            {hideMoney && !item.alwaysShow
-              ? maskValue(null, currencySymbol)
-              : item.value}
-          </p>
-        </div>
-      ))}
+      {items.map((item) => {
+        const masked = hideMoney && !item.alwaysShow;
+        const cardClass =
+          masked || item.verdict == null
+            ? NEUTRAL_KPI_CARD_CLASS
+            : VERDICT_CARD_CLASSES[item.verdict];
+        const textClass =
+          masked || item.verdict == null
+            ? NEUTRAL_KPI_TEXT_CLASS
+            : VERDICT_TEXT_CLASSES[item.verdict];
+
+        return (
+          <div
+            key={item.key}
+            className={clsx('rounded-lg border px-4 py-3 shadow-sm', cardClass)}
+          >
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{item.label}</p>
+            <p className={clsx('mt-1 text-xl font-bold tabular-nums', textClass)}>
+              {masked ? maskValue(null, currencySymbol) : item.value}
+            </p>
+          </div>
+        );
+      })}
     </div>
   );
 }
