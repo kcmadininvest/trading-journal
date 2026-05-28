@@ -1,5 +1,5 @@
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Sum, Count, Avg, Max, Min, F, Value, CharField, Q, Case, When, DecimalField, ExpressionWrapper
@@ -5451,6 +5451,7 @@ def _market_holidays_bundle_response(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
+@throttle_classes([])
 def market_holidays(request):
     """
     Retourne les prochains jours fériés et demi-journées des marchés boursiers (NYSE et Euronext).
@@ -5482,6 +5483,7 @@ def market_holidays(request):
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
+@throttle_classes([])
 def market_holidays_today(request):
     """
     Pour chaque marché : date locale « aujourd'hui » et jour férié fermé toute la journée (calcul léger).

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getApiBaseUrl } from '../../utils/apiConfig';
+import { dayStrategyComplianceService } from '../../services/dayStrategyCompliance';
 import { getFullMediaUrl } from '../../utils/mediaUrl';
 
 interface ComplianceScreenshot {
@@ -11,6 +11,11 @@ interface ComplianceScreenshot {
 interface ComplianceScreenshotsProps {
   date: string;
   tradingAccountId?: number;
+}
+
+function unwrapList<T>(data: T[] | { results?: T[] }): T[] {
+  if (Array.isArray(data)) return data;
+  return data.results ?? [];
 }
 
 export const ComplianceScreenshots: React.FC<ComplianceScreenshotsProps> = ({
@@ -27,26 +32,12 @@ export const ComplianceScreenshots: React.FC<ComplianceScreenshotsProps> = ({
         const token = localStorage.getItem('access_token');
         if (!token) return;
 
-        const baseUrl = getApiBaseUrl();
-        let url = `${baseUrl}/api/trades/day-strategy-compliance/by_date/?date=${date}`;
-        
-        if (tradingAccountId) {
-          url += `&trading_account=${tradingAccountId}`;
-        }
-
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+        const data = await dayStrategyComplianceService.list({
+          date,
+          trading_account: tradingAccountId,
         });
-
-        if (response.ok) {
-          const data = await response.json();
-          // Filtrer uniquement ceux qui ont un screenshot
-          const withScreenshots = data.filter((item: any) => item.screenshot_url);
-          setScreenshots(withScreenshots);
-        }
+        const withScreenshots = unwrapList(data).filter((item) => item.screenshot_url);
+        setScreenshots(withScreenshots);
       } catch (error) {
         console.error('Erreur lors du chargement des screenshots:', error);
       } finally {

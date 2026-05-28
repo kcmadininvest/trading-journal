@@ -6,7 +6,7 @@ from django.db.models import Max, Prefetch
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions, status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, throttle_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 
@@ -148,6 +148,7 @@ class DailyJournalEntryViewSet(viewsets.ModelViewSet):
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
+@throttle_classes([])
 def serve_journal_image_file(request, pk: int):
     """
     Sert le fichier image après vérification d'un jeton signé (lié à l'image et au propriétaire).

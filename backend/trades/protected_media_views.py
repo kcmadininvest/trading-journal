@@ -4,7 +4,7 @@ import mimetypes
 from django.core import signing
 from django.http import FileResponse
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -19,6 +19,7 @@ from .protected_screenshot_urls import (
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@throttle_classes([])
 def serve_protected_screenshot_media(request):
     """Sert un fichier sous media/screenshots/ après vérification du jeton."""
     raw = (request.GET.get('s') or '').strip()
