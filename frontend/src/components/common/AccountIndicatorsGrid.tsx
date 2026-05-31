@@ -5,6 +5,12 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { AccountIndicators } from '../../hooks/useAccountIndicators';
 import { maskValue } from '../../hooks/usePrivacySettings';
+import {
+  DASHBOARD_INNER_TILE_CLASS,
+  DASHBOARD_PNL_NEGATIVE_TEXT_CLASS,
+  DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
+  DASHBOARD_TILE_DIVIDER_CLASS,
+} from '../dashboard/tickerShell';
 import type { GlobalAllAccountsActivity } from './AccountSummaryCard';
 
 interface AccountIndicatorsGridProps {
@@ -17,6 +23,7 @@ interface AccountIndicatorsGridProps {
   hideProfitLoss?: boolean;
   hideConsistencyTarget?: boolean;
   globalAllAccountsActivity?: GlobalAllAccountsActivity | null;
+  theme?: 'default' | 'band';
 }
 
 export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
@@ -29,9 +36,33 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   hideProfitLoss = false,
   hideConsistencyTarget = false,
   globalAllAccountsActivity = null,
+  theme = 'default',
 }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
+  const isBand = theme === 'band';
+  const tileClass = isBand
+    ? DASHBOARD_INNER_TILE_CLASS
+    : 'flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150';
+  const dividerClass = isBand
+    ? DASHBOARD_TILE_DIVIDER_CLASS
+    : 'hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch';
+  const labelMuted = isBand
+    ? 'text-white/50'
+    : 'text-gray-500 dark:text-gray-400';
+  const valuePrimary = isBand ? 'text-white/90' : 'text-gray-900 dark:text-gray-100';
+  const valueUp = isBand ? DASHBOARD_PNL_POSITIVE_TEXT_CLASS : 'text-blue-600 dark:text-blue-400';
+  const valueDown = isBand ? DASHBOARD_PNL_NEGATIVE_TEXT_CLASS : 'text-pink-600 dark:text-pink-400';
+  const badgeUp = isBand
+    ? 'bg-blue-500/15 text-blue-300'
+    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
+  const badgeDown = isBand
+    ? 'bg-pink-500/15 text-pink-300'
+    : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300';
+  const badgeNeutral = isBand
+    ? 'bg-white/10 text-white/60'
+    : 'bg-gray-200/70 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+  const cumulBorder = isBand ? 'border-white/15' : 'border-gray-200 dark:border-gray-600';
   const { accountBalance, totalTrades, bestAndWorstDays, consistencyTarget, activeDays, accountCreatedAt } = indicators;
 
   const variationValue = accountBalance.current - accountBalance.initial;
@@ -59,33 +90,31 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
         className={`grid w-full min-w-0 grid-cols-1 md:grid-cols-2 ${visibleConsistencyTarget ? 'xl:grid-cols-4' : 'xl:grid-cols-3'} gap-3`}
       >
         {/* Solde initial et actuel regroupés */}
-        <div className="flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
+        <div className={tileClass}>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
               {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
             </span>
-            <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            <span className={`text-xl font-semibold ${valuePrimary}`}>
               {hideInitialBalance 
                 ? maskValue(accountBalance.initial, currencySymbol)
                 : formatCurrency(accountBalance.initial, currencySymbol, preferences.number_format, 2)
               }
             </span>
           </div>
-          <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
+          <div className={dividerClass} aria-hidden />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
             </span>
             <span className={`text-xl font-semibold ${
-              accountBalance.current >= accountBalance.initial 
-                ? 'text-blue-600 dark:text-blue-400' 
-                : 'text-pink-600 dark:text-pink-400'
+              accountBalance.current >= accountBalance.initial ? valueUp : valueDown
             }`}>
               {hideCurrentBalance 
                 ? maskValue(accountBalance.current, currencySymbol)
@@ -93,18 +122,16 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               }
             </span>
           </div>
-          <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
+          <div className={dividerClass} aria-hidden />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
               {t('dashboard:highestBalanceReached', { defaultValue: 'Plus haut atteint' })}
             </span>
             <span className={`text-xl font-semibold ${
-              accountBalance.peak >= accountBalance.initial
-                ? 'text-blue-600 dark:text-blue-400'
-                : 'text-pink-600 dark:text-pink-400'
+              accountBalance.peak >= accountBalance.initial ? valueUp : valueDown
             }`}>
               {hideCurrentBalance
                 ? maskValue(accountBalance.peak, currencySymbol)
@@ -115,10 +142,10 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
         </div>
 
         {/* Variation et Total Trades regroupés — variation en largeur contenu, le reste pour trades/cumul */}
-        <div className="flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
+        <div className={tileClass}>
           {accountBalance.initial > 0 && (
             <div className="flex min-w-0 shrink-0 flex-col gap-1">
-              <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   {variationValue >= 0 
                     ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -130,9 +157,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2 sm:flex-wrap">
                 <span
                   className={`text-lg font-semibold tabular-nums sm:text-xl ${
-                    variationValue >= 0
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-pink-600 dark:text-pink-400'
+                    variationValue >= 0 ? valueUp : valueDown
                   }`}
                 >
                   {hideProfitLoss
@@ -141,10 +166,8 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 </span>
                 {!hideProfitLoss && (
                   <span
-                    className={`inline-flex w-fit shrink-0 items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      variationValue >= 0
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
-                        : 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300'
+                    className={`inline-flex w-fit shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      variationValue >= 0 ? badgeUp : badgeDown
                     }`}
                   >
                     {variationValue >= 0 ? '+' : ''}
@@ -155,7 +178,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
             </div>
           )}
           {showTradesSection && accountBalance.initial > 0 && (
-            <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
+            <div className={dividerClass} aria-hidden />
           )}
           {showTradesSection && (
             <div
@@ -167,7 +190,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
             >
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex min-w-0 flex-1 items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  <span className={`flex min-w-0 flex-1 items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
                     <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
@@ -175,7 +198,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                   </span>
                   {formattedAccountCreatedDate ? (
                     <span
-                      className="min-w-0 max-w-[45%] shrink truncate text-right text-[10px] font-normal normal-case tracking-normal text-gray-500 dark:text-gray-400"
+                      className={`min-w-0 max-w-[45%] shrink truncate text-right text-[10px] font-normal normal-case tracking-normal ${labelMuted}`}
                       title={t('dashboard:accountCreatedOn', {
                         date: formattedAccountCreatedDate,
                         defaultValue: 'Depuis le {{date}}',
@@ -189,11 +212,11 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  <span className={`text-xl font-semibold ${valuePrimary}`}>
                     {totalTrades}
                   </span>
                   {hasActiveDays && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200/70 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${badgeNeutral}`}>
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10m-11 8h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -206,31 +229,31 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 <>
                   <div
                     aria-hidden
-                    className="mx-0 hidden min-h-0 w-px shrink-0 self-stretch bg-gray-200 dark:bg-gray-600 xl:mx-4 xl:block"
+                    className={`mx-0 hidden min-h-0 w-px shrink-0 self-stretch xl:mx-4 xl:block ${isBand ? 'bg-white/15' : 'bg-gray-200 dark:bg-gray-600'}`}
                   />
                   <div
-                    className="flex min-w-0 flex-1 flex-col gap-1 justify-center border-t border-gray-200 pt-3 dark:border-gray-600 xl:border-t-0 xl:pt-0 font-sans"
+                    className={`flex min-w-0 flex-1 flex-col justify-center gap-1 border-t pt-3 font-sans xl:border-t-0 xl:pt-0 ${cumulBorder}`}
                   >
-                    <span className="break-words text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    <span className={`break-words text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
                       {t('dashboard:allAccountsCumulative', { defaultValue: 'Tous comptes (cumul)' })}
                     </span>
                     <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 sm:gap-x-2 xl:gap-x-1 2xl:gap-x-2">
-                      <span className="text-base font-semibold tabular-nums text-gray-900 dark:text-gray-100 xl:text-sm 2xl:text-base min-[1800px]:text-xl">
+                      <span className={`text-base font-semibold tabular-nums xl:text-sm 2xl:text-base min-[1800px]:text-xl ${valuePrimary}`}>
                         {globalAllAccountsActivity.totalPositions}
                       </span>
-                      <span className="text-xs font-medium lowercase leading-tight text-gray-700 dark:text-gray-300 xl:text-[0.625rem] xl:leading-tight 2xl:text-xs min-[1800px]:text-sm">
+                      <span className={`text-xs font-medium lowercase leading-tight xl:text-[0.625rem] xl:leading-tight 2xl:text-xs min-[1800px]:text-sm ${isBand ? 'text-white/60' : 'text-gray-700 dark:text-gray-300'}`}>
                         {t('dashboard:globalPositionsLabel', { defaultValue: 'positions' })}
                       </span>
                       <span
-                        className="select-none text-xs leading-none text-gray-400 dark:text-gray-500 xl:text-[0.625rem] 2xl:text-xs min-[1800px]:text-sm"
+                        className={`select-none text-xs leading-none xl:text-[0.625rem] 2xl:text-xs min-[1800px]:text-sm ${isBand ? 'text-white/40' : 'text-gray-400 dark:text-gray-500'}`}
                         aria-hidden
                       >
                         ·
                       </span>
-                      <span className="text-base font-semibold tabular-nums text-gray-900 dark:text-gray-100 xl:text-sm 2xl:text-base min-[1800px]:text-xl">
+                      <span className={`text-base font-semibold tabular-nums xl:text-sm 2xl:text-base min-[1800px]:text-xl ${valuePrimary}`}>
                         {globalAllAccountsActivity.globalActiveDays}
                       </span>
-                      <span className="text-xs font-medium lowercase leading-tight text-gray-700 dark:text-gray-300 xl:text-[0.625rem] xl:leading-tight 2xl:text-xs min-[1800px]:text-sm">
+                      <span className={`text-xs font-medium lowercase leading-tight xl:text-[0.625rem] xl:leading-tight 2xl:text-xs min-[1800px]:text-sm ${isBand ? 'text-white/60' : 'text-gray-700 dark:text-gray-300'}`}>
                         {t('dashboard:activeDays', { defaultValue: 'Jours actifs' })}
                       </span>
                     </div>
@@ -243,41 +266,41 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
 
         {/* Meilleur jour et Pire jour regroupés */}
         {(bestAndWorstDays.bestDay || bestAndWorstDays.worstDay) && (
-          <div className="flex h-full min-w-0 w-full flex-col gap-3 xl:flex-row xl:items-stretch xl:gap-0 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700/70 transition-colors duration-150">
+          <div className={tileClass}>
             {bestAndWorstDays.bestDay && (
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-blue-600 dark:text-blue-300">
+                <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${valueUp}`}>
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                   </svg>
                   {t('dashboard:bestDay', { defaultValue: 'Meilleur jour' })}
                 </span>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xl font-semibold text-blue-600 dark:text-blue-400">
+                  <span className={`text-xl font-semibold ${valueUp}`}>
                     {formatCurrency(bestAndWorstDays.bestDay.pnl, currencySymbol, preferences.number_format, 2)}
                   </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badgeUp}`}>
                     {formatDate(bestAndWorstDays.bestDay.date, preferences.date_format, false, preferences.timezone)}
                   </span>
                 </div>
               </div>
             )}
             {bestAndWorstDays.bestDay && bestAndWorstDays.worstDay && (
-              <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
+              <div className={dividerClass} aria-hidden />
             )}
             {bestAndWorstDays.worstDay && (
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-pink-600 dark:text-pink-300">
+                <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${valueDown}`}>
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   {t('dashboard:worstDay', { defaultValue: 'Pire jour' })}
                 </span>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xl font-semibold text-pink-600 dark:text-pink-400">
+                  <span className={`text-xl font-semibold ${valueDown}`}>
                     {formatCurrency(bestAndWorstDays.worstDay.pnl, currencySymbol, preferences.number_format, 2)}
                   </span>
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${badgeDown}`}>
                     {formatDate(bestAndWorstDays.worstDay.date, preferences.date_format, false, preferences.timezone)}
                   </span>
                 </div>
@@ -288,16 +311,28 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
 
         {/* Consistency Target (si applicable) */}
         {visibleConsistencyTarget && (
-          <div className={`flex h-full min-w-0 w-full flex-col gap-2 p-4 rounded-lg border transition-colors duration-150 ${
-            consistencyTarget.isCompliant
-              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/30'
-              : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30'
-          }`}>
-            <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${
-              consistencyTarget.isCompliant
-                ? 'text-green-700 dark:text-green-300'
-                : 'text-amber-700 dark:text-amber-300'
-            }`}>
+          <div
+            className={`flex h-full min-w-0 w-full flex-col gap-2 rounded-lg border p-4 transition-colors duration-150 ${
+              isBand
+                ? consistencyTarget.isCompliant
+                  ? 'border-emerald-400/30 bg-emerald-500/10 hover:bg-emerald-500/15'
+                  : 'border-amber-400/30 bg-amber-500/10 hover:bg-amber-500/15'
+                : consistencyTarget.isCompliant
+                  ? 'border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-900/20 dark:hover:bg-green-900/30'
+                  : 'border-amber-200 bg-amber-50 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/20 dark:hover:bg-amber-900/30'
+            }`}
+          >
+            <span
+              className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${
+                consistencyTarget.isCompliant
+                  ? isBand
+                    ? 'text-emerald-400'
+                    : 'text-green-700 dark:text-green-300'
+                  : isBand
+                    ? 'text-amber-400'
+                    : 'text-amber-700 dark:text-amber-300'
+              }`}
+            >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <circle cx="12" cy="12" r="10" strokeWidth={2} />
                 <circle cx="12" cy="12" r="6" strokeWidth={2} />
@@ -306,20 +341,32 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               {t('dashboard:consistencyTarget', { defaultValue: 'Consistency Target' })}
             </span>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-lg font-semibold ${
-                consistencyTarget.isCompliant
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-amber-600 dark:text-amber-400'
-              }`}>
+              <span
+                className={`text-lg font-semibold ${
+                  consistencyTarget.isCompliant
+                    ? isBand
+                      ? 'text-emerald-400'
+                      : 'text-green-600 dark:text-green-400'
+                    : isBand
+                      ? 'text-amber-400'
+                      : 'text-amber-600 dark:text-amber-400'
+                }`}
+              >
                 {formatNumber(consistencyTarget.bestDayPercentage, 2, preferences.number_format)}% / {formatNumber(consistencyTarget.targetPercentage, 2, preferences.number_format)}%
               </span>
               {/* Mini barre de progression inline */}
-              <div className="flex-1 min-w-[60px] bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
+              <div
+                className={`h-1.5 min-w-[60px] flex-1 rounded-full ${isBand ? 'bg-white/15' : 'bg-gray-200 dark:bg-gray-600'}`}
+              >
                 <div
                   className={`h-1.5 rounded-full transition-all duration-500 ${
                     consistencyTarget.isCompliant
-                      ? 'bg-green-500 dark:bg-green-400'
-                      : 'bg-amber-500 dark:bg-amber-400'
+                      ? isBand
+                        ? 'bg-emerald-400'
+                        : 'bg-green-500 dark:bg-green-400'
+                      : isBand
+                        ? 'bg-amber-400'
+                        : 'bg-amber-500 dark:bg-amber-400'
                   }`}
                   style={{ width: `${progressPercentage}%` }}
                 ></div>
@@ -348,7 +395,7 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 return null;
               }
               return (
-                <div className="text-xs text-amber-600 dark:text-amber-400">
+                <div className={`text-xs ${isBand ? 'text-amber-400' : 'text-amber-600 dark:text-amber-400'}`}>
                   {label}
                 </div>
               );

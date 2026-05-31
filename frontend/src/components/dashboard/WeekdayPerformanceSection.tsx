@@ -8,6 +8,17 @@ import {
   WEEKDAY_WIN_RATE_MIN_TRADES,
   type WeekdayPerformanceDay,
 } from '../../hooks/useWeekdayPerformance';
+import {
+  DASHBOARD_PANEL_SHELL_CLASS,
+  DASHBOARD_PNL_NEGATIVE_BAR_BG,
+  DASHBOARD_PNL_NEGATIVE_BAR_BORDER,
+  DASHBOARD_PNL_NEGATIVE_TEXT_CLASS,
+  DASHBOARD_PNL_POSITIVE_BAR_BG,
+  DASHBOARD_PNL_POSITIVE_BAR_BORDER,
+  DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
+} from './tickerShell';
+
+const WEEKDAY_PANEL_CLASS = `${DASHBOARD_PANEL_SHELL_CLASS} p-4 sm:p-6`;
 
 export interface WeekdayPerformanceSectionProps {
   weekdayPerformanceData: WeekdayPerformanceDay[];
@@ -97,9 +108,11 @@ export function WeekdayPerformanceSection({
           }),
           data: totalPnlValues,
           backgroundColor: totalPnlValues.map((value) =>
-            value >= 0 ? 'rgba(59, 130, 246, 0.8)' : 'rgba(236, 72, 153, 0.8)',
+            value >= 0 ? DASHBOARD_PNL_POSITIVE_BAR_BG : DASHBOARD_PNL_NEGATIVE_BAR_BG,
           ),
-          borderColor: totalPnlValues.map((value) => (value >= 0 ? '#3b82f6' : '#ec4899')),
+          borderColor: totalPnlValues.map((value) =>
+            value >= 0 ? DASHBOARD_PNL_POSITIVE_BAR_BORDER : DASHBOARD_PNL_NEGATIVE_BAR_BORDER,
+          ),
           borderWidth: 0,
           borderRadius: 0,
           borderSkipped: false,
@@ -119,8 +132,8 @@ export function WeekdayPerformanceSection({
         {
           label: t('dashboard:winRatePercentage'),
           data: winRateValues,
-          backgroundColor: 'rgba(59, 130, 246, 0.8)',
-          borderColor: '#3b82f6',
+          backgroundColor: DASHBOARD_PNL_POSITIVE_BAR_BG,
+          borderColor: DASHBOARD_PNL_POSITIVE_BAR_BORDER,
           borderWidth: 0,
           borderRadius: 0,
           borderSkipped: false,
@@ -205,24 +218,24 @@ export function WeekdayPerformanceSection({
 
   if (variant === 'pnl') {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className={WEEKDAY_PANEL_CLASS}>
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            <h3 className="text-lg font-bold text-white/90">
               {t('dashboard:weeklyPerformanceTitle')}
             </h3>
           </div>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-white/60 mb-2">
             <div className="flex items-center gap-1">
               <span>{t('dashboard:mostActive')} :</span>
-              <span className="font-medium text-blue-500">
+              <span className={`font-medium ${DASHBOARD_PNL_POSITIVE_TEXT_CLASS}`}>
                 {weekdayStats.mostActiveDay.day} ({weekdayStats.mostActiveDay.trade_count}{' '}
                 {t('trades:trades')})
               </span>
             </div>
             <div className="flex items-center gap-1">
               <span>{t('dashboard:leastActive')} :</span>
-              <span className="font-medium text-pink-500">
+              <span className={`font-medium ${DASHBOARD_PNL_NEGATIVE_TEXT_CLASS}`}>
                 {weekdayStats.leastActiveDay.day} ({weekdayStats.leastActiveDay.trade_count}{' '}
                 {t('trades:trades')})
               </span>
@@ -275,13 +288,13 @@ export function WeekdayPerformanceSection({
                     const value = context.dataset.data[context.dataIndex];
                     return value >= 0 ? 'top' : 'bottom';
                   },
-                  color: isDark ? '#d1d5db' : '#374151',
+                  color: '#e2e8f0',
                   font: {
                     weight: 700,
                     size: windowWidth < 640 ? 11 : 13,
                   },
                   backgroundColor() {
-                    if (windowWidth < 640) return 'rgba(0, 0, 0, 0.4)';
+                    if (windowWidth < 640) return 'rgba(15, 23, 42, 0.75)';
                     return 'transparent';
                   },
                   padding: windowWidth < 640 ? 4 : 0,
@@ -296,8 +309,8 @@ export function WeekdayPerformanceSection({
               scales: {
                 x: {
                   grid: { display: false },
-                  ticks: { color: chartColors.textSecondary, font: { size: 12 } },
-                  border: { color: chartColors.border },
+                  ticks: { color: 'rgba(255, 255, 255, 0.55)', font: { size: 12 } },
+                  border: { color: 'rgba(255, 255, 255, 0.12)' },
                   title: { display: false },
                 },
                 y: {
@@ -310,9 +323,9 @@ export function WeekdayPerformanceSection({
                   grid: {
                     color(context: any) {
                       if (Math.abs(context.tick.value) < 0.0001) {
-                        return isDark ? '#6b7280' : '#9ca3af';
+                        return 'rgba(255, 255, 255, 0.35)';
                       }
-                      return chartColors.grid;
+                      return 'rgba(255, 255, 255, 0.08)';
                     },
                     lineWidth: 1,
                   },
@@ -321,13 +334,13 @@ export function WeekdayPerformanceSection({
                     callback(value: number | string) {
                       return formatCurrency(Number(value), currencySymbol);
                     },
-                    color: chartColors.textSecondary,
+                    color: 'rgba(255, 255, 255, 0.55)',
                     font: { size: 11 },
                     stepSize: weekdayYAxisLimits.stepSize,
                     maxTicksLimit: 10,
                     padding: 5,
                   },
-                  border: { color: chartColors.border, display: false },
+                  border: { color: 'rgba(255, 255, 255, 0.12)', display: false },
                 },
               },
               animation: { duration: 1000, easing: 'easeInOutQuart' },
@@ -339,18 +352,18 @@ export function WeekdayPerformanceSection({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className={WEEKDAY_PANEL_CLASS}>
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+          <h3 className="text-lg font-bold text-white/90">
             {t('dashboard:winRateByWeekdayTitle')}
           </h3>
         </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-white/60 mb-2">
           {weekdayStats.hasWinRateSample && weekdayStats.bestWinRateDay && (
             <div className="flex items-center gap-1">
               <span>{t('dashboard:bestWinRateDay')} :</span>
-              <span className="font-medium text-blue-500">
+              <span className={`font-medium ${DASHBOARD_PNL_POSITIVE_TEXT_CLASS}`}>
                 {weekdayStats.bestWinRateDay.day} (
                 {formatNumber(weekdayStats.bestWinRateDay.win_rate, 1)}% —{' '}
                 {weekdayStats.bestWinRateDay.trade_count} {t('trades:trades')})
@@ -360,7 +373,7 @@ export function WeekdayPerformanceSection({
           {weekdayStats.hasWinRateSample && weekdayStats.worstWinRateDay && (
             <div className="flex items-center gap-1">
               <span>{t('dashboard:worstWinRateDay')} :</span>
-              <span className="font-medium text-pink-500">
+              <span className={`font-medium ${DASHBOARD_PNL_NEGATIVE_TEXT_CLASS}`}>
                 {weekdayStats.worstWinRateDay.day} (
                 {formatNumber(weekdayStats.worstWinRateDay.win_rate, 1)}% —{' '}
                 {weekdayStats.worstWinRateDay.trade_count} {t('trades:trades')})
@@ -368,7 +381,7 @@ export function WeekdayPerformanceSection({
             </div>
           )}
           {!weekdayStats.hasWinRateSample && (
-            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-500">
+            <div className="flex items-center gap-1 text-white/50">
               <span>{t('dashboard:weekdayWinRateInsufficientSample', { count: WEEKDAY_WIN_RATE_MIN_TRADES })}</span>
             </div>
           )}
@@ -398,13 +411,13 @@ export function WeekdayPerformanceSection({
                 },
                 anchor: 'end' as const,
                 align: 'top' as const,
-                color: isDark ? '#d1d5db' : '#374151',
+                color: '#e2e8f0',
                 font: {
                   weight: 700,
                   size: windowWidth < 640 ? 11 : 13,
                 },
                 backgroundColor() {
-                  if (windowWidth < 640) return 'rgba(0, 0, 0, 0.4)';
+                  if (windowWidth < 640) return 'rgba(15, 23, 42, 0.75)';
                   return 'transparent';
                 },
                 padding: windowWidth < 640 ? 4 : 0,
@@ -419,8 +432,8 @@ export function WeekdayPerformanceSection({
             scales: {
               x: {
                 grid: { display: false },
-                ticks: { color: chartColors.textSecondary, font: { size: 12 } },
-                border: { color: chartColors.border },
+                ticks: { color: 'rgba(255, 255, 255, 0.55)', font: { size: 12 } },
+                border: { color: 'rgba(255, 255, 255, 0.12)' },
                 title: { display: false },
               },
               y: {
@@ -431,20 +444,20 @@ export function WeekdayPerformanceSection({
                 min: 0,
                 max: 100,
                 grid: {
-                  color: chartColors.grid,
+                  color: 'rgba(255, 255, 255, 0.08)',
                   lineWidth: 1,
                 },
                 ticks: {
                   callback(value: number | string) {
                     return `${formatNumber(Number(value), 0)}%`;
                   },
-                  color: chartColors.textSecondary,
+                  color: 'rgba(255, 255, 255, 0.55)',
                   font: { size: 11 },
                   stepSize: 20,
                   maxTicksLimit: 6,
                   padding: 5,
                 },
-                border: { color: chartColors.border, display: false },
+                border: { color: 'rgba(255, 255, 255, 0.12)', display: false },
               },
             },
             animation: { duration: 1000, easing: 'easeInOutQuart' },

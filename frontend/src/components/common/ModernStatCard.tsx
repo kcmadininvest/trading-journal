@@ -1,5 +1,6 @@
 import React from 'react'
 import Tooltip from '../ui/Tooltip'
+import { DASHBOARD_STAT_CARD_SHELL_CLASS } from '../dashboard/tickerShell'
 
 // Helper function to get gradient class based on progress and variant
 const getProgressGradientClass = (progressValue: number, progressMax: number, variant: string): string => {
@@ -22,6 +23,21 @@ const getProgressGradientClass = (progressValue: number, progressMax: number, va
   
   return 'progress-gradient-default';
 };
+
+function getBandProgressFillClass(
+  progressValue: number,
+  progressMax: number,
+  variant: ModernStatCardProps['variant'],
+): string {
+  const progress = progressMax > 0 ? progressValue / progressMax : 0;
+  if (progressValue >= progressMax) return 'bg-blue-400';
+  if (variant === 'danger') return 'bg-pink-400';
+  if (variant === 'warning') return 'bg-orange-400';
+  if (variant === 'success') return 'bg-blue-400';
+  if (progress >= 0.8) return 'bg-blue-400';
+  if (progress >= 0.5) return 'bg-orange-400';
+  return 'bg-pink-400';
+}
 
 
 
@@ -61,6 +77,9 @@ interface ModernStatCardProps {
 
   hideValue?: boolean
 
+  /** `band` = thème bandeau cotations (dashboard) */
+  theme?: 'default' | 'band'
+
 }
 
 
@@ -93,11 +112,43 @@ function ModernStatCard({
 
   progressLabel,
 
-  hideValue = false
+  hideValue = false,
+
+  theme = 'default',
 
 }: ModernStatCardProps) {
 
-  const variantConfig = {
+  const isBand = theme === 'band'
+
+  const variantConfig = isBand
+    ? {
+        default: {
+          iconBg: 'bg-white/10',
+          iconColor: 'text-white/70',
+          border: 'border-white/15',
+        },
+        success: {
+          iconBg: 'bg-emerald-500/15',
+          iconColor: 'text-emerald-400',
+          border: 'border-emerald-400/30',
+        },
+        danger: {
+          iconBg: 'bg-red-500/15',
+          iconColor: 'text-red-400',
+          border: 'border-red-400/30',
+        },
+        warning: {
+          iconBg: 'bg-amber-500/15',
+          iconColor: 'text-amber-400',
+          border: 'border-amber-400/30',
+        },
+        info: {
+          iconBg: 'bg-white/10',
+          iconColor: 'text-blue-300',
+          border: 'border-blue-400/30',
+        },
+      }
+    : {
 
     default: {
 
@@ -243,15 +294,17 @@ function ModernStatCard({
 
 
 
-  const trendColors = {
-
-    up: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20',
-
-    down: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20',
-
-    neutral: 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'
-
-  }
+  const trendColors = isBand
+    ? {
+        up: 'text-emerald-400 bg-emerald-500/15',
+        down: 'text-red-400 bg-red-500/15',
+        neutral: 'text-white/60 bg-white/10',
+      }
+    : {
+        up: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20',
+        down: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20',
+        neutral: 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700',
+      }
 
 
 
@@ -263,23 +316,13 @@ function ModernStatCard({
 
   return (
 
-    <div className={`
-
-      bg-white dark:bg-gray-800
-
-      border ${config.border}
-
-      rounded-lg 
-
-      shadow-sm hover:shadow-md 
-
-      transition-shadow duration-200
-
-      ${sizeStyles.container}
-
-      overflow-hidden
-
-    `}>
+    <div
+      className={
+        isBand
+          ? `${DASHBOARD_STAT_CARD_SHELL_CLASS} border ${config.border} shadow-lg shadow-blue-950/30 hover:shadow-xl hover:shadow-blue-950/40 ${sizeStyles.container} overflow-hidden transition-shadow duration-200`
+          : `bg-white dark:bg-gray-800 border ${config.border} rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 ${sizeStyles.container} overflow-hidden`
+      }
+    >
 
       {/* Contenu principal */}
 
@@ -322,7 +365,7 @@ function ModernStatCard({
 
                 ${sizeStyles.label}
 
-                text-gray-700 dark:text-gray-300 font-medium 
+                ${isBand ? 'text-white/70' : 'text-gray-700 dark:text-gray-300'} font-medium 
 
                 truncate min-w-0
 
@@ -339,7 +382,7 @@ function ModernStatCard({
                   contentClassName="whitespace-pre-line block"
                 >
                   <svg
-                    className="block h-3.5 w-3.5 shrink-0 cursor-help text-gray-400 dark:text-gray-500 sm:h-4 sm:w-4"
+                    className={`block h-3.5 w-3.5 shrink-0 cursor-help sm:h-4 sm:w-4 ${isBand ? 'text-white/40' : 'text-gray-400 dark:text-gray-500'}`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                     aria-hidden
@@ -371,7 +414,7 @@ function ModernStatCard({
 
               font-semibold 
 
-              text-gray-900 dark:text-gray-100
+              ${isBand ? 'text-white/90' : 'text-gray-900 dark:text-gray-100'}
 
               mb-2
 
@@ -387,16 +430,20 @@ function ModernStatCard({
             {progressValue !== undefined && progressMax !== undefined && (
               <div className="mb-2">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                  <span className={`text-xs font-medium ${isBand ? 'text-white/50' : 'text-gray-600 dark:text-gray-400'}`}>
                     {progressLabel || `${progressValue} / ${progressMax}`}
                   </span>
-                  <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                  <span className={`text-xs font-semibold ${isBand ? 'text-white/80' : 'text-gray-700 dark:text-gray-300'}`}>
                     {Math.min(Math.round((progressValue / progressMax) * 100), 100)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden relative">
+                <div className={`h-2 w-full overflow-hidden rounded-full relative ${isBand ? 'bg-white/15' : 'bg-gray-200 dark:bg-gray-700'}`}>
                   <div
-                    className={`h-full rounded-full transition-all duration-500 relative overflow-hidden ${getProgressGradientClass(progressValue, progressMax, variant)}`}
+                    className={`relative h-full overflow-hidden rounded-full transition-all duration-500 ${
+                      isBand
+                        ? getBandProgressFillClass(progressValue, progressMax, variant)
+                        : getProgressGradientClass(progressValue, progressMax, variant)
+                    }`}
                     style={{ width: `${Math.min((progressValue / progressMax) * 100, 100)}%` }}
                   />
                   {progressValue > 0 && progressValue < progressMax && (
@@ -411,7 +458,7 @@ function ModernStatCard({
               <div className="mb-2">
                 {valueSubtext ? (
                   <>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    <div className={`mb-1 text-xs ${isBand ? 'text-white/50' : 'text-gray-500 dark:text-gray-400'}`}>
                       {valueSubtext}
                     </div>
                     <div className="w-full h-2">
@@ -440,13 +487,13 @@ function ModernStatCard({
 
             {/* Métriques secondaires */}
             {subMetrics && subMetrics.length > 0 && (
-              <div className="pt-1.5 border-t border-gray-200 dark:border-gray-700">
+              <div className={`pt-1.5 border-t ${isBand ? 'border-white/15' : 'border-gray-200 dark:border-gray-700'}`}>
                 <div className="space-y-1">
                   {subMetrics.map((metric, index) => (
                     metric.label && metric.value ? (
                       <div key={index} className="flex items-center justify-between gap-2 min-w-0">
-                        <span className="text-xs text-gray-600 dark:text-gray-400 truncate min-w-0 flex-1">{metric.label}</span>
-                        <span className="text-xs font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap flex-shrink-0">{metric.value}</span>
+                        <span className={`text-xs truncate min-w-0 flex-1 ${isBand ? 'text-white/50' : 'text-gray-600 dark:text-gray-400'}`}>{metric.label}</span>
+                        <span className={`text-xs font-semibold whitespace-nowrap flex-shrink-0 ${isBand ? 'text-white/85' : 'text-gray-900 dark:text-gray-100'}`}>{metric.value}</span>
                       </div>
                     ) : null
                   ))}
@@ -467,11 +514,11 @@ function ModernStatCard({
 
                 font-medium 
 
-                ${trend ? trendColors[trend] : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'}
+                ${trend ? trendColors[trend] : isBand ? 'text-white/70 bg-white/10' : 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700'}
 
                 px-2 py-1 
 
-                rounded-md
+                ${isBand ? 'rounded-full' : 'rounded-md'}
 
                 w-full
 

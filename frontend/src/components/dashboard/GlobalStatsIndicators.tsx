@@ -44,21 +44,21 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   const { t } = useTranslation();
 
   const getDisciplineColor = (rate: number) => {
-    if (rate >= 80) return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
-    if (rate >= 60) return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
-    return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
+    if (rate >= 80) return 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10';
+    if (rate >= 60) return 'text-amber-400 border-amber-400/30 bg-amber-500/10';
+    return 'text-red-400 border-red-400/30 bg-red-500/10';
   };
 
   const getPnLColor = (pnl: number) => {
-    if (pnl > 0) return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
-    if (pnl < 0) return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-    return 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800';
+    if (pnl > 0) return 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10';
+    if (pnl < 0) return 'text-red-400 border-red-400/30 bg-red-500/10';
+    return 'text-white/70 border-white/15 bg-white/5';
   };
 
   const getWinRateColor = (rate: number) => {
-    if (rate >= 60) return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
-    if (rate >= 45) return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800';
-    return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
+    if (rate >= 60) return 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10';
+    if (rate >= 45) return 'text-amber-400 border-amber-400/30 bg-amber-500/10';
+    return 'text-red-400 border-red-400/30 bg-red-500/10';
   };
 
   const formatPnL = (value: number) => {
@@ -75,8 +75,8 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
     if (trend === undefined || trend === 0) return null;
     
     const trendColor = (isPositive && trend > 0) || (!isPositive && trend < 0)
-      ? 'text-green-600 dark:text-green-400'
-      : 'text-red-600 dark:text-red-400';
+      ? 'text-emerald-400'
+      : 'text-red-400';
     
     return (
       <div className={`flex items-center gap-0.5 text-xs font-medium ${trendColor}`}>
@@ -133,7 +133,8 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
     </div>
   );
 
-  const cardShell = 'flex h-10 min-h-10 items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors';
+  const cardShell =
+    'flex h-10 min-h-10 items-center gap-2 rounded-lg border px-3 py-1.5 transition-colors';
 
   return (
     <div className={`flex items-stretch gap-2 ${className}`}>
@@ -149,7 +150,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
             </svg>
           </div>
           <div className="flex min-w-0 flex-col justify-center">
-            <div className="text-xs font-medium opacity-75 whitespace-nowrap">
+            <div className="text-xs font-medium text-white/50 whitespace-nowrap">
               {t('dashboard:globalDiscipline', { defaultValue: 'Discipline' })}
             </div>
             <div className="flex items-center gap-1">
@@ -177,7 +178,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
         <div
           className={`${cardShell} ${
             hideCurrentBalance
-              ? 'text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800'
+              ? 'text-white/50 border-white/15 bg-white/5'
               : getPnLColor(totalPnL)
           }`}
         >
@@ -187,7 +188,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
             </svg>
           </div>
           <div className="flex min-w-0 flex-col justify-center">
-            <div className="text-xs font-medium opacity-75 whitespace-nowrap">
+            <div className="text-xs font-medium text-white/50 whitespace-nowrap">
               {t('dashboard:globalPnL', { defaultValue: 'PnL Global' })}
             </div>
             <div className="flex items-center gap-1">
@@ -214,7 +215,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
               </svg>
             </div>
             <div className="flex min-w-0 flex-col justify-center">
-              <div className="text-xs font-medium opacity-75 whitespace-nowrap">
+              <div className="text-xs font-medium text-white/50 whitespace-nowrap">
                 {t('dashboard:globalWinRate', { defaultValue: 'Win Rate' })}
               </div>
               <div className="flex items-center gap-1">

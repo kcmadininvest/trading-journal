@@ -15,6 +15,15 @@ import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, getChartColors, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import {
+  DASHBOARD_CHART_BORDER,
+  DASHBOARD_CHART_GRID,
+  DASHBOARD_CHART_TICK,
+  DASHBOARD_PANEL_SHELL_CLASS,
+  DASHBOARD_PANEL_TITLE_CLASS,
+  DASHBOARD_PNL_POSITIVE_BAR_BG,
+  DASHBOARD_PNL_POSITIVE_BAR_BORDER,
+} from '../dashboard/tickerShell';
 
 // Register Chart.js components
 ChartJS.register(
@@ -57,8 +66,8 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         {
           label: t('dashboard:winningTrades'),
           data: successfulData,
-          backgroundColor: 'rgba(59, 130, 246, 0.8)',
-          borderColor: '#3b82f6',
+          backgroundColor: DASHBOARD_PNL_POSITIVE_BAR_BG,
+          borderColor: DASHBOARD_PNL_POSITIVE_BAR_BORDER,
           borderWidth: 0,
           borderRadius: 0,
           borderSkipped: false,
@@ -129,7 +138,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
             family: CHART_FONT_FAMILY,
             size: 12
           },
-          color: chartColors.text,
+          color: DASHBOARD_CHART_TICK,
           boxWidth: 10,
           boxHeight: 10,
         }
@@ -183,14 +192,14 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         ticks: {
           maxRotation: 0,
           minRotation: 0,
-          color: chartColors.textSecondary,
+          color: DASHBOARD_CHART_TICK,
           font: {
             family: CHART_FONT_FAMILY,
             size: 11
           },
         },
         border: {
-          color: chartColors.border,
+          color: DASHBOARD_CHART_BORDER,
         },
       },
       y: {
@@ -198,21 +207,21 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         beginAtZero: true,
         max: yAxisConfig.max,
         grid: {
-          color: chartColors.grid,
+          color: DASHBOARD_CHART_GRID,
           lineWidth: 1,
         },
         ticks: {
           stepSize: yAxisConfig.stepSize,
           precision: 0,
           callback: (value: string | number) => formatNumber(Number(value), 0, numberFormat),
-          color: chartColors.textSecondary,
+          color: DASHBOARD_CHART_TICK,
           font: {
             family: CHART_FONT_FAMILY,
             size: 11
           },
         },
         border: {
-          color: chartColors.border,
+          color: DASHBOARD_CHART_BORDER,
           display: false,
         },
       }
@@ -229,16 +238,16 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
   }), [chartColors, yAxisConfig, isDark, numberFormat, t]);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className={`${DASHBOARD_PANEL_SHELL_CLASS} p-4 sm:p-6`}>
       <div className="mb-4">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+        <h3 className={`text-lg font-bold ${DASHBOARD_PANEL_TITLE_CLASS}`}>
           {t('dashboard:durationDistribution')}
         </h3>
       </div>
 
       <div className="h-[460px]">
         {bins.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+          <div className="flex h-full items-center justify-center text-white/50">
             {t('dashboard:noData')}
           </div>
         ) : (

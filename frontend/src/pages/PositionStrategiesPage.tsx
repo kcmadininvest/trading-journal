@@ -2468,7 +2468,7 @@ const PositionStrategiesPage: React.FC = () => {
                                         type="checkbox"
                                         checked={isChecked}
                                         onChange={() => toggleRule(sectionIndex, ruleIndex)}
-                                        className="mt-0.5 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-blue-600 cursor-pointer flex-shrink-0"
+                                        className="mt-0.5 h-5 w-5 flex-shrink-0"
                                       />
                                       <div className="flex-1 min-w-0">
                                       <div className="flex items-start gap-2">

@@ -30,6 +30,19 @@ import { MarketQuotesTicker } from '../components/dashboard/MarketQuotesTicker';
 import { DashboardFilterBar } from '../components/dashboard/DashboardFilterBar';
 import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformanceKpis';
 import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerformanceSection';
+import {
+  DashboardPanel,
+  DASHBOARD_BAND_DATE_INPUT_CLASS,
+  DASHBOARD_CHART_BORDER,
+  DASHBOARD_CHART_GRID,
+  DASHBOARD_CHART_TICK,
+  DASHBOARD_GAUGE_TILE_CLASS,
+  DASHBOARD_PANEL_HINT_CLASS,
+  DASHBOARD_PANEL_TITLE_CLASS,
+  getDashboardPerformanceBadgeClasses,
+  DASHBOARD_PNL_NEGATIVE_TEXT_CLASS,
+  DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
+} from '../components/dashboard/tickerShell';
 import { useWeekdayPerformance } from '../hooks/useWeekdayPerformance';
 import { PageShell } from '../components/layout';
 import {
@@ -146,19 +159,6 @@ const getPerformanceLabel = (
     label,
     color,
   };
-};
-
-const getPerformanceBadgeClasses = (color?: string) => {
-  switch (color) {
-    case '#10b981':
-      return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-50 dark:border-emerald-800';
-    case '#f59e0b':
-      return 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-50 dark:border-amber-800';
-    case '#ef4444':
-      return 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-50 dark:border-rose-800';
-    default:
-      return 'bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-50 dark:border-blue-800';
-  }
 };
 
 /** Seuils d'agrégation automatique pour le graphique waterfall (affichage uniquement). */
@@ -1688,6 +1688,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       {/* Soldes du compte */}
       {selectedAccount && (
         <AccountSummaryCard
+          theme="band"
           className="mb-6"
           indicators={indicators}
           currencySymbol={currencySymbol}
@@ -1725,8 +1726,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">{t('dashboard:loading')}</p>
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-400/80" />
+            <p className="text-white/60">{t('dashboard:loading')}</p>
           </div>
         </div>
       ) : (
@@ -1735,17 +1736,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
           {/* Graphique 1: Métriques de trading (jauges circulaires) */}
           {tradingMetrics && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 h-full flex flex-col">
-              <div className="text-center mb-6">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">{t('dashboard:traderPerformanceTracker')}</h2>
-                <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mx-auto"></div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{t('dashboard:objectivesBasedOnHistory')}</p>
+            <DashboardPanel padding="large" className="flex h-full flex-col">
+              <div className="mb-6 text-center">
+                <h2 className={`mb-2 text-lg font-bold ${DASHBOARD_PANEL_TITLE_CLASS}`}>{t('dashboard:traderPerformanceTracker')}</h2>
+                <div className="mx-auto h-1 w-20 rounded-full bg-gradient-to-r from-emerald-400/80 to-blue-400/80" />
+                <p className={`mt-2 text-sm ${DASHBOARD_PANEL_HINT_CLASS}`}>{t('dashboard:objectivesBasedOnHistory')}</p>
               </div>
               
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 flex-1">
+              <div className="grid flex-1 grid-cols-3 gap-2 sm:gap-4">
                 {/* Jauge Win Rate */}
-                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-3 sm:p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 text-center uppercase tracking-wide">
+                <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
+                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-white/70 sm:mb-4">
                     {t('dashboard:winRate')}
                   </h3>
                   <Tooltip
@@ -1774,7 +1775,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       return (
                         <div
                           className={clsx(
-                            'relative flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]',
+                            'relative flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/5 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]',
                             showPeakExtras && 'cursor-help'
                           )}
                         >
@@ -1820,7 +1821,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             />
                           </svg>
                           <div className="relative z-10 flex flex-col items-center justify-center px-0.5">
-                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 sm:text-xl xl:text-2xl">
+                            <div className="text-sm font-bold text-white/90 sm:text-xl xl:text-2xl">
                               {formatNumber(tradingMetrics.winRate, 2)}%
                             </div>
                             {showPeakExtras ? (
@@ -1833,13 +1834,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       );
                     })()}
                   </Tooltip>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
+                  <div className="mb-3 text-center text-xs leading-relaxed text-white/50">
                     {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
                   </div>
                   <div
                     className={clsx(
-                      'mt-2 px-2 py-1 rounded-full text-xs font-medium',
-                      getPerformanceBadgeClasses(performanceLabels?.winRate.color)
+                      'mt-2',
+                      getDashboardPerformanceBadgeClasses(performanceLabels?.winRate.color)
                     )}
                   >
                     {performanceLabels?.winRate.label}
@@ -1847,11 +1848,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Jauge Avg Winning Trade */}
-                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-3 sm:p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 text-center uppercase tracking-wide">
+                <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
+                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-white/70 sm:mb-4">
                     {t('dashboard:avgWinning')}
                   </h3>
-                  <div className="relative w-[72px] h-[72px] sm:w-[110px] sm:h-[110px] md:w-[90px] md:h-[90px] lg:w-[110px] lg:h-[110px] xl:w-[130px] xl:h-[130px] mx-auto mb-2 sm:mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                  <div className="relative mx-auto mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/5 sm:mb-4 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]">
                     <svg className="w-full h-full transform -rotate-90 absolute top-0 left-0" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
                       <circle
                         cx="70"
@@ -1876,18 +1877,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-[10px] sm:text-sm font-bold text-gray-900 dark:text-gray-100 text-center px-1">
+                      <div className="px-1 text-center text-[10px] font-bold text-white/90 sm:text-sm">
                         {formatCurrency(tradingMetrics.avgWinningTrade, currencySymbol)}
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
+                  <div className="mb-3 text-center text-xs leading-relaxed text-white/50">
                     {t('dashboard:objective')}: {formatCurrency(gaugeObjectives?.avgWinning || 0, currencySymbol)}
                   </div>
                   <div
                     className={clsx(
-                      'mt-2 px-2 py-1 rounded-full text-xs font-medium',
-                      getPerformanceBadgeClasses(performanceLabels?.avgWinning.color)
+                      'mt-2',
+                      getDashboardPerformanceBadgeClasses(performanceLabels?.avgWinning.color)
                     )}
                   >
                     {performanceLabels?.avgWinning.label}
@@ -1895,11 +1896,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Jauge Avg Losing Trade */}
-                <div className="flex flex-col items-center bg-gray-100 dark:bg-gray-700 rounded-xl p-3 sm:p-4 shadow-md border border-gray-200 dark:border-gray-600 hover:shadow-2xl hover:scale-105 hover:-translate-y-1 transition-all duration-300 ease-in-out cursor-pointer">
-                  <h3 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-3 sm:mb-4 text-center uppercase tracking-wide">
+                <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
+                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-white/70 sm:mb-4">
                     {t('dashboard:avgLosing')}
                   </h3>
-                  <div className="relative w-[72px] h-[72px] sm:w-[110px] sm:h-[110px] md:w-[90px] md:h-[90px] lg:w-[110px] lg:h-[110px] xl:w-[130px] xl:h-[130px] mx-auto mb-2 sm:mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                  <div className="relative mx-auto mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/5 sm:mb-4 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]">
                     <svg className="w-full h-full transform -rotate-90 absolute top-0 left-0" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
                       <circle
                         cx="70"
@@ -1924,25 +1925,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="text-[10px] sm:text-sm font-bold text-gray-900 dark:text-gray-100 text-center px-1">
+                      <div className="px-1 text-center text-[10px] font-bold text-white/90 sm:text-sm">
                         {formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}
                       </div>
                     </div>
                   </div>
-                  <div className="text-xs text-gray-600 dark:text-gray-400 text-center leading-relaxed mb-3">
+                  <div className="mb-3 text-center text-xs leading-relaxed text-white/50">
                     {t('dashboard:objective')}: &lt; {formatCurrency(gaugeObjectives?.avgLosing || 0, currencySymbol)}
                   </div>
                   <div
                     className={clsx(
-                      'mt-2 px-2 py-1 rounded-full text-xs font-medium',
-                      getPerformanceBadgeClasses(performanceLabels?.avgLosing.color)
+                      'mt-2',
+                      getDashboardPerformanceBadgeClasses(performanceLabels?.avgLosing.color)
                     )}
                   >
                     {performanceLabels?.avgLosing.label}
                   </div>
                 </div>
               </div>
-            </div>
+            </DashboardPanel>
           )}
 
           {/* Cartes de statistiques à droite */}
@@ -1950,6 +1951,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             <div className="h-full flex flex-col min-h-0">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 items-stretch">
               <ModernStatCard
+                theme="band"
                 label={t('dashboard:totalPnL')}
                 labelTooltip={t('dashboard:totalPnlTransactionsHintTooltip', {
                   defaultValue:
@@ -1957,17 +1959,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 })}
                 value={
                   <div className="flex flex-col w-full gap-1.5">
-                    <span className="text-2xl font-semibold break-words">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
+                    <span className="break-words text-2xl font-semibold text-white/90">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
                     <div className="flex flex-col gap-1">
                       <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
                         <span className="inline-flex items-center justify-between gap-2 cursor-help">
-                          <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                          <span className="whitespace-nowrap text-xs text-white/50">
                             {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })}
                           </span>
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap inline-block text-center ${
+                          <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-center text-xs font-semibold ${
                             additionalStats.currentWinningStreakDays > 0 
-                              ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
-                              : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                              ? 'bg-emerald-500/15 text-emerald-400' 
+                              : 'bg-white/10 text-white/50'
                           }`}>
                             {additionalStats.currentWinningStreakDays || 0} {(additionalStats.currentWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
                           </span>
@@ -1975,10 +1977,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       </Tooltip>
                       <Tooltip content={t('statistics:overview.maxWinningStreakTooltip', { defaultValue: 'Record de jours consécutifs avec un P/L positif' })}>
                         <span className="inline-flex items-center justify-between gap-2 cursor-help">
-                          <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                          <span className="whitespace-nowrap text-xs text-white/50">
                             {t('statistics:overview.maxWinningStreak', { defaultValue: 'Record' })}
                           </span>
-                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap inline-block text-center bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                          <span className="inline-block whitespace-nowrap rounded-full bg-amber-500/15 px-2 py-0.5 text-center text-xs font-semibold text-amber-400">
                             {additionalStats.maxWinningStreakDays || 0} {(additionalStats.maxWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
                           </span>
                         </span>
@@ -2017,15 +2019,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               />
               
               <ModernStatCard
+                theme="band"
                 label={t('dashboard:profitFactor')}
                 value={
                   <div className="w-full flex flex-col h-full">
-                    <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                    <div className="text-2xl font-semibold text-white/90">
                       {formatNumber(additionalStats.profitFactor, 2)}
                     </div>
                     <div className="flex-1 flex items-center">
                       <div className="w-full py-6">
                         <MetricGauge
+                          theme="band"
                           label=""
                           value={additionalStats.profitFactor}
                           config={GAUGE_CONFIGS.profitFactor}
@@ -2055,6 +2059,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               />
               
               <ModernStatCard
+                theme="band"
                 label={t('dashboard:wlRatio')}
                 value={(() => {
                   const wlRatio = tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0
@@ -2062,12 +2067,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     : 0;
                   return (
                     <div className="w-full flex flex-col h-full">
-                      <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                      <div className="text-2xl font-semibold text-white/90">
                         {formatNumber(wlRatio, 2)}
                       </div>
                       <div className="flex-1 flex items-center">
                         <div className="w-full py-6">
                           <MetricGauge
+                            theme="band"
                             label=""
                             value={wlRatio}
                             config={GAUGE_CONFIGS.winLossRatio}
@@ -2098,6 +2104,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               >
                 <div className="h-full w-full">
                   <ModernStatCard
+                    theme="band"
                     label={(() => {
                       // Utiliser complianceStats.current_streak si disponible (inclut les jours sans trades)
                       // Sinon utiliser additionalStats (seulement les jours avec trades)
@@ -2168,6 +2175,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               >
                 <div className="h-full w-full">
                   <ModernStatCard
+                    theme="band"
                     label={t('dashboard:sequenceRespect')}
                     value={(() => {
                       return `${disciplineBestStreakDays} ${t('dashboard:days')}`;
@@ -2216,6 +2224,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               >
                 <div className="h-full w-full">
                   <ModernStatCard
+                    theme="band"
                     label={t('dashboard:sequenceNotRespect')}
                     value={`${additionalStats.maxConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`}
                     variant={additionalStats.maxConsecutiveDaysNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'warning' : 'default'}
@@ -2250,35 +2259,35 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Graphique 2: Solde du compte dans le temps */}
           {accountBalanceData.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <DashboardPanel padding="large">
               <div className="mb-4">
                 {/* Title + date pickers on same row, wrapping on small screens */}
-                <div className="flex flex-row items-center justify-between gap-2 flex-wrap mb-3">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">{t('dashboard:accountBalanceOverTime')}</h3>
+                <div className="mb-3 flex flex-row flex-wrap items-center justify-between gap-2">
+                  <h3 className={`text-base font-semibold sm:text-lg ${DASHBOARD_PANEL_TITLE_CLASS}`}>{t('dashboard:accountBalanceOverTime')}</h3>
                   <div className="flex flex-row items-center gap-2 min-w-0">
                     {/* Start Date Picker */}
                     <div className="relative min-w-0 flex-1 max-w-[120px] sm:max-w-[140px]">
-                      <div className="absolute -top-2 left-2 bg-white dark:bg-gray-800 px-1 text-[10px] font-medium text-gray-500 dark:text-gray-400 z-10">
+                      <div className={`absolute -top-2 left-2 z-10 px-1 text-[10px] font-medium ${DASHBOARD_PANEL_HINT_CLASS}`}>
                         {t('dashboard:startDate')}
                       </div>
                       <DateInput
                         value={startDate || defaultStartDate}
                         onChange={(value) => setStartDate(value || defaultStartDate)}
-                        className="w-full px-2 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        className={DASHBOARD_BAND_DATE_INPUT_CLASS}
                         min={defaultStartDate}
                         max={defaultEndDate}
                       />
                     </div>
-                    <span className="text-gray-400 dark:text-gray-500 font-medium flex-shrink-0">–</span>
+                    <span className="shrink-0 font-medium text-white/40">–</span>
                     {/* End Date Picker */}
                     <div className="relative min-w-0 flex-1 max-w-[120px] sm:max-w-[140px]">
-                      <div className="absolute -top-2 left-2 bg-white dark:bg-gray-800 px-1 text-[10px] font-medium text-gray-500 dark:text-gray-400 z-10">
+                      <div className={`absolute -top-2 left-2 z-10 px-1 text-[10px] font-medium ${DASHBOARD_PANEL_HINT_CLASS}`}>
                         {t('dashboard:endDate')}
                       </div>
                       <DateInput
                         value={endDate || defaultEndDate}
                         onChange={(value) => setEndDate(value || defaultEndDate)}
-                        className="w-full px-2 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                        className={DASHBOARD_BAND_DATE_INPUT_CLASS}
                         min={defaultStartDate}
                         max={defaultEndDate}
                       />
@@ -2289,14 +2298,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 {!privacySettings.hideProfitLoss && !privacySettings.hideCurrentBalance && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs sm:text-sm">
                     <div className="flex items-center gap-1">
-                      <span className="text-gray-500 dark:text-gray-400">{t('dashboard:highest')} :</span>
-                      <span className={`font-medium ${performanceStats.highestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                      <span className="text-white/50">{t('dashboard:highest')} :</span>
+                      <span className={`font-medium ${performanceStats.highestValue >= 0 ? DASHBOARD_PNL_POSITIVE_TEXT_CLASS : DASHBOARD_PNL_NEGATIVE_TEXT_CLASS}`}>
                         {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-gray-500 dark:text-gray-400">{t('dashboard:lowest')} :</span>
-                      <span className={`font-medium ${performanceStats.lowestValue >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                      <span className="text-white/50">{t('dashboard:lowest')} :</span>
+                      <span className={`font-medium ${performanceStats.lowestValue >= 0 ? DASHBOARD_PNL_POSITIVE_TEXT_CLASS : DASHBOARD_PNL_NEGATIVE_TEXT_CLASS}`}>
                         {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
                       </span>
                     </div>
@@ -2319,7 +2328,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   hideProfitLoss={privacySettings.hideProfitLoss}
                 />
               </div>
-            </div>
+            </DashboardPanel>
           )}
 
           <WeekdayPerformanceSection
@@ -2337,30 +2346,30 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
           {/* Graphique 5: Évolution des gains et pertes journalière */}
           {waterfallData.length > 0 && waterfallChartData && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="mb-4 flex-shrink-0">
-                  <div className="flex items-center gap-2 mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t('dashboard:dailyGainsLossesEvolution')}</h3>
+            <DashboardPanel padding="large">
+                <div className="mb-4 shrink-0">
+                  <div className="mb-4 flex items-center gap-2">
+                    <h3 className={`text-lg font-bold ${DASHBOARD_PANEL_TITLE_CLASS}`}>{t('dashboard:dailyGainsLossesEvolution')}</h3>
                   </div>
                   {waterfallStats && (
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    <div className="mb-2 flex flex-wrap items-center gap-4 text-sm text-white/60">
                       {!privacySettings.hideProfitLoss && (
                         <>
                           <div className="flex items-center gap-1">
                             <span>{t('dashboard:bestDay')} :</span>
-                            <span className="font-medium text-blue-500">{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
+                            <span className={`font-medium ${DASHBOARD_PNL_POSITIVE_TEXT_CLASS}`}>{formatCurrency(waterfallStats.bestDay, currencySymbol)}</span>
                           </div>
                           {waterfallStats.worstDay < 0 && (
                             <div className="flex items-center gap-1">
                               <span>{t('dashboard:worstDay')} :</span>
-                              <span className="font-medium text-pink-500">{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
+                              <span className={`font-medium ${DASHBOARD_PNL_NEGATIVE_TEXT_CLASS}`}>{formatCurrency(waterfallStats.worstDay, currencySymbol)}</span>
                             </div>
                           )}
                         </>
                       )}
                       <div className="flex items-center gap-1">
                         <span>{t('dashboard:winningDays')} :</span>
-                        <span className="font-medium text-gray-700">{waterfallStats.positiveDays}/{waterfallStats.tradingDaysCount} ({formatNumber(waterfallStats.winRate, 1)}%)</span>
+                        <span className="font-medium text-white/80">{waterfallStats.positiveDays}/{waterfallStats.tradingDaysCount} ({formatNumber(waterfallStats.winRate, 1)}%)</span>
                       </div>
                     </div>
                   )}
@@ -2447,19 +2456,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             minRotation: 0,
                             autoSkip: true,
                             maxTicksLimit: 24,
-                            color: chartColors.textSecondary,
+                            color: DASHBOARD_CHART_TICK,
                             font: {
                               size: 11
                             }
                           },
                           border: {
-                            color: chartColors.border,
+                            color: DASHBOARD_CHART_BORDER,
                           },
                         },
                         y: {
                           beginAtZero: true,
                           grid: {
-                            color: chartColors.grid,
+                            color: DASHBOARD_CHART_GRID,
                             lineWidth: 1,
                           },
                           ticks: {
@@ -2467,13 +2476,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             callback: function(value: any) {
                               return formatCurrency(value, currencySymbol);
                             },
-                            color: chartColors.textSecondary,
+                            color: DASHBOARD_CHART_TICK,
                             font: {
                               size: 11
                             }
                           },
                           border: {
-                            color: chartColors.border,
+                            color: DASHBOARD_CHART_BORDER,
                             display: false,
                           },
                         }
@@ -2491,7 +2500,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     }}
                   />
                 </ChartTooltipResetContainer>
-            </div>
+            </DashboardPanel>
           )}
 
           <WeekdayPerformanceSection
@@ -2518,9 +2527,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       )}
 
       {!isLoading && accountBalanceData.length === 0 && !durationDistribution.some(d => d.total > 0) && waterfallData.length === 0 && weekdayPerformanceData.length === 0 && !tradingMetrics && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 text-center text-gray-600 dark:text-gray-400">
+        <DashboardPanel padding="large" className="text-center text-white/60">
           <p>{t('dashboard:noDataForPeriod')}</p>
-        </div>
+        </DashboardPanel>
       )}
 
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />

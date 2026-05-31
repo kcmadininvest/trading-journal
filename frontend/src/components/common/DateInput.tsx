@@ -4,6 +4,22 @@ import { useTranslation } from 'react-i18next';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatDate, getMonthNames, getDayNames } from '../../utils/dateFormat';
 
+/** Styles champ texte (alignés TradesFilters / modales transactions). */
+export const DATE_INPUT_FIELD_CLASS =
+  'w-full min-w-0 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+
+const DATE_INPUT_LAYOUT_CLASS = 'w-full min-w-0 pr-10';
+
+function buildDateInputFieldClass(className: string, isCompact: boolean): string {
+  const sizeClass = isCompact
+    ? 'h-9 rounded-md px-3 py-1.5 text-sm'
+    : 'rounded-lg px-4 py-2 text-sm';
+  if (/\bbg-/.test(className)) {
+    return `${DATE_INPUT_LAYOUT_CLASS} ${sizeClass} ${className}`.trim();
+  }
+  return `${DATE_INPUT_FIELD_CLASS} ${sizeClass} ${className}`.trim();
+}
+
 interface DateInputProps {
   value: string; // Format ISO (YYYY-MM-DD)
   onChange: (value: string) => void;
@@ -461,7 +477,7 @@ export const DateInput: React.FC<DateInputProps> = ({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           placeholder={placeholder || placeholderText}
-          className={className}
+          className={buildDateInputFieldClass(className, isCompact)}
         />
         <button
           type="button"

@@ -392,7 +392,7 @@ const StrategyChecklistPopup: React.FC = () => {
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleRule(sectionIndex, ruleIndex)}
-                            className="mt-0.5 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 cursor-pointer flex-shrink-0"
+                            className="mt-0.5 h-4 w-4 flex-shrink-0"
                           />
                           <span className={`text-xs leading-relaxed flex-1 ${
                             isChecked 

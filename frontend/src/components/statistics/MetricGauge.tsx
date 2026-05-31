@@ -27,6 +27,8 @@ interface MetricGaugeProps {
   showLabels?: boolean;
   size?: 'sm' | 'md' | 'lg';
   compactBar?: boolean;
+  /** `band` = fond sombre dashboard (cotations) */
+  theme?: 'default' | 'band';
 }
 
 export const MetricGauge: React.FC<MetricGaugeProps> = ({
@@ -38,7 +40,9 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
   showLabels = true,
   size = 'md',
   compactBar = false,
+  theme = 'default',
 }) => {
+  const isBand = theme === 'band';
   const labelRef = React.useRef<HTMLSpanElement>(null);
   const gaugeRef = React.useRef<HTMLDivElement>(null);
   const [isLabelTruncated, setIsLabelTruncated] = React.useState(false);
@@ -102,17 +106,29 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
 
   const currentColor = getCurrentColor();
 
-  const colorClasses = {
-    red: 'bg-pink-500 dark:bg-pink-400',
-    orange: 'bg-orange-500 dark:bg-orange-400',
-    green: 'bg-blue-500 dark:bg-blue-400',
-  };
+  const colorClasses = isBand
+    ? {
+        red: 'bg-pink-400',
+        orange: 'bg-orange-400',
+        green: 'bg-blue-400',
+      }
+    : {
+        red: 'bg-pink-500 dark:bg-pink-400',
+        orange: 'bg-orange-500 dark:bg-orange-400',
+        green: 'bg-blue-500 dark:bg-blue-400',
+      };
 
-  const textColorClasses = {
-    red: 'text-pink-600 dark:text-pink-400',
-    orange: 'text-orange-600 dark:text-orange-400',
-    green: 'text-blue-600 dark:text-blue-400',
-  };
+  const textColorClasses = isBand
+    ? {
+        red: 'text-pink-400',
+        orange: 'text-orange-400',
+        green: 'text-blue-400',
+      }
+    : {
+        red: 'text-pink-600 dark:text-pink-400',
+        orange: 'text-orange-600 dark:text-orange-400',
+        green: 'text-blue-600 dark:text-blue-400',
+      };
 
   const sizeClasses = {
     sm: 'h-2',
@@ -179,7 +195,11 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
 
   const barContent = (
     <div ref={gaugeRef} className="relative">
-      <div className={`w-full ${sizeClasses[size]} rounded-full overflow-hidden ${getGaugeBackgroundClass()}`}>
+      <div
+        className={`w-full ${sizeClasses[size]} rounded-full overflow-hidden ${getGaugeBackgroundClass()}${
+          isBand ? ' gauge-bg-on-band' : ''
+        }`}
+      >
         <div
           className={`${sizeClasses[size]} ${colorClasses[currentColor]} rounded-full transition-all duration-700 ease-out relative`}
           style={{ width: `${percentage}%` }}
@@ -194,14 +214,14 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
         return (
           <div
             key={index}
-            className="absolute top-0 bottom-0 w-px bg-gray-400 dark:bg-gray-600"
+            className={`absolute top-0 bottom-0 w-px ${isBand ? 'bg-white/25' : 'bg-gray-400 dark:bg-gray-600'}`}
             style={{ left: `${thresholdPercentage}%` }}
           >
             {showLabels && (
               <span
-                className={`absolute top-full mt-1 -translate-x-1/2 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ${
-                  showDetailedScale ? 'block' : 'hidden'
-                }`}
+                className={`absolute top-full mt-1 -translate-x-1/2 whitespace-nowrap text-xs ${
+                  isBand ? 'text-white/40' : 'text-gray-500 dark:text-gray-400'
+                } ${showDetailedScale ? 'block' : 'hidden'}`}
               >
                 {threshold.value}
               </span>
@@ -212,7 +232,11 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
 
       {/* Labels des zones (positionnés en absolu pour ne pas affecter la hauteur) */}
       {showLabels && (
-        <div className="absolute top-full mt-1 left-0 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
+        <div
+          className={`absolute top-full left-0 right-0 mt-1 flex justify-between px-1 text-xs ${
+            isBand ? 'text-white/40' : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
           <span>{min}</span>
           {showDetailedScale ? <span>{max}+</span> : <span>{max}</span>}
         </div>
@@ -233,9 +257,9 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
               <Tooltip content={label} delay={0} disabled={!isLabelTruncated}>
                 <span
                   ref={labelRef}
-                  className={`inline-block max-w-full text-sm text-gray-500 dark:text-gray-400 break-words ${
-                    isLabelTruncated ? 'cursor-help' : ''
-                  }`}
+                  className={`inline-block max-w-full break-words text-sm ${
+                    isBand ? 'text-white/50' : 'text-gray-500 dark:text-gray-400'
+                  } ${isLabelTruncated ? 'cursor-help' : ''}`}
                 >
                   {label}
                 </span>
@@ -247,7 +271,7 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
                   contentClassName="whitespace-pre-line block"
                 >
                   <svg
-                    className="block h-4 w-4 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
+                    className={`block h-4 w-4 shrink-0 cursor-help ${isBand ? 'text-white/40' : 'text-gray-400 dark:text-gray-500'}`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >

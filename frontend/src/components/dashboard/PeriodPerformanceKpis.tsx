@@ -7,6 +7,15 @@ import { formatCurrency, formatNumber, getCurrencySymbolForCode } from '../../ut
 import { usePreferences } from '../../hooks/usePreferences';
 import { currenciesService, type Currency } from '../../services/currencies';
 import type { PeriodPerformance, PeriodPerformanceEntry } from '../../services/dashboard';
+import {
+  DASHBOARD_INNER_CARD_CLASS,
+  DASHBOARD_INNER_LABEL_CLASS,
+  DASHBOARD_PANEL_HINT_CLASS,
+  DASHBOARD_PANEL_SHELL_CLASS,
+  DASHBOARD_PANEL_TITLE_CLASS,
+  DASHBOARD_PNL_NEGATIVE_TEXT_CLASS,
+  DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
+} from './tickerShell';
 
 export interface PeriodPerformanceKpisProps {
   data: PeriodPerformance | null | undefined;
@@ -23,9 +32,6 @@ type PeriodKey = 'day' | 'week' | 'month' | 'year';
 
 const PERIOD_KEYS: PeriodKey[] = ['day', 'week', 'month', 'year'];
 
-/** Même enveloppe que AccountSummaryCard (barre des soldes). */
-const SUMMARY_SHELL_CLASS = 'bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4';
-
 const PREVIOUS_PERIOD_LABEL: Record<PeriodKey, string> = {
   day: 'dashboard:periodPerformance.vsYesterday',
   week: 'dashboard:periodPerformance.vsLastWeek',
@@ -33,31 +39,22 @@ const PREVIOUS_PERIOD_LABEL: Record<PeriodKey, string> = {
   year: 'dashboard:periodPerformance.vsLastYear',
 };
 
-/** Aligné sur AccountIndicatorsGrid (variation PnL) : bleu = gain, rose = perte. */
 function getPnLCardClasses(pnl: number): string {
-  if (pnl > 0) {
-    return 'border-blue-200 bg-blue-50/80 dark:border-blue-800 dark:bg-blue-900/20';
-  }
-  if (pnl < 0) {
-    return 'border-pink-200 bg-pink-50/80 dark:border-pink-800 dark:bg-pink-900/20';
-  }
-  return 'border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/40';
+  if (pnl > 0) return 'border-blue-400/30 bg-blue-500/10';
+  if (pnl < 0) return 'border-pink-400/30 bg-pink-500/10';
+  return 'border-white/15 bg-white/5';
 }
 
 function getPnLTextClasses(pnl: number): string {
-  if (pnl > 0) return 'text-blue-600 dark:text-blue-400';
-  if (pnl < 0) return 'text-pink-600 dark:text-pink-400';
-  return 'text-gray-700 dark:text-gray-300';
+  if (pnl > 0) return DASHBOARD_PNL_POSITIVE_TEXT_CLASS;
+  if (pnl < 0) return DASHBOARD_PNL_NEGATIVE_TEXT_CLASS;
+  return 'text-white/90';
 }
 
 function getChangeBadgeClasses(changePct: number): string {
-  if (changePct > 0) {
-    return 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
-  }
-  if (changePct < 0) {
-    return 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300';
-  }
-  return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
+  if (changePct > 0) return 'bg-blue-500/15 text-blue-300';
+  if (changePct < 0) return 'bg-pink-500/15 text-pink-300';
+  return 'bg-white/10 text-white/60';
 }
 
 interface PeriodCardProps {
@@ -141,11 +138,12 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
   return (
     <div
       className={clsx(
-        'flex min-w-0 flex-col gap-2 rounded-lg border p-4 transition-colors',
+        DASHBOARD_INNER_CARD_CLASS,
+        'flex min-w-0 flex-col gap-2 p-4',
         getPnLCardClasses(entry.pnl)
       )}
     >
-      <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+      <span className={DASHBOARD_INNER_LABEL_CLASS}>
         {t(`dashboard:periodPerformance.${periodKey}`, {
           defaultValue:
             periodKey === 'day'
@@ -162,7 +160,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
         <span
           className={clsx(
             'text-xl font-semibold tabular-nums sm:text-2xl',
-            hideMoney ? 'text-gray-700 dark:text-gray-300' : getPnLTextClasses(entry.pnl)
+            hideMoney ? 'text-white/70' : getPnLTextClasses(entry.pnl)
           )}
         >
           {formatPnLValue(entry.pnl)}
@@ -188,9 +186,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
             <span
               className={clsx(
                 'inline-flex w-fit shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                hideMoney
-                  ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
-                  : getChangeBadgeClasses(changePct)
+                hideMoney ? 'bg-white/10 text-white/50' : getChangeBadgeClasses(changePct)
               )}
             >
               {!hideMoney && changePct !== 0 && (
@@ -231,7 +227,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
                   })
             }
           >
-            <span className="inline-flex w-fit max-w-full shrink-0 items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium leading-snug text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+            <span className="inline-flex w-fit max-w-full shrink-0 items-center rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium leading-snug text-white/60">
               {hideMoney ? '***' : yearUnavailableHint ?? `— ${vsLabel}`}
             </span>
           </Tooltip>
@@ -248,7 +244,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
                 'Rendement du PnL de la période rapporté au capital initial du (des) compte(s) affiché(s).',
             })}
           >
-            <span className="text-xs text-gray-600 dark:text-gray-400">
+            <span className="text-xs text-white/60">
               {hideMoney
                 ? maskValue(null)
                 : t('dashboard:periodPerformance.returnOnCapital', {
@@ -303,18 +299,18 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
 
   if (loading) {
     return (
-      <div className={clsx(SUMMARY_SHELL_CLASS, className)}>
-        <div className="mb-3 h-5 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-700 sm:mb-4" />
+      <div className={clsx(DASHBOARD_PANEL_SHELL_CLASS, className)}>
+        <div className="mb-3 h-5 w-48 animate-pulse rounded bg-white/10 sm:mb-4" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {PERIOD_KEYS.map((key) => (
             <div
               key={key}
-              className="animate-pulse rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50"
+              className={clsx(DASHBOARD_INNER_CARD_CLASS, 'animate-pulse p-4')}
             >
-            <div className="mb-3 h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="mb-3 h-3 w-24 rounded bg-white/10" />
             <div className="flex flex-wrap items-center gap-2">
-              <div className="h-8 w-32 rounded bg-gray-200 dark:bg-gray-700" />
-              <div className="h-5 w-36 rounded bg-gray-100 dark:bg-gray-700/80" />
+              <div className="h-8 w-32 rounded bg-white/10" />
+              <div className="h-5 w-36 rounded bg-white/10" />
             </div>
           </div>
         ))}
@@ -329,16 +325,16 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
 
   return (
     <section
-      className={clsx(SUMMARY_SHELL_CLASS, className)}
+      className={clsx(DASHBOARD_PANEL_SHELL_CLASS, className)}
       aria-label={t('dashboard:periodPerformance.sectionTitle', {
         defaultValue: 'Performance récente',
       })}
     >
       <div className="mb-3 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 sm:mb-4">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <h2 className={DASHBOARD_PANEL_TITLE_CLASS}>
           {t('dashboard:periodPerformance.sectionTitle', { defaultValue: 'Performance récente' })}
         </h2>
-        <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
+        <span className={DASHBOARD_PANEL_HINT_CLASS}>
           {t('dashboard:periodPerformance.sectionScopeHint', {
             defaultValue: '(Indépendant du filtre de période ci-dessus)',
           })}

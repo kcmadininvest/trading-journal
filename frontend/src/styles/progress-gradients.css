@@ -191,3 +191,69 @@
     rgb(191 219 254) 66.67%, 
     rgb(191 219 254) 100%);
 }
+
+/* Piste de jauge sur panneau bandeau sombre — mêmes seuils, couleurs plus saturées */
+.gauge-bg-on-band.gauge-bg-profit-factor,
+.gauge-bg-on-band.gauge-bg-win-loss-ratio,
+.gauge-bg-on-band.gauge-bg-recovery-ratio,
+.gauge-bg-on-band.gauge-bg-default {
+  background: linear-gradient(
+    to right,
+    rgba(236, 72, 153, 0.55) 0%,
+    rgba(244, 114, 182, 0.45) 28%,
+    rgba(251, 146, 60, 0.5) 33.33%,
+    rgba(253, 186, 116, 0.45) 60%,
+    rgba(59, 130, 246, 0.5) 66.67%,
+    rgba(96, 165, 250, 0.55) 100%
+  );
+}
+
+.gauge-bg-on-band.gauge-bg-win-rate,
+.gauge-bg-on-band.gauge-bg-trade-efficiency {
+  background: linear-gradient(
+    to right,
+    rgba(236, 72, 153, 0.55) 0%,
+    rgba(244, 114, 182, 0.45) 35%,
+    rgba(251, 146, 60, 0.5) 40%,
+    rgba(253, 186, 116, 0.45) 47%,
+    rgba(59, 130, 246, 0.5) 50%,
+    rgba(96, 165, 250, 0.55) 100%
+  );
+}
+
+.gauge-bg-on-band.gauge-bg-sharpe-ratio {
+  background: linear-gradient(
+    to right,
+    rgba(236, 72, 153, 0.55) 0%,
+    rgba(244, 114, 182, 0.45) 14%,
+    rgba(251, 146, 60, 0.5) 16.67%,
+    rgba(253, 186, 116, 0.45) 30%,
+    rgba(59, 130, 246, 0.5) 33.33%,
+    rgba(96, 165, 250, 0.55) 100%
+  );
+}
+
+.gauge-bg-on-band.gauge-bg-fees-ratio,
+.gauge-bg-on-band.gauge-bg-larger-pct-after-trade {
+  background: linear-gradient(
+    to right,
+    rgba(59, 130, 246, 0.5) 0%,
+    rgba(96, 165, 250, 0.45) 28%,
+    rgba(251, 146, 60, 0.5) 33.33%,
+    rgba(253, 186, 116, 0.45) 60%,
+    rgba(236, 72, 153, 0.55) 66.67%,
+    rgba(244, 114, 182, 0.55) 100%
+  );
+}
+
+.gauge-bg-on-band.gauge-bg-plan-respect-rate {
+  background: linear-gradient(
+    to right,
+    rgba(236, 72, 153, 0.55) 0%,
+    rgba(244, 114, 182, 0.45) 45%,
+    rgba(251, 146, 60, 0.5) 50%,
+    rgba(253, 186, 116, 0.45) 67%,
+    rgba(59, 130, 246, 0.5) 70%,
+    rgba(96, 165, 250, 0.55) 100%
+  );
+}

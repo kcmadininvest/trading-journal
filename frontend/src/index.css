@@ -66,11 +66,14 @@
 
 /* Checkbox styles for light mode - enhanced visibility */
 input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
   border-width: 2px !important;
   border-color: #6b7280 !important; /* gray-500 - more visible */
   background-color: #ffffff !important;
   border-radius: 4px;
   transition: all 0.2s ease-in-out;
+  cursor: pointer;
 }
 
 input[type="checkbox"]:hover {
@@ -94,8 +97,8 @@ input[type="checkbox"]:checked {
 
 /* Checkbox styles for dark mode - enhanced visibility */
 .dark input[type="checkbox"] {
-  background-color: #4b5563 !important; /* gray-600 - lighter for better visibility */
-  border-color: #9ca3af !important; /* gray-400 - more visible than gray-600 */
+  background-color: #374151 !important; /* gray-700 - fond sombre, pas blanc natif */
+  border-color: #6b7280 !important; /* gray-500 */
   border-width: 2px !important;
   border-radius: 4px;
   transition: all 0.2s ease-in-out;

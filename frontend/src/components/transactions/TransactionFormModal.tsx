@@ -323,7 +323,6 @@ export const TransactionFormModal: React.FC<TransactionFormModalProps> = ({
               <DateInput
                 value={transactionDate}
                 onChange={setTransactionDate}
-                className="w-full"
               />
             </div>
             <div>
