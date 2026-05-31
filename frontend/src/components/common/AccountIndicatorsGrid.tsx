@@ -93,6 +93,25 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
               }
             </span>
           </div>
+          <div className="hidden xl:block w-px bg-gray-200 dark:bg-gray-600 mx-4 my-1 self-stretch"></div>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              {t('dashboard:highestBalanceReached', { defaultValue: 'Plus haut atteint' })}
+            </span>
+            <span className={`text-xl font-semibold ${
+              accountBalance.peak >= accountBalance.initial
+                ? 'text-blue-600 dark:text-blue-400'
+                : 'text-pink-600 dark:text-pink-400'
+            }`}>
+              {hideCurrentBalance
+                ? maskValue(accountBalance.peak, currencySymbol)
+                : formatCurrency(accountBalance.peak, currencySymbol, preferences.number_format, 2)
+              }
+            </span>
+          </div>
         </div>
 
         {/* Variation et Total Trades regroupés — variation en largeur contenu, le reste pour trades/cumul */}

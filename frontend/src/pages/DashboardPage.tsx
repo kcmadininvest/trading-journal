@@ -1951,6 +1951,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 items-stretch">
               <ModernStatCard
                 label={t('dashboard:totalPnL')}
+                labelTooltip={t('dashboard:totalPnlTransactionsHintTooltip', {
+                  defaultValue:
+                    'PnL de trading sur la période filtrée (somme des trades). Les dépôts et retraits ne sont pas inclus ici : ils sont pris en compte dans le solde actuel et le plus haut atteint.',
+                })}
                 value={
                   <div className="flex flex-col w-full gap-1.5">
                     <span className="text-2xl font-semibold break-words">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>

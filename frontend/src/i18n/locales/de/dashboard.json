@@ -25,6 +25,7 @@
   "winningTrades": "Gewinnende Trades",
   "losingTrades": "Verlierende Trades",
   "totalPnL": "Gesamt-PnL",
+  "totalPnlTransactionsHintTooltip": "Trading-PnL für den gefilterten Zeitraum (Summe der Trades). Ein- und Auszahlungen sind hier nicht enthalten; sie fließen in den aktuellen Saldo und das Höchstniveau ein.",
   "averageWin": "Durchschnittlicher Gewinn",
   "averageLoss": "Durchschnittlicher Verlust",
   "winRatePercentage": "Gewinnrate",
@@ -121,6 +122,7 @@
   "currentNotRespectTrades": "Nicht-Respekt-Trades",
   "initialBalance": "Anfangssaldo",
   "currentBalance": "Aktueller Saldo",
+  "highestBalanceReached": "Höchster erreicht",
   "period": "Zeitraum",
   "periodGroups": {
     "calendar": "Tage und Monate",

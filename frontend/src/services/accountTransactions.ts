@@ -32,6 +32,9 @@ export interface AccountBalance {
   current_balance: string;
   /** Solde si l’on cumule le PnL brut + mêmes flux — aligné préférence affichage gross */
   current_balance_gross?: string;
+  /** Plus haut solde atteint (historique complet, net) */
+  peak_balance?: string;
+  peak_balance_gross?: string;
   currency: string;
 }
 

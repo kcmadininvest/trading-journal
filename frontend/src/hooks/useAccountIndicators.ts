@@ -42,6 +42,8 @@ export interface BestWorstDay {
 export interface AccountBalance {
   initial: number;
   current: number;
+  /** Plus haut solde atteint (historique, dépôts/retraits inclus) */
+  peak: number;
 }
 
 export interface ConsistencyTarget {
@@ -143,15 +145,36 @@ export function useAccountIndicators({
   // Calculer le solde initial et actuel du compte
   const accountBalance = useMemo(() => {
     if (!selectedAccount) {
-      return { initial: 0, current: 0 };
+      return { initial: 0, current: 0, peak: 0 };
     }
+
+    const parsePeakFromApi = (
+      balance: AccountBalanceData,
+      mode: PnlDisplayMode,
+      current: number,
+      initial: number,
+    ): number => {
+      const rawPeak =
+        mode === 'gross' ? balance.peak_balance_gross : balance.peak_balance;
+      if (rawPeak !== undefined && rawPeak !== '') {
+        const parsed = parseFloat(rawPeak);
+        if (Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+      return Math.max(current, initial);
+    };
 
     // Si on a le solde avec transactions depuis l'API, l'utiliser
     if (balanceWithTransactions) {
       const initial = parseFloat(balanceWithTransactions.initial_capital);
       const currentNet = parseFloat(balanceWithTransactions.current_balance);
       if (pnlDisplay === 'net') {
-        return { initial, current: currentNet };
+        return {
+          initial,
+          current: currentNet,
+          peak: parsePeakFromApi(balanceWithTransactions, 'net', currentNet, initial),
+        };
       }
       const rawGross = balanceWithTransactions.current_balance_gross;
       let currentGross =
@@ -170,6 +193,7 @@ export function useAccountIndicators({
       return {
         initial,
         current: currentGross,
+        peak: parsePeakFromApi(balanceWithTransactions, 'gross', currentGross, initial),
       };
     }
 
@@ -189,6 +213,7 @@ export function useAccountIndicators({
     return {
       initial: initialCapital,
       current: currentBalance,
+      peak: Math.max(currentBalance, initialCapital),
     };
   }, [selectedAccount, allTrades, balanceWithTransactions, pnlDisplay]);
 

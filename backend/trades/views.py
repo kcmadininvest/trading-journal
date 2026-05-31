@@ -668,6 +668,8 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
         net_transactions = bal['net_transactions']
         current_balance = bal['current_balance']
         current_balance_gross = bal['current_balance_gross']
+        peak_balance = bal['peak_balance']
+        peak_balance_gross = bal['peak_balance_gross']
 
         return Response({
             'trading_account_id': account.id,
@@ -682,6 +684,8 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
             'net_transactions': str(net_transactions),
             'current_balance': str(current_balance),
             'current_balance_gross': str(current_balance_gross),
+            'peak_balance': str(peak_balance),
+            'peak_balance_gross': str(peak_balance_gross),
             'currency': account.currency,
         })
 

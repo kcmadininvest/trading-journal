@@ -25,6 +25,7 @@
   "winningTrades": "Operaciones ganadoras",
   "losingTrades": "Operaciones perdedoras",
   "totalPnL": "PnL total",
+  "totalPnlTransactionsHintTooltip": "PnL de trading del período filtrado (suma de operaciones). Los depósitos y retiros no se incluyen aquí; se reflejan en el saldo actual y el máximo alcanzado.",
   "averageWin": "Ganancia promedio",
   "averageLoss": "Pérdida promedio",
   "winRatePercentage": "Tasa de aciertos",
@@ -121,6 +122,7 @@
   "currentNotRespectTrades": "Operaciones sin respeto",
   "initialBalance": "Saldo inicial",
   "currentBalance": "Saldo actual",
+  "highestBalanceReached": "Máximo alcanzado",
   "period": "Período",
   "periodGroups": {
     "calendar": "Días y meses",

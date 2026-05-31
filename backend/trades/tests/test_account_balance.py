@@ -75,6 +75,50 @@ class AccountBalanceComputationTests(TestCase):
         self.assertEqual(b['trading_equity_gross'], Decimal('1100.000000000'))
         self.assertEqual(b['current_balance'], Decimal('1080.000000000'))
         self.assertEqual(b['current_balance_gross'], Decimal('1100.000000000'))
+        self.assertEqual(b['peak_balance'], Decimal('1080.000000000'))
+        self.assertEqual(b['peak_balance_gross'], Decimal('1100.000000000'))
+
+    def test_peak_balance_tracks_intraday_high_before_drawdown(self) -> None:
+        d1 = timezone.now().date()
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-peak-1',
+            contract_name='NQ',
+            entered_at=timezone.now(),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('200.00'),
+            trade_day=d1,
+        )
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-peak-2',
+            contract_name='NQ',
+            entered_at=timezone.now(),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('-50.00'),
+            trade_day=d1,
+        )
+        b = compute_trading_account_balance(self.account)
+        self.assertEqual(b['current_balance'], Decimal('1150.00'))
+        self.assertEqual(b['peak_balance'], Decimal('1200.00'))
+
+    def test_deposit_can_raise_peak_balance(self) -> None:
+        AccountTransaction.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            transaction_type='deposit',
+            amount=Decimal('500.00'),
+            transaction_date=timezone.now(),
+        )
+        b = compute_trading_account_balance(self.account)
+        self.assertEqual(b['peak_balance'], Decimal('1500.00'))
+        self.assertEqual(b['current_balance'], Decimal('1500.00'))
 
 
 class WithdrawalValidationTests(TestCase):

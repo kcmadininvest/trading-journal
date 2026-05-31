@@ -25,6 +25,7 @@
   "winningTrades": "Winning Trades",
   "losingTrades": "Losing Trades",
   "totalPnL": "Total PnL",
+  "totalPnlTransactionsHintTooltip": "Trading PnL for the filtered period (sum of trades). Deposits and withdrawals are not included here; they are reflected in current balance and highest reached.",
   "averageWin": "Average Win",
   "averageLoss": "Average Loss",
   "winRatePercentage": "Win Rate",
@@ -120,6 +121,7 @@
   "currentNotRespectTrades": "Non-respect trades",
   "initialBalance": "Initial Balance",
   "currentBalance": "Current Balance",
+  "highestBalanceReached": "Highest reached",
   "period": "Period",
   "periodGroups": {
     "calendar": "Days and months",

@@ -1,4 +1,5 @@
 import React from 'react'
+import Tooltip from '../ui/Tooltip'
 
 // Helper function to get gradient class based on progress and variant
 const getProgressGradientClass = (progressValue: number, progressMax: number, variant: string): string => {
@@ -33,6 +34,9 @@ interface ModernStatCardProps {
 
   label: string
 
+  /** Info-bulle sur l’icône à côté du libellé (pattern PerformanceEdgeKpiStrip). */
+  labelTooltip?: string
+
   value: string | number | React.ReactNode
 
   valueSubtext?: string
@@ -63,7 +67,9 @@ interface ModernStatCardProps {
 
 function ModernStatCard({ 
 
-  label, 
+  label,
+
+  labelTooltip,
 
   value, 
 
@@ -311,19 +317,42 @@ function ModernStatCard({
 
             )}
 
-            <span className={`
+            <div className="inline-flex min-w-0 items-center gap-1">
+              <span className={`
 
-              ${sizeStyles.label}
+                ${sizeStyles.label}
 
-              text-gray-700 dark:text-gray-300 font-medium 
+                text-gray-700 dark:text-gray-300 font-medium 
 
-              truncate min-w-0
+                truncate min-w-0
 
-            `}>
+              `}>
 
-              {label}
+                {label}
 
-            </span>
+              </span>
+              {labelTooltip ? (
+                <Tooltip
+                  content={labelTooltip}
+                  position="bottom"
+                  className="shrink-0 items-center leading-none"
+                  contentClassName="whitespace-pre-line block"
+                >
+                  <svg
+                    className="block h-3.5 w-3.5 shrink-0 cursor-help text-gray-400 dark:text-gray-500 sm:h-4 sm:w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    aria-hidden
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </Tooltip>
+              ) : null}
+            </div>
 
           </div>
 
