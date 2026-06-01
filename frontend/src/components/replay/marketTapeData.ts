@@ -26,6 +26,10 @@ export interface TapeMarker {
   offsetY?: number;
   /** Décalage horizontal viewBox (px, négatif = plus à gauche, positif = côté droit de la bougie). */
   offsetX?: number;
+  /** Prix d’ancrage pour empiler les pastilles de sortie sur une même bougie (ordre chronologique). */
+  stackAnchorPrice?: number;
+  /** Rang chronologique parmi les sorties de la même bougie (0 = la plus ancienne). */
+  stackSlot?: number;
 }
 
 export interface TapeRenderBar {
@@ -294,16 +298,20 @@ const MARKER_VERTICAL_STACK_STEP_PX = 22;
 const MARKER_EXIT_STACK_EXTRA_LEFT_PX = 22;
 const MARKER_EXIT_STACK_RIGHT_PX = 20;
 
-const MARKER_KIND_STACK_ORDER: Record<TapeMarkerKind, number> = {
-  entry: 0,
-  exit: 1,
-};
+export { MARKER_VERTICAL_STACK_STEP_PX };
+
+function applyExitStackOffsetX(exitSlot: number): number | undefined {
+  if (exitSlot === 1) return -MARKER_EXIT_STACK_EXTRA_LEFT_PX;
+  if (exitSlot === 2) return MARKER_EXIT_STACK_RIGHT_PX;
+  if (exitSlot >= 3) return -MARKER_EXIT_STACK_EXTRA_LEFT_PX - (exitSlot - 2) * 14;
+  return undefined;
+}
 
 /**
- * Sur une même bougie, empile les marqueurs vers le haut sans décaler horizontalement
- * (le prix / la bougie restent alignés sur l’axe X).
+ * Sur une même bougie, empile les marqueurs du même type (entrées entre elles, sorties entre elles).
+ * Une entrée et une sortie sur la même bougie ne sont pas décalées l'une par rapport à l'autre.
  */
-function applyMarkerVerticalStackOffsets(markers: TapeMarker[]): TapeMarker[] {
+export function applyMarkerVerticalStackOffsets(markers: TapeMarker[]): TapeMarker[] {
   if (markers.length <= 1) return markers;
 
   const byBar = new Map<number, number[]>();
@@ -318,30 +326,40 @@ function applyMarkerVerticalStackOffsets(markers: TapeMarker[]): TapeMarker[] {
   for (const indices of Array.from(byBar.values())) {
     if (indices.length <= 1) continue;
 
-    const sorted = [...indices].sort((a, b) => {
-      const ka = MARKER_KIND_STACK_ORDER[markers[a].kind];
-      const kb = MARKER_KIND_STACK_ORDER[markers[b].kind];
-      if (ka !== kb) return ka - kb;
-      return parseTimeMs(markers[a].occurredAt) - parseTimeMs(markers[b].occurredAt);
-    });
+    for (const kind of ['entry', 'exit'] as TapeMarkerKind[]) {
+      const kindIndices = indices
+        .filter((idx) => markers[idx].kind === kind)
+        .sort((a, b) => {
+          const ta = parseTimeMs(markers[a].occurredAt);
+          const tb = parseTimeMs(markers[b].occurredAt);
+          if (ta !== tb) return ta - tb;
+          return a - b;
+        });
 
-    sorted.forEach((markerIdx, slot) => {
-      if (slot === 0) return;
-      const stacked = markers[markerIdx];
-      const patch: Partial<TapeMarker> = {
-        offsetY: -slot * MARKER_VERTICAL_STACK_STEP_PX,
-      };
-      if (stacked.kind === 'exit') {
-        if (slot === 1) {
-          patch.offsetX = -MARKER_EXIT_STACK_EXTRA_LEFT_PX;
-        } else if (slot === 2) {
-          patch.offsetX = MARKER_EXIT_STACK_RIGHT_PX;
-        } else if (slot >= 3) {
-          patch.offsetX = -MARKER_EXIT_STACK_EXTRA_LEFT_PX - (slot - 2) * 14;
-        }
+      if (kindIndices.length <= 1) continue;
+
+      if (kind === 'exit') {
+        const anchorPrice = markers[kindIndices[0]].price;
+        kindIndices.forEach((markerIdx, exitSlot) => {
+          const patch: Partial<TapeMarker> = {
+            stackAnchorPrice: anchorPrice,
+            stackSlot: exitSlot,
+          };
+          const offsetX = applyExitStackOffsetX(exitSlot);
+          if (offsetX != null) patch.offsetX = offsetX;
+          result[markerIdx] = { ...result[markerIdx], ...patch };
+        });
+        continue;
       }
-      result[markerIdx] = { ...result[markerIdx], ...patch };
-    });
+
+      kindIndices.forEach((markerIdx, slot) => {
+        if (slot === 0) return;
+        result[markerIdx] = {
+          ...result[markerIdx],
+          offsetY: -slot * MARKER_VERTICAL_STACK_STEP_PX,
+        };
+      });
+    }
   }
 
   return result;

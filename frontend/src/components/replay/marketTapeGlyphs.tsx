@@ -112,15 +112,15 @@ export const TapeExitMarkerGraphic: React.FC<{ layout: TapeExitMarkerLayout }> =
   <g>
     <line
       x1={layout.barX}
-      y1={layout.priceY}
+      y1={layout.tickY}
       x2={layout.dotX}
-      y2={layout.priceY}
+      y2={layout.dotY}
       stroke={layout.fill}
       strokeWidth={1.25}
       strokeLinecap="round"
       opacity={0.9}
     />
-    <circle cx={layout.barX} cy={layout.priceY} r={TAPE_EXIT_TICK_R} fill={layout.fill} />
+    <circle cx={layout.barX} cy={layout.tickY} r={TAPE_EXIT_TICK_R} fill={layout.fill} />
     <circle cx={layout.dotX} cy={layout.dotY} r={TAPE_EXIT_DOT_R} fill={layout.fill} />
   </g>
 );

@@ -31,6 +31,24 @@ from .market_data_fetcher import fetch_market_data_for_session
 
 logger = logging.getLogger(__name__)
 
+# Ordre stable à timestamp égal (ex. position_close avant pnl_tick).
+_EVENT_SORT_RANK: dict[str, int] = {
+    'fill': 10,
+    'order_created': 20,
+    'order_updated': 25,
+    'position_open': 30,
+    'position_close': 40,
+    'pnl_tick': 50,
+}
+
+
+def _event_sort_key(evt: dict[str, Any]) -> tuple:
+    return (
+        evt['occurred_at'],
+        _EVENT_SORT_RANK.get(evt['event_type'], 99),
+        str(evt.get('external_id') or ''),
+    )
+
 
 @dataclass
 class SessionBuildResult:
@@ -285,7 +303,7 @@ class SessionReplayBuilder:
         raw_events.extend(_fill_events(fills, trade_by_topstep_id))
         raw_events.extend(_pnl_tick_events(raw_events))
 
-        raw_events.sort(key=lambda e: (e['occurred_at'], e['event_type']))
+        raw_events.sort(key=_event_sort_key)
 
         net_pnl = Decimal('0')
         peak_pnl = Decimal('0')

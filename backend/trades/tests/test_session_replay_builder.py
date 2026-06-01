@@ -11,10 +11,11 @@ from integrations.credentials_crypto import encrypt_json
 from integrations.models import UserApiIntegration
 from integrations.topstepx_client import TopStepXApiError
 from trades.models import SessionEvent, TradingAccount, TradingSession, TopStepTrade
-from trades.replay.insight_rules import run_insight_rules
+from trades.sync.topstepx_mapper import parse_api_timestamp
 from trades.replay.event_display import format_contract_label, order_summary
 from trades.replay.session_builder import (
     SessionReplayBuilder,
+    _event_sort_key,
     _fill_events,
     _order_events,
     session_day_bounds,
@@ -142,6 +143,22 @@ class SessionReplayBuilderUnitTests(TestCase):
         d = date(2025, 8, 10)
         start, end = session_day_bounds(d, 'Europe/Paris')
         self.assertLess(start, end)
+
+    def test_event_sort_key_orders_close_before_pnl_tick(self) -> None:
+        ts = parse_api_timestamp('2025-08-10T16:31:03.000Z')
+        close = {
+            'event_type': 'position_close',
+            'occurred_at': ts,
+            'external_id': 'close-1002',
+        }
+        tick = {
+            'event_type': 'pnl_tick',
+            'occurred_at': ts,
+            'external_id': 'pnl-close-1002',
+        }
+        ordered = sorted([tick, close], key=_event_sort_key)
+        self.assertEqual(ordered[0]['event_type'], 'position_close')
+        self.assertEqual(ordered[1]['event_type'], 'pnl_tick')
 
 
 @override_settings(

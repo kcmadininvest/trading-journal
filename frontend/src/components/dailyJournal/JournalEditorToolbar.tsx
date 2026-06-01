@@ -10,7 +10,11 @@ interface JournalEditorToolbarProps {
 
 export const JournalEditorToolbar: React.FC<JournalEditorToolbarProps> = ({ onAction, onInsertText, disabled = false }) => {
   const { t } = useI18nTranslation();
-  const buttonClass = 'px-2 py-1 text-sm border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors';
+  const buttonClass =
+    'px-2 py-1 text-sm font-medium text-gray-800 dark:text-gray-100 ' +
+    'bg-gray-50 dark:bg-gray-700/90 border border-gray-200 dark:border-gray-600 rounded ' +
+    'hover:bg-gray-100 dark:hover:bg-gray-600 ' +
+    'disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
   const [activePicker, setActivePicker] = useState<'emoji' | null>(null);
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const tooltipProps = { position: 'top' as const, offset: { y: 8 } };
@@ -39,8 +43,12 @@ export const JournalEditorToolbar: React.FC<JournalEditorToolbarProps> = ({ onAc
     setActivePicker(null);
   };
 
-  const pickerPanelClass = 'absolute z-20 mt-2 min-w-[220px] rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl p-3 flex flex-wrap gap-2';
-  const pickerButtonClass = 'px-2 py-1 rounded-lg text-base hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors';
+  const pickerPanelClass =
+    'absolute z-20 mt-2 min-w-[220px] rounded-xl border border-gray-200 dark:border-gray-600 ' +
+    'bg-white dark:bg-gray-800 shadow-xl p-3 flex flex-wrap gap-2';
+  const pickerButtonClass =
+    'px-2 py-1 rounded-lg text-base text-gray-800 dark:text-gray-100 ' +
+    'hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors';
 
   return (
     <div className="flex flex-wrap gap-2" ref={toolbarRef}>

@@ -405,6 +405,13 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
 
       {model.markers
         .filter((m) => m.kind === 'exit')
+        .slice()
+        .sort((a, b) => {
+          const ta = Date.parse(a.occurredAt);
+          const tb = Date.parse(b.occurredAt);
+          if (Number.isFinite(ta) && Number.isFinite(tb) && ta !== tb) return ta - tb;
+          return 0;
+        })
         .map((m, i) => {
           const layout = computeTapeExitMarkerLayout(m, model, barCount, theme);
           if (!layout) return null;
