@@ -5,7 +5,7 @@ import Tooltip from '../ui/Tooltip';
 import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import { SessionEventItem, SessionMarketData } from '../../services/sessionReplay';
-import { getOrderMarkerTooltipText, getStopLossLineTooltipText } from './eventDetail';
+import { getStopLossLineTooltipText, getTapeMarkerTooltipText } from './eventDetail';
 import { buildTapeRenderModel, TapeMarker, TapePriceLine, TapeRenderModel } from './marketTapeData';
 import {
   TAPE_VIEW_H,
@@ -17,6 +17,7 @@ import {
 import {
   computeTapeExitMarkerLayout,
   computeTapeMarkerHitCoords,
+  resolveTapeTripStrokeColor,
 } from './marketTapeMarkerLayout';
 import {
   getTapeMarkerAnchorOffset,
@@ -136,6 +137,7 @@ function markerHitCoords(
   model: TapeRenderModel,
   barCount: number,
   theme: MarketTapeTheme,
+  isDark: boolean,
 ): { x: number; y: number } {
   return computeTapeMarkerHitCoords(
     marker,
@@ -143,6 +145,7 @@ function markerHitCoords(
     barCount,
     theme,
     getTapeMarkerAnchorOffset(marker),
+    isDark,
   );
 }
 
@@ -182,7 +185,14 @@ const TapeStopLossHitLayer: React.FC<{
   <>
     {model.priceLines.map((line, i) => {
       const { x1, x2, y } = lineSegmentBounds(line, model, barCount);
-      const tooltip = getStopLossLineTooltipText(line.price, line.kind, t, numberFormat);
+      const tooltip = getStopLossLineTooltipText(
+        line.price,
+        line.kind,
+        t,
+        numberFormat,
+        line.side,
+        line.tripIndex,
+      );
       const leftPct = (x1 / TAPE_VIEW_W) * 100;
       const widthPct = ((x2 - x1) / TAPE_VIEW_W) * 100;
       const topPct = (y / TAPE_VIEW_H) * 100;
@@ -218,16 +228,18 @@ const TapeMarkerHitLayer: React.FC<{
   model: TapeRenderModel;
   barCount: number;
   theme: MarketTapeTheme;
+  isDark: boolean;
+  events: SessionEventItem[];
   t: TFunction;
   numberFormat: NumberFormatType;
-}> = ({ model, barCount, theme, t, numberFormat }) => {
+}> = ({ model, barCount, theme, isDark, events, t, numberFormat }) => {
   const interactiveMarkers = model.markers.filter((m) => m.sourceEvent);
 
   return (
     <>
       {interactiveMarkers.map((marker) => {
-        const { x, y } = markerHitCoords(marker, model, barCount, theme);
-        const tooltip = getOrderMarkerTooltipText(marker.sourceEvent!, t, numberFormat);
+        const { x, y } = markerHitCoords(marker, model, barCount, theme, isDark);
+        const tooltip = getTapeMarkerTooltipText(marker, t, numberFormat, events);
         const pos = markerPositionPercent(x, y);
 
         return (
@@ -257,10 +269,12 @@ const TapeMarkerHitLayer: React.FC<{
 
 const TapeChart: React.FC<{
   model: TapeRenderModel;
+  events: SessionEventItem[];
   theme: MarketTapeTheme;
+  isDark: boolean;
   t: TFunction;
   numberFormat: NumberFormatType;
-}> = ({ model, theme, t, numberFormat }) => {
+}> = ({ model, events, theme, isDark, t, numberFormat }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [meetSize, setMeetSize] = useState({ width: 0, height: 0 });
   const barCount = model.bars.length;
@@ -294,13 +308,15 @@ const TapeChart: React.FC<{
           height: meetSize.height > 0 ? meetSize.height : '100%',
         }}
       >
-        <TapeSvg model={model} theme={theme} />
+        <TapeSvg model={model} theme={theme} isDark={isDark} />
         <div className="pointer-events-none absolute inset-0 z-10">
           <TapeStopLossHitLayer model={model} barCount={barCount} t={t} numberFormat={numberFormat} />
           <TapeMarkerHitLayer
             model={model}
             barCount={barCount}
             theme={theme}
+            isDark={isDark}
+            events={events}
             t={t}
             numberFormat={numberFormat}
           />
@@ -310,7 +326,11 @@ const TapeChart: React.FC<{
   );
 };
 
-const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({ model, theme }) => {
+const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme; isDark: boolean }> = ({
+  model,
+  theme,
+  isDark,
+}) => {
   const barCount = model.bars.length;
   const bandStartSlot = model.openPositionBand
     ? barSlotWidth(model.openPositionBand.barStart, model)
@@ -385,8 +405,13 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
 
       {model.priceLines.map((line, i) => {
         const { x1, x2, y } = lineSegmentBounds(line, model, barCount);
-        const stroke = line.kind === 'planned_stop_loss' ? theme.stopLossPlannedLine : theme.stopLossBrokerLine;
-        const strokeWidth = line.kind === 'planned_stop_loss' ? 2.25 : 2;
+        const stroke = resolveTapeTripStrokeColor(
+          line.tripIndex,
+          line.side,
+          isDark,
+          theme,
+          theme.stopLossBrokerLine,
+        );
         return (
           <line
             key={`sl-line-${line.kind}-${line.barStart}-${line.barEnd}-${i}`}
@@ -395,8 +420,8 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
             x2={x2}
             y2={y}
             stroke={stroke}
-            strokeWidth={strokeWidth}
-            strokeDasharray={line.kind === 'planned_stop_loss' ? '6 3' : '4 3'}
+            strokeWidth={2}
+            strokeDasharray="4 3"
             strokeLinecap="round"
             strokeOpacity={1}
           />
@@ -413,7 +438,7 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
           return 0;
         })
         .map((m, i) => {
-          const layout = computeTapeExitMarkerLayout(m, model, barCount, theme);
+          const layout = computeTapeExitMarkerLayout(m, model, barCount, theme, isDark);
           if (!layout) return null;
           return (
             <TapeExitMarkerGraphic
@@ -432,7 +457,7 @@ const TapeSvg: React.FC<{ model: TapeRenderModel; theme: MarketTapeTheme }> = ({
               key={m.markerKey || `entry-${m.occurredAt}-${i}`}
               transform={`translate(${x}, ${y})`}
             >
-              <TapeChartEntryMarkerGlyph marker={m} theme={theme} />
+              <TapeChartEntryMarkerGlyph marker={m} theme={theme} isDark={isDark} />
             </g>
           );
         })}
@@ -542,22 +567,24 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
         <div className="h-[220px] shrink-0 sm:h-[240px] lg:h-auto lg:flex-1 lg:min-h-[240px]">
           <TapeChart
             model={model}
+            events={events}
             theme={tapeTheme}
+            isDark={isDark}
             t={t}
             numberFormat={preferences.number_format}
           />
         </div>
         <MarketTapeLegend
           theme={tapeTheme}
+          isDark={isDark}
           labels={{
-            bull: t('marketTapeLegendBull'),
-            bear: t('marketTapeLegendBear'),
             entryLong: t('marketTapeLegendEntryLong'),
             entryShort: t('marketTapeLegendEntryShort'),
             exitWin: t('marketTapeLegendExitWin'),
             exitLoss: t('marketTapeLegendExitLoss'),
-            stopLossPlanned: t('marketTapeLegendStopLossPlanned'),
             stopLossBroker: t('marketTapeLegendStopLossBroker'),
+            tripColorHelp: t('marketTapeLegendTripColorHelp'),
+            entryTripHelp: t('marketTapeLegendEntryTripHelp'),
           }}
         />
       </div>

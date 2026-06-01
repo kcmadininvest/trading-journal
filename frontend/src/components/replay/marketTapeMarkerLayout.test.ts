@@ -39,7 +39,7 @@ describe('computeTapeExitMarkerLayout', () => {
   it('aligns priceY with exit_price on wick high', () => {
     const model = baseModel();
     const marker = exitMarker({ price: 110 });
-    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme);
+    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme, true);
     expect(layout).not.toBeNull();
     expect(layout!.priceY).toBe(tapeYForPrice(110, model.yMin, model.yMax));
     expect(layout!.dotY).toBe(layout!.priceY);
@@ -48,7 +48,7 @@ describe('computeTapeExitMarkerLayout', () => {
   it('aligns priceY with exit_price on wick low', () => {
     const model = baseModel();
     const marker = exitMarker({ price: 95, pnl: -10 });
-    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme);
+    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme, true);
     expect(layout!.priceY).toBe(tapeYForPrice(95, model.yMin, model.yMax));
     expect(layout!.fill).toBe(theme.exitLoss);
   });
@@ -56,14 +56,14 @@ describe('computeTapeExitMarkerLayout', () => {
   it('flips dot to the right when left placement is out of bounds', () => {
     const model = baseModel();
     const marker = exitMarker({ barIndex: 0 });
-    const layout = computeTapeExitMarkerLayout(marker, model, 20, theme);
+    const layout = computeTapeExitMarkerLayout(marker, model, 20, theme, true);
     expect(layout!.dotX).toBeGreaterThan(layout!.barX);
   });
 
   it('places dot fully left of candle body', () => {
     const model = baseModel();
     const marker = exitMarker({ barIndex: 1 });
-    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme);
+    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme, true);
     const halfW = 7 * 0.72 / 2;
     expect(layout!.dotX + 4.5).toBeLessThanOrEqual(layout!.barX - halfW - 1);
   });
@@ -71,20 +71,29 @@ describe('computeTapeExitMarkerLayout', () => {
   it('applies stack offsetY to priceY and dotY', () => {
     const model = baseModel();
     const marker = exitMarker({ offsetY: -22 });
-    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme);
+    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme, true);
     const baseY = tapeYForPrice(110, model.yMin, model.yMax);
     expect(layout!.priceY).toBe(baseY - 22);
     expect(layout!.dotY).toBe(baseY - 22);
   });
 
+  it('uses trip color for exit fill when tripIndex is set', () => {
+    const model = baseModel();
+    const marker = exitMarker({ tripIndex: 1, side: 'Long', pnl: -10 });
+    const layout = computeTapeExitMarkerLayout(marker, model, 2, theme, true);
+    expect(layout!.fill).not.toBe(theme.exitLoss);
+    expect(layout!.fill).toBe('#2dd4bf');
+  });
+
   it('applies stack offsetX further left', () => {
     const model = baseModel();
-    const base = computeTapeExitMarkerLayout(exitMarker({ barIndex: 1 }), model, 2, theme)!;
+    const base = computeTapeExitMarkerLayout(exitMarker({ barIndex: 1 }), model, 2, theme, true)!;
     const stacked = computeTapeExitMarkerLayout(
       exitMarker({ barIndex: 1, offsetX: -22 }),
       model,
       2,
       theme,
+      true,
     )!;
     expect(stacked.dotX).toBeLessThan(base.dotX);
   });

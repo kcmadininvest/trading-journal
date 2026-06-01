@@ -53,6 +53,8 @@
   "marketTapeLegendOrderTooltip": "Order an den Markt gesendet oder geändert (Limit, Market, Stop…) während der Session, vor oder ohne vollständige Ausführung.",
   "marketTapeLegendStopLossPlanned": "Geplanter Stop-Loss",
   "marketTapeLegendStopLossBroker": "Broker-Stop",
+  "marketTapeLegendTripColorHelp": "Jeder Trade hat einen einzigartigen Farbton. Einstieg, Broker-Stop und Ausstieg teilen dieselbe Farbe.",
+  "marketTapeLegendEntryTripHelp": "Einzigartige Farbe pro Trade: Einstieg, Stops und Ausstieg einer Position teilen denselben Farbton.",
   "marketTapeStopLossPlannedTooltip": "Geplanter Stop-Loss (Journal) @ {{price}}",
   "marketTapeStopLossBrokerTooltip": "Broker-Stop (TopStep-Order) @ {{price}}",
   "marketTapeLegendCursor": "Cursor",
@@ -109,7 +111,9 @@
     "sizeContracts": "{{size}} Kontrakt(e)",
     "partialFill": "ausgeführt {{size}}",
     "pnl": "PnL {{amount}}",
-    "cumulativePnl": "Kumulierter PnL {{amount}}"
+    "cumulativePnl": "Kumulierter PnL {{amount}}",
+    "tradeNumber": "Trade {{num}}",
+    "exitViaStopLoss": "Ausstieg per Stop-Loss"
   },
   "eventTypes": {
     "order_created": "Order erstellt",

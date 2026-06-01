@@ -10,6 +10,8 @@ export interface TapePriceLine {
   barEnd: number;
   kind: TapePriceLineKind;
   sourceEventId?: number;
+  tripIndex?: number;
+  side?: string;
 }
 
 export interface TapeMarker {
@@ -30,6 +32,12 @@ export interface TapeMarker {
   stackAnchorPrice?: number;
   /** Rang chronologique parmi les sorties de la même bougie (0 = la plus ancienne). */
   stackSlot?: number;
+  /** Index du trade (position_open) pour la teinte unique. */
+  tripIndex?: number;
+  /** Sortie exécutée au prix du stop broker (ligne SL masquée). */
+  exitViaStopLoss?: boolean;
+  /** Taille réelle de la position à l'entrée (lots du fill d'entrée). */
+  positionSize?: number;
 }
 
 export interface TapeRenderBar {
@@ -135,26 +143,131 @@ function brokerStopPriceFromEvent(evt: SessionEventItem): number | null {
   );
 }
 
-interface RoundTripStopLoss {
+interface ContractRoundTrip {
+  tripIndex: number;
+  tradeSide: string;
   openBar: number;
   openEventId: number;
   openIndex: number;
   closeBar: number | null;
   closeIndex: number | null;
+  closeEventIds: number[];
   plannedSl: number | null;
   brokerSl: number | null;
 }
 
-function collectRoundTripsStopLoss(
+function tradeSideFromPayload(payload: Record<string, unknown>): string {
+  return String(payload.trade_type || '');
+}
+
+/** Comparaison de prix marché (tolérance sous le tick mini courant). */
+export function tapePricesEqual(a: number, b: number): boolean {
+  return Math.abs(a - b) < 0.01;
+}
+
+interface TripCloseDetail {
+  eventId: number;
+  eventIndex: number;
+  price: number;
+}
+
+function closeDetailsForTrip(
+  events: SessionEventItem[],
+  trip: ContractRoundTrip,
+  maxIndex: number,
+): TripCloseDetail[] {
+  const idSet = new Set(trip.closeEventIds);
+  const details: TripCloseDetail[] = [];
+  for (let i = 0; i <= maxIndex && i < events.length; i++) {
+    const evt = events[i];
+    if (!idSet.has(evt.id)) continue;
+    const price = priceFromPayload(evt.payload || {}, ['exit_price']);
+    if (price == null) continue;
+    details.push({ eventId: evt.id, eventIndex: i, price });
+  }
+  return details;
+}
+
+function brokerStopTriggeredByClose(
+  brokerSl: number,
+  closes: TripCloseDetail[],
+): boolean {
+  return closes.some((c) => tapePricesEqual(c.price, brokerSl));
+}
+
+/** Indices des position_close liées à un position_open (jusqu'à la prochaine ouverture). */
+function closeIndicesForOpen(
+  events: SessionEventItem[],
+  openIndex: number,
+  contractId: string,
+  label: string,
+): number[] {
+  const indices: number[] = [];
+  for (let i = openIndex + 1; i < events.length; i++) {
+    const evt = events[i];
+    if (!eventMatchesContract(evt, contractId, label)) continue;
+    if (evt.event_type === 'position_open') break;
+    if (evt.event_type === 'position_close') indices.push(i);
+  }
+  return indices;
+}
+
+function isEntryFillEvent(evt: SessionEventItem): boolean {
+  const payload = evt.payload || {};
+  const pnl = payload.pnl;
+  if (pnl != null && pnl !== '') return false;
+  const fill = payload.fill as Record<string, unknown> | undefined;
+  const fillPnl = fill?.profitAndLoss;
+  return fillPnl == null || fillPnl === '';
+}
+
+/** Taille du fill d'entrée associé à un position_open (même horodatage). */
+export function entryFillSizeForOpen(
+  events: SessionEventItem[],
+  openEvt: SessionEventItem,
+  contractId: string,
+  label: string,
+): number | undefined {
+  for (const evt of events) {
+    if (evt.event_type !== 'fill') continue;
+    if (evt.occurred_at !== openEvt.occurred_at) continue;
+    if (!eventMatchesContract(evt, contractId, label)) continue;
+    if (!isEntryFillEvent(evt)) continue;
+    const payload = evt.payload || {};
+    const fill = payload.fill as Record<string, unknown> | undefined;
+    const raw = payload.size ?? fill?.size;
+    const n = Number(raw);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return undefined;
+}
+
+function isAfterTripLastClose(
+  events: SessionEventItem[],
+  openIndex: number,
+  eventIndex: number,
+  contractId: string,
+  label: string,
+): boolean {
+  const closeIndices = closeIndicesForOpen(events, openIndex, contractId, label);
+  if (closeIndices.length === 0) return false;
+  const lastCloseIndex = closeIndices[closeIndices.length - 1];
+  return eventIndex > lastCloseIndex;
+}
+
+function collectContractRoundTrips(
   events: SessionEventItem[],
   contractId: string,
   label: string,
   bars: SessionMarketBar[],
-): RoundTripStopLoss[] {
-  const trips: RoundTripStopLoss[] = [];
-  let current: RoundTripStopLoss | null = null;
+  maxEventIndex: number = events.length - 1,
+): ContractRoundTrip[] {
+  const trips: ContractRoundTrip[] = [];
+  let current: ContractRoundTrip | null = null;
+  let tripCounter = 0;
+  const lastIndex = Math.min(maxEventIndex, events.length - 1);
 
-  for (let i = 0; i < events.length; i++) {
+  for (let i = 0; i <= lastIndex; i++) {
     const evt = events[i];
     if (!eventMatchesContract(evt, contractId, label)) continue;
 
@@ -162,12 +275,16 @@ function collectRoundTripsStopLoss(
       if (current) {
         trips.push(current);
       }
+      const payload = evt.payload || {};
       current = {
+        tripIndex: tripCounter++,
+        tradeSide: tradeSideFromPayload(payload),
         openBar: barIndexAtOrBefore(bars, evt.occurred_at),
         openEventId: evt.id,
         openIndex: i,
         closeBar: null,
         closeIndex: null,
+        closeEventIds: [],
         plannedSl: plannedStopLossFromEvent(evt),
         brokerSl: null,
       };
@@ -176,7 +293,15 @@ function collectRoundTripsStopLoss(
 
     if (!current) continue;
 
-    if (current.plannedSl == null) {
+    const afterLastClose = isAfterTripLastClose(
+      events,
+      current.openIndex,
+      i,
+      contractId,
+      label,
+    );
+
+    if (!afterLastClose && current.plannedSl == null) {
       const planned = plannedStopLossFromEvent(evt);
       if (planned != null) {
         current.plannedSl = planned;
@@ -184,15 +309,14 @@ function collectRoundTripsStopLoss(
     }
 
     const brokerStop = brokerStopPriceFromEvent(evt);
-    if (brokerStop != null) {
+    if (brokerStop != null && !afterLastClose) {
       current.brokerSl = brokerStop;
     }
 
     if (evt.event_type === 'position_close') {
       current.closeBar = barIndexAtOrBefore(bars, evt.occurred_at);
       current.closeIndex = i;
-      trips.push(current);
-      current = null;
+      current.closeEventIds.push(evt.id);
     }
   }
 
@@ -203,6 +327,20 @@ function collectRoundTripsStopLoss(
   return trips;
 }
 
+function buildTripLookup(
+  trips: ContractRoundTrip[],
+): Map<number, { tripIndex: number; side: string; brokerSl: number | null }> {
+  const lookup = new Map<number, { tripIndex: number; side: string; brokerSl: number | null }>();
+  for (const trip of trips) {
+    const meta = { tripIndex: trip.tripIndex, side: trip.tradeSide, brokerSl: trip.brokerSl };
+    lookup.set(trip.openEventId, meta);
+    for (const closeId of trip.closeEventIds) {
+      lookup.set(closeId, meta);
+    }
+  }
+  return lookup;
+}
+
 export function buildStopLossLines(
   events: SessionEventItem[],
   currentIndex: number,
@@ -211,32 +349,31 @@ export function buildStopLossLines(
   bars: SessionMarketBar[],
   cursorBarIndex: number,
 ): TapePriceLine[] {
-  const trips = collectRoundTripsStopLoss(events, contractId, label, bars);
+  const trips = collectContractRoundTrips(events, contractId, label, bars, currentIndex);
   const lines: TapePriceLine[] = [];
 
   for (const trip of trips) {
     if (trip.openIndex > currentIndex) continue;
 
-    const tradeClosed =
-      trip.closeIndex != null && trip.closeBar != null && trip.closeIndex <= currentIndex;
-    const barEnd = tradeClosed ? trip.closeBar! : cursorBarIndex;
+    const allCloseIndices = closeIndicesForOpen(events, trip.openIndex, contractId, label);
+    const visibleCloseIndices = allCloseIndices.filter((idx) => idx <= currentIndex);
+    const fullyClosed =
+      allCloseIndices.length > 0
+      && visibleCloseIndices.length === allCloseIndices.length;
+    const barEnd = fullyClosed && trip.closeBar != null ? trip.closeBar : cursorBarIndex;
+    const lineMeta = { tripIndex: trip.tripIndex, side: trip.tradeSide };
+    const closes = closeDetailsForTrip(events, trip, currentIndex);
+    const hideBrokerLine =
+      trip.brokerSl != null && brokerStopTriggeredByClose(trip.brokerSl, closes);
 
-    if (trip.plannedSl != null) {
-      lines.push({
-        price: trip.plannedSl,
-        barStart: trip.openBar,
-        barEnd,
-        kind: 'planned_stop_loss',
-        sourceEventId: trip.openEventId,
-      });
-    }
-    if (trip.brokerSl != null) {
+    if (trip.brokerSl != null && !hideBrokerLine) {
       lines.push({
         price: trip.brokerSl,
         barStart: trip.openBar,
         barEnd,
         kind: 'broker_stop',
         sourceEventId: trip.openEventId,
+        ...lineMeta,
       });
     }
   }
@@ -253,12 +390,15 @@ export function buildMarkersForContract(
 ): TapeMarker[] {
   const markers: TapeMarker[] = [];
   const slice = events.slice(0, currentIndex + 1);
+  const trips = collectContractRoundTrips(events, contractId, label, bars, currentIndex);
+  const tripLookup = buildTripLookup(trips);
 
   for (const evt of slice) {
     if (!eventMatchesContract(evt, contractId, label)) continue;
     const payload = evt.payload || {};
     const occurredAt = evt.occurred_at;
     const barIndex = barIndexAtOrBefore(bars, occurredAt);
+    const tripMeta = tripLookup.get(evt.id);
 
     if (evt.event_type === 'position_open') {
       const price = priceFromPayload(payload, ['entry_price']);
@@ -269,6 +409,8 @@ export function buildMarkersForContract(
           price,
           occurredAt,
           side: String(payload.trade_type || ''),
+          tripIndex: tripMeta?.tripIndex,
+          positionSize: entryFillSizeForOpen(events, evt, contractId, label),
           sourceEvent: evt,
           markerKey: `${evt.event_type}-${evt.id}`,
         });
@@ -278,12 +420,18 @@ export function buildMarkersForContract(
       const pnlRaw = payload.pnl;
       const pnl = pnlRaw != null ? Number(pnlRaw) : undefined;
       if (price != null) {
+        const brokerSl = tripMeta?.brokerSl;
+        const exitViaStopLoss =
+          brokerSl != null && tapePricesEqual(price, brokerSl);
         markers.push({
           kind: 'exit',
           barIndex,
           price,
           occurredAt,
+          side: tripMeta?.side,
+          tripIndex: tripMeta?.tripIndex,
           pnl: Number.isFinite(pnl) ? pnl : undefined,
+          exitViaStopLoss: exitViaStopLoss || undefined,
           sourceEvent: evt,
           markerKey: `${evt.event_type}-${evt.id}`,
         });
@@ -292,6 +440,23 @@ export function buildMarkersForContract(
   }
 
   return markers;
+}
+
+/** Exporté pour les tests — round-trips d'un contrat avec index de teinte. */
+export function getContractRoundTrips(
+  events: SessionEventItem[],
+  contractId: string,
+  label: string,
+  bars: SessionMarketBar[],
+  maxEventIndex?: number,
+): ContractRoundTrip[] {
+  return collectContractRoundTrips(
+    events,
+    contractId,
+    label,
+    bars,
+    maxEventIndex ?? events.length - 1,
+  );
 }
 
 const MARKER_VERTICAL_STACK_STEP_PX = 22;
@@ -339,12 +504,18 @@ export function applyMarkerVerticalStackOffsets(markers: TapeMarker[]): TapeMark
       if (kindIndices.length <= 1) continue;
 
       if (kind === 'exit') {
-        const anchorPrice = markers[kindIndices[0]].price;
         kindIndices.forEach((markerIdx, exitSlot) => {
+          const marker = markers[markerIdx];
+          const anchorPrice = markers[kindIndices[0]].price;
           const patch: Partial<TapeMarker> = {
-            stackAnchorPrice: anchorPrice,
             stackSlot: exitSlot,
           };
+          if (
+            exitSlot > 0
+            && tapePricesEqual(anchorPrice, marker.price)
+          ) {
+            patch.stackAnchorPrice = anchorPrice;
+          }
           const offsetX = applyExitStackOffsetX(exitSlot);
           if (offsetX != null) patch.offsetX = offsetX;
           result[markerIdx] = { ...result[markerIdx], ...patch };
@@ -376,18 +547,26 @@ function computeOpenPositionBand(
   const slice = events.slice(0, currentIndex + 1);
   let entryPrice: number | null = null;
   let entryBar = 0;
+  let openIndex: number | null = null;
 
-  for (const evt of slice) {
+  for (let i = 0; i < slice.length; i++) {
+    const evt = slice[i];
     if (!eventMatchesContract(evt, contractId, label)) continue;
     if (evt.event_type === 'position_open') {
       const p = priceFromPayload(evt.payload || {}, ['entry_price']);
       if (p != null) {
         entryPrice = p;
         entryBar = barIndexAtOrBefore(bars, evt.occurred_at);
+        openIndex = i;
       }
     }
-    if (evt.event_type === 'position_close') {
-      entryPrice = null;
+    if (evt.event_type === 'position_close' && openIndex != null) {
+      const closes = closeIndicesForOpen(events, openIndex, contractId, label);
+      const lastCloseIndex = closes[closes.length - 1];
+      if (i === lastCloseIndex) {
+        entryPrice = null;
+        openIndex = null;
+      }
     }
   }
 

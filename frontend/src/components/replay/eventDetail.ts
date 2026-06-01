@@ -1,6 +1,7 @@
 import { TFunction } from 'i18next';
 import { SessionEventItem } from '../../services/sessionReplay';
-import { TapePriceLineKind } from './marketTapeData';
+import { TapeMarker, TapePriceLineKind, entryFillSizeForOpen, eventContractKeys } from './marketTapeData';
+import { formatTripLabel, normalizeTradeSide } from './marketTapeTripColors';
 import { formatCurrencyWithSign, formatNumber, NumberFormatType } from '../../utils/numberFormat';
 
 const ORDER_TYPE_KEYS: Record<string, string> = {
@@ -144,6 +145,38 @@ function mergeFillPayload(payload: Record<string, unknown>): Record<string, unkn
   };
 }
 
+/** Taille réelle du fill d'entrée lié à un position_open (ex. 2 lots, pas la taille d'une sortie partielle). */
+export function resolveEntryFillSize(
+  events: SessionEventItem[],
+  openEvt: SessionEventItem,
+): number | undefined {
+  const keys = eventContractKeys(openEvt);
+  return entryFillSizeForOpen(
+    events,
+    openEvt,
+    keys.contractId || '',
+    keys.label || '',
+  );
+}
+
+export interface EventDetailOptions {
+  sizeOverride?: number;
+  contextEvents?: SessionEventItem[];
+}
+
+function resolvePositionOpenSize(
+  evt: SessionEventItem,
+  payload: Record<string, unknown>,
+  options?: EventDetailOptions,
+): unknown {
+  if (options?.sizeOverride != null) return options.sizeOverride;
+  if (options?.contextEvents) {
+    const fromFill = resolveEntryFillSize(options.contextEvents, evt);
+    if (fromFill != null) return fromFill;
+  }
+  return payload.size;
+}
+
 /**
  * Ligne de détail lisible sous le libellé d'événement (ex. « NQ · Achat · 2 · Limite @ 21050 »).
  */
@@ -151,6 +184,7 @@ export function getEventDetailText(
   evt: SessionEventItem,
   t: TFunction,
   numberFormat: NumberFormatType = 'comma',
+  options?: EventDetailOptions,
 ): string | null {
   const base = asRecord(evt.payload) || {};
   let payload = base;
@@ -221,7 +255,7 @@ export function getEventDetailText(
       const parts: string[] = [];
       if (payload.contract_name) parts.push(String(payload.contract_name));
       if (payload.trade_type) parts.push(String(payload.trade_type));
-      const size = sizePart(payload.size, t, numberFormat);
+      const size = sizePart(resolvePositionOpenSize(evt, payload, options), t, numberFormat);
       const entry = pricePart(payload.entry_price, '@', numberFormat);
       if (size) parts.push(size);
       if (entry) parts.push(entry);
@@ -263,22 +297,42 @@ export function getEventDetailText(
   }
 }
 
+function tripSuffix(t: TFunction, tripIndex: number | undefined, side: string | undefined): string {
+  const parts: string[] = [];
+  const normalized = normalizeTradeSide(side);
+  if (normalized) {
+    parts.push(
+      t(normalized === 'long' ? 'sides.long' : 'sides.short', {
+        defaultValue: normalized === 'long' ? 'Long' : 'Short',
+      }),
+    );
+  }
+  const label = formatTripLabel(tripIndex);
+  if (label) {
+    parts.push(t('eventDetail.tradeNumber', { defaultValue: 'Trade {{num}}', num: label }));
+  }
+  return parts.length ? ` · ${parts.join(' · ')}` : '';
+}
+
 /** Tooltip d'une ligne stop loss sur le bandeau marché. */
 export function getStopLossLineTooltipText(
   price: number,
   kind: TapePriceLineKind,
   t: TFunction,
   numberFormat: NumberFormatType = 'comma',
+  side?: string,
+  tripIndex?: number,
 ): string {
   const labelKey =
     kind === 'planned_stop_loss'
       ? 'marketTapeStopLossPlannedTooltip'
       : 'marketTapeStopLossBrokerTooltip';
   const priceStr = formatNumber(price, price % 1 === 0 ? 0 : 2, numberFormat);
-  return t(labelKey, {
+  const base = t(labelKey, {
     defaultValue: kind === 'planned_stop_loss' ? 'Stop loss planifié @ {{price}}' : 'Stop broker @ {{price}}',
     price: priceStr,
   });
+  return `${base}${tripSuffix(t, tripIndex, side)}`;
 }
 
 /** Tooltip du marqueur ordre sur le bandeau marché (type, sens, prix…). */
@@ -286,8 +340,44 @@ export function getOrderMarkerTooltipText(
   evt: SessionEventItem,
   t: TFunction,
   numberFormat: NumberFormatType = 'comma',
+  tripIndex?: number,
 ): string {
   const title = t(`eventTypes.${evt.event_type}`, { defaultValue: evt.event_type });
   const detail = getEventDetailText(evt, t, numberFormat);
-  return detail ? `${title} — ${detail}` : title;
+  const payload = evt.payload || {};
+  const side = payload.trade_type != null ? String(payload.trade_type) : undefined;
+  const suffix = tripSuffix(t, tripIndex, side);
+  if (detail) return `${title} — ${detail}${suffix}`;
+  return `${title}${suffix}`;
+}
+
+/** Tooltip d'un marqueur entrée/sortie sur le bandeau marché. */
+export function getTapeMarkerTooltipText(
+  marker: TapeMarker,
+  t: TFunction,
+  numberFormat: NumberFormatType = 'comma',
+  contextEvents?: SessionEventItem[],
+): string {
+  if (!marker.sourceEvent) return '';
+  const evt = marker.sourceEvent;
+  const title = t(`eventTypes.${evt.event_type}`, { defaultValue: evt.event_type });
+  const detail = getEventDetailText(
+    evt,
+    t,
+    numberFormat,
+    marker.kind === 'entry'
+      ? { sizeOverride: marker.positionSize, contextEvents }
+      : undefined,
+  );
+  const payload = evt.payload || {};
+  const side = payload.trade_type != null ? String(payload.trade_type) : marker.side;
+  const suffix = tripSuffix(t, marker.tripIndex, side);
+  let text = detail ? `${title} — ${detail}${suffix}` : `${title}${suffix}`;
+  if (marker.kind === 'exit' && marker.exitViaStopLoss) {
+    const stopNote = t('eventDetail.exitViaStopLoss', {
+      defaultValue: 'Sortie par stop loss',
+    });
+    text = `${text} · ${stopNote}`;
+  }
+  return text;
 }

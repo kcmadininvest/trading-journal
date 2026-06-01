@@ -104,6 +104,7 @@ class SessionReplayBuilderUnitTests(TestCase):
         close_events = [e for e in events if e['event_type'] == 'position_close']
         self.assertEqual(len(open_events), 1)
         self.assertEqual(open_events[0]['external_id'], 'open-3001')
+        self.assertEqual(open_events[0]['payload']['size'], '3')
         self.assertEqual(len(close_events), 2)
         self.assertEqual(
             {e['external_id'] for e in close_events},

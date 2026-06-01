@@ -184,7 +184,7 @@ def _fill_events(fills: list[dict[str, Any]], trade_by_topstep_id: dict[str, Top
                     'payload': {
                         'contract_name': format_contract_label(row.get('contract_name')),
                         'trade_type': row.get('trade_type'),
-                        'size': str(row.get('size')),
+                        'size': str(entry.get('size') or row.get('size')),
                         'entry_price': str(row.get('entry_price')),
                     },
                     'trade': trade,

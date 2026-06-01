@@ -1,5 +1,6 @@
 import type { TapeMarker, TapeRenderModel } from './marketTapeData';
-import { MARKER_VERTICAL_STACK_STEP_PX } from './marketTapeData';
+import { MARKER_VERTICAL_STACK_STEP_PX, tapePricesEqual } from './marketTapeData';
+import { getTripColor } from './marketTapeTripColors';
 import {
   TAPE_EXIT_DOT_R,
   TAPE_PAD_LEFT,
@@ -23,7 +24,13 @@ export interface TapeExitMarkerLayout {
 
 const EXIT_DOT_GAP_PX = 6;
 
-function exitFill(marker: Pick<TapeMarker, 'pnl'>, theme: MarketTapeTheme): string {
+function exitFill(
+  marker: Pick<TapeMarker, 'pnl' | 'tripIndex' | 'side'>,
+  theme: MarketTapeTheme,
+  isDark: boolean,
+): string {
+  const tripColor = getTripColor(marker.tripIndex, marker.side, isDark);
+  if (tripColor) return tripColor;
   const win = marker.pnl != null && marker.pnl >= 0;
   return win ? theme.exitWin : theme.exitLoss;
 }
@@ -60,6 +67,7 @@ export function computeTapeExitMarkerLayout(
   model: TapeRenderModel,
   barCount: number,
   theme: MarketTapeTheme,
+  isDark: boolean,
 ): TapeExitMarkerLayout | null {
   if (marker.kind !== 'exit') return null;
 
@@ -75,6 +83,7 @@ export function computeTapeExitMarkerLayout(
     marker.stackAnchorPrice != null
     && marker.stackSlot != null
     && marker.stackSlot > 0
+    && tapePricesEqual(marker.stackAnchorPrice, marker.price)
   ) {
     const anchorY = tapeYForPrice(marker.stackAnchorPrice, model.yMin, model.yMax);
     dotY = anchorY - marker.stackSlot * MARKER_VERTICAL_STACK_STEP_PX;
@@ -89,8 +98,19 @@ export function computeTapeExitMarkerLayout(
     priceY: tickY,
     dotX,
     dotY,
-    fill: exitFill(marker, theme),
+    fill: exitFill(marker, theme, isDark),
   };
+}
+
+/** Couleur de trait / pastille pour un marqueur ou une ligne SL. */
+export function resolveTapeTripStrokeColor(
+  tripIndex: number | undefined,
+  side: string | undefined,
+  isDark: boolean,
+  theme: MarketTapeTheme,
+  fallback: string,
+): string {
+  return getTripColor(tripIndex, side, isDark) ?? fallback;
 }
 
 /** Coordonnées d’interaction (centre pastille pour sorties, ancre entrée inchangée). */
@@ -100,9 +120,10 @@ export function computeTapeMarkerHitCoords(
   barCount: number,
   theme: MarketTapeTheme,
   entryAnchorOffsetY: number,
+  isDark: boolean,
 ): { x: number; y: number } {
   if (marker.kind === 'exit') {
-    const layout = computeTapeExitMarkerLayout(marker, model, barCount, theme);
+    const layout = computeTapeExitMarkerLayout(marker, model, barCount, theme, isDark);
     if (layout) {
       return { x: layout.dotX, y: layout.dotY };
     }

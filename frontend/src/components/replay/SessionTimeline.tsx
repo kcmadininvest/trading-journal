@@ -120,7 +120,7 @@ export const SessionTimeline: React.FC<SessionTimelineProps> = ({
             const isActive = eventIndex === currentIndex;
             const dotColor = EVENT_DOT_COLORS[evt.event_type] || 'bg-gray-400';
             const pnlHint = eventPnlHint(evt);
-            const detail = getEventDetailText(evt, t, numberFormat);
+            const detail = getEventDetailText(evt, t, numberFormat, { contextEvents: events });
             return (
               <button
                 key={evt.id}
