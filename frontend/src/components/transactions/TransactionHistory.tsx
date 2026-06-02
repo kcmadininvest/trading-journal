@@ -32,6 +32,25 @@ const emptyStats: AccountTransactionsStats = {
   net_flow: '0',
 };
 
+function TransactionSummaryStatCard({
+  label,
+  children,
+  valueClassName = 'text-gray-900 dark:text-gray-100',
+}: {
+  label: string;
+  children: React.ReactNode;
+  valueClassName?: string;
+}) {
+  return (
+    <article className="flex min-h-[4.25rem] flex-col justify-center rounded-lg border border-gray-200 bg-white px-3 py-2.5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <p className="text-xs leading-snug text-gray-500 dark:text-gray-400">{label}</p>
+      <div className={`mt-1 text-sm font-semibold tabular-nums leading-tight ${valueClassName}`}>
+        {children}
+      </div>
+    </article>
+  );
+}
+
 interface TransactionHistoryProps {
   tradingAccountId?: number;
   onEdit?: (transaction: AccountTransaction) => void;
@@ -302,8 +321,8 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800 sm:p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-2 overflow-x-auto">
           <button
             type="button"
@@ -365,62 +384,51 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
               {withdrawalCount}
             </span>
           </button>
-        </div>
-
-        {tradingAccountId && (
-          <div className="grid w-full gap-2 sm:min-w-[26rem] sm:max-w-3xl sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-700/40">
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                {t('transactions:currentBalance', { defaultValue: 'Solde actuel' })}
-              </div>
-              <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                {balanceLoading && currentBalance === null ? (
-                  <span className="text-gray-500 dark:text-gray-400 font-normal">
-                    {t('common:loading', { defaultValue: 'Chargement...' })}
-                  </span>
-                ) : currentBalance !== null ? (
-                  privacySettings.hideCurrentBalance ? (
-                    maskValue(null, balanceSymbol)
-                  ) : (
-                    formatCurrency(currentBalance, balanceSymbol, preferences.number_format, 2)
-                  )
-                ) : null}
-              </div>
-            </div>
-            <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                {t('transactions:netAccountImpact', { defaultValue: 'Impact net sur le compte' })}
-              </div>
-              <div
-                className={`text-sm font-semibold ${
-                  netAccountFlow > 0
-                    ? 'text-green-600 dark:text-green-400'
-                    : netAccountFlow < 0
-                      ? 'text-orange-600 dark:text-orange-400'
-                      : 'text-gray-900 dark:text-gray-100'
-                }`}
-              >
-                {renderNetFlowFormatted()}
-              </div>
-            </div>
-            <div className="rounded-lg bg-green-50 px-3 py-2 dark:bg-green-900/20">
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                {t('transactions:totalDeposited', { defaultValue: 'Total déposé' })}
-              </div>
-              <div className="text-sm font-semibold text-green-600 dark:text-green-400">
-                {renderAbsoluteAmount(totalDeposits)}
-              </div>
-            </div>
-            <div className="rounded-lg bg-orange-50 px-3 py-2 dark:bg-orange-900/20">
-              <div className="text-xs text-gray-600 dark:text-gray-400">
-                {t('transactions:totalWithdrawn', { defaultValue: 'Total retiré' })}
-              </div>
-              <div className="text-sm font-semibold text-orange-600 dark:text-orange-400">
-                {renderAbsoluteAmount(totalWithdrawals)}
-              </div>
-            </div>
           </div>
-        )}
+
+          {tradingAccountId ? (
+            <div className="grid w-full gap-2 sm:min-w-[26rem] sm:max-w-3xl sm:grid-cols-2 lg:grid-cols-4">
+            <TransactionSummaryStatCard label={t('transactions:currentBalance', { defaultValue: 'Solde actuel' })}>
+              {balanceLoading && currentBalance === null ? (
+                <span className="font-normal text-gray-500 dark:text-gray-400">
+                  {t('common:loading', { defaultValue: 'Chargement...' })}
+                </span>
+              ) : currentBalance !== null ? (
+                privacySettings.hideCurrentBalance ? (
+                  maskValue(null, balanceSymbol)
+                ) : (
+                  formatCurrency(currentBalance, balanceSymbol, preferences.number_format, 2)
+                )
+              ) : (
+                '—'
+              )}
+            </TransactionSummaryStatCard>
+            <TransactionSummaryStatCard
+              label={t('transactions:netAccountImpact', { defaultValue: 'Impact net sur le compte' })}
+              valueClassName={
+                netAccountFlow > 0
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : netAccountFlow < 0
+                    ? 'text-orange-600 dark:text-orange-400'
+                    : 'text-gray-900 dark:text-gray-100'
+              }
+            >
+              {renderNetFlowFormatted()}
+            </TransactionSummaryStatCard>
+            <TransactionSummaryStatCard
+              label={t('transactions:totalDeposited', { defaultValue: 'Total déposé' })}
+              valueClassName="text-emerald-600 dark:text-emerald-400"
+            >
+              {renderAbsoluteAmount(totalDeposits)}
+            </TransactionSummaryStatCard>
+            <TransactionSummaryStatCard
+              label={t('transactions:totalWithdrawn', { defaultValue: 'Total retiré' })}
+              valueClassName="text-orange-600 dark:text-orange-400"
+            >
+              {renderAbsoluteAmount(totalWithdrawals)}
+            </TransactionSummaryStatCard>
+            </div>
+          ) : null}
         </div>
       </div>
 

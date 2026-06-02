@@ -64,7 +64,7 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header avec gradient rouge */}
-        <div className="relative border-b border-red-100 dark:border-red-900/50 bg-gradient-to-r from-red-50 to-rose-50 dark:from-gray-800 dark:to-gray-700 rounded-t-2xl px-6 py-4">
+        <div className="relative border-b border-red-100 dark:border-red-900/50 bg-gradient-to-r from-red-50 to-rose-50 dark:from-gray-800 dark:to-gray-700 px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
               <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

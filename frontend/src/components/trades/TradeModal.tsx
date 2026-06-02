@@ -71,8 +71,8 @@ export const TradeModal: React.FC<TradeModalProps> = ({ tradeId, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm p-2 sm:p-4">
-      <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-xl shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-t-xl flex-shrink-0 gap-3">
+      <div className="bg-white dark:bg-gray-800 w-full max-w-xl rounded-xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="px-3 sm:px-6 py-3 sm:py-5 border-b border-gray-200 dark:border-gray-700 flex items-start sm:items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 flex-shrink-0 gap-3">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate flex-1 min-w-0">{t('trades:modal.editTitle')}</h2>
           <button 
             onClick={() => onClose(false)} 
@@ -112,7 +112,7 @@ export const TradeModal: React.FC<TradeModalProps> = ({ tradeId, onClose }) => {
             </>
           )}
         </div>
-        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50 rounded-b-xl">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3 flex-shrink-0 bg-gray-50 dark:bg-gray-900/50">
           <button 
             onClick={() => onClose(false)} 
             className="px-3 sm:px-4 py-2 text-sm sm:text-base rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 w-full sm:w-auto"

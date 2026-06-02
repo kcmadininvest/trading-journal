@@ -378,7 +378,7 @@ export const PeriodSelector: React.FC<PeriodSelectorProps> = ({
           onClick={handleBackdropClick}
         >
           <div
-            className="my-auto w-full max-w-md transform rounded-2xl border border-gray-100 bg-white shadow-2xl transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 dark:border-gray-700 dark:bg-gray-800"
+            className="my-auto w-full max-w-md transform overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl transition-all duration-300 animate-in zoom-in-95 slide-in-from-bottom-4 dark:border-gray-700 dark:bg-gray-800"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex-shrink-0 border-b border-gray-200 px-6 py-4 dark:border-gray-700">

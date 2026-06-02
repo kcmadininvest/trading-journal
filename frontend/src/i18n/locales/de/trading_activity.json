@@ -1,19 +1,57 @@
 {
   "title": "Rentabilität der Handelsaktivität",
-  "subtitle": "Ausgaben (Bewertungen, Daten, Resets…) und Gutschriften (Auszahlungen), ohne App-Abonnement.",
+  "subtitle": "Aktivitätskosten, Gutschriften (Auszahlungen) und tatsächliche Steuer- oder Sozialzahlungen, ohne App-Abonnement.",
   "loading": "Wird geladen…",
   "tabs": {
     "debit": "Lastschrift",
     "credit": "Gutschrift",
-    "ariaLabel": "Ausgaben und Gutschriften"
+    "taxPayments": "Steuer- und Sozialabgaben",
+    "ariaLabel": "Ausgaben, Gutschriften und Steuerzahlungen"
   },
   "summary": {
-    "primaryTitle": "Salden nach Hauptwährung",
-    "secondaryTitle": "Salden nach Zweitwährung",
-    "credits": "Gutschriften",
-    "expenses": "Ausgaben",
-    "balance": "Saldo",
+    "balancesTitle": "Salden nach Währung",
+    "ariaBalances": "Währungssalden Übersicht",
+    "primaryBadge": "Haupt",
+    "secondaryBadge": "Zweit",
+    "primaryTitle": "Hauptwährung",
+    "secondaryTitle": "Zweitwährung",
+    "primaryHint": "Summen aus dem Hauptfeld Ihrer Ausgaben und Auszahlungen. Steuer- und Sozialzahlungen in dieser Währung werden hier abgezogen, sobald Hauptwährungs-Aktivität für diese Währung vorliegt (auch bei zusätzlichen Sekundärbeträgen derselben Währung).",
+    "secondaryHint": "Summen aus Sekundärbetrag und Wechselkurs. Steuer- und Sozialzahlungen in dieser Währung werden hier abgezogen, wenn die gesamte Aktivität in dieser Währung nur über das Sekundärfeld läuft (z. B. USD-Zeilen mit EUR-Beträgen).",
+    "secondaryCardHint": "Steuerabzug hier, wenn die Aktivität in dieser Währung nur sekundär erfasst ist.",
+    "activitySection": "Handelsaktivität",
+    "taxSection": "Erfasste Zahlungen",
+    "credits": "Gutschriften (Auszahlungen)",
+    "creditsShort": "Gutschriften",
+    "expenses": "Aktivitätsausgaben",
+    "expensesShort": "Ausgaben",
+    "taxesShort": "Steuern",
+    "balance": "Aktivitätssaldo",
+    "balanceShort": "Saldo",
+    "activityBalanceHint": "Gutschriften − Aktivitätsausgaben",
+    "taxPayments": "Steuer- und Sozialabgaben (abgezogen)",
+    "netBalance": "Nettosaldo",
+    "netBalanceHint": "Aktivitätssaldo − Zahlungen oben",
+    "balanceAfterTaxPayments": "Saldo nach Zahlungen",
     "empty": "Noch keine Daten."
+  },
+  "taxPayments": {
+    "title": "Steuer- und Sozialabgaben",
+    "add": "Zahlung hinzufügen",
+    "edit": "Zahlung bearbeiten",
+    "empty": "Keine Zahlungen erfasst.",
+    "modalNewDesc": "Erfassen Sie eine tatsächlich geleistete Zahlung an eine Behörde oder Sozialversicherung.",
+    "modalEditDesc": "Zahlung anpassen und speichern.",
+    "help": "Wählen Sie die passendste Kategorie und ergänzen Sie Details im Bezeichnungsfeld.",
+    "filterType": "Zahlungsart",
+    "filterTypeAll": "— Alle —"
+  },
+  "paymentType": {
+    "social_contributions": "Sozialabgaben",
+    "income_tax": "Einkommensteuer",
+    "business_tax": "Steuer auf die berufliche Tätigkeit",
+    "local_tax": "Kommunale Steuer",
+    "consumption_tax": "Verbrauchsteuer",
+    "other": "Sonstige Steuer- oder Sozialzahlung"
   },
   "expenses": {
     "title": "Ausgaben (Lastschrift)",
@@ -52,7 +90,9 @@
     "secondary": "Zweitwährung",
     "amount": "Betrag",
     "fxRate": "Kurs",
-    "transferFee": "Transfergebühr"
+    "transferFee": "Transfergebühr",
+    "paymentType": "Art",
+    "currency": "Währung"
   },
   "form": {
     "date": "Datum",
@@ -65,11 +105,20 @@
     "categoryNone": "— Keine —",
     "newCategory": "Anlegen",
     "newCategoryPlaceholder": "Neue Kategorie…",
+    "customCategoryAddLabel": "Kategorie hinzufügen",
+    "customCategoryEditLabel": "Namen der ausgewählten Kategorie bearbeiten",
+    "customCategoryAddPlaceholder": "z. B. Abonnements, Hardware…",
+    "newPaymentType": "Anlegen",
+    "customPaymentTypeAddLabel": "Benutzerdefinierten Zahlungstyp hinzufügen",
+    "customPaymentTypeEditLabel": "Namen des ausgewählten Typs bearbeiten",
+    "customPaymentTypeAddPlaceholder": "z. B. vierteljährliche Sozialabgaben",
     "label": "Bezeichnung",
     "secondaryAmount": "Sekundärbetrag",
     "secondaryCurrency": "Zweitwährung",
     "amount": "Betrag",
     "notes": "Notizen",
+    "paymentType": "Zahlungsart",
+    "reference": "Referenz",
     "none": "—",
     "fxRate": "Wechselkurs (1 {{secondary}} = … {{primary}})",
     "fxRateHint": "Hauptwährungseinheiten pro 1 Einheit der Zweitwährung (beliebiges ISO-Währungspaar). Leer lassen, wenn kein Umrechnungskurs.",
@@ -101,7 +150,12 @@
     "creditCreated": "Gutschrift gespeichert.",
     "creditUpdated": "Gutschrift aktualisiert.",
     "deleted": "Gelöscht.",
-    "categoryCreated": "Kategorie angelegt."
+    "categoryCreated": "Kategorie angelegt.",
+    "categoryUpdated": "Kategorie aktualisiert.",
+    "paymentTypeCreated": "Zahlungstyp angelegt.",
+    "paymentTypeUpdated": "Zahlungstyp aktualisiert.",
+    "taxPaymentCreated": "Zahlung gespeichert.",
+    "taxPaymentUpdated": "Zahlung aktualisiert."
   },
   "errors": {
     "load": "Daten konnten nicht geladen werden.",
@@ -110,6 +164,7 @@
   },
   "confirm": {
     "deleteExpense": "Diese Ausgabe löschen?",
-    "deleteCredit": "Diese Gutschrift löschen?"
+    "deleteCredit": "Diese Gutschrift löschen?",
+    "deleteTaxPayment": "Diese Zahlung löschen?"
   }
 }

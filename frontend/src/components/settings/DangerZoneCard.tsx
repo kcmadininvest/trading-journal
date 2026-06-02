@@ -96,7 +96,7 @@ export const DangerZoneCard: React.FC<DangerZoneCardProps> = ({ onDeleteAccount 
       {/* Modal de confirmation */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+          <div className="overflow-hidden bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
@@ -121,7 +121,7 @@ export const DangerZoneCard: React.FC<DangerZoneCardProps> = ({ onDeleteAccount 
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-red-500"
               />
             </div>
-            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex gap-3 justify-end rounded-b-lg">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900 flex gap-3 justify-end">
               <button
                 onClick={() => {
                   setShowModal(false);

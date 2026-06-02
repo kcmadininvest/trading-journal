@@ -1,19 +1,57 @@
 {
   "title": "Rentabilidad de la actividad de trading",
-  "subtitle": "Gastos (evaluaciones, datos, resets…) y créditos (retiros), aparte de la suscripción a la aplicación.",
+  "subtitle": "Gastos de actividad, créditos (retiros) y pagos fiscales o sociales reales, aparte de la suscripción a la aplicación.",
   "loading": "Cargando…",
   "tabs": {
     "debit": "Débito",
     "credit": "Crédito",
-    "ariaLabel": "Gastos y créditos"
+    "taxPayments": "Pagos fiscales y sociales",
+    "ariaLabel": "Gastos, créditos y pagos fiscales"
   },
   "summary": {
-    "primaryTitle": "Saldos por divisa principal",
-    "secondaryTitle": "Saldos por divisa secundaria",
-    "credits": "Créditos",
-    "expenses": "Gastos",
-    "balance": "Saldo",
+    "balancesTitle": "Saldos por divisa",
+    "ariaBalances": "Resumen de saldos por divisa",
+    "primaryBadge": "Principal",
+    "secondaryBadge": "Secundaria",
+    "primaryTitle": "Divisa principal",
+    "secondaryTitle": "Divisa secundaria",
+    "primaryHint": "Totales del campo principal en sus gastos y retiros. Los pagos fiscales y sociales en esta divisa se deducen aquí cuando hay actividad en principal para esta divisa (también si tiene importes secundarios para la misma divisa).",
+    "secondaryHint": "Totales del importe secundario y del tipo de cambio. Los pagos fiscales y sociales en esta divisa se deducen aquí cuando toda la actividad en esta divisa pasa solo por el secundario (p. ej. líneas en USD con importes en EUR).",
+    "secondaryCardHint": "Pagos fiscales deducidos aquí si la actividad en esta divisa es solo secundaria.",
+    "activitySection": "Actividad de trading",
+    "taxSection": "Pagos registrados",
+    "credits": "Créditos (retiros)",
+    "creditsShort": "Créditos",
+    "expenses": "Gastos de actividad",
+    "expensesShort": "Gastos",
+    "taxesShort": "Impuestos",
+    "balance": "Saldo de actividad",
+    "balanceShort": "Saldo",
+    "activityBalanceHint": "Créditos − gastos de actividad",
+    "taxPayments": "Pagos fiscales y sociales (deducidos)",
+    "netBalance": "Saldo neto",
+    "netBalanceHint": "Saldo de actividad − pagos anteriores",
+    "balanceAfterTaxPayments": "Saldo tras pagos",
     "empty": "Aún no hay datos."
+  },
+  "taxPayments": {
+    "title": "Pagos fiscales y sociales",
+    "add": "Añadir pago",
+    "edit": "Editar pago",
+    "empty": "No hay pagos registrados.",
+    "modalNewDesc": "Registre un pago realizado a una administración u organismo de protección social.",
+    "modalEditDesc": "Actualice el pago y guarde.",
+    "help": "Elija la categoría más cercana y detalle en el campo etiqueta.",
+    "filterType": "Tipo de pago",
+    "filterTypeAll": "— Todos —"
+  },
+  "paymentType": {
+    "social_contributions": "Cotizaciones sociales",
+    "income_tax": "Impuesto sobre la renta",
+    "business_tax": "Impuesto sobre la actividad",
+    "local_tax": "Impuesto local",
+    "consumption_tax": "Impuesto sobre el consumo",
+    "other": "Otro pago fiscal o social"
   },
   "expenses": {
     "title": "Gastos (débito)",
@@ -52,7 +90,9 @@
     "secondary": "Divisa secundaria",
     "amount": "Importe",
     "fxRate": "Tipo de cambio",
-    "transferFee": "Comisión transferencia"
+    "transferFee": "Comisión transferencia",
+    "paymentType": "Tipo",
+    "currency": "Divisa"
   },
   "form": {
     "date": "Fecha",
@@ -65,11 +105,20 @@
     "categoryNone": "— Ninguna —",
     "newCategory": "Crear",
     "newCategoryPlaceholder": "Nueva categoría…",
+    "customCategoryAddLabel": "Añadir una categoría",
+    "customCategoryEditLabel": "Modificar el nombre de la categoría seleccionada",
+    "customCategoryAddPlaceholder": "Ej. Suscripciones, Material…",
+    "newPaymentType": "Crear",
+    "customPaymentTypeAddLabel": "Añadir un tipo de pago personalizado",
+    "customPaymentTypeEditLabel": "Modificar el nombre del tipo seleccionado",
+    "customPaymentTypeAddPlaceholder": "Ej. cotizaciones trimestrales",
     "label": "Etiqueta",
     "secondaryAmount": "Importe secundario",
     "secondaryCurrency": "Divisa secundaria",
     "amount": "Importe",
     "notes": "Notas",
+    "paymentType": "Tipo de pago",
+    "reference": "Referencia",
     "none": "—",
     "fxRate": "Tipo de cambio (1 {{secondary}} = … {{primary}})",
     "fxRateHint": "Unidades de la divisa principal por 1 unidad de la divisa secundaria (cualquier par ISO). Dejar vacío si no hubo cambio.",
@@ -101,7 +150,12 @@
     "creditCreated": "Crédito guardado.",
     "creditUpdated": "Crédito actualizado.",
     "deleted": "Eliminado.",
-    "categoryCreated": "Categoría creada."
+    "categoryCreated": "Categoría creada.",
+    "categoryUpdated": "Categoría actualizada.",
+    "paymentTypeCreated": "Tipo de pago creado.",
+    "paymentTypeUpdated": "Tipo de pago actualizado.",
+    "taxPaymentCreated": "Pago guardado.",
+    "taxPaymentUpdated": "Pago actualizado."
   },
   "errors": {
     "load": "No se pudieron cargar los datos.",
@@ -110,6 +164,7 @@
   },
   "confirm": {
     "deleteExpense": "¿Eliminar este gasto?",
-    "deleteCredit": "¿Eliminar este crédito?"
+    "deleteCredit": "¿Eliminar este crédito?",
+    "deleteTaxPayment": "¿Eliminar este pago?"
   }
 }

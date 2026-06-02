@@ -5,7 +5,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.db.models import Q, Sum
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,12 +19,19 @@ from .models import (
     TradingActivityCredit,
     TradingActivityExpense,
     TradingActivityExpenseCategory,
+    TradingActivityTaxPaymentBuiltinLabel,
+    TradingActivityTaxPaymentType,
+    TradingActivityTaxPayment,
 )
 from .serializers import (
     TradingActivityCreditSerializer,
     TradingActivityExpenseCategorySerializer,
+    TradingActivityTaxPaymentBuiltinLabelSerializer,
+    TradingActivityTaxPaymentTypeSerializer,
     TradingActivityExpenseSerializer,
+    TradingActivityTaxPaymentSerializer,
 )
+from .tax_payment_types import is_builtin_tax_payment_type
 
 
 def _parse_iso_date_param(value: str | None, *, param: str) -> date | None:
@@ -37,6 +44,63 @@ def _parse_iso_date_param(value: str | None, *, param: str) -> date | None:
         return date.fromisoformat(raw)
     except ValueError as exc:
         raise ValidationError({param: 'Format invalide. Utilisez YYYY-MM-DD.'}) from exc
+
+
+def _has_ledger_activity(credits: Decimal, expenses: Decimal) -> bool:
+    return credits > 0 or expenses > 0
+
+
+def _allocate_tax_in_summary(
+    primary_by_currency: dict[str, dict],
+    secondary_by_currency: dict[str, dict],
+    tax_qs,
+) -> None:
+    """
+    Affecte chaque paiement fiscal à une seule ligne de solde par devise.
+    Si l'activité en devise secondaire existe (ex. EUR sur crédits USD),
+    la déduction fiscale porte sur le bloc secondaire ; sinon sur le principal.
+  """
+    all_currencies = set(primary_by_currency) | set(secondary_by_currency)
+    for cur in all_currencies:
+        tax = tax_qs.filter(currency=cur).aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        pri = primary_by_currency.get(cur)
+        sec = secondary_by_currency.get(cur)
+
+        pri_credits = Decimal(pri['credits']) if pri else Decimal('0')
+        pri_expenses = Decimal(pri['expenses']) if pri else Decimal('0')
+        sec_credits = Decimal(sec['credits']) if sec else Decimal('0')
+        sec_expenses = Decimal(sec['expenses']) if sec else Decimal('0')
+        pri_active = _has_ledger_activity(pri_credits, pri_expenses)
+        sec_active = _has_ledger_activity(sec_credits, sec_expenses)
+
+        if tax <= 0:
+            if pri:
+                pri['tax_payments'] = str(Decimal('0'))
+                pri['balance_after_tax_payments'] = pri['balance']
+            continue
+
+        if pri_active and sec_active:
+            bal = Decimal(pri['balance'])
+            pri['tax_payments'] = str(tax)
+            pri['balance_after_tax_payments'] = str(bal - tax)
+            continue
+
+        if sec_active:
+            if sec:
+                sec_bal = Decimal(sec['balance'])
+                sec['tax_payments'] = str(tax)
+                sec['balance_after_tax_payments'] = str(sec_bal - tax)
+            if pri and not pri_active:
+                del primary_by_currency[cur]
+            elif pri:
+                pri['tax_payments'] = str(Decimal('0'))
+                pri['balance_after_tax_payments'] = pri['balance']
+            continue
+
+        if pri:
+            bal = Decimal(pri['balance'])
+            pri['tax_payments'] = str(tax)
+            pri['balance_after_tax_payments'] = str(bal - tax)
 
 
 def _parse_int_param(value: str | None, *, param: str) -> int | None:
@@ -62,6 +126,57 @@ class TradingActivityExpenseCategoryViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         # SET_NULL on expenses already — categories can be deleted
         super().perform_destroy(instance)
+
+
+class TradingActivityTaxPaymentTypeViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
+    serializer_class = TradingActivityTaxPaymentTypeSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return TradingActivityTaxPaymentType.objects.filter(user=self.request.user)
+
+    def perform_destroy(self, instance):
+        from .tax_payment_types import custom_tax_payment_type_code
+
+        code = custom_tax_payment_type_code(instance.pk)
+        if TradingActivityTaxPayment.objects.filter(user=instance.user, payment_type=code).exists():
+            raise ValidationError(
+                'Ce type est utilisé par au moins un paiement et ne peut pas être supprimé.'
+            )
+        super().perform_destroy(instance)
+
+
+class TradingActivityTaxPaymentBuiltinLabelListView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
+
+    def get(self, request):
+        rows = TradingActivityTaxPaymentBuiltinLabel.objects.filter(user=request.user)
+        return Response({row.code: row.label for row in rows})
+
+
+class TradingActivityTaxPaymentBuiltinLabelDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
+
+    def put(self, request, code: str):
+        if not is_builtin_tax_payment_type(code):
+            raise ValidationError('Type de paiement système invalide.')
+        payload = {'code': code, 'label': request.data.get('label', '')}
+        serializer = TradingActivityTaxPaymentBuiltinLabelSerializer(data=payload)
+        serializer.is_valid(raise_exception=True)
+        label = serializer.validated_data['label']
+        obj, _created = TradingActivityTaxPaymentBuiltinLabel.objects.update_or_create(
+            user=request.user,
+            code=code,
+            defaults={'label': label},
+        )
+        return Response(TradingActivityTaxPaymentBuiltinLabelSerializer(obj).data)
+
+    def delete(self, request, code: str):
+        if not is_builtin_tax_payment_type(code):
+            raise ValidationError('Type de paiement système invalide.')
+        TradingActivityTaxPaymentBuiltinLabel.objects.filter(user=request.user, code=code).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TradingActivityExpenseViewSet(viewsets.ModelViewSet):
@@ -127,6 +242,37 @@ class TradingActivityCreditViewSet(viewsets.ModelViewSet):
         return qs
 
 
+class TradingActivityTaxPaymentViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
+    serializer_class = TradingActivityTaxPaymentSerializer
+    pagination_class = CustomPageNumberPagination
+
+    def get_queryset(self):
+        qs = TradingActivityTaxPayment.objects.filter(user=self.request.user).order_by(
+            '-date', '-created_at'
+        )
+        qp = self.request.query_params
+
+        date_from = _parse_iso_date_param(qp.get('date_from'), param='date_from')
+        date_to = _parse_iso_date_param(qp.get('date_to'), param='date_to')
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+
+        payment_type = (qp.get('payment_type') or '').strip()
+        if payment_type:
+            qs = qs.filter(payment_type=payment_type)
+
+        q = (qp.get('q') or '').strip()
+        if q:
+            qs = qs.filter(
+                Q(reference__icontains=q) | Q(label__icontains=q) | Q(notes__icontains=q)
+            )
+
+        return qs
+
+
 class CurrencySuggestionsView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
 
@@ -141,18 +287,22 @@ class TradingActivitySummaryView(APIView):
         user = request.user
         exp_qs = TradingActivityExpense.objects.filter(user=user)
         cred_qs = TradingActivityCredit.objects.filter(user=user)
+        tax_qs = TradingActivityTaxPayment.objects.filter(user=user)
 
-        primary_currencies = set(exp_qs.values_list('primary_currency', flat=True)) | set(
-            cred_qs.values_list('primary_currency', flat=True)
+        primary_currencies = (
+            set(exp_qs.values_list('primary_currency', flat=True))
+            | set(cred_qs.values_list('primary_currency', flat=True))
+            | set(tax_qs.values_list('currency', flat=True))
         )
         primary_by_currency = {}
         for cur in sorted(primary_currencies):
             e = exp_qs.filter(primary_currency=cur).aggregate(s=Sum('total'))['s'] or Decimal('0')
             cr = cred_qs.filter(primary_currency=cur).aggregate(s=Sum('amount'))['s'] or Decimal('0')
+            balance = cr - e
             primary_by_currency[cur] = {
                 'expenses': str(e),
                 'credits': str(cr),
-                'balance': str(cr - e),
+                'balance': str(balance),
             }
 
         secondary_currencies = set(
@@ -175,6 +325,8 @@ class TradingActivitySummaryView(APIView):
                 'credits': str(cr),
                 'balance': str(cr - e),
             }
+
+        _allocate_tax_in_summary(primary_by_currency, secondary_by_currency, tax_qs)
 
         cat_rows = (
             exp_qs.filter(category__isnull=False)

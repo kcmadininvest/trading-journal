@@ -98,7 +98,7 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className={`relative border-b bg-gradient-to-r rounded-t-2xl px-6 py-4 ${vs.headerBorder} ${vs.headerBg}`}
+          className={`relative border-b bg-gradient-to-r px-6 py-4 ${vs.headerBorder} ${vs.headerBg}`}
         >
           <div className="flex items-center gap-3">
             <div

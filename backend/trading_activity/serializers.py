@@ -9,6 +9,14 @@ from .models import (
     TradingActivityCredit,
     TradingActivityExpense,
     TradingActivityExpenseCategory,
+    TradingActivityTaxPayment,
+    TradingActivityTaxPaymentBuiltinLabel,
+    TradingActivityTaxPaymentType,
+)
+from .tax_payment_types import (
+    custom_tax_payment_type_code,
+    is_builtin_tax_payment_type,
+    tax_payment_type_exists_for_user,
 )
 
 
@@ -16,6 +24,46 @@ def _normalize_currency(value: str) -> str:
     if not value:
         return DEFAULT_PRIMARY_CURRENCY
     return str(value).strip().upper()
+
+
+class TradingActivityTaxPaymentTypeSerializer(serializers.ModelSerializer):
+    code = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TradingActivityTaxPaymentType
+        fields = ('id', 'name', 'code', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'code', 'created_at', 'updated_at')
+
+    def get_code(self, obj: TradingActivityTaxPaymentType) -> str:
+        return custom_tax_payment_type_code(obj.pk)
+
+    def validate_name(self, value: str) -> str:
+        name = (value or '').strip()
+        if not name:
+            raise serializers.ValidationError('Le nom est requis.')
+        return name
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class TradingActivityTaxPaymentBuiltinLabelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TradingActivityTaxPaymentBuiltinLabel
+        fields = ('code', 'label')
+        read_only_fields = ('code',)
+
+    def validate_label(self, value: str) -> str:
+        label = (value or '').strip()
+        if not label:
+            raise serializers.ValidationError('Le libellé est requis.')
+        return label
+
+    def validate_code(self, value: str) -> str:
+        if not is_builtin_tax_payment_type(value):
+            raise serializers.ValidationError('Type de paiement système invalide.')
+        return value
 
 
 class TradingActivityExpenseCategorySerializer(serializers.ModelSerializer):
@@ -239,6 +287,46 @@ class TradingActivityCreditSerializer(serializers.ModelSerializer):
         if linked_txs is not None:
             credit.linked_account_transactions.set(linked_txs)
         return credit
+
+
+class TradingActivityTaxPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TradingActivityTaxPayment
+        fields = (
+            'id',
+            'date',
+            'amount',
+            'currency',
+            'payment_type',
+            'label',
+            'reference',
+            'notes',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+    def validate_currency(self, value: str) -> str:
+        code = _normalize_currency(value)
+        if code not in COMMON_CURRENCY_CODES:
+            raise serializers.ValidationError('Devise non supportée.')
+        return code
+
+    def validate_payment_type(self, value: str) -> str:
+        code = (value or '').strip()
+        user = self.context['request'].user
+        if not tax_payment_type_exists_for_user(user, code):
+            raise serializers.ValidationError('Type de paiement invalide.')
+        return code
+
+    def validate_amount(self, value):
+        if value is not None and value <= 0:
+            raise serializers.ValidationError('Le montant doit être strictement positif.')
+        return value
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super().create(validated_data)
 
 
 class TradingActivitySummarySerializer(serializers.Serializer):

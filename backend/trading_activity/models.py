@@ -8,6 +8,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from .constants import COMMON_CURRENCY_CODES, DEFAULT_PRIMARY_CURRENCY
+from .tax_payment_types import tax_payment_type_exists_for_user
 
 
 def validate_iso_currency(value: str) -> None:
@@ -41,6 +42,60 @@ class TradingActivityExpenseCategory(models.Model):
 
     def __str__(self) -> str:
         return f'{self.name} ({self.user_id})'
+
+
+class TradingActivityTaxPaymentType(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_activity_tax_payment_types',
+        verbose_name='Utilisateur',
+    )
+    name = models.CharField(max_length=100, verbose_name='Nom')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
+
+    class Meta:
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'name'],
+                name='unique_trading_activity_tax_payment_type_name_per_user',
+            ),
+        ]
+        verbose_name = 'Type de paiement fiscal (activité trading)'
+        verbose_name_plural = 'Types de paiement fiscal (activité trading)'
+
+    def __str__(self) -> str:
+        return f'{self.name} ({self.user_id})'
+
+
+class TradingActivityTaxPaymentBuiltinLabel(models.Model):
+    """Libellé d'affichage personnalisé pour un type de paiement fiscal système."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_activity_tax_payment_builtin_labels',
+        verbose_name='Utilisateur',
+    )
+    code = models.CharField(max_length=32, verbose_name='Code système')
+    label = models.CharField(max_length=100, verbose_name='Libellé')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'code'],
+                name='unique_trading_activity_tax_payment_builtin_label_per_user',
+            ),
+        ]
+        verbose_name = 'Libellé type paiement fiscal système'
+        verbose_name_plural = 'Libellés types paiement fiscal système'
+
+    def __str__(self) -> str:
+        return f'{self.code}={self.label} ({self.user_id})'
 
 
 class TradingActivityExpense(models.Model):
@@ -277,3 +332,49 @@ class TradingActivityCredit(models.Model):
 
     def __str__(self) -> str:
         return f'Crédit {self.date} {self.amount} {self.primary_currency}'
+
+
+class TradingActivityTaxPayment(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='trading_activity_tax_payments',
+        verbose_name='Utilisateur',
+    )
+    date = models.DateField(verbose_name='Date')
+    amount = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        verbose_name='Montant',
+    )
+    currency = models.CharField(max_length=3, verbose_name='Devise', default=DEFAULT_PRIMARY_CURRENCY)
+    payment_type = models.CharField(max_length=48, verbose_name='Type de paiement')
+    label = models.CharField(max_length=255, blank=True, default='', verbose_name='Libellé')
+    reference = models.CharField(max_length=100, blank=True, default='', verbose_name='Référence')
+    notes = models.TextField(blank=True, default='', verbose_name='Notes')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Créé le')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Modifié le')
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['user', '-date']),
+            models.Index(fields=['user', 'currency']),
+            models.Index(fields=['user', 'payment_type']),
+        ]
+        verbose_name = 'Paiement fiscal ou social (activité trading)'
+        verbose_name_plural = 'Paiements fiscaux et sociaux (activité trading)'
+
+    def clean(self) -> None:
+        validate_iso_currency(self.currency)
+        if not tax_payment_type_exists_for_user(self.user, self.payment_type):
+            raise ValidationError({'payment_type': 'Type de paiement invalide.'})
+
+    def save(self, *args, **kwargs):
+        self.currency = self.currency.upper()
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f'Paiement fiscal {self.date} {self.amount} {self.currency}'

@@ -56,6 +56,58 @@ export interface CurrencySummaryBlock {
   expenses: string;
   credits: string;
   balance: string;
+  tax_payments?: string;
+  balance_after_tax_payments?: string;
+}
+
+export const TAX_PAYMENT_TYPES = [
+  'social_contributions',
+  'income_tax',
+  'business_tax',
+  'local_tax',
+  'consumption_tax',
+  'other',
+] as const;
+
+export type BuiltinTaxPaymentType = (typeof TAX_PAYMENT_TYPES)[number];
+
+/** Libellés personnalisés pour les types système (clé = code builtin). */
+export type BuiltinTaxPaymentLabels = Partial<Record<BuiltinTaxPaymentType, string>>;
+
+/** Code système ou `custom_{id}` renvoyé par l’API. */
+export type TaxPaymentTypeCode = BuiltinTaxPaymentType | string;
+
+const CUSTOM_TAX_PAYMENT_TYPE_PREFIX = 'custom_';
+
+export function isCustomTaxPaymentTypeCode(code: string): boolean {
+  return code.startsWith(CUSTOM_TAX_PAYMENT_TYPE_PREFIX);
+}
+
+export function customTaxPaymentTypeIdFromCode(code: string): number | null {
+  if (!isCustomTaxPaymentTypeCode(code)) return null;
+  const id = Number(code.slice(CUSTOM_TAX_PAYMENT_TYPE_PREFIX.length));
+  return Number.isFinite(id) ? id : null;
+}
+
+export interface TaxPaymentCustomType {
+  id: number;
+  name: string;
+  code: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TradingActivityTaxPayment {
+  id: number;
+  date: string;
+  amount: string;
+  currency: string;
+  payment_type: TaxPaymentTypeCode;
+  label: string;
+  reference: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ExpenseTotalsPrimaryBlock {
@@ -131,6 +183,10 @@ export type TradingActivityExpenseLedgerFilters = TradingActivityLedgerFilters &
   category?: number | string;
 };
 
+export type TradingActivityTaxPaymentLedgerFilters = TradingActivityLedgerFilters & {
+  payment_type?: string;
+};
+
 function authHeaders(): HeadersInit {
   const token = localStorage.getItem('access_token');
   return {
@@ -198,6 +254,36 @@ export const tradingActivityService = {
     return request(`${BASE}/expense-categories/${id}/`, { method: 'DELETE' });
   },
 
+  listTaxPaymentTypes(): Promise<TaxPaymentCustomType[]> {
+    return request(`${BASE}/tax-payment-types/`);
+  },
+
+  createTaxPaymentType(data: { name: string }): Promise<TaxPaymentCustomType> {
+    return request(`${BASE}/tax-payment-types/`, { method: 'POST', body: JSON.stringify(data) });
+  },
+
+  updateTaxPaymentType(id: number, data: { name: string }): Promise<TaxPaymentCustomType> {
+    return request(`${BASE}/tax-payment-types/${id}/`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+
+  deleteTaxPaymentType(id: number): Promise<void> {
+    return request(`${BASE}/tax-payment-types/${id}/`, { method: 'DELETE' });
+  },
+
+  listBuiltinTaxPaymentLabels(): Promise<BuiltinTaxPaymentLabels> {
+    return request(`${BASE}/tax-payment-builtin-labels/`);
+  },
+
+  upsertBuiltinTaxPaymentLabel(
+    code: BuiltinTaxPaymentType,
+    label: string,
+  ): Promise<{ code: string; label: string }> {
+    return request(`${BASE}/tax-payment-builtin-labels/${code}/`, {
+      method: 'PUT',
+      body: JSON.stringify({ label }),
+    });
+  },
+
   listExpenses(params?: {
     page?: number;
     page_size?: number;
@@ -253,5 +339,36 @@ export const tradingActivityService = {
 
   deleteCredit(id: number): Promise<void> {
     return request(`${BASE}/credits/${id}/`, { method: 'DELETE' });
+  },
+
+  listTaxPayments(params?: {
+    page?: number;
+    page_size?: number;
+    filters?: TradingActivityTaxPaymentLedgerFilters;
+  }): Promise<PaginatedResults<TradingActivityTaxPayment>> {
+    const q = new URLSearchParams();
+    if (params?.page != null) q.set('page', String(params.page));
+    if (params?.page_size != null) q.set('page_size', String(params.page_size));
+    const f = params?.filters;
+    if (f?.date_from) q.set('date_from', String(f.date_from));
+    if (f?.date_to) q.set('date_to', String(f.date_to));
+    if (f?.q) q.set('q', String(f.q));
+    if (f?.payment_type != null && String(f.payment_type).trim() !== '') {
+      q.set('payment_type', String(f.payment_type));
+    }
+    const suffix = q.toString() ? `?${q.toString()}` : '';
+    return request(`${BASE}/tax-payments/${suffix}`);
+  },
+
+  createTaxPayment(data: Record<string, unknown>): Promise<TradingActivityTaxPayment> {
+    return request(`${BASE}/tax-payments/`, { method: 'POST', body: JSON.stringify(data) });
+  },
+
+  updateTaxPayment(id: number, data: Record<string, unknown>): Promise<TradingActivityTaxPayment> {
+    return request(`${BASE}/tax-payments/${id}/`, { method: 'PATCH', body: JSON.stringify(data) });
+  },
+
+  deleteTaxPayment(id: number): Promise<void> {
+    return request(`${BASE}/tax-payments/${id}/`, { method: 'DELETE' });
   },
 };

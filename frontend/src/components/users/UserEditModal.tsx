@@ -96,7 +96,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header avec gradient */}
-        <div className="relative border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 rounded-t-xl px-3 sm:px-6 py-3 sm:py-4 flex-shrink-0">
+        <div className="relative border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 px-3 sm:px-6 py-3 sm:py-4 flex-shrink-0">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 pr-8 sm:pr-10 truncate flex-1 min-w-0">
             {t('users:editModal.title')}
           </h2>

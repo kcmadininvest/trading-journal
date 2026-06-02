@@ -838,11 +838,11 @@ const HomePage: React.FC = () => {
       {showLegalNotice && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm" onClick={() => setShowLegalNotice(false)}>
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col"
+            className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-t-2xl flex justify-between items-center">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 flex justify-between items-center">
               <h2 className="text-2xl font-bold">{t('home:legalNotice.title')}</h2>
               <button
                 onClick={() => setShowLegalNotice(false)}
@@ -885,7 +885,7 @@ const HomePage: React.FC = () => {
             </div>
 
             {/* Footer */}
-            <div className="sticky bottom-0 bg-gray-50 p-6 rounded-b-2xl flex justify-end">
+            <div className="sticky bottom-0 bg-gray-50 p-6 flex justify-end">
               <button
                 onClick={() => setShowLegalNotice(false)}
                 className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200"

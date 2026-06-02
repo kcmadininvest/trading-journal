@@ -1,19 +1,57 @@
 {
   "title": "Trading activity profitability",
-  "subtitle": "Costs (evals, data, resets…) and credits (withdrawals), separate from app subscription.",
+  "subtitle": "Activity costs, credits (withdrawals), and actual tax or social payments, separate from app subscription.",
   "loading": "Loading…",
   "tabs": {
     "debit": "Debit",
     "credit": "Credit",
-    "ariaLabel": "Expenses and credits"
+    "taxPayments": "Tax and social payments",
+    "ariaLabel": "Expenses, credits, and tax payments"
   },
   "summary": {
-    "primaryTitle": "Balances by primary currency",
-    "secondaryTitle": "Balances by secondary currency",
-    "credits": "Credits",
-    "expenses": "Expenses",
-    "balance": "Balance",
+    "balancesTitle": "Balances by currency",
+    "ariaBalances": "Currency balance summary",
+    "primaryBadge": "Primary",
+    "secondaryBadge": "Secondary",
+    "primaryTitle": "Primary currency",
+    "secondaryTitle": "Secondary currency",
+    "primaryHint": "Totals from the primary field on your expenses and withdrawals. Tax and social payments in this currency are deducted here whenever there is primary-currency activity (including when you also have secondary amounts for the same currency).",
+    "secondaryHint": "Totals from the secondary amount and FX rate. Tax and social payments in this currency are deducted here when all activity in this currency is recorded only via the secondary field (e.g. USD lines with EUR amounts).",
+    "secondaryCardHint": "Tax payments deducted here when activity in this currency is secondary-only.",
+    "activitySection": "Trading activity",
+    "taxSection": "Recorded payments",
+    "credits": "Credits (withdrawals)",
+    "creditsShort": "Credits",
+    "expenses": "Activity expenses",
+    "expensesShort": "Expenses",
+    "taxesShort": "Taxes",
+    "balance": "Activity balance",
+    "balanceShort": "Balance",
+    "activityBalanceHint": "Credits − activity expenses",
+    "taxPayments": "Tax and social payments (deducted)",
+    "netBalance": "Net balance",
+    "netBalanceHint": "Activity balance − payments above",
+    "balanceAfterTaxPayments": "Balance after payments",
     "empty": "No data yet."
+  },
+  "taxPayments": {
+    "title": "Tax and social payments",
+    "add": "Add payment",
+    "edit": "Edit payment",
+    "empty": "No payments recorded yet.",
+    "modalNewDesc": "Record an actual payment made to a government authority or social protection body.",
+    "modalEditDesc": "Update the payment, then save.",
+    "help": "Pick the closest category and add details in the label field.",
+    "filterType": "Payment type",
+    "filterTypeAll": "— All —"
+  },
+  "paymentType": {
+    "social_contributions": "Social contributions",
+    "income_tax": "Income tax",
+    "business_tax": "Business tax",
+    "local_tax": "Local tax",
+    "consumption_tax": "Consumption tax",
+    "other": "Other tax or social payment"
   },
   "expenses": {
     "title": "Expenses (debit)",
@@ -52,7 +90,9 @@
     "secondary": "Secondary currency",
     "amount": "Amount",
     "fxRate": "FX rate",
-    "transferFee": "Transfer fee"
+    "transferFee": "Transfer fee",
+    "paymentType": "Type",
+    "currency": "Currency"
   },
   "form": {
     "date": "Date",
@@ -65,11 +105,20 @@
     "categoryNone": "— None —",
     "newCategory": "Create",
     "newCategoryPlaceholder": "New category…",
+    "customCategoryAddLabel": "Add a category",
+    "customCategoryEditLabel": "Edit the selected category name",
+    "customCategoryAddPlaceholder": "e.g. Subscriptions, Equipment…",
+    "newPaymentType": "Create",
+    "customPaymentTypeAddLabel": "Add a custom payment type",
+    "customPaymentTypeEditLabel": "Edit the selected custom type name",
+    "customPaymentTypeAddPlaceholder": "e.g. Quarterly social security",
     "label": "Label",
     "secondaryAmount": "Secondary amount",
     "secondaryCurrency": "Secondary currency",
     "amount": "Amount",
     "notes": "Notes",
+    "paymentType": "Payment type",
+    "reference": "Reference",
     "none": "—",
     "fxRate": "FX rate (1 {{secondary}} = … {{primary}})",
     "fxRateHint": "Primary-currency units for one unit of secondary currency (any ISO pair). Leave empty if there was no conversion.",
@@ -101,7 +150,12 @@
     "creditCreated": "Credit saved.",
     "creditUpdated": "Credit updated.",
     "deleted": "Deleted.",
-    "categoryCreated": "Category created."
+    "categoryCreated": "Category created.",
+    "categoryUpdated": "Category updated.",
+    "paymentTypeCreated": "Payment type created.",
+    "paymentTypeUpdated": "Payment type updated.",
+    "taxPaymentCreated": "Payment saved.",
+    "taxPaymentUpdated": "Payment updated."
   },
   "errors": {
     "load": "Could not load data.",
@@ -110,6 +164,7 @@
   },
   "confirm": {
     "deleteExpense": "Delete this expense?",
-    "deleteCredit": "Delete this credit?"
+    "deleteCredit": "Delete this credit?",
+    "deleteTaxPayment": "Delete this payment?"
   }
 }

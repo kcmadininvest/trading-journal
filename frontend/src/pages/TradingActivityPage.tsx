@@ -1,20 +1,30 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast/headless';
 import { PageShell } from '../components/layout';
 import { DeleteConfirmModal, PaginationControls, Tooltip } from '../components/ui';
 import { DateInput } from '../components/common/DateInput';
 import { CustomSelect } from '../components/common/CustomSelect';
-import { useColonBeforeValue } from '../hooks/useColonBeforeValue';
 import { usePreferences } from '../hooks/usePreferences';
+import {
+  TradingActivityTaxPaymentModal,
+  TradingActivityTaxPaymentsLedgerPanel,
+  buildTaxPaymentTypeSelectOptions,
+  type TaxPaymentFormState,
+} from '../components/tradingActivity/TradingActivityTaxPaymentsPanel';
+import { TradingActivityLedgerDeleteAction } from '../components/tradingActivity/TradingActivityLedgerDeleteAction';
 import {
   tradingActivityService,
   CurrencySummaryBlock,
   ExpenseCategory,
   TradingActivityExpense,
   TradingActivityCredit,
+  TradingActivityTaxPayment,
   TradingActivitySummary,
   WithdrawalSuggestion,
+  TaxPaymentCustomType,
+  type BuiltinTaxPaymentLabels,
+  type BuiltinTaxPaymentType,
 } from '../services/tradingActivity';
 import { normalizeDecimalForApi, parseUserDecimal } from '../utils/normalizeDecimalForApi';
 import { formatDate, formatDateTimeShort, type DateFormatType } from '../utils/dateFormat';
@@ -260,41 +270,36 @@ function handleLedgerRowActivate(e: React.MouseEvent | React.KeyboardEvent, onEd
   onEdit();
 }
 
-function TradingActivityLedgerDeleteAction({
-  deleteLabel,
-  onRequestDelete,
-  compact,
+function parseSummaryAmount(value: string | undefined): number {
+  const n = parseFloat(String(value ?? '0'));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Même alignement que le ledger (`items-center`, `text-sm`), lignes plus compactes. */
+const BALANCE_CARD_ROW_CLASS = 'flex items-center justify-between gap-2 py-1';
+
+function BalanceCardRow({
+  label,
+  value,
+  valueClassName = '',
 }: {
-  deleteLabel: string;
-  onRequestDelete: () => void;
-  compact: boolean;
+  label: string;
+  value: string;
+  valueClassName?: string;
 }) {
-  const pad = compact ? 'p-1.5' : 'p-2';
-  const icon = compact ? 'h-4 w-4' : 'h-5 w-5';
   return (
-    <Tooltip content={deleteLabel} position="top">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRequestDelete();
-        }}
-        aria-label={deleteLabel}
-        className={`${pad} rounded-lg text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300`}
+    <div className={BALANCE_CARD_ROW_CLASS}>
+      <span className="text-gray-500 dark:text-gray-400">{label}</span>
+      <span
+        className={`shrink-0 tabular-nums ${valueClassName || 'text-gray-900 dark:text-gray-100'}`}
       >
-        <svg className={icon} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0a1 1 0 001-1V5a1 1 0 011-1h4a1 1 0 011 1v1a1 1 0 001 1m-7 0h8"
-          />
-        </svg>
-      </button>
-    </Tooltip>
+        {value}
+      </span>
+    </div>
   );
 }
 
-function MobileCurrencySummaryCard({
+function CurrencySummaryCard({
   code,
   block,
   t,
@@ -307,81 +312,56 @@ function MobileCurrencySummaryCard({
   numberFormat: NumberFormatType;
   summaryVariant?: 'primary' | 'secondary';
 }) {
-  const bal = parseFloat(String(block.balance));
-  const balanceTone =
-    bal >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400';
-  const headingId = `summary-mobile-${summaryVariant}-${code}`;
+  const activityBalance = parseSummaryAmount(block.balance);
+  const taxTotal = parseSummaryAmount(block.tax_payments);
+  const netBalance = parseSummaryAmount(block.balance_after_tax_payments ?? block.balance);
+  const showTaxLines = taxTotal > 0;
+  const finalAmount = showTaxLines ? netBalance : activityBalance;
+  const finalLabel = showTaxLines ? t('summary.netBalance') : t('summary.balanceShort');
+  const finalValue = formatNumber(
+    showTaxLines ? (block.balance_after_tax_payments ?? block.balance) : block.balance,
+    2,
+    numberFormat,
+  );
+  const finalValueClass =
+    finalAmount >= 0
+      ? 'font-semibold text-emerald-600 dark:text-emerald-400'
+      : 'font-semibold text-red-600 dark:text-red-400';
+  const headingId = `summary-card-${summaryVariant}-${code}`;
+  const sectionBadge =
+    summaryVariant === 'primary' ? t('summary.primaryBadge') : t('summary.secondaryBadge');
+
   return (
     <article
-      className="flex w-full flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 xl:hidden"
+      className="rounded-lg border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800"
       aria-labelledby={headingId}
     >
-      <h3 id={headingId} className="text-base font-bold tracking-wide text-gray-900 dark:text-gray-100">
-        {code}
-      </h3>
-      <dl className="grid gap-2 text-sm">
-        <div className="flex items-center justify-between gap-3 border-b border-gray-100 pb-2 dark:border-gray-700/80">
-          <dt className="text-gray-500 dark:text-gray-400">{t('summary.credits')}</dt>
-          <dd className="tabular-nums font-semibold text-gray-900 dark:text-gray-100">
-            {formatNumber(block.credits, 2, numberFormat)}
-          </dd>
-        </div>
-        <div className="flex items-center justify-between gap-3 border-b border-gray-100 pb-2 dark:border-gray-700/80">
-          <dt className="text-gray-500 dark:text-gray-400">{t('summary.expenses')}</dt>
-          <dd className="tabular-nums font-semibold text-gray-900 dark:text-gray-100">
-            {formatNumber(block.expenses, 2, numberFormat)}
-          </dd>
-        </div>
-        <div className="flex items-center justify-between gap-3 pt-0.5">
-          <dt className="font-medium text-gray-700 dark:text-gray-300">{t('summary.balance')}</dt>
-          <dd className={`tabular-nums text-base font-bold ${balanceTone}`}>
-            {formatNumber(block.balance, 2, numberFormat)}
-          </dd>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <h3 id={headingId} className="text-sm font-semibold leading-none text-gray-900 dark:text-gray-100">
+          {code}
+        </h3>
+        <span className="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:bg-gray-700 dark:text-gray-400">
+          {sectionBadge}
+        </span>
+      </div>
+      <dl className="text-sm">
+        <BalanceCardRow label={t('summary.creditsShort')} value={formatNumber(block.credits, 2, numberFormat)} />
+        <BalanceCardRow label={t('summary.expensesShort')} value={formatNumber(block.expenses, 2, numberFormat)} />
+        {showTaxLines ? (
+          <BalanceCardRow
+            label={t('summary.taxesShort')}
+            value={formatNumber(-taxTotal, 2, numberFormat)}
+            valueClassName="text-red-600 dark:text-red-400"
+          />
+        ) : null}
+        <div
+          className={`${BALANCE_CARD_ROW_CLASS} border-t border-gray-200 dark:border-gray-700`}
+        >
+          <dt className="font-medium text-gray-700 dark:text-gray-300">{finalLabel}</dt>
+          <dd className={`shrink-0 tabular-nums ${finalValueClass}`}>{finalValue}</dd>
         </div>
       </dl>
     </article>
-  );
-}
-
-function DesktopCurrencySummaryStrip({
-  code,
-  block,
-  colonFr,
-  t,
-  numberFormat,
-}: {
-  code: string;
-  block: CurrencySummaryBlock;
-  colonFr: string;
-  t: TradingActivityT;
-  numberFormat: NumberFormatType;
-}) {
-  const bal = parseFloat(String(block.balance));
-  const balanceTone =
-    bal >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400';
-  return (
-    <div
-      className="hidden w-full max-w-full flex flex-wrap items-baseline gap-x-4 gap-y-2 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-700 dark:bg-gray-800 sm:px-5 sm:py-3.5 xl:flex"
-      aria-label={code}
-    >
-      <span className="shrink-0 text-base font-semibold tracking-wide text-gray-700 dark:text-gray-200">{code}</span>
-      <span className="shrink-0 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-        {`${t('summary.credits')}${colonFr} `}
-        <span className="font-semibold text-gray-900 dark:text-gray-100">
-          {formatNumber(block.credits, 2, numberFormat)}
-        </span>
-      </span>
-      <span className="shrink-0 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-        {`${t('summary.expenses')}${colonFr} `}
-        <span className="font-semibold text-gray-900 dark:text-gray-100">
-          {formatNumber(block.expenses, 2, numberFormat)}
-        </span>
-      </span>
-      <span className={`shrink-0 whitespace-nowrap text-base font-bold ${balanceTone}`}>
-        {`${t('summary.balance')}${colonFr} `}
-        {formatNumber(block.balance, 2, numberFormat)}
-      </span>
-    </div>
   );
 }
 
@@ -572,7 +552,6 @@ const TradingActivityPage: React.FC = () => {
   const { t } = useI18nTranslation('trading_activity');
   const { t: tCommon } = useI18nTranslation('common');
   const { preferences } = usePreferences();
-  const colonFr = useColonBeforeValue();
   const defaultCurrency = preferences.default_currency || 'USD';
   const numberFormat: NumberFormatType = preferences.number_format || 'comma';
   const dateFormatPref: DateFormatType = preferences.date_format ?? 'EU';
@@ -589,6 +568,11 @@ const TradingActivityPage: React.FC = () => {
   const [creditsPageSize, setCreditsPageSize] = useState(DEFAULT_LEDGER_PAGE_SIZE);
   const [creditsTotal, setCreditsTotal] = useState(0);
   const [creditsLoading, setCreditsLoading] = useState(false);
+  const [taxPayments, setTaxPayments] = useState<TradingActivityTaxPayment[]>([]);
+  const [taxPaymentsPage, setTaxPaymentsPage] = useState(1);
+  const [taxPaymentsPageSize, setTaxPaymentsPageSize] = useState(DEFAULT_LEDGER_PAGE_SIZE);
+  const [taxPaymentsTotal, setTaxPaymentsTotal] = useState(0);
+  const [taxPaymentsLoading, setTaxPaymentsLoading] = useState(false);
   const [ledgerBump, setLedgerBump] = useState(0);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [currencies, setCurrencies] = useState<string[]>([]);
@@ -597,12 +581,19 @@ const TradingActivityPage: React.FC = () => {
 
   const [expenseModal, setExpenseModal] = useState(false);
   const [creditModal, setCreditModal] = useState(false);
+  const [taxPaymentModal, setTaxPaymentModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState<TradingActivityExpense | null>(null);
   const [editingCredit, setEditingCredit] = useState<TradingActivityCredit | null>(null);
+  const [editingTaxPayment, setEditingTaxPayment] = useState<TradingActivityTaxPayment | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [ledgerTab, setLedgerTab] = useState<'debit' | 'credit'>('debit');
+  const [taxPaymentTypes, setTaxPaymentTypes] = useState<TaxPaymentCustomType[]>([]);
+  const [builtinTaxPaymentLabels, setBuiltinTaxPaymentLabels] = useState<BuiltinTaxPaymentLabels>({});
+  const [newPaymentTypeName, setNewPaymentTypeName] = useState('');
+  const [ledgerTab, setLedgerTab] = useState<'debit' | 'credit' | 'tax'>('debit');
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ kind: 'expense' | 'credit'; id: number } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<
+    { kind: 'expense' | 'credit' | 'tax'; id: number } | null
+  >(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [ledgerFilters, setLedgerFilters] = useState<{
@@ -610,11 +601,13 @@ const TradingActivityPage: React.FC = () => {
     date_to: string;
     q: string;
     category: string;
+    payment_type: string;
   }>({
     date_from: '',
     date_to: '',
     q: '',
     category: '',
+    payment_type: '',
   });
   const [debouncedLedgerQuery, setDebouncedLedgerQuery] = useState('');
 
@@ -628,9 +621,16 @@ const TradingActivityPage: React.FC = () => {
   useEffect(() => {
     setExpensesPage(1);
     setCreditsPage(1);
+    setTaxPaymentsPage(1);
     setLedgerBump((b) => b + 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ledgerFilters.date_from, ledgerFilters.date_to, debouncedLedgerQuery, ledgerFilters.category]);
+  }, [
+    ledgerFilters.date_from,
+    ledgerFilters.date_to,
+    debouncedLedgerQuery,
+    ledgerFilters.category,
+    ledgerFilters.payment_type,
+  ]);
 
   const refreshWithdrawalSuggestions = useCallback(async () => {
     try {
@@ -693,16 +693,30 @@ const TradingActivityPage: React.FC = () => {
   const [creditFxRateFormat, setCreditFxRateFormat] = useState<'app' | 'intermediary'>('app');
   const [creditFeeCurrency, setCreditFeeCurrency] = useState<'secondary' | 'primary'>('secondary');
 
+  const [taxForm, setTaxForm] = useState<TaxPaymentFormState>({
+    date: new Date().toISOString().slice(0, 10),
+    currency: defaultCurrency,
+    amount: '',
+    payment_type: 'income_tax',
+    label: '',
+    reference: '',
+    notes: '',
+  });
+
   const loadStaticData = useCallback(async () => {
     setLoading(true);
     try {
-      const [sum, cat, cur] = await Promise.all([
+      const [sum, cat, taxTypes, builtinLabels, cur] = await Promise.all([
         tradingActivityService.getSummary(),
         tradingActivityService.listCategories(),
+        tradingActivityService.listTaxPaymentTypes(),
+        tradingActivityService.listBuiltinTaxPaymentLabels(),
         tradingActivityService.listCurrencies(),
       ]);
       setSummary(sum);
       setCategories(cat);
+      setTaxPaymentTypes(Array.isArray(taxTypes) ? taxTypes : []);
+      setBuiltinTaxPaymentLabels(builtinLabels && typeof builtinLabels === 'object' ? builtinLabels : {});
       setCurrencies(cur.currencies);
       const wd = await tradingActivityService.listWithdrawalSuggestions();
       setWithdrawals(Array.isArray(wd?.withdrawals) ? wd.withdrawals : []);
@@ -791,8 +805,58 @@ const TradingActivityPage: React.FC = () => {
     [t, ledgerFilters.date_from, ledgerFilters.date_to, debouncedLedgerQuery],
   );
 
+  const loadTaxPaymentsList = useCallback(
+    async (page: number, pageSize: number) => {
+      setTaxPaymentsLoading(true);
+      try {
+        let p = page;
+        let data = await tradingActivityService.listTaxPayments({
+          page: p,
+          page_size: pageSize,
+          filters: {
+            date_from: ledgerFilters.date_from || undefined,
+            date_to: ledgerFilters.date_to || undefined,
+            q: debouncedLedgerQuery || undefined,
+            payment_type: ledgerFilters.payment_type || undefined,
+          },
+        });
+        while ((data.results?.length ?? 0) === 0 && data.count > 0 && p > 1) {
+          p -= 1;
+          data = await tradingActivityService.listTaxPayments({
+            page: p,
+            page_size: pageSize,
+            filters: {
+              date_from: ledgerFilters.date_from || undefined,
+              date_to: ledgerFilters.date_to || undefined,
+              q: debouncedLedgerQuery || undefined,
+              payment_type: ledgerFilters.payment_type || undefined,
+            },
+          });
+        }
+        setTaxPaymentsPage(p);
+        setTaxPayments(Array.isArray(data.results) ? data.results : []);
+        setTaxPaymentsTotal(typeof data.count === 'number' ? data.count : 0);
+      } catch (e: any) {
+        toast.error(e?.message || t('errors.load'));
+      } finally {
+        setTaxPaymentsLoading(false);
+      }
+    },
+    [
+      t,
+      ledgerFilters.date_from,
+      ledgerFilters.date_to,
+      ledgerFilters.payment_type,
+      debouncedLedgerQuery,
+    ],
+  );
+
   const refreshLedgersAfterMutation = useCallback(
-    async (opts?: { resetExpensesPage?: boolean; resetCreditsPage?: boolean }) => {
+    async (opts?: {
+      resetExpensesPage?: boolean;
+      resetCreditsPage?: boolean;
+      resetTaxPaymentsPage?: boolean;
+    }) => {
       try {
         const sum = await tradingActivityService.getSummary();
         setSummary(sum);
@@ -801,6 +865,7 @@ const TradingActivityPage: React.FC = () => {
       }
       if (opts?.resetExpensesPage) setExpensesPage(1);
       if (opts?.resetCreditsPage) setCreditsPage(1);
+      if (opts?.resetTaxPaymentsPage) setTaxPaymentsPage(1);
       setLedgerBump((b) => b + 1);
     },
     [t],
@@ -817,6 +882,14 @@ const TradingActivityPage: React.FC = () => {
   useEffect(() => {
     void loadCreditsList(creditsPage, creditsPageSize);
   }, [creditsPage, creditsPageSize, ledgerBump, loadCreditsList]);
+
+  useEffect(() => {
+    void loadTaxPaymentsList(taxPaymentsPage, taxPaymentsPageSize);
+  }, [taxPaymentsPage, taxPaymentsPageSize, ledgerBump, loadTaxPaymentsList]);
+
+  useEffect(() => {
+    setTaxForm((f) => ({ ...f, currency: f.currency || defaultCurrency }));
+  }, [defaultCurrency]);
 
   useEffect(() => {
     if (creditModal) {
@@ -1065,6 +1138,66 @@ const TradingActivityPage: React.FC = () => {
     setDeleteModalOpen(true);
   };
 
+  const openNewTaxPayment = () => {
+    setEditingTaxPayment(null);
+    setTaxForm({
+      date: new Date().toISOString().slice(0, 10),
+      currency: defaultCurrency,
+      amount: '',
+      payment_type: 'income_tax',
+      label: '',
+      reference: '',
+      notes: '',
+    });
+    setNewPaymentTypeName('');
+    setTaxPaymentModal(true);
+  };
+
+  const openEditTaxPayment = (row: TradingActivityTaxPayment) => {
+    setEditingTaxPayment(row);
+    setTaxForm({
+      date: row.date,
+      currency: row.currency,
+      amount: formatNumber(row.amount, 2, numberFormat),
+      payment_type: row.payment_type,
+      label: row.label || '',
+      reference: row.reference || '',
+      notes: row.notes || '',
+    });
+    setTaxPaymentModal(true);
+  };
+
+  const saveTaxPayment = async () => {
+    try {
+      const amountApi = normalizeDecimalForApi(taxForm.amount, numberFormat);
+      const payload: Record<string, unknown> = {
+        date: taxForm.date,
+        currency: taxForm.currency,
+        amount: amountApi,
+        payment_type: taxForm.payment_type,
+        label: taxForm.label || '',
+        reference: taxForm.reference || '',
+        notes: taxForm.notes || '',
+      };
+      if (editingTaxPayment) {
+        await tradingActivityService.updateTaxPayment(editingTaxPayment.id, payload);
+        toast.success(t('toast.taxPaymentUpdated'));
+      } else {
+        await tradingActivityService.createTaxPayment(payload);
+        toast.success(t('toast.taxPaymentCreated'));
+      }
+      setTaxPaymentModal(false);
+      await refreshLedgersAfterMutation({ resetTaxPaymentsPage: !editingTaxPayment });
+    } catch (e: any) {
+      toast.error(e?.message || t('errors.save'));
+    }
+  };
+
+  const requestDeleteTaxPayment = (id: number) => {
+    setDeleteTarget({ kind: 'tax', id });
+    setDeleteModalOpen(true);
+  };
+
   const closeDeleteModal = () => {
     if (deleteLoading) return;
     setDeleteModalOpen(false);
@@ -1077,8 +1210,10 @@ const TradingActivityPage: React.FC = () => {
     try {
       if (deleteTarget.kind === 'expense') {
         await tradingActivityService.deleteExpense(deleteTarget.id);
-      } else {
+      } else if (deleteTarget.kind === 'credit') {
         await tradingActivityService.deleteCredit(deleteTarget.id);
+      } else {
+        await tradingActivityService.deleteTaxPayment(deleteTarget.id);
       }
       toast.success(t('toast.deleted'));
       setDeleteModalOpen(false);
@@ -1101,6 +1236,11 @@ const TradingActivityPage: React.FC = () => {
     setCreditsPage(1);
   };
 
+  const handleTaxPaymentsPageSizeChange = (size: number) => {
+    setTaxPaymentsPageSize(size);
+    setTaxPaymentsPage(1);
+  };
+
   const createInlineCategory = async () => {
     const name = newCategoryName.trim();
     if (!name) return;
@@ -1112,6 +1252,95 @@ const TradingActivityPage: React.FC = () => {
       toast.success(t('toast.categoryCreated'));
     } catch (e: any) {
       toast.error(e?.message || t('errors.save'));
+    }
+  };
+
+  const renameCategory = async (id: number, name: string) => {
+    try {
+      const row = await tradingActivityService.updateCategory(id, { name });
+      setCategories((prev) =>
+        prev.map((item) => (item.id === id ? row : item)).sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      toast.success(t('toast.categoryUpdated'));
+    } catch (e: any) {
+      toast.error(e?.message || t('errors.save'));
+      throw e;
+    }
+  };
+
+  const selectedExpenseCategory = useMemo(() => {
+    if (!expForm.category) return null;
+    const id = Number(expForm.category);
+    if (!Number.isFinite(id)) return null;
+    return categories.find((c) => c.id === id) ?? null;
+  }, [expForm.category, categories]);
+
+  const isEditingExpenseCategory = selectedExpenseCategory != null;
+  const trimmedCategoryName = newCategoryName.trim();
+  const canSaveCategoryRename =
+    isEditingExpenseCategory &&
+    trimmedCategoryName !== '' &&
+    trimmedCategoryName !== selectedExpenseCategory!.name;
+  const canCreateCategory = !isEditingExpenseCategory && trimmedCategoryName !== '';
+
+  const expenseCategorySyncRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!expenseModal) {
+      expenseCategorySyncRef.current = null;
+      return;
+    }
+    const key = expForm.category || '';
+    if (expenseCategorySyncRef.current === key) return;
+    expenseCategorySyncRef.current = key;
+    const cat = categories.find((c) => String(c.id) === expForm.category);
+    setNewCategoryName(cat?.name ?? '');
+  }, [expenseModal, expForm.category, categories]);
+
+  const handleCategoryNameAction = async () => {
+    if (isEditingExpenseCategory && selectedExpenseCategory) {
+      if (!canSaveCategoryRename) return;
+      await renameCategory(selectedExpenseCategory.id, trimmedCategoryName);
+      return;
+    }
+    if (!canCreateCategory) return;
+    await createInlineCategory();
+  };
+
+  const createInlinePaymentType = async () => {
+    const name = newPaymentTypeName.trim();
+    if (!name) return;
+    try {
+      const row = await tradingActivityService.createTaxPaymentType({ name });
+      setTaxPaymentTypes((prev) => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
+      setTaxForm((f) => ({ ...f, payment_type: row.code }));
+      setNewPaymentTypeName('');
+      toast.success(t('toast.paymentTypeCreated'));
+    } catch (e: any) {
+      toast.error(e?.message || t('errors.save'));
+    }
+  };
+
+  const renamePaymentType = async (id: number, name: string) => {
+    try {
+      const row = await tradingActivityService.updateTaxPaymentType(id, { name });
+      setTaxPaymentTypes((prev) =>
+        prev.map((item) => (item.id === id ? row : item)).sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      toast.success(t('toast.paymentTypeUpdated'));
+    } catch (e: any) {
+      toast.error(e?.message || t('errors.save'));
+      throw e;
+    }
+  };
+
+  const upsertBuiltinPaymentTypeLabel = async (code: BuiltinTaxPaymentType, label: string) => {
+    try {
+      const row = await tradingActivityService.upsertBuiltinTaxPaymentLabel(code, label);
+      setBuiltinTaxPaymentLabels((prev) => ({ ...prev, [code]: row.label }));
+      toast.success(t('toast.paymentTypeUpdated'));
+    } catch (e: any) {
+      toast.error(e?.message || t('errors.save'));
+      throw e;
     }
   };
 
@@ -1142,77 +1371,64 @@ const TradingActivityPage: React.FC = () => {
 
   return (
     <PageShell variant="fluid">
-      <div className="w-full space-y-6 py-4 sm:space-y-8 sm:py-6">
-        <div className="max-w-3xl">
-          <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-2xl">{t('title')}</h1>
-          <p className="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-gray-400">{t('subtitle')}</p>
-        </div>
-
-        <div
-          className={
-            secondaryCards.length > 0
-              ? 'grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-start xl:gap-8'
-              : 'grid grid-cols-1 gap-6'
-          }
-        >
-          {/* Soldes devise principale */}
-          <section className="min-w-0">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{t('summary.primaryTitle')}</h2>
-            {loading && !summary ? (
-              <p className="text-gray-500">{t('loading')}</p>
-            ) : (
-              <div className="flex w-full max-w-full flex-col items-stretch gap-3 sm:gap-4">
-                {primaryCards.map(([code, block]) => (
-                  <React.Fragment key={code}>
-                    <MobileCurrencySummaryCard
-                      code={code}
-                      block={block}
-                      t={t}
-                      numberFormat={numberFormat}
-                      summaryVariant="primary"
-                    />
-                    <DesktopCurrencySummaryStrip
-                      code={code}
-                      block={block}
-                      colonFr={colonFr}
-                      t={t}
-                      numberFormat={numberFormat}
-                    />
-                  </React.Fragment>
-                ))}
-                {primaryCards.length === 0 && (
-                  <p className="text-gray-500 text-sm">{t('summary.empty')}</p>
+      <div className="w-full space-y-6 sm:space-y-8">
+        <section className="min-w-0 max-w-5xl" aria-label={t('summary.ariaBalances')}>
+          <h2 className="mb-2 text-base font-semibold text-gray-800 dark:text-gray-200">{t('summary.balancesTitle')}</h2>
+          {loading && !summary ? (
+            <p className="text-sm text-gray-500">{t('loading')}</p>
+          ) : primaryCards.length === 0 && secondaryCards.length === 0 ? (
+            <p className="text-sm text-gray-500">{t('summary.empty')}</p>
+          ) : (
+            <>
+              <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                {primaryCards.length > 0 && (
+                  <Tooltip
+                    content={t('summary.primaryHint')}
+                    position="bottom"
+                    contentClassName="block max-w-[18rem] text-left leading-snug"
+                  >
+                    <span className="inline-flex cursor-help items-center gap-1 underline decoration-dotted underline-offset-2">
+                      {t('summary.primaryTitle')}
+                    </span>
+                  </Tooltip>
+                )}
+                {secondaryCards.length > 0 && (
+                  <Tooltip
+                    content={t('summary.secondaryHint')}
+                    position="bottom"
+                    contentClassName="block max-w-[18rem] text-left leading-snug"
+                  >
+                    <span className="inline-flex cursor-help items-center gap-1 underline decoration-dotted underline-offset-2">
+                      {t('summary.secondaryTitle')}
+                    </span>
+                  </Tooltip>
                 )}
               </div>
-            )}
-          </section>
-
-          {secondaryCards.length > 0 && (
-            <section className="min-w-0">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3">{t('summary.secondaryTitle')}</h2>
-              <div className="flex w-full max-w-full flex-col items-stretch gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {primaryCards.map(([code, block]) => (
+                  <CurrencySummaryCard
+                    key={`primary-${code}`}
+                    code={code}
+                    block={block}
+                    t={t}
+                    numberFormat={numberFormat}
+                    summaryVariant="primary"
+                  />
+                ))}
                 {secondaryCards.map(([code, block]) => (
-                  <React.Fragment key={code}>
-                    <MobileCurrencySummaryCard
-                      code={code}
-                      block={block}
-                      t={t}
-                      numberFormat={numberFormat}
-                      summaryVariant="secondary"
-                    />
-                    <DesktopCurrencySummaryStrip
-                      code={code}
-                      block={block}
-                      colonFr={colonFr}
-                      t={t}
-                      numberFormat={numberFormat}
-                    />
-                  </React.Fragment>
+                  <CurrencySummaryCard
+                    key={`secondary-${code}`}
+                    code={code}
+                    block={block}
+                    t={t}
+                    numberFormat={numberFormat}
+                    summaryVariant="secondary"
+                  />
                 ))}
               </div>
-            </section>
+            </>
           )}
-        </div>
+        </section>
 
         <div className="flex min-w-0 flex-col space-y-4 sm:space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-5">
@@ -1241,16 +1457,33 @@ const TradingActivityPage: React.FC = () => {
 
               <div className="min-w-0 w-full">
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
-                  {t('form.category')}
+                  {ledgerTab === 'tax' ? t('taxPayments.filterType') : t('form.category')}
                 </label>
                 <CustomSelect
-                  value={ledgerFilters.category}
-                  onChange={(value) => setLedgerFilters((f) => ({ ...f, category: value ? String(value) : '' }))}
+                  value={ledgerTab === 'tax' ? ledgerFilters.payment_type : ledgerFilters.category}
+                  onChange={(value) => {
+                    const v = value ? String(value) : '';
+                    if (ledgerTab === 'tax') {
+                      setLedgerFilters((f) => ({ ...f, payment_type: v }));
+                    } else {
+                      setLedgerFilters((f) => ({ ...f, category: v }));
+                    }
+                  }}
                   disabled={ledgerTab === 'credit'}
-                  options={[
-                    { value: '', label: t('form.categoryNone') },
-                    ...categories.map((c) => ({ value: String(c.id), label: c.name })),
-                  ]}
+                  options={
+                    ledgerTab === 'tax'
+                      ? [
+                          { value: '', label: t('taxPayments.filterTypeAll') },
+                          ...buildTaxPaymentTypeSelectOptions(t, taxPaymentTypes, builtinTaxPaymentLabels).map((opt) => ({
+                            value: String(opt.value),
+                            label: opt.label,
+                          })),
+                        ]
+                      : [
+                          { value: '', label: t('form.categoryNone') },
+                          ...categories.map((c) => ({ value: String(c.id), label: c.name })),
+                        ]
+                  }
                 />
               </div>
 
@@ -1286,6 +1519,7 @@ const TradingActivityPage: React.FC = () => {
                       date_to: '',
                       q: '',
                       category: '',
+                      payment_type: '',
                     })
                   }
                   className="w-full h-10 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm font-medium"
@@ -1335,6 +1569,22 @@ const TradingActivityPage: React.FC = () => {
               >
                 {t('tabs.credit')}
               </button>
+              <button
+                type="button"
+                role="tab"
+                id="trading-ledger-tab-tax"
+                aria-selected={ledgerTab === 'tax'}
+                aria-controls="trading-ledger-panel-tax"
+                tabIndex={ledgerTab === 'tax' ? 0 : -1}
+                onClick={() => setLedgerTab('tax')}
+                className={`min-h-[44px] flex-1 rounded-t-lg px-2 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 sm:min-h-0 sm:flex-none sm:px-3 ${
+                  ledgerTab === 'tax'
+                    ? 'border-b-2 border-blue-600 text-blue-600 dark:border-blue-500 dark:text-blue-400'
+                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {t('tabs.taxPayments')}
+              </button>
             </div>
 
             {ledgerTab === 'credit' && (
@@ -1354,6 +1604,16 @@ const TradingActivityPage: React.FC = () => {
                 className="self-center min-h-[44px] shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:px-4 sm:py-2"
               >
                 {t('expenses.add')}
+              </button>
+            )}
+
+            {ledgerTab === 'tax' && (
+              <button
+                type="button"
+                onClick={openNewTaxPayment}
+                className="self-center min-h-[44px] shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 sm:min-h-0 sm:px-4 sm:py-2"
+              >
+                {t('taxPayments.add')}
               </button>
             )}
           </div>
@@ -1757,6 +2017,38 @@ const TradingActivityPage: React.FC = () => {
               )}
             </section>
           )}
+
+          {ledgerTab === 'tax' && (
+            <section
+              id="trading-ledger-panel-tax"
+              role="tabpanel"
+              aria-labelledby="trading-ledger-tab-tax"
+              className="flex min-w-0 flex-col"
+            >
+              <TradingActivityTaxPaymentsLedgerPanel
+                t={t}
+                numberFormat={numberFormat}
+                dateFormat={dateFormatPref}
+                timezone={timezonePref}
+                customPaymentTypes={taxPaymentTypes}
+                builtinLabels={builtinTaxPaymentLabels}
+                rows={taxPayments}
+                loading={taxPaymentsLoading}
+                total={taxPaymentsTotal}
+                page={taxPaymentsPage}
+                pageSize={taxPaymentsPageSize}
+                pageSizeOptions={LEDGER_PAGE_SIZE_OPTIONS}
+                onPageChange={(p) => {
+                  setTaxPaymentsPage(p);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onPageSizeChange={handleTaxPaymentsPageSizeChange}
+                onEdit={openEditTaxPayment}
+                onDelete={requestDeleteTaxPayment}
+                handleLedgerRowActivate={handleLedgerRowActivate}
+              />
+            </section>
+          )}
         </div>
 
         {ledgerTab === 'debit' && (
@@ -1810,10 +2102,10 @@ const TradingActivityPage: React.FC = () => {
           }}
         >
           <div
-            className="flex max-h-[min(92dvh,100vh-1rem)] w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-gray-800 sm:max-h-[90vh] sm:rounded-xl"
+            className="flex max-h-[min(92dvh,100vh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 sm:max-h-[90vh] sm:rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-shrink-0 items-start justify-between gap-3 rounded-t-2xl border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-3 dark:border-gray-700 dark:from-blue-900/20 dark:to-indigo-900/20 sm:items-center sm:rounded-t-xl sm:px-6 sm:py-5">
+            <div className="flex flex-shrink-0 items-start justify-between gap-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-3 dark:border-gray-700 dark:from-blue-900/20 dark:to-indigo-900/20 sm:items-center sm:px-6 sm:py-5">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-orange-600 dark:bg-orange-500">
                   <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
@@ -1929,22 +2221,31 @@ const TradingActivityPage: React.FC = () => {
                     <ModalSelectChevron />
                   </div>
                 </div>
-                <div className="sm:col-span-2 flex flex-col sm:flex-row gap-2 sm:items-end">
-                  <input
-                    type="text"
-                    aria-label={t('form.newCategoryPlaceholder')}
-                    placeholder={t('form.newCategoryPlaceholder')}
-                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={createInlineCategory}
-                    className="px-3 sm:px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shrink-0"
-                  >
-                    {t('form.newCategory')}
-                  </button>
+                <div className="sm:col-span-2">
+                  <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {isEditingExpenseCategory
+                      ? t('form.customCategoryEditLabel')
+                      : t('form.customCategoryAddLabel')}
+                  </label>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                    <input
+                      type="text"
+                      className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      placeholder={
+                        isEditingExpenseCategory ? undefined : t('form.customCategoryAddPlaceholder')
+                      }
+                    />
+                    <button
+                      type="button"
+                      disabled={loading || (isEditingExpenseCategory ? !canSaveCategoryRename : !canCreateCategory)}
+                      onClick={handleCategoryNameAction}
+                      className="shrink-0 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 sm:px-4"
+                    >
+                      {isEditingExpenseCategory ? t('actions.save') : t('form.newCategory')}
+                    </button>
+                  </div>
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('form.label')}</label>
@@ -1992,7 +2293,7 @@ const TradingActivityPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-shrink-0 flex-col gap-2 rounded-b-2xl border-t border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-900/50 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:rounded-b-xl sm:px-6 sm:py-4">
+            <div className="flex flex-shrink-0 flex-col gap-2 border-t border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-900/50 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-6 sm:py-4">
               <button
                 type="button"
                 disabled={loading}
@@ -2023,10 +2324,10 @@ const TradingActivityPage: React.FC = () => {
           }}
         >
           <div
-            className="flex max-h-[min(92dvh,100vh-1rem)] w-full max-w-2xl flex-col rounded-t-2xl bg-white shadow-2xl dark:bg-gray-800 sm:max-h-[90vh] sm:rounded-xl"
+            className="flex max-h-[min(92dvh,100vh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-800 sm:max-h-[90vh] sm:rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex flex-shrink-0 items-start justify-between gap-3 rounded-t-2xl border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-3 dark:border-gray-700 dark:from-blue-900/20 dark:to-indigo-900/20 sm:items-center sm:rounded-t-xl sm:px-6 sm:py-5">
+            <div className="flex flex-shrink-0 items-start justify-between gap-3 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-3 py-3 dark:border-gray-700 dark:from-blue-900/20 dark:to-indigo-900/20 sm:items-center sm:px-6 sm:py-5">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-green-600 dark:bg-green-500">
                   <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
@@ -2278,7 +2579,7 @@ const TradingActivityPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="flex flex-shrink-0 flex-col gap-2 rounded-b-2xl border-t border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-900/50 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:rounded-b-xl sm:px-6 sm:py-4">
+            <div className="flex flex-shrink-0 flex-col gap-2 border-t border-gray-200 bg-gray-50 px-3 py-3 dark:border-gray-700 dark:bg-gray-900/50 sm:flex-row sm:items-center sm:justify-end sm:gap-3 sm:px-6 sm:py-4">
               <button
                 type="button"
                 disabled={loading}
@@ -2300,6 +2601,25 @@ const TradingActivityPage: React.FC = () => {
         </div>
       )}
 
+      <TradingActivityTaxPaymentModal
+        open={taxPaymentModal}
+        editing={editingTaxPayment}
+        form={taxForm}
+        currencies={currencies}
+        customPaymentTypes={taxPaymentTypes}
+        builtinLabels={builtinTaxPaymentLabels}
+        loading={loading}
+        t={t}
+        onClose={() => setTaxPaymentModal(false)}
+        onChange={setTaxForm}
+        onSave={saveTaxPayment}
+        newPaymentTypeName={newPaymentTypeName}
+        onNewPaymentTypeNameChange={setNewPaymentTypeName}
+        onCreatePaymentType={createInlinePaymentType}
+        onRenamePaymentType={renamePaymentType}
+        onUpsertBuiltinLabel={upsertBuiltinPaymentTypeLabel}
+      />
+
       <DeleteConfirmModal
         isOpen={deleteModalOpen}
         onClose={closeDeleteModal}
@@ -2309,7 +2629,9 @@ const TradingActivityPage: React.FC = () => {
             ? t('confirm.deleteExpense')
             : deleteTarget?.kind === 'credit'
               ? t('confirm.deleteCredit')
-              : t('actions.delete')
+              : deleteTarget?.kind === 'tax'
+                ? t('confirm.deleteTaxPayment')
+                : t('actions.delete')
         }
         message={
           <p className="text-gray-600 dark:text-gray-400">

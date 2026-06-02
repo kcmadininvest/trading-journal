@@ -1,19 +1,57 @@
 {
   "title": "Rentabilité activité trading",
-  "subtitle": "Dépenses (évaluations, données, resets…) et crédits (retraits), hors abonnement application.",
+  "subtitle": "Dépenses d’activité, crédits (retraits) et paiements fiscaux ou sociaux réels, hors abonnement application.",
   "loading": "Chargement…",
   "tabs": {
     "debit": "Débit",
     "credit": "Crédit",
-    "ariaLabel": "Dépenses et crédits"
+    "taxPayments": "Paiements fiscaux et sociaux",
+    "ariaLabel": "Dépenses, crédits et paiements fiscaux"
   },
   "summary": {
-    "primaryTitle": "Soldes par devise principale",
-    "secondaryTitle": "Soldes par devise secondaire",
-    "credits": "Crédits",
-    "expenses": "Dépenses",
-    "balance": "Solde",
+    "balancesTitle": "Soldes par devise",
+    "ariaBalances": "Résumé des soldes par devise",
+    "primaryBadge": "Principal",
+    "secondaryBadge": "Secondaire",
+    "primaryTitle": "Devise principale",
+    "secondaryTitle": "Devise secondaire",
+    "primaryHint": "Totaux du champ principal sur vos dépenses et retraits. Les paiements fiscaux et sociaux en cette devise sont déduits ici dès qu’il y a une activité en principal pour cette devise (y compris si vous avez aussi des montants secondaires pour la même devise).",
+    "secondaryHint": "Totaux du montant secondaire et du taux de change. Les paiements fiscaux et sociaux en cette devise sont déduits ici lorsque toute l’activité en cette devise passe uniquement par le secondaire (ex. lignes en USD avec montants en EUR).",
+    "secondaryCardHint": "Paiements fiscaux déduits ici si l’activité en cette devise est uniquement en secondaire.",
+    "activitySection": "Activité trading",
+    "taxSection": "Paiements enregistrés",
+    "credits": "Crédits (retraits)",
+    "creditsShort": "Crédits",
+    "expenses": "Dépenses d’activité",
+    "expensesShort": "Dépenses",
+    "taxesShort": "Taxes",
+    "balance": "Solde activité",
+    "balanceShort": "Solde",
+    "activityBalanceHint": "Crédits − dépenses d’activité",
+    "taxPayments": "Paiements fiscaux et sociaux (déduits)",
+    "netBalance": "Solde net",
+    "netBalanceHint": "Solde activité − paiements ci-dessus",
+    "balanceAfterTaxPayments": "Solde après paiements",
     "empty": "Aucune donnée pour le moment."
+  },
+  "taxPayments": {
+    "title": "Paiements fiscaux et sociaux",
+    "add": "Ajouter un paiement",
+    "edit": "Modifier le paiement",
+    "empty": "Aucun paiement enregistré.",
+    "modalNewDesc": "Enregistrez un paiement réellement effectué vers une administration ou un organisme de protection sociale.",
+    "modalEditDesc": "Modifiez le paiement puis enregistrez.",
+    "help": "Choisissez la catégorie la plus proche et précisez le détail dans le libellé.",
+    "filterType": "Type de paiement",
+    "filterTypeAll": "— Tous —"
+  },
+  "paymentType": {
+    "social_contributions": "Cotisations sociales",
+    "income_tax": "Impôt sur le revenu",
+    "business_tax": "Impôt sur l’activité professionnelle",
+    "local_tax": "Taxe locale",
+    "consumption_tax": "Taxe sur la consommation",
+    "other": "Autre paiement fiscal ou social"
   },
   "expenses": {
     "title": "Dépenses (débit)",
@@ -52,7 +90,9 @@
     "secondary": "Devise secondaire",
     "amount": "Montant",
     "fxRate": "Taux",
-    "transferFee": "Frais transfert"
+    "transferFee": "Frais transfert",
+    "paymentType": "Type",
+    "currency": "Devise"
   },
   "form": {
     "date": "Date",
@@ -65,11 +105,20 @@
     "categoryNone": "— Aucune —",
     "newCategory": "Créer",
     "newCategoryPlaceholder": "Nouvelle catégorie…",
+    "customCategoryAddLabel": "Ajouter une catégorie",
+    "customCategoryEditLabel": "Modifier le nom de la catégorie sélectionnée",
+    "customCategoryAddPlaceholder": "Ex. Abonnements, Matériel…",
+    "newPaymentType": "Créer",
+    "customPaymentTypeAddLabel": "Ajouter un type personnalisé",
+    "customPaymentTypeEditLabel": "Modifier le nom du type sélectionné",
+    "customPaymentTypeAddPlaceholder": "Ex. URSSAF trimestrielle",
     "label": "Libellé",
     "secondaryAmount": "Montant secondaire",
     "secondaryCurrency": "Devise secondaire",
     "amount": "Montant",
     "notes": "Notes",
+    "paymentType": "Type de paiement",
+    "reference": "Référence",
     "none": "—",
     "fxRate": "Taux (1 {{secondary}} = … {{primary}})",
     "fxRateHint": "Nombre d’unités de la devise principale pour 1 unité de la devise secondaire (toute paire ISO). Laisser vide si pas de change.",
@@ -101,7 +150,12 @@
     "creditCreated": "Crédit enregistré.",
     "creditUpdated": "Crédit mis à jour.",
     "deleted": "Supprimé.",
-    "categoryCreated": "Catégorie créée."
+    "categoryCreated": "Catégorie créée.",
+    "categoryUpdated": "Catégorie mise à jour.",
+    "paymentTypeCreated": "Type de paiement créé.",
+    "paymentTypeUpdated": "Type de paiement mis à jour.",
+    "taxPaymentCreated": "Paiement enregistré.",
+    "taxPaymentUpdated": "Paiement mis à jour."
   },
   "errors": {
     "load": "Impossible de charger les données.",
@@ -110,6 +164,7 @@
   },
   "confirm": {
     "deleteExpense": "Supprimer cette dépense ?",
-    "deleteCredit": "Supprimer ce crédit ?"
+    "deleteCredit": "Supprimer ce crédit ?",
+    "deleteTaxPayment": "Supprimer ce paiement ?"
   }
 }
