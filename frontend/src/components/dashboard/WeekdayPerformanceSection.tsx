@@ -9,7 +9,9 @@ import {
   type WeekdayPerformanceDay,
 } from '../../hooks/useWeekdayPerformance';
 import {
+  DASHBOARD_PANEL_HINT_CLASS,
   DASHBOARD_PANEL_SHELL_CLASS,
+  DASHBOARD_PANEL_TITLE_CLASS,
   DASHBOARD_PNL_NEGATIVE_BAR_BG,
   DASHBOARD_PNL_NEGATIVE_BAR_BORDER,
   DASHBOARD_PNL_NEGATIVE_TEXT_CLASS,
@@ -221,11 +223,11 @@ export function WeekdayPerformanceSection({
       <div className={WEEKDAY_PANEL_CLASS}>
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-lg font-bold text-white/90">
+            <h3 className={`text-lg font-bold ${DASHBOARD_PANEL_TITLE_CLASS}`}>
               {t('dashboard:weeklyPerformanceTitle')}
             </h3>
           </div>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-white/60 mb-2">
+          <div className={`mb-2 flex flex-wrap items-center gap-4 text-sm ${DASHBOARD_PANEL_HINT_CLASS}`}>
             <div className="flex items-center gap-1">
               <span>{t('dashboard:mostActive')} :</span>
               <span className={`font-medium ${DASHBOARD_PNL_POSITIVE_TEXT_CLASS}`}>
@@ -355,11 +357,11 @@ export function WeekdayPerformanceSection({
     <div className={WEEKDAY_PANEL_CLASS}>
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-4">
-          <h3 className="text-lg font-bold text-white/90">
+          <h3 className={`text-lg font-bold ${DASHBOARD_PANEL_TITLE_CLASS}`}>
             {t('dashboard:winRateByWeekdayTitle')}
           </h3>
         </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm text-white/60 mb-2">
+        <div className={`mb-2 flex flex-wrap items-center gap-4 text-sm ${DASHBOARD_PANEL_HINT_CLASS}`}>
           {weekdayStats.hasWinRateSample && weekdayStats.bestWinRateDay && (
             <div className="flex items-center gap-1">
               <span>{t('dashboard:bestWinRateDay')} :</span>
@@ -381,7 +383,7 @@ export function WeekdayPerformanceSection({
             </div>
           )}
           {!weekdayStats.hasWinRateSample && (
-            <div className="flex items-center gap-1 text-white/50">
+            <div className={`flex items-center gap-1 ${DASHBOARD_PANEL_HINT_CLASS}`}>
               <span>{t('dashboard:weekdayWinRateInsufficientSample', { count: WEEKDAY_WIN_RATE_MIN_TRADES })}</span>
             </div>
           )}

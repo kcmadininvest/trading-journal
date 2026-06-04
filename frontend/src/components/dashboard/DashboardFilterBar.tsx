@@ -84,14 +84,14 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
                   onChange={onAccountChange}
                   hideLabel
                   hideAccountNumber={hideAccountNumber}
-                  variant="band"
+                  variant="default"
                 />
               </div>
-              <div className="flex shrink-0 items-center self-stretch py-0.5">
+              <div className="flex h-10 shrink-0 items-center">
                 <PrivacyDropdown
                   pageContext={PAGE_CONTEXTS.DASHBOARD}
                   availableOptions={PAGE_PRIVACY_OPTIONS[PAGE_CONTEXTS.DASHBOARD]}
-                  variant="band"
+                  variant="default"
                 />
               </div>
             </div>
@@ -100,7 +100,7 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
               <PeriodSelector
                 value={selectedPeriod}
                 onChange={onPeriodChange}
-                variant="band"
+                variant="default"
               />
             </div>
 
@@ -110,21 +110,21 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
                 onChange={onPositionStrategyChange}
                 strategies={positionStrategies}
                 disabled={loadingStrategies}
-                variant="band"
+                variant="default"
               />
             </div>
 
             <div className={`min-w-0 ${PILL_WIDTH}`}>
-              <PnlBasisToggle variant="band" />
+              <PnlBasisToggle variant="default" />
             </div>
           </div>
 
           <div className="hidden shrink-0 2xl:ml-auto 2xl:flex 2xl:items-center">
             {statsLoading ? (
               <div className={`flex ${BAND_ROW_MIN_HEIGHT} items-center gap-2`}>
-                <div className="h-10 w-32 shrink-0 animate-pulse rounded-lg bg-white/10" />
-                <div className="h-10 w-32 shrink-0 animate-pulse rounded-lg bg-white/10" />
-                <div className="h-10 w-32 shrink-0 animate-pulse rounded-lg bg-white/10" />
+                <div className="h-10 w-32 shrink-0 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+                <div className="h-10 w-32 shrink-0 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+                <div className="h-10 w-32 shrink-0 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
               </div>
             ) : (
               <GlobalStatsIndicators

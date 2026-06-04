@@ -35,10 +35,10 @@ interface MarketClockCardProps {
 }
 
 const colorClasses = {
-  blue: { text: 'text-blue-300', ring: 'ring-blue-400/30' },
-  purple: { text: 'text-purple-300', ring: 'ring-purple-400/30' },
-  red: { text: 'text-red-300', ring: 'ring-red-400/30' },
-  rose: { text: 'text-rose-300', ring: 'ring-rose-400/30' },
+  blue: { text: 'text-blue-600 dark:text-blue-300', headerBorder: 'border-blue-200 dark:border-blue-500/40' },
+  purple: { text: 'text-purple-600 dark:text-purple-300', headerBorder: 'border-purple-200 dark:border-purple-500/40' },
+  red: { text: 'text-red-600 dark:text-red-300', headerBorder: 'border-red-200 dark:border-red-500/40' },
+  rose: { text: 'text-rose-600 dark:text-rose-300', headerBorder: 'border-rose-200 dark:border-rose-500/40' },
 };
 
 function MarketStatusPill({ status }: { status: MarketStatus }) {
@@ -75,7 +75,7 @@ function MarketStatusPill({ status }: { status: MarketStatus }) {
       </span>
       <span
         className={`text-[11px] font-semibold ${
-          isOpen ? 'text-emerald-400' : isPreMarket ? 'text-amber-400' : 'text-white/50'
+          isOpen ? 'text-emerald-600 dark:text-emerald-400' : isPreMarket ? 'text-amber-600 dark:text-amber-400' : 'text-gray-500 dark:text-gray-400'
         }`}
       >
         {label}
@@ -232,9 +232,9 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-[#0f172a] via-[#172554] to-[#0f172a] shadow-md shadow-blue-950/25 dark:from-slate-950 dark:via-blue-950 dark:to-slate-950">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div
-        className={`flex items-center justify-between px-2.5 py-1.5 ring-1 ring-inset ${classes.ring} bg-white/5`}
+        className={`flex items-center justify-between rounded-t-xl border-b bg-gray-50 px-2.5 py-1.5 dark:bg-gray-700/50 ${classes.headerBorder}`}
       >
         <div className="flex min-w-0 items-center gap-1.5">
           <img
@@ -255,14 +255,14 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
       <div className="flex items-center justify-between gap-1.5 px-2.5 py-1.5">
         <div className="flex min-w-0 flex-1 items-baseline gap-2">
           {timezoneOffset ? (
-            <span className="shrink-0 text-[11px] font-medium text-white/50">
+            <span className="shrink-0 text-[11px] font-medium text-gray-500 dark:text-gray-400">
               UTC{timezoneOffset.formatted}
             </span>
           ) : null}
-          <span className="text-lg font-bold tabular-nums leading-none text-white">
+          <span className="text-lg font-bold tabular-nums leading-none text-gray-900 dark:text-gray-100">
             {formattedTime}
           </span>
-          <span className="truncate text-xs text-white/50">
+          <span className="truncate text-xs text-gray-500 dark:text-gray-400">
             {tradingHours.open}–{sessionClose}
           </span>
         </div>
@@ -271,7 +271,7 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
             className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap ${
               isDSTUrgent
                 ? 'border-amber-400/30 bg-amber-500/10 text-amber-300'
-                : 'border-white/10 bg-white/5 text-white/50'
+                : 'border-gray-200 bg-gray-100 text-gray-500 dark:border-gray-600 dark:bg-gray-700/50 dark:text-gray-400'
             }`}
           >
             {dstShortLabel()}
@@ -286,9 +286,9 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
       ) : null}
 
       {showHolidaysSection ? (
-        <div className="mt-1 border-t border-white/10 px-2.5 pt-1.5 pb-2">
+        <div className="mt-1 border-t border-gray-200 px-2.5 pt-1.5 pb-2 dark:border-gray-700">
           {holidaysLoading ? (
-            <div className="h-4 animate-pulse rounded bg-white/10" aria-hidden />
+            <div className="h-4 animate-pulse rounded bg-gray-200 dark:bg-gray-700" aria-hidden />
           ) : (
             <ul className="space-y-0.5">
               {upcomingEvents.map((event) => {
@@ -326,20 +326,20 @@ export const MarketClockCard: React.FC<MarketClockCardProps> = ({
                       </svg>
                     ) : null}
                     {isEarlyClose ? (
-                      <span className="shrink-0 text-[11px] font-bold text-white/50" title={t('common:marketHours.earlyClose')}>
+                      <span className="shrink-0 text-[11px] font-bold text-gray-500 dark:text-gray-400" title={t('common:marketHours.earlyClose')}>
                         ½
                       </span>
                     ) : null}
                     <span
                       className={`min-w-0 flex-1 truncate text-xs ${
-                        urgent ? 'font-medium text-white' : 'text-white/80'
+                        urgent ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300'
                       }`}
                     >
                       {event.name}
                     </span>
                     <span
                       className={`shrink-0 text-xs ${
-                        urgent ? 'font-medium text-amber-300' : 'text-white/50'
+                        urgent ? 'font-medium text-amber-600 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
                       {relativeDate}

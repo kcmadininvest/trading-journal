@@ -40,9 +40,9 @@ const PREVIOUS_PERIOD_LABEL: Record<PeriodKey, string> = {
 };
 
 function getPnLCardClasses(pnl: number): string {
-  if (pnl > 0) return 'border-blue-400/30 bg-blue-500/10';
-  if (pnl < 0) return 'border-pink-400/30 bg-pink-500/10';
-  return 'border-white/15 bg-white/5';
+  if (pnl > 0) return 'border-blue-200 bg-blue-50 dark:border-blue-400/30 dark:bg-blue-500/10';
+  if (pnl < 0) return 'border-pink-200 bg-pink-50 dark:border-pink-400/30 dark:bg-pink-500/10';
+  return 'border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-700/30';
 }
 
 function getPnLTextClasses(pnl: number): string {
@@ -52,9 +52,9 @@ function getPnLTextClasses(pnl: number): string {
 }
 
 function getChangeBadgeClasses(changePct: number): string {
-  if (changePct > 0) return 'bg-blue-500/15 text-blue-300';
-  if (changePct < 0) return 'bg-pink-500/15 text-pink-300';
-  return 'bg-white/10 text-white/60';
+  if (changePct > 0) return 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300';
+  if (changePct < 0) return 'bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300';
+  return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
 }
 
 interface PeriodCardProps {
@@ -160,7 +160,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
         <span
           className={clsx(
             'text-xl font-semibold tabular-nums sm:text-2xl',
-            hideMoney ? 'text-white/70' : getPnLTextClasses(entry.pnl)
+            hideMoney ? 'text-gray-400 dark:text-gray-500' : getPnLTextClasses(entry.pnl)
           )}
         >
           {formatPnLValue(entry.pnl)}
@@ -186,7 +186,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
             <span
               className={clsx(
                 'inline-flex w-fit shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
-                hideMoney ? 'bg-white/10 text-white/50' : getChangeBadgeClasses(changePct)
+                hideMoney ? 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400' : getChangeBadgeClasses(changePct)
               )}
             >
               {!hideMoney && changePct !== 0 && (
@@ -227,7 +227,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
                   })
             }
           >
-            <span className="inline-flex w-fit max-w-full shrink-0 items-center rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium leading-snug text-white/60">
+            <span className="inline-flex w-fit max-w-full shrink-0 items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium leading-snug text-gray-600 dark:bg-gray-700 dark:text-gray-400">
               {hideMoney ? '***' : yearUnavailableHint ?? `— ${vsLabel}`}
             </span>
           </Tooltip>
@@ -244,7 +244,7 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
                 'Rendement du PnL de la période rapporté au capital initial du (des) compte(s) affiché(s).',
             })}
           >
-            <span className="text-xs text-white/60">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {hideMoney
                 ? maskValue(null)
                 : t('dashboard:periodPerformance.returnOnCapital', {
@@ -300,17 +300,17 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
   if (loading) {
     return (
       <div className={clsx(DASHBOARD_PANEL_SHELL_CLASS, className)}>
-        <div className="mb-3 h-5 w-48 animate-pulse rounded bg-white/10 sm:mb-4" />
+        <div className="mb-3 h-5 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-700 sm:mb-4" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {PERIOD_KEYS.map((key) => (
             <div
               key={key}
               className={clsx(DASHBOARD_INNER_CARD_CLASS, 'animate-pulse p-4')}
             >
-            <div className="mb-3 h-3 w-24 rounded bg-white/10" />
+            <div className="mb-3 h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
             <div className="flex flex-wrap items-center gap-2">
-              <div className="h-8 w-32 rounded bg-white/10" />
-              <div className="h-5 w-36 rounded bg-white/10" />
+              <div className="h-8 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="h-5 w-36 rounded bg-gray-200 dark:bg-gray-700" />
             </div>
           </div>
         ))}

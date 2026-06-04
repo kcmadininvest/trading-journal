@@ -33,9 +33,7 @@ import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerfor
 import {
   DashboardPanel,
   DASHBOARD_BAND_DATE_INPUT_CLASS,
-  DASHBOARD_CHART_BORDER,
-  DASHBOARD_CHART_GRID,
-  DASHBOARD_CHART_TICK,
+  getDashboardChartAxisColors,
   DASHBOARD_GAUGE_TILE_CLASS,
   DASHBOARD_PANEL_HINT_CLASS,
   DASHBOARD_PANEL_TITLE_CLASS,
@@ -1648,6 +1646,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
 
   const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
+  const dashboardChartAxis = useMemo(() => getDashboardChartAxisColors(isDark), [isDark]);
 
 
   return (
@@ -1688,7 +1687,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       {/* Soldes du compte */}
       {selectedAccount && (
         <AccountSummaryCard
-          theme="band"
+          theme="default"
           className="mb-6"
           indicators={indicators}
           currencySymbol={currencySymbol}
@@ -1726,8 +1725,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-emerald-400/80" />
-            <p className="text-white/60">{t('dashboard:loading')}</p>
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-gray-200 border-t-sky-500 dark:border-gray-700 dark:border-t-sky-400" />
+            <p className="text-gray-500 dark:text-gray-400">{t('dashboard:loading')}</p>
           </div>
         </div>
       ) : (
@@ -1746,7 +1745,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               <div className="grid flex-1 grid-cols-3 gap-2 sm:gap-4">
                 {/* Jauge Win Rate */}
                 <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
-                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-white/70 sm:mb-4">
+                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:mb-4">
                     {t('dashboard:winRate')}
                   </h3>
                   <Tooltip
@@ -1775,7 +1774,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       return (
                         <div
                           className={clsx(
-                            'relative flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/5 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]',
+                            'relative flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700/50 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]',
                             showPeakExtras && 'cursor-help'
                           )}
                         >
@@ -1821,7 +1820,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             />
                           </svg>
                           <div className="relative z-10 flex flex-col items-center justify-center px-0.5">
-                            <div className="text-sm font-bold text-white/90 sm:text-xl xl:text-2xl">
+                            <div className="text-sm font-bold text-gray-900 dark:text-gray-100 sm:text-xl xl:text-2xl">
                               {formatNumber(tradingMetrics.winRate, 2)}%
                             </div>
                             {showPeakExtras ? (
@@ -1834,7 +1833,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       );
                     })()}
                   </Tooltip>
-                  <div className="mb-3 text-center text-xs leading-relaxed text-white/50">
+                  <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                     {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
                   </div>
                   <div
@@ -1849,10 +1848,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
                 {/* Jauge Avg Winning Trade */}
                 <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
-                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-white/70 sm:mb-4">
+                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:mb-4">
                     {t('dashboard:avgWinning')}
                   </h3>
-                  <div className="relative mx-auto mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/5 sm:mb-4 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]">
+                  <div className="relative mx-auto mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700/50 sm:mb-4 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]">
                     <svg className="w-full h-full transform -rotate-90 absolute top-0 left-0" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
                       <circle
                         cx="70"
@@ -1877,12 +1876,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="px-1 text-center text-[10px] font-bold text-white/90 sm:text-sm">
+                      <div className="px-1 text-center text-[10px] font-bold text-gray-900 dark:text-gray-100 sm:text-sm">
                         {formatCurrency(tradingMetrics.avgWinningTrade, currencySymbol)}
                       </div>
                     </div>
                   </div>
-                  <div className="mb-3 text-center text-xs leading-relaxed text-white/50">
+                  <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                     {t('dashboard:objective')}: {formatCurrency(gaugeObjectives?.avgWinning || 0, currencySymbol)}
                   </div>
                   <div
@@ -1897,10 +1896,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
                 {/* Jauge Avg Losing Trade */}
                 <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
-                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-white/70 sm:mb-4">
+                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:mb-4">
                     {t('dashboard:avgLosing')}
                   </h3>
-                  <div className="relative mx-auto mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/5 sm:mb-4 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]">
+                  <div className="relative mx-auto mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700/50 sm:mb-4 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]">
                     <svg className="w-full h-full transform -rotate-90 absolute top-0 left-0" viewBox="0 0 140 140" preserveAspectRatio="xMidYMid meet">
                       <circle
                         cx="70"
@@ -1925,12 +1924,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       />
                     </svg>
                     <div className="relative z-10 flex flex-col items-center justify-center">
-                      <div className="px-1 text-center text-[10px] font-bold text-white/90 sm:text-sm">
+                      <div className="px-1 text-center text-[10px] font-bold text-gray-900 dark:text-gray-100 sm:text-sm">
                         {formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}
                       </div>
                     </div>
                   </div>
-                  <div className="mb-3 text-center text-xs leading-relaxed text-white/50">
+                  <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                     {t('dashboard:objective')}: &lt; {formatCurrency(gaugeObjectives?.avgLosing || 0, currencySymbol)}
                   </div>
                   <div
@@ -1951,7 +1950,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
             <div className="h-full flex flex-col min-h-0">
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 items-stretch">
               <ModernStatCard
-                theme="band"
+                theme="default"
                 label={t('dashboard:totalPnL')}
                 labelTooltip={t('dashboard:totalPnlTransactionsHintTooltip', {
                   defaultValue:
@@ -1959,17 +1958,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 })}
                 value={
                   <div className="flex flex-col w-full gap-1.5">
-                    <span className="break-words text-2xl font-semibold text-white/90">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
+                    <span className="break-words text-2xl font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(additionalStats.totalPnl, currencySymbol)}</span>
                     <div className="flex flex-col gap-1">
                       <Tooltip content={t('statistics:overview.currentWinningStreakTooltip', { defaultValue: 'Nombre de jours consécutifs avec un P/L positif' })}>
                         <span className="inline-flex items-center justify-between gap-2 cursor-help">
-                          <span className="whitespace-nowrap text-xs text-white/50">
+                          <span className="whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
                             {t('statistics:overview.currentWinningStreak', { defaultValue: 'Profit Streak' })}
                           </span>
                           <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-center text-xs font-semibold ${
                             additionalStats.currentWinningStreakDays > 0 
                               ? 'bg-emerald-500/15 text-emerald-400' 
-                              : 'bg-white/10 text-white/50'
+                              : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                           }`}>
                             {additionalStats.currentWinningStreakDays || 0} {(additionalStats.currentWinningStreakDays || 0) === 1 ? t('statistics:overview.day', { defaultValue: 'jour' }) : t('statistics:overview.days', { defaultValue: 'jours' })}
                           </span>
@@ -1977,7 +1976,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       </Tooltip>
                       <Tooltip content={t('statistics:overview.maxWinningStreakTooltip', { defaultValue: 'Record de jours consécutifs avec un P/L positif' })}>
                         <span className="inline-flex items-center justify-between gap-2 cursor-help">
-                          <span className="whitespace-nowrap text-xs text-white/50">
+                          <span className="whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
                             {t('statistics:overview.maxWinningStreak', { defaultValue: 'Record' })}
                           </span>
                           <span className="inline-block whitespace-nowrap rounded-full bg-amber-500/15 px-2 py-0.5 text-center text-xs font-semibold text-amber-400">
@@ -2019,17 +2018,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               />
               
               <ModernStatCard
-                theme="band"
+                theme="default"
                 label={t('dashboard:profitFactor')}
                 value={
                   <div className="w-full flex flex-col h-full">
-                    <div className="text-2xl font-semibold text-white/90">
+                    <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                       {formatNumber(additionalStats.profitFactor, 2)}
                     </div>
                     <div className="flex-1 flex items-center">
                       <div className="w-full py-6">
                         <MetricGauge
-                          theme="band"
+                          theme="default"
                           label=""
                           value={additionalStats.profitFactor}
                           config={GAUGE_CONFIGS.profitFactor}
@@ -2059,7 +2058,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               />
               
               <ModernStatCard
-                theme="band"
+                theme="default"
                 label={t('dashboard:wlRatio')}
                 value={(() => {
                   const wlRatio = tradingMetrics.avgWinningTrade !== 0 && tradingMetrics.avgLosingTrade !== 0
@@ -2067,13 +2066,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     : 0;
                   return (
                     <div className="w-full flex flex-col h-full">
-                      <div className="text-2xl font-semibold text-white/90">
+                      <div className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
                         {formatNumber(wlRatio, 2)}
                       </div>
                       <div className="flex-1 flex items-center">
                         <div className="w-full py-6">
                           <MetricGauge
-                            theme="band"
+                            theme="default"
                             label=""
                             value={wlRatio}
                             config={GAUGE_CONFIGS.winLossRatio}
@@ -2104,7 +2103,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               >
                 <div className="h-full w-full">
                   <ModernStatCard
-                    theme="band"
+                    theme="default"
                     label={(() => {
                       // Utiliser complianceStats.current_streak si disponible (inclut les jours sans trades)
                       // Sinon utiliser additionalStats (seulement les jours avec trades)
@@ -2175,7 +2174,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               >
                 <div className="h-full w-full">
                   <ModernStatCard
-                    theme="band"
+                    theme="default"
                     label={t('dashboard:sequenceRespect')}
                     value={(() => {
                       return `${disciplineBestStreakDays} ${t('dashboard:days')}`;
@@ -2224,7 +2223,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
               >
                 <div className="h-full w-full">
                   <ModernStatCard
-                    theme="band"
+                    theme="default"
                     label={t('dashboard:sequenceNotRespect')}
                     value={`${additionalStats.maxConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`}
                     variant={additionalStats.maxConsecutiveDaysNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'warning' : 'default'}
@@ -2278,7 +2277,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                         max={defaultEndDate}
                       />
                     </div>
-                    <span className="shrink-0 font-medium text-white/40">–</span>
+                    <span className="shrink-0 font-medium text-gray-400 dark:text-gray-500">–</span>
                     {/* End Date Picker */}
                     <div className="relative min-w-0 flex-1 max-w-[120px] sm:max-w-[140px]">
                       <div className={`absolute -top-2 left-2 z-10 px-1 text-[10px] font-medium ${DASHBOARD_PANEL_HINT_CLASS}`}>
@@ -2298,13 +2297,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 {!privacySettings.hideProfitLoss && !privacySettings.hideCurrentBalance && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs sm:text-sm">
                     <div className="flex items-center gap-1">
-                      <span className="text-white/50">{t('dashboard:highest')} :</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('dashboard:highest')} :</span>
                       <span className={`font-medium ${performanceStats.highestValue >= 0 ? DASHBOARD_PNL_POSITIVE_TEXT_CLASS : DASHBOARD_PNL_NEGATIVE_TEXT_CLASS}`}>
                         {formatCurrency(performanceStats.highestValue || 0, currencySymbol)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-white/50">{t('dashboard:lowest')} :</span>
+                      <span className="text-gray-500 dark:text-gray-400">{t('dashboard:lowest')} :</span>
                       <span className={`font-medium ${performanceStats.lowestValue >= 0 ? DASHBOARD_PNL_POSITIVE_TEXT_CLASS : DASHBOARD_PNL_NEGATIVE_TEXT_CLASS}`}>
                         {formatCurrency(performanceStats.lowestValue || 0, currencySymbol)}
                       </span>
@@ -2352,7 +2351,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     <h3 className={`text-lg font-bold ${DASHBOARD_PANEL_TITLE_CLASS}`}>{t('dashboard:dailyGainsLossesEvolution')}</h3>
                   </div>
                   {waterfallStats && (
-                    <div className="mb-2 flex flex-wrap items-center gap-4 text-sm text-white/60">
+                    <div className="mb-2 flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                       {!privacySettings.hideProfitLoss && (
                         <>
                           <div className="flex items-center gap-1">
@@ -2369,7 +2368,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       )}
                       <div className="flex items-center gap-1">
                         <span>{t('dashboard:winningDays')} :</span>
-                        <span className="font-medium text-white/80">{waterfallStats.positiveDays}/{waterfallStats.tradingDaysCount} ({formatNumber(waterfallStats.winRate, 1)}%)</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{waterfallStats.positiveDays}/{waterfallStats.tradingDaysCount} ({formatNumber(waterfallStats.winRate, 1)}%)</span>
                       </div>
                     </div>
                   )}
@@ -2456,19 +2455,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             minRotation: 0,
                             autoSkip: true,
                             maxTicksLimit: 24,
-                            color: DASHBOARD_CHART_TICK,
+                            color: dashboardChartAxis.tick,
                             font: {
                               size: 11
                             }
                           },
                           border: {
-                            color: DASHBOARD_CHART_BORDER,
+                            color: dashboardChartAxis.border,
                           },
                         },
                         y: {
                           beginAtZero: true,
                           grid: {
-                            color: DASHBOARD_CHART_GRID,
+                            color: dashboardChartAxis.grid,
                             lineWidth: 1,
                           },
                           ticks: {
@@ -2476,13 +2475,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             callback: function(value: any) {
                               return formatCurrency(value, currencySymbol);
                             },
-                            color: DASHBOARD_CHART_TICK,
+                            color: dashboardChartAxis.tick,
                             font: {
                               size: 11
                             }
                           },
                           border: {
-                            color: DASHBOARD_CHART_BORDER,
+                            color: dashboardChartAxis.border,
                             display: false,
                           },
                         }
@@ -2527,7 +2526,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       )}
 
       {!isLoading && accountBalanceData.length === 0 && !durationDistribution.some(d => d.total > 0) && waterfallData.length === 0 && weekdayPerformanceData.length === 0 && !tradingMetrics && (
-        <DashboardPanel padding="large" className="text-center text-white/60">
+        <DashboardPanel padding="large" className="text-center text-gray-500 dark:text-gray-400">
           <p>{t('dashboard:noDataForPeriod')}</p>
         </DashboardPanel>
       )}

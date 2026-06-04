@@ -5,10 +5,26 @@ type IconProps = { className?: string; size?: number };
 
 /** Icônes Lucide (MIT) + SVG minimalistes pour le bandeau cours. */
 const INSTRUMENT_LUCIDE: Record<string, LucideIcon> = {
-  nasdaq: TrendingUp,
   sp500: Landmark,
   bitcoin: Bitcoin,
 };
+
+/** Monogramme « N » anguleux — évocateur Nasdaq, lisible à 16px (pas le logo officiel). */
+function NasdaqIcon({ className, size = 16 }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden
+      fill="currentColor"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M6 4.5h2.6l7.8 12.2V4.5H19v15h-2.6L8.6 7.3V19.5H6V4.5z" />
+    </svg>
+  );
+}
 
 /** Trois lingots empilés — lecture immédiate « or » à petite taille. */
 function GoldIcon({ className, size = 16 }: IconProps) {
@@ -63,6 +79,9 @@ export function MarketQuoteInstrumentIcon({
 }) {
   if (instrumentKey === 'eurusd') {
     return <EurUsdIcon className={className} />;
+  }
+  if (instrumentKey === 'nasdaq') {
+    return <NasdaqIcon className={className} size={16} />;
   }
   if (instrumentKey === 'gold') {
     return <GoldIcon className={className} size={16} />;

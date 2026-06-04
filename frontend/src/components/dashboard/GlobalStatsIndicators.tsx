@@ -44,21 +44,33 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
   const { t } = useTranslation();
 
   const getDisciplineColor = (rate: number) => {
-    if (rate >= 80) return 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10';
-    if (rate >= 60) return 'text-amber-400 border-amber-400/30 bg-amber-500/10';
-    return 'text-red-400 border-red-400/30 bg-red-500/10';
+    if (rate >= 80) {
+      return 'text-emerald-700 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-400/30 dark:bg-emerald-500/10';
+    }
+    if (rate >= 60) {
+      return 'text-amber-700 border-amber-200 bg-amber-50 dark:text-amber-400 dark:border-amber-400/30 dark:bg-amber-500/10';
+    }
+    return 'text-red-700 border-red-200 bg-red-50 dark:text-red-400 dark:border-red-400/30 dark:bg-red-500/10';
   };
 
   const getPnLColor = (pnl: number) => {
-    if (pnl > 0) return 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10';
-    if (pnl < 0) return 'text-red-400 border-red-400/30 bg-red-500/10';
-    return 'text-white/70 border-white/15 bg-white/5';
+    if (pnl > 0) {
+      return 'text-blue-700 border-blue-200 bg-blue-50 dark:text-blue-400 dark:border-blue-400/30 dark:bg-blue-500/10';
+    }
+    if (pnl < 0) {
+      return 'text-pink-700 border-pink-200 bg-pink-50 dark:text-pink-400 dark:border-pink-400/30 dark:bg-pink-500/10';
+    }
+    return 'text-gray-600 border-gray-200 bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700/50';
   };
 
   const getWinRateColor = (rate: number) => {
-    if (rate >= 60) return 'text-emerald-400 border-emerald-400/30 bg-emerald-500/10';
-    if (rate >= 45) return 'text-amber-400 border-amber-400/30 bg-amber-500/10';
-    return 'text-red-400 border-red-400/30 bg-red-500/10';
+    if (rate >= 60) {
+      return 'text-emerald-700 border-emerald-200 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-400/30 dark:bg-emerald-500/10';
+    }
+    if (rate >= 45) {
+      return 'text-amber-700 border-amber-200 bg-amber-50 dark:text-amber-400 dark:border-amber-400/30 dark:bg-amber-500/10';
+    }
+    return 'text-red-700 border-red-200 bg-red-50 dark:text-red-400 dark:border-red-400/30 dark:bg-red-500/10';
   };
 
   const formatPnL = (value: number) => {
@@ -75,8 +87,8 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
     if (trend === undefined || trend === 0) return null;
     
     const trendColor = (isPositive && trend > 0) || (!isPositive && trend < 0)
-      ? 'text-emerald-400'
-      : 'text-red-400';
+      ? 'text-emerald-600 dark:text-emerald-400'
+      : 'text-red-600 dark:text-red-400';
     
     return (
       <div className={`flex items-center gap-0.5 text-xs font-medium ${trendColor}`}>
@@ -150,7 +162,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
             </svg>
           </div>
           <div className="flex min-w-0 flex-col justify-center">
-            <div className="text-xs font-medium text-white/50 whitespace-nowrap">
+            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
               {t('dashboard:globalDiscipline', { defaultValue: 'Discipline' })}
             </div>
             <div className="flex items-center gap-1">
@@ -178,7 +190,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
         <div
           className={`${cardShell} ${
             hideCurrentBalance
-              ? 'text-white/50 border-white/15 bg-white/5'
+              ? 'text-gray-600 border-gray-200 bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:bg-gray-700/50'
               : getPnLColor(totalPnL)
           }`}
         >
@@ -188,7 +200,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
             </svg>
           </div>
           <div className="flex min-w-0 flex-col justify-center">
-            <div className="text-xs font-medium text-white/50 whitespace-nowrap">
+            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
               {t('dashboard:globalPnL', { defaultValue: 'PnL Global' })}
             </div>
             <div className="flex items-center gap-1">
@@ -215,7 +227,7 @@ export const GlobalStatsIndicators: React.FC<GlobalStatsIndicatorsProps> = ({
               </svg>
             </div>
             <div className="flex min-w-0 flex-col justify-center">
-              <div className="text-xs font-medium text-white/50 whitespace-nowrap">
+              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">
                 {t('dashboard:globalWinRate', { defaultValue: 'Win Rate' })}
               </div>
               <div className="flex items-center gap-1">

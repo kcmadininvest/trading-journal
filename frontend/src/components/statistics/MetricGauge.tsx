@@ -214,7 +214,9 @@ export const MetricGauge: React.FC<MetricGaugeProps> = ({
         return (
           <div
             key={index}
-            className={`absolute top-0 bottom-0 w-px ${isBand ? 'bg-white/25' : 'bg-gray-400 dark:bg-gray-600'}`}
+            className={`absolute top-0 bottom-0 w-px ${
+              isBand ? 'bg-white/25' : 'bg-gray-300/80 dark:bg-white/12'
+            }`}
             style={{ left: `${thresholdPercentage}%` }}
           >
             {showLabels && (

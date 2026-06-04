@@ -265,14 +265,15 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
     );
 
   const isBand = variant === 'band';
-  const bandButtonClass =
-    activeOverridesCount > 0
-      ? 'h-9 w-9 items-center justify-center rounded-lg bg-blue-500/80 text-white hover:bg-blue-500'
-      : 'h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white hover:bg-white/15';
-  const defaultButtonClass = `flex items-center gap-2 rounded-lg px-4 py-2 transition-colors ${
-    activeOverridesCount > 0
-      ? 'bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
-      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+  const activeTriggerClass =
+    'border-sky-300 bg-sky-50 text-sky-700 hover:border-sky-400 hover:bg-sky-100 dark:border-sky-500/45 dark:bg-sky-500/15 dark:text-sky-300 dark:hover:border-sky-400/55 dark:hover:bg-sky-500/25';
+  const inactiveTriggerClass =
+    'border-gray-300 bg-white text-gray-600 shadow-sm hover:border-gray-400 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:border-gray-500 dark:hover:bg-gray-600/80';
+  const bandButtonClass = `relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md border transition-colors ${
+    activeOverridesCount > 0 ? activeTriggerClass : inactiveTriggerClass
+  }`;
+  const defaultButtonClass = `inline-flex h-10 shrink-0 items-center gap-1.5 rounded-md border px-3 text-sm shadow-sm transition-colors ${
+    activeOverridesCount > 0 ? activeTriggerClass : inactiveTriggerClass
   }`;
 
   return (
@@ -285,11 +286,11 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
           type="button"
           onClick={() => setIsOpen((open) => !open)}
           disabled={isSaving && !isOpen}
-          className={`inline-flex transition-colors ${isBand ? `relative ${bandButtonClass}` : defaultButtonClass} ${
+          className={`${isBand ? bandButtonClass : defaultButtonClass} ${
             isSaving && !isOpen ? 'cursor-wait' : ''
           }`}
         >
-          <svg className={isBand ? 'h-4 w-4' : 'h-5 w-5'} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {activeOverridesCount > 0 ? (
               <path
                 strokeLinecap="round"
@@ -307,12 +308,12 @@ export const PrivacyDropdown: React.FC<PrivacyDropdownProps> = ({
             )}
           </svg>
           {activeOverridesCount > 0 && !isBand && (
-            <span className="inline-flex items-center justify-center rounded-full bg-white px-2 py-0.5 text-xs font-bold text-blue-600 dark:bg-gray-800 dark:text-blue-400">
+            <span className="inline-flex min-w-[1.125rem] items-center justify-center rounded-full bg-sky-600 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white dark:bg-sky-400 dark:text-slate-900">
               {activeOverridesCount}
             </span>
           )}
           {activeOverridesCount > 0 && isBand && (
-            <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-blue-400 px-1 text-[10px] font-bold text-white">
+            <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full border border-sky-200 bg-sky-600 px-1 text-[10px] font-bold leading-none text-white dark:border-sky-300/50 dark:bg-sky-400 dark:text-slate-900">
               {activeOverridesCount}
             </span>
           )}

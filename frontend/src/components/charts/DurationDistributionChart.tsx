@@ -16,13 +16,11 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, getChartColors, buildChartTooltipPlugin } from '../../utils/chartConfig';
 import {
-  DASHBOARD_CHART_BORDER,
-  DASHBOARD_CHART_GRID,
-  DASHBOARD_CHART_TICK,
   DASHBOARD_PANEL_SHELL_CLASS,
   DASHBOARD_PANEL_TITLE_CLASS,
   DASHBOARD_PNL_POSITIVE_BAR_BG,
   DASHBOARD_PNL_POSITIVE_BAR_BORDER,
+  getDashboardChartAxisColors,
 } from '../dashboard/tickerShell';
 
 // Register Chart.js components
@@ -53,6 +51,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
   const numberFormat = preferences.number_format;
   
   const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
+  const dashboardChartAxis = useMemo(() => getDashboardChartAxisColors(isDark), [isDark]);
 
   // Données du graphique
   const chartData = useMemo(() => {
@@ -138,7 +137,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
             family: CHART_FONT_FAMILY,
             size: 12
           },
-          color: DASHBOARD_CHART_TICK,
+          color: dashboardChartAxis.tick,
           boxWidth: 10,
           boxHeight: 10,
         }
@@ -192,14 +191,14 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         ticks: {
           maxRotation: 0,
           minRotation: 0,
-          color: DASHBOARD_CHART_TICK,
+          color: dashboardChartAxis.tick,
           font: {
             family: CHART_FONT_FAMILY,
             size: 11
           },
         },
         border: {
-          color: DASHBOARD_CHART_BORDER,
+          color: dashboardChartAxis.border,
         },
       },
       y: {
@@ -207,21 +206,21 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
         beginAtZero: true,
         max: yAxisConfig.max,
         grid: {
-          color: DASHBOARD_CHART_GRID,
+          color: dashboardChartAxis.grid,
           lineWidth: 1,
         },
         ticks: {
           stepSize: yAxisConfig.stepSize,
           precision: 0,
           callback: (value: string | number) => formatNumber(Number(value), 0, numberFormat),
-          color: DASHBOARD_CHART_TICK,
+          color: dashboardChartAxis.tick,
           font: {
             family: CHART_FONT_FAMILY,
             size: 11
           },
         },
         border: {
-          color: DASHBOARD_CHART_BORDER,
+          color: dashboardChartAxis.border,
           display: false,
         },
       }
@@ -235,7 +234,7 @@ function DurationDistributionChart({ bins }: DurationDistributionChartProps) {
       duration: 1000,
       easing: 'easeInOutQuart' as const
     }
-  }), [chartColors, yAxisConfig, isDark, numberFormat, t]);
+  }), [chartColors, dashboardChartAxis, yAxisConfig, isDark, numberFormat, t]);
 
   return (
     <div className={`${DASHBOARD_PANEL_SHELL_CLASS} p-4 sm:p-6`}>
