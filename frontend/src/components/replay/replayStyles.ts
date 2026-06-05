@@ -23,7 +23,7 @@ export function getReplayPnlTextClass(value: number): string {
   return 'text-gray-500 dark:text-gray-400';
 }
 
-/** Palette SVG du bandeau marché replay (bleu haussier / rose baissier + gris futur). */
+/** Palette SVG du bandeau marché replay (bleu haussier / blanc baissier + gris futur). */
 export interface MarketTapeTheme {
   background: string;
   chartBgTop: string;
@@ -51,7 +51,7 @@ export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
   const pnl = getReplayPnlColors(isDark);
   const cursor = isDark ? '#06b6d4' : '#2563eb';
   const fillDot = isDark ? '#22d3ee' : '#2563eb';
-  /** Orange / ambre : contrastent avec les bougies baissières rose (#f472b6), contrairement au rouge PnL. */
+  /** Orange / ambre : contrastent avec les bougies baissières blanches, contrairement au rouge PnL. */
   const entryShort = isDark ? '#fb923c' : '#ea580c';
   const exitLoss = isDark ? '#eab308' : '#ca8a04';
 
@@ -63,7 +63,7 @@ export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
       border: 'rgba(255,255,255,0.1)',
       gridLine: '#ffffff',
       bullFill: '#3b82f6',
-      bearFill: '#f472b6',
+      bearFill: '#ffffff',
       wickFill: '#334155',
       futureFill: '#64748b',
       cursor,
@@ -86,7 +86,7 @@ export function getMarketTapeTheme(isDark: boolean): MarketTapeTheme {
     border: '#e5e7eb',
     gridLine: '#64748b',
     bullFill: '#3b82f6',
-    bearFill: '#f472b6',
+    bearFill: '#ffffff',
     wickFill: '#1e293b',
     futureFill: '#d1d5db',
     cursor,

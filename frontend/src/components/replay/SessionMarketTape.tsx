@@ -71,6 +71,7 @@ const ModernCandle: React.FC<{
   const bodyBottom = Math.max(yO, yC);
   const bodyH = Math.max(2.5, bodyBottom - bodyTop);
   const bodyColor = future ? theme.futureFill : up ? theme.bullFill : theme.bearFill;
+  const isBear = !up && !future;
 
   return (
     <g>
@@ -92,6 +93,8 @@ const ModernCandle: React.FC<{
         height={bodyH}
         rx={BODY_RX}
         fill={bodyColor}
+        stroke={isBear ? theme.wickFill : undefined}
+        strokeWidth={isBear ? 1 : 0}
       />
       {bodyBottom < yL - 0.5 && (
         <line

@@ -58,7 +58,16 @@ export const TapeGlyphBullCandle: React.FC<GlyphProps> = ({ theme, size = ICON }
 export const TapeGlyphBearCandle: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
     <line x1={11} y1={3} x2={11} y2={6} stroke={theme.wickFill} strokeWidth={0.5} strokeLinecap="round" />
-    <rect x={7.5} y={6} width={7} height={9} rx={2} fill={theme.bearFill} />
+    <rect
+      x={7.5}
+      y={6}
+      width={7}
+      height={9}
+      rx={2}
+      fill={theme.bearFill}
+      stroke={theme.wickFill}
+      strokeWidth={1}
+    />
     <line x1={11} y1={15} x2={11} y2={19} stroke={theme.wickFill} strokeWidth={0.5} strokeLinecap="round" />
   </svg>
 );
