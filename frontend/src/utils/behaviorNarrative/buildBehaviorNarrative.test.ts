@@ -226,6 +226,47 @@ describe('buildBehaviorNarrative', () => {
     const strengths = sections.find((s) => s.id === 'strengths');
     expect(strengths?.paragraphs.some((p) => p.includes('expectancyPositive'))).toBe(false);
   });
+
+  it('affiche le créneau horaire le moins performant', () => {
+    const sections = buildBehaviorNarrative({
+      context: baseContext({ tone: 'excellent' }),
+      t,
+      formatNumber,
+      formatCurrency,
+      formatDate,
+      currencySymbol: '$',
+    });
+
+    const timeWindows = sections.find((s) => s.id === 'timeWindows');
+    expect(timeWindows).toBeDefined();
+    expect(timeWindows!.paragraphs.some((p) => p.includes('bestHoursCelebrate'))).toBe(true);
+    expect(timeWindows!.paragraphs.some((p) => p.includes('17h - 18h'))).toBe(true);
+    expect(timeWindows!.paragraphs.some((p) => p.includes('worstHourCelebrate'))).toBe(true);
+    expect(timeWindows!.paragraphs.some((p) => p.includes('18h - 19h'))).toBe(true);
+    expect(timeWindows!.paragraphs.some((p) => p.includes('"pnl"'))).toBe(false);
+  });
+
+  it('affiche le pire créneau sans montant en multi-devises', () => {
+    const sections = buildBehaviorNarrative({
+      context: baseContext({
+        monetaryNarrativesEnabled: false,
+        aggregationMode: 'multi_mixed_no_money',
+      }),
+      t,
+      formatNumber,
+      formatCurrency,
+      formatDate,
+      currencySymbol: '',
+    });
+
+    const timeWindows = sections.find((s) => s.id === 'timeWindows');
+    expect(
+      timeWindows?.paragraphs.some(
+        (p) => p.includes('worstHourCelebrate') || p.includes('worstHour'),
+      ),
+    ).toBe(true);
+    expect(timeWindows?.paragraphs.some((p) => p.includes('"pnl"'))).toBe(false);
+  });
 });
 
 describe('aggregateHourlyPerformance', () => {

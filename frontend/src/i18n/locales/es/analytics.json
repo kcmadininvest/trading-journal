@@ -460,7 +460,10 @@
       },
       "bestHours": "Rinde claramente mejor hacia {{hours}} (zona horaria {{timezone}}).",
       "bestHoursCelebrate": "Enhorabuena: sus mejores resultados se concentran hacia {{hours}} (zona horaria {{timezone}}).",
-      "worstHourEncourage": "La franja {{hour}} es menos favorable ({{pnl}} en el período) — rinde mejor en otros horarios; conviene evitarla por ahora (zona horaria {{timezone}}).",
+      "worstHour": "Su rendimiento más débil se concentra en la franja {{hour}} (zona horaria {{timezone}}).",
+      "worstHourCelebrate": "En cambio, la franja {{hour}} es la menos productiva (zona horaria {{timezone}}).",
+      "worstHourEncourage": "La franja {{hour}} es menos favorable — rinde mejor en otros horarios; conviene evitarla por ahora (zona horaria {{timezone}}).",
+      "worstHourNoMoney": "Su rendimiento más débil se concentra en la franja {{hour}} (zona horaria {{timezone}}).",
       "weekdays": "{{bestDay}} es su mejor día ({{bestWinRate}} % de acierto, {{bestPnl}}), {{worstDay}} el más delicado.",
       "weekdaysCelebrate": "Felicitaciones: {{bestDay}} es su día más fuerte ({{bestWinRate}} % de acierto, {{bestPnl}}), mientras {{worstDay}} pide más prudencia.",
       "weekdaysNoMoney": "{{bestDay}} mejor día ({{bestWinRate}} %), {{worstDay}} más débil — importes ocultos."

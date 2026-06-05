@@ -463,7 +463,10 @@
       },
       "bestHours": "Vous performez nettement mieux vers {{hours}} (fuseau {{timezone}}).",
       "bestHoursCelebrate": "Bravo : vos meilleures performances se concentrent vers {{hours}} (fuseau {{timezone}}).",
-      "worstHourEncourage": "La plage {{hour}} est moins favorable ({{pnl}} sur la période) — vous performez mieux ailleurs ; à éviter pour l'instant (fuseau {{timezone}}).",
+      "worstHour": "Votre performance est la plus faible sur le créneau {{hour}} (fuseau {{timezone}}).",
+      "worstHourCelebrate": "En revanche, le créneau {{hour}} est le moins performant (fuseau {{timezone}}).",
+      "worstHourEncourage": "Le créneau {{hour}} est moins favorable — vous performez mieux ailleurs ; à éviter pour l'instant (fuseau {{timezone}}).",
+      "worstHourNoMoney": "Votre performance est la plus faible sur le créneau {{hour}} (fuseau {{timezone}}).",
       "weekdays": "{{bestDay}} est votre meilleur jour (win rate {{bestWinRate}} %, {{bestPnl}}), {{worstDay}} le plus délicat.",
       "weekdaysCelebrate": "Félicitations : {{bestDay}} est votre jour le plus fort ({{bestWinRate}} % de win rate, {{bestPnl}}), alors que {{worstDay}} demande plus de prudence.",
       "weekdaysNoMoney": "{{bestDay}} est votre meilleur jour (win rate {{bestWinRate}} %), {{worstDay}} le plus délicat — montants agrégés masqués (devises multiples)."

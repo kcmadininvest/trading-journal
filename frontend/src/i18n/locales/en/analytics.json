@@ -463,7 +463,10 @@
       },
       "bestHours": "You perform clearly better around {{hours}} ({{timezone}} timezone).",
       "bestHoursCelebrate": "Well done: your best results cluster around {{hours}} ({{timezone}} timezone).",
-      "worstHourEncourage": "The {{hour}} slot is weaker ({{pnl}} on the period) — you perform better elsewhere; worth avoiding for now ({{timezone}} timezone).",
+      "worstHour": "Your weakest performance is on the {{hour}} slot ({{timezone}} timezone).",
+      "worstHourCelebrate": "Conversely, the {{hour}} slot is your least productive ({{timezone}} timezone).",
+      "worstHourEncourage": "The {{hour}} slot is weaker — you perform better elsewhere; worth avoiding for now ({{timezone}} timezone).",
+      "worstHourNoMoney": "Your weakest performance is on the {{hour}} slot ({{timezone}} timezone).",
       "weekdays": "{{bestDay}} is your best day ({{bestWinRate}} % win rate, {{bestPnl}}), {{worstDay}} the trickiest.",
       "weekdaysCelebrate": "Congratulations: {{bestDay}} is your strongest day ({{bestWinRate}} % win rate, {{bestPnl}}), while {{worstDay}} needs more caution.",
       "weekdaysNoMoney": "{{bestDay}} is your best day ({{bestWinRate}} % win rate), {{worstDay}} the trickiest — aggregated amounts hidden (multiple currencies)."

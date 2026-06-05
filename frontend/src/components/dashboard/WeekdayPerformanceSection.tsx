@@ -18,6 +18,7 @@ import {
   DASHBOARD_PNL_POSITIVE_BAR_BG,
   DASHBOARD_PNL_POSITIVE_BAR_BORDER,
   DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
+  getDashboardChartAxisColors,
 } from './tickerShell';
 
 const WEEKDAY_PANEL_CLASS = `${DASHBOARD_PANEL_SHELL_CLASS} p-4 sm:p-6`;
@@ -93,6 +94,10 @@ export function WeekdayPerformanceSection({
   variant,
 }: WeekdayPerformanceSectionProps) {
   const { t } = useTranslation(['dashboard', 'trades', 'common']);
+
+  const dashboardChartAxis = useMemo(() => getDashboardChartAxisColors(isDark), [isDark]);
+  const dataLabelColor = windowWidth < 640 ? '#f1f5f9' : chartColors.text;
+  const zeroAxisGridColor = isDark ? 'rgba(255, 255, 255, 0.35)' : chartColors.textSecondary;
 
   const hasTrades = weekdayPerformanceData.some((d) => d.trade_count > 0);
 
@@ -290,7 +295,7 @@ export function WeekdayPerformanceSection({
                     const value = context.dataset.data[context.dataIndex];
                     return value >= 0 ? 'top' : 'bottom';
                   },
-                  color: '#e2e8f0',
+                  color: dataLabelColor,
                   font: {
                     weight: 700,
                     size: windowWidth < 640 ? 11 : 13,
@@ -311,8 +316,8 @@ export function WeekdayPerformanceSection({
               scales: {
                 x: {
                   grid: { display: false },
-                  ticks: { color: 'rgba(255, 255, 255, 0.55)', font: { size: 12 } },
-                  border: { color: 'rgba(255, 255, 255, 0.12)' },
+                  ticks: { color: dashboardChartAxis.tick, font: { size: 12 } },
+                  border: { color: dashboardChartAxis.border },
                   title: { display: false },
                 },
                 y: {
@@ -325,9 +330,9 @@ export function WeekdayPerformanceSection({
                   grid: {
                     color(context: any) {
                       if (Math.abs(context.tick.value) < 0.0001) {
-                        return 'rgba(255, 255, 255, 0.35)';
+                        return zeroAxisGridColor;
                       }
-                      return 'rgba(255, 255, 255, 0.08)';
+                      return dashboardChartAxis.grid;
                     },
                     lineWidth: 1,
                   },
@@ -336,13 +341,13 @@ export function WeekdayPerformanceSection({
                     callback(value: number | string) {
                       return formatCurrency(Number(value), currencySymbol);
                     },
-                    color: 'rgba(255, 255, 255, 0.55)',
+                    color: dashboardChartAxis.tick,
                     font: { size: 11 },
                     stepSize: weekdayYAxisLimits.stepSize,
                     maxTicksLimit: 10,
                     padding: 5,
                   },
-                  border: { color: 'rgba(255, 255, 255, 0.12)', display: false },
+                  border: { color: dashboardChartAxis.border, display: false },
                 },
               },
               animation: { duration: 1000, easing: 'easeInOutQuart' },
@@ -413,7 +418,7 @@ export function WeekdayPerformanceSection({
                 },
                 anchor: 'end' as const,
                 align: 'top' as const,
-                color: '#e2e8f0',
+                color: dataLabelColor,
                 font: {
                   weight: 700,
                   size: windowWidth < 640 ? 11 : 13,
@@ -434,8 +439,8 @@ export function WeekdayPerformanceSection({
             scales: {
               x: {
                 grid: { display: false },
-                ticks: { color: 'rgba(255, 255, 255, 0.55)', font: { size: 12 } },
-                border: { color: 'rgba(255, 255, 255, 0.12)' },
+                ticks: { color: dashboardChartAxis.tick, font: { size: 12 } },
+                border: { color: dashboardChartAxis.border },
                 title: { display: false },
               },
               y: {
@@ -446,20 +451,20 @@ export function WeekdayPerformanceSection({
                 min: 0,
                 max: 100,
                 grid: {
-                  color: 'rgba(255, 255, 255, 0.08)',
+                  color: dashboardChartAxis.grid,
                   lineWidth: 1,
                 },
                 ticks: {
                   callback(value: number | string) {
                     return `${formatNumber(Number(value), 0)}%`;
                   },
-                  color: 'rgba(255, 255, 255, 0.55)',
+                  color: dashboardChartAxis.tick,
                   font: { size: 11 },
                   stepSize: 20,
                   maxTicksLimit: 6,
                   padding: 5,
                 },
-                border: { color: 'rgba(255, 255, 255, 0.12)', display: false },
+                border: { color: dashboardChartAxis.border, display: false },
               },
             },
             animation: { duration: 1000, easing: 'easeInOutQuart' },

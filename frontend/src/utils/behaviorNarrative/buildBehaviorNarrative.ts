@@ -17,8 +17,12 @@ import {
 } from './types';
 import type { NarrativeHighlight } from './types';
 
-function formatHourLabel(hour: number): string {
-  return `${hour}h`;
+function formatHourSlotLabel(hour: number): string {
+  return `${hour}h - ${hour + 1}h`;
+}
+
+function formatHourSlotLabels(hours: number[]): string {
+  return hours.map(formatHourSlotLabel).join(', ');
 }
 
 function isCelebrateTone(tone: NarrativeTone): boolean {
@@ -30,10 +34,29 @@ function pickTopHours(
   minTrades: number,
 ) {
   const eligible = hourly.filter((h) => h.tradeCount >= minTrades);
+  if (eligible.length < 2) {
+    return {
+      best: [...eligible]
+        .sort((a, b) => b.totalPnl - a.totalPnl)
+        .filter((h) => h.totalPnl > 0)
+        .slice(0, 2),
+      worst: null,
+    };
+  }
+
   const sorted = [...eligible].sort((a, b) => b.totalPnl - a.totalPnl);
   const best = sorted.filter((h) => h.totalPnl > 0).slice(0, 2);
-  const worst = [...eligible].sort((a, b) => a.totalPnl - b.totalPnl).find((h) => h.totalPnl < 0);
+  const worst = [...eligible].sort((a, b) => a.totalPnl - b.totalPnl)[0] ?? null;
   return { best, worst };
+}
+
+function shouldShowWorstHour(
+  best: ReturnType<typeof pickTopHours>['best'],
+  worst: ReturnType<typeof pickTopHours>['worst'],
+): boolean {
+  if (!worst) return false;
+  if (best.length === 0) return true;
+  return worst.hour !== best[0].hour;
 }
 
 function pickWeekdayExtremes(weekday: BuildBehaviorNarrativeInput['context']['weekday']) {
@@ -253,7 +276,7 @@ function buildTimeWindowsSection(input: BuildBehaviorNarrativeInput): NarrativeS
   const paragraphs: string[] = [];
 
   if (best.length > 0) {
-    const hours = best.map((h) => formatHourLabel(h.hour)).join(', ');
+    const hours = formatHourSlotLabels(best.map((h) => h.hour));
     const key = isCelebrateTone(tone)
       ? 'analytics:behaviorNarrative.timeWindows.bestHoursCelebrate'
       : 'analytics:behaviorNarrative.timeWindows.bestHours';
@@ -265,12 +288,17 @@ function buildTimeWindowsSection(input: BuildBehaviorNarrativeInput): NarrativeS
     );
   }
 
-  if (worst && monetary) {
+  if (shouldShowWorstHour(best, worst)) {
+    let worstKey = 'analytics:behaviorNarrative.timeWindows.worstHour';
+    if (isCelebrateTone(tone)) {
+      worstKey = 'analytics:behaviorNarrative.timeWindows.worstHourCelebrate';
+    } else if (tone === 'challenging') {
+      worstKey = 'analytics:behaviorNarrative.timeWindows.worstHourEncourage';
+    }
     paragraphs.push(
-      t('analytics:behaviorNarrative.timeWindows.worstHourEncourage', {
-        hour: formatHourLabel(worst.hour),
+      t(worstKey, {
+        hour: formatHourSlotLabel(worst!.hour),
         timezone: context.timezone,
-        pnl: formatCurrency(worst.totalPnl, currencySymbol),
       }),
     );
   }
