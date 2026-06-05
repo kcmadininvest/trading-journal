@@ -18,6 +18,16 @@
     <!-- Viewport and Theme -->
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem('theme');
+          var dark = pref === 'dark' ||
+            (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+        } catch (e) {}
+      })();
+    </script>
     
     <!-- SEO Meta Tags - Ces valeurs seront mises à jour dynamiquement par SEOHead selon la langue -->
     <meta name="description" content="Free professional trading journal - Track, analyze and optimize your trading performance with advanced tools. CSV import, multi-account, detailed statistics. 100% free, no hidden fees." />

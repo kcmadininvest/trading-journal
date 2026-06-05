@@ -57,6 +57,7 @@
   "theme": "Theme",
   "themeLight": "Light",
   "themeDark": "Dark",
+  "themeSystem": "System",
   "fontSize": "Font Size",
   "fontFamily": "Font Family",
   "fontSizeSmall": "Small",

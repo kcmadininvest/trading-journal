@@ -15,6 +15,7 @@ import {
   storeAppFontFamily,
   syncChartFontFamily,
 } from '../utils/chartConfig';
+import { applyThemePreference, isThemePreference, ThemePreference } from '../utils/theme';
 
 interface PreferencesContextType {
   preferences: UserPreferences;
@@ -27,16 +28,11 @@ interface PreferencesContextType {
 const PreferencesContext = createContext<PreferencesContextType | null>(null);
 
 // Lire le thème depuis localStorage immédiatement pour éviter le flash
-const getInitialTheme = (): 'light' | 'dark' => {
+const getInitialTheme = (): ThemePreference => {
   try {
     const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark' || savedTheme === 'light') {
-      // Appliquer immédiatement le thème au DOM avant le premier rendu
-      if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+    if (isThemePreference(savedTheme)) {
+      applyThemePreference(savedTheme);
       return savedTheme;
     }
   } catch {
@@ -123,14 +119,13 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           pnl_display: prefs.pnl_display === 'gross' ? 'gross' : 'net',
         });
         // Appliquer le thème immédiatement
-        const root = document.documentElement;
-        if (prefs.theme === 'dark') {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
+        const effectiveTheme: ThemePreference = isThemePreference(prefs.theme)
+          ? prefs.theme
+          : 'light';
+        applyThemePreference(effectiveTheme);
         
         // Appliquer la taille de police immédiatement
+        const root = document.documentElement;
         root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');
         root.classList.add(`font-size-${prefs.font_size || 'medium'}`);
         const effectiveFontFamily = prefs.font_family || DEFAULT_FONT_FAMILY;
@@ -140,7 +135,7 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
         
         // Sauvegarder le thème et la taille de police dans localStorage pour éviter le flash au prochain chargement
         try {
-          localStorage.setItem('theme', prefs.theme || 'light');
+          localStorage.setItem('theme', effectiveTheme);
           localStorage.setItem('font_size', prefs.font_size || 'medium');
           storeAppFontFamily(effectiveFontFamily);
         } catch {

@@ -55,6 +55,7 @@
   "theme": "Tema",
   "themeLight": "Claro",
   "themeDark": "Oscuro",
+  "themeSystem": "Sistema",
   "fontSize": "Tamaño de fuente",
   "fontSizeSmall": "Pequeño",
   "fontSizeMedium": "Mediano",

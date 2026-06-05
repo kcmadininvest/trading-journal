@@ -57,6 +57,7 @@
   "theme": "Thème",
   "themeLight": "Clair",
   "themeDark": "Sombre",
+  "themeSystem": "Automatique (système)",
   "fontSize": "Taille de police",
   "fontFamily": "Police",
   "fontSizeSmall": "Petit",

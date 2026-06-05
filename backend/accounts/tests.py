@@ -28,6 +28,40 @@ class UserPreferencesPnlDisplayTests(APITestCase):
         self.assertEqual(payload.get('pnl_display'), 'gross')
 
 
+class UserPreferencesThemeTests(APITestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email='prefs-theme@example.com',
+            username='prefs_theme',
+            password='testpass123',
+        )
+        UserPreferences.objects.get_or_create(user=self.user)
+
+    def test_put_accepts_system_theme(self) -> None:
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(
+            '/api/accounts/preferences/',
+            {'theme': 'system'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 200, response.data)
+        prefs = UserPreferences.objects.get(user=self.user)
+        self.assertEqual(prefs.theme, 'system')
+        payload = response.data.get('preferences') or response.data
+        self.assertEqual(payload.get('theme'), 'system')
+
+    def test_put_rejects_invalid_theme(self) -> None:
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(
+            '/api/accounts/preferences/',
+            {'theme': 'auto'},
+            format='json',
+        )
+        self.assertEqual(response.status_code, 400, response.data)
+        prefs = UserPreferences.objects.get(user=self.user)
+        self.assertEqual(prefs.theme, 'light')
+
+
 class AppSettingsApiTests(APITestCase):
     def setUp(self) -> None:
         self.user = User.objects.create_user(

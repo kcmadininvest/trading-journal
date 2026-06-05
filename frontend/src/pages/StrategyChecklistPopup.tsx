@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { positionStrategiesService, PositionStrategy } from '../services/positionStrategies';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
+import { applyThemePreference, isThemePreference, subscribeSystemTheme } from '../utils/theme';
 
 const STORAGE_KEY_PREFIX = 'strategy-checklist-';
 
@@ -18,20 +19,21 @@ const StrategyChecklistPopup: React.FC = () => {
 
   // Appliquer le thème depuis localStorage et synchroniser en temps réel
   useEffect(() => {
-    const applyTheme = () => {
+    const applyTheme = (): 'light' | 'dark' | 'system' => {
       try {
         const theme = localStorage.getItem('theme');
-        if (theme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
+        if (isThemePreference(theme)) {
+          applyThemePreference(theme);
+          return theme;
         }
       } catch {
         // Ignorer
       }
+      applyThemePreference('light');
+      return 'light';
     };
 
-    applyTheme();
+    let currentTheme = applyTheme();
 
     // Appliquer la taille de police
     try {
@@ -47,12 +49,21 @@ const StrategyChecklistPopup: React.FC = () => {
     // Écouter les changements de thème depuis la fenêtre principale
     const handleStorageTheme = (e: StorageEvent) => {
       if (e.key === 'theme') {
-        applyTheme();
+        currentTheme = applyTheme();
       }
     };
 
+    const unsubscribeSystemTheme = currentTheme === 'system'
+      ? subscribeSystemTheme(() => {
+          applyThemePreference('system');
+        })
+      : undefined;
+
     window.addEventListener('storage', handleStorageTheme);
-    return () => window.removeEventListener('storage', handleStorageTheme);
+    return () => {
+      window.removeEventListener('storage', handleStorageTheme);
+      unsubscribeSystemTheme?.();
+    };
   }, []);
 
   // Charger la stratégie

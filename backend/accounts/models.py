@@ -112,6 +112,7 @@ class UserPreferences(models.Model):
     THEME_CHOICES = [
         ('light', 'Clair'),
         ('dark', 'Sombre'),
+        ('system', 'Système'),
     ]
     
     FONT_SIZE_CHOICES = [

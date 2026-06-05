@@ -4,7 +4,6 @@ import { TRADING_CURRENCY_CODES } from '../constants/tradingCurrencies';
 import authService from '../services/auth';
 import { changeLanguage } from '../i18n/config';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { useTheme } from '../hooks/useTheme';
 import { usePreferences } from '../hooks/usePreferences';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { GroupedSelect } from '../components/common/GroupedSelect';
@@ -158,7 +157,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
   onPremiumRestrictionsChange,
 }) => {
   const { t } = useI18nTranslation();
-  const { theme } = useTheme();
   const { mergePreferences } = usePreferences();
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'trading' | 'display' | 'data'>('profile');
   const [loading, setLoading] = useState(false);
@@ -316,6 +314,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       Chart.defaults.font.family = fontStack;
       storeAppFontFamily(updatedPreferences.font_family);
     }
+    if (updatedPreferences.theme) {
+      try {
+        localStorage.setItem('theme', updatedPreferences.theme);
+      } catch {
+        /* ignore */
+      }
+    }
     if (updatedPreferences.language) {
       changeLanguage(updatedPreferences.language);
     }
@@ -425,17 +430,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       setPreferences(initialData.preferences);
       mergePreferences({ ...initialData.preferences });
     }
-  };
-
-  /**
-   * Aperçu thème sans API : évite setTheme() du hook (persist + refresh + événement) qui provoquait
-   * plusieurs cycles et un interrupteur visuel instable. mergePreferences met à jour le contexte
-   * global ; useTheme applique la classe `dark` sur le document.
-   */
-  const handleThemeToggle = () => {
-    const newTheme: 'light' | 'dark' = theme === 'dark' ? 'light' : 'dark';
-    setPreferences({ ...preferences, theme: newTheme });
-    mergePreferences({ theme: newTheme });
   };
 
   const handleRevokeSession = (jti: string) => {
@@ -1041,29 +1035,19 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {t('settings:theme')}
                 </label>
-                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <svg className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    <span className="truncate text-sm text-gray-700 dark:text-gray-300">
-                      {theme === 'light' ? t('settings:themeLight') : t('settings:themeDark')}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleThemeToggle}
-                    className={`relative ml-2 inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                      theme === 'dark' ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
+                <CustomSelect
+                  value={preferences.theme}
+                  onChange={(value) => {
+                    const newTheme = value as 'light' | 'dark' | 'system';
+                    setPreferences({ ...preferences, theme: newTheme });
+                    mergePreferences({ theme: newTheme });
+                  }}
+                  options={[
+                    { value: 'light', label: t('settings:themeLight') },
+                    { value: 'dark', label: t('settings:themeDark') },
+                    { value: 'system', label: t('settings:themeSystem') },
+                  ]}
+                />
               </div>
               <div className="min-w-0">
                 <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">

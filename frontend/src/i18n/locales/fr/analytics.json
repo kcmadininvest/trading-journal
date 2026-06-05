@@ -411,7 +411,7 @@
       "title": "Habitudes post-trade",
       "postLoss": {
         "larger": "Après une perte, vous augmentez souvent la taille — détail dans l'onglet « {{tab}} ».",
-        "equal": "Après une perte, vous garnez globalement la même taille — bon réflexe (voir « {{tab}} »).",
+        "equal": "Après une perte, vous gardez globalement la même taille — bon réflexe (voir « {{tab}} »).",
         "smaller": "Après une perte, vous réduisez souvent la taille — discipline prudente (voir « {{tab}} »).",
         "insufficient": "Pas assez de cas post-perte pour résumer une habitude de sizing."
       },

@@ -68,7 +68,7 @@ export interface UserPreferences {
   number_format: 'point' | 'comma';
   /** ISO 4217 — défaut pour rentabilité activité trading */
   default_currency?: string;
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'system';
   font_size: 'small' | 'medium' | 'large';
   font_family: AppFontFamily;
   sidebar_collapsed?: boolean;
