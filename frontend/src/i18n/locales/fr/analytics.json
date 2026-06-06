@@ -463,6 +463,7 @@
       },
       "bestHours": "Vous performez nettement mieux vers {{hours}} (fuseau {{timezone}}).",
       "bestHoursCelebrate": "Bravo : vos meilleures performances se concentrent vers {{hours}} (fuseau {{timezone}}).",
+      "bestAndWorstHoursCelebrate": "Bravo : vos meilleures performances se concentrent vers {{hours}}, en revanche le créneau {{hour}} est le moins performant (fuseau {{timezone}}).",
       "worstHour": "Votre performance est la plus faible sur le créneau {{hour}} (fuseau {{timezone}}).",
       "worstHourCelebrate": "En revanche, le créneau {{hour}} est le moins performant (fuseau {{timezone}}).",
       "worstHourEncourage": "Le créneau {{hour}} est moins favorable — vous performez mieux ailleurs ; à éviter pour l'instant (fuseau {{timezone}}).",

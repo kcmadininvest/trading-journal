@@ -460,6 +460,7 @@
       },
       "bestHours": "Rinde claramente mejor hacia {{hours}} (zona horaria {{timezone}}).",
       "bestHoursCelebrate": "Enhorabuena: sus mejores resultados se concentran hacia {{hours}} (zona horaria {{timezone}}).",
+      "bestAndWorstHoursCelebrate": "Enhorabuena: sus mejores resultados se concentran hacia {{hours}}, en cambio la franja {{hour}} es la menos productiva (zona horaria {{timezone}}).",
       "worstHour": "Su rendimiento más débil se concentra en la franja {{hour}} (zona horaria {{timezone}}).",
       "worstHourCelebrate": "En cambio, la franja {{hour}} es la menos productiva (zona horaria {{timezone}}).",
       "worstHourEncourage": "La franja {{hour}} es menos favorable — rinde mejor en otros horarios; conviene evitarla por ahora (zona horaria {{timezone}}).",

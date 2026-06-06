@@ -22,7 +22,7 @@ function formatHourSlotLabel(hour: number): string {
 }
 
 function formatHourSlotLabels(hours: number[]): string {
-  return hours.map(formatHourSlotLabel).join(', ');
+  return [...hours].sort((a, b) => a - b).map(formatHourSlotLabel).join(', ');
 }
 
 function isCelebrateTone(tone: NarrativeTone): boolean {
@@ -275,20 +275,32 @@ function buildTimeWindowsSection(input: BuildBehaviorNarrativeInput): NarrativeS
 
   const paragraphs: string[] = [];
 
+  const showWorstHour = shouldShowWorstHour(best, worst);
+
   if (best.length > 0) {
     const hours = formatHourSlotLabels(best.map((h) => h.hour));
-    const key = isCelebrateTone(tone)
-      ? 'analytics:behaviorNarrative.timeWindows.bestHoursCelebrate'
-      : 'analytics:behaviorNarrative.timeWindows.bestHours';
-    paragraphs.push(
-      t(key, {
-        hours,
-        timezone: context.timezone,
-      }),
-    );
+    if (isCelebrateTone(tone) && showWorstHour) {
+      paragraphs.push(
+        t('analytics:behaviorNarrative.timeWindows.bestAndWorstHoursCelebrate', {
+          hours,
+          hour: formatHourSlotLabel(worst!.hour),
+          timezone: context.timezone,
+        }),
+      );
+    } else {
+      const key = isCelebrateTone(tone)
+        ? 'analytics:behaviorNarrative.timeWindows.bestHoursCelebrate'
+        : 'analytics:behaviorNarrative.timeWindows.bestHours';
+      paragraphs.push(
+        t(key, {
+          hours,
+          timezone: context.timezone,
+        }),
+      );
+    }
   }
 
-  if (shouldShowWorstHour(best, worst)) {
+  if (showWorstHour && !(best.length > 0 && isCelebrateTone(tone))) {
     let worstKey = 'analytics:behaviorNarrative.timeWindows.worstHour';
     if (isCelebrateTone(tone)) {
       worstKey = 'analytics:behaviorNarrative.timeWindows.worstHourCelebrate';

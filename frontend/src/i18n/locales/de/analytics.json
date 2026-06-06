@@ -460,6 +460,7 @@
       },
       "bestHours": "Sie performen deutlich besser gegen {{hours}} (Zeitzone {{timezone}}).",
       "bestHoursCelebrate": "Stark: Ihre besten Ergebnisse bündeln sich um {{hours}} (Zeitzone {{timezone}}).",
+      "bestAndWorstHoursCelebrate": "Stark: Ihre besten Ergebnisse bündeln sich um {{hours}}, während das Fenster {{hour}} am wenigsten produktiv ist (Zeitzone {{timezone}}).",
       "worstHour": "Ihre schwächste Performance liegt im Fenster {{hour}} (Zeitzone {{timezone}}).",
       "worstHourCelebrate": "Umgekehrt ist das Fenster {{hour}} am wenigsten produktiv (Zeitzone {{timezone}}).",
       "worstHourEncourage": "Das Fenster {{hour}} ist schwächer — Sie sind woanders stärker; vorerst meiden (Zeitzone {{timezone}}).",

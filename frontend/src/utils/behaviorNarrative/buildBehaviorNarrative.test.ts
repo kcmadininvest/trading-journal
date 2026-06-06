@@ -239,10 +239,16 @@ describe('buildBehaviorNarrative', () => {
 
     const timeWindows = sections.find((s) => s.id === 'timeWindows');
     expect(timeWindows).toBeDefined();
-    expect(timeWindows!.paragraphs.some((p) => p.includes('bestHoursCelebrate'))).toBe(true);
+    expect(
+      timeWindows!.paragraphs.some((p) => p.includes('bestAndWorstHoursCelebrate')),
+    ).toBe(true);
     expect(timeWindows!.paragraphs.some((p) => p.includes('17h - 18h'))).toBe(true);
-    expect(timeWindows!.paragraphs.some((p) => p.includes('worstHourCelebrate'))).toBe(true);
+    expect(timeWindows!.paragraphs.some((p) => p.includes('19h - 20h'))).toBe(true);
+    const combined = timeWindows!.paragraphs.find((p) => p.includes('bestAndWorstHoursCelebrate'));
+    expect(combined).toBeDefined();
+    expect(combined!.indexOf('17h - 18h')).toBeLessThan(combined!.indexOf('19h - 20h'));
     expect(timeWindows!.paragraphs.some((p) => p.includes('18h - 19h'))).toBe(true);
+    expect(timeWindows!.paragraphs.some((p) => p.includes('worstHourCelebrate'))).toBe(false);
     expect(timeWindows!.paragraphs.some((p) => p.includes('"pnl"'))).toBe(false);
   });
 
@@ -262,7 +268,10 @@ describe('buildBehaviorNarrative', () => {
     const timeWindows = sections.find((s) => s.id === 'timeWindows');
     expect(
       timeWindows?.paragraphs.some(
-        (p) => p.includes('worstHourCelebrate') || p.includes('worstHour'),
+        (p) =>
+          p.includes('bestAndWorstHoursCelebrate') ||
+          p.includes('worstHourCelebrate') ||
+          p.includes('worstHour'),
       ),
     ).toBe(true);
     expect(timeWindows?.paragraphs.some((p) => p.includes('"pnl"'))).toBe(false);

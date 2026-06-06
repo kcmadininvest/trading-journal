@@ -463,6 +463,7 @@
       },
       "bestHours": "You perform clearly better around {{hours}} ({{timezone}} timezone).",
       "bestHoursCelebrate": "Well done: your best results cluster around {{hours}} ({{timezone}} timezone).",
+      "bestAndWorstHoursCelebrate": "Well done: your best results cluster around {{hours}}, while the {{hour}} slot is your least productive ({{timezone}} timezone).",
       "worstHour": "Your weakest performance is on the {{hour}} slot ({{timezone}} timezone).",
       "worstHourCelebrate": "Conversely, the {{hour}} slot is your least productive ({{timezone}} timezone).",
       "worstHourEncourage": "The {{hour}} slot is weaker — you perform better elsewhere; worth avoiding for now ({{timezone}} timezone).",
