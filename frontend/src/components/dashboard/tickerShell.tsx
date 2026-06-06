@@ -40,8 +40,11 @@ export const DASHBOARD_TILE_DIVIDER_CLASS =
 
 export const DASHBOARD_GAUGE_TILE_CLASS = `${DASHBOARD_INNER_CARD_CLASS} flex flex-col items-center p-3 shadow-none transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-md dark:hover:shadow-none sm:p-4`;
 
+export const DASHBOARD_BAND_DATE_LABEL_CLASS =
+  'absolute -top-2.5 left-2 z-10 px-1 text-xs font-medium leading-none text-gray-500 bg-white dark:bg-gray-800 dark:text-gray-400';
+
 export const DASHBOARD_BAND_DATE_INPUT_CLASS =
-  'w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/30 sm:text-sm';
+  'w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/30';
 
 /** @deprecated Utiliser getDashboardChartAxisColors(isDark) — conservé pour imports existants. */
 export const DASHBOARD_CHART_TICK = 'rgba(255, 255, 255, 0.55)';

@@ -33,6 +33,7 @@ import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerfor
 import {
   DashboardPanel,
   DASHBOARD_BAND_DATE_INPUT_CLASS,
+  DASHBOARD_BAND_DATE_LABEL_CLASS,
   getDashboardChartAxisColors,
   DASHBOARD_GAUGE_TILE_CLASS,
   DASHBOARD_PANEL_HINT_CLASS,
@@ -2266,7 +2267,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <div className="flex flex-row items-center gap-2 min-w-0">
                     {/* Start Date Picker */}
                     <div className="relative min-w-0 flex-1 max-w-[120px] sm:max-w-[140px]">
-                      <div className={`absolute -top-2 left-2 z-10 px-1 text-[10px] font-medium ${DASHBOARD_PANEL_HINT_CLASS}`}>
+                      <div className={DASHBOARD_BAND_DATE_LABEL_CLASS}>
                         {t('dashboard:startDate')}
                       </div>
                       <DateInput
@@ -2280,7 +2281,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     <span className="shrink-0 font-medium text-gray-400 dark:text-gray-500">–</span>
                     {/* End Date Picker */}
                     <div className="relative min-w-0 flex-1 max-w-[120px] sm:max-w-[140px]">
-                      <div className={`absolute -top-2 left-2 z-10 px-1 text-[10px] font-medium ${DASHBOARD_PANEL_HINT_CLASS}`}>
+                      <div className={DASHBOARD_BAND_DATE_LABEL_CLASS}>
                         {t('dashboard:endDate')}
                       </div>
                       <DateInput
