@@ -90,6 +90,7 @@
   "avg": "Avg",
   "ofPnL": "% du P/L",
   "accountBalanceOverTime": "Solde du Compte dans le Temps",
+  "accountBalanceMllVsBalanceTooltip": "Le MLL est calculé sur le solde trading (sans dépôts/retraits). La courbe de solde inclut les flux de trésorerie.",
   "startDate": "Date début",
   "endDate": "Date fin",
   "totalGain": "Gain total",

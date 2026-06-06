@@ -8,7 +8,7 @@ export interface TradingAccount {
   account_type: 'topstep' | 'ibkr' | 'ninjatrader' | 'tradovate' | 'other';
   broker_account_id?: string;
   currency: string;
-  initial_capital?: string | number;
+  initial_capital?: string | number | null;
   maximum_loss_limit?: string | number;
   mll_enabled?: boolean;
   profit_target?: string | number;

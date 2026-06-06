@@ -1,12 +1,16 @@
 """Tests ciblés : solde compte et validation des retraits."""
 from decimal import Decimal
 
+from datetime import date, datetime, timedelta
+
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APITestCase, APIClient, APIRequestFactory
 
 from accounts.models import User
 from trades.account_balance import (
+    build_dashboard_balance_context,
+    compute_balance_at_period_start,
     compute_peak_balances,
     compute_topstep_best_day,
     compute_trading_account_balance,
@@ -198,6 +202,103 @@ class AccountBalanceComputationTests(TestCase):
         peaks = resolve_peak_balance_only(self.account, use_cache=False)
         full = compute_trading_account_balance(self.account)
         self.assertEqual(peaks['peak_balance'], full['peak_balance'])
+
+
+class PeriodOpeningBalanceTests(TestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email='opening-balance@example.com',
+            username='opening_balance',
+            password='testpass123',
+            first_name='O',
+            last_name='B',
+        )
+        self.account = TradingAccount.objects.create(
+            user=self.user,
+            name='Opening balance account',
+            account_type='topstep',
+            currency='USD',
+            initial_capital=Decimal('50000.00'),
+            maximum_loss_limit=Decimal('2000.00'),
+            mll_enabled=True,
+            profit_target_enabled=True,
+            profit_target=Decimal('3000.00'),
+            status='active',
+        )
+        self.day_before = date(2026, 1, 15)
+        self.period_start = date(2026, 2, 1)
+
+    def test_opening_balance_without_start_date_is_initial_capital(self) -> None:
+        opening = compute_balance_at_period_start(self.account, None)
+        self.assertEqual(opening, Decimal('50000.00'))
+
+    def test_opening_balance_includes_pnl_and_deposits_before_period(self) -> None:
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='open-bal-1',
+            contract_name='NQ',
+            entered_at=timezone.make_aware(
+                datetime.combine(self.day_before, datetime.min.time())
+            ),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('2000.00'),
+            trade_day=self.day_before,
+        )
+        AccountTransaction.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            transaction_type='deposit',
+            amount=Decimal('1000.00'),
+            transaction_date=timezone.make_aware(
+                datetime.combine(self.day_before, datetime.min.time())
+            ),
+        )
+        opening = compute_balance_at_period_start(self.account, self.period_start)
+        self.assertEqual(opening, Decimal('53000.00'))
+
+    def test_opening_balance_zero_initial_capital(self) -> None:
+        self.account.initial_capital = Decimal('0')
+        self.account.save(update_fields=['initial_capital'])
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='open-bal-zero',
+            contract_name='NQ',
+            entered_at=timezone.make_aware(
+                datetime.combine(self.day_before, datetime.min.time())
+            ),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('500.00'),
+            trade_day=self.day_before,
+        )
+        opening = compute_balance_at_period_start(self.account, self.period_start)
+        self.assertEqual(opening, Decimal('500.00'))
+
+    def test_build_dashboard_balance_context(self) -> None:
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='open-bal-ctx',
+            contract_name='NQ',
+            entered_at=timezone.make_aware(
+                datetime.combine(self.day_before, datetime.min.time())
+            ),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('1000.00'),
+            trade_day=self.day_before,
+        )
+        ctx = build_dashboard_balance_context(self.account, self.period_start)
+        self.assertEqual(Decimal(ctx['opening_balance']), Decimal('51000.00'))
+        self.assertEqual(Decimal(ctx['current_balance']), Decimal('51000.00'))
+        self.assertEqual(Decimal(ctx['profit_target_absolute']), Decimal('53000.00'))
+        self.assertTrue(ctx['mll_configured'])
 
 
 class AccountBalanceApiTests(APITestCase):

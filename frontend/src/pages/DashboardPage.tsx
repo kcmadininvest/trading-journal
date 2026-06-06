@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef, lazy } from 'react';
 import { useWindowWidth } from '../hooks/useWindowWidth';
 import clsx from 'clsx';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
-import { DateInput } from '../components/common/DateInput';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday, MarketTodaySnapshot } from '../services/calendar';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -32,8 +31,6 @@ import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformance
 import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerformanceSection';
 import {
   DashboardPanel,
-  DASHBOARD_BAND_DATE_INPUT_CLASS,
-  DASHBOARD_BAND_DATE_LABEL_CLASS,
   getDashboardChartAxisColors,
   DASHBOARD_GAUGE_TILE_CLASS,
   DASHBOARD_PANEL_HINT_CLASS,
@@ -58,6 +55,7 @@ import { Bar as ChartBar } from 'react-chartjs-2';
 import { getChartColors, buildChartTooltipPlugin } from '../utils/chartConfig';
 import { ChartTooltipResetContainer } from '../components/charts/ChartTooltipResetContainer';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
+import { resolveAccountChartConfig } from '../utils/accountChartConfig';
 import { aggregateDurationDistribution } from '../utils/tradeDurationBuckets';
 import { getWaterfallBarBorder, getWaterfallBarFill } from '../utils/waterfallBarGradient';
 import { WIN_RATE_ROLLING_WINDOW } from '../utils/tradingSampleThresholds';
@@ -671,46 +669,76 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, []);
 
+  const chartConfig = useMemo(
+    () => resolveAccountChartConfig(selectedAccount, dashboardData?.balance_context),
+    [selectedAccount, dashboardData?.balance_context],
+  );
+
   // Calculer le solde du compte dans le temps avec format { date, pnl, cumulative, mll }
-  // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
-  // Inclut maintenant les transactions (dépôts et retraits)
+  // Ancré sur opening_balance (début de période) + PnL/transactions de la période
   const accountBalanceData = useMemo(() => {
     const tz = preferences.timezone;
-    const initialCapital = selectedAccount?.initial_capital 
-      ? parseFloat(String(selectedAccount.initial_capital)) 
-      : 0;
-    
-    // Récupérer le MLL initial si activé
-    const mllInitial = selectedAccount?.mll_enabled !== false && selectedAccount?.maximum_loss_limit
-      ? parseFloat(String(selectedAccount.maximum_loss_limit))
-      : undefined;
-    
-    // Fonction pour calculer le MLL en fonction du solde
-    // Utilise prioritairement les métriques backend si disponibles
-    const calculateMll = (balance: number, date: string, maxBalanceSeen: number): number | undefined => {
-      if (mllInitial === undefined) return undefined;
-      
-      // Récupérer le MLL depuis les métriques quotidiennes pour cette date
-      const dailyMetric = dailyMetrics.find(m => {
-        const metricDate = typeof m.date === 'string' 
-          ? m.date.split('T')[0] 
-          : new Date(m.date).toISOString().split('T')[0];
-        return metricDate === date;
-      });
-      
-      // Priorité 1 : Utiliser le MLL calculé par le backend si disponible
-      if (dailyMetric && dailyMetric.maximum_loss_limit !== undefined) {
+    const { initialCapital, openingBalance, showMll, mllInitial } = chartConfig;
+    const periodStart = selectedPeriod?.start;
+
+    const metricDateKey = (m: AccountDailyMetric) =>
+      typeof m.date === 'string'
+        ? m.date.split('T')[0]
+        : new Date(m.date).toISOString().split('T')[0];
+
+    const historicalPeakFromMetrics = dailyMetrics.reduce((max, m) => {
+      const d = metricDateKey(m);
+      if (periodStart && d >= periodStart) return max;
+      const high = parseFloat(String(m.account_balance_high ?? '0'));
+      return Number.isFinite(high) ? Math.max(max, high) : max;
+    }, openingBalance);
+
+    const calculateMll = (_balance: number, date: string, maxBalanceSeen: number): number | undefined => {
+      if (!showMll || mllInitial == null) return undefined;
+
+      const dailyMetric = dailyMetrics.find((m) => metricDateKey(m) === date);
+      if (dailyMetric?.maximum_loss_limit !== undefined) {
         return parseFloat(String(dailyMetric.maximum_loss_limit));
       }
-      
-      // Priorité 2 : Calculer le MLL en utilisant le solde maximum vu jusqu'à présent
-      // MLL = max(solde maximum vu, capital initial) - limite de perte
-      // Le MLL ne redescend jamais car maxBalanceSeen est toujours croissant
-      // MAIS il est plafonné au capital initial (ne peut pas dépasser ce seuil)
+
       const baseForMll = Math.max(maxBalanceSeen, initialCapital);
       const calculatedMll = baseForMll - mllInitial;
-      // Plafonner au capital initial - le MLL ne doit jamais dépasser ce seuil
-      return Math.min(calculatedMll, initialCapital);
+      if (initialCapital > 0) {
+        return Math.min(calculatedMll, initialCapital);
+      }
+      return calculatedMll;
+    };
+
+    const prependOpeningAnchor = <
+      T extends { date: string; pnl: number; dailyNetTransactions: number; cumulative: number; mll?: number },
+    >(result: T[]): T[] => {
+      if (result.length === 0) return result;
+      const firstDate = result[0].date;
+      const dayBefore = new Date(`${firstDate}T12:00:00Z`);
+      dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+      const dayBeforeStr = dayBefore.toISOString().split('T')[0];
+      if (result.some((r) => r.date === dayBeforeStr)) return result;
+
+      let initialMll: number | undefined;
+      if (showMll && mllInitial != null) {
+        const metricDayBefore = dailyMetrics.find((m) => metricDateKey(m) === dayBeforeStr);
+        if (metricDayBefore?.maximum_loss_limit !== undefined) {
+          initialMll = parseFloat(String(metricDayBefore.maximum_loss_limit));
+        } else if (initialCapital > 0) {
+          initialMll = initialCapital - mllInitial;
+        }
+      }
+
+      return [
+        {
+          date: dayBeforeStr,
+          pnl: 0,
+          dailyNetTransactions: 0,
+          cumulative: openingBalance,
+          mll: initialMll,
+        } as T,
+        ...result,
+      ];
     };
 
     // Grouper les transactions par date (triées chronologiquement)
@@ -739,7 +767,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
       let cumulativePnl = 0;
       let cumulativeTransactions = 0;
-      let maxBalanceSeen = initialCapital; // Suivre le solde maximum pour le calcul du MLL
+      let maxBalanceSeen = Math.max(openingBalance, initialCapital, historicalPeakFromMetrics);
       
       const result = sortedAllDates.map(date => {
         // Appliquer les transactions AVANT les trades du jour (logique : dépôts/retraits en début de journée)
@@ -755,7 +783,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
         const dailyPnl = dailyAggregate?.pnl || 0;
         const dailyNetTransactions = transactionsByDate[date] || 0;
-        const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
+        const cumulative = openingBalance + cumulativePnl + cumulativeTransactions;
         
         // Mettre à jour le solde maximum vu
         maxBalanceSeen = Math.max(maxBalanceSeen, cumulative);
@@ -772,36 +800,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         };
       });
 
-      // Si on a des données et que la première date n'est pas le début, ajouter un point initial
-      if (result.length > 0 && initialCapital > 0) {
-        const firstDate = result[0].date;
-        // Vérifier s'il y a des transactions ou trades avant la première date
-        const hasDataBeforeFirst = sortedTransactions.some(t => {
-          const tDate = toIsoCalendarDateInTimezone(t.transaction_date, tz);
-          return tDate && tDate < firstDate;
-        }) || dailyAggregates.some(d => d.date < firstDate);
-        
-        // Si pas de données avant, ajouter un point au capital initial UN JOUR AVANT le premier trade
-        if (!hasDataBeforeFirst) {
-          // Pour le point initial, le MLL est toujours fixe : capital initial - MLL initial
-          const initialMll = mllInitial !== undefined ? initialCapital - mllInitial : undefined;
-          
-          // Calculer la date du jour précédent
-          const dayBefore = new Date(firstDate);
-          dayBefore.setDate(dayBefore.getDate() - 1);
-          const dayBeforeStr = dayBefore.toISOString().split('T')[0];
-          
-          return [{
-            date: dayBeforeStr,
-            pnl: 0,
-            dailyNetTransactions: 0,
-            cumulative: initialCapital,
-            mll: initialMll,
-          }, ...result];
-        }
-      }
-
-      return result;
+      return prependOpeningAnchor(result);
     }
     
     // Fallback: utiliser les trades individuels si les agrégats ne sont pas disponibles
@@ -832,7 +831,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
     let cumulativePnl = 0;
     let cumulativeTransactions = 0;
-    let maxBalanceSeen = initialCapital; // Suivre le solde maximum pour le calcul du MLL
+    let maxBalanceSeen = Math.max(openingBalance, initialCapital, historicalPeakFromMetrics);
     
     const result = sortedDates.map(date => {
       const dailyPnl = dailyPnlData[date] || 0;
@@ -846,7 +845,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       // Ajouter le PnL du jour (après les transactions)
       cumulativePnl += dailyPnl;
 
-      const cumulative = initialCapital + cumulativePnl + cumulativeTransactions;
+      const cumulative = openingBalance + cumulativePnl + cumulativeTransactions;
       
       // Mettre à jour le solde maximum vu
       maxBalanceSeen = Math.max(maxBalanceSeen, cumulative);
@@ -863,74 +862,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       };
     });
 
-    // Si on a des données et que la première date n'est pas le début, ajouter un point initial
-    if (result.length > 0 && initialCapital > 0) {
-      const firstDate = result[0].date;
-      // Vérifier s'il y a des transactions ou trades avant la première date
-      const hasDataBeforeFirst = sortedTransactions.some(t => {
-        const tDate = toIsoCalendarDateInTimezone(t.transaction_date, tz);
-        return tDate && tDate < firstDate;
-      }) || tradesWithDates.some(t => t.date < firstDate);
-      
-      // Si pas de données avant, ajouter un point au capital initial UN JOUR AVANT le premier trade
-      if (!hasDataBeforeFirst) {
-        // Pour le point initial, le MLL est toujours fixe : capital initial - MLL initial
-        const initialMll = mllInitial !== undefined ? initialCapital - mllInitial : undefined;
-        
-        // Calculer la date du jour précédent
-        const dayBefore = new Date(firstDate);
-        dayBefore.setDate(dayBefore.getDate() - 1);
-        const dayBeforeStr = dayBefore.toISOString().split('T')[0];
-        
-        return [{
-          date: dayBeforeStr,
-          pnl: 0,
-          dailyNetTransactions: 0,
-          cumulative: initialCapital,
-          mll: initialMll,
-        }, ...result];
-      }
-    }
-
-    return result;
-  }, [dailyAggregates, trades, transactionsInSelectedPeriod, selectedAccount, dailyMetrics, pnlDisplayMode, preferences.timezone]);
-
-  // États pour les filtres de date
-  const { defaultStartDate, defaultEndDate } = useMemo(() => {
-    if (accountBalanceData.length === 0) return { defaultStartDate: '', defaultEndDate: '' };
-    const dates = accountBalanceData.map(d => d.date).sort();
-    return {
-      defaultStartDate: dates[0] || '',
-      defaultEndDate: dates[dates.length - 1] || ''
-    };
-  }, [accountBalanceData]);
-
-  const [startDate, setStartDate] = useState(defaultStartDate);
-  const [endDate, setEndDate] = useState(defaultEndDate);
-
-  // Initialiser et mettre à jour les dates quand elles changent
-  useEffect(() => {
-    if (defaultStartDate && defaultEndDate) {
-      if (defaultStartDate <= defaultEndDate) {
-        setStartDate(defaultStartDate);
-        setEndDate(defaultEndDate);
-      } else {
-        setStartDate(defaultEndDate);
-        setEndDate(defaultStartDate);
-      }
-    }
-  }, [defaultStartDate, defaultEndDate]);
-
-  // Filtrer les données par période
-  const filteredBalanceData = useMemo(() => {
-    if (!startDate || !endDate || accountBalanceData.length === 0) return accountBalanceData;
-    return accountBalanceData.filter(d => d.date >= startDate && d.date <= endDate);
-  }, [accountBalanceData, startDate, endDate]);
+    return prependOpeningAnchor(result);
+  }, [dailyAggregates, trades, transactionsInSelectedPeriod, dailyMetrics, pnlDisplayMode, preferences.timezone, chartConfig, selectedPeriod?.start]);
 
   // Série affichée (agrégation auto) pour le graphique du solde uniquement.
-  // Les stats (performanceStats) restent basées sur la série journalière filtrée.
   const balanceDisplay = useMemo(() => {
-    const daily = filteredBalanceData;
+    const daily = accountBalanceData;
     if (daily.length === 0) {
       return { rows: [] as any[], mode: 'day' as BalanceAggregation };
     }
@@ -995,23 +932,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       };
     });
     return { rows, mode: 'month' as BalanceAggregation };
-  }, [filteredBalanceData]);
+  }, [accountBalanceData]);
 
   // Calculer les statistiques de performance
   const performanceStats = useMemo(() => {
-    if (filteredBalanceData.length === 0) {
+    if (accountBalanceData.length === 0) {
       return { totalReturn: 0, isPositive: false, maxDrawdown: 0, highestValue: 0, lowestValue: 0 };
     }
     // Calculer la perte/gain total : somme des PnL de la période filtrée
     // C'est plus fiable car cela représente exactement la variation pendant la période sélectionnée
-    const totalReturn = filteredBalanceData.reduce((sum, d) => sum + d.pnl, 0);
-    const highestValue = Math.max(...filteredBalanceData.map(d => d.cumulative));
-    const lowestValue = Math.min(...filteredBalanceData.map(d => d.cumulative));
+    const totalReturn = accountBalanceData.reduce((sum, d) => sum + d.pnl, 0);
+    const highestValue = Math.max(...accountBalanceData.map(d => d.cumulative));
+    const lowestValue = Math.min(...accountBalanceData.map(d => d.cumulative));
     // Couleur alignée sur la performance de trading (somme des PnL), pas sur le solde cumulé incluant flux
     const isPositive = totalReturn >= 0;
     
     return { totalReturn, isPositive, highestValue, lowestValue };
-  }, [filteredBalanceData]);
+  }, [accountBalanceData]);
 
 
   // Répartition par durée : même périmètre et même P/L affiché que le graphique Analytics
@@ -1638,7 +1575,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   } = useAccountIndicators({
     selectedAccount,
     filteredTrades: trades,
-    filteredBalanceData,
+    filteredBalanceData: accountBalanceData,
     activeDays: dashboardData?.active_days,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
@@ -2262,39 +2199,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {accountBalanceData.length > 0 && (
             <DashboardPanel padding="large">
               <div className="mb-4">
-                {/* Title + date pickers on same row, wrapping on small screens */}
-                <div className="mb-3 flex flex-row flex-wrap items-center justify-between gap-2">
-                  <h3 className={`text-base font-semibold sm:text-lg ${DASHBOARD_PANEL_TITLE_CLASS}`}>{t('dashboard:accountBalanceOverTime')}</h3>
-                  <div className="flex flex-row items-center gap-2 min-w-0">
-                    {/* Start Date Picker */}
-                    <div className="relative min-w-0 flex-1 max-w-[120px] sm:max-w-[140px]">
-                      <div className={DASHBOARD_BAND_DATE_LABEL_CLASS}>
-                        {t('dashboard:startDate')}
-                      </div>
-                      <DateInput
-                        value={startDate || defaultStartDate}
-                        onChange={(value) => setStartDate(value || defaultStartDate)}
-                        className={DASHBOARD_BAND_DATE_INPUT_CLASS}
-                        min={defaultStartDate}
-                        max={defaultEndDate}
-                      />
-                    </div>
-                    <span className="shrink-0 font-medium text-gray-400 dark:text-gray-500">–</span>
-                    {/* End Date Picker */}
-                    <div className="relative min-w-0 flex-1 max-w-[120px] sm:max-w-[140px]">
-                      <div className={DASHBOARD_BAND_DATE_LABEL_CLASS}>
-                        {t('dashboard:endDate')}
-                      </div>
-                      <DateInput
-                        value={endDate || defaultEndDate}
-                        onChange={(value) => setEndDate(value || defaultEndDate)}
-                        className={DASHBOARD_BAND_DATE_INPUT_CLASS}
-                        min={defaultStartDate}
-                        max={defaultEndDate}
-                      />
-                    </div>
-                  </div>
-                </div>
+                <h3 className={`mb-3 text-lg font-bold ${DASHBOARD_PANEL_TITLE_CLASS}`}>
+                  {t('dashboard:accountBalanceOverTime')}
+                </h3>
                 {/* Stats row */}
                 {!privacySettings.hideProfitLoss && !privacySettings.hideCurrentBalance && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs sm:text-sm">
@@ -2320,12 +2227,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   data={balanceDisplay.rows}
                   currencySymbol={currencySymbol}
                   formatCurrency={formatCurrency}
-                  initialCapital={selectedAccount?.initial_capital ? parseFloat(String(selectedAccount.initial_capital)) : 0}
-                  hideMll={privacySettings.hideMll}
-                  hideProfitTarget={selectedAccount?.profit_target_enabled !== true}
-                  profitTarget={selectedAccount?.profit_target_enabled === true && selectedAccount?.profit_target 
-                    ? (selectedAccount?.initial_capital ? parseFloat(String(selectedAccount.initial_capital)) : 0) + parseFloat(String(selectedAccount.profit_target))
-                    : 0}
+                  initialCapital={chartConfig.initialCapital}
+                  referenceBalance={chartConfig.referenceBalance}
+                  hideMll={privacySettings.hideMll || !chartConfig.showMll}
+                  hideProfitTarget={chartConfig.profitTargetAbsolute == null}
+                  profitTarget={chartConfig.profitTargetAbsolute ?? 0}
                   hideProfitLoss={privacySettings.hideProfitLoss}
                 />
               </div>

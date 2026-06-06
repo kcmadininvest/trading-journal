@@ -116,11 +116,6 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   const cumulBorder = isBand ? 'border-white/15' : 'border-gray-200 dark:border-gray-600';
   const { accountBalance, totalTrades, bestAndWorstDays, consistencyTarget, activeDays, accountCreatedAt } = indicators;
 
-  const variationValue = accountBalance.current - accountBalance.initial;
-  const variationPercentage = accountBalance.initial > 0 
-    ? ((variationValue / accountBalance.initial) * 100) 
-    : 0;
-
   const hasActiveDays = useMemo(() => typeof activeDays === 'number' && activeDays >= 0, [activeDays]);
   const showTradesSection = useMemo(() => totalTrades > 0 || hasActiveDays, [totalTrades, hasActiveDays]);
   const formattedAccountCreatedDate = useMemo(() => {
@@ -136,10 +131,6 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   const highestBalanceTooltip = t('dashboard:highestBalanceReachedTooltip', {
     defaultValue:
       'Pic de solde sur tout l’historique du compte (trades et transactions). Il n’est pas filtré par la période sélectionnée.',
-  });
-  const variationAllTimeTooltip = t('dashboard:variationAllTimeTooltip', {
-    defaultValue:
-      'Variation depuis le capital initial sur tout l’historique du compte. Elle n’est pas filtrée par la période sélectionnée.',
   });
 
   // Barre de progression pour le Consistency Target
@@ -223,56 +214,8 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
           </div>
         </div>
 
-        {/* Variation et Total Trades regroupés — variation en largeur contenu, le reste pour trades/cumul */}
+        {/* Total Trades et cumul multi-comptes */}
         <div className={tileClass}>
-          {accountBalance.initial > 0 && (
-            <div className="flex min-w-0 shrink-0 flex-col gap-1">
-              <IndicatorMetricLabel
-                labelClassName={labelMuted}
-                isBand={isBand}
-                label={t('dashboard:variation', { defaultValue: 'Variation' })}
-                tooltip={variationAllTimeTooltip}
-                icon={(
-                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    {variationValue >= 0 
-                      ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                      : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                    }
-                  </svg>
-                )}
-              />
-              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2 sm:flex-wrap">
-                {balanceLoading ? (
-                  <span className={valueSkeletonClass} aria-hidden />
-                ) : (
-                  <>
-                    <span
-                      className={`text-lg font-semibold tabular-nums sm:text-xl ${
-                        variationValue >= 0 ? valueUp : valueDown
-                      }`}
-                    >
-                      {hideProfitLoss
-                        ? maskValue(variationValue, currencySymbol)
-                        : formatCurrency(variationValue, currencySymbol, preferences.number_format, 2)}
-                    </span>
-                    {!hideProfitLoss && (
-                      <span
-                        className={`inline-flex w-fit shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                          variationValue >= 0 ? badgeUp : badgeDown
-                        }`}
-                      >
-                        {variationValue >= 0 ? '+' : ''}
-                        {formatNumber(variationPercentage, 2, preferences.number_format)}%
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-          {showTradesSection && accountBalance.initial > 0 && (
-            <div className={dividerClass} aria-hidden />
-          )}
           {showTradesSection && (
             <div
               className={

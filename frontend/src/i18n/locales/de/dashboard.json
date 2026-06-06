@@ -93,6 +93,7 @@
   "avg": "Durchschn.",
   "ofPnL": "% des P/L",
   "accountBalanceOverTime": "Kontostand im Zeitverlauf",
+  "accountBalanceMllVsBalanceTooltip": "MLL basiert auf dem Handelssaldo (ohne Ein-/Auszahlungen). Die Saldenkurve enthält Cashflows.",
   "startDate": "Startdatum",
   "endDate": "Enddatum",
   "totalGain": "Gesamtgewinn",

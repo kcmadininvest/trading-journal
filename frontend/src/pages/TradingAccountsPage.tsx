@@ -195,7 +195,7 @@ const TradingAccountsPage: React.FC = () => {
       const symbol = getCurrencySymbol(account.currency);
       return maskValue(null, symbol);
     }
-    if (!account.initial_capital) return '-';
+    if (account.initial_capital === null || account.initial_capital === undefined || account.initial_capital === '') return '-';
     const value = typeof account.initial_capital === 'string' 
       ? parseFloat(account.initial_capital) 
       : account.initial_capital;

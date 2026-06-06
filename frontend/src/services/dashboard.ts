@@ -37,6 +37,16 @@ export interface PeriodPerformance {
   year: PeriodPerformanceEntry;
 }
 
+export interface DashboardBalanceContext {
+  initial_capital: string;
+  opening_balance: string;
+  opening_balance_gross: string;
+  current_balance: string;
+  current_balance_gross: string;
+  profit_target_absolute: string | null;
+  mll_configured: boolean;
+}
+
 export interface DashboardSummary {
   daily_aggregates: DailyAggregate[];
   trades: any[];
@@ -45,6 +55,7 @@ export interface DashboardSummary {
   active_days?: number;
   count: number;
   period_performance?: PeriodPerformance;
+  balance_context?: DashboardBalanceContext;
 }
 
 export interface DashboardActivitySummary {

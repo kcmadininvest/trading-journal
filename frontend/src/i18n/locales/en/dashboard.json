@@ -89,6 +89,7 @@
   "avg": "Avg",
   "ofPnL": "% of P/L",
   "accountBalanceOverTime": "Account Balance Over Time",
+  "accountBalanceMllVsBalanceTooltip": "MLL is based on trading balance (excluding deposits/withdrawals). The balance curve includes cash flows.",
   "startDate": "Start Date",
   "endDate": "End Date",
   "totalGain": "Total Gain",

@@ -16,7 +16,8 @@ import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrency as formatCurrencyUtil } from '../../utils/numberFormat';
-import { getChartColors, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { formatDate } from '../../utils/dateFormat';
+import { getChartColors, buildChartTooltipPlugin, getChartSvgFontSizes, CHART_FONT_FAMILY } from '../../utils/chartConfig';
 import { parsePnlDisplayMode } from '../../utils/pnlDisplay';
 
 // Enregistrer les composants Chart.js nécessaires
@@ -47,7 +48,8 @@ interface AccountBalanceChartProps {
   data: BalanceDataPoint[];
   currencySymbol?: string;
   formatCurrency?: (value: number, currencySymbol?: string) => string;
-  initialCapital?: number; // Capital initial pour la ligne de référence
+  initialCapital?: number; // Capital initial métier (seuils objectif / MLL)
+  referenceBalance?: number; // Solde de référence pour la coloration (ouverture de période)
   hideMll?: boolean; // Masquer la ligne MLL
   hideProfitTarget?: boolean; // Masquer la ligne Profit Target
   profitTarget?: number; // Objectif de profit
@@ -59,54 +61,46 @@ function AccountBalanceChart({
   currencySymbol = '',
   formatCurrency: formatCurrencyProp,
   initialCapital = 0,
+  referenceBalance,
   hideMll = false,
   hideProfitTarget = false,
   profitTarget = 0,
   hideProfitLoss = false
 }: AccountBalanceChartProps) {
-  const { t, i18n } = useI18nTranslation();
+  const { t } = useI18nTranslation();
   const { theme } = useTheme();
   const { preferences } = usePreferences();
   const isDark = theme === 'dark';
+  const chartFontSizes = useMemo(
+    () => getChartSvgFontSizes(preferences.font_size),
+    [preferences.font_size],
+  );
 
   const formatDayLabel = useMemo(() => {
-    const locale = i18n?.resolvedLanguage || i18n?.language || 'fr';
-    const tz = preferences.timezone;
-    return (isoKey: string, includeYear: boolean) => {
-      const d = new Date(`${isoKey}T00:00:00Z`);
-      const parts: Intl.DateTimeFormatOptions = includeYear
-        ? { year: 'numeric', month: 'short', day: 'numeric', timeZone: tz }
-        : { month: 'short', day: 'numeric', timeZone: tz };
-      return d.toLocaleDateString(locale, parts);
-    };
-  }, [i18n?.resolvedLanguage, i18n?.language, preferences.timezone]);
+    return (isoKey: string) =>
+      formatDate(isoKey, preferences.date_format, false, preferences.timezone);
+  }, [preferences.date_format, preferences.timezone]);
 
   const formatMonthAxisLabel = useMemo(() => {
-    const locale = i18n?.resolvedLanguage || i18n?.language || 'fr';
-    return (monthKey: string) => {
-      const d = new Date(`${monthKey}-01T00:00:00Z`);
-      return d.toLocaleDateString(locale, { month: 'short', year: 'numeric' });
-    };
-  }, [i18n?.resolvedLanguage, i18n?.language]);
+    return (monthKey: string) =>
+      formatDate(`${monthKey}-01`, preferences.date_format, false, preferences.timezone);
+  }, [preferences.date_format, preferences.timezone]);
 
   const formatPointLabel = useMemo(() => {
-    const locale = i18n?.resolvedLanguage || i18n?.language || 'fr';
-    const tz = preferences.timezone;
     return (pt: BalanceDataPoint) => {
       const agg = pt.aggregation || 'day';
       if (agg === 'week' && pt.rangeStartKey && pt.rangeEndKey) {
-        const start = formatDayLabel(pt.rangeStartKey, true);
-        const end = formatDayLabel(pt.rangeEndKey, true);
+        const start = formatDayLabel(pt.rangeStartKey);
+        const end = formatDayLabel(pt.rangeEndKey);
         return t('dashboard:waterfallWeekAxis', { start, end });
       }
       if (agg === 'month') {
         const monthKey = (pt.rangeStartKey || pt.date).slice(0, 7);
         return formatMonthAxisLabel(monthKey);
       }
-      const d = new Date(pt.date);
-      return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', timeZone: tz });
+      return formatDayLabel(pt.date);
     };
-  }, [i18n?.resolvedLanguage, i18n?.language, preferences.timezone, t, formatDayLabel, formatMonthAxisLabel]);
+  }, [t, formatDayLabel, formatMonthAxisLabel]);
 
   // Wrapper pour formatCurrency avec préférences du projet
   // Utilise toujours le currencySymbol de la prop pour garantir la cohérence
@@ -127,6 +121,7 @@ function AccountBalanceChart({
   }, [formatCurrencyProp, currencySymbol, preferences.number_format]);
 
   const chartColors = useMemo(() => getChartColors(isDark), [isDark]);
+  const colorReference = referenceBalance ?? initialCapital;
 
   // Préparer les données du graphique
   const { chartData, chartLabels, pnlMapping, netTransactionsMapping } = useMemo(() => {
@@ -177,15 +172,14 @@ function AccountBalanceChart({
       // Si le segment traverse le capital initial, ajouter un point intermédiaire invisible au capital initial
       // Cela permet de colorer correctement : rose en dessous, bleu au-dessus
       // Utiliser lastRealBalance pour détecter correctement la traversée
-      const crossesInitialCapital = 
-        (lastRealBalance < initialCapital && balance > initialCapital) || 
-        (lastRealBalance > initialCapital && balance < initialCapital);
+      const crossesReferenceBalance = 
+        (lastRealBalance < colorReference && balance > colorReference) || 
+        (lastRealBalance > colorReference && balance < colorReference);
       
-      if (crossesInitialCapital) {
-        // Ajouter le point intermédiaire au capital initial (invisible)
-        // Utiliser le même label que le point actuel pour qu'il soit au même endroit sur l'axe X
+      if (crossesReferenceBalance) {
+        // Ajouter le point intermédiaire au solde de référence (invisible)
         processedLabels.push(dates[index]);
-        processedBalances.push(initialCapital);
+        processedBalances.push(colorReference);
         isIntermediatePoint.push(true); // Marquer comme point intermédiaire
         
         // Pour le MLL au point intermédiaire, utiliser la valeur actuelle ou la précédente
@@ -249,22 +243,15 @@ function AccountBalanceChart({
                 const v1 = ctx.p1.parsed.y;
                 // Tolérance pour la comparaison avec le capital initial (problèmes de précision)
                 const tolerance = 0.01;
-                const isV0AtInitial = Math.abs(v0 - initialCapital) < tolerance;
-                const isV1AtInitial = Math.abs(v1 - initialCapital) < tolerance;
+                const isV0AtInitial = Math.abs(v0 - colorReference) < tolerance;
+                const isV1AtInitial = Math.abs(v1 - colorReference) < tolerance;
                 
-                // Colorer le segment selon la position du point d'arrivée
-                // Si le segment traverse le capital initial, colorer selon la partie du segment
-                // Si v0 est au capital initial (point intermédiaire), utiliser la couleur de v1
-                // Sinon, utiliser la couleur du point d'arrivée
                 if (isV0AtInitial) {
-                  // On part du capital initial (point intermédiaire), utiliser la couleur du point d'arrivée
-                  return v1 >= initialCapital ? '#3b82f6' : '#ec4899';
+                  return v1 >= colorReference ? '#3b82f6' : '#ec4899';
                 } else if (isV1AtInitial) {
-                  // On arrive au capital initial (point intermédiaire), utiliser la couleur du point de départ
-                  return v0 >= initialCapital ? '#3b82f6' : '#ec4899';
+                  return v0 >= colorReference ? '#3b82f6' : '#ec4899';
                 } else {
-                  // Segment normal, colorer selon le point d'arrivée
-                  return v1 >= initialCapital ? '#3b82f6' : '#ec4899';
+                  return v1 >= colorReference ? '#3b82f6' : '#ec4899';
                 }
               },
             },
@@ -285,14 +272,14 @@ function AccountBalanceChart({
             },
             pointBackgroundColor: (context: any) => {
               const value = context.parsed?.y;
-              return value >= initialCapital ? '#3b82f6' : '#ec4899';
+              return value >= colorReference ? '#3b82f6' : '#ec4899';
             },
             pointBorderColor: '#ffffff',
             pointBorderWidth: 2,
             pointHoverRadius: 6,
             pointHoverBackgroundColor: (context: any) => {
               const value = context.parsed?.y;
-              return value >= initialCapital ? '#3b82f6' : '#ec4899';
+              return value >= colorReference ? '#3b82f6' : '#ec4899';
             },
             pointHoverBorderColor: '#ffffff',
             pointHoverBorderWidth: 3,
@@ -363,7 +350,7 @@ function AccountBalanceChart({
       pnlMapping: processedPnlMapping,
       netTransactionsMapping: processedNetTransactionsMapping,
     };
-  }, [data, initialCapital, hideMll, hideProfitTarget, profitTarget, formatPointLabel]);
+  }, [data, colorReference, hideMll, hideProfitTarget, profitTarget, formatPointLabel]);
 
   // Options du graphique
   const options = useMemo(() => {
@@ -435,8 +422,8 @@ function AccountBalanceChart({
             const agg = pt?.aggregation || 'day';
             if (agg === 'week' && pt?.rangeStartKey && pt?.rangeEndKey) {
               return t('dashboard:waterfallTooltipWeekTitle', {
-                start: formatDayLabel(pt.rangeStartKey, true),
-                end: formatDayLabel(pt.rangeEndKey, true),
+                start: formatDayLabel(pt.rangeStartKey),
+                end: formatDayLabel(pt.rangeEndKey),
               });
             }
             if (agg === 'month') {
@@ -488,7 +475,8 @@ function AccountBalanceChart({
           minRotation: 45,
           color: chartColors.textSecondary,
           font: {
-            size: 11,
+            family: CHART_FONT_FAMILY,
+            size: chartFontSizes.tick,
           },
         },
         grid: {
@@ -504,7 +492,8 @@ function AccountBalanceChart({
           display: !hideProfitLoss,
           color: chartColors.textSecondary,
           font: {
-            size: 12,
+            family: CHART_FONT_FAMILY,
+            size: chartFontSizes.tick,
           },
           callback: function(value: any) {
             const numValue = typeof value === 'number' ? value : parseFloat(String(value));
@@ -538,7 +527,7 @@ function AccountBalanceChart({
         duration: 0, // Désactiver l'animation pour éviter le tremblement après chargement
       },
     };
-  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartColors, formatCurrency, currencySymbol, t, hideProfitLoss, data, formatDayLabel, formatMonthAxisLabel, preferences.pnl_display]);
+  }, [chartData, chartLabels, pnlMapping, netTransactionsMapping, chartColors, formatCurrency, currencySymbol, t, hideProfitLoss, data, formatDayLabel, formatMonthAxisLabel, preferences.pnl_display, chartFontSizes]);
 
   if (data.length === 0) {
     return (

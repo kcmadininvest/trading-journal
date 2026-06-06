@@ -114,6 +114,7 @@ class PnlPreferenceMixin:
     def get_pnl_field(self) -> str:
         return get_trade_pnl_field(self.request.user)
 from .account_balance import (
+    build_dashboard_balance_context,
     compute_trading_account_balance,
     resolve_account_balance,
     resolve_peak_balance_only,
@@ -5354,6 +5355,17 @@ def dashboard_summary(request):
         _dash_pf,
     )
 
+    balance_context = None
+    if trading_account_id:
+        try:
+            account = TradingAccount.objects.get(  # type: ignore
+                id=int(trading_account_id),
+                user=request.user,
+            )
+            balance_context = build_dashboard_balance_context(account, start_date_obj)
+        except (TradingAccount.DoesNotExist, ValueError, TypeError):  # type: ignore
+            balance_context = None
+
     # Build response
     response_data = {
         'daily_aggregates': daily_data,
@@ -5364,6 +5376,8 @@ def dashboard_summary(request):
         'count': len(daily_data),
         'period_performance': period_performance,
     }
+    if balance_context is not None:
+        response_data['balance_context'] = balance_context
     
     return Response(response_data)
 

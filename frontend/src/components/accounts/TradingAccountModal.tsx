@@ -31,7 +31,8 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
     status: 'active',
     description: '',
     maximum_loss_limit: undefined,
-    mll_enabled: true,
+    mll_enabled: false,
+    initial_capital: null,
     profit_target: undefined,
     profit_target_enabled: false,
     broker_account_id: '',
@@ -78,7 +79,7 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
         currency: account.currency,
         initial_capital: account.initial_capital,
         maximum_loss_limit: mllValue,
-        mll_enabled: account.mll_enabled !== undefined ? account.mll_enabled : true,
+        mll_enabled: account.mll_enabled !== undefined ? account.mll_enabled : false,
         profit_target: profitTargetValue,
         profit_target_enabled: account.profit_target_enabled !== undefined ? account.profit_target_enabled : false,
         status: account.status,
@@ -95,7 +96,8 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
         status: 'active',
         description: '',
         maximum_loss_limit: undefined,
-        mll_enabled: true,
+        mll_enabled: false,
+        initial_capital: null,
         profit_target: undefined,
         profit_target_enabled: false,
         broker_account_id: '',
@@ -123,6 +125,20 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
     if (!form.name) {
       setError(t('accounts:form.nameRequired', { defaultValue: 'Le nom est requis' }));
       return;
+    }
+    if ((form as any).mll_enabled === true) {
+      const mll = (form as any).maximum_loss_limit;
+      if (mll === null || mll === undefined || mll === '') {
+        setError(t('accounts:form.mllRequiredWhenEnabled', { defaultValue: 'Saisissez un MLL ou désactivez l’option.' }));
+        return;
+      }
+    }
+    if ((form as any).profit_target_enabled === true) {
+      const pt = (form as any).profit_target;
+      if (pt === null || pt === undefined || pt === '') {
+        setError(t('accounts:form.profitTargetRequiredWhenEnabled', { defaultValue: 'Saisissez un objectif de profit ou désactivez l’option.' }));
+        return;
+      }
     }
 
     setSaving(true);
@@ -319,15 +335,34 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                   {t('accounts:form.initialCapital')}
                 </label>
                 <NumberInput
-                  value={(form as any).initial_capital || ''}
-                  onChange={(value) => setForm(prev => ({ ...prev, initial_capital: value ? parseFloat(value) : null } as any))}
+                  value={(() => {
+                    const ic = (form as any).initial_capital;
+                    if (ic === null || ic === undefined) return '';
+                    return ic;
+                  })()}
+                  onChange={(value) => setForm(prev => ({ ...prev, initial_capital: value !== '' && value != null ? parseFloat(String(value)) : null } as any))}
                   className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2"
                   placeholder={t('accounts:form.initialCapitalPlaceholder')}
                   min={0}
                   step="0.01"
                   digits={2}
                 />
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {[0, 50000, 150000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, initial_capital: preset } as any))}
+                      className="rounded-md border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                    >
+                      {t(`accounts:form.initialCapitalPreset${preset}`, {
+                        defaultValue: preset === 0 ? '0' : preset.toLocaleString('fr-FR'),
+                      })}
+                    </button>
+                  ))}
+                </div>
                 <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.initialCapitalDescription')}</p>
+                <p className="mt-1 text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">{t('accounts:form.chartThresholdHelp')}</p>
               </div>
             </div>
 
@@ -343,15 +378,14 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
                 </div>
               </div>
               <SettingsStyleToggle
-                pressed={(form as any).mll_enabled !== false}
+                pressed={(form as any).mll_enabled === true}
                 onPressedChange={(next) => setForm((prev) => ({ ...prev, mll_enabled: next } as any))}
               />
             </div>
-            {(form as any).mll_enabled !== false && (
+            {(form as any).mll_enabled === true && (
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
                   {t('accounts:form.maximumLossLimit', { defaultValue: 'Maximum Loss Limit (MLL)' })}
-                  <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
                 </label>
                 <NumberInput
                   value={(() => {
@@ -393,7 +427,6 @@ const TradingAccountModal: React.FC<TradingAccountModalProps> = ({
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 sm:mb-2">
                   {t('accounts:form.profitTarget', { defaultValue: 'Objectif de profit' })}
-                  <span className="text-gray-400 text-xs ml-1">({t('common:optional', { defaultValue: 'optionnel' })})</span>
                 </label>
                 <NumberInput
                   value={(() => {

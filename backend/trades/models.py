@@ -89,7 +89,7 @@ class TradingAccount(models.Model):
     initial_capital = models.DecimalField(
         max_digits=15,
         decimal_places=2,
-        default=Decimal('50000.00'),
+        default=None,
         null=True,
         blank=True,
         verbose_name='Capital initial',

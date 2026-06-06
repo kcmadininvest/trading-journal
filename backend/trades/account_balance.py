@@ -183,6 +183,174 @@ def compute_topstep_best_day(
     }
 
 
+def _balance_before_calendar_date_sql(
+    trading_account: TradingAccount,
+    before_date: date,
+) -> Tuple[Decimal, Decimal]:
+    """
+    Solde de trésorerie juste avant ``before_date`` (événements des jours strictement antérieurs).
+    Applique tx avant trades pour chaque journée (aligné sur le pic SQL).
+    """
+    from .models import AccountTransaction, TopStepTrade
+
+    initial_capital: Decimal = trading_account.initial_capital or Decimal('0')
+    trade_table = TopStepTrade._meta.db_table
+    tx_table = AccountTransaction._meta.db_table
+
+    sql = f"""
+        WITH initial AS (
+            SELECT %s::numeric AS capital
+        ),
+        tx_events AS (
+            SELECT
+                DATE(t.transaction_date) AS event_day,
+                0 AS sort_kind,
+                MIN(t.transaction_date) AS sort_ts,
+                0 AS trade_pk,
+                SUM(
+                    CASE
+                        WHEN t.transaction_type = 'deposit' THEN t.amount
+                        ELSE -t.amount
+                    END
+                )::numeric AS delta_net,
+                SUM(
+                    CASE
+                        WHEN t.transaction_type = 'deposit' THEN t.amount
+                        ELSE -t.amount
+                    END
+                )::numeric AS delta_gross
+            FROM {tx_table} t
+            WHERE t.trading_account_id = %s
+            GROUP BY DATE(t.transaction_date)
+        ),
+        trade_events AS (
+            SELECT
+                tr.trade_day AS event_day,
+                1 AS sort_kind,
+                COALESCE(tr.entered_at, tr.trade_day::timestamp) AS sort_ts,
+                tr.id AS trade_pk,
+                COALESCE(tr.net_pnl, 0)::numeric AS delta_net,
+                COALESCE(tr.pnl, tr.net_pnl, 0)::numeric AS delta_gross
+            FROM {trade_table} tr
+            WHERE tr.trading_account_id = %s
+              AND tr.trade_day IS NOT NULL
+        ),
+        all_events AS (
+            SELECT * FROM tx_events
+            UNION ALL
+            SELECT * FROM trade_events
+        ),
+        filtered AS (
+            SELECT * FROM all_events WHERE event_day < %s
+        ),
+        running AS (
+            SELECT
+                event_day,
+                sort_kind,
+                sort_ts,
+                trade_pk,
+                (SELECT capital FROM initial)
+                + SUM(delta_net) OVER (
+                    ORDER BY event_day, sort_kind, sort_ts, trade_pk
+                    ROWS UNBOUNDED PRECEDING
+                ) AS running_net,
+                (SELECT capital FROM initial)
+                + SUM(delta_gross) OVER (
+                    ORDER BY event_day, sort_kind, sort_ts, trade_pk
+                    ROWS UNBOUNDED PRECEDING
+                ) AS running_gross
+            FROM filtered
+        ),
+        last_balance AS (
+            SELECT running_net, running_gross
+            FROM running
+            ORDER BY event_day DESC, sort_kind DESC, sort_ts DESC, trade_pk DESC
+            LIMIT 1
+        )
+        SELECT
+            COALESCE(
+                (SELECT running_net FROM last_balance),
+                (SELECT capital FROM initial)
+            ) AS balance_net,
+            COALESCE(
+                (SELECT running_gross FROM last_balance),
+                (SELECT capital FROM initial)
+            ) AS balance_gross
+    """
+    params = [
+        initial_capital,
+        trading_account.pk,
+        trading_account.pk,
+        before_date,
+    ]
+    with connection.cursor() as cursor:
+        cursor.execute(sql, params)
+        row = cursor.fetchone()
+
+    if not row:
+        return initial_capital, initial_capital
+    balance_net = row[0] if row[0] is not None else initial_capital
+    balance_gross = row[1] if row[1] is not None else initial_capital
+    return Decimal(str(balance_net)), Decimal(str(balance_gross))
+
+
+def compute_balance_at_period_start(
+    trading_account: TradingAccount,
+    start_date: Optional[date],
+    *,
+    use_gross: bool = False,
+) -> Decimal:
+    """
+    Solde réel au début de ``start_date`` (capital + PnL + flux strictement avant ce jour).
+    Sans ``start_date`` : retourne le capital initial effectif.
+    """
+    initial_capital: Decimal = trading_account.initial_capital or Decimal('0')
+    if start_date is None:
+        return initial_capital
+
+    balance_net, balance_gross = _balance_before_calendar_date_sql(
+        trading_account,
+        start_date,
+    )
+    return balance_gross if use_gross else balance_net
+
+
+def build_dashboard_balance_context(
+    trading_account: TradingAccount,
+    start_date: Optional[date],
+) -> Dict[str, Any]:
+    """Contexte de solde pour le graphique dashboard (compte unique)."""
+    initial_capital: Decimal = trading_account.initial_capital or Decimal('0')
+    opening_net = compute_balance_at_period_start(trading_account, start_date, use_gross=False)
+    opening_gross = compute_balance_at_period_start(trading_account, start_date, use_gross=True)
+
+    bal = resolve_account_balance(trading_account, include_peak=False, use_cache=True)
+
+    profit_target_absolute: Optional[Decimal] = None
+    if (
+        trading_account.profit_target_enabled
+        and trading_account.profit_target is not None
+    ):
+        profit_target_absolute = initial_capital + Decimal(str(trading_account.profit_target))
+
+    mll_configured = bool(
+        trading_account.mll_enabled is not False
+        and trading_account.maximum_loss_limit is not None
+    )
+
+    return {
+        'initial_capital': str(initial_capital),
+        'opening_balance': str(opening_net),
+        'opening_balance_gross': str(opening_gross),
+        'current_balance': str(bal['current_balance']),
+        'current_balance_gross': str(bal.get('current_balance_gross', bal['current_balance'])),
+        'profit_target_absolute': (
+            str(profit_target_absolute) if profit_target_absolute is not None else None
+        ),
+        'mll_configured': mll_configured,
+    }
+
+
 def compute_trading_account_balance(
     trading_account: TradingAccount,
     exclude_transaction_id: Optional[int] = None,

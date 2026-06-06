@@ -74,28 +74,30 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
     <div className={`min-w-0 ${className}`.trim()}>
       <TickerShell ariaLabel={ariaLabel} shellClassName={FILTER_BAR_SHELL_CLASS}>
         <div
-          className={`flex w-full ${BAND_ROW_MIN_HEIGHT} min-w-0 flex-nowrap items-center gap-2 overflow-x-auto overflow-y-visible py-1 overscroll-x-contain sm:gap-3 [-webkit-overflow-scrolling:touch]`}
+          className={`flex w-full ${BAND_ROW_MIN_HEIGHT} min-w-0 flex-nowrap items-center gap-2 sm:gap-3`}
         >
-          <div className="flex shrink-0 flex-nowrap items-center gap-2 sm:gap-3">
-            <div className="flex shrink-0 items-center gap-2">
-              <div className="min-w-0 w-max max-w-[min(100vw-8rem,20rem)]">
-                <AccountSelector
-                  value={accountId}
-                  onChange={onAccountChange}
-                  hideLabel
-                  hideAccountNumber={hideAccountNumber}
-                  variant="default"
-                />
-              </div>
-              <div className="flex h-10 shrink-0 items-center">
-                <PrivacyDropdown
-                  pageContext={PAGE_CONTEXTS.DASHBOARD}
-                  availableOptions={PAGE_PRIVACY_OPTIONS[PAGE_CONTEXTS.DASHBOARD]}
-                  variant="default"
-                />
-              </div>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="min-w-0 w-max max-w-[min(100vw-8rem,20rem)]">
+              <AccountSelector
+                value={accountId}
+                onChange={onAccountChange}
+                hideLabel
+                hideAccountNumber={hideAccountNumber}
+                variant="default"
+              />
             </div>
+            <div className="flex h-10 shrink-0 items-center">
+              <PrivacyDropdown
+                pageContext={PAGE_CONTEXTS.DASHBOARD}
+                availableOptions={PAGE_PRIVACY_OPTIONS[PAGE_CONTEXTS.DASHBOARD]}
+                variant="default"
+              />
+            </div>
+          </div>
 
+          <div
+            className={`flex min-w-0 flex-1 flex-nowrap items-center gap-2 overflow-x-auto overflow-y-visible py-1 overscroll-x-contain sm:gap-3 [-webkit-overflow-scrolling:touch]`}
+          >
             <div className={`min-w-0 ${PILL_WIDTH}`}>
               <PeriodSelector
                 value={selectedPeriod}

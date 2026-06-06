@@ -93,6 +93,7 @@
   "avg": "Prom",
   "ofPnL": "% del P/L",
   "accountBalanceOverTime": "Saldo de la Cuenta en el Tiempo",
+  "accountBalanceMllVsBalanceTooltip": "El MLL se calcula sobre el saldo de trading (sin depósitos/retiros). La curva de saldo incluye flujos de caja.",
   "startDate": "Fecha de inicio",
   "endDate": "Fecha de fin",
   "totalGain": "Ganancia total",
