@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatNumber, formatCurrency } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin, ANALYTICS_CHART_BODY_CLASS, ANALYTICS_CHART_CARD_CLASS, ANALYTICS_CHART_HEADER_CLASS } from '../../utils/chartConfig';
 
 interface DrawdownChartProps {
   data: Array<{ date: string; drawdown: number; drawdownAmount: number; drawdownPercent: number; cumulativePnl: number }>;
@@ -22,8 +22,8 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
   const { t } = useTranslation();
 
   return (
-    <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px] flex flex-col">
-      <div className="flex items-center gap-2 mb-6 flex-shrink-0">
+    <div className={ANALYTICS_CHART_CARD_CLASS}>
+      <div className={ANALYTICS_CHART_HEADER_CLASS}>
         <div className="w-1 h-6 bg-gradient-to-b from-red-500 to-red-600 rounded-full mr-3"></div>
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('analytics:charts.drawdown.title')}</h3>
         <TooltipComponent
@@ -37,7 +37,7 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">
+      <ChartTooltipResetContainer className={ANALYTICS_CHART_BODY_CLASS}>
         {data.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             <div className="text-center">
@@ -155,4 +155,3 @@ export const DrawdownChart: React.FC<DrawdownChartProps> = ({
     </div>
   );
 };
-

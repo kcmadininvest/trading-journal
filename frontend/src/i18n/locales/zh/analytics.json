@@ -68,18 +68,23 @@
       "onTotal": "sur {{total}} total"
     },
     "maeMfe": {
-      "title": "MAE vs MFE",
+      "title": "最大不利偏移 vs 最大有利偏移",
+      "description": "MAE 表示交易期间对您最不利的波动，MFE 表示最有利的波动。气泡聚合相似交易。",
+      "densitySubtitle": "交易密度",
       "tooltip": "最大不利偏移（对您不利的最差走势）与最大有利偏移（对您有利的最佳走势）分析。左上角的点表示管理良好的交易（低MAE，高MFE）。",
       "mae": "MAE",
       "mfe": "MFE",
       "pnl": "盈亏",
       "date": "日期",
+      "trades": "交易数",
+      "winRate": "胜率",
+      "clusterTitle": "MAE / MFE 区域",
       "xAxis": "MAE - 最大不利偏移",
       "yAxis": "MFE - 最大有利偏移",
       "winningTrades": "盈利交易",
       "losingTrades": "亏损交易",
       "noData": "此期间没有MAE/MFE数据",
-      "densityHint": "交易数量较多时，标记会更小、更透明，以便突出密集区域。"
+      "densityHint": "气泡按 MAE/MFE 区域聚合。大小反映交易数量，透明度突出密集区域。"
     }
   },
   "common": {

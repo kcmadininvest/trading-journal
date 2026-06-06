@@ -1,12 +1,20 @@
-import React, { useMemo } from 'react';
-import { Scatter } from 'react-chartjs-2';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  CartesianGrid,
+  ResponsiveContainer,
+  Scatter,
+  ScatterChart,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { useTranslation } from 'react-i18next';
-import TooltipComponent from '../ui/Tooltip';
+import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
+import { ChartHoverTooltip, rechartsTooltipWrapperProps } from '../charts/ChartHoverTooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
-import { formatCurrency } from '../../utils/numberFormat';
-import { formatDate } from '../../utils/dateFormat';
+import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 import { usePreferences } from '../../hooks/usePreferences';
-import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, ANALYTICS_CHART_BODY_CLASS, ANALYTICS_CHART_CARD_CLASS, type ChartColors } from '../../utils/chartConfig';
 
 interface MaeMfeDataPoint {
   tradeId: number;
@@ -15,38 +23,121 @@ interface MaeMfeDataPoint {
   entryPrice: number;
   exitPrice: number;
   pnl: number;
-  mae: number; // Maximum Adverse Excursion (pire mouvement contre nous)
-  mfe: number; // Maximum Favorable Excursion (meilleur mouvement pour nous)
+  mae: number;
+  mfe: number;
   tradeDay: string;
 }
 
 interface MaeMfeChartProps {
   data: MaeMfeDataPoint[];
   currencySymbol: string;
-  chartColors: any;
+  chartColors: ChartColors;
   tradesCount: number;
 }
 
-/** Ajuste taille, transparence et bordures selon le nombre de points (nuage lisible). */
-function getMaeMfeScatterStyle(pointCount: number) {
-  const t = Math.min(1, Math.max(0, (pointCount - 25) / 375));
-  const pointRadius = Math.max(2, Math.round(6 - 3.5 * t));
-  const pointHoverRadius = Math.max(7, pointRadius + 4);
-  const borderWidth = pointCount > 220 ? 0 : pointCount > 90 ? 1 : 2;
-  const fillA = Number((0.58 - 0.33 * t).toFixed(2));
-  const strokeA = Number((0.92 - 0.35 * t).toFixed(2));
-  const hitRadius = pointRadius <= 3 ? 20 : pointRadius <= 4 ? 16 : 12;
-  return {
-    pointRadius,
-    pointHoverRadius,
-    borderWidth,
-    hitRadius,
-    winningFill: `rgba(59, 130, 246, ${fillA})`,
-    winningStroke: `rgba(59, 130, 246, ${strokeA})`,
-    losingFill: `rgba(236, 72, 153, ${fillA})`,
-    losingStroke: `rgba(236, 72, 153, ${strokeA})`,
-    showDensityHint: pointCount >= 70,
-  };
+interface MaeMfeCluster {
+  mae: number;
+  mfe: number;
+  trades: number;
+  winRate: number;
+  z: number;
+}
+
+const WINNING_COLOR = '#3b82f6';
+const LOSING_COLOR = '#ec4899';
+const BUBBLE_OPACITY = 0.6;
+
+function clusterRadius(trades: number): number {
+  return Math.max(5, Math.min(38, Math.sqrt(trades) * 2));
+}
+
+/** Regroupe les trades en cellules MAE/MFE pour visualiser la densité. */
+function clusterMaeMfeData(data: MaeMfeDataPoint[]): {
+  winningClusters: MaeMfeCluster[];
+  losingClusters: MaeMfeCluster[];
+} {
+  if (data.length === 0) {
+    return { winningClusters: [], losingClusters: [] };
+  }
+
+  const points = data.map((d) => ({
+    mae: Math.abs(d.mae),
+    mfe: d.mfe,
+    isWin: d.pnl > 0,
+  }));
+
+  const maes = points.map((p) => p.mae);
+  const mfes = points.map((p) => p.mfe);
+  const maeMin = Math.min(...maes);
+  const maeMax = Math.max(...maes);
+  const mfeMin = Math.min(...mfes);
+  const mfeMax = Math.max(...mfes);
+
+  const bins = Math.min(12, Math.max(6, Math.round(Math.sqrt(points.length / 3))));
+  const maeSpan = maeMax - maeMin || 1;
+  const mfeSpan = mfeMax - mfeMin || 1;
+  const maeStep = maeSpan / bins;
+  const mfeStep = mfeSpan / bins;
+
+  const cells = new Map<string, { maeSum: number; mfeSum: number; count: number; wins: number }>();
+
+  for (const point of points) {
+    const maeBin = Math.min(bins - 1, Math.floor((point.mae - maeMin) / maeStep));
+    const mfeBin = Math.min(bins - 1, Math.floor((point.mfe - mfeMin) / mfeStep));
+    const key = `${maeBin}:${mfeBin}`;
+    const cell = cells.get(key) ?? { maeSum: 0, mfeSum: 0, count: 0, wins: 0 };
+    cell.maeSum += point.mae;
+    cell.mfeSum += point.mfe;
+    cell.count += 1;
+    if (point.isWin) {
+      cell.wins += 1;
+    }
+    cells.set(key, cell);
+  }
+
+  const winningClusters: MaeMfeCluster[] = [];
+  const losingClusters: MaeMfeCluster[] = [];
+
+  for (const cell of Array.from(cells.values())) {
+    const cluster: MaeMfeCluster = {
+      mae: cell.maeSum / cell.count,
+      mfe: cell.mfeSum / cell.count,
+      trades: cell.count,
+      winRate: (cell.wins / cell.count) * 100,
+      z: cell.count,
+    };
+    if (cluster.winRate >= 50) {
+      winningClusters.push(cluster);
+    } else {
+      losingClusters.push(cluster);
+    }
+  }
+
+  return { winningClusters, losingClusters };
+}
+
+function MaeMfeBubble(props: {
+  cx?: number;
+  cy?: number;
+  payload?: MaeMfeCluster;
+  fill: string;
+}) {
+  const { cx, cy, payload, fill } = props;
+  if (cx == null || cy == null || !payload) {
+    return null;
+  }
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={clusterRadius(payload.trades)}
+      fill={fill}
+      fillOpacity={BUBBLE_OPACITY}
+      stroke={fill}
+      strokeOpacity={0.85}
+      strokeWidth={1}
+    />
+  );
 }
 
 export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
@@ -57,210 +148,103 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
 }) => {
   const { t } = useTranslation();
   const { preferences } = usePreferences();
-  const dateFormat = preferences.date_format ?? 'EU';
-  const timezone = preferences.timezone;
+  const numberFormat = preferences.number_format ?? 'comma';
 
-  // Séparer les trades gagnants et perdants
-  const { winningTrades, losingTrades } = useMemo(() => {
-    const winning = data.filter(d => d.pnl > 0);
-    const losing = data.filter(d => d.pnl <= 0);
-    return { winningTrades: winning, losingTrades: losing };
-  }, [data]);
+  const { winningClusters, losingClusters } = useMemo(() => clusterMaeMfeData(data), [data]);
 
-  const scatterStyle = useMemo(() => getMaeMfeScatterStyle(data.length), [data.length]);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
 
-  const chartData = useMemo(() => ({
-    datasets: [
-      {
-        label: t('analytics:charts.maeMfe.winningTrades', { defaultValue: 'Trades gagnants' }),
-        data: winningTrades.map(d => ({
-          x: Math.abs(d.mae),
-          y: d.mfe,
-          tradeId: d.tradeId,
-          contractName: d.contractName,
-          tradeType: d.tradeType,
-          pnl: d.pnl,
-          tradeDay: d.tradeDay,
-        })),
-        backgroundColor: scatterStyle.winningFill,
-        borderColor: scatterStyle.winningStroke,
-        borderWidth: scatterStyle.borderWidth,
-        pointRadius: scatterStyle.pointRadius,
-        pointHoverRadius: scatterStyle.pointHoverRadius,
-      },
-      {
-        label: t('analytics:charts.maeMfe.losingTrades', { defaultValue: 'Trades perdants' }),
-        data: losingTrades.map(d => ({
-          x: Math.abs(d.mae),
-          y: d.mfe,
-          tradeId: d.tradeId,
-          contractName: d.contractName,
-          tradeType: d.tradeType,
-          pnl: d.pnl,
-          tradeDay: d.tradeDay,
-        })),
-        backgroundColor: scatterStyle.losingFill,
-        borderColor: scatterStyle.losingStroke,
-        borderWidth: scatterStyle.borderWidth,
-        pointRadius: scatterStyle.pointRadius,
-        pointHoverRadius: scatterStyle.pointHoverRadius,
-      },
-    ],
-  }), [winningTrades, losingTrades, scatterStyle, t]);
+  useEffect(() => {
+    const node = chartContainerRef.current;
+    if (!node) {
+      return undefined;
+    }
 
-  const chartOptions = useMemo(() => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: 'nearest' as const,
-      intersect: false,
-    },
-    elements: {
-      point: {
-        hitRadius: scatterStyle.hitRadius,
-      },
-    },
-    plugins: {
-      datalabels: {
-        display: false,
-      },
-      legend: {
-        display: true,
-        position: 'top' as const,
-        labels: {
-          color: chartColors.text,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 12,
-            weight: 500,
-          },
-          usePointStyle: true,
-          padding: 15,
-        },
-      },
-      tooltip: {
-        ...buildChartTooltipPlugin(chartColors, 'lineMultiSeries', undefined, {
-        callbacks: {
-          title: (items: any) => {
-            const point = items[0].raw;
-            return `${point.contractName} - ${point.tradeType}`;
-          },
-          label: (context: any) => {
-            const point = context.raw;
-            const dateLabel = formatDate(point.tradeDay, dateFormat, false, timezone);
-            return [
-              `${t('analytics:charts.maeMfe.mae')}: ${formatCurrency(point.x, currencySymbol)}`,
-              `${t('analytics:charts.maeMfe.mfe')}: ${formatCurrency(point.y, currencySymbol)}`,
-              `${t('analytics:charts.maeMfe.pnl')}: ${formatCurrency(point.pnl, currencySymbol)}`,
-              `${t('analytics:charts.maeMfe.date')}: ${dateLabel || point.tradeDay}`,
-            ];
-          },
-        },
-        }),
-      },
-    },
-    scales: {
-      x: {
-        type: 'linear' as const,
-        position: 'bottom' as const,
-        title: {
-          display: true,
-          text: t('analytics:charts.maeMfe.xAxis', { defaultValue: 'MAE - Maximum Adverse Excursion' }),
-          color: chartColors.text,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 13,
-            weight: 600,
-          },
-        },
-        ticks: {
-          color: chartColors.textSecondary,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 11,
-          },
-          callback: function(value: any) {
-            return formatCurrency(value, currencySymbol);
-          },
-        },
-        grid: {
-          color: chartColors.grid,
-          lineWidth: 1,
-        },
-        border: {
-          color: chartColors.border,
-        },
-      },
-      y: {
-        type: 'linear' as const,
-        position: 'left' as const,
-        title: {
-          display: true,
-          text: t('analytics:charts.maeMfe.yAxis', { defaultValue: 'MFE - Maximum Favorable Excursion' }),
-          color: chartColors.text,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 13,
-            weight: 600,
-          },
-        },
-        ticks: {
-          color: chartColors.textSecondary,
-          font: {
-            family: CHART_FONT_FAMILY,
-            size: 11,
-          },
-          callback: function(value: any) {
-            return formatCurrency(value, currencySymbol);
-          },
-        },
-        grid: {
-          color: chartColors.grid,
-          lineWidth: 1,
-        },
-        border: {
-          color: chartColors.border,
-        },
-      },
-    },
-  }), [chartColors, currencySymbol, dateFormat, scatterStyle.hitRadius, timezone, t]);
+    const measure = () => {
+      const { width, height } = node.getBoundingClientRect();
+      const w = Math.floor(width);
+      const h = Math.floor(height);
+      if (w > 0 && h > 0) {
+        setChartSize((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+      }
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [data.length]);
+
+  const axisTickStyle = useMemo(
+    () => ({
+      fontSize: 11,
+      fill: chartColors.textSecondary,
+      fontFamily: CHART_FONT_FAMILY,
+    }),
+    [chartColors.textSecondary],
+  );
+
+  const axisLabelStyle = useMemo(
+    () => ({
+      fontSize: 12,
+      fill: chartColors.text,
+      fontFamily: CHART_FONT_FAMILY,
+      fontWeight: 600,
+    }),
+    [chartColors.text],
+  );
+
+  const formatAxisCurrency = (value: number) =>
+    formatCurrency(value, currencySymbol, numberFormat, 0);
 
   return (
-    <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px] flex flex-col">
-      <div className="flex items-center gap-2 mb-6 flex-shrink-0">
-        <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full mr-3"></div>
-        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
-          {t('analytics:charts.maeMfe.title', { defaultValue: 'MAE vs MFE' })}
-        </h3>
-        <TooltipComponent
-          content={t('analytics:charts.maeMfe.tooltip', { 
-            defaultValue: 'Analyse du Maximum Adverse Excursion (pire mouvement contre vous) vs Maximum Favorable Excursion (meilleur mouvement pour vous). Les points en haut à gauche indiquent des trades bien gérés (faible MAE, fort MFE).' 
-          })}
-          position="top"
-        >
-          <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-help">
-            <svg className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+    <div className={ANALYTICS_CHART_CARD_CLASS}>
+      <div className="mb-3 flex-shrink-0">
+        <div className="flex items-start gap-2">
+          <div className="w-1 h-6 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full mr-1 mt-1 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-bold text-gray-800 dark:text-gray-100 leading-snug">
+                {t('analytics:charts.maeMfe.title', {
+                  defaultValue: 'Maximum Adverse Excursion vs Maximum Favorable Excursion',
+                })}
+              </h3>
+              <ChartHelpTooltip
+                content={t('analytics:charts.maeMfe.tooltip', {
+                  defaultValue:
+                    'Analyse du Maximum Adverse Excursion (pire mouvement contre vous) vs Maximum Favorable Excursion (meilleur mouvement pour vous). Les points en haut à gauche indiquent des trades bien gérés (faible MAE, fort MFE).',
+                })}
+              />
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+              {t('analytics:charts.maeMfe.description', {
+                defaultValue:
+                  'Le MAE mesure le pire mouvement contre vous pendant un trade ; le MFE, le meilleur mouvement en votre faveur. Les bulles regroupent des trades proches.',
+              })}
+            </p>
           </div>
-        </TooltipComponent>
+        </div>
+        <div className="flex items-center justify-center gap-4 mt-3 text-xs text-gray-600 dark:text-gray-300">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: WINNING_COLOR, opacity: BUBBLE_OPACITY }} />
+            {t('analytics:charts.maeMfe.winningTrades', { defaultValue: 'Trades gagnants' })}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: LOSING_COLOR, opacity: BUBBLE_OPACITY }} />
+            {t('analytics:charts.maeMfe.losingTrades', { defaultValue: 'Trades perdants' })}
+          </span>
+        </div>
       </div>
 
-      {scatterStyle.showDensityHint && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 -mt-2 leading-snug">
-          {t('analytics:charts.maeMfe.densityHint', {
-            defaultValue:
-              'Les marqueurs rétrécissent et deviennent plus transparents lorsqu\'il y a beaucoup de trades, ce qui fait ressortir les zones denses.',
-          })}
-        </p>
-      )}
-
-      <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">
+      <ChartTooltipResetContainer className={ANALYTICS_CHART_BODY_CLASS}>
         {data.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
             <div className="text-center">
               <p className="text-sm">
-                {t('analytics:charts.maeMfe.noData', { defaultValue: 'Aucune donnée MAE/MFE disponible pour cette période' })}
+                {t('analytics:charts.maeMfe.noData', {
+                  defaultValue: 'Aucune donnée MAE/MFE disponible pour cette période',
+                })}
               </p>
               {tradesCount === 0 && (
                 <p className="text-xs mt-2 text-gray-400 dark:text-gray-500">
@@ -270,7 +254,105 @@ export const MaeMfeChart: React.FC<MaeMfeChartProps> = ({
             </div>
           </div>
         ) : (
-          <Scatter data={chartData} options={chartOptions} />
+          <div
+            ref={chartContainerRef}
+            className="min-w-0 h-full w-full [&_.recharts-wrapper]:outline-none [&_.recharts-surface]:outline-none [&_.recharts-surface]:focus:outline-none [&_.recharts-surface]:focus-visible:outline-none"
+            onMouseDown={(event) => event.preventDefault()}
+          >
+            {chartSize.width > 0 && chartSize.height > 0 && (
+              <ResponsiveContainer width={chartSize.width} height={chartSize.height} minWidth={0}>
+                <ScatterChart
+                  accessibilityLayer={false}
+                  style={{ outline: 'none' }}
+                  margin={{ top: 8, right: 12, bottom: 20, left: 0 }}
+                >
+                  <CartesianGrid stroke={chartColors.grid} strokeDasharray="3 3" />
+                  <XAxis
+                    type="number"
+                    dataKey="mae"
+                    name={t('analytics:charts.maeMfe.mae', { defaultValue: 'MAE' })}
+                    tick={axisTickStyle}
+                    tickFormatter={formatAxisCurrency}
+                    tickMargin={4}
+                    axisLine={false}
+                    tickLine={false}
+                    label={{
+                      value: t('analytics:charts.maeMfe.mae', { defaultValue: 'MAE' }),
+                      position: 'bottom',
+                      offset: 0,
+                      style: axisLabelStyle,
+                    }}
+                    stroke={chartColors.border}
+                  />
+                  <YAxis
+                    type="number"
+                    dataKey="mfe"
+                    name={t('analytics:charts.maeMfe.mfe', { defaultValue: 'MFE' })}
+                    tick={axisTickStyle}
+                    tickFormatter={formatAxisCurrency}
+                    width={72}
+                    tickMargin={4}
+                    axisLine={false}
+                    tickLine={false}
+                    label={{
+                      value: t('analytics:charts.maeMfe.mfe', { defaultValue: 'MFE' }),
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: 12,
+                      style: { ...axisLabelStyle, textAnchor: 'middle' },
+                    }}
+                    stroke={chartColors.border}
+                  />
+                  <Tooltip
+                    {...rechartsTooltipWrapperProps}
+                    cursor={false}
+                    trigger="hover"
+                    isAnimationActive={false}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) {
+                        return null;
+                      }
+                      const cluster = payload[0].payload as MaeMfeCluster;
+                      return (
+                        <ChartHoverTooltip
+                          chartColors={chartColors}
+                          title={t('analytics:charts.maeMfe.clusterTitle', {
+                            defaultValue: 'Zone MAE / MFE',
+                          })}
+                          lines={[
+                            `${t('analytics:charts.maeMfe.mae', { defaultValue: 'MAE' })}: ${formatCurrency(cluster.mae, currencySymbol, numberFormat)}`,
+                            `${t('analytics:charts.maeMfe.mfe', { defaultValue: 'MFE' })}: ${formatCurrency(cluster.mfe, currencySymbol, numberFormat)}`,
+                            `${t('analytics:charts.maeMfe.trades', { defaultValue: 'Trades' })}: ${formatNumber(cluster.trades, 0, numberFormat)}`,
+                            `${t('analytics:charts.maeMfe.winRate', { defaultValue: 'Win rate' })}: ${formatNumber(cluster.winRate, 0, numberFormat)}%`,
+                          ]}
+                        />
+                      );
+                    }}
+                  />
+                  <Scatter
+                    name={t('analytics:charts.maeMfe.winningTrades', { defaultValue: 'Trades gagnants' })}
+                    data={winningClusters}
+                    fill={WINNING_COLOR}
+                    isAnimationActive={false}
+                    activeShape={false}
+                    shape={(props: { cx?: number; cy?: number; payload?: MaeMfeCluster }) => (
+                      <MaeMfeBubble {...props} fill={WINNING_COLOR} />
+                    )}
+                  />
+                  <Scatter
+                    name={t('analytics:charts.maeMfe.losingTrades', { defaultValue: 'Trades perdants' })}
+                    data={losingClusters}
+                    fill={LOSING_COLOR}
+                    isAnimationActive={false}
+                    activeShape={false}
+                    shape={(props: { cx?: number; cy?: number; payload?: MaeMfeCluster }) => (
+                      <MaeMfeBubble {...props} fill={LOSING_COLOR} />
+                    )}
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         )}
       </ChartTooltipResetContainer>
     </div>

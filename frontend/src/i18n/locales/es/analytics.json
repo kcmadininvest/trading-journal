@@ -121,18 +121,23 @@
       "tooltip": "Este gráfico compara la distribución de tus ganancias y pérdidas por separado. El histograma de la izquierda muestra la distribución de las operaciones ganadoras por rangos de valores, y el de la derecha muestra la distribución de las operaciones perdedoras. Esto ayuda a identificar patrones y comparar la distribución de ganancias y pérdidas para optimizar tu estrategia."
     },
     "maeMfe": {
-      "title": "MAE vs MFE",
+      "title": "Excursión Adversa Máxima vs Excursión Favorable Máxima",
+      "description": "El MAE mide el peor movimiento en tu contra durante una operación; el MFE, el mejor movimiento a tu favor. Las burbujas agrupan operaciones similares.",
+      "densitySubtitle": "Densidad de operaciones",
       "tooltip": "Análisis de la Excursión Adversa Máxima (peor movimiento en tu contra) vs Excursión Favorable Máxima (mejor movimiento a tu favor). Los puntos en la parte superior izquierda indican operaciones bien gestionadas (MAE bajo, MFE alto).",
       "mae": "MAE",
       "mfe": "MFE",
       "pnl": "P/L",
       "date": "Fecha",
+      "trades": "Operaciones",
+      "winRate": "Tasa de acierto",
+      "clusterTitle": "Zona MAE / MFE",
       "xAxis": "MAE - Excursión Adversa Máxima",
       "yAxis": "MFE - Excursión Favorable Máxima",
       "winningTrades": "Operaciones ganadoras",
       "losingTrades": "Operaciones perdedoras",
       "noData": "No hay datos MAE/MFE disponibles para este período",
-      "densityHint": "Con muchas operaciones, los puntos se hacen más pequeños y transparentes para que destaquen las zonas densas."
+      "densityHint": "Las burbujas se agregan por zona MAE/MFE. Su tamaño refleja el número de operaciones y su transparencia destaca las regiones densas."
     },
     "monthlyPerformance": {
       "title": "Rendimiento Mensual/Anual",

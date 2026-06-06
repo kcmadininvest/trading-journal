@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
-import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin, ANALYTICS_CHART_BODY_CLASS, ANALYTICS_CHART_CARD_CLASS, ANALYTICS_CHART_HEADER_CLASS } from '../../utils/chartConfig';
 
 interface GainsVsLossesChartProps {
   data: {
@@ -238,14 +238,14 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
 
   if (!data) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
-        <div className="flex items-center gap-2 mb-6">
+      <div className={ANALYTICS_CHART_CARD_CLASS}>
+        <div className={ANALYTICS_CHART_HEADER_CLASS}>
           <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
           <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
             {t('analytics:charts.gainsVsLosses.title', { defaultValue: 'Distribution des Gains vs Pertes' })}
           </h3>
         </div>
-        <div className="flex items-center justify-center h-[350px]">
+        <div className={`${ANALYTICS_CHART_BODY_CLASS} flex items-center justify-center`}>
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
         </div>
       </div>
@@ -253,8 +253,8 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex items-center gap-2 mb-6">
+    <div className={ANALYTICS_CHART_CARD_CLASS}>
+      <div className={ANALYTICS_CHART_HEADER_CLASS}>
         <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
           {t('analytics:charts.gainsVsLosses.title', { defaultValue: 'Distribution des Gains vs Pertes' })}
@@ -270,12 +270,12 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
+      <div className={`${ANALYTICS_CHART_BODY_CLASS} grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0`}>
+        <div className="flex flex-col h-full min-h-0">
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center shrink-0">
             {t('analytics:charts.gainsVsLosses.gains', { defaultValue: 'Gains' })} ({data.totalGains} {t('analytics:common.trades', { defaultValue: 'trades' })})
           </h4>
-          <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
+          <ChartTooltipResetContainer className="relative flex-1 min-h-0">
             <ChartBar
               data={{
                 labels: data.gains.map(b => b.rangeLabel),
@@ -296,11 +296,11 @@ export const GainsVsLossesChart: React.FC<GainsVsLossesChartProps> = ({
           </ChartTooltipResetContainer>
         </div>
 
-        <div>
-          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center">
+        <div className="flex flex-col h-full min-h-0">
+          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 text-center shrink-0">
             {t('analytics:charts.gainsVsLosses.losses', { defaultValue: 'Pertes' })} ({data.totalLosses} {t('analytics:common.trades', { defaultValue: 'trades' })})
           </h4>
-          <ChartTooltipResetContainer style={{ height: '320px', position: 'relative' }}>
+          <ChartTooltipResetContainer className="relative flex-1 min-h-0">
             <ChartBar
               data={{
                 labels: data.losses.map(b => b.rangeLabel),

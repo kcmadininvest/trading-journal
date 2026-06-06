@@ -122,6 +122,18 @@ export const syncChartFontFamily = (fontFamily: string): void => {
   CHART_FONT_FAMILY = fontFamily;
 };
 
+/** Carte graphique standard (page Analytics). */
+export const ANALYTICS_CHART_CARD_CLASS =
+  'h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px] flex flex-col';
+
+/** En-tête titre + info (une ligne). */
+export const ANALYTICS_CHART_HEADER_CLASS = 'flex items-center gap-2 mb-6 flex-shrink-0';
+
+/** Zone de tracé — même hauteur minimale que les autres graphiques Analytics. */
+export const ANALYTICS_CHART_BODY_CLASS = 'relative flex-1 min-h-[320px]';
+
+export const ANALYTICS_CHART_MIN_HEIGHT = 320;
+
 export type ChartFontSizePreference = 'small' | 'medium' | 'large';
 
 /** Tailles SVG alignées sur Paramètres → Taille (graphiques hors Chart.js). */

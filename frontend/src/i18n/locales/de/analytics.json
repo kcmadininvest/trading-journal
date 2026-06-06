@@ -121,18 +121,23 @@
       "tooltip": "Dieses Diagramm vergleicht die Verteilung Ihrer Gewinne und Verluste getrennt. Das linke Histogramm zeigt die Verteilung der gewinnbringenden Trades nach Wertebereichen, und das rechte zeigt die Verteilung der verlustbringenden Trades. Dies hilft, Muster zu identifizieren und die Verteilung von Gewinnen und Verlusten zu vergleichen, um Ihre Strategie zu optimieren."
     },
     "maeMfe": {
-      "title": "MAE vs MFE",
+      "title": "Maximum Adverse Excursion vs Maximum Favorable Excursion",
+      "description": "MAE misst die schlechteste Bewegung gegen Sie während eines Trades; MFE die beste Bewegung zu Ihren Gunsten. Blasen fassen ähnliche Trades zusammen.",
+      "densitySubtitle": "Trade-Dichte",
       "tooltip": "Analyse der Maximum Adverse Excursion (schlechteste Bewegung gegen Sie) vs Maximum Favorable Excursion (beste Bewegung zu Ihren Gunsten). Punkte oben links zeigen gut verwaltete Trades (niedriger MAE, hoher MFE).",
       "mae": "MAE",
       "mfe": "MFE",
       "pnl": "P/L",
       "date": "Datum",
+      "trades": "Trades",
+      "winRate": "Trefferquote",
+      "clusterTitle": "MAE / MFE-Zone",
       "xAxis": "MAE - Maximum Adverse Excursion",
       "yAxis": "MFE - Maximum Favorable Excursion",
       "winningTrades": "Gewinnende Trades",
       "losingTrades": "Verlierende Trades",
       "noData": "Keine MAE/MFE-Daten für diesen Zeitraum verfügbar",
-      "densityHint": "Bei vielen Trades werden die Punkte kleiner und transparenter, damit dichte Bereiche besser erkennbar sind."
+      "densityHint": "Blasen werden nach MAE/MFE-Zone aggregiert. Ihre Größe spiegelt die Anzahl der Trades wider, die Transparenz hebt dichte Bereiche hervor."
     },
     "monthlyPerformance": {
       "title": "Monatliche/Jährliche Leistung",

@@ -5,7 +5,7 @@ import { useTheme } from '../../hooks/useTheme';
 import TooltipComponent from '../ui/Tooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+import { CHART_FONT_FAMILY, buildChartTooltipPlugin, ANALYTICS_CHART_BODY_CLASS, ANALYTICS_CHART_CARD_CLASS, ANALYTICS_CHART_HEADER_CLASS } from '../../utils/chartConfig';
 
 interface PnlDistributionChartProps {
   data: {
@@ -157,19 +157,23 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
-          </div>
+      <div className={ANALYTICS_CHART_CARD_CLASS}>
+        <div className={ANALYTICS_CHART_HEADER_CLASS}>
+          <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
+          <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+            {t('analytics:charts.pnlDistribution.title')}
+          </h3>
+        </div>
+        <div className={`${ANALYTICS_CHART_BODY_CLASS} flex items-center justify-center`}>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300">
-      <div className="flex items-center gap-2 mb-6">
+    <div className={ANALYTICS_CHART_CARD_CLASS}>
+      <div className={ANALYTICS_CHART_HEADER_CLASS}>
         <div className="w-1 h-6 bg-gradient-to-b from-indigo-500 to-indigo-600 rounded-full mr-3"></div>
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
           {t('analytics:charts.pnlDistribution.title')}
@@ -185,7 +189,7 @@ export const PnlDistributionChart: React.FC<PnlDistributionChartProps> = ({
           </div>
         </TooltipComponent>
       </div>
-      <ChartTooltipResetContainer style={{ height: '350px', position: 'relative' }}>
+      <ChartTooltipResetContainer className={ANALYTICS_CHART_BODY_CLASS}>
         <ChartBar
           data={{
             labels: data.map(d => formatCurrency(d.start, currencySymbol)),

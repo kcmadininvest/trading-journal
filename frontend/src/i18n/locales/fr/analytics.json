@@ -124,18 +124,23 @@
       "tooltip": "Ce graphique compare la distribution de vos gains et de vos pertes séparément. L'histogramme de gauche montre la répartition des trades gagnants par plages de valeurs, et celui de droite montre la répartition des trades perdants. Cela permet d'identifier les patterns et de comparer la distribution des gains et des pertes pour optimiser votre stratégie."
     },
     "maeMfe": {
-      "title": "MAE vs MFE",
+      "title": "Maximum Adverse Excursion vs Maximum Favorable Excursion",
+      "description": "Le MAE mesure le pire mouvement contre vous pendant un trade ; le MFE, le meilleur mouvement en votre faveur. Les bulles regroupent des trades proches.",
+      "densitySubtitle": "Densité des trades",
       "tooltip": "Analyse du Maximum Adverse Excursion (pire mouvement contre vous) vs Maximum Favorable Excursion (meilleur mouvement pour vous). Les points en haut à gauche indiquent des trades bien gérés (faible MAE, fort MFE).",
       "mae": "MAE",
       "mfe": "MFE",
       "pnl": "P/L",
       "date": "Date",
+      "trades": "Trades",
+      "winRate": "Win rate",
+      "clusterTitle": "Zone MAE / MFE",
       "xAxis": "MAE - Maximum Adverse Excursion",
       "yAxis": "MFE - Maximum Favorable Excursion",
       "winningTrades": "Trades gagnants",
       "losingTrades": "Trades perdants",
       "noData": "Aucune donnée MAE/MFE disponible pour cette période",
-      "densityHint": "Les marqueurs rétrécissent et deviennent plus transparents lorsqu'il y a beaucoup de trades, ce qui fait ressortir les zones denses."
+      "densityHint": "Les bulles sont agrégées par zone MAE/MFE. Leur taille reflète le nombre de trades et leur transparence met en évidence les zones denses."
     },
     "monthlyPerformance": {
       "title": "Performance Mensuelle/Annuelle",
