@@ -1,10 +1,14 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { TradeListItem } from '../services/trades';
 import { TradingAccount } from '../services/tradingAccounts';
-import { accountTransactionsService, AccountBalance as AccountBalanceData } from '../services/accountTransactions';
+import {
+  accountTransactionsService,
+  AccountBalance as AccountBalanceData,
+  TopStepConsistencyData,
+} from '../services/accountTransactions';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
-import { getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 import { toIsoCalendarDateInTimezone } from '../utils/dateFormat';
+import { getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 
 function groupTradesPnlByDay(
   trades: TradeListItem[],
@@ -61,7 +65,6 @@ export interface AccountIndicators {
   accountBalance: AccountBalance;
   totalTrades: number;
   activeDays?: number;
-  /** ISO date du compte de trading (TradingAccount.created_at) */
   accountCreatedAt?: string;
   bestAndWorstDays: {
     bestDay: BestWorstDay | null;
@@ -70,13 +73,16 @@ export interface AccountIndicators {
   consistencyTarget: ConsistencyTarget | null;
 }
 
+export interface UseAccountIndicatorsResult extends AccountIndicators {
+  balanceLoading: boolean;
+  balanceError: string | null;
+  peakLoading: boolean;
+}
+
 interface UseAccountIndicatorsParams {
   selectedAccount: TradingAccount | null;
-  allTrades: TradeListItem[];
   filteredTrades: TradeListItem[];
-  // Optionnel: données agrégées par jour (plus performant)
   filteredBalanceData?: DailyBalanceData[];
-  // Optionnel: données analytics du backend (plus performant)
   analyticsData?: {
     daily_stats?: {
       best_day?: string | null;
@@ -87,49 +93,135 @@ interface UseAccountIndicatorsParams {
   } | null;
   activeDays?: number;
   pnlDisplay?: PnlDisplayMode;
-  /** Fuseau horaire utilisateur (Réglages) pour l'agrégation journalière */
   timezone?: string;
 }
 
-/**
- * Hook personnalisé pour calculer les indicateurs de compte de manière cohérente
- * Utilise la source de données la plus performante disponible
- */
+function parsePeakFromApi(
+  balance: AccountBalanceData,
+  mode: PnlDisplayMode,
+  current: number,
+  initial: number,
+): number | null {
+  const rawPeak = mode === 'gross' ? balance.peak_balance_gross : balance.peak_balance;
+  if (rawPeak !== undefined && rawPeak !== '') {
+    const parsed = parseFloat(rawPeak);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+function buildAccountBalanceFromApi(
+  balance: AccountBalanceData,
+  pnlDisplay: PnlDisplayMode,
+  fallbackInitial: number,
+  fallbackPeak: number,
+): AccountBalance {
+  const initial = Number.isFinite(parseFloat(balance.initial_capital))
+    ? parseFloat(balance.initial_capital)
+    : fallbackInitial;
+  const currentNet = parseFloat(balance.current_balance);
+  if (pnlDisplay === 'net') {
+    const peak =
+      parsePeakFromApi(balance, 'net', currentNet, initial) ?? fallbackPeak;
+    return { initial, current: currentNet, peak };
+  }
+  const rawGross = balance.current_balance_gross;
+  const currentGross =
+    rawGross !== undefined && rawGross !== '' && Number.isFinite(parseFloat(rawGross))
+      ? parseFloat(rawGross)
+      : currentNet;
+  const peak =
+    parsePeakFromApi(balance, 'gross', currentGross, initial) ?? fallbackPeak;
+  return { initial, current: currentGross, peak };
+}
+
+function mergePeakIntoBalance(
+  balance: AccountBalanceData,
+  peakNet: string,
+  peakGross: string | undefined,
+): AccountBalanceData {
+  return {
+    ...balance,
+    peak_balance: peakNet,
+    peak_balance_gross: peakGross ?? peakNet,
+  };
+}
+
 export function useAccountIndicators({
   selectedAccount,
-  allTrades,
   filteredTrades,
   filteredBalanceData,
   analyticsData,
   activeDays,
   pnlDisplay = 'net',
   timezone = 'Europe/Paris',
-}: UseAccountIndicatorsParams): AccountIndicators {
-  // État pour le solde avec transactions
+}: UseAccountIndicatorsParams): UseAccountIndicatorsResult {
   const [balanceWithTransactions, setBalanceWithTransactions] = useState<AccountBalanceData | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [peakLoading, setPeakLoading] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+  const [topstepConsistency, setTopstepConsistency] = useState<TopStepConsistencyData | null>(null);
 
-  // Fonction pour charger le solde
   const loadBalance = useCallback(async () => {
     if (!selectedAccount) {
       setBalanceWithTransactions(null);
+      setTopstepConsistency(null);
+      setBalanceLoading(false);
+      setPeakLoading(false);
+      setBalanceError(null);
       return;
     }
 
+    setBalanceLoading(true);
+    setPeakLoading(true);
+    setBalanceError(null);
+    setTopstepConsistency(null);
+
+    const accountId = selectedAccount.id;
+    const isTopstep = selectedAccount.account_type === 'topstep';
+
     try {
-      const balance = await accountTransactionsService.getBalance(selectedAccount.id);
-      setBalanceWithTransactions(balance);
+      const fastBalance = await accountTransactionsService.getBalance(accountId, {
+        include_peak: false,
+      });
+      setBalanceWithTransactions(fastBalance);
+      setBalanceLoading(false);
+
+      const peakPromise = accountTransactionsService.getBalancePeak(accountId);
+      const consistencyPromise = isTopstep
+        ? accountTransactionsService.getBalanceConsistency(accountId)
+        : Promise.resolve({ consistency: null });
+
+      const [peakData, consistencyResponse] = await Promise.all([
+        peakPromise,
+        consistencyPromise,
+      ]);
+
+      setBalanceWithTransactions((prev) =>
+        prev
+          ? mergePeakIntoBalance(prev, peakData.peak_balance, peakData.peak_balance_gross)
+          : mergePeakIntoBalance(fastBalance, peakData.peak_balance, peakData.peak_balance_gross),
+      );
+      setTopstepConsistency(consistencyResponse.consistency);
     } catch (error) {
       console.error('Erreur lors du chargement du solde avec transactions:', error);
       setBalanceWithTransactions(null);
+      setTopstepConsistency(null);
+      setBalanceError(
+        error instanceof Error ? error.message : 'Erreur lors du chargement du solde',
+      );
+    } finally {
+      setBalanceLoading(false);
+      setPeakLoading(false);
     }
   }, [selectedAccount]);
 
-  // Charger le solde avec transactions depuis l'API
   useEffect(() => {
     loadBalance();
   }, [loadBalance]);
 
-  // Écouter les événements de mise à jour des transactions
   useEffect(() => {
     const handleTransactionUpdate = () => {
       loadBalance();
@@ -142,94 +234,54 @@ export function useAccountIndicators({
     };
   }, [loadBalance]);
 
-  // Calculer le solde initial et actuel du compte
   const accountBalance = useMemo(() => {
     if (!selectedAccount) {
       return { initial: 0, current: 0, peak: 0 };
     }
 
-    const parsePeakFromApi = (
-      balance: AccountBalanceData,
-      mode: PnlDisplayMode,
-      current: number,
-      initial: number,
-    ): number => {
-      const rawPeak =
-        mode === 'gross' ? balance.peak_balance_gross : balance.peak_balance;
-      if (rawPeak !== undefined && rawPeak !== '') {
-        const parsed = parseFloat(rawPeak);
-        if (Number.isFinite(parsed)) {
-          return parsed;
-        }
-      }
-      return Math.max(current, initial);
-    };
+    const fallbackInitial = selectedAccount.initial_capital
+      ? parseFloat(String(selectedAccount.initial_capital))
+      : 0;
 
-    // Si on a le solde avec transactions depuis l'API, l'utiliser
     if (balanceWithTransactions) {
-      const initial = parseFloat(balanceWithTransactions.initial_capital);
-      const currentNet = parseFloat(balanceWithTransactions.current_balance);
-      if (pnlDisplay === 'net') {
-        return {
-          initial,
-          current: currentNet,
-          peak: parsePeakFromApi(balanceWithTransactions, 'net', currentNet, initial),
-        };
-      }
-      const rawGross = balanceWithTransactions.current_balance_gross;
-      let currentGross =
-        rawGross !== undefined && rawGross !== '' ? parseFloat(rawGross) : NaN;
-      if (!Number.isFinite(currentGross) && allTrades.length > 0) {
-        const pnlDelta = allTrades.reduce((s, t) => {
-          const g = getTradeDisplayPnlValue(t, 'gross') ?? 0;
-          const n = getTradeDisplayPnlValue(t, 'net') ?? 0;
-          return s + (g - n);
-        }, 0);
-        currentGross = currentNet + pnlDelta;
-      }
-      if (!Number.isFinite(currentGross)) {
-        currentGross = currentNet;
+      const hasPeakData =
+        balanceWithTransactions.peak_balance !== undefined ||
+        balanceWithTransactions.peak_balance_gross !== undefined;
+      const interim = buildAccountBalanceFromApi(
+        balanceWithTransactions,
+        pnlDisplay,
+        fallbackInitial,
+        Math.max(
+          parseFloat(balanceWithTransactions.current_balance) || fallbackInitial,
+          fallbackInitial,
+        ),
+      );
+      if (hasPeakData) {
+        return interim;
       }
       return {
-        initial,
-        current: currentGross,
-        peak: parsePeakFromApi(balanceWithTransactions, 'gross', currentGross, initial),
+        ...interim,
+        peak: interim.current >= interim.initial ? interim.current : interim.initial,
       };
     }
 
-    // Fallback: calculer sans transactions (pour compatibilité)
-    const initialCapital = selectedAccount.initial_capital 
-      ? parseFloat(String(selectedAccount.initial_capital)) 
-      : 0;
-
-    // Calculer le PnL total de tous les trades du compte (pas seulement la période filtrée)
-    const totalPnl = allTrades.reduce((sum, t) => {
-      const v = getTradeDisplayPnlValue(t, pnlDisplay);
-      return sum + (v ?? 0);
-    }, 0);
-
-    const currentBalance = initialCapital + totalPnl;
-
     return {
-      initial: initialCapital,
-      current: currentBalance,
-      peak: Math.max(currentBalance, initialCapital),
+      initial: fallbackInitial,
+      current: fallbackInitial,
+      peak: fallbackInitial,
     };
-  }, [selectedAccount, allTrades, balanceWithTransactions, pnlDisplay]);
+  }, [selectedAccount, balanceWithTransactions, pnlDisplay]);
 
-  // Calculer le meilleur et le pire jour pour la période filtrée
-  // Priorité: filteredBalanceData > analyticsData > calcul depuis filteredTrades
   const bestAndWorstDays = useMemo(() => {
-    // Méthode 1: Utiliser filteredBalanceData si disponible (le plus performant)
     if (filteredBalanceData && filteredBalanceData.length > 0) {
-      const bestDay = filteredBalanceData.reduce((max, day) => 
-        day.pnl > max.pnl ? day : max, 
-        filteredBalanceData[0]
+      const bestDay = filteredBalanceData.reduce(
+        (max, day) => (day.pnl > max.pnl ? day : max),
+        filteredBalanceData[0],
       );
-      
-      const worstDay = filteredBalanceData.reduce((min, day) => 
-        day.pnl < min.pnl ? day : min, 
-        filteredBalanceData[0]
+
+      const worstDay = filteredBalanceData.reduce(
+        (min, day) => (day.pnl < min.pnl ? day : min),
+        filteredBalanceData[0],
       );
 
       return {
@@ -238,20 +290,20 @@ export function useAccountIndicators({
       };
     }
 
-    // Méthode 2: Utiliser analyticsData si disponible
     if (analyticsData?.daily_stats) {
       const { best_day, best_day_pnl, worst_day, worst_day_pnl } = analyticsData.daily_stats;
       return {
-        bestDay: best_day && best_day_pnl !== undefined && best_day_pnl > 0
-          ? { date: best_day, pnl: best_day_pnl }
-          : null,
-        worstDay: worst_day && worst_day_pnl !== undefined && worst_day_pnl < 0
-          ? { date: worst_day, pnl: worst_day_pnl }
-          : null,
+        bestDay:
+          best_day && best_day_pnl !== undefined && best_day_pnl > 0
+            ? { date: best_day, pnl: best_day_pnl }
+            : null,
+        worstDay:
+          worst_day && worst_day_pnl !== undefined && worst_day_pnl < 0
+            ? { date: worst_day, pnl: worst_day_pnl }
+            : null,
       };
     }
 
-    // Méthode 3: Calculer depuis filteredTrades (fallback)
     if (filteredTrades.length === 0) {
       return { bestDay: null, worstDay: null };
     }
@@ -263,14 +315,14 @@ export function useAccountIndicators({
       return { bestDay: null, worstDay: null };
     }
 
-    const bestDay = dailyEntries.reduce((max, day) => 
-      day.pnl > max.pnl ? day : max, 
-      dailyEntries[0]
+    const bestDay = dailyEntries.reduce(
+      (max, day) => (day.pnl > max.pnl ? day : max),
+      dailyEntries[0],
     );
-    
-    const worstDay = dailyEntries.reduce((min, day) => 
-      day.pnl < min.pnl ? day : min, 
-      dailyEntries[0]
+
+    const worstDay = dailyEntries.reduce(
+      (min, day) => (day.pnl < min.pnl ? day : min),
+      dailyEntries[0],
     );
 
     return {
@@ -279,10 +331,8 @@ export function useAccountIndicators({
     };
   }, [filteredBalanceData, analyticsData, filteredTrades, pnlDisplay, timezone]);
 
-  // Calculer le Consistency Target pour les comptes TopStep
-  // Utilise le meilleur jour de tous les temps (pas seulement la période filtrée)
   const consistencyTarget = useMemo(() => {
-    if (!selectedAccount || selectedAccount.account_type !== 'topstep') {
+    if (!selectedAccount || selectedAccount.account_type !== 'topstep' || !topstepConsistency) {
       return null;
     }
 
@@ -291,38 +341,24 @@ export function useAccountIndicators({
       return null;
     }
 
-    // Calculer le meilleur jour de tous les temps à partir de tous les trades du compte
-    if (allTrades.length === 0) {
+    const rawBestPnl =
+      pnlDisplay === 'gross'
+        ? topstepConsistency.best_day_pnl_gross ?? topstepConsistency.best_day_pnl_net
+        : topstepConsistency.best_day_pnl_net;
+    const bestDayProfit = parseFloat(rawBestPnl);
+    if (!Number.isFinite(bestDayProfit) || bestDayProfit <= 0) {
       return null;
     }
 
-    const dailyData = groupTradesPnlByDay(allTrades, pnlDisplay, timezone);
-    const dailyEntries = Object.entries(dailyData).map(([date, pnl]) => ({ date, pnl }));
-    if (dailyEntries.length === 0) {
-      return null;
-    }
-
-    const bestDay = dailyEntries.reduce((max, day) => 
-      day.pnl > max.pnl ? day : max, 
-      dailyEntries[0]
-    );
-
-    if (bestDay.pnl <= 0) {
-      return null;
-    }
-
-    const bestDayProfit = bestDay.pnl;
     const bestDayPercentage = (bestDayProfit / overallProfit) * 100;
     const isCompliant = bestDayPercentage < 50;
     const targetPercentage = 50;
-
-    // Calculer le profit total nécessaire si non conforme
     const requiredTotalProfit = bestDayProfit / 0.5;
     const additionalProfitNeeded = requiredTotalProfit - overallProfit;
 
     return {
       bestDayProfit,
-      bestDayDate: bestDay.date,
+      bestDayDate: topstepConsistency.best_day,
       overallProfit,
       bestDayPercentage,
       isCompliant,
@@ -330,9 +366,8 @@ export function useAccountIndicators({
       requiredTotalProfit,
       additionalProfitNeeded: additionalProfitNeeded > 0 ? additionalProfitNeeded : 0,
     };
-  }, [selectedAccount, accountBalance, allTrades, pnlDisplay, timezone]);
+  }, [selectedAccount, accountBalance, topstepConsistency, pnlDisplay]);
 
-  // Total trades pour la période filtrée
   const totalTrades = filteredTrades.length;
 
   return {
@@ -342,6 +377,8 @@ export function useAccountIndicators({
     accountCreatedAt: selectedAccount?.created_at ?? undefined,
     bestAndWorstDays,
     consistencyTarget,
+    balanceLoading,
+    balanceError,
+    peakLoading,
   };
 }
-

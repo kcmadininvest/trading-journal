@@ -384,10 +384,13 @@ const StrategiesPage: React.FC = () => {
   }, [selectedAccount, currencies]);
 
 
-  // allTrades n'est plus chargé, passer un tableau vide (le fallback balance n'est plus utilisé)
-  const indicators = useAccountIndicators({
+  const {
+    balanceLoading,
+    balanceError,
+    peakLoading,
+    ...accountIndicators
+  } = useAccountIndicators({
     selectedAccount,
-    allTrades: [],
     filteredTrades,
     activeDays: dashboardSummary?.active_days,
     pnlDisplay: pnlDisplayMode,
@@ -533,14 +536,16 @@ const StrategiesPage: React.FC = () => {
         {selectedAccount && (
           <AccountSummaryCard 
             className="mb-4 sm:mb-6"
-            indicators={indicators} 
+            indicators={accountIndicators} 
             currencySymbol={currencySymbol} 
             globalAllAccountsActivity={globalAllAccountsActivity}
             hideInitialBalance={privacySettings.hideInitialBalance}
             hideCurrentBalance={privacySettings.hideCurrentBalance}
             hideConsistencyTarget={privacySettings.hideConsistencyTarget}
-            loading={isLoading || summaryLoading}
-            error={error || null}
+            balanceLoading={balanceLoading}
+            peakLoading={peakLoading}
+            detailsLoading={isLoading || summaryLoading}
+            error={balanceError || error || null}
           />
         )}
 

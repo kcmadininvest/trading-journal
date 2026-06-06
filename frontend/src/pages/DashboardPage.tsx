@@ -1629,15 +1629,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     return additionalStats?.maxConsecutiveDaysRespected ?? 0;
   }, [complianceStats, additionalStats?.maxConsecutiveDaysRespected]);
 
-  // Préparer les données pour le hook (utiliser allTradesForSequences si disponible)
-  const allTradesForIndicators = useMemo(() => {
-    return allTradesForSequences.length > 0 ? allTradesForSequences : trades;
-  }, [allTradesForSequences, trades]);
-
   // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
-  const indicators = useAccountIndicators({
+  const {
+    balanceLoading,
+    balanceError,
+    peakLoading,
+    ...accountIndicators
+  } = useAccountIndicators({
     selectedAccount,
-    allTrades: allTradesForIndicators,
     filteredTrades: trades,
     filteredBalanceData,
     activeDays: dashboardData?.active_days,
@@ -1690,7 +1689,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         <AccountSummaryCard
           theme="default"
           className="mb-6"
-          indicators={indicators}
+          indicators={accountIndicators}
           currencySymbol={currencySymbol}
           globalAllAccountsActivity={globalAllAccountsActivity}
           onNavigateToTransactions={() => {
@@ -1700,8 +1699,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           hideCurrentBalance={privacySettings.hideCurrentBalance}
           hideProfitLoss={privacySettings.hideProfitLoss}
           hideConsistencyTarget={privacySettings.hideConsistencyTarget}
-          loading={dashboardLoading}
-          error={dashboardError}
+          balanceLoading={balanceLoading}
+          peakLoading={peakLoading}
+          detailsLoading={dashboardLoading}
+          error={balanceError || dashboardError}
         />
       )}
 

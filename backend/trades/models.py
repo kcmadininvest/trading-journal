@@ -154,6 +154,81 @@ class TradingAccount(models.Model):
         help_text='Compte sélectionné par défaut pour cet utilisateur'
     )
 
+    # Soldes dénormalisés (maintenus par signaux / refresh après calcul)
+    cached_current_balance = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        verbose_name='Solde actuel (cache)',
+    )
+    cached_current_balance_gross = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        verbose_name='Solde actuel brut (cache)',
+    )
+    cached_peak_balance = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        verbose_name='Pic de solde net (cache)',
+    )
+    cached_peak_balance_gross = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        verbose_name='Pic de solde brut (cache)',
+    )
+    cached_total_deposits = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Total dépôts (cache)',
+    )
+    cached_total_withdrawals = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Total retraits (cache)',
+    )
+    cached_net_transactions = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name='Flux nets (cache)',
+    )
+    cached_best_day = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Meilleur jour TopStep (cache)',
+    )
+    cached_best_day_pnl_net = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        verbose_name='PnL net meilleur jour (cache)',
+    )
+    cached_best_day_pnl_gross = models.DecimalField(
+        max_digits=18,
+        decimal_places=9,
+        null=True,
+        blank=True,
+        verbose_name='PnL brut meilleur jour (cache)',
+    )
+    balance_computed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Soldes calculés le',
+    )
+
     copy_imports_from = models.ForeignKey(
         'self',
         null=True,

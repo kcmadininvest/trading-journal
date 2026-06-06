@@ -38,6 +38,22 @@ export interface AccountBalance {
   currency: string;
 }
 
+export interface AccountBalancePeak {
+  trading_account_id: number;
+  peak_balance: string;
+  peak_balance_gross?: string;
+}
+
+export interface TopStepConsistencyData {
+  best_day: string;
+  best_day_pnl_net: string;
+  best_day_pnl_gross?: string;
+}
+
+export interface AccountBalanceConsistencyResponse {
+  consistency: TopStepConsistencyData | null;
+}
+
 export interface AccountTransactionsListResponse {
   count: number;
   next: string | null;
@@ -234,9 +250,38 @@ class AccountTransactionsService {
   /**
    * Récupère le solde actuel d'un compte en tenant compte des transactions
    */
-  async getBalance(trading_account_id: number): Promise<AccountBalance> {
+  async getBalance(
+    trading_account_id: number,
+    options?: { include_peak?: boolean },
+  ): Promise<AccountBalance> {
+    const params = new URLSearchParams({
+      trading_account: String(trading_account_id),
+    });
+    if (options?.include_peak === false) {
+      params.append('include_peak', 'false');
+    }
     return this.request<AccountBalance>(
-      `account-transactions/balance/?trading_account=${trading_account_id}`
+      `account-transactions/balance/?${params.toString()}`
+    );
+  }
+
+  async getBalancePeak(trading_account_id: number): Promise<AccountBalancePeak> {
+    const params = new URLSearchParams({
+      trading_account: String(trading_account_id),
+    });
+    return this.request<AccountBalancePeak>(
+      `account-transactions/balance/peak/?${params.toString()}`
+    );
+  }
+
+  async getBalanceConsistency(
+    trading_account_id: number,
+  ): Promise<AccountBalanceConsistencyResponse> {
+    const params = new URLSearchParams({
+      trading_account: String(trading_account_id),
+    });
+    return this.request<AccountBalanceConsistencyResponse>(
+      `account-transactions/balance/consistency/?${params.toString()}`
     );
   }
 }

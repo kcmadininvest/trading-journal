@@ -113,7 +113,12 @@ class PnlPreferenceMixin:
 
     def get_pnl_field(self) -> str:
         return get_trade_pnl_field(self.request.user)
-from .account_balance import compute_trading_account_balance
+from .account_balance import (
+    compute_trading_account_balance,
+    resolve_account_balance,
+    resolve_peak_balance_only,
+    resolve_topstep_consistency,
+)
 from .pagination import AccountTransactionPagination
 from daily_journal.models import DailyJournalEntry
 from .market_holidays import MarketHolidaysService
@@ -657,7 +662,10 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        bal = compute_trading_account_balance(account)
+        include_peak_param = request.query_params.get('include_peak', 'true')
+        include_peak = str(include_peak_param).lower() not in ('0', 'false', 'no')
+
+        bal = resolve_account_balance(account, include_peak=include_peak)
         initial_capital = bal['initial_capital']
         total_pnl = bal['total_pnl']
         total_pnl_gross = bal['total_pnl_gross']
@@ -668,10 +676,8 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
         net_transactions = bal['net_transactions']
         current_balance = bal['current_balance']
         current_balance_gross = bal['current_balance_gross']
-        peak_balance = bal['peak_balance']
-        peak_balance_gross = bal['peak_balance_gross']
 
-        return Response({
+        response_data = {
             'trading_account_id': account.id,
             'trading_account_name': account.name,
             'initial_capital': str(initial_capital),
@@ -684,9 +690,71 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
             'net_transactions': str(net_transactions),
             'current_balance': str(current_balance),
             'current_balance_gross': str(current_balance_gross),
-            'peak_balance': str(peak_balance),
-            'peak_balance_gross': str(peak_balance_gross),
             'currency': account.currency,
+        }
+        if include_peak:
+            response_data['peak_balance'] = str(bal['peak_balance'])
+            response_data['peak_balance_gross'] = str(bal['peak_balance_gross'])
+
+        return Response(response_data)
+
+    @action(detail=False, methods=['get'], url_path='balance/peak')
+    def balance_peak(self, request):
+        """Retourne uniquement le pic de solde (sans recalculer les agrégats de solde actuel)."""
+        trading_account_id = request.query_params.get('trading_account', None)
+        if not trading_account_id:
+            return Response(
+                {'error': 'Le paramètre trading_account est requis'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            account = TradingAccount.objects.get(id=trading_account_id, user=request.user)  # type: ignore
+        except TradingAccount.DoesNotExist:  # type: ignore
+            return Response(
+                {'error': 'Compte de trading non trouvé'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        peaks = resolve_peak_balance_only(account)
+        return Response({
+            'trading_account_id': account.id,
+            'peak_balance': str(peaks['peak_balance']),
+            'peak_balance_gross': str(peaks['peak_balance_gross']),
+        })
+
+    @action(detail=False, methods=['get'], url_path='balance/consistency')
+    def balance_consistency(self, request):
+        """Meilleur jour all-time TopStep pour le consistency target."""
+        trading_account_id = request.query_params.get('trading_account', None)
+        if not trading_account_id:
+            return Response(
+                {'error': 'Le paramètre trading_account est requis'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            account = TradingAccount.objects.get(id=trading_account_id, user=request.user)  # type: ignore
+        except TradingAccount.DoesNotExist:  # type: ignore
+            return Response(
+                {'error': 'Compte de trading non trouvé'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if account.account_type != 'topstep':
+            return Response({'consistency': None})
+
+        data = resolve_topstep_consistency(account)
+        if not data:
+            return Response({'consistency': None})
+
+        best_day = data['best_day']
+        return Response({
+            'consistency': {
+                'best_day': best_day.isoformat() if hasattr(best_day, 'isoformat') else str(best_day),
+                'best_day_pnl_net': str(data['best_day_pnl_net']),
+                'best_day_pnl_gross': str(data['best_day_pnl_gross']),
+            },
         })
 
 

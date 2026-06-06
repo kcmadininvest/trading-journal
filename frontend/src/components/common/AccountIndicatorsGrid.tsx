@@ -24,6 +24,10 @@ interface AccountIndicatorsGridProps {
   hideConsistencyTarget?: boolean;
   globalAllAccountsActivity?: GlobalAllAccountsActivity | null;
   theme?: 'default' | 'band';
+  balanceLoading?: boolean;
+  peakLoading?: boolean;
+  detailsLoading?: boolean;
+  valueSkeletonClass?: string;
 }
 
 export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
@@ -37,6 +41,10 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   hideConsistencyTarget = false,
   globalAllAccountsActivity = null,
   theme = 'default',
+  balanceLoading = false,
+  peakLoading = false,
+  detailsLoading = false,
+  valueSkeletonClass = 'h-7 w-24 animate-pulse rounded bg-gray-200 dark:bg-gray-700',
 }) => {
   const { preferences } = usePreferences();
   const { t } = useI18nTranslation();
@@ -116,7 +124,9 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
             <span className={`text-xl font-semibold ${
               accountBalance.current >= accountBalance.initial ? valueUp : valueDown
             }`}>
-              {hideCurrentBalance 
+              {balanceLoading ? (
+                <span className={valueSkeletonClass} aria-hidden />
+              ) : hideCurrentBalance 
                 ? maskValue(accountBalance.current, currencySymbol)
                 : formatCurrency(accountBalance.current, currencySymbol, preferences.number_format, 2)
               }
@@ -133,7 +143,9 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
             <span className={`text-xl font-semibold ${
               accountBalance.peak >= accountBalance.initial ? valueUp : valueDown
             }`}>
-              {hideCurrentBalance
+              {peakLoading ? (
+                <span className={valueSkeletonClass} aria-hidden />
+              ) : hideCurrentBalance
                 ? maskValue(accountBalance.peak, currencySymbol)
                 : formatCurrency(accountBalance.peak, currencySymbol, preferences.number_format, 2)
               }
@@ -155,24 +167,30 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 {t('dashboard:variation', { defaultValue: 'Variation' })}
               </span>
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2 sm:flex-wrap">
-                <span
-                  className={`text-lg font-semibold tabular-nums sm:text-xl ${
-                    variationValue >= 0 ? valueUp : valueDown
-                  }`}
-                >
-                  {hideProfitLoss
-                    ? maskValue(variationValue, currencySymbol)
-                    : formatCurrency(variationValue, currencySymbol, preferences.number_format, 2)}
-                </span>
-                {!hideProfitLoss && (
-                  <span
-                    className={`inline-flex w-fit shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                      variationValue >= 0 ? badgeUp : badgeDown
-                    }`}
-                  >
-                    {variationValue >= 0 ? '+' : ''}
-                    {formatNumber(variationPercentage, 2, preferences.number_format)}%
-                  </span>
+                {balanceLoading ? (
+                  <span className={valueSkeletonClass} aria-hidden />
+                ) : (
+                  <>
+                    <span
+                      className={`text-lg font-semibold tabular-nums sm:text-xl ${
+                        variationValue >= 0 ? valueUp : valueDown
+                      }`}
+                    >
+                      {hideProfitLoss
+                        ? maskValue(variationValue, currencySymbol)
+                        : formatCurrency(variationValue, currencySymbol, preferences.number_format, 2)}
+                    </span>
+                    {!hideProfitLoss && (
+                      <span
+                        className={`inline-flex w-fit shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          variationValue >= 0 ? badgeUp : badgeDown
+                        }`}
+                      >
+                        {variationValue >= 0 ? '+' : ''}
+                        {formatNumber(variationPercentage, 2, preferences.number_format)}%
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -213,7 +231,11 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`text-xl font-semibold ${valuePrimary}`}>
-                    {totalTrades}
+                    {detailsLoading ? (
+                      <span className={valueSkeletonClass} aria-hidden />
+                    ) : (
+                      totalTrades
+                    )}
                   </span>
                   {hasActiveDays && (
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${badgeNeutral}`}>

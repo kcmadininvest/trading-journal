@@ -54,7 +54,6 @@ function StatisticsPage() {
   const privacySettings = usePrivacySettings('statistics');
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
@@ -166,26 +165,6 @@ function StatisticsPage() {
   }, [selectedAccountId, accounts]);
 
   useEffect(() => {
-    const loadAllTrades = async () => {
-      if (!selectedAccountId || accountLoading) {
-        setAllTrades([]);
-        return;
-      }
-      try {
-        const response = await tradesService.list({
-          trading_account: selectedAccountId,
-          page_size: 10000,
-        });
-        setAllTrades(response.results);
-      } catch (err) {
-        console.error('Erreur lors du chargement des trades', err);
-        setAllTrades([]);
-      }
-    };
-    loadAllTrades();
-  }, [selectedAccountId, accountLoading]);
-
-  useEffect(() => {
     const loadFilteredTrades = async () => {
       if (!selectedAccountId || accountLoading) {
         setFilteredTrades([]);
@@ -228,9 +207,13 @@ function StatisticsPage() {
     loadFilteredTrades();
   }, [selectedAccountId, accountLoading, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy]);
 
-  const indicators = useAccountIndicators({
+  const {
+    balanceLoading,
+    balanceError,
+    peakLoading,
+    ...accountIndicators
+  } = useAccountIndicators({
     selectedAccount,
-    allTrades,
     filteredTrades,
     analyticsData,
     activeDays: dashboardSummary?.active_days,
@@ -421,14 +404,16 @@ function StatisticsPage() {
         {selectedAccount && (
           <AccountSummaryCard
             className="mb-4 sm:mb-6"
-            indicators={indicators}
+            indicators={accountIndicators}
             currencySymbol={currencySymbol}
             globalAllAccountsActivity={globalAllAccountsActivity}
             hideInitialBalance={privacySettings.hideInitialBalance}
             hideCurrentBalance={privacySettings.hideCurrentBalance}
             hideConsistencyTarget={privacySettings.hideConsistencyTarget}
-            loading={isLoading || summaryLoading}
-            error={hasError ? t('statistics:errorLoadingData') : summaryError}
+            balanceLoading={balanceLoading}
+            peakLoading={peakLoading}
+            detailsLoading={isLoading || summaryLoading}
+            error={balanceError || (hasError ? t('statistics:errorLoadingData') : summaryError)}
           />
         )}
 

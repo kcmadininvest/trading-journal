@@ -96,7 +96,6 @@ const BehaviorPage: React.FC = () => {
   const [selectedMonth] = useState<number | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
-  const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
   const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
 
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
@@ -156,26 +155,6 @@ const BehaviorPage: React.FC = () => {
   );
 
   useEffect(() => {
-    const loadAllTrades = async () => {
-      if (accountLoading) {
-        setAllTrades([]);
-        return;
-      }
-      try {
-        const response = await tradesService.list({
-          ...(accountId != null ? { trading_account: accountId } : {}),
-          page_size: 10000,
-        });
-        setAllTrades(response.results);
-      } catch (err) {
-        console.error('Erreur lors du chargement de tous les trades', err);
-        setAllTrades([]);
-      }
-    };
-    loadAllTrades();
-  }, [accountId, accountLoading]);
-
-  useEffect(() => {
     const loadFilteredTrades = async () => {
       if (accountLoading) {
         setFilteredTrades([]);
@@ -221,9 +200,13 @@ const BehaviorPage: React.FC = () => {
     loadFilteredTrades();
   }, [accountId, accountLoading, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy]);
 
-  const indicators = useAccountIndicators({
+  const {
+    balanceLoading,
+    balanceError,
+    peakLoading,
+    ...accountIndicators
+  } = useAccountIndicators({
     selectedAccount,
-    allTrades,
     filteredTrades,
     analyticsData,
     activeDays: dashboardSummary?.active_days,
@@ -501,14 +484,16 @@ const BehaviorPage: React.FC = () => {
       {selectedAccount && (
         <AccountSummaryCard
           className="mb-6"
-          indicators={indicators}
+          indicators={accountIndicators}
           currencySymbol={currencySymbol}
           globalAllAccountsActivity={globalAllAccountsActivity}
           hideInitialBalance={privacySettings.hideInitialBalance}
           hideCurrentBalance={privacySettings.hideCurrentBalance}
           hideConsistencyTarget={privacySettings.hideConsistencyTarget}
-          loading={summaryLoading}
-          error={summaryError}
+          balanceLoading={balanceLoading}
+          peakLoading={peakLoading}
+          detailsLoading={summaryLoading}
+          error={balanceError || summaryError}
         />
       )}
 

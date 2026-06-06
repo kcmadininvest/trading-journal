@@ -4,7 +4,8 @@ Signaux Django pour la gestion automatique des fichiers media et des métriques.
 
 from django.db.models.signals import pre_delete, pre_save, post_save, post_delete
 from django.dispatch import receiver
-from .models import TradeStrategy, DayStrategyCompliance, PositionStrategy, TopStepTrade
+from .models import TradeStrategy, DayStrategyCompliance, PositionStrategy, TopStepTrade, AccountTransaction
+from .account_balance import refresh_trading_account_balance_after_mutation
 from .image_processor import image_processor
 from .services.metrics_calculator import AccountMetricsCalculator
 import logging
@@ -224,3 +225,40 @@ def recalculate_metrics_after_trade_delete(sender, instance, **kwargs):
             logger.info(f"Métriques MLL recalculées automatiquement après suppression du trade {instance.id} pour le compte {instance.trading_account.name}")
     except Exception as e:
         logger.error(f"Erreur lors du recalcul automatique des métriques après suppression du trade {instance.id}: {e}")
+
+
+def _refresh_balance_cache_for_account(trading_account_id) -> None:
+    if not trading_account_id:
+        return
+    try:
+        refresh_trading_account_balance_after_mutation(trading_account_id)
+    except Exception as e:
+        logger.error(
+            'Erreur lors du rafraîchissement du cache solde pour le compte %s: %s',
+            trading_account_id,
+            e,
+        )
+
+
+@receiver(post_save, sender=TopStepTrade)
+def refresh_balance_cache_after_trade_save(sender, instance, **kwargs):
+    if instance.trading_account_id:
+        _refresh_balance_cache_for_account(instance.trading_account_id)
+
+
+@receiver(post_delete, sender=TopStepTrade)
+def refresh_balance_cache_after_trade_delete(sender, instance, **kwargs):
+    if instance.trading_account_id:
+        _refresh_balance_cache_for_account(instance.trading_account_id)
+
+
+@receiver(post_save, sender=AccountTransaction)
+def refresh_balance_cache_after_transaction_save(sender, instance, **kwargs):
+    if instance.trading_account_id:
+        _refresh_balance_cache_for_account(instance.trading_account_id)
+
+
+@receiver(post_delete, sender=AccountTransaction)
+def refresh_balance_cache_after_transaction_delete(sender, instance, **kwargs):
+    if instance.trading_account_id:
+        _refresh_balance_cache_for_account(instance.trading_account_id)

@@ -3,10 +3,15 @@ from decimal import Decimal
 
 from django.test import TestCase
 from django.utils import timezone
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APITestCase, APIClient, APIRequestFactory
 
 from accounts.models import User
-from trades.account_balance import compute_trading_account_balance
+from trades.account_balance import (
+    compute_peak_balances,
+    compute_topstep_best_day,
+    compute_trading_account_balance,
+    resolve_peak_balance_only,
+)
 from trades.models import AccountTransaction, TopStepTrade, TradingAccount
 from trades.serializers import AccountTransactionSerializer
 
@@ -66,7 +71,7 @@ class AccountBalanceComputationTests(TestCase):
             size=Decimal('1.0000'),
             trade_type='Long',
             pnl=Decimal('100.000000000'),
-            net_pnl=Decimal('80.000000000'),
+            fees=Decimal('20.000000000'),
         )
         b = compute_trading_account_balance(self.account)
         self.assertEqual(b['total_pnl'], Decimal('80.000000000'))
@@ -119,6 +124,178 @@ class AccountBalanceComputationTests(TestCase):
         b = compute_trading_account_balance(self.account)
         self.assertEqual(b['peak_balance'], Decimal('1500.00'))
         self.assertEqual(b['current_balance'], Decimal('1500.00'))
+
+    def test_include_peak_false_omits_peak_fields(self) -> None:
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-no-peak-1',
+            contract_name='NQ',
+            entered_at=timezone.now(),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('50.00'),
+        )
+        b = compute_trading_account_balance(self.account, include_peak=False)
+        self.assertEqual(b['current_balance'], Decimal('1050.00'))
+        self.assertNotIn('peak_balance', b)
+        self.assertNotIn('peak_balance_gross', b)
+
+    def test_compute_peak_balances_single_pass_matches_net_and_gross(self) -> None:
+        now = timezone.now()
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-dual-1',
+            contract_name='NQ',
+            entered_at=now,
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            pnl=Decimal('100.000000000'),
+            fees=Decimal('20.000000000'),
+        )
+        peak_net, peak_gross = compute_peak_balances(self.account)
+        full = compute_trading_account_balance(self.account)
+        self.assertEqual(peak_net, full['peak_balance'])
+        self.assertEqual(peak_gross, full['peak_balance_gross'])
+
+    def test_topstep_best_day_aggregation(self) -> None:
+        self.account.account_type = 'topstep'
+        self.account.save(update_fields=['account_type'])
+        d1 = timezone.now().date()
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-best-1',
+            contract_name='NQ',
+            entered_at=timezone.now(),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            pnl=Decimal('120.000000000'),
+            fees=Decimal('20.000000000'),
+            trade_day=d1,
+        )
+        best = compute_topstep_best_day(self.account)
+        self.assertIsNotNone(best)
+        self.assertEqual(best['best_day_pnl_net'], Decimal('100.000000000'))
+        self.assertEqual(best['best_day_pnl_gross'], Decimal('120.000000000'))
+
+    def test_resolve_peak_balance_only(self) -> None:
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-peak-only-1',
+            contract_name='NQ',
+            entered_at=timezone.now(),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('40.00'),
+        )
+        peaks = resolve_peak_balance_only(self.account, use_cache=False)
+        full = compute_trading_account_balance(self.account)
+        self.assertEqual(peaks['peak_balance'], full['peak_balance'])
+
+
+class AccountBalanceApiTests(APITestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            email='balance-api@example.com',
+            username='balance_api',
+            password='testpass123',
+            first_name='A',
+            last_name='P',
+        )
+        self.client.force_authenticate(user=self.user)
+        self.account = TradingAccount.objects.create(
+            user=self.user,
+            name='API account',
+            account_type='other',
+            currency='USD',
+            initial_capital=Decimal('1000.00'),
+            status='active',
+        )
+
+    def test_balance_api_without_peak(self) -> None:
+        response = self.client.get(
+            '/api/trades/account-transactions/balance/',
+            {'trading_account': self.account.pk, 'include_peak': 'false'},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['current_balance'], '1000.00')
+        self.assertNotIn('peak_balance', response.data)
+        self.assertNotIn('peak_balance_gross', response.data)
+
+    def test_balance_api_with_peak(self) -> None:
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-api-1',
+            contract_name='NQ',
+            entered_at=timezone.now(),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('25.00'),
+        )
+        response = self.client.get(
+            '/api/trades/account-transactions/balance/',
+            {'trading_account': self.account.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['current_balance']), Decimal('1025'))
+        self.assertEqual(Decimal(response.data['peak_balance']), Decimal('1025'))
+        self.assertIn('peak_balance_gross', response.data)
+
+    def test_balance_peak_api(self) -> None:
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-peak-api-1',
+            contract_name='NQ',
+            entered_at=timezone.now(),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('25.00'),
+        )
+        response = self.client.get(
+            '/api/trades/account-transactions/balance/peak/',
+            {'trading_account': self.account.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(response.data['peak_balance']), Decimal('1025'))
+
+    def test_balance_consistency_api_topstep(self) -> None:
+        self.account.account_type = 'topstep'
+        self.account.save(update_fields=['account_type'])
+        d1 = timezone.now().date()
+        TopStepTrade.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            topstep_id='bal-cons-1',
+            contract_name='NQ',
+            entered_at=timezone.now(),
+            entry_price=Decimal('100.000000000'),
+            size=Decimal('1.0000'),
+            trade_type='Long',
+            net_pnl=Decimal('150.00'),
+            trade_day=d1,
+        )
+        response = self.client.get(
+            '/api/trades/account-transactions/balance/consistency/',
+            {'trading_account': self.account.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNotNone(response.data['consistency'])
+        self.assertEqual(
+            Decimal(response.data['consistency']['best_day_pnl_net']),
+            Decimal('150'),
+        )
 
 
 class WithdrawalValidationTests(TestCase):

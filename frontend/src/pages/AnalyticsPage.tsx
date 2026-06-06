@@ -121,7 +121,6 @@ const AnalyticsPage: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [trades, setTrades] = useState<TradeListItem[]>([]);
-  const [allTrades, setAllTrades] = useState<TradeListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
@@ -248,31 +247,13 @@ const AnalyticsPage: React.FC = () => {
     loadTrades();
   }, [accountId, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy, accountLoading, t]);
 
-  // Charger tous les trades du compte pour calculer le solde (sans filtre de période)
-  useEffect(() => {
-    const loadAllTrades = async () => {
-      if (!accountId || accountLoading) {
-        setAllTrades([]);
-        return;
-      }
-      try {
-        const response = await tradesService.list({
-          trading_account: accountId,
-          page_size: 10000, // Charger tous les trades
-        });
-        setAllTrades(response.results);
-      } catch (err) {
-        console.error('Erreur lors du chargement de tous les trades', err);
-        setAllTrades([]);
-      }
-    };
-    loadAllTrades();
-  }, [accountId, accountLoading]);
-
-  // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
-  const indicators = useAccountIndicators({
+  const {
+    balanceLoading,
+    balanceError,
+    peakLoading,
+    ...accountIndicators
+  } = useAccountIndicators({
     selectedAccount,
-    allTrades,
     filteredTrades: trades,
     activeDays: dashboardSummary?.active_days,
     pnlDisplay: pnlDisplayMode,
@@ -1491,14 +1472,16 @@ const AnalyticsPage: React.FC = () => {
       {selectedAccount && (
         <AccountSummaryCard 
           className="mb-6"
-          indicators={indicators} 
+          indicators={accountIndicators} 
           currencySymbol={currencySymbol} 
           globalAllAccountsActivity={globalAllAccountsActivity}
           hideInitialBalance={privacySettings.hideInitialBalance}
           hideCurrentBalance={privacySettings.hideCurrentBalance}
           hideConsistencyTarget={privacySettings.hideConsistencyTarget}
-          loading={isLoading || summaryLoading}
-          error={error || summaryError}
+          balanceLoading={balanceLoading}
+          peakLoading={peakLoading}
+          detailsLoading={isLoading || summaryLoading}
+          error={balanceError || error || summaryError}
         />
       )}
 

@@ -17,13 +17,21 @@ interface AccountSummaryCardProps {
   hideProfitLoss?: boolean;
   hideConsistencyTarget?: boolean;
   onNavigateToTransactions?: () => void;
-  loading?: boolean;
+  /** Chargement des soldes actuels (API balance sans pic) */
+  balanceLoading?: boolean;
+  /** Chargement du pic de solde (2e requête) */
+  peakLoading?: boolean;
+  /** Chargement du reste (trades, best/worst, consistency…) */
+  detailsLoading?: boolean;
   error?: string | null;
-  /** Cumul tous comptes — affiché dans Total trades sous <2000px (carte Activité du header masquée) */
   globalAllAccountsActivity?: GlobalAllAccountsActivity | null;
-  /** `band` = thème bandeau cotations (dashboard) */
   theme?: 'default' | 'band';
 }
+
+const valueSkeletonClass = (theme: 'default' | 'band') =>
+  theme === 'band'
+    ? 'h-7 w-24 animate-pulse rounded bg-white/10'
+    : 'h-7 w-24 animate-pulse rounded bg-gray-200 dark:bg-gray-700';
 
 export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(({
   indicators,
@@ -34,7 +42,9 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(
   hideProfitLoss,
   hideConsistencyTarget,
   onNavigateToTransactions,
-  loading = false,
+  balanceLoading = false,
+  peakLoading = false,
+  detailsLoading = false,
   error = null,
   globalAllAccountsActivity = null,
   theme = 'default',
@@ -44,36 +54,11 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(
       ? DASHBOARD_PANEL_SHELL_CLASS
       : 'bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4';
 
-  if (loading) {
-    return (
-      <div className={`${shellClass} ${className}`.trim()}>
-        <div className="animate-pulse space-y-4">
-          <div
-            className={`h-5 rounded ${theme === 'band' ? 'bg-white/10' : 'bg-gray-200 dark:bg-gray-700'}`}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {[...Array(3)].map((_, idx) => (
-              <div
-                key={idx}
-                className={`h-20 rounded ${theme === 'band' ? 'bg-white/10' : 'bg-gray-100 dark:bg-gray-700'}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={`${shellClass} ${className}`.trim()}>
-        <div className="text-sm text-red-400">{error}</div>
-      </div>
-    );
-  }
-
   return (
     <div className={`${shellClass} ${className}`.trim()}>
+      {error ? (
+        <div className="mb-3 text-sm text-red-400">{error}</div>
+      ) : null}
       <AccountIndicatorsGrid
         indicators={indicators}
         currencySymbol={currencySymbol}
@@ -84,6 +69,10 @@ export const AccountSummaryCard: React.FC<AccountSummaryCardProps> = React.memo(
         hideConsistencyTarget={hideConsistencyTarget}
         onNavigateToTransactions={onNavigateToTransactions}
         theme={theme}
+        balanceLoading={balanceLoading}
+        peakLoading={peakLoading}
+        detailsLoading={detailsLoading}
+        valueSkeletonClass={valueSkeletonClass(theme)}
       />
     </div>
   );
