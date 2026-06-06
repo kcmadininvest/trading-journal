@@ -11,7 +11,50 @@ import {
   DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
   DASHBOARD_TILE_DIVIDER_CLASS,
 } from '../dashboard/tickerShell';
+import Tooltip from '../ui/Tooltip';
 import type { GlobalAllAccountsActivity } from './AccountSummaryCard';
+
+interface IndicatorMetricLabelProps {
+  icon: React.ReactNode;
+  label: string;
+  labelClassName: string;
+  tooltip?: string;
+  isBand?: boolean;
+}
+
+const IndicatorMetricLabel: React.FC<IndicatorMetricLabelProps> = ({
+  icon,
+  label,
+  labelClassName,
+  tooltip,
+  isBand = false,
+}) => (
+  <span className={`flex min-w-0 flex-wrap items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelClassName}`}>
+    {icon}
+    <span className="truncate">{label}</span>
+    {tooltip ? (
+      <Tooltip
+        content={tooltip}
+        position="bottom"
+        className="shrink-0 items-center leading-none"
+        contentClassName="whitespace-pre-line block max-w-xs"
+      >
+        <svg
+          className={`block h-3.5 w-3.5 shrink-0 cursor-help ${isBand ? 'text-white/40' : 'text-gray-400 dark:text-gray-500'}`}
+          fill="currentColor"
+          viewBox="0 0 20 20"
+          aria-hidden
+        >
+          <path
+            fillRule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </Tooltip>
+    ) : null}
+  </span>
+);
 
 interface AccountIndicatorsGridProps {
   indicators: AccountIndicators;
@@ -86,6 +129,19 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
   }, [accountCreatedAt, preferences.date_format, preferences.timezone]);
   const visibleConsistencyTarget = consistencyTarget && !hideConsistencyTarget;
 
+  const currentBalanceTooltip = t('dashboard:currentBalanceTooltip', {
+    defaultValue:
+      'Solde de trésorerie réel du compte (capital initial + PnL cumulé + dépôts − retraits). Il n’est pas filtré par la période sélectionnée.',
+  });
+  const highestBalanceTooltip = t('dashboard:highestBalanceReachedTooltip', {
+    defaultValue:
+      'Pic de solde sur tout l’historique du compte (trades et transactions). Il n’est pas filtré par la période sélectionnée.',
+  });
+  const variationAllTimeTooltip = t('dashboard:variationAllTimeTooltip', {
+    defaultValue:
+      'Variation depuis le capital initial sur tout l’historique du compte. Elle n’est pas filtrée par la période sélectionnée.',
+  });
+
   // Barre de progression pour le Consistency Target
   const progressPercentage = consistencyTarget
     ? Math.min((consistencyTarget.bestDayPercentage / consistencyTarget.targetPercentage) * 100, 100)
@@ -100,12 +156,16 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
         {/* Solde initial et actuel regroupés */}
         <div className={tileClass}>
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-              </svg>
-              {t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
-            </span>
+            <IndicatorMetricLabel
+              labelClassName={labelMuted}
+              isBand={isBand}
+              label={t('dashboard:initialBalance', { defaultValue: 'Solde initial' })}
+              icon={(
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+              )}
+            />
             <span className={`text-xl font-semibold ${valuePrimary}`}>
               {hideInitialBalance 
                 ? maskValue(accountBalance.initial, currencySymbol)
@@ -115,12 +175,17 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
           </div>
           <div className={dividerClass} aria-hidden />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
-            </span>
+            <IndicatorMetricLabel
+              labelClassName={labelMuted}
+              isBand={isBand}
+              label={t('dashboard:currentBalance', { defaultValue: 'Solde actuel' })}
+              tooltip={currentBalanceTooltip}
+              icon={(
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            />
             <span className={`text-xl font-semibold ${
               accountBalance.current >= accountBalance.initial ? valueUp : valueDown
             }`}>
@@ -134,12 +199,17 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
           </div>
           <div className={dividerClass} aria-hidden />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              {t('dashboard:highestBalanceReached', { defaultValue: 'Plus haut atteint' })}
-            </span>
+            <IndicatorMetricLabel
+              labelClassName={labelMuted}
+              isBand={isBand}
+              label={t('dashboard:highestBalanceReached', { defaultValue: 'Plus haut atteint' })}
+              tooltip={highestBalanceTooltip}
+              icon={(
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              )}
+            />
             <span className={`text-xl font-semibold ${
               accountBalance.peak >= accountBalance.initial ? valueUp : valueDown
             }`}>
@@ -157,15 +227,20 @@ export const AccountIndicatorsGrid: React.FC<AccountIndicatorsGridProps> = ({
         <div className={tileClass}>
           {accountBalance.initial > 0 && (
             <div className="flex min-w-0 shrink-0 flex-col gap-1">
-              <span className={`flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider ${labelMuted}`}>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  {variationValue >= 0 
-                    ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                  }
-                </svg>
-                {t('dashboard:variation', { defaultValue: 'Variation' })}
-              </span>
+              <IndicatorMetricLabel
+                labelClassName={labelMuted}
+                isBand={isBand}
+                label={t('dashboard:variation', { defaultValue: 'Variation' })}
+                tooltip={variationAllTimeTooltip}
+                icon={(
+                  <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    {variationValue >= 0 
+                      ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                    }
+                  </svg>
+                )}
+              />
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-2 sm:flex-wrap">
                 {balanceLoading ? (
                   <span className={valueSkeletonClass} aria-hidden />

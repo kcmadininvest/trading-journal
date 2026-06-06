@@ -122,6 +122,9 @@
   "currentNotRespectTrades": "Trades non-respect",
   "initialBalance": "Solde initial",
   "currentBalance": "Solde actuel",
+  "currentBalanceTooltip": "Solde de trésorerie réel du compte (capital initial + PnL cumulé + dépôts − retraits). Il n’est pas filtré par la période sélectionnée.",
+  "highestBalanceReachedTooltip": "Pic de solde sur tout l’historique du compte (trades et transactions). Il n’est pas filtré par la période sélectionnée.",
+  "variationAllTimeTooltip": "Variation depuis le capital initial sur tout l’historique du compte. Elle n’est pas filtrée par la période sélectionnée.",
   "highestBalanceReached": "Plus haut atteint",
   "period": "Période",
   "periodGroups": {

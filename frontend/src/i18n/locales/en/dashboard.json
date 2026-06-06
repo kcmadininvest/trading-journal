@@ -121,6 +121,9 @@
   "currentNotRespectTrades": "Non-respect trades",
   "initialBalance": "Initial Balance",
   "currentBalance": "Current Balance",
+  "currentBalanceTooltip": "Real account treasury balance (initial capital + cumulative PnL + deposits − withdrawals). Not filtered by the selected period.",
+  "highestBalanceReachedTooltip": "Peak balance over the full account history (trades and transactions). Not filtered by the selected period.",
+  "variationAllTimeTooltip": "Change from initial capital over the full account history. Not filtered by the selected period.",
   "highestBalanceReached": "Highest reached",
   "period": "Period",
   "periodGroups": {

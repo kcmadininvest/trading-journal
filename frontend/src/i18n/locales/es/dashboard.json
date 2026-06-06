@@ -122,6 +122,9 @@
   "currentNotRespectTrades": "Operaciones sin respeto",
   "initialBalance": "Saldo inicial",
   "currentBalance": "Saldo actual",
+  "currentBalanceTooltip": "Saldo de tesorería real de la cuenta (capital inicial + PnL acumulado + depósitos − retiros). No se filtra por el período seleccionado.",
+  "highestBalanceReachedTooltip": "Máximo saldo en todo el historial de la cuenta (operaciones y transacciones). No se filtra por el período seleccionado.",
+  "variationAllTimeTooltip": "Variación respecto al capital inicial en todo el historial de la cuenta. No se filtra por el período seleccionado.",
   "highestBalanceReached": "Máximo alcanzado",
   "period": "Período",
   "periodGroups": {

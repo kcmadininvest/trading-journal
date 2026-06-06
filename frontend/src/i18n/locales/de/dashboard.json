@@ -122,6 +122,9 @@
   "currentNotRespectTrades": "Nicht-Respekt-Trades",
   "initialBalance": "Anfangssaldo",
   "currentBalance": "Aktueller Saldo",
+  "currentBalanceTooltip": "Echter Kontostand (Anfangskapital + kumuliertes PnL + Einzahlungen − Auszahlungen). Wird nicht durch den gewählten Zeitraum gefiltert.",
+  "highestBalanceReachedTooltip": "Höchster Saldo über die gesamte Kontohistorie (Trades und Transaktionen). Wird nicht durch den gewählten Zeitraum gefiltert.",
+  "variationAllTimeTooltip": "Veränderung gegenüber dem Anfangskapital über die gesamte Kontohistorie. Wird nicht durch den gewählten Zeitraum gefiltert.",
   "highestBalanceReached": "Höchster erreicht",
   "period": "Zeitraum",
   "periodGroups": {
