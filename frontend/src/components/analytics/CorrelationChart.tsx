@@ -83,7 +83,11 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
     }
 
     const points = data.dataPoints.map((d) => ({ x: d.trades, y: d.pnl }));
-    const { yMin, yMax } = computeNiceYBounds(points.map((p) => p.y));
+    const yValues = points.map((p) => p.y);
+    if (data.regressionLine.length === 2) {
+      yValues.push(data.regressionLine[0].y, data.regressionLine[1].y);
+    }
+    const { yMin, yMax } = computeNiceYBounds(yValues);
     const tradeSlots = buildTradeSlots(data.minTrades, data.maxTrades);
     const cells = computeTradePnlDensityGrid(
       points,
@@ -132,7 +136,8 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
     [theme],
   );
 
-  const regressionStroke = theme === 'dark' ? '#fbbf24' : '#d97706';
+  const regressionStroke = theme === 'dark' ? '#e879f9' : '#c026d3';
+  const cellHoverStroke = theme === 'dark' ? '#e2e8f0' : '#1e293b';
 
   const handleCellEnter = useCallback((cell: DensityGridCell, event: React.MouseEvent) => {
     setHovered({
@@ -199,7 +204,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         {data.regressionLine.length > 0 && (
           <div className="flex items-center gap-2">
             <span
-              className="inline-block w-6 border-t-2 border-dashed"
+              className="inline-block w-6 border-t-2"
               style={{ borderColor: regressionStroke }}
             />
             <span>{t('analytics:charts.correlation.regressionLine')}</span>
@@ -279,7 +284,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
                       cell.count,
                       chartModel.maxCountByTrades.get(cell.trades) ?? 1,
                     )}
-                    stroke={isHovered ? regressionStroke : 'transparent'}
+                    stroke={isHovered ? cellHoverStroke : 'transparent'}
                     strokeWidth={isHovered ? 1.5 : 0}
                     onMouseEnter={(e) => handleCellEnter(cell, e)}
                     onMouseLeave={handleCellLeave}
@@ -287,6 +292,9 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
                 );
               })}
 
+            </g>
+
+            <g clipPath={`url(#${clipPathId})`} pointerEvents="none">
               {data.regressionLine.length === 2 && (
                 <line
                   x1={scales.xScaleTrades(data.regressionLine[0].x)}
@@ -294,9 +302,8 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
                   x2={scales.xScaleTrades(data.regressionLine[1].x)}
                   y2={scales.yScale(data.regressionLine[1].y)}
                   stroke={regressionStroke}
-                  strokeWidth={2}
-                  strokeDasharray="6 4"
-                  pointerEvents="none"
+                  strokeWidth={2.5}
+                  strokeLinecap="round"
                 />
               )}
             </g>

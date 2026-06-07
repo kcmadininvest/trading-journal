@@ -83,7 +83,7 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
     [preferences.font_size],
   );
   /** Win rate — durée et taille de position (Analytics) */
-  const winRateStroke = '#4AA3A2';
+  const winRateStroke = isDark ? '#e879f9' : '#c026d3';
 
   const labels = useMemo(() => {
     if (chartKey !== 'sizePerformance') {
