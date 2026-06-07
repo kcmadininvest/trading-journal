@@ -28,10 +28,13 @@
       "q1": "Q1 (25%)",
       "min": "Minimum",
       "trades": "Trades",
+      "outliers": "Exceptional values",
+      "outliersMore": "  ... and {{count}} more",
       "boxDescription": "Box: Central 50% of trades (Q1 to Q3)",
       "medianDescription": "Center line: Median (middle value)",
       "whiskersDescription": "Whiskers: Range of normal values",
-      "outliersDescription": "Dots: Exceptional values (blue = gains, pink = losses)"
+      "outliersDescription": "Dots: Exceptional values (blue = gains, pink = losses)",
+      "outliersClippedDescription": "Triangles at axis edge: off-scale values (see tooltip)"
     },
     "correlation": {
       "title": "PnL vs Number of Trades Correlation",

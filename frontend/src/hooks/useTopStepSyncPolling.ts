@@ -20,7 +20,7 @@ export interface UseTopStepSyncPollingOptions {
 
 /**
  * Polling léger : GET sync-status toutes les 5 min, POST sync seulement si should_sync.
- * Réservé à la page Trades (enablePolling). Pause si onglet masqué.
+ * Activé via `enablePolling` (pages Trades et Replay session). Pause si onglet masqué.
  */
 export function useTopStepSyncPolling(
   accountId: number | null | undefined,

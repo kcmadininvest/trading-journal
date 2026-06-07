@@ -447,7 +447,9 @@ const SessionReplayPage: React.FC = () => {
 
   const refreshSessionQuiet = useCallback(async () => {
     if (!accountId || !sessionDate || !canSync) return;
-    if (sessionRef.current?.session_date !== sessionDate) return;
+    if (sessionRef.current != null && sessionRef.current.session_date !== sessionDate) return;
+
+    const preservePlayback = sessionRef.current?.session_date === sessionDate;
 
     silentRefreshAbortRef.current?.abort();
     const controller = new AbortController();
@@ -458,7 +460,7 @@ const SessionReplayPage: React.FC = () => {
         signal: controller.signal,
       });
       if (controller.signal.aborted) return;
-      await hydrateSession(built, controller.signal, { preservePlayback: true });
+      await hydrateSession(built, controller.signal, { preservePlayback });
     } catch (error: unknown) {
       if (!isAbortError(error)) {
         console.error('[SessionReplayPage] quiet refresh failed', error);
@@ -714,7 +716,7 @@ const SessionReplayPage: React.FC = () => {
             </div>
           </div>
           <div className="flex w-full flex-wrap items-end gap-2 lg:w-auto lg:flex-shrink-0">
-            {accountId && canSync && (
+            {accountId && (
               <TopStepSyncControls
                 iconOnly="narrow"
                 accountId={accountId}

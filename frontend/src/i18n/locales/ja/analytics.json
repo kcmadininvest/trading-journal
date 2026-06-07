@@ -24,7 +24,10 @@
       "boxDescription": "ボックス：中央50%の取引（Q1からQ3）",
       "medianDescription": "中央線：中央値（中間値）",
       "whiskersDescription": "ひげ：正常値の範囲",
-      "outliersDescription": "点：例外的な値（青=利益、ピンク=損失）"
+      "outliers": "例外的な値",
+      "outliersMore": "  ... 他{{count}}件",
+      "outliersDescription": "点：例外的な値（青=利益、ピンク=損失）",
+      "outliersClippedDescription": "軸端の三角：スケール外の値（ツールチップを参照）"
     },
     "gainsVsLosses": {
       "title": "利益と損失の分布",

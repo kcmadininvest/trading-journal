@@ -12,6 +12,8 @@ ChartJS.register(BoxPlotController, BoxAndWiskers);
 const OUTLIER_GAIN_COLOR = '#3b82f6';
 const OUTLIER_LOSS_COLOR = '#ec4899';
 const OUTLIER_POINT_RADIUS = 4;
+const OUTLIER_CLIP_JITTER = 4;
+const TOOLTIP_OUTLIERS_MAX = 2;
 
 type BoxPlotPoint = {
   min: number;
@@ -57,21 +59,42 @@ const hourlyBoxPlotColoredOutliersPlugin: Plugin<'boxplot'> = {
       );
       const xPos = x as number;
 
-      for (const pnl of outliers) {
+      const yMin = yScale.min as number;
+      const yMax = yScale.max as number;
+      const { top, bottom } = chart.chartArea;
+
+      outliers.forEach((pnl, outlierIndex) => {
+        const isAbove = pnl > yMax;
+        const isBelow = pnl < yMin;
+        const isClipped = isAbove || isBelow;
+
+        let yPos: number;
+        let rotation = 0;
+        if (isAbove) {
+          yPos = top + OUTLIER_POINT_RADIUS + 1;
+        } else if (isBelow) {
+          yPos = bottom - OUTLIER_POINT_RADIUS - 1;
+          rotation = Math.PI;
+        } else {
+          yPos = yScale.getPixelForValue(pnl);
+        }
+
+        const jitter = (outlierIndex - (outliers.length - 1) / 2) * OUTLIER_CLIP_JITTER;
         const color = pnl >= 0 ? OUTLIER_GAIN_COLOR : OUTLIER_LOSS_COLOR;
         ctx.fillStyle = color;
         ctx.strokeStyle = color;
         drawPoint(
           ctx,
           {
-            pointStyle: 'circle',
-            radius: OUTLIER_POINT_RADIUS,
-            borderWidth: 1,
+            pointStyle: isClipped ? 'triangle' : 'circle',
+            radius: isClipped ? 5 : OUTLIER_POINT_RADIUS,
+            borderWidth: isClipped ? 0 : 1,
+            rotation,
           },
-          xPos,
-          yScale.getPixelForValue(pnl),
+          xPos + jitter,
+          yPos,
         );
-      }
+      });
     });
 
     ctx.restore();
@@ -135,17 +158,48 @@ const calculateBoxPlotStats = (values: number[]): Omit<BoxPlotData, 'hour' | 'ho
   return { min, q1, median, q3, max, outliers };
 };
 
+const buildOutlierTooltipLines = (
+  outliers: number[],
+  currencySymbol: string,
+  translate: (key: string, options?: Record<string, unknown>) => string,
+): string[] => {
+  if (outliers.length === 0) {
+    return [];
+  }
+
+  const sorted = [...outliers].sort((a, b) => Math.abs(b) - Math.abs(a));
+  const shown = sorted.slice(0, TOOLTIP_OUTLIERS_MAX);
+  const remaining = sorted.length - shown.length;
+
+  const lines = [
+    `${translate('analytics:charts.hourlyPerformanceBoxPlot.outliers')} (${sorted.length}) :`,
+    ...shown.map(o => `  ${formatCurrency(o, currencySymbol)}`),
+  ];
+
+  if (remaining > 0) {
+    lines.push(
+      translate('analytics:charts.hourlyPerformanceBoxPlot.outliersMore', {
+        count: remaining,
+        defaultValue: '  ... et {{count}} autre(s)',
+      }),
+    );
+  }
+
+  return lines;
+};
+
 /** Bornes Y arrondies + pas régulier (évite des ticks comme -1832,67 en bord d'axe). */
 const computeNiceYAxisBounds = (
   plots: BoxPlotData[],
 ): { min: number; max: number; stepSize: number } => {
-  const allValues = plots.flatMap(d => d.values);
-  if (allValues.length === 0) {
+  // Moustaches uniquement : les outliers ne doivent pas étirer l'échelle et écraser les boîtes.
+  const whiskerValues = plots.flatMap(d => (d.values.length > 0 ? [d.min, d.max] : []));
+  if (whiskerValues.length === 0) {
     return { min: -100, max: 100, stepSize: 50 };
   }
 
-  const dataMin = Math.min(...allValues);
-  const dataMax = Math.max(...allValues);
+  const dataMin = Math.min(...whiskerValues);
+  const dataMax = Math.max(...whiskerValues);
   const span = dataMax - dataMin;
   const padding = Math.max(span * 0.12, 50);
   const effectiveMin = dataMin - padding;
@@ -212,6 +266,13 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
 
   const yAxisBounds = useMemo(() => computeNiceYAxisBounds(boxPlotData), [boxPlotData]);
 
+  const hasClippedOutliers = useMemo(
+    () => boxPlotData.some(d =>
+      d.outliers.some(o => o < yAxisBounds.min || o > yAxisBounds.max),
+    ),
+    [boxPlotData, yAxisBounds],
+  );
+
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
@@ -235,7 +296,7 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
           label: (context: any) => {
             const index = context.dataIndex;
             const stats = boxPlotData[index];
-            return [
+            const lines = [
               `${t('analytics:charts.hourlyPerformanceBoxPlot.max')}: ${formatCurrency(stats.max, currencySymbol)}`,
               `${t('analytics:charts.hourlyPerformanceBoxPlot.q3')}: ${formatCurrency(stats.q3, currencySymbol)}`,
               `${t('analytics:charts.hourlyPerformanceBoxPlot.median')}: ${formatCurrency(stats.median, currencySymbol)}`,
@@ -243,6 +304,10 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
               `${t('analytics:charts.hourlyPerformanceBoxPlot.min')}: ${formatCurrency(stats.min, currencySymbol)}`,
               `${t('analytics:charts.hourlyPerformanceBoxPlot.trades')}: ${stats.values.length}`,
             ];
+            if (stats.outliers.length > 0) {
+              lines.push(...buildOutlierTooltipLines(stats.outliers, currencySymbol, t));
+            }
+            return lines;
           },
         },
         }),
@@ -351,8 +416,20 @@ export const HourlyPerformanceBoxPlotChart: React.FC<HourlyPerformanceBoxPlotCha
               <span className="inline-block w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
               <span className="inline-block w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
             </span>
-            <span>{t('analytics:charts.hourlyPerformanceBoxPlot.outliersDescription', { defaultValue: 'Points : Valeurs exceptionnelles (bleu = gains, rose = pertes)' })}</span>
+            <span>{t('analytics:charts.hourlyPerformanceBoxPlot.outliersDescription', { defaultValue: 'Points : valeurs exceptionnelles (bleu = gains, rose = pertes)' })}</span>
           </div>
+          {hasClippedOutliers && (
+            <div className="flex items-center gap-1.5">
+              <span className="inline-flex gap-0.5">
+                <span className="inline-block w-0 h-0 border-l-[3px] border-r-[3px] border-b-[5px] border-l-transparent border-r-transparent border-b-blue-500"></span>
+                <span
+                  className="inline-block w-0 h-0 border-l-[3px] border-r-[3px] border-t-[5px] border-l-transparent border-r-transparent border-t-pink-500"
+                  style={{ transform: 'rotate(180deg)' }}
+                ></span>
+              </span>
+              <span>{t('analytics:charts.hourlyPerformanceBoxPlot.outliersClippedDescription', { defaultValue: 'Triangles en bord d\'axe : valeurs hors échelle (voir infobulle)' })}</span>
+            </div>
+          )}
         </div>
       </div>
       <ChartTooltipResetContainer className="relative flex-1 min-h-[320px]">

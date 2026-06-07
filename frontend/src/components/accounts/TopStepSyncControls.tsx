@@ -10,7 +10,7 @@ import { translateIntegrationError } from '../../utils/integrationErrors';
 
 interface TopStepSyncControlsProps {
   accountId: number | null | undefined;
-  /** Polling auto (GET + POST si besoin) — uniquement page Trades, 5 min */
+  /** Polling auto (GET + POST si besoin) — pages Trades et Replay session, 5 min */
   enablePolling?: boolean;
   onSynced?: () => void;
   /** Si défini, utilisé par le polling auto à la place de `onSynced` (refresh plus discret). */

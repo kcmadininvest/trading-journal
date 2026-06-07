@@ -32,7 +32,10 @@
       "boxDescription": "Caixa: 50% central das operações (Q1 a Q3)",
       "medianDescription": "Linha central: Mediana (valor médio)",
       "whiskersDescription": "Bigodes: Intervalo de valores normais",
-      "outliersDescription": "Pontos: Valores excepcionais (azul = ganhos, rosa = perdas)"
+      "outliers": "Valores excepcionais",
+      "outliersMore": "  ... e mais {{count}}",
+      "outliersDescription": "Pontos: Valores excepcionais (azul = ganhos, rosa = perdas)",
+      "outliersClippedDescription": "Triângulos na borda do eixo: valores fora da escala (ver tooltip)"
     },
     "correlation": {
       "title": "Correlação PnL vs Número de Operações",

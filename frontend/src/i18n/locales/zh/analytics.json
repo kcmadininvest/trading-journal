@@ -24,7 +24,10 @@
       "boxDescription": "箱体：中间50%的交易（Q1到Q3）",
       "medianDescription": "中线：中位数（中间值）",
       "whiskersDescription": "须线：正常值范围",
-      "outliersDescription": "点：异常值（蓝色=盈利，粉色=亏损）"
+      "outliers": "异常值",
+      "outliersMore": "  ... 另有 {{count}} 个",
+      "outliersDescription": "点：异常值（蓝色=盈利，粉色=亏损）",
+      "outliersClippedDescription": "轴边缘三角：超出刻度的值（见工具提示）"
     },
     "correlation": {
       "title": "PnL 与交易笔数相关性",

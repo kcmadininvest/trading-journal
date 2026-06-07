@@ -24,7 +24,10 @@
       "boxDescription": "박스: 중앙 50% 거래 (Q1에서 Q3)",
       "medianDescription": "중앙선: 중앙값 (중간값)",
       "whiskersDescription": "수염: 정상 값의 범위",
-      "outliersDescription": "점: 예외적인 값 (파란색 = 이익, 분홍색 = 손실)"
+      "outliers": "예외적인 값",
+      "outliersMore": "  ... 외 {{count}}개",
+      "outliersDescription": "점: 예외적인 값 (파란색 = 이익, 분홍색 = 손실)",
+      "outliersClippedDescription": "축 가장자리 삼각형: 스케일 밖 값 (툴팁 참조)"
     },
     "gainsVsLosses": {
       "title": "이익 대 손실 분포",

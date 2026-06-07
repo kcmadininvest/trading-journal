@@ -31,7 +31,10 @@
       "boxDescription": "Box: Zentrale 50% der Trades (Q1 bis Q3)",
       "medianDescription": "Mittellinie: Median (Mittelwert)",
       "whiskersDescription": "Whiskers: Bereich normaler Werte",
-      "outliersDescription": "Punkte: Außergewöhnliche Werte (blau = Gewinne, rosa = Verluste)"
+      "outliers": "Außergewöhnliche Werte",
+      "outliersMore": "  ... und {{count}} weitere",
+      "outliersDescription": "Punkte: Außergewöhnliche Werte (blau = Gewinne, rosa = Verluste)",
+      "outliersClippedDescription": "Dreiecke am Achsenrand: Werte außerhalb der Skala (siehe Tooltip)"
     },
     "correlation": {
       "title": "PnL vs Anzahl der Trades Korrelation",

@@ -38,6 +38,7 @@ interface CorrelationChartProps {
 }
 
 const MARGIN = { top: 16, right: 16, bottom: 58, left: 72 };
+const DENSITY_RGB = { light: '59, 130, 246', dark: '96, 165, 250' } as const;
 
 type HoveredCell = DensityGridCell & { clientX: number; clientY: number };
 
@@ -125,9 +126,8 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
   const densityColor = useCallback(
     (count: number, maxInColumn: number) => {
       const alpha = densityIntensity(count, maxInColumn);
-      return theme === 'dark'
-        ? `rgba(16, 185, 129, ${alpha})`
-        : `rgba(5, 150, 105, ${alpha})`;
+      const rgb = theme === 'dark' ? DENSITY_RGB.dark : DENSITY_RGB.light;
+      return `rgba(${rgb}, ${alpha})`;
     },
     [theme],
   );
@@ -161,7 +161,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
   return (
     <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 flex flex-col">
       <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-        <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-emerald-600 rounded-full mr-3" />
+        <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3" />
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
           {t('analytics:charts.correlation.title')}
         </h3>
@@ -191,8 +191,8 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
             className="h-2.5 w-20 rounded-full"
             style={{
               background: theme === 'dark'
-                ? 'linear-gradient(90deg, rgba(16,185,129,0.25), rgba(16,185,129,1))'
-                : 'linear-gradient(90deg, rgba(5,150,105,0.25), rgba(5,150,105,1))',
+                ? `linear-gradient(90deg, rgba(${DENSITY_RGB.dark}, 0.25), rgba(${DENSITY_RGB.dark}, 1))`
+                : `linear-gradient(90deg, rgba(${DENSITY_RGB.light}, 0.25), rgba(${DENSITY_RGB.light}, 1))`,
             }}
           />
         </div>
