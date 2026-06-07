@@ -43,6 +43,7 @@ import {
   SessionInsightItem,
   TradingSessionReplay,
 } from '../services/sessionReplay';
+import { tradingAccountsService } from '../services/tradingAccounts';
 import { formatDateTimeShort, type DateFormatType } from '../utils/dateFormat';
 import { formatCurrencyWithSign } from '../utils/numberFormat';
 
@@ -269,11 +270,17 @@ const SessionReplayPage: React.FC = () => {
   }, []);
 
   const runBuild = useCallback(
-    async (signal: AbortSignal, generation: number): Promise<TradingSessionReplay | null> => {
+    async (
+      signal: AbortSignal,
+      generation: number,
+      options?: { preservePlayback?: boolean },
+    ): Promise<TradingSessionReplay | null> => {
       if (!accountId || !sessionDate) return null;
       const built = await sessionReplayService.build(accountId, sessionDate, { signal });
       if (generation !== generationRef.current) return null;
-      await hydrateSession(built, signal);
+      await hydrateSession(built, signal, {
+        preservePlayback: options?.preservePlayback,
+      });
       return built;
     },
     [accountId, sessionDate, hydrateSession],
@@ -316,40 +323,91 @@ const SessionReplayPage: React.FC = () => {
     [accountId, canSync, cancelPendingRequests, loadActiveDates, runBuild, t],
   );
 
-  const tryAutoBuildForSelection = useCallback(
-    async (signal: AbortSignal, generation: number): Promise<boolean> => {
+  const attemptBuildForSelection = useCallback(
+    async (
+      signal: AbortSignal,
+      generation: number,
+      options?: {
+        showSuccessToast?: boolean;
+        bootstrapSync?: boolean;
+        preservePlayback?: boolean;
+        quiet?: boolean;
+      },
+    ): Promise<boolean> => {
       if (!accountId || !sessionDate) return false;
-      const shouldAutoBuild =
-        (autoBuildPendingRef.current || parseHashParams().autoBuild) &&
-        activeDatesRef.current.includes(sessionDate) &&
-        canSyncRef.current &&
-        !eligibilityLoadingRef.current;
-      if (!shouldAutoBuild) return false;
+      if (!canSyncRef.current || eligibilityLoadingRef.current) return false;
+
+      const {
+        showSuccessToast = false,
+        bootstrapSync = true,
+        preservePlayback = false,
+        quiet = false,
+      } = options ?? {};
+
+      if (bootstrapSync) {
+        try {
+          const status = await tradingAccountsService.getSyncStatus(accountId);
+          if (signal.aborted) return false;
+          if (status.should_sync) {
+            await tradingAccountsService.sync(accountId);
+          }
+        } catch (error: unknown) {
+          if (!isAbortError(error)) {
+            console.error('[SessionReplayPage] bootstrap sync failed', error);
+          }
+        }
+      }
+
+      if (signal.aborted) return false;
+
+      let dates: string[];
+      try {
+        dates = await sessionReplayService.getActiveDates(accountId, { signal });
+      } catch (error: unknown) {
+        if (!isAbortError(error)) {
+          console.error('[SessionReplayPage] active dates failed', error);
+        }
+        return false;
+      }
+      if (signal.aborted) return false;
+      setActiveDates(dates);
+      activeDatesRef.current = dates;
+
+      if (!dates.includes(sessionDate)) return false;
 
       autoBuildPendingRef.current = false;
       clearAutoBuildFromHash();
-      setBuilding(true);
+
+      if (!quiet) {
+        setBuilding(true);
+      }
       try {
-        await runBuild(signal, generation);
-        if (generation !== generationRef.current) return false;
-        toast.success(t('buildSuccess'));
-        await loadActiveDates();
+        await runBuild(signal, generation, { preservePlayback });
+        if (generation !== generationRef.current || signal.aborted) return false;
+        if (showSuccessToast) {
+          toast.success(t('buildSuccess'));
+        }
         return true;
       } catch (error: unknown) {
-        toastReplayError(error, t('buildError'));
+        if (!quiet) {
+          toastReplayError(error, t('buildError'));
+        }
         return false;
       } finally {
-        if (generation === generationRef.current) {
+        if (!quiet && generation === generationRef.current) {
           setBuilding(false);
         }
       }
     },
-    [accountId, sessionDate, runBuild, loadActiveDates, t],
+    [accountId, sessionDate, runBuild, t],
   );
 
   const loadSessionForSelection = useCallback(async () => {
     if (!accountId || !sessionDate) {
       clearSessionState();
+      return;
+    }
+    if (eligibilityLoadingRef.current) {
       return;
     }
 
@@ -372,7 +430,13 @@ const SessionReplayPage: React.FC = () => {
 
       clearSessionState();
       if (generation !== generationRef.current) return;
-      await tryAutoBuildForSelection(signal, generation);
+
+      const showSuccessToast =
+        autoBuildPendingRef.current || parseHashParams().autoBuild;
+      await attemptBuildForSelection(signal, generation, {
+        showSuccessToast,
+        bootstrapSync: true,
+      });
     } catch (error: unknown) {
       if (generation !== generationRef.current) return;
       clearSessionState();
@@ -389,7 +453,7 @@ const SessionReplayPage: React.FC = () => {
     fetchBuiltSession,
     hydrateSession,
     clearSessionState,
-    tryAutoBuildForSelection,
+    attemptBuildForSelection,
     t,
   ]);
 
@@ -408,59 +472,24 @@ const SessionReplayPage: React.FC = () => {
       }
       abortRef.current?.abort();
     };
-  }, [accountId, sessionDate, loadSessionForSelection]);
-
-  /** Auto-build différé quand activeDates / éligibilité arrivent après le premier chargement. */
-  useEffect(() => {
-    if (!accountId || !sessionDate) return;
-    if (!(autoBuildPendingRef.current || parseHashParams().autoBuild)) return;
-    if (eligibilityLoading || !canSync) return;
-    if (!activeDates.includes(sessionDate)) return;
-    if (session?.session_date === sessionDate && session.status === 'built') return;
-
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      if (cancelled || loadingRef.current || buildingRef.current) return;
-      const currentSession = sessionRef.current;
-      if (currentSession?.session_date === sessionDate && currentSession.status === 'built') {
-        return;
-      }
-      const controller = new AbortController();
-      abortRef.current = controller;
-      const generation = ++generationRef.current;
-      void tryAutoBuildForSelection(controller.signal, generation);
-    }, 0);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [
-    accountId,
-    sessionDate,
-    activeDates,
-    canSync,
-    eligibilityLoading,
-    session,
-    tryAutoBuildForSelection,
-  ]);
+  }, [accountId, sessionDate, canSync, eligibilityLoading, loadSessionForSelection]);
 
   const refreshSessionQuiet = useCallback(async () => {
     if (!accountId || !sessionDate || !canSync) return;
     if (sessionRef.current != null && sessionRef.current.session_date !== sessionDate) return;
 
-    const preservePlayback = sessionRef.current?.session_date === sessionDate;
-
     silentRefreshAbortRef.current?.abort();
     const controller = new AbortController();
     silentRefreshAbortRef.current = controller;
+    const generation = ++generationRef.current;
 
     try {
-      const built = await sessionReplayService.build(accountId, sessionDate, {
-        signal: controller.signal,
+      await attemptBuildForSelection(controller.signal, generation, {
+        bootstrapSync: false,
+        showSuccessToast: false,
+        preservePlayback: sessionRef.current?.session_date === sessionDate,
+        quiet: true,
       });
-      if (controller.signal.aborted) return;
-      await hydrateSession(built, controller.signal, { preservePlayback });
     } catch (error: unknown) {
       if (!isAbortError(error)) {
         console.error('[SessionReplayPage] quiet refresh failed', error);
@@ -470,7 +499,7 @@ const SessionReplayPage: React.FC = () => {
         silentRefreshAbortRef.current = null;
       }
     }
-  }, [accountId, sessionDate, canSync, hydrateSession]);
+  }, [accountId, sessionDate, canSync, attemptBuildForSelection]);
 
   const handleAfterSync = useCallback(() => {
     void loadActiveDates();
@@ -732,7 +761,7 @@ const SessionReplayPage: React.FC = () => {
         )}
       </div>
 
-      {loading && !building ? (
+      {(loading || eligibilityLoading) && !building ? (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4" />
