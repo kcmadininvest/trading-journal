@@ -134,6 +134,85 @@ export const ANALYTICS_CHART_BODY_CLASS = 'relative flex-1 min-h-[320px]';
 
 export const ANALYTICS_CHART_MIN_HEIGHT = 320;
 
+/**
+ * Marges de base pour graphiques SVG Analytics.
+ * Aligné sur chartArea Chart.js (auto-fit des ticks) et Recharts (ex. MaeMfe).
+ */
+export const ANALYTICS_SVG_CHART_MARGIN = {
+  top: 8,
+  right: 12,
+  bottom: 52,
+  /** Axe X à deux lignes de ticks + titre (ex. corrélation PnL / trades). */
+  bottomDenseX: 58,
+  minLeft: 4,
+  tickGap: 6,
+  edgePad: 2,
+} as const;
+
+export interface AnalyticsSvgPlotMargins {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+let svgTextMeasureCanvas: HTMLCanvasElement | null = null;
+
+function measureSvgTickLabelWidth(text: string, fontSize: number): number {
+  if (typeof document === 'undefined') {
+    return text.length * fontSize * 0.6;
+  }
+
+  if (!svgTextMeasureCanvas) {
+    svgTextMeasureCanvas = document.createElement('canvas');
+  }
+
+  const ctx = svgTextMeasureCanvas.getContext('2d');
+  if (!ctx) {
+    return text.length * fontSize * 0.6;
+  }
+
+  ctx.font = `${fontSize}px ${CHART_FONT_FAMILY}`;
+  return ctx.measureText(text).width;
+}
+
+/** Marge gauche selon la largeur réelle des libellés (équivalent auto-fit Chart.js). */
+export function computeAnalyticsSvgLeftMargin(
+  tickLabels: string[],
+  tickFontSize: number,
+  options?: {
+    minLeft?: number;
+    tickGap?: number;
+    edgePad?: number;
+  },
+): number {
+  const minLeft = options?.minLeft ?? ANALYTICS_SVG_CHART_MARGIN.minLeft;
+  const tickGap = options?.tickGap ?? ANALYTICS_SVG_CHART_MARGIN.tickGap;
+  const edgePad = options?.edgePad ?? ANALYTICS_SVG_CHART_MARGIN.edgePad;
+
+  const maxLabelWidth = tickLabels.reduce(
+    (max, label) => Math.max(max, measureSvgTickLabelWidth(label, tickFontSize)),
+    0,
+  );
+
+  return Math.max(minLeft, Math.ceil(maxLabelWidth) + tickGap + edgePad);
+}
+
+export function computeAnalyticsSvgPlotMargins(params: {
+  yTickLabels: string[];
+  tickFontSize: number;
+  bottom?: number;
+}): AnalyticsSvgPlotMargins {
+  const { yTickLabels, tickFontSize, bottom } = params;
+
+  return {
+    top: ANALYTICS_SVG_CHART_MARGIN.top,
+    right: ANALYTICS_SVG_CHART_MARGIN.right,
+    bottom: bottom ?? ANALYTICS_SVG_CHART_MARGIN.bottom,
+    left: computeAnalyticsSvgLeftMargin(yTickLabels, tickFontSize),
+  };
+}
+
 export type ChartFontSizePreference = 'small' | 'medium' | 'large';
 
 /** Tailles SVG alignées sur Paramètres → Taille (graphiques hors Chart.js). */

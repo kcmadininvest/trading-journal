@@ -4,7 +4,14 @@ import { useTheme } from '../../hooks/useTheme';
 import { usePreferences } from '../../hooks/usePreferences';
 import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
-import { CHART_FONT_FAMILY, getChartSvgFontSizes } from '../../utils/chartConfig';
+import {
+  ANALYTICS_CHART_BODY_CLASS,
+  ANALYTICS_CHART_CARD_CLASS,
+  ANALYTICS_SVG_CHART_MARGIN,
+  CHART_FONT_FAMILY,
+  computeAnalyticsSvgPlotMargins,
+  getChartSvgFontSizes,
+} from '../../utils/chartConfig';
 import {
   computeDayTotalsByTrades,
   computeMaxCountByTrades,
@@ -37,7 +44,6 @@ interface CorrelationChartProps {
   };
 }
 
-const MARGIN = { top: 16, right: 16, bottom: 58, left: 72 };
 const DENSITY_RGB = { light: '59, 130, 246', dark: '96, 165, 250' } as const;
 
 type HoveredCell = DensityGridCell & { clientX: number; clientY: number };
@@ -74,9 +80,6 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const plotWidth = Math.max(size.width - MARGIN.left - MARGIN.right, 0);
-  const plotHeight = Math.max(size.height - MARGIN.top - MARGIN.bottom, 0);
-
   const chartModel = useMemo(() => {
     if (!data?.dataPoints.length) {
       return null;
@@ -106,6 +109,29 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
     };
   }, [data]);
 
+  const margins = useMemo(() => {
+    if (!chartModel) {
+      return computeAnalyticsSvgPlotMargins({
+        yTickLabels: [],
+        tickFontSize: chartFonts.tick,
+        bottom: ANALYTICS_SVG_CHART_MARGIN.bottomDenseX,
+      });
+    }
+
+    const yLabels = chartModel.yTicks.map((tick) =>
+      formatCurrency(tick, currencySymbol, preferences.number_format),
+    );
+
+    return computeAnalyticsSvgPlotMargins({
+      yTickLabels: yLabels,
+      tickFontSize: chartFonts.tick,
+      bottom: ANALYTICS_SVG_CHART_MARGIN.bottomDenseX,
+    });
+  }, [chartModel, currencySymbol, preferences.number_format, chartFonts.tick]);
+
+  const plotWidth = Math.max(size.width - margins.left - margins.right, 0);
+  const plotHeight = Math.max(size.height - margins.top - margins.bottom, 0);
+
   const scales = useMemo(() => {
     if (!chartModel || plotWidth <= 0 || plotHeight <= 0 || chartModel.tradeSlots.length === 0) {
       return null;
@@ -119,13 +145,13 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
       const rounded = Math.round(trades);
       const index = rounded - slotBase;
       const clampedIndex = Math.max(0, Math.min(tradeSlots.length - 1, index));
-      return MARGIN.left + slotWidth * (clampedIndex + 0.5);
+      return margins.left + slotWidth * (clampedIndex + 0.5);
     };
 
-    const yScale = (y: number) => MARGIN.top + plotHeight - ((y - yMin) / (yMax - yMin)) * plotHeight;
+    const yScale = (y: number) => margins.top + plotHeight - ((y - yMin) / (yMax - yMin)) * plotHeight;
 
     return { xScaleTrades, yScale, columnWidthPx, slotWidth };
-  }, [chartModel, plotWidth, plotHeight]);
+  }, [chartModel, margins.left, margins.top, plotWidth, plotHeight]);
 
   const densityColor = useCallback(
     (count: number, maxInColumn: number) => {
@@ -153,7 +179,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
 
   if (!data || data.dataPoints.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px]">
+      <div className={ANALYTICS_CHART_CARD_CLASS}>
         <div className="flex items-center justify-center h-[450px]">
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">{t('analytics:noData', { defaultValue: 'Aucune donnée disponible' })}</p>
@@ -164,7 +190,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
   }
 
   return (
-    <div className="h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 flex flex-col">
+    <div className={ANALYTICS_CHART_CARD_CLASS}>
       <div className="flex items-center gap-2 mb-2 flex-shrink-0">
         <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full mr-3" />
         <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">
@@ -212,7 +238,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
         )}
       </div>
 
-      <div ref={containerRef} className="relative flex-1 min-h-[320px]">
+      <div ref={containerRef} className={ANALYTICS_CHART_BODY_CLASS}>
         {size.width > 0 && size.height > 0 && chartModel && scales && (
           <svg
             width={size.width}
@@ -225,8 +251,8 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
               return (
                 <line
                   key={`y-grid-${tick}`}
-                  x1={MARGIN.left}
-                  x2={MARGIN.left + plotWidth}
+                  x1={margins.left}
+                  x2={margins.left + plotWidth}
                   y1={y}
                   y2={y}
                   stroke={chartColors.grid}
@@ -242,8 +268,8 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
                   key={`x-grid-${tick}`}
                   x1={x}
                   x2={x}
-                  y1={MARGIN.top}
-                  y2={MARGIN.top + plotHeight}
+                  y1={margins.top}
+                  y2={margins.top + plotHeight}
                   stroke={chartColors.grid}
                   strokeWidth={1}
                 />
@@ -253,8 +279,8 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
             <defs>
               <clipPath id={clipPathId}>
                 <rect
-                  x={MARGIN.left}
-                  y={MARGIN.top}
+                  x={margins.left}
+                  y={margins.top}
                   width={plotWidth}
                   height={plotHeight}
                 />
@@ -309,17 +335,17 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
             </g>
 
             <line
-              x1={MARGIN.left}
-              x2={MARGIN.left + plotWidth}
-              y1={MARGIN.top + plotHeight}
-              y2={MARGIN.top + plotHeight}
+              x1={margins.left}
+              x2={margins.left + plotWidth}
+              y1={margins.top + plotHeight}
+              y2={margins.top + plotHeight}
               stroke={chartColors.border}
             />
             <line
-              x1={MARGIN.left}
-              x2={MARGIN.left}
-              y1={MARGIN.top}
-              y2={MARGIN.top + plotHeight}
+              x1={margins.left}
+              x2={margins.left}
+              y1={margins.top}
+              y2={margins.top + plotHeight}
               stroke={chartColors.border}
             />
 
@@ -329,7 +355,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
                 <g key={`x-label-${tick}`}>
                   <text
                     x={scales.xScaleTrades(tick)}
-                    y={MARGIN.top + plotHeight + 20}
+                    y={margins.top + plotHeight + 20}
                     textAnchor="middle"
                     fill={chartColors.textSecondary}
                     fontFamily={CHART_FONT_FAMILY}
@@ -340,7 +366,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
                   {dayTotal > 0 && (
                     <text
                       x={scales.xScaleTrades(tick)}
-                      y={MARGIN.top + plotHeight + 34}
+                      y={margins.top + plotHeight + 34}
                       textAnchor="middle"
                       fill={chartColors.textSecondary}
                       fontFamily={CHART_FONT_FAMILY}
@@ -356,7 +382,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
               );
             })}
             <text
-              x={MARGIN.left + plotWidth / 2}
+              x={margins.left + plotWidth / 2}
               y={size.height - 6}
               textAnchor="middle"
               fill={chartColors.text}
@@ -370,7 +396,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
             {chartModel.yTicks.map((tick) => (
               <text
                 key={`y-label-${tick}`}
-                x={MARGIN.left - 10}
+                x={margins.left - ANALYTICS_SVG_CHART_MARGIN.tickGap}
                 y={scales.yScale(tick) + 4}
                 textAnchor="end"
                 fill={chartColors.textSecondary}
@@ -380,16 +406,6 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
                 {formatCurrency(tick, currencySymbol, preferences.number_format)}
               </text>
             ))}
-            <text
-              transform={`translate(14 ${MARGIN.top + plotHeight / 2}) rotate(-90)`}
-              textAnchor="middle"
-              fill={chartColors.text}
-              fontFamily={CHART_FONT_FAMILY}
-              fontSize={chartFonts.axis}
-              fontWeight={600}
-            >
-              {t('analytics:charts.correlation.yAxis')}
-            </text>
           </svg>
         )}
 

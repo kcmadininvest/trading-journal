@@ -82,7 +82,6 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
     () => getChartSvgFontSizes(preferences.font_size),
     [preferences.font_size],
   );
-  /** Win rate — durée et taille de position (Analytics) */
   const winRateStroke = isDark ? '#e879f9' : '#c026d3';
 
   const labels = useMemo(() => {
@@ -279,8 +278,8 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
       <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: chartColors.text }}>
         <span className="inline-flex items-center gap-1.5">
           <span
-            className="inline-block h-2.5 w-2.5 rounded-full border-2 bg-white"
-            style={{ borderColor: winRateStroke }}
+            className="inline-block h-0.5 w-5 rounded-full"
+            style={{ backgroundColor: winRateStroke }}
             aria-hidden
           />
           {t(`${i18nPrefix}.winRate`)}
@@ -313,15 +312,15 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
                 label: t(`${i18nPrefix}.winRate`),
                 data: winRateValues,
                 borderColor: winRateStroke,
-                backgroundColor: '#ffffff',
-                borderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                pointBorderWidth: 2,
-                pointBorderColor: winRateStroke,
-                pointBackgroundColor: '#ffffff',
+                backgroundColor: 'transparent',
+                borderWidth: 2.5,
+                pointRadius: 0,
+                pointHoverRadius: 5,
+                pointHoverBorderWidth: 2,
+                pointHoverBorderColor: chartColors.background,
+                pointHoverBackgroundColor: winRateStroke,
                 spanGaps: false,
-                tension: 0.35,
+                tension: 0.25,
                 fill: false,
                 clip: false,
                 yAxisID: 'y1',
