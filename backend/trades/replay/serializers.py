@@ -9,6 +9,8 @@ from trades.models import (
     TradingSession,
 )
 
+from .journal_generator import journal_draft_content_for_session
+
 
 class SessionEventSerializer(serializers.ModelSerializer):
     planned_stop_loss = serializers.SerializerMethodField()
@@ -41,9 +43,15 @@ class SessionInsightSerializer(serializers.ModelSerializer):
 
 
 class SessionJournalDraftSerializer(serializers.ModelSerializer):
+    content = serializers.SerializerMethodField()
+
     class Meta:
         model = SessionJournalDraft
         fields = ['content', 'applied_at', 'applied_entry_id', 'updated_at']
+
+    def get_content(self, obj: SessionJournalDraft) -> str:
+        tz_name = self.context.get('user_timezone', 'Europe/Paris')
+        return journal_draft_content_for_session(obj.session, tz_name=tz_name)
 
 
 class TradingSessionSerializer(serializers.ModelSerializer):

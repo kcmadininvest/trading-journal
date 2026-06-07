@@ -24,6 +24,7 @@ from .serializers import (
 from integrations.topstepx_auth import get_topstepx_integration, get_valid_session_token
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 
+from .journal_generator import journal_draft_content_for_session
 from .market_data_fetcher import refresh_session_market_data
 from .session_builder import SessionReplayBuilder
 
@@ -44,6 +45,11 @@ class TradingSessionReplayViewSet(viewsets.ReadOnlyModelViewSet):
 
     permission_classes = [permissions.IsAuthenticated, IsPremiumBundleSubscriberOrAdmin]
     serializer_class = TradingSessionSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['user_timezone'] = _user_timezone_name(self.request)
+        return context
 
     def get_queryset(self):
         qs = TradingSession.objects.filter(user=self.request.user).select_related(
@@ -138,11 +144,15 @@ class TradingSessionReplayViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         overwrite = request.data.get('overwrite', False)
+        content = journal_draft_content_for_session(
+            session,
+            tz_name=_user_timezone_name(request),
+        )
         entry, created = DailyJournalEntry.objects.get_or_create(
             user=request.user,
             trading_account=session.trading_account,
             date=session.session_date,
-            defaults={'content': draft.content},
+            defaults={'content': content},
         )
         if not created and entry.content.strip() and not overwrite:
             return Response(
@@ -153,7 +163,7 @@ class TradingSessionReplayViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_409_CONFLICT,
             )
         if not created:
-            entry.content = draft.content
+            entry.content = content
             entry.save(update_fields=['content', 'updated_at'])
 
         draft.applied_entry = entry

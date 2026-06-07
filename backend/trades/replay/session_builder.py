@@ -366,7 +366,9 @@ class SessionReplayBuilder:
             insights = run_insight_rules(session, list(session.events.order_by('sequence')), trading_account)
             SessionInsight.objects.bulk_create(insights)
 
-            draft_content = generate_journal_draft(session, event_objs, insights)
+            draft_content = generate_journal_draft(
+                session, event_objs, insights, tz_name=tz_name
+            )
             SessionJournalDraft.objects.create(session=session, content=draft_content)
 
             try:

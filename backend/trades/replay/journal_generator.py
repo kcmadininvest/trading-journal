@@ -1,15 +1,45 @@
 """Génération du brouillon de journal quotidien depuis une session."""
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 
+import pytz
+from django.utils import timezone
+
 from trades.models import SessionEvent, SessionInsight, TradingSession
+
+
+def _resolve_timezone(tz_name: str) -> pytz.BaseTzInfo:
+    try:
+        return pytz.timezone(tz_name)
+    except pytz.UnknownTimeZoneError:
+        return pytz.timezone('Europe/Paris')
+
+
+def _format_event_time(dt: datetime, tz_name: str) -> str:
+    tz = _resolve_timezone(tz_name)
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt, timezone.utc)
+    return dt.astimezone(tz).strftime('%H:%M:%S')
+
+
+def journal_draft_content_for_session(
+    session: TradingSession,
+    *,
+    tz_name: str = 'Europe/Paris',
+) -> str:
+    events = list(session.events.order_by('sequence'))
+    insights = list(session.insights.order_by('occurred_at', 'id'))
+    return generate_journal_draft(session, events, insights, tz_name=tz_name)
 
 
 def generate_journal_draft(
     session: TradingSession,
     events: list[SessionEvent],
     insights: list[SessionInsight],
+    *,
+    tz_name: str = 'Europe/Paris',
 ) -> str:
     lines: list[str] = [
         f'# Session du {session.session_date}',
@@ -54,7 +84,7 @@ def generate_journal_draft(
     for evt in events:
         if evt.event_type in ('position_open', 'position_close', 'order_created'):
             label = evt.get_event_type_display()  # type: ignore
-            ts = evt.occurred_at.strftime('%H:%M:%S')
+            ts = _format_event_time(evt.occurred_at, tz_name)
             contract = (evt.payload or {}).get('contract_name', '')
             lines.append(f'- {ts} — {label}' + (f' ({contract})' if contract else ''))
 
