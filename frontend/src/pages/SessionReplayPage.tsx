@@ -43,7 +43,6 @@ import {
   SessionInsightItem,
   TradingSessionReplay,
 } from '../services/sessionReplay';
-import { tradingAccountsService } from '../services/tradingAccounts';
 import { formatDateTimeShort, type DateFormatType } from '../utils/dateFormat';
 import { formatCurrencyWithSign } from '../utils/numberFormat';
 
@@ -329,7 +328,6 @@ const SessionReplayPage: React.FC = () => {
       generation: number,
       options?: {
         showSuccessToast?: boolean;
-        bootstrapSync?: boolean;
         preservePlayback?: boolean;
         quiet?: boolean;
       },
@@ -339,24 +337,9 @@ const SessionReplayPage: React.FC = () => {
 
       const {
         showSuccessToast = false,
-        bootstrapSync = true,
         preservePlayback = false,
         quiet = false,
       } = options ?? {};
-
-      if (bootstrapSync) {
-        try {
-          const status = await tradingAccountsService.getSyncStatus(accountId);
-          if (signal.aborted) return false;
-          if (status.should_sync) {
-            await tradingAccountsService.sync(accountId);
-          }
-        } catch (error: unknown) {
-          if (!isAbortError(error)) {
-            console.error('[SessionReplayPage] bootstrap sync failed', error);
-          }
-        }
-      }
 
       if (signal.aborted) return false;
 
@@ -433,10 +416,7 @@ const SessionReplayPage: React.FC = () => {
 
       const showSuccessToast =
         autoBuildPendingRef.current || parseHashParams().autoBuild;
-      await attemptBuildForSelection(signal, generation, {
-        showSuccessToast,
-        bootstrapSync: true,
-      });
+      await attemptBuildForSelection(signal, generation, { showSuccessToast });
     } catch (error: unknown) {
       if (generation !== generationRef.current) return;
       clearSessionState();
@@ -458,6 +438,13 @@ const SessionReplayPage: React.FC = () => {
   ]);
 
   useEffect(() => {
+    setLoading(false);
+    setBuilding(false);
+    clearSessionState();
+    setActiveDates([]);
+  }, [accountId, clearSessionState]);
+
+  useEffect(() => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -471,21 +458,22 @@ const SessionReplayPage: React.FC = () => {
         debounceTimerRef.current = null;
       }
       abortRef.current?.abort();
+      setLoading(false);
+      setBuilding(false);
     };
   }, [accountId, sessionDate, canSync, eligibilityLoading, loadSessionForSelection]);
 
   const refreshSessionQuiet = useCallback(async () => {
     if (!accountId || !sessionDate || !canSync) return;
+    if (loadingRef.current || buildingRef.current) return;
     if (sessionRef.current != null && sessionRef.current.session_date !== sessionDate) return;
 
     silentRefreshAbortRef.current?.abort();
     const controller = new AbortController();
     silentRefreshAbortRef.current = controller;
-    const generation = ++generationRef.current;
 
     try {
-      await attemptBuildForSelection(controller.signal, generation, {
-        bootstrapSync: false,
+      await attemptBuildForSelection(controller.signal, generationRef.current, {
         showSuccessToast: false,
         preservePlayback: sessionRef.current?.session_date === sessionDate,
         quiet: true,
