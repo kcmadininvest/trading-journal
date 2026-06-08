@@ -2533,20 +2533,21 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         if trading_account_id:
             queryset = queryset.filter(trading_account_id=trading_account_id)
         
+        user_tz = get_user_timezone(request)
+
         if start_date:
             try:
                 start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
-                paris_tz = pytz.timezone('Europe/Paris')
-                start_datetime = paris_tz.localize(start_datetime)
+                start_datetime = user_tz.localize(start_datetime)
                 queryset = queryset.filter(entered_at__gte=start_datetime)
             except ValueError:
                 pass
-        
+
         if end_date:
             try:
                 end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
-                paris_tz = pytz.timezone('Europe/Paris')
-                end_datetime = paris_tz.localize(end_datetime.replace(hour=23, minute=59, second=59))
+                end_datetime = end_datetime.replace(hour=23, minute=59, second=59)
+                end_datetime = user_tz.localize(end_datetime)
                 queryset = queryset.filter(entered_at__lte=end_datetime)
             except ValueError:
                 pass
@@ -2598,6 +2599,23 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'results': result,
             'count': len(result)
         })
+
+    @action(detail=False, methods=['get'])
+    def monte_carlo_inputs(self, request):
+        """
+        Exposition historique (médiane size × point_value) pour ajuster μ/σ Monte Carlo.
+        All-time sur le compte sélectionné, sans filtre période.
+        """
+        from trades.services.monte_carlo_inputs import compute_monte_carlo_exposure_inputs
+
+        trading_account_id = request.query_params.get('trading_account', None)
+        queryset = TopStepTrade.objects.filter(user=request.user)  # type: ignore
+
+        if trading_account_id:
+            queryset = queryset.filter(trading_account_id=trading_account_id)
+
+        payload = compute_monte_carlo_exposure_inputs(queryset)
+        return Response(payload)
 
     @action(detail=False, methods=['get'])
     def analytics(self, request):

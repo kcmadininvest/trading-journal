@@ -226,9 +226,138 @@
   "tabs": {
     "overview": "Overview",
     "riskCapital": "Risk & Capital",
+    "projection": "Projection",
     "timeAnalysis": "Time Analysis",
     "patterns": "Correlations & Patterns",
     "behavior": "Behavior"
+  },
+  "monteCarlo": {
+    "title": "Balance target projection",
+    "tooltip": "Monte Carlo simulation based on your average daily gain (μ) and daily volatility (σ) from the account's full trading history. Optionally adjust lots and $/point to project a target size (μ and σ scaled linearly vs historical median size×$/point). Assumes stable edge; mixed contracts = approximation.",
+    "targetLabel": "Balance target",
+    "targetPlaceholder": "e.g. 10000",
+    "currentBalance": "Current balance",
+    "muLabel": "Avg. gain (μ)",
+    "sigmaLabel": "Volatility (σ)",
+    "daysPerWeekLabel": "Trading days / wk",
+    "approxDays": "~{{count}} days",
+    "approxWeeks": "~{{count}} wk",
+    "statsHint": "μ {{mu}}/day · σ {{sigma}} · ~{{daysPerWeek}} trading days/week",
+    "loading": "Computing projection…",
+    "chartTitle": "Projection curves",
+    "milestonesTitle": "Intermediate milestones",
+    "targetLine": "Target",
+    "dangerLine": "Danger threshold",
+    "dayLabel": "Day {{day}}",
+    "days": "days",
+    "weeks": "wk",
+    "probabilityHint": "chance of reaching target",
+    "noAccount": "Select a trading account to run a projection.",
+    "scenarios": {
+      "optimistic": "Fast",
+      "median": "Typical",
+      "prudent": "Prudent"
+    },
+    "percentileExplainer": "Fast = time reached by the 25% most favorable simulations. Prudent = time by which 75% of simulations reach the target (the remaining 25% take longer). Typical = median time (50/50).",
+    "cards": {
+      "median": "Typical scenario",
+      "medianHint": "Median time — half faster, half slower",
+      "medianTooltip": "Across 10,000 simulations, 50% reach the target in fewer days than this, 50% take longer. This is the central scenario, neither optimistic nor cautious.",
+      "optimistic": "Fast scenario",
+      "optimisticHint": "25% of simulations go even faster",
+      "optimisticTooltip": "Only 25% of simulations reach the target in this time or less — a favorable path, not a guarantee.",
+      "prudent": "Prudent scenario",
+      "prudentHint": "75% of simulations reach the target by then",
+      "prudentTooltip": "75% of simulations reach the target in this time or less; 25% take longer. Useful for planning without being too optimistic.",
+      "probability": "Probability",
+      "probabilitySims": "over {{simCount}} simulations",
+      "probabilityTooltip": "Share of {{simCount}} independent Monte Carlo scenarios that reach the balance target, simulating a random daily P&L from μ and σ."
+    },
+    "errors": {
+      "targetTooLow": "Target must be higher than current balance.",
+      "negativeMu": "Negative average daily gain — projection not possible.",
+      "insufficientData": "Not enough trading days for a reliable projection (minimum 5).",
+      "loadFailed": "Unable to load historical data."
+    },
+    "narrative": {
+      "title": "Summary",
+      "labels": {
+        "main": "Main conclusion",
+        "gap": "Gap to close",
+        "horizon": "Simulated horizon",
+        "typical": "Typical scenario",
+        "timeline": "Realistic range",
+        "milestone": "Next milestone",
+        "assumptions": "Assumptions",
+        "history": "History"
+      },
+      "gap": {
+        "remaining": "{{gap}} left to reach {{target}} (current balance {{current}})."
+      },
+      "horizon": {
+        "failure": "{{failureRate}}% of simulations do not reach {{target}} within the {{maxDays}} simulated trading-day horizon."
+      },
+      "milestone": {
+        "next": "{{balance}} in {{days}} ({{weeks}}) — about {{pct}}% of the way to your goal."
+      },
+      "typical": {
+        "withDuration": "Median time {{days}} (about {{weeks}}) — central scenario between fast and prudent.",
+        "insufficient": "Median timeline is not available with the current data."
+      },
+      "assumptions": {
+        "base": "Average gain {{mu}}/day, volatility {{sigma}}, ~{{daysPerWeek}} trading days/week.",
+        "adjusted": "μ and σ adjusted for your target size (×{{ratio}})."
+      },
+      "history": {
+        "standard": "{{dayCount}} trading days included from the full account history.",
+        "limited": "Only {{dayCount}} trading days (minimum {{minDays}} to project); interpret with caution."
+      },
+      "dateEarly": "early {{month}}",
+      "dateLate": "late {{month}}",
+      "probability": {
+        "certainty": "{{probability}}% chance of reaching {{target}} — near statistical certainty with your current profile.",
+        "veryLikely": "{{probability}}% chance of reaching {{target}} — the target is very likely with your current profile.",
+        "likely": "{{probability}}% chance of reaching {{target}} — the target is realistic with your current profile.",
+        "uncertain": "{{probability}}% chance of reaching {{target}} — the outcome remains uncertain despite a positive edge.",
+        "unlikely": "{{probability}}% chance of reaching {{target}} — the target looks difficult with your current profile.",
+        "veryUnlikely": "{{probability}}% chance of reaching {{target}} — the target is unlikely within the simulated horizon.",
+        "withSizing": "Projection based on your target size (μ and σ scaled ×{{ratio}})."
+      },
+      "timeline": {
+        "range": "The realistic range is {{monthsMin}} to {{monthsMax}} months of trading depending on your consistency.",
+        "withDateRange": "The realistic range is {{monthsMin}} to {{monthsMax}} months of trading depending on your consistency, around {{dateRange}}.",
+        "singleMonth": "The realistic timeline is about {{months}} months of trading depending on your consistency.",
+        "singleMonthWithDateRange": "The realistic timeline is about {{months}} months of trading, around {{dateRange}}.",
+        "insufficient": "The estimated timeline is not available with the current data.",
+        "relaxed": "No need to rush or force trades to get there faster.",
+        "patient": "Variability between optimistic and prudent scenarios is notable — keep your pace without forcing entries.",
+        "cautious": "Probability remains modest: prioritize execution quality rather than accelerating your pace.",
+        "steady": "Stay consistent in your trading routine to converge toward this range."
+      }
+    },
+    "sizing": {
+      "sectionTitle": "Size scenario",
+      "sectionTeaser": "e.g. 1 MNQ lot at $2/point — click here to scale μ and σ to your target size",
+      "sectionActive": "Adjustment active — edit lots and $/point below",
+      "sectionCollapsed": "{{lots}} lot × {{pointValue}} $/pt — exposure {{exposure}} $/pt",
+      "expandDetails": "Expand settings",
+      "collapseDetails": "Collapse settings",
+      "optionalBadge": "Optional",
+      "toggleOn": "Click to enable",
+      "toggleOff": "Click to disable",
+      "enable": "Adjust for my target size",
+      "lotsLabel": "Lots",
+      "pointValueLabel": "$/point",
+      "targetExposure": "Target exposure",
+      "historicalMedian": "Historical (median)",
+      "ratioApplied": "μ and σ scaled (×{{ratio}})",
+      "ratioNeutral": "Target exposure matches historical median.",
+      "hintMNQ": "e.g. MNQ micro = $2/point",
+      "assumptionNote": "Linear adjustment: assumes the same edge per $/point as your history.",
+      "errors": {
+        "insufficientExposureData": "Not enough trades with known exposure to adjust size (minimum 5)."
+      }
+    }
   },
   "postLossSizing": {
     "title": "Size after a loss",

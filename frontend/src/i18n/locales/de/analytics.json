@@ -223,9 +223,138 @@
   "tabs": {
     "overview": "Übersicht",
     "riskCapital": "Risiko & Kapital",
+    "projection": "Projektion",
     "timeAnalysis": "Zeitanalyse",
     "patterns": "Korrelationen & Muster",
     "behavior": "Verhalten"
+  },
+  "monteCarlo": {
+    "title": "Projektion zum Kontostand-Ziel",
+    "tooltip": "Monte-Carlo-Simulation basierend auf Ihrem durchschnittlichen Tagesgewinn (μ) und der Tagesvolatilität (σ) aus der vollständigen Handelshistorie des Kontos.",
+    "targetLabel": "Kontostand-Ziel",
+    "targetPlaceholder": "z. B. 10000",
+    "currentBalance": "Aktueller Kontostand",
+    "muLabel": "Ø Gewinn (μ)",
+    "sigmaLabel": "Volatilität (σ)",
+    "daysPerWeekLabel": "Handelstage / Wo.",
+    "approxDays": "~{{count}} Tage",
+    "approxWeeks": "~{{count}} Wo.",
+    "statsHint": "μ {{mu}}/Tag · σ {{sigma}} · ~{{daysPerWeek}} Handelstage/Woche",
+    "loading": "Projektion wird berechnet…",
+    "chartTitle": "Projektionskurven",
+    "milestonesTitle": "Zwischenziele",
+    "targetLine": "Ziel",
+    "dangerLine": "Gefahrenschwelle",
+    "dayLabel": "Tag {{day}}",
+    "days": "Tage",
+    "weeks": "Wo.",
+    "probabilityHint": "Wahrscheinlichkeit das Ziel zu erreichen",
+    "noAccount": "Wählen Sie ein Handelskonto für eine Projektion.",
+    "scenarios": {
+      "optimistic": "Schnell",
+      "median": "Typisch",
+      "prudent": "Vorsichtig"
+    },
+    "percentileExplainer": "Schnell = Zeit, die von den 25 % günstigsten Simulationen erreicht wird. Vorsichtig = Zeit, bis zu der 75 % der Simulationen das Ziel erreichen (die restlichen 25 % brauchen länger). Typisch = Medianzeit (50/50).",
+    "cards": {
+      "median": "Typisches Szenario",
+      "medianHint": "Medianzeit — Hälfte schneller, Hälfte langsamer",
+      "medianTooltip": "Bei 10.000 Simulationen erreichen 50 % das Ziel in weniger Tagen, 50 % brauchen länger. Das zentrale Szenario, weder optimistisch noch vorsichtig.",
+      "optimistic": "Schnelles Szenario",
+      "optimisticHint": "25 % der Simulationen sind noch schneller",
+      "optimisticTooltip": "Nur 25 % der Simulationen erreichen das Ziel in dieser Zeit oder schneller — ein günstiger Verlauf, keine Garantie.",
+      "prudent": "Vorsichtiges Szenario",
+      "prudentHint": "75 % der Simulationen erreichen das Ziel bis dahin",
+      "prudentTooltip": "75 % der Simulationen erreichen das Ziel in dieser Zeit oder schneller; 25 % brauchen länger. Hilfreich zur Planung ohne zu viel Optimismus.",
+      "probability": "Wahrscheinlichkeit",
+      "probabilitySims": "über {{simCount}} Simulationen",
+      "probabilityTooltip": "Anteil der {{simCount}} unabhängigen Monte-Carlo-Szenarien, die das Saldoziel erreichen, mit täglichem Zufalls-P&L aus μ und σ."
+    },
+    "errors": {
+      "targetTooLow": "Das Ziel muss über dem aktuellen Kontostand liegen.",
+      "negativeMu": "Negativer durchschnittlicher Tagesgewinn — Projektion nicht möglich.",
+      "insufficientData": "Nicht genug Handelstage für eine zuverlässige Projektion (mindestens 5).",
+      "loadFailed": "Historische Daten konnten nicht geladen werden."
+    },
+    "narrative": {
+      "title": "Zusammenfassung",
+      "labels": {
+        "main": "Hauptergebnis",
+        "typical": "Typisches Szenario",
+        "timeline": "Realistische Spanne",
+        "assumptions": "Annahmen",
+        "history": "Historie",
+        "gap": "Lücke zum Ziel",
+        "horizon": "Simulierter Horizont",
+        "milestone": "Nächster Meilenstein"
+      },
+      "typical": {
+        "withDuration": "Medianzeit {{days}} (ca. {{weeks}}) — zentrales Szenario zwischen schnell und vorsichtig.",
+        "insufficient": "Medianzeit ist mit den aktuellen Daten nicht verfügbar."
+      },
+      "assumptions": {
+        "base": "Ø-Gewinn {{mu}}/Tag, Volatilität {{sigma}}, ~{{daysPerWeek}} Handelstage/Woche.",
+        "adjusted": "μ und σ für Ihre Zielgröße angepasst (×{{ratio}})."
+      },
+      "history": {
+        "standard": "{{dayCount}} Handelstage aus der vollständigen Kontohistorie einbezogen.",
+        "limited": "Nur {{dayCount}} Handelstage (Minimum {{minDays}} für Projektion); mit Vorsicht interpretieren."
+      },
+      "dateEarly": "Anfang {{month}}",
+      "dateLate": "Ende {{month}}",
+      "probability": {
+        "certainty": "{{probability}} % Wahrscheinlichkeit, {{target}} zu erreichen — nahezu statistische Sicherheit mit Ihrem aktuellen Profil.",
+        "veryLikely": "{{probability}} % Wahrscheinlichkeit, {{target}} zu erreichen — das Ziel ist mit Ihrem Profil sehr wahrscheinlich.",
+        "likely": "{{probability}} % Wahrscheinlichkeit, {{target}} zu erreichen — das Ziel ist mit Ihrem Profil realistisch.",
+        "uncertain": "{{probability}} % Wahrscheinlichkeit, {{target}} zu erreichen — das Ergebnis bleibt trotz positivem Edge unsicher.",
+        "unlikely": "{{probability}} % Wahrscheinlichkeit, {{target}} zu erreichen — das Ziel wirkt mit Ihrem Profil schwierig.",
+        "veryUnlikely": "{{probability}} % Wahrscheinlichkeit, {{target}} zu erreichen — das Ziel ist im simulierten Horizont unwahrscheinlich.",
+        "withSizing": "Projektion basierend auf Ihrer Zielgröße (μ und σ skaliert ×{{ratio}})."
+      },
+      "timeline": {
+        "range": "Die realistische Spanne liegt bei {{monthsMin}} bis {{monthsMax}} Monaten Trading je nach Ihrer Regelmäßigkeit.",
+        "withDateRange": "Die realistische Spanne liegt bei {{monthsMin}} bis {{monthsMax}} Monaten Trading, etwa {{dateRange}}.",
+        "singleMonth": "Der realistische Zeitraum beträgt etwa {{months}} Monate Trading je nach Ihrer Regelmäßigkeit.",
+        "singleMonthWithDateRange": "Der realistische Zeitraum beträgt etwa {{months}} Monate Trading, etwa {{dateRange}}.",
+        "insufficient": "Der geschätzte Zeitraum ist mit den aktuellen Daten nicht verfügbar.",
+        "relaxed": "Kein Grund zur Eile oder erzwungener Trades, um schneller ans Ziel zu kommen.",
+        "patient": "Die Streuung zwischen optimistischem und vorsichtigem Szenario ist bemerkbar — bleiben Sie in Ihrem Tempo.",
+        "cautious": "Die Wahrscheinlichkeit bleibt bescheiden: Qualität der Ausführung vor Beschleunigung.",
+        "steady": "Bleiben Sie in Ihrer Trading-Routine konstant, um diese Spanne zu erreichen."
+      },
+      "gap": {
+        "remaining": "{{gap}} verbleiben bis {{target}} (aktueller Kontostand {{current}})."
+      },
+      "horizon": {
+        "failure": "{{failureRate}} % der Simulationen erreichen {{target}} nicht innerhalb des simulierten Horizonts von {{maxDays}} Handelstagen."
+      },
+      "milestone": {
+        "next": "{{balance}} in {{days}} ({{weeks}}) — etwa {{pct}} % des Wegs zum Ziel."
+      }
+    },
+    "sizing": {
+      "sectionTitle": "Größenszenario",
+      "sectionTeaser": "z. B. 1 MNQ-Lot bei 2 $/Punkt — hier klicken, um μ und σ an Ihre Zielgröße anzupassen",
+      "sectionActive": "Anpassung aktiv — Lots und $/Punkt unten bearbeiten",
+      "sectionCollapsed": "{{lots}} Lot × {{pointValue}} $/Punkt — Exposition {{exposure}} $/Punkt",
+      "expandDetails": "Einstellungen aufklappen",
+      "collapseDetails": "Einstellungen einklappen",
+      "optionalBadge": "Optional",
+      "toggleOn": "Klicken zum Aktivieren",
+      "toggleOff": "Klicken zum Deaktivieren",
+      "enable": "Nach Zielgröße anpassen",
+      "lotsLabel": "Lots",
+      "pointValueLabel": "$/Punkt",
+      "targetExposure": "Ziel-Exposition",
+      "historicalMedian": "Historisch (Median)",
+      "ratioApplied": "μ und σ skaliert (×{{ratio}})",
+      "ratioNeutral": "Ziel-Exposition entspricht dem historischen Median.",
+      "hintMNQ": "z. B. MNQ Micro = 2 $/Punkt",
+      "assumptionNote": "Lineare Anpassung: gleicher Edge pro $/Punkt wie in der Historie.",
+      "errors": {
+        "insufficientExposureData": "Nicht genug Trades mit bekannter Exposition (mindestens 5)."
+      }
+    }
   },
   "postLossSizing": {
     "title": "Größe nach einem Verlust",

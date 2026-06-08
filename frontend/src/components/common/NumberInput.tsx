@@ -3,6 +3,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber } from '../../utils/numberFormat';
 
 interface NumberInputProps {
+  id?: string;
   value: string | number;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -21,6 +22,7 @@ interface NumberInputProps {
  * L'affichage est formaté selon preferences.number_format (point ou comma)
  */
 export const NumberInput: React.FC<NumberInputProps> = ({
+  id,
   value,
   onChange,
   placeholder,
@@ -134,6 +136,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   return (
     <input
       ref={inputRef}
+      id={id}
       type="text"
       inputMode="decimal"
       value={displayValue}

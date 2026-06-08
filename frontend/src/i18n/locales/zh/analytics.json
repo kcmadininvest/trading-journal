@@ -107,7 +107,136 @@
   "tabs": {
     "overview": "概览",
     "riskCapital": "风险与资本",
+    "projection": "预测",
     "timeAnalysis": "时间分析",
     "patterns": "相关性与模式"
+  },
+  "monteCarlo": {
+    "title": "余额目标预测",
+    "tooltip": "基于账户完整交易历史的日均收益(μ)和日波动率(σ)的蒙特卡洛模拟。",
+    "targetLabel": "目标余额",
+    "targetPlaceholder": "例如 10000",
+    "currentBalance": "当前余额",
+    "muLabel": "平均收益 (μ)",
+    "sigmaLabel": "波动率 (σ)",
+    "daysPerWeekLabel": "每周交易日",
+    "approxDays": "约{{count}}天",
+    "approxWeeks": "约{{count}}周",
+    "statsHint": "μ {{mu}}/天 · σ {{sigma}} · 每周约{{daysPerWeek}}个交易日",
+    "loading": "正在计算预测…",
+    "chartTitle": "预测曲线",
+    "milestonesTitle": "中间里程碑",
+    "targetLine": "目标",
+    "dangerLine": "危险阈值",
+    "dayLabel": "第{{day}}天",
+    "days": "天",
+    "weeks": "周",
+    "probabilityHint": "达成目标概率",
+    "noAccount": "请选择交易账户以运行预测。",
+    "scenarios": {
+      "optimistic": "较快",
+      "median": "典型",
+      "prudent": "谨慎"
+    },
+    "percentileExplainer": "较快 = 最有利的 25% 模拟达到的时间。谨慎 = 75% 模拟达到目标的时间（其余 25% 更久）。典型 = 中位数（50/50）。",
+    "cards": {
+      "median": "典型情景",
+      "medianHint": "中位时间 — 一半更快，一半更慢",
+      "medianTooltip": "在 10,000 次模拟中，50% 更快达到目标，50% 更慢。这是居中情景，既非乐观也非谨慎。",
+      "optimistic": "较快情景",
+      "optimisticHint": "25% 的模拟会更快",
+      "optimisticTooltip": "仅 25% 的模拟在此期限内达到目标 — 有利路径，并非保证。",
+      "prudent": "谨慎情景",
+      "prudentHint": "75% 的模拟在此期限前达到目标",
+      "prudentTooltip": "75% 在此期限或之前达到目标，25% 需要更久。有助于规划而不过于乐观。",
+      "probability": "概率",
+      "probabilitySims": "{{simCount}} 次模拟",
+      "probabilityTooltip": "在按 μ 和 σ 模拟每日随机盈亏时，{{simCount}} 个独立 Monte Carlo 情景中达到余额目标的比例。"
+    },
+    "errors": {
+      "targetTooLow": "目标必须高于当前余额。",
+      "negativeMu": "日均收益为负 — 无法预测。",
+      "insufficientData": "交易天数不足，无法可靠预测（至少5天）。",
+      "loadFailed": "无法加载历史数据。"
+    },
+    "narrative": {
+      "title": "总结",
+      "labels": {
+        "main": "主要结论",
+        "timeline": "现实区间",
+        "typical": "典型情景",
+        "assumptions": "假设",
+        "history": "历史",
+        "gap": "待弥补差额",
+        "horizon": "模拟期限",
+        "milestone": "下一里程碑"
+      },
+      "dateEarly": "{{month}}初",
+      "dateLate": "{{month}}底",
+      "probability": {
+        "certainty": "达到 {{target}} 的概率为 {{probability}}% — 以您当前画像来看几乎具有统计确定性。",
+        "veryLikely": "达到 {{target}} 的概率为 {{probability}}% — 以您当前画像来看很可能实现。",
+        "likely": "达到 {{target}} 的概率为 {{probability}}% — 以您当前画像来看目标现实可行。",
+        "uncertain": "达到 {{target}} 的概率为 {{probability}}% — 尽管有正边际，结果仍不确定。",
+        "unlikely": "达到 {{target}} 的概率为 {{probability}}% — 以您当前画像来看目标较难。",
+        "veryUnlikely": "达到 {{target}} 的概率为 {{probability}}% — 在模拟期限内不太可能实现。",
+        "withSizing": "基于目标仓位的投影（μ 和 σ 按 ×{{ratio}} 缩放）。"
+      },
+      "timeline": {
+        "range": "按您的交易规律性，现实区间约为 {{monthsMin}} 至 {{monthsMax}} 个月。",
+        "withDateRange": "按您的交易规律性，现实区间约为 {{monthsMin}} 至 {{monthsMax}} 个月，约在 {{dateRange}}。",
+        "singleMonth": "按您的交易规律性，现实周期约为 {{months}} 个月。",
+        "singleMonthWithDateRange": "按您的交易规律性，现实周期约为 {{months}} 个月，约在 {{dateRange}}。",
+        "insufficient": "当前数据无法估算时间范围。",
+        "relaxed": "无需急于求成或强行增加交易频率。",
+        "patient": "乐观与谨慎情景差异较大 — 请保持节奏，勿强行入场。",
+        "cautious": "概率仍偏低：请优先执行质量，而非加快节奏。",
+        "steady": "保持交易习惯的一致性，以逐步接近该区间。"
+      },
+      "typical": {
+        "withDuration": "中位时间 {{days}}（约 {{weeks}}）— 较快与谨慎之间的中心情景。",
+        "insufficient": "当前数据无法计算中位时间。"
+      },
+      "assumptions": {
+        "base": "日均收益 {{mu}}、波动率 {{sigma}}、每周约 {{daysPerWeek}} 个交易日。",
+        "adjusted": "已按目标仓位调整 μ 和 σ（×{{ratio}}）。"
+      },
+      "history": {
+        "standard": "账户完整历史纳入 {{dayCount}} 个交易日。",
+        "limited": "仅 {{dayCount}} 个交易日（投影至少需 {{minDays}} 天）；请谨慎解读。"
+      },
+      "gap": {
+        "remaining": "距离 {{target}} 还差 {{gap}}（当前余额 {{current}}）。"
+      },
+      "horizon": {
+        "failure": "{{failureRate}}% 的模拟在 {{maxDays}} 个交易日内未能达到 {{target}}。"
+      },
+      "milestone": {
+        "next": "{{balance}}，约 {{days}}（{{weeks}}）— 约为目标的 {{pct}}%。"
+      }
+    },
+    "sizing": {
+      "sectionTitle": "仓位场景",
+      "sectionTeaser": "例：1 手 MNQ，2 $/点 — 点击此处按目标仓位调整 μ 和 σ",
+      "sectionActive": "调整已启用 — 在下方编辑手数和 $/点",
+      "sectionCollapsed": "{{lots}} 手 × {{pointValue}} $/点 — 敞口 {{exposure}} $/点",
+      "expandDetails": "展开设置",
+      "collapseDetails": "收起设置",
+      "optionalBadge": "可选",
+      "toggleOn": "点击启用",
+      "toggleOff": "点击关闭",
+      "enable": "按目标仓位调整",
+      "lotsLabel": "手数",
+      "pointValueLabel": "$/点",
+      "targetExposure": "目标敞口",
+      "historicalMedian": "历史（中位数）",
+      "ratioApplied": "μ 和 σ 已缩放 (×{{ratio}})",
+      "ratioNeutral": "目标敞口与历史中位数相同。",
+      "hintMNQ": "例：MNQ 微型 = 2 $/点",
+      "assumptionNote": "线性调整：假设每$/点边际与历史相同。",
+      "errors": {
+        "insufficientExposureData": "已知敞口的交易不足（至少5笔）。"
+      }
+    }
   }
 }

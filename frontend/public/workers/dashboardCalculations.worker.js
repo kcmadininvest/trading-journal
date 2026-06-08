@@ -14,10 +14,92 @@ self.addEventListener('message', (event) => {
     case 'CALCULATE_WEEKDAY_PERFORMANCE':
       calculateWeekdayPerformance(data);
       break;
+    case 'CALCULATE_MONTE_CARLO':
+      calculateMonteCarlo(data);
+      break;
     default:
       self.postMessage({ type: 'ERROR', error: 'Unknown calculation type' });
   }
 });
+
+function gaussianRandom(mean, std) {
+  let u = 0;
+  let v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return mean + std * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+function percentile(arr, p) {
+  if (!arr.length) return null;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const idx = (p / 100) * (sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+function calculateMonteCarlo(data) {
+  const {
+    currentBalance,
+    targetBalance,
+    mu,
+    sigma,
+    nSims = 10000,
+    maxDays = 365,
+    generation = 0,
+  } = data;
+
+  if (mu <= 0 || targetBalance <= currentBalance) {
+    self.postMessage({
+      type: 'MONTE_CARLO_RESULT',
+      result: {
+        successRate: 0,
+        p25: null,
+        median: null,
+        p75: null,
+        p90: null,
+        successfulRuns: 0,
+        totalSimulations: nSims,
+        generation,
+      },
+    });
+    return;
+  }
+
+  const results = [];
+
+  for (let i = 0; i < nSims; i += 1) {
+    let balance = currentBalance;
+    let days = 0;
+
+    while (balance < targetBalance && balance > 0 && days < maxDays) {
+      balance += gaussianRandom(mu, sigma);
+      days += 1;
+    }
+
+    if (balance >= targetBalance) {
+      results.push(days);
+    }
+  }
+
+  const successfulRuns = results.length;
+  const successRate = (successfulRuns / nSims) * 100;
+
+  self.postMessage({
+    type: 'MONTE_CARLO_RESULT',
+    result: {
+      successRate,
+      p25: percentile(results, 25),
+      median: percentile(results, 50),
+      p75: percentile(results, 75),
+      p90: percentile(results, 90),
+      successfulRuns,
+      totalSimulations: nSims,
+      generation,
+    },
+  });
+}
 
 function calculateSequences(data) {
   const { trades, strategies } = data;

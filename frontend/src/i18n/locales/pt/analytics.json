@@ -191,7 +191,136 @@
   "tabs": {
     "overview": "Visão Geral",
     "riskCapital": "Risco e Capital",
+    "projection": "Projeção",
     "timeAnalysis": "Análise Temporal",
     "patterns": "Correlações e Padrões"
+  },
+  "monteCarlo": {
+    "title": "Projeção para meta de saldo",
+    "tooltip": "Simulação Monte Carlo com base no ganho médio diário (μ) e na volatilidade (σ) do histórico completo da conta.",
+    "targetLabel": "Meta de saldo",
+    "targetPlaceholder": "ex. 10000",
+    "currentBalance": "Saldo atual",
+    "muLabel": "Ganho médio (μ)",
+    "sigmaLabel": "Volatilidade (σ)",
+    "daysPerWeekLabel": "Dias operados / sem.",
+    "approxDays": "~{{count}} dias",
+    "approxWeeks": "~{{count}} sem.",
+    "statsHint": "μ {{mu}}/dia · σ {{sigma}} · ~{{daysPerWeek}} dias operados/semana",
+    "loading": "Calculando projeção…",
+    "chartTitle": "Curvas de projeção",
+    "milestonesTitle": "Marcos intermediários",
+    "targetLine": "Meta",
+    "dangerLine": "Limite de perigo",
+    "dayLabel": "Dia {{day}}",
+    "days": "dias",
+    "weeks": "sem.",
+    "probabilityHint": "de atingir a meta",
+    "noAccount": "Selecione uma conta de trading para executar uma projeção.",
+    "scenarios": {
+      "optimistic": "Rápido",
+      "median": "Típico",
+      "prudent": "Prudente"
+    },
+    "percentileExplainer": "Rápido = prazo atingido pelos 25 % de simulações mais favoráveis. Prudente = prazo em que 75 % atingem a meta (os 25 % restantes demoram mais). Típico = prazo mediano (50/50).",
+    "cards": {
+      "median": "Cenário típico",
+      "medianHint": "Prazo mediano — metade mais rápida, metade mais lenta",
+      "medianTooltip": "Em 10.000 simulações, 50 % atingem a meta em menos dias, 50 % demoram mais. Cenário central, nem otimista nem prudente.",
+      "optimistic": "Cenário rápido",
+      "optimisticHint": "25 % das simulações vão ainda mais rápido",
+      "optimisticTooltip": "Apenas 25 % das simulações atingem a meta neste prazo ou menos — trajetória favorável, não uma garantia.",
+      "prudent": "Cenário prudente",
+      "prudentHint": "75 % das simulações atingem a meta até então",
+      "prudentTooltip": "75 % atingem a meta neste prazo ou menos; 25 % demoram mais. Útil para planear sem ser demasiado otimista.",
+      "probability": "Probabilidade",
+      "probabilitySims": "em {{simCount}} simulações",
+      "probabilityTooltip": "Parcela dos {{simCount}} cenários Monte Carlo independentes que atingem a meta de saldo, simulando um P&L diário aleatório com μ e σ."
+    },
+    "errors": {
+      "targetTooLow": "A meta deve ser superior ao saldo atual.",
+      "negativeMu": "Ganho médio diário negativo — projeção impossível.",
+      "insufficientData": "Dias de trading insuficientes para uma projeção confiável (mínimo 5).",
+      "loadFailed": "Não foi possível carregar os dados históricos."
+    },
+    "narrative": {
+      "title": "Síntese",
+      "labels": {
+        "main": "Conclusão principal",
+        "timeline": "Faixa realista",
+        "typical": "Cenário típico",
+        "assumptions": "Hipóteses",
+        "history": "Histórico",
+        "gap": "Distância a percorrer",
+        "horizon": "Horizonte simulado",
+        "milestone": "Próximo marco"
+      },
+      "dateEarly": "início de {{month}}",
+      "dateLate": "fim de {{month}}",
+      "probability": {
+        "certainty": "{{probability}} % de probabilidade de atingir {{target}} — quase certeza estatística com o seu perfil atual.",
+        "veryLikely": "{{probability}} % de probabilidade de atingir {{target}} — a meta é muito provável com o seu perfil atual.",
+        "likely": "{{probability}} % de probabilidade de atingir {{target}} — a meta é realista com o seu perfil atual.",
+        "uncertain": "{{probability}} % de probabilidade de atingir {{target}} — o resultado permanece incerto apesar de um edge positivo.",
+        "unlikely": "{{probability}} % de probabilidade de atingir {{target}} — a meta parece difícil com o seu perfil atual.",
+        "veryUnlikely": "{{probability}} % de probabilidade de atingir {{target}} — a meta é pouco provável no horizonte simulado.",
+        "withSizing": "Projeção baseada no seu tamanho alvo (μ e σ escalados ×{{ratio}})."
+      },
+      "timeline": {
+        "range": "A faixa realista é de {{monthsMin}} a {{monthsMax}} meses de trading conforme a sua regularidade.",
+        "withDateRange": "A faixa realista é de {{monthsMin}} a {{monthsMax}} meses de trading, por volta de {{dateRange}}.",
+        "singleMonth": "O prazo realista é de cerca de {{months}} meses de trading conforme a sua regularidade.",
+        "singleMonthWithDateRange": "O prazo realista é de cerca de {{months}} meses de trading, por volta de {{dateRange}}.",
+        "insufficient": "O prazo estimado não está disponível com os dados atuais.",
+        "relaxed": "Não precisa acelerar nem forçar trades para chegar mais rápido.",
+        "patient": "A variabilidade entre cenários otimista e prudente é notável — avance no seu ritmo sem forçar entradas.",
+        "cautious": "A probabilidade continua modesta: priorize a qualidade de execução em vez de acelerar o ritmo.",
+        "steady": "Mantenha a regularidade na sua rotina de trading para convergir para esta faixa."
+      },
+      "typical": {
+        "withDuration": "Prazo mediano {{days}} (cerca de {{weeks}}) — cenário central entre rápido e prudente.",
+        "insufficient": "O prazo mediano não está disponível com os dados atuais."
+      },
+      "assumptions": {
+        "base": "Ganho médio {{mu}}/dia, volatilidade {{sigma}}, ~{{daysPerWeek}} dias de trading/semana.",
+        "adjusted": "μ e σ ajustados ao seu tamanho alvo (×{{ratio}})."
+      },
+      "history": {
+        "standard": "{{dayCount}} dias de trading incluídos do histórico completo da conta.",
+        "limited": "Apenas {{dayCount}} dias de trading (mínimo {{minDays}} para projetar); interprete com cautela."
+      },
+      "gap": {
+        "remaining": "Faltam {{gap}} para atingir {{target}} (saldo atual {{current}})."
+      },
+      "horizon": {
+        "failure": "{{failureRate}} % das simulações não atingem {{target}} no horizonte de {{maxDays}} dias de trading simulados."
+      },
+      "milestone": {
+        "next": "{{balance}} em {{days}} ({{weeks}}) — cerca de {{pct}} % do caminho até à meta."
+      }
+    },
+    "sizing": {
+      "sectionTitle": "Cenário de tamanho",
+      "sectionTeaser": "ex. 1 lote MNQ a 2 $/ponto — clique aqui para adaptar μ e σ ao seu tamanho alvo",
+      "sectionActive": "Ajuste ativo — edite lotes e $/ponto abaixo",
+      "sectionCollapsed": "{{lots}} lote × {{pointValue}} $/ponto — exposição {{exposure}} $/ponto",
+      "expandDetails": "Expandir definições",
+      "collapseDetails": "Recolher definições",
+      "optionalBadge": "Opcional",
+      "toggleOn": "Clique para ativar",
+      "toggleOff": "Clique para desativar",
+      "enable": "Ajustar ao meu tamanho alvo",
+      "lotsLabel": "Lotes",
+      "pointValueLabel": "$/ponto",
+      "targetExposure": "Exposição alvo",
+      "historicalMedian": "Histórico (mediana)",
+      "ratioApplied": "μ e σ escalados (×{{ratio}})",
+      "ratioNeutral": "Exposição alvo igual à mediana histórica.",
+      "hintMNQ": "ex. MNQ micro = 2 $/ponto",
+      "assumptionNote": "Ajuste linear: mesmo edge por $/ponto do histórico.",
+      "errors": {
+        "insufficientExposureData": "Trades com exposição conhecida insuficientes (mínimo 5)."
+      }
+    }
   }
 }

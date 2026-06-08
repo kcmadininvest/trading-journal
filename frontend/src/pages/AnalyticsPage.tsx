@@ -58,9 +58,11 @@ import {
   GainsVsLossesChart,
   PnlDistributionChart,
   MaeMfeChart,
+  MonteCarloProjectionPanel,
   createRadarAlternatingZonesPlugin,
   createRadarGradientPlugin,
 } from '../components/analytics';
+import { resolveAccountChartConfig } from '../utils/accountChartConfig';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../utils/pnlDisplay';
 import { aggregateDurationPerformance } from '../utils/tradeDurationBuckets';
 import { aggregatePositionSizePerformance } from '../utils/positionSizePerformance';
@@ -180,6 +182,11 @@ const AnalyticsPage: React.FC = () => {
   }, [accountId]);
 
   // Obtenir le symbole de devise
+  const chartConfig = useMemo(
+    () => resolveAccountChartConfig(selectedAccount, dashboardSummary?.balance_context),
+    [selectedAccount, dashboardSummary?.balance_context],
+  );
+
   const currencySymbol = useMemo(() => {
     if (!selectedAccount || !currencies.length) return '';
     const currency = currencies.find(c => c.code === selectedAccount.currency);
@@ -1400,6 +1407,35 @@ const AnalyticsPage: React.FC = () => {
         </svg>
       )
     },
+    {
+      id: 'projection',
+      label: t('analytics:tabs.projection'),
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <circle cx="19" cy="5" r="2.5" strokeWidth={2} />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 19 C9 11 13 8 19 5"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            d="M4 19 C9 15 14 12 19 9"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            d="M4 19 C7 17 11 16 19 14"
+          />
+        </svg>
+      ),
+    },
     { 
       id: 'timeAnalysis', 
       label: t('analytics:tabs.timeAnalysis'), 
@@ -1549,6 +1585,19 @@ const AnalyticsPage: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Onglet Projection Monte Carlo */}
+      {activeTab === 'projection' && (
+        <MonteCarloProjectionPanel
+          accountId={accountId}
+          currentBalance={accountIndicators.accountBalance.current}
+          currencySymbol={currencySymbol}
+          chartColors={chartColors}
+          hideProfitLoss={privacySettings.hideProfitLoss}
+          defaultTarget={chartConfig.profitTargetAbsolute}
+          enabled={activeTab === 'projection'}
+        />
       )}
 
       {/* Onglet Risque & Capital */}

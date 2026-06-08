@@ -144,6 +144,19 @@ class TradesService {
     return res.json();
   }
 
+  async monteCarloInputs(tradingAccount: number): Promise<{
+    median_risk_units: number | null;
+    avg_risk_units: number | null;
+    trade_count: number;
+    trades_with_risk_units: number;
+    skipped_unknown_contract: number;
+  }> {
+    const url = `${this.BASE_URL}/api/trades/topstep/monte_carlo_inputs/?trading_account=${tradingAccount}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement des données Monte Carlo');
+    return res.json();
+  }
+
   async dailyAggregates(filters: { trading_account?: number; start_date?: string; end_date?: string }): Promise<{
     results: Array<{
       date: string;

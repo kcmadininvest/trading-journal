@@ -226,9 +226,138 @@
   "tabs": {
     "overview": "Vue d'ensemble",
     "riskCapital": "Risque & Capital",
+    "projection": "Projection",
     "timeAnalysis": "Analyse Temporelle",
     "patterns": "Corrélations & Patterns",
     "behavior": "Comportement"
+  },
+  "monteCarlo": {
+    "title": "Projection vers un objectif de solde",
+    "tooltip": "Simulation Monte Carlo basée sur votre gain moyen journalier (μ) et la volatilité (σ) calculés sur l'historique complet du compte. Optionnel : ajustez lots et $/point pour projeter une taille cible (μ et σ rééchelonnés linéairement vs la médiane historique size×$/point). Hypothèse : edge stable ; historique multi-contrats = approximation.",
+    "targetLabel": "Objectif de solde",
+    "targetPlaceholder": "Ex. 10000",
+    "currentBalance": "Solde actuel",
+    "muLabel": "Gain moyen (μ)",
+    "sigmaLabel": "Volatilité (σ)",
+    "daysPerWeekLabel": "Jours tradés / sem.",
+    "approxDays": "~{{count}} jours",
+    "approxWeeks": "~{{count}} sem.",
+    "statsHint": "μ {{mu}}/jour · σ {{sigma}} · ~{{daysPerWeek}} j. tradés/semaine",
+    "loading": "Calcul de la projection…",
+    "chartTitle": "Courbes de projection",
+    "milestonesTitle": "Jalons intermédiaires",
+    "targetLine": "Objectif",
+    "dangerLine": "Seuil danger",
+    "dayLabel": "Jour {{day}}",
+    "days": "jours",
+    "weeks": "sem.",
+    "probabilityHint": "d'atteindre l'objectif",
+    "noAccount": "Sélectionnez un compte de trading pour lancer une projection.",
+    "scenarios": {
+      "optimistic": "Rapide",
+      "median": "Typique",
+      "prudent": "Prudent"
+    },
+    "percentileExplainer": "Rapide = délai atteint par 25 % des simulations les plus favorables. Prudent = délai sous lequel 75 % des simulations atteignent l'objectif (les 25 % restantes prennent plus de temps). Typique = délai médian (50/50).",
+    "cards": {
+      "median": "Scénario typique",
+      "medianHint": "Délai médian — moitié plus rapide, moitié plus lente",
+      "medianTooltip": "Sur 10 000 simulations, 50 % atteignent l'objectif en moins de jours que ce délai, 50 % en prennent plus. C'est le scénario central, ni optimiste ni prudent.",
+      "optimistic": "Scénario rapide",
+      "optimisticHint": "25 % des simulations vont encore plus vite",
+      "optimisticTooltip": "Seulement 25 % des simulations atteignent l'objectif en ce délai ou moins — c'est la trajectoire favorable, pas une garantie.",
+      "prudent": "Scénario prudent",
+      "prudentHint": "75 % des simulations atteignent l'objectif d'ici là",
+      "prudentTooltip": "75 % des simulations atteignent l'objectif en ce délai ou moins ; 25 % prennent plus de temps. Utile pour planifier sans être trop optimiste.",
+      "probability": "Probabilité",
+      "probabilitySims": "sur {{simCount}} simulations",
+      "probabilityTooltip": "Part des {{simCount}} scénarios Monte Carlo indépendants atteignant l'objectif de solde, en simulant chaque jour un P&L aléatoire selon μ et σ."
+    },
+    "errors": {
+      "targetTooLow": "L'objectif doit être supérieur au solde actuel.",
+      "negativeMu": "Gain moyen journalier négatif — projection impossible.",
+      "insufficientData": "Pas assez de jours de trading pour une projection fiable (minimum 5).",
+      "loadFailed": "Impossible de charger les données historiques."
+    },
+    "narrative": {
+      "title": "Synthèse",
+      "labels": {
+        "main": "Conclusion principale",
+        "gap": "Écart à combler",
+        "horizon": "Horizon simulé",
+        "typical": "Scénario typique",
+        "timeline": "Fourchette réaliste",
+        "milestone": "Prochain repère",
+        "assumptions": "Hypothèses",
+        "history": "Historique"
+      },
+      "gap": {
+        "remaining": "{{gap}} restants pour atteindre {{target}} (solde actuel {{current}})."
+      },
+      "horizon": {
+        "failure": "{{failureRate}} % des simulations n'atteignent pas {{target}} dans l'horizon de {{maxDays}} jours de trading simulés."
+      },
+      "milestone": {
+        "next": "{{balance}} dans {{days}} ({{weeks}}) — environ {{pct}} % du chemin vers l'objectif."
+      },
+      "typical": {
+        "withDuration": "Délai médian {{days}} (soit {{weeks}}) — scénario central entre rapide et prudent.",
+        "insufficient": "Le délai médian n'est pas disponible avec les données actuelles."
+      },
+      "assumptions": {
+        "base": "Gain moyen {{mu}}/jour, volatilité {{sigma}}, ~{{daysPerWeek}} jours tradés/semaine.",
+        "adjusted": "μ et σ ajustés pour votre taille cible (×{{ratio}})."
+      },
+      "history": {
+        "standard": "{{dayCount}} jours de trading pris en compte sur l'historique complet du compte.",
+        "limited": "{{dayCount}} jours de trading seulement (minimum {{minDays}} pour projeter) ; interprétez avec prudence."
+      },
+      "dateEarly": "début {{month}}",
+      "dateLate": "fin {{month}}",
+      "probability": {
+        "certainty": "{{probability}} % de probabilité d'atteindre {{target}} — quasi-certitude statistique avec votre profil actuel.",
+        "veryLikely": "{{probability}} % de probabilité d'atteindre {{target}} — l'objectif est très probable avec votre profil actuel.",
+        "likely": "{{probability}} % de probabilité d'atteindre {{target}} — l'objectif est réaliste avec votre profil actuel.",
+        "uncertain": "{{probability}} % de probabilité d'atteindre {{target}} — l'issue reste incertaine malgré un edge positif.",
+        "unlikely": "{{probability}} % de probabilité d'atteindre {{target}} — l'objectif paraît difficile avec votre profil actuel.",
+        "veryUnlikely": "{{probability}} % de probabilité d'atteindre {{target}} — l'objectif est peu probable dans l'horizon simulé.",
+        "withSizing": "Projection basée sur votre taille cible (μ et σ rééchelonnés ×{{ratio}})."
+      },
+      "timeline": {
+        "range": "La fourchette réaliste est de {{monthsMin}} à {{monthsMax}} mois de trading selon votre régularité.",
+        "withDateRange": "La fourchette réaliste est de {{monthsMin}} à {{monthsMax}} mois de trading selon votre régularité, soit {{dateRange}}.",
+        "singleMonth": "Le délai réaliste est d'environ {{months}} mois de trading selon votre régularité.",
+        "singleMonthWithDateRange": "Le délai réaliste est d'environ {{months}} mois de trading, soit {{dateRange}}.",
+        "insufficient": "Le délai estimé n'est pas disponible avec les données actuelles.",
+        "relaxed": "Pas besoin de se presser ni de forcer les trades pour aller plus vite.",
+        "patient": "La variabilité entre scénarios optimiste et prudent est notable — avancez à votre rythme sans forcer les entrées.",
+        "cautious": "La probabilité reste modeste : privilégiez la qualité d'exécution plutôt que d'accélérer le rythme.",
+        "steady": "Restez régulier dans votre routine de trading pour converger vers cette fourchette."
+      }
+    },
+    "sizing": {
+      "sectionTitle": "Scénario de taille",
+      "sectionTeaser": "Ex. 1 lot MNQ à 2 $/point — cliquez ici pour adapter μ et σ à votre taille cible",
+      "sectionActive": "Ajustement actif — modifiez lots et $/point ci-dessous",
+      "sectionCollapsed": "{{lots}} lot × {{pointValue}} $/pt — exposition {{exposure}} $/pt",
+      "expandDetails": "Déplier les réglages",
+      "collapseDetails": "Replier les réglages",
+      "optionalBadge": "Optionnel",
+      "toggleOn": "Cliquer pour activer",
+      "toggleOff": "Cliquer pour désactiver",
+      "enable": "Ajuster selon ma taille cible",
+      "lotsLabel": "Lots",
+      "pointValueLabel": "$/point",
+      "targetExposure": "Exposition cible",
+      "historicalMedian": "Historique (médiane)",
+      "ratioApplied": "μ et σ rééchelonnés (×{{ratio}})",
+      "ratioNeutral": "Exposition cible identique à la médiane historique.",
+      "hintMNQ": "Ex. MNQ micro = 2 $/point",
+      "assumptionNote": "Ajustement linéaire : suppose le même edge par $/point que votre historique.",
+      "errors": {
+        "insufficientExposureData": "Pas assez de trades avec exposition connue pour ajuster la taille (minimum 5)."
+      }
+    }
   },
   "postLossSizing": {
     "title": "Taille après une perte",

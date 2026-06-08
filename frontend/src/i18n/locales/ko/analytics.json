@@ -116,7 +116,136 @@
   "tabs": {
     "overview": "개요",
     "riskCapital": "리스크 및 자본",
+    "projection": "예측",
     "timeAnalysis": "시간 분석",
     "patterns": "상관관계 및 패턴"
+  },
+  "monteCarlo": {
+    "title": "잔고 목표 예측",
+    "tooltip": "계좌 전체 거래 이력의 일평균 수익(μ)과 일일 변동성(σ)을 기반으로 한 몬테카를로 시뮬레이션.",
+    "targetLabel": "목표 잔고",
+    "targetPlaceholder": "예: 10000",
+    "currentBalance": "현재 잔고",
+    "muLabel": "평균 수익 (μ)",
+    "sigmaLabel": "변동성 (σ)",
+    "daysPerWeekLabel": "주당 거래일",
+    "approxDays": "약 {{count}}일",
+    "approxWeeks": "약 {{count}}주",
+    "statsHint": "μ {{mu}}/일 · σ {{sigma}} · 주 ~{{daysPerWeek}}거래일",
+    "loading": "예측 계산 중…",
+    "chartTitle": "예측 곡선",
+    "milestonesTitle": "중간 마일스톤",
+    "targetLine": "목표",
+    "dangerLine": "위험 임계값",
+    "dayLabel": "{{day}}일차",
+    "days": "일",
+    "weeks": "주",
+    "probabilityHint": "목표 달성 확률",
+    "noAccount": "예측을 실행하려면 거래 계좌를 선택하세요.",
+    "scenarios": {
+      "optimistic": "빠름",
+      "median": "일반",
+      "prudent": "신중"
+    },
+    "percentileExplainer": "빠름 = 상위 25% 유리한 시뮬레이션이 도달하는 기간. 신중 = 75%가 목표에 도달하는 기간(나머지 25%는 더 김). 일반 = 중앙값(50/50).",
+    "cards": {
+      "median": "일반 시나리오",
+      "medianHint": "중앙값 — 절반은 더 빠르고, 절반은 더 느림",
+      "medianTooltip": "10,000회 시뮬레이션 중 50%는 이보다 빨리, 50%는 더 느리게 목표에 도달합니다. 낙관·신중 사이의 중심 시나리오입니다.",
+      "optimistic": "빠른 시나리오",
+      "optimisticHint": "25%의 시뮬레이션은 더 빠름",
+      "optimisticTooltip": "25%의 시뮬레이션만 이 기간 이내에 도달 — 유리한 경로이지 보장은 아닙니다.",
+      "prudent": "신중 시나리오",
+      "prudentHint": "75%의 시뮬레이션이 그때까지 도달",
+      "prudentTooltip": "75%가 이 기간 이내에 도달하고, 25%는 더 걸립니다. 과도한 낙관 없이 계획할 때 유용합니다.",
+      "probability": "확률",
+      "probabilitySims": "{{simCount}}회 시뮬레이션",
+      "probabilityTooltip": "μ와 σ로 일일 무작위 P&L을 시뮬레이션할 때 잔고 목표에 도달한 {{simCount}}개 독립 Monte Carlo 시나리오의 비율."
+    },
+    "errors": {
+      "targetTooLow": "목표는 현재 잔고보다 커야 합니다.",
+      "negativeMu": "일평균 수익이 음수 — 예측 불가.",
+      "insufficientData": "신뢰할 수 있는 예측을 위한 거래일이 부족합니다(최소 5일).",
+      "loadFailed": "이력 데이터를 불러올 수 없습니다."
+    },
+    "narrative": {
+      "title": "요약",
+      "labels": {
+        "main": "주요 결론",
+        "timeline": "현실적 범위",
+        "typical": "일반 시나리오",
+        "assumptions": "가정",
+        "history": "이력",
+        "gap": "남은 격차",
+        "horizon": "시뮬레이션 기간",
+        "milestone": "다음 이정표"
+      },
+      "dateEarly": "{{month}} 초",
+      "dateLate": "{{month}} 말",
+      "probability": {
+        "certainty": "{{target}} 달성 확률 {{probability}}% — 현재 프로필에서는 거의 통계적 확실성입니다.",
+        "veryLikely": "{{target}} 달성 확률 {{probability}}% — 현재 프로필에서 매우 달성 가능합니다.",
+        "likely": "{{target}} 달성 확률 {{probability}}% — 현재 프로필에서 현실적인 목표입니다.",
+        "uncertain": "{{target}} 달성 확률 {{probability}}% — 양의 엣지가 있어도 결과는 불확실합니다.",
+        "unlikely": "{{target}} 달성 확률 {{probability}}% — 현재 프로필에서는 어려운 목표입니다.",
+        "veryUnlikely": "{{target}} 달성 확률 {{probability}}% — 시뮬레이션 기간 내 달성은 어렵습니다.",
+        "withSizing": "목표 크기 기반 투영(μ, σ ×{{ratio}} 스케일)."
+      },
+      "timeline": {
+        "range": "규칙성에 따른 현실적 기간은 약 {{monthsMin}}~{{monthsMax}}개월의 트레이딩입니다.",
+        "withDateRange": "규칙성에 따른 현실적 기간은 약 {{monthsMin}}~{{monthsMax}}개월({{dateRange}} 전후)입니다.",
+        "singleMonth": "규칙성에 따른 현실적 기간은 약 {{months}}개월의 트레이딩입니다.",
+        "singleMonthWithDateRange": "규칙성에 따른 현실적 기간은 약 {{months}}개월({{dateRange}} 전후)입니다.",
+        "insufficient": "현재 데이터로는 기간을 추정할 수 없습니다.",
+        "relaxed": "서두르거나 무리하게 거래를 늘릴 필요가 없습니다.",
+        "patient": "낙관·신중 시나리오 차이가 큽니다 — 무리하지 말고 본인 페이스를 유지하세요.",
+        "cautious": "확률이 낮은 편입니다. 속도보다 실행 품질을 우선하세요.",
+        "steady": "이 범위에 수렴하려면 트레이딩 루틴의 일관성을 유지하세요."
+      },
+      "typical": {
+        "withDuration": "중앙값 기간 {{days}}({{weeks}}) — 빠름과 신중 사이의 중심 시나리오.",
+        "insufficient": "현재 데이터로는 중앙값 기간을 계산할 수 없습니다."
+      },
+      "assumptions": {
+        "base": "일평균 수익 {{mu}}, 변동성 {{sigma}}, 주당 ~{{daysPerWeek}} 거래일.",
+        "adjusted": "목표 크기에 맞게 μ, σ 조정(×{{ratio}})."
+      },
+      "history": {
+        "standard": "계정 전체 이력에서 {{dayCount}}거래일 반영.",
+        "limited": "거래일 {{dayCount}}일뿐(투영 최소 {{minDays}}일); 신중히 해석하세요."
+      },
+      "gap": {
+        "remaining": "{{target}}까지 {{gap}} 남음(현재 잔고 {{current}})."
+      },
+      "horizon": {
+        "failure": "시뮬레이션의 {{failureRate}}%가 {{maxDays}}거래일 기간 내 {{target}}에 도달하지 못합니다."
+      },
+      "milestone": {
+        "next": "{{balance}}까지 {{days}}({{weeks}}) — 목표까지 약 {{pct}}%."
+      }
+    },
+    "sizing": {
+      "sectionTitle": "크기 시나리오",
+      "sectionTeaser": "예: MNQ 1랏, 2 $/포인트 — 여기를 클릭해 목표 크기에 맞게 μ, σ 조정",
+      "sectionActive": "조정 활성 — 아래에서 랏과 $/포인트 수정",
+      "sectionCollapsed": "{{lots}} 랏 × {{pointValue}} $/pt — 노출 {{exposure}} $/pt",
+      "expandDetails": "설정 펼치기",
+      "collapseDetails": "설정 접기",
+      "optionalBadge": "선택",
+      "toggleOn": "클릭하여 활성화",
+      "toggleOff": "클릭하여 비활성화",
+      "enable": "목표 크기로 조정",
+      "lotsLabel": "랏",
+      "pointValueLabel": "$/포인트",
+      "targetExposure": "목표 노출",
+      "historicalMedian": "이력 (중앙값)",
+      "ratioApplied": "μ, σ 스케일 (×{{ratio}})",
+      "ratioNeutral": "목표 노출이 이력 중앙값과 동일합니다.",
+      "hintMNQ": "예: MNQ 마이크로 = 2 $/포인트",
+      "assumptionNote": "선형 조정: 이력과 동일한 $/포인트 엣지 가정.",
+      "errors": {
+        "insufficientExposureData": "노출을 알 수 있는 거래가 부족합니다 (최소 5건)."
+      }
+    }
   }
 }

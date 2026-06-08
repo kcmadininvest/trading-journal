@@ -116,7 +116,136 @@
   "tabs": {
     "overview": "概要",
     "riskCapital": "リスクと資本",
+    "projection": "予測",
     "timeAnalysis": "時間分析",
     "patterns": "相関とパターン"
+  },
+  "monteCarlo": {
+    "title": "残高目標への予測",
+    "tooltip": "口座の全取引履歴に基づく平均日次利益（μ）と日次ボラティリティ（σ）によるモンテカルロシミュレーション。",
+    "targetLabel": "目標残高",
+    "targetPlaceholder": "例: 10000",
+    "currentBalance": "現在残高",
+    "muLabel": "平均利益 (μ)",
+    "sigmaLabel": "ボラティリティ (σ)",
+    "daysPerWeekLabel": "週あたり取引日",
+    "approxDays": "約{{count}}日",
+    "approxWeeks": "約{{count}}週",
+    "statsHint": "μ {{mu}}/日 · σ {{sigma}} · 週~{{daysPerWeek}}取引日",
+    "loading": "予測を計算中…",
+    "chartTitle": "予測曲線",
+    "milestonesTitle": "中間マイルストーン",
+    "targetLine": "目標",
+    "dangerLine": "危険閾値",
+    "dayLabel": "{{day}}日目",
+    "days": "日",
+    "weeks": "週",
+    "probabilityHint": "目標達成確率",
+    "noAccount": "予測を実行するには取引口座を選択してください。",
+    "scenarios": {
+      "optimistic": "速い",
+      "median": "典型",
+      "prudent": "慎重"
+    },
+    "percentileExplainer": "速い＝上位25%の有利なシミュレーションが到達する期間。慎重＝75%が目標に到達する期間（残り25%はそれ以上）。典型＝中央値（50/50）。",
+    "cards": {
+      "median": "典型シナリオ",
+      "medianHint": "中央値 — 半分はより速く、半分はより遅い",
+      "medianTooltip": "10,000回のシミュレーションのうち50%はこれより早く、50%は遅く目標に到達します。楽観でも慎重でもない中心シナリオです。",
+      "optimistic": "速いシナリオ",
+      "optimisticHint": "25%のシミュレーションはさらに早い",
+      "optimisticTooltip": "25%のシミュレーションのみがこの期間以内に到達 — 有利な軌道であり、保証ではありません。",
+      "prudent": "慎重シナリオ",
+      "prudentHint": "75%のシミュレーションがその時点までに到達",
+      "prudentTooltip": "75%がこの期間以内に到達、25%はそれ以上。過度に楽観的にならず計画するのに有用です。",
+      "probability": "確率",
+      "probabilitySims": "{{simCount}}回のシミュレーション",
+      "probabilityTooltip": "μとσに基づく日次ランダムP&Lで、残高目標に到達した{{simCount}}件の独立Monte Carloシナリオの割合。"
+    },
+    "errors": {
+      "targetTooLow": "目標は現在残高より大きい必要があります。",
+      "negativeMu": "平均日次利益が負 — 予測できません。",
+      "insufficientData": "信頼できる予測に必要な取引日が不足しています（最低5日）。",
+      "loadFailed": "履歴データを読み込めませんでした。"
+    },
+    "narrative": {
+      "title": "まとめ",
+      "labels": {
+        "main": "主な結論",
+        "timeline": "現実的な範囲",
+        "typical": "典型シナリオ",
+        "assumptions": "仮定",
+        "history": "履歴",
+        "gap": "達成までの差額",
+        "horizon": "シミュレーション期間",
+        "milestone": "次の節目"
+      },
+      "dateEarly": "{{month}}初旬",
+      "dateLate": "{{month}}下旬",
+      "probability": {
+        "certainty": "{{target}}到達確率{{probability}}% — 現在のプロフィールではほぼ統計的に確実です。",
+        "veryLikely": "{{target}}到達確率{{probability}}% — 現在のプロフィールでは非常に達成可能です。",
+        "likely": "{{target}}到達確率{{probability}}% — 現在のプロフィールでは現実的な目標です。",
+        "uncertain": "{{target}}到達確率{{probability}}% — 正のエッジがあっても結果は不確実です。",
+        "unlikely": "{{target}}到達確率{{probability}}% — 現在のプロフィールでは難しい目標です。",
+        "veryUnlikely": "{{target}}到達確率{{probability}}% — シミュレーション期間内では達成は困難です。",
+        "withSizing": "目標サイズに基づく投影（μとσを×{{ratio}}でスケール）。"
+      },
+      "timeline": {
+        "range": "規律に応じた現実的な期間は約{{monthsMin}}〜{{monthsMax}}ヶ月のトレードです。",
+        "withDateRange": "規律に応じた現実的な期間は約{{monthsMin}}〜{{monthsMax}}ヶ月（{{dateRange}}頃）です。",
+        "singleMonth": "規律に応じた現実的な期間は約{{months}}ヶ月のトレードです。",
+        "singleMonthWithDateRange": "規律に応じた現実的な期間は約{{months}}ヶ月（{{dateRange}}頃）です。",
+        "insufficient": "現在のデータでは期間を推定できません。",
+        "relaxed": "急いだり無理にトレードを増やしたりする必要はありません。",
+        "patient": "楽観と慎重シナリオの差が大きい — 無理せず自分のペースで進めてください。",
+        "cautious": "確率は控えめです。ペースを上げるより実行の質を優先してください。",
+        "steady": "この範囲に近づくため、トレード習慣の一貫性を保ってください。"
+      },
+      "typical": {
+        "withDuration": "中央値の期間 {{days}}（{{weeks}}）— 速いと慎重の中間シナリオ。",
+        "insufficient": "現在のデータでは中央値の期間を算出できません。"
+      },
+      "assumptions": {
+        "base": "平均利益 {{mu}}/日、ボラティリティ {{sigma}}、週あたり約 {{daysPerWeek}} 取引日。",
+        "adjusted": "目標サイズに合わせて μ と σ を調整（×{{ratio}}）。"
+      },
+      "history": {
+        "standard": "口座の全履歴から {{dayCount}} 取引日を使用。",
+        "limited": "取引日は {{dayCount}} 日のみ（投影には最低 {{minDays}} 日）; 慎重に解釈してください。"
+      },
+      "gap": {
+        "remaining": "{{target}}まであと{{gap}}（現在残高{{current}}）。"
+      },
+      "horizon": {
+        "failure": "シミュレーションの{{failureRate}}%は{{maxDays}}取引日の期間内に{{target}}に到達しません。"
+      },
+      "milestone": {
+        "next": "{{balance}}まで{{days}}（{{weeks}}）— 目標まで約{{pct}}%。"
+      }
+    },
+    "sizing": {
+      "sectionTitle": "サイズシナリオ",
+      "sectionTeaser": "例: MNQ 1ロット・2 $/ポイント — ここをクリックして目標サイズに μ と σ を調整",
+      "sectionActive": "調整中 — 下でロットと $/ポイントを編集",
+      "sectionCollapsed": "{{lots}} ロット × {{pointValue}} $/pt — エクスポージャ {{exposure}} $/pt",
+      "expandDetails": "設定を展開",
+      "collapseDetails": "設定を折りたたむ",
+      "optionalBadge": "任意",
+      "toggleOn": "クリックで有効化",
+      "toggleOff": "クリックで無効化",
+      "enable": "目標サイズで調整",
+      "lotsLabel": "ロット",
+      "pointValueLabel": "$/ポイント",
+      "targetExposure": "目標エクスポージャ",
+      "historicalMedian": "履歴（中央値）",
+      "ratioApplied": "μとσをスケール (×{{ratio}})",
+      "ratioNeutral": "目標エクスポージャは履歴中央値と同じです。",
+      "hintMNQ": "例: MNQマイクロ = 2 $/ポイント",
+      "assumptionNote": "線形調整：履歴と同じ$/ポイントあたりのエッジを仮定。",
+      "errors": {
+        "insufficientExposureData": "既知のエクスポージャの取引が不足（最低5件）。"
+      }
+    }
   }
 }
