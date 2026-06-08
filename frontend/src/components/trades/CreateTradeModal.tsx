@@ -429,11 +429,17 @@ export const CreateTradeModal: React.FC<CreateTradeModalProps> = ({
       if (formData.position_strategy) {
         payload.position_strategy = formData.position_strategy;
       }
-      if (formData.planned_stop_loss) {
-        payload.planned_stop_loss = formData.planned_stop_loss;
-      }
-      if (formData.planned_take_profit) {
-        payload.planned_take_profit = formData.planned_take_profit;
+      if (tradeId) {
+        // En édition, envoyer null explicitement pour effacer SL/TP prévus
+        payload.planned_stop_loss = formData.planned_stop_loss.trim() || null;
+        payload.planned_take_profit = formData.planned_take_profit.trim() || null;
+      } else {
+        if (formData.planned_stop_loss) {
+          payload.planned_stop_loss = formData.planned_stop_loss;
+        }
+        if (formData.planned_take_profit) {
+          payload.planned_take_profit = formData.planned_take_profit;
+        }
       }
 
       if (tradeId) {
