@@ -1671,63 +1671,66 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 <p className={`mt-2 text-sm ${DASHBOARD_PANEL_HINT_CLASS}`}>{t('dashboard:objectivesBasedOnHistory')}</p>
               </div>
               
-              <div className="grid flex-1 grid-cols-3 gap-2 sm:gap-4">
+              <div className="grid flex-1 grid-cols-3 items-stretch gap-2 sm:gap-4">
                 {/* Jauge Win Rate */}
-                <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
-                  <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:mb-4">
-                    {t('dashboard:winRate')}
-                  </h3>
-                  <Tooltip
-                    disabled={
-                      tradingMetrics.winRateRingSecondary == null ||
-                      (tradingMetrics.winRateRingSecondaryMode === 'peak' &&
-                        tradingMetrics.winRateRingSecondary <=
-                          tradingMetrics.winRate + 1e-9)
-                    }
-                    content={
-                      tradingMetrics.winRateRingSecondaryMode === 'recent'
-                        ? t('dashboard:winRateRecentWindowTooltip', {
-                            count: WIN_RATE_ROLLING_WINDOW,
-                            defaultValue:
-                              'Main figure: win rate over the full selected period.\nOrange figure: win rate on your last {{count}} trades within this period only.',
-                          })
-                        : t('dashboard:winRatePeriodPeakTooltip', {
-                            count: WIN_RATE_ROLLING_WINDOW,
-                            defaultValue:
-                              'Best win rate on a rolling window of {{count}} consecutive trades during the period. The orange ring shows how far above your current period rate that peak was.',
-                          })
-                    }
-                    contentClassName={
-                      tradingMetrics.winRateRingSecondaryMode === 'recent'
-                        ? 'whitespace-pre-line max-w-[16rem]'
-                        : ''
-                    }
-                    position="bottom"
-                    triggerDisplay="block"
-                    className="mx-auto mb-1 block max-w-full w-[72px] sm:mb-2 sm:w-[110px] md:w-[90px] lg:w-[110px] xl:w-[130px]"
-                  >
-                    {(() => {
-                      const C = 2 * Math.PI * 66;
-                      const secondaryVal = tradingMetrics.winRateRingSecondary;
-                      const isRecentRing =
-                        tradingMetrics.winRateRingSecondaryMode === 'recent';
-                      const currentVal = tradingMetrics.winRate;
-                      const p =
-                        secondaryVal != null ? Math.min(secondaryVal / 100, 1) : 0;
-                      const showPeakExtras =
-                        !isRecentRing &&
-                        secondaryVal != null &&
-                        secondaryVal > currentVal + 1e-9;
-                      const showRecentExtras =
-                        isRecentRing && secondaryVal != null;
-                      const showRingExtras = showPeakExtras || showRecentExtras;
-                      return (
-                        <div
-                          className={clsx(
-                            'relative flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700/50 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]',
-                            showRingExtras && 'cursor-help'
-                          )}
-                        >
+                {(() => {
+                  const secondaryVal = tradingMetrics.winRateRingSecondary;
+                  const isRecentRing =
+                    tradingMetrics.winRateRingSecondaryMode === 'recent';
+                  const currentVal = tradingMetrics.winRate;
+                  const showPeakExtras =
+                    !isRecentRing &&
+                    secondaryVal != null &&
+                    secondaryVal > currentVal + 1e-9;
+                  const showRecentExtras = isRecentRing && secondaryVal != null;
+                  const showRingExtras = showPeakExtras || showRecentExtras;
+                  const winRateRingTooltip = isRecentRing
+                    ? t('dashboard:winRateRecentWindowTooltip', {
+                        count: WIN_RATE_ROLLING_WINDOW,
+                        defaultValue:
+                          'Main figure: win rate over the full selected period.\nOrange figure: win rate on your last {{count}} trades within this period only.',
+                      })
+                    : t('dashboard:winRatePeriodPeakTooltip', {
+                        count: WIN_RATE_ROLLING_WINDOW,
+                        defaultValue:
+                          'Best win rate on a rolling window of {{count}} consecutive trades during the period. The orange ring shows how far above your current period rate that peak was.',
+                      });
+                  const C = 2 * Math.PI * 66;
+                  const p =
+                    secondaryVal != null ? Math.min(secondaryVal / 100, 1) : 0;
+
+                  return (
+                    <div
+                      className={clsx(
+                        DASHBOARD_GAUGE_TILE_CLASS,
+                        'h-full w-full cursor-pointer hover:scale-105'
+                      )}
+                    >
+                      <h3 className="mb-3 flex items-center justify-center gap-1.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:mb-4">
+                        <span>{t('dashboard:winRate')}</span>
+                        {showRingExtras ? (
+                          <Tooltip
+                            content={winRateRingTooltip}
+                            position="bottom"
+                            className="shrink-0 items-center leading-none"
+                            contentClassName="whitespace-pre-line block max-w-xs"
+                          >
+                            <svg
+                              className="block h-3.5 w-3.5 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                              aria-hidden
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </Tooltip>
+                        ) : null}
+                      </h3>
+                        <div className="relative mx-auto mb-2 flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700/50 sm:mb-4 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]">
                           <svg
                             className="absolute inset-0 h-full w-full -rotate-90"
                             viewBox="0 0 140 140"
@@ -1780,34 +1783,32 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             ) : null}
                           </div>
                         </div>
-                      );
-                    })()}
-                  </Tooltip>
-                  {tradingMetrics.winRateRingSecondaryMode === 'recent' &&
-                  tradingMetrics.winRateRingSecondary != null ? (
-                    <p className="mb-2 text-center text-[10px] leading-snug text-gray-500 dark:text-gray-400 sm:mb-3 sm:text-xs">
-                      {t('dashboard:winRateRecentLegend', {
-                        count: WIN_RATE_ROLLING_WINDOW,
-                        defaultValue:
-                          'Black = period · Orange = last {{count}} trades',
-                      })}
-                    </p>
-                  ) : null}
-                  <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-                    {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
-                  </div>
-                  <div
-                    className={clsx(
-                      'mt-2',
-                      getDashboardPerformanceBadgeClasses(performanceLabels?.winRate.color)
-                    )}
-                  >
-                    {performanceLabels?.winRate.label}
-                  </div>
-                </div>
+                        <div className="mb-2 min-h-[2rem] text-center text-[10px] leading-snug text-gray-500 dark:text-gray-400 sm:mb-3 sm:min-h-[2.25rem] sm:text-xs">
+                          {isRecentRing && secondaryVal != null
+                            ? t('dashboard:winRateRecentLegend', {
+                                count: WIN_RATE_ROLLING_WINDOW,
+                                defaultValue:
+                                  'Black = period · Orange = last {{count}} trades',
+                              })
+                            : null}
+                        </div>
+                        <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+                          {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
+                        </div>
+                        <div
+                          className={clsx(
+                            'mt-auto',
+                            getDashboardPerformanceBadgeClasses(performanceLabels?.winRate.color)
+                          )}
+                        >
+                          {performanceLabels?.winRate.label}
+                        </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Jauge Avg Winning Trade */}
-                <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
+                <div className={`${DASHBOARD_GAUGE_TILE_CLASS} h-full w-full cursor-pointer hover:scale-105`}>
                   <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:mb-4">
                     {t('dashboard:avgWinning')}
                   </h3>
@@ -1841,12 +1842,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       </div>
                     </div>
                   </div>
+                  <div
+                    className="mb-2 min-h-[2rem] sm:mb-3 sm:min-h-[2.25rem]"
+                    aria-hidden
+                  />
                   <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                     {t('dashboard:objective')}: {formatCurrency(gaugeObjectives?.avgWinning || 0, currencySymbol)}
                   </div>
                   <div
                     className={clsx(
-                      'mt-2',
+                      'mt-auto',
                       getDashboardPerformanceBadgeClasses(performanceLabels?.avgWinning.color)
                     )}
                   >
@@ -1855,7 +1860,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 </div>
 
                 {/* Jauge Avg Losing Trade */}
-                <div className={`${DASHBOARD_GAUGE_TILE_CLASS} cursor-pointer hover:scale-105`}>
+                <div className={`${DASHBOARD_GAUGE_TILE_CLASS} h-full w-full cursor-pointer hover:scale-105`}>
                   <h3 className="mb-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300 sm:mb-4">
                     {t('dashboard:avgLosing')}
                   </h3>
@@ -1889,12 +1894,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       </div>
                     </div>
                   </div>
+                  <div
+                    className="mb-2 min-h-[2rem] sm:mb-3 sm:min-h-[2.25rem]"
+                    aria-hidden
+                  />
                   <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                     {t('dashboard:objective')}: &lt; {formatCurrency(gaugeObjectives?.avgLosing || 0, currencySymbol)}
                   </div>
                   <div
                     className={clsx(
-                      'mt-2',
+                      'mt-auto',
                       getDashboardPerformanceBadgeClasses(performanceLabels?.avgLosing.color)
                     )}
                   >
