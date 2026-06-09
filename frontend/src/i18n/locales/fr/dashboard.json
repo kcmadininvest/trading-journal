@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Objectifs basés sur vos performances historiques",
   "winRate": "Win Rate",
   "winRatePeriodPeakTooltip": "Meilleur win rate sur une fenêtre de {{count}} trades consécutifs dans la période. L’anneau orange indique ce pic lorsqu’il dépasse le taux actuel de la période.",
+  "winRateRecentWindowTooltip": "Chiffre principal : win rate sur toute la période sélectionnée.\nChiffre orange : win rate sur vos {{count}} derniers trades de cette période uniquement.",
+  "winRateRecentLegend": "Noir = période · Orange = {{count}} derniers trades",
   "avgWinning": "Avg Gagnant",
   "avgLosing": "Avg Perdant",
   "objective": "Objectif",

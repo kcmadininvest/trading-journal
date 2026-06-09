@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Objectifs basés sur vos performances historiques",
   "winRate": "Win Rate",
   "winRatePeriodPeakTooltip": "期间内连续 {{count}} 笔交易的滚动窗口最佳胜率。当该峰值高于当前期间胜率时，橙色圆环会显示该峰值。",
+  "winRateRecentWindowTooltip": "主数字：所选期间整体胜率。\n橙色数字：仅该期间内最近 {{count}} 笔交易的胜率。",
+  "winRateRecentLegend": "黑色 = 期间 · 橙色 = 最近 {{count}} 笔",
   "avgWinning": "Avg Gagnant",
   "avgLosing": "Avg Perdant",
   "objective": "Objectif",

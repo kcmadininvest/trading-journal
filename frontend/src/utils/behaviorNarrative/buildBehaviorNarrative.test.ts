@@ -252,6 +252,45 @@ describe('buildBehaviorNarrative', () => {
     expect(timeWindows!.paragraphs.some((p) => p.includes('"pnl"'))).toBe(false);
   });
 
+  it('n affiche pas Risque maîtrisé pour un drawdown très élevé même si le ton global est positif', () => {
+    const sections = buildBehaviorNarrative({
+      context: baseContext({
+        tone: 'positive',
+        maxDrawdownPct: 42,
+        maxDrawdownGlobal: -4200,
+        recoveryRatio: 2,
+      }),
+      t,
+      formatNumber,
+      formatCurrency,
+      formatDate,
+      currencySymbol: '$',
+    });
+
+    const risk = sections.find((s) => s.id === 'risk');
+    expect(risk).toBeDefined();
+    expect(risk!.titleKey).toBe('behaviorNarrative.risk.title.challenging');
+    expect(risk!.paragraphs.some((p) => p.includes('drawdownHigh'))).toBe(true);
+  });
+
+  it('affiche Risque maîtrisé seulement pour un drawdown modéré et une bonne récupération', () => {
+    const sections = buildBehaviorNarrative({
+      context: baseContext({
+        tone: 'positive',
+        maxDrawdownPct: 10,
+        recoveryRatio: 1.5,
+      }),
+      t,
+      formatNumber,
+      formatCurrency,
+      formatDate,
+      currencySymbol: '$',
+    });
+
+    const risk = sections.find((s) => s.id === 'risk');
+    expect(risk?.titleKey).toBe('behaviorNarrative.risk.title.celebrate');
+  });
+
   it('affiche le pire créneau sans montant en multi-devises', () => {
     const sections = buildBehaviorNarrative({
       context: baseContext({

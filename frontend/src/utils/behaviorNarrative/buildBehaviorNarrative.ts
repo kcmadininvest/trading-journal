@@ -2,6 +2,10 @@ import { GAUGE_CONFIGS } from '../../components/statistics/MetricGauge';
 import { getGaugeVerdict } from '../getGaugeVerdict';
 import { WEEKDAY_WIN_RATE_MIN_TRADES } from './aggregateBehaviorTimeContext';
 import { resolveSectionTitle } from './resolveSectionTitle';
+import {
+  RISK_DRAWDOWN_MODERATE_MAX_PCT,
+  resolveRiskSectionTitle,
+} from './resolveRiskSectionTitle';
 import type { BuildBehaviorNarrativeInput, NarrativeSection, NarrativeTone } from './types';
 import {
   BEHAVIOR_NARRATIVE_LOW_VOLUME_BUCKET,
@@ -421,7 +425,7 @@ function buildRiskSection(input: BuildBehaviorNarrativeInput): NarrativeSection 
 
   if (context.maxDrawdownPct != null) {
     const ddKey =
-      context.maxDrawdownPct > 15
+      context.maxDrawdownPct > RISK_DRAWDOWN_MODERATE_MAX_PCT
         ? 'analytics:behaviorNarrative.risk.drawdownHigh'
         : 'analytics:behaviorNarrative.risk.drawdownModerate';
     paragraphs.push(
@@ -451,7 +455,7 @@ function buildRiskSection(input: BuildBehaviorNarrativeInput): NarrativeSection 
 
   return {
     id: 'risk',
-    titleKey: resolveSectionTitle('risk', tone),
+    titleKey: resolveRiskSectionTitle(context.maxDrawdownPct, context.recoveryRatio),
     paragraphs,
     toneVariant: tone,
   };

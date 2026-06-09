@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Objectives based on your historical performance",
   "winRate": "Win Rate",
   "winRatePeriodPeakTooltip": "Best win rate on a rolling window of {{count}} consecutive trades during the period. The orange ring shows this peak when it is above your current period rate.",
+  "winRateRecentWindowTooltip": "Main figure: win rate over the full selected period.\nOrange figure: win rate on your last {{count}} trades within this period only.",
+  "winRateRecentLegend": "Black = period · Orange = last {{count}} trades",
   "avgWinning": "Avg Winning",
   "avgLosing": "Avg Losing",
   "objective": "Objective",

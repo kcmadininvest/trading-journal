@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Objectifs basés sur vos performances historiques",
   "winRate": "Win Rate",
   "winRatePeriodPeakTooltip": "期間内の連続{{count}}トレードのローリングウィンドウにおける最高勝率。現在の期間勝率を上回る場合、オレンジのリングでそのピークを表示します。",
+  "winRateRecentWindowTooltip": "メインの数値：選択した期間全体の勝率。\nオレンジの数値：この期間内の直近{{count}}トレードのみの勝率。",
+  "winRateRecentLegend": "黒 = 期間 · オレンジ = 直近{{count}}トレード",
   "avgWinning": "Avg Gagnant",
   "avgLosing": "Avg Perdant",
   "objective": "Objectif",

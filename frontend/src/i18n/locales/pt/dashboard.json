@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Objectifs basés sur vos performances historiques",
   "winRate": "Win Rate",
   "winRatePeriodPeakTooltip": "Melhor taxa de acerto numa janela móvel de {{count}} trades consecutivos no período. O anel laranja mostra esse pico quando está acima da taxa atual do período.",
+  "winRateRecentWindowTooltip": "Valor principal: taxa de acerto do período selecionado.\nValor laranja: taxa de acerto apenas dos seus últimos {{count}} trades neste período.",
+  "winRateRecentLegend": "Preto = período · Laranja = últimos {{count}} trades",
   "avgWinning": "Avg Gagnant",
   "avgLosing": "Avg Perdant",
   "objective": "Objectif",

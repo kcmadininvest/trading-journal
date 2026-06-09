@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Objectifs basés sur vos performances historiques",
   "winRate": "Win Rate",
   "winRatePeriodPeakTooltip": "Miglior win rate su una finestra mobile di {{count}} trade consecutivi nel periodo. L’anello arancione mostra quel picco quando supera il tasso attuale del periodo.",
+  "winRateRecentWindowTooltip": "Cifra principale: win rate sul periodo selezionato.\nCifra arancione: win rate solo sugli ultimi {{count}} trade di questo periodo.",
+  "winRateRecentLegend": "Nero = periodo · Arancione = ultimi {{count}} trade",
   "avgWinning": "Avg Gagnant",
   "avgLosing": "Avg Perdant",
   "objective": "Objectif",

@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Ziele basierend auf Ihrer historischen Leistung",
   "winRate": "Gewinnrate",
   "winRatePeriodPeakTooltip": "Beste Gewinnrate auf einem gleitenden Fenster von {{count}} aufeinanderfolgenden Trades in der Periode. Der orangefarbene Ring zeigt diesen Höchstwert, wenn er über dem aktuellen Periodenwert liegt.",
+  "winRateRecentWindowTooltip": "Hauptwert: Gewinnrate über die gewählte Periode.\nOrangefarbener Wert: Gewinnrate nur auf Ihre letzten {{count}} Trades innerhalb dieser Periode.",
+  "winRateRecentLegend": "Schwarz = Periode · Orange = letzte {{count}} Trades",
   "avgWinning": "Durchschn. Gewinn",
   "avgLosing": "Durchschn. Verlust",
   "objective": "Ziel",

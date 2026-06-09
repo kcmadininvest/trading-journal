@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Objetivos basados en tu rendimiento histórico",
   "winRate": "Tasa de aciertos",
   "winRatePeriodPeakTooltip": "Mejor tasa de acierto en una ventana móvil de {{count}} trades consecutivos del periodo. El anillo naranja muestra ese pico cuando supera la tasa actual del periodo.",
+  "winRateRecentWindowTooltip": "Cifra principal: tasa de acierto del periodo seleccionado.\nCifra naranja: tasa de acierto solo de sus últimos {{count}} trades dentro de este periodo.",
+  "winRateRecentLegend": "Negro = periodo · Naranja = últimos {{count}} trades",
   "avgWinning": "Promedio ganador",
   "avgLosing": "Promedio perdedor",
   "objective": "Objetivo",

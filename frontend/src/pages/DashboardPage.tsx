@@ -59,6 +59,10 @@ import { resolveAccountChartConfig } from '../utils/accountChartConfig';
 import { aggregateDurationDistribution } from '../utils/tradeDurationBuckets';
 import { getWaterfallBarBorder, getWaterfallBarFill } from '../utils/waterfallBarGradient';
 import { WIN_RATE_ROLLING_WINDOW } from '../utils/tradingSampleThresholds';
+import {
+  getTradePnlOutcome,
+  resolveWinRateRingSecondary,
+} from '../utils/computeRollingPeakWinRate';
 import { buildGlobalStatsSparklines } from '../utils/globalStatsSparklines';
 
 // Lazy load heavy chart components for better performance
@@ -1266,10 +1270,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const tradingMetrics = useMemo(() => {
     if (trades.length === 0) return null;
 
-    const winningTrades = trades.filter(t => t.is_profitable === true && getTradeDisplayPnlValue(t, pnlDisplayMode) != null);
-    const losingTrades = trades.filter(t => t.is_profitable === false && getTradeDisplayPnlValue(t, pnlDisplayMode) != null);
-    
-    const totalTrades = trades.filter(t => t.is_profitable !== null).length;
+    const winningTrades = trades.filter((t) => getTradePnlOutcome(t, pnlDisplayMode) === 'win');
+    const losingTrades = trades.filter((t) => getTradePnlOutcome(t, pnlDisplayMode) === 'loss');
+
+    const totalTrades = trades.filter((t) => getTradePnlOutcome(t, pnlDisplayMode) != null).length;
     const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
     
     const avgWinningTrade = winningTrades.length > 0
@@ -1280,34 +1284,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       ? losingTrades.reduce((sum, t) => sum + (getTradeDisplayPnlValue(t, pnlDisplayMode) ?? 0), 0) / losingTrades.length
       : 0;
 
-    let peakWinRateOnPeriod: number | null = null;
-    if (totalTrades >= WIN_RATE_ROLLING_WINDOW) {
-      const orderedDecided = [...trades]
-        .filter((t) => t.is_profitable !== null)
-        .sort((a, b) => {
-          const ta = a.entered_at ? new Date(a.entered_at).getTime() : 0;
-          const tb = b.entered_at ? new Date(b.entered_at).getTime() : 0;
-          return ta - tb;
-        });
-      const rollingRates: number[] = [];
-      for (let i = WIN_RATE_ROLLING_WINDOW - 1; i < orderedDecided.length; i++) {
-        const slice = orderedDecided.slice(i - WIN_RATE_ROLLING_WINDOW + 1, i + 1);
-        const winsInWindow = slice.filter(
-          (t) => t.is_profitable === true && getTradeDisplayPnlValue(t, pnlDisplayMode) != null
-        ).length;
-        rollingRates.push((winsInWindow / WIN_RATE_ROLLING_WINDOW) * 100);
-      }
-      peakWinRateOnPeriod =
-        rollingRates.length > 0 ? Math.max(...rollingRates) : null;
-    }
+    const winRateRing = resolveWinRateRingSecondary(
+      trades,
+      pnlDisplayMode,
+      selectedPeriod?.preset,
+    );
 
     return {
       winRate,
       avgWinningTrade,
       avgLosingTrade,
-      peakWinRateOnPeriod,
+      winRateRingSecondary: winRateRing.value,
+      winRateRingSecondaryMode: winRateRing.mode,
     };
-  }, [trades, pnlDisplayMode]);
+  }, [trades, pnlDisplayMode, selectedPeriod?.preset]);
 
   // Calculer les max pour les jauges (basé sur les données réelles avec marge)
   const gaugeMaxValues = useMemo(() => {
@@ -1689,32 +1679,53 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   </h3>
                   <Tooltip
                     disabled={
-                      tradingMetrics.peakWinRateOnPeriod == null ||
-                      tradingMetrics.peakWinRateOnPeriod <=
-                        tradingMetrics.winRate + 1e-9
+                      tradingMetrics.winRateRingSecondary == null ||
+                      (tradingMetrics.winRateRingSecondaryMode === 'peak' &&
+                        tradingMetrics.winRateRingSecondary <=
+                          tradingMetrics.winRate + 1e-9)
                     }
-                    content={t('dashboard:winRatePeriodPeakTooltip', {
-                      count: WIN_RATE_ROLLING_WINDOW,
-                      defaultValue:
-                        'Best win rate on a rolling window of {{count}} consecutive trades during the period. The orange ring shows how far above your current period rate that peak was.',
-                    })}
+                    content={
+                      tradingMetrics.winRateRingSecondaryMode === 'recent'
+                        ? t('dashboard:winRateRecentWindowTooltip', {
+                            count: WIN_RATE_ROLLING_WINDOW,
+                            defaultValue:
+                              'Main figure: win rate over the full selected period.\nOrange figure: win rate on your last {{count}} trades within this period only.',
+                          })
+                        : t('dashboard:winRatePeriodPeakTooltip', {
+                            count: WIN_RATE_ROLLING_WINDOW,
+                            defaultValue:
+                              'Best win rate on a rolling window of {{count}} consecutive trades during the period. The orange ring shows how far above your current period rate that peak was.',
+                          })
+                    }
+                    contentClassName={
+                      tradingMetrics.winRateRingSecondaryMode === 'recent'
+                        ? 'whitespace-pre-line max-w-[16rem]'
+                        : ''
+                    }
                     position="bottom"
                     triggerDisplay="block"
-                    className="mx-auto mb-2 block max-w-full w-[72px] sm:mb-4 sm:w-[110px] md:w-[90px] lg:w-[110px] xl:w-[130px]"
+                    className="mx-auto mb-1 block max-w-full w-[72px] sm:mb-2 sm:w-[110px] md:w-[90px] lg:w-[110px] xl:w-[130px]"
                   >
                     {(() => {
                       const C = 2 * Math.PI * 66;
-                      const peakVal = tradingMetrics.peakWinRateOnPeriod;
+                      const secondaryVal = tradingMetrics.winRateRingSecondary;
+                      const isRecentRing =
+                        tradingMetrics.winRateRingSecondaryMode === 'recent';
                       const currentVal = tradingMetrics.winRate;
                       const p =
-                        peakVal != null ? Math.min(peakVal / 100, 1) : 0;
+                        secondaryVal != null ? Math.min(secondaryVal / 100, 1) : 0;
                       const showPeakExtras =
-                        peakVal != null && peakVal > currentVal + 1e-9;
+                        !isRecentRing &&
+                        secondaryVal != null &&
+                        secondaryVal > currentVal + 1e-9;
+                      const showRecentExtras =
+                        isRecentRing && secondaryVal != null;
+                      const showRingExtras = showPeakExtras || showRecentExtras;
                       return (
                         <div
                           className={clsx(
                             'relative flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700/50 sm:h-[110px] sm:w-[110px] md:h-[90px] md:w-[90px] lg:h-[110px] lg:w-[110px] xl:h-[130px] xl:w-[130px]',
-                            showPeakExtras && 'cursor-help'
+                            showRingExtras && 'cursor-help'
                           )}
                         >
                           <svg
@@ -1731,7 +1742,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                               fill="none"
                               className="opacity-40"
                             />
-                            {showPeakExtras ? (
+                            {showRingExtras ? (
                               <circle
                                 cx="70"
                                 cy="70"
@@ -1762,9 +1773,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                             <div className="text-sm font-bold text-gray-900 dark:text-gray-100 sm:text-xl xl:text-2xl">
                               {formatNumber(tradingMetrics.winRate, 2)}%
                             </div>
-                            {showPeakExtras ? (
+                            {showRingExtras ? (
                               <div className="mt-0.5 text-[10px] font-semibold leading-none text-amber-600 dark:text-amber-400 sm:text-xs">
-                                {formatNumber(peakVal!, 2)}%
+                                {formatNumber(secondaryVal!, 2)}%
                               </div>
                             ) : null}
                           </div>
@@ -1772,6 +1783,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                       );
                     })()}
                   </Tooltip>
+                  {tradingMetrics.winRateRingSecondaryMode === 'recent' &&
+                  tradingMetrics.winRateRingSecondary != null ? (
+                    <p className="mb-2 text-center text-[10px] leading-snug text-gray-500 dark:text-gray-400 sm:mb-3 sm:text-xs">
+                      {t('dashboard:winRateRecentLegend', {
+                        count: WIN_RATE_ROLLING_WINDOW,
+                        defaultValue:
+                          'Black = period · Orange = last {{count}} trades',
+                      })}
+                    </p>
+                  ) : null}
                   <div className="mb-3 text-center text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                     {t('dashboard:objective')}: {gaugeObjectives?.winRate}%
                   </div>

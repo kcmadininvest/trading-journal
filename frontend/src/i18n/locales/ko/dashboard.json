@@ -6,6 +6,8 @@
   "objectivesBasedOnHistory": "Objectifs basés sur vos performances historiques",
   "winRate": "Win Rate",
   "winRatePeriodPeakTooltip": "기간 내 연속 {{count}}건 트레이드 롤링 윈도우에서의 최고 승률. 현재 기간 승률보다 높을 때 주황색 링으로 해당 피크를 표시합니다.",
+  "winRateRecentWindowTooltip": "주요 수치: 선택한 기간 전체 승률.\n주황색 수치: 이 기간 내 최근 {{count}}건 트레이드만의 승률.",
+  "winRateRecentLegend": "검정 = 기간 · 주황 = 최근 {{count}}건",
   "avgWinning": "Avg Gagnant",
   "avgLosing": "Avg Perdant",
   "objective": "Objectif",
