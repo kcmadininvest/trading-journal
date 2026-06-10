@@ -60,6 +60,7 @@ import { aggregateDurationDistribution } from '../utils/tradeDurationBuckets';
 import { getWaterfallBarBorder, getWaterfallBarFill } from '../utils/waterfallBarGradient';
 import { WIN_RATE_ROLLING_WINDOW } from '../utils/tradingSampleThresholds';
 import {
+  buildTradeOutcomeSeries,
   getTradePnlOutcome,
   resolveWinRateRingSecondary,
 } from '../utils/computeRollingPeakWinRate';
@@ -1299,6 +1300,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [trades, pnlDisplayMode, selectedPeriod?.preset]);
 
+  const recentOutcomeSeries = useMemo(
+    () => buildTradeOutcomeSeries(dashboardData?.recent_trades ?? [], pnlDisplayMode),
+    [dashboardData?.recent_trades, pnlDisplayMode],
+  );
+
   // Calculer les max pour les jauges (basé sur les données réelles avec marge)
   const gaugeMaxValues = useMemo(() => {
     if (!tradingMetrics) return { winRate: 100, avgWinning: 1200, avgLosing: 850 };
@@ -1641,6 +1647,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         hideMoney={hideWeekdayChartMoneyValues}
         loading={dashboardLoading && !dashboardData}
         singleAccountSelected={accountId != null}
+        outcomeSeries={recentOutcomeSeries}
+        pnlDisplayMode={pnlDisplayMode}
+        dateFormat={preferences.date_format}
+        timezone={preferences.timezone}
+        numberFormat={preferences.number_format}
       />
 
       {/* Message d'erreur */}

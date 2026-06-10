@@ -264,3 +264,6 @@ class DashboardSummaryPeriodPerformanceTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['period_performance']['day']['pnl'], 40.0)
         self.assertEqual(len(response.data['daily_aggregates']), 0)
+        self.assertIn('recent_trades', response.data)
+        self.assertEqual(len(response.data['recent_trades']), 1)
+        self.assertEqual(len(response.data['trades']), 0)

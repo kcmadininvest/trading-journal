@@ -8,6 +8,9 @@ interface MetricCardProps {
   icon?: React.ReactNode;
   variant?: MetricCardVariant;
   className?: string;
+  titleAddon?: React.ReactNode;
+  headerAction?: React.ReactNode;
+  fillHeight?: boolean;
   children: React.ReactNode;
 }
 
@@ -16,6 +19,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   icon,
   variant = 'standard',
   className = '',
+  titleAddon,
+  headerAction,
+  fillHeight = false,
   children,
 }) => {
   const baseClasses = 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700';
@@ -39,22 +45,32 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   };
 
   return (
-    <div className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
-      {(title || icon) && (
-        <div className="mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3">
-          {icon && (
-            <div
-              className={`${iconSizeClasses[variant]} flex flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30`}
-            >
-              <div className="h-6 w-6 text-blue-600 dark:text-blue-400">{icon}</div>
-            </div>
-          )}
-          {title && (
-            <h3 className={`${titleSizeClasses[variant]} text-gray-500 dark:text-gray-400`}>{title}</h3>
-          )}
+    <div
+      className={`${baseClasses} ${variantClasses[variant]} ${fillHeight ? 'flex h-full flex-col' : ''} ${className}`}
+    >
+      {(title || icon || titleAddon || headerAction) && (
+        <div className="mb-3 flex items-center justify-between gap-2 sm:mb-4 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            {icon && (
+              <div
+                className={`${iconSizeClasses[variant]} flex flex-shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30`}
+              >
+                <div className="h-6 w-6 text-blue-600 dark:text-blue-400">{icon}</div>
+              </div>
+            )}
+            {title && (
+              <h3 className={`${titleSizeClasses[variant]} text-gray-500 dark:text-gray-400`}>{title}</h3>
+            )}
+            {titleAddon ? <div className="shrink-0">{titleAddon}</div> : null}
+          </div>
+          {headerAction ? <div className="shrink-0">{headerAction}</div> : null}
         </div>
       )}
-      <div className={variant === 'hero' ? 'space-y-3' : 'space-y-2'}>{children}</div>
+      <div
+        className={`${variant === 'hero' ? 'space-y-3' : 'space-y-2'} ${fillHeight ? 'flex min-h-0 flex-1 flex-col justify-center' : ''}`}
+      >
+        {children}
+      </div>
     </div>
   );
 };

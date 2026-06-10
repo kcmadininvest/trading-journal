@@ -5373,6 +5373,9 @@ def dashboard_summary(request):
         _dash_pf,
     )
 
+    recent_trades_qs = period_trades_qs.select_related('trading_account').order_by('-entered_at')[:20]
+    recent_trades_data = TopStepTradeListSerializer(recent_trades_qs, many=True).data
+
     balance_context = None
     if trading_account_id:
         try:
@@ -5393,6 +5396,7 @@ def dashboard_summary(request):
         'active_days': active_days_count,
         'count': len(daily_data),
         'period_performance': period_performance,
+        'recent_trades': recent_trades_data,
     }
     if balance_context is not None:
         response_data['balance_context'] = balance_context

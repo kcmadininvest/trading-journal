@@ -7,6 +7,12 @@ import { formatCurrency, formatNumber, getCurrencySymbolForCode } from '../../ut
 import { usePreferences } from '../../hooks/usePreferences';
 import { currenciesService, type Currency } from '../../services/currencies';
 import type { PeriodPerformance, PeriodPerformanceEntry } from '../../services/dashboard';
+import type { PnlDisplayMode } from '../../utils/pnlDisplay';
+import type { DateFormatType } from '../../utils/dateFormat';
+import type { NumberFormatType } from '../../utils/numberFormat';
+import type { TradeOutcomeSeriesItem } from '../../utils/computeRollingPeakWinRate';
+import { TradeOutcomeSeriesStrip } from '../trading/TradeOutcomeSeriesStrip';
+import { WIN_RATE_ROLLING_WINDOW } from '../../utils/tradingSampleThresholds';
 import {
   DASHBOARD_INNER_CARD_CLASS,
   DASHBOARD_INNER_LABEL_CLASS,
@@ -27,6 +33,11 @@ export interface PeriodPerformanceKpisProps {
   className?: string;
   /** true = un compte précis sélectionné (pas « Tous les comptes ») */
   singleAccountSelected?: boolean;
+  outcomeSeries?: TradeOutcomeSeriesItem[];
+  pnlDisplayMode?: PnlDisplayMode;
+  dateFormat?: DateFormatType;
+  timezone?: string;
+  numberFormat?: NumberFormatType;
 }
 
 type PeriodKey = 'day' | 'week' | 'month' | 'year';
@@ -66,6 +77,119 @@ interface PeriodCardProps {
   hideMoney: boolean;
   singleAccountSelected: boolean;
 }
+
+interface OutcomeSeriesCardProps {
+  series: TradeOutcomeSeriesItem[];
+  currencySymbol: string;
+  pnlDisplayMode: PnlDisplayMode;
+  numberFormat: NumberFormatType;
+  dateFormat: DateFormatType;
+  timezone: string;
+  hideMoney: boolean;
+}
+
+function getOutcomeSeriesCardClasses(series: TradeOutcomeSeriesItem[]): string {
+  const wins = series.filter((item) => item.letter === 'W').length;
+  const losses = series.filter((item) => item.letter === 'L').length;
+  if (wins > losses) return getPnLCardClasses(1);
+  if (losses > wins) return getPnLCardClasses(-1);
+  return getPnLCardClasses(0);
+}
+
+const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
+  series,
+  currencySymbol,
+  pnlDisplayMode,
+  numberFormat,
+  dateFormat,
+  timezone,
+  hideMoney,
+}) => {
+  const { t } = useTranslation();
+
+  const wins = series.filter((item) => item.letter === 'W').length;
+  const losses = series.filter((item) => item.letter === 'L').length;
+  const breakEvens = series.filter((item) => item.letter === 'B').length;
+
+  const summaryLabel =
+    series.length > 0
+      ? t('dashboard:periodPerformance.outcomeSeriesSummary', {
+          wins,
+          losses,
+          breakEvens,
+          defaultValue: '{{wins}}G · {{losses}}P · {{breakEvens}}BE',
+        })
+      : t('dashboard:periodPerformance.outcomeSeriesEmpty', {
+          defaultValue: 'Aucun trade récent',
+        });
+
+  return (
+    <div
+      className={clsx(
+        DASHBOARD_INNER_CARD_CLASS,
+        'flex min-w-0 flex-col gap-2 p-4',
+        getOutcomeSeriesCardClasses(series),
+      )}
+    >
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="inline-flex min-w-0 items-center gap-1">
+          <span className={DASHBOARD_INNER_LABEL_CLASS}>
+            {t('dashboard:periodPerformance.outcomeSeries', {
+              count: WIN_RATE_ROLLING_WINDOW,
+              defaultValue: 'Forme récente',
+            })}
+          </span>
+          <Tooltip
+            content={t('dashboard:recentOutcomeSeriesTooltip', {
+              count: WIN_RATE_ROLLING_WINDOW,
+              defaultValue:
+                'Résultats de vos {{count}} derniers trades, du plus ancien (gauche) au plus récent (droite). Indépendant du filtre de période ci-dessus.',
+            })}
+            position="bottom"
+            className="shrink-0 items-center leading-none"
+            contentClassName="whitespace-pre-line block max-w-xs"
+          >
+            <svg
+              className="block h-3.5 w-3.5 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+              aria-hidden
+            >
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </Tooltip>
+        </div>
+        {series.length > 0 ? (
+          <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium tabular-nums text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+            {hideMoney ? maskValue(null) : summaryLabel}
+          </span>
+        ) : null}
+      </div>
+
+      {series.length > 0 ? (
+        <TradeOutcomeSeriesStrip
+          series={series}
+          pnlDisplayMode={pnlDisplayMode}
+          currencySymbol={currencySymbol}
+          numberFormat={numberFormat}
+          dateFormat={dateFormat}
+          timezone={timezone}
+          hideMoney={hideMoney}
+          compact
+          showLegend={false}
+          highlightLatest={false}
+          className="min-w-0 space-y-0"
+        />
+      ) : (
+        <p className="text-sm text-gray-500 dark:text-gray-400">{summaryLabel}</p>
+      )}
+    </div>
+  );
+};
 
 const PeriodCard: React.FC<PeriodCardProps> = ({
   periodKey,
@@ -271,6 +395,11 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
   loading = false,
   className = '',
   singleAccountSelected = false,
+  outcomeSeries = [],
+  pnlDisplayMode = 'net',
+  dateFormat = 'EU',
+  timezone = 'UTC',
+  numberFormat = 'comma',
 }) => {
   const { t } = useTranslation();
   const { preferences } = usePreferences();
@@ -302,7 +431,7 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
     return (
       <div className={clsx(DASHBOARD_PANEL_SHELL_CLASS, className)}>
         <div className="mb-3 h-5 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-700 sm:mb-4" />
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
           {PERIOD_KEYS.map((key) => (
             <div
               key={key}
@@ -315,6 +444,11 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
             </div>
           </div>
         ))}
+          <div className={clsx(DASHBOARD_INNER_CARD_CLASS, 'animate-pulse p-4')}>
+            <div className="mb-3 h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="mb-3 h-8 w-20 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-5 w-full rounded bg-gray-200 dark:bg-gray-700" />
+          </div>
       </div>
       </div>
     );
@@ -341,7 +475,7 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
           })}
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {PERIOD_KEYS.map((key) => {
           const entry = data[key];
           if (!entry) return null;
@@ -357,6 +491,15 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
           />
           );
         })}
+        <OutcomeSeriesCard
+          series={outcomeSeries}
+          currencySymbol={displayCurrencySymbol}
+          pnlDisplayMode={pnlDisplayMode}
+          numberFormat={numberFormat}
+          dateFormat={dateFormat}
+          timezone={timezone}
+          hideMoney={hideMoney}
+        />
       </div>
     </section>
   );

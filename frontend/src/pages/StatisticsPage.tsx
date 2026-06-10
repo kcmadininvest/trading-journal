@@ -323,8 +323,27 @@ function StatisticsPage() {
       formatVolume,
       formatRatio,
       hideMoney: privacySettings.hideProfitLoss,
+      filteredTrades,
+      pnlDisplayMode,
+      dateFormat: preferences.date_format,
+      timezone: preferences.timezone,
+      numberFormat: preferences.number_format,
     }),
-  [statisticsData, analyticsData, currencySymbol, formatCurrency, formatNumber, formatVolume, formatRatio, privacySettings.hideProfitLoss],
+  [
+    statisticsData,
+    analyticsData,
+    currencySymbol,
+    formatCurrency,
+    formatNumber,
+    formatVolume,
+    formatRatio,
+    privacySettings.hideProfitLoss,
+    filteredTrades,
+    pnlDisplayMode,
+    preferences.date_format,
+    preferences.timezone,
+    preferences.number_format,
+  ],
   );
 
   if (hasError) {

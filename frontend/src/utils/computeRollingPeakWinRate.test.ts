@@ -1,4 +1,5 @@
 import {
+  buildTradeOutcomeSeries,
   computeRollingPeakWinRate,
   computeTrailingWinRate,
   getTradePnlOutcome,
@@ -145,5 +146,42 @@ describe('usesRecentWinRateRing', () => {
     expect(usesRecentWinRateRing('allTime')).toBe(true);
     expect(usesRecentWinRateRing('last3Months')).toBe(true);
     expect(usesRecentWinRateRing('rollingYear')).toBe(true);
+  });
+});
+
+describe('buildTradeOutcomeSeries', () => {
+  it('retourne la série chronologique W/L/B', () => {
+    const rows = [
+      trade('b', '2025-01-03T10:00:00Z', '10'),
+      trade('a', '2025-01-01T10:00:00Z', '-5'),
+      trade('c', '2025-01-02T10:00:00Z', '0'),
+    ];
+    expect(buildTradeOutcomeSeries(rows, 'net').map((item) => item.letter)).toEqual(['L', 'B', 'W']);
+  });
+
+  it('respecte le mode brut vs net', () => {
+    const row = trade('g', '2025-01-01T10:00:00Z', '0', '50');
+    expect(buildTradeOutcomeSeries([row], 'gross').map((item) => item.letter)).toEqual(['W']);
+    expect(buildTradeOutcomeSeries([row], 'net').map((item) => item.letter)).toEqual(['B']);
+  });
+
+  it('limite aux N derniers trades en mode tail', () => {
+    const rows = [
+      trade('1', '2025-01-01T10:00:00Z', '10'),
+      trade('2', '2025-01-02T10:00:00Z', '-5'),
+      trade('3', '2025-01-03T10:00:00Z', '10'),
+      trade('4', '2025-01-04T10:00:00Z', '-5'),
+    ];
+    expect(
+      buildTradeOutcomeSeries(rows, 'net', { limit: 2, tail: true }).map((item) => item.letter),
+    ).toEqual(['W', 'L']);
+  });
+
+  it('retourne toute la série sans limite', () => {
+    const rows = [
+      trade('1', '2025-01-01T10:00:00Z', '10'),
+      trade('2', '2025-01-02T10:00:00Z', '-5'),
+    ];
+    expect(buildTradeOutcomeSeries(rows, 'net').map((item) => item.letter)).toEqual(['W', 'L']);
   });
 });

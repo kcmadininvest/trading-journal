@@ -8,6 +8,8 @@
   "winRatePeriodPeakTooltip": "Best win rate on a rolling window of {{count}} consecutive trades during the period. The orange ring shows this peak when it is above your current period rate.",
   "winRateRecentWindowTooltip": "Main figure: win rate over the full selected period.\nOrange figure: win rate on your last {{count}} trades within this period only.",
   "winRateRecentLegend": "Black = period · Orange = last {{count}} trades",
+  "recentOutcomeSeries": "Recent form (last {{count}} trades)",
+  "recentOutcomeSeriesTooltip": "Results of your last {{count}} trades, oldest (left) to most recent (right). Independent of the period filter above.",
   "avgWinning": "Avg Winning",
   "avgLosing": "Avg Losing",
   "objective": "Objective",
@@ -214,7 +216,10 @@
     "noPriorYearAnywhere": "No trades in {{year}}",
     "changePctUnavailableTooltip": "Change not available: previous period had no PnL.",
     "returnOnCapital": "{{pct}} on capital",
-    "returnOnCapitalTooltip": "Period PnL as a percentage of initial capital for the displayed account(s). Amounts use the default currency from Settings."
+    "returnOnCapitalTooltip": "Period PnL as a percentage of initial capital for the displayed account(s). Amounts use the default currency from Settings.",
+    "outcomeSeries": "Recent form",
+    "outcomeSeriesSummary": "{{wins}}W · {{losses}}L · {{breakEvens}}BE",
+    "outcomeSeriesEmpty": "No recent trades"
   },
   "marketQuotes": {
     "title": "Live market prices",

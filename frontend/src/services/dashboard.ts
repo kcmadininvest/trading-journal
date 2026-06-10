@@ -55,6 +55,8 @@ export interface DashboardSummary {
   active_days?: number;
   count: number;
   period_performance?: PeriodPerformance;
+  /** 20 derniers trades (hors filtre de période), aligné sur period_performance. */
+  recent_trades?: any[];
   balance_context?: DashboardBalanceContext;
 }
 

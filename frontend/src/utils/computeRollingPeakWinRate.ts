@@ -98,3 +98,50 @@ export function resolveWinRateRingSecondary(
     mode: 'recent',
   };
 }
+
+export type TradeOutcomeLetter = 'W' | 'L' | 'B';
+
+export interface TradeOutcomeSeriesItem {
+  letter: TradeOutcomeLetter;
+  trade: TradeForWinRate;
+}
+
+function outcomeToLetter(outcome: TradePnlOutcome): TradeOutcomeLetter {
+  if (outcome === 'win') return 'W';
+  if (outcome === 'loss') return 'L';
+  return 'B';
+}
+
+export interface BuildTradeOutcomeSeriesOptions {
+  /** Nombre max d'éléments à conserver. */
+  limit?: number;
+  /** Si true (défaut quand limit est défini), garde les N derniers trades. */
+  tail?: boolean;
+}
+
+/**
+ * Série chronologique W/L/B alignée sur le P/L affiché (net ou brut).
+ * Ordre : plus ancien → plus récent (gauche → droite).
+ */
+export function buildTradeOutcomeSeries(
+  trades: TradeForWinRate[],
+  pnlDisplayMode: PnlDisplayMode,
+  options?: BuildTradeOutcomeSeriesOptions,
+): TradeOutcomeSeriesItem[] {
+  const ordered = orderTradesChronologically(trades);
+
+  const series: TradeOutcomeSeriesItem[] = [];
+  for (const trade of ordered) {
+    const outcome = getTradePnlOutcome(trade, pnlDisplayMode);
+    if (outcome == null) continue;
+    series.push({ letter: outcomeToLetter(outcome), trade });
+  }
+
+  const limit = options?.limit;
+  if (limit == null || limit <= 0 || series.length <= limit) {
+    return series;
+  }
+
+  const tail = options?.tail ?? true;
+  return tail ? series.slice(-limit) : series.slice(0, limit);
+}

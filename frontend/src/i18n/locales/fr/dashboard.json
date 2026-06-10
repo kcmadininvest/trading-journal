@@ -8,6 +8,8 @@
   "winRatePeriodPeakTooltip": "Meilleur win rate sur une fenêtre de {{count}} trades consécutifs dans la période. L’anneau orange indique ce pic lorsqu’il dépasse le taux actuel de la période.",
   "winRateRecentWindowTooltip": "Chiffre principal : win rate sur toute la période sélectionnée.\nChiffre orange : win rate sur vos {{count}} derniers trades de cette période uniquement.",
   "winRateRecentLegend": "Noir = période · Orange = {{count}} derniers trades",
+  "recentOutcomeSeries": "Forme récente ({{count}} derniers trades)",
+  "recentOutcomeSeriesTooltip": "Résultats de vos {{count}} derniers trades, du plus ancien (gauche) au plus récent (droite). Indépendant du filtre de période ci-dessus.",
   "avgWinning": "Avg Gagnant",
   "avgLosing": "Avg Perdant",
   "objective": "Objectif",
@@ -215,7 +217,10 @@
     "noPriorYearAnywhere": "Aucun trade en {{year}}",
     "changePctUnavailableTooltip": "Évolution non calculable : la période précédente n'a pas de PnL.",
     "returnOnCapital": "{{pct}} sur capital",
-    "returnOnCapitalTooltip": "Rendement du PnL de la période rapporté au capital initial du (des) compte(s) affiché(s). Les montants utilisent la devise par défaut définie dans les paramètres."
+    "returnOnCapitalTooltip": "Rendement du PnL de la période rapporté au capital initial du (des) compte(s) affiché(s). Les montants utilisent la devise par défaut définie dans les paramètres.",
+    "outcomeSeries": "Forme récente",
+    "outcomeSeriesSummary": "{{wins}}G · {{losses}}P · {{breakEvens}}BE",
+    "outcomeSeriesEmpty": "Aucun trade récent"
   },
   "marketQuotes": {
     "title": "Cours marché en direct",

@@ -8,6 +8,8 @@
   "winRatePeriodPeakTooltip": "Beste Gewinnrate auf einem gleitenden Fenster von {{count}} aufeinanderfolgenden Trades in der Periode. Der orangefarbene Ring zeigt diesen Höchstwert, wenn er über dem aktuellen Periodenwert liegt.",
   "winRateRecentWindowTooltip": "Hauptwert: Gewinnrate über die gewählte Periode.\nOrangefarbener Wert: Gewinnrate nur auf Ihre letzten {{count}} Trades innerhalb dieser Periode.",
   "winRateRecentLegend": "Schwarz = Periode · Orange = letzte {{count}} Trades",
+  "recentOutcomeSeries": "Aktuelle Form (letzte {{count}} Trades)",
+  "recentOutcomeSeriesTooltip": "Ergebnisse Ihrer letzten {{count}} Trades, vom ältesten (links) zum neuesten (rechts). Unabhängig vom Periodenfilter oben.",
   "avgWinning": "Durchschn. Gewinn",
   "avgLosing": "Durchschn. Verlust",
   "objective": "Ziel",
@@ -215,7 +217,10 @@
     "noPriorYearAnywhere": "Keine Trades in {{year}}",
     "changePctUnavailableTooltip": "Entwicklung nicht berechenbar: Vorperiode ohne PnL.",
     "returnOnCapital": "{{pct}} auf Kapital",
-    "returnOnCapitalTooltip": "Perioden-PnL in Prozent des Anfangskapitals der angezeigten Konten. Beträge nutzen die Standardwährung aus den Einstellungen."
+    "returnOnCapitalTooltip": "Perioden-PnL in Prozent des Anfangskapitals der angezeigten Konten. Beträge nutzen die Standardwährung aus den Einstellungen.",
+    "outcomeSeries": "Aktuelle Form",
+    "outcomeSeriesSummary": "{{wins}}G · {{losses}}V · {{breakEvens}}BE",
+    "outcomeSeriesEmpty": "Keine aktuellen Trades"
   },
   "marketQuotes": {
     "title": "Live-Marktpreise",

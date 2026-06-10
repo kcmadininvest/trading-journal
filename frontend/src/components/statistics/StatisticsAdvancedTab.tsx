@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MetricCard, MetricItem } from './MetricCard';
 import { MetricGauge, GAUGE_CONFIGS } from './MetricGauge';
 import { STATS_GRID } from './statisticsConstants';
 import type { StatisticsTabBaseProps } from './statisticsTypes';
+import { buildTradeOutcomeSeries } from '../../utils/computeRollingPeakWinRate';
+import { StatisticsOutcomeSeriesCard } from './StatisticsOutcomeSeriesCard';
+import { WIN_RATE_ROLLING_WINDOW } from '../../utils/tradingSampleThresholds';
 
 export const StatisticsAdvancedTab: React.FC<StatisticsTabBaseProps> = ({
   statisticsData,
@@ -12,8 +15,22 @@ export const StatisticsAdvancedTab: React.FC<StatisticsTabBaseProps> = ({
   formatCurrency,
   formatNumber,
   hideMoney = false,
+  filteredTrades = [],
+  pnlDisplayMode = 'net',
+  dateFormat = 'EU',
+  timezone = 'UTC',
+  numberFormat = 'comma',
 }) => {
   const { t } = useTranslation();
+
+  const recentOutcomeSeries = useMemo(
+    () =>
+      buildTradeOutcomeSeries(filteredTrades, pnlDisplayMode, {
+        limit: WIN_RATE_ROLLING_WINDOW,
+        tail: true,
+      }),
+    [filteredTrades, pnlDisplayMode],
+  );
 
   const displayCurrency = (value: number) =>
     hideMoney ? '***' : formatCurrency(value, currencySymbol);
@@ -178,6 +195,16 @@ export const StatisticsAdvancedTab: React.FC<StatisticsTabBaseProps> = ({
             tooltip={t('statistics:advancedAnalysis.consecutiveLossesGlobalTooltip')}
           />
         </MetricCard>
+
+        <StatisticsOutcomeSeriesCard
+          series={recentOutcomeSeries}
+          currencySymbol={currencySymbol}
+          pnlDisplayMode={pnlDisplayMode}
+          numberFormat={numberFormat}
+          dateFormat={dateFormat}
+          timezone={timezone}
+          hideMoney={hideMoney}
+        />
       </div>
 
       <div>
