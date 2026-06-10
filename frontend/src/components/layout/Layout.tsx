@@ -23,7 +23,7 @@ const Layout: React.FC<LayoutProps> = ({
   topBanner,
   lockedPremiumPages,
   billingStatusLabel,
-  premiumRestrictionsEnabled = true,
+  premiumRestrictionsEnabled = false,
   children,
 }) => {
   return (

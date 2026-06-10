@@ -69,6 +69,27 @@
   "journalOverwriteTitle": "Remplacer le journal",
   "journalOverwriteConfirm": "Un journal existe déjà pour cette date. Remplacer son contenu par le brouillon généré ?",
   "journalOverwriteReplace": "Remplacer",
+  "journalDraft": {
+    "title": "Session du {{date}}",
+    "account": "Compte",
+    "closedTrades": "Trades fermés",
+    "netPnl": "PnL net session",
+    "maxDrawdown": "Drawdown intraday max",
+    "eventCount": "Événements",
+    "tradesSection": "Trades",
+    "bestTrade": "Meilleur trade",
+    "worstTrade": "Pire trade",
+    "alertsSection": "Points d'attention",
+    "timelineSection": "Chronologie (résumé)",
+    "timelineLine": "- {{time}} — {{label}}",
+    "timelineLineWithContract": "- {{time}} — {{label}} ({{contract}})",
+    "footer": "Généré automatiquement par le replay de session.",
+    "severity": {
+      "info": "INFO",
+      "warning": "ATTENTION",
+      "error": "ERREUR"
+    }
+  },
   "tradeCount": "Trades",
   "netPnl": "PnL net",
   "eventCount": "Événements",
@@ -136,5 +157,13 @@
     "loss_streak": "Série de pertes",
     "mll_pressure": "Pression MLL",
     "orphan_fill": "Fill orphelin"
+  },
+  "insightMessages": {
+    "overtrading": "{{tradeCount}} round-trips sur la session (seuil {{limit}}).",
+    "revenge_trade": "Nouvelle position {{minutes}} min après une perte ({{pnl}}).",
+    "oversize": "Taille {{size}} > {{multiplier}}× la médiane récente ({{median}}).",
+    "loss_streak": "{{streak}} pertes consécutives.",
+    "mll_pressure": "PnL session ({{pnl}}) proche du MLL ({{mll}}).",
+    "orphan_fill": "Clôture sans entrée appariée dans la session."
   }
 }

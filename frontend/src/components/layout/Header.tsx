@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({
   onLogout,
   lockedPremiumPages = new Set(),
   billingStatusLabel = null,
-  premiumRestrictionsEnabled = true,
+  premiumRestrictionsEnabled = false,
 }) => {
   const { t, i18n } = useI18nTranslation();
   const { mergePreferences } = usePreferences();

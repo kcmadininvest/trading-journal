@@ -13,8 +13,8 @@ Ce guide explique comment déployer les releases stables de la branche `main` ve
 
 - **Serveur**: 185.217.126.243
 - **Répertoire**: `/var/www/html/trading_journal/`
-- **URL Production**: https://app.kcmadininvest.fr
-- **URL API**: https://app.kcmadininvest.fr/api
+- **URL Production**: https://app.example.com
+- **URL API**: https://app.example.com/api
 
 ## 🔧 Prérequis
 
@@ -30,7 +30,7 @@ Ce guide explique comment déployer les releases stables de la branche `main` ve
 Le fichier `.env.production` doit contenir les variables suivantes dans `/var/www/html/trading_journal/frontend/`:
 
 ```env
-REACT_APP_API_URL=https://app.kcmadininvest.fr/api
+REACT_APP_API_URL=https://app.example.com/api
 REACT_APP_ENVIRONMENT=production
 ```
 
@@ -95,7 +95,7 @@ rm -f /var/www/html/trading_journal/frontend/src/services/api.ts
 ```bash
 cd /var/www/html/trading_journal/frontend
 cat > .env.production << EOF
-REACT_APP_API_URL=https://app.kcmadininvest.fr/api
+REACT_APP_API_URL=https://app.example.com/api
 REACT_APP_ENVIRONMENT=production
 EOF
 ```
@@ -179,12 +179,12 @@ systemctl status apache2
 
 2. **L'application est accessible**:
 ```bash
-curl -I https://app.kcmadininvest.fr
+curl -I https://app.example.com
 ```
 
 3. **L'API répond correctement**:
 ```bash
-curl -I https://app.kcmadininvest.fr/api/
+curl -I https://app.example.com/api/
 ```
 
 4. **Les fichiers sont bien déployés**:

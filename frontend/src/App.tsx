@@ -80,6 +80,16 @@ function App() {
     currentPageRef.current = currentPage;
   }, [currentPage]);
 
+  const loadAppSettings = React.useCallback(async () => {
+    try {
+      const data = await userService.getAppSettings();
+      setAppSettings(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des paramètres application:', error);
+      setAppSettings({ premium_restrictions_enabled: false });
+    }
+  }, []);
+
   useEffect(() => {
     // Vérifier l'authentification au chargement
     const checkAuth = async () => {
@@ -87,6 +97,7 @@ function App() {
         if (authService.isAuthenticated()) {
           const user = authService.getCurrentUser();
           setCurrentUser(user);
+          await loadAppSettings();
         }
       } catch (error) {
         console.error('Erreur lors de la vérification de l\'authentification:', error);
@@ -96,7 +107,7 @@ function App() {
     };
 
     checkAuth();
-  }, []);
+  }, [loadAppSettings]);
 
   // Déclencher l'onboarding "comptes de trading" pour les nouveaux utilisateurs
   useEffect(() => {
@@ -139,6 +150,9 @@ function App() {
     };
   }, [currentUser]);
 
+  const premiumRestrictionsEnabled = appSettings?.premium_restrictions_enabled === true;
+  const premiumRestrictionsSetting = appSettings?.premium_restrictions_enabled ?? true;
+
   const refreshBillingStatus = React.useCallback(async () => {
     if (!currentUser) {
       setBillingStatus(null);
@@ -157,22 +171,22 @@ function App() {
   }, [currentUser]);
 
   useEffect(() => {
+    if (!premiumRestrictionsEnabled) {
+      setBillingStatus(null);
+      setBillingError(null);
+      setBillingLoading(false);
+      return;
+    }
     refreshBillingStatus();
-  }, [refreshBillingStatus]);
+  }, [refreshBillingStatus, premiumRestrictionsEnabled]);
 
   const refreshAppSettings = React.useCallback(async () => {
     if (!currentUser) {
       setAppSettings(null);
       return;
     }
-    try {
-      const data = await userService.getAppSettings();
-      setAppSettings(data);
-    } catch (error) {
-      console.error('Erreur lors du chargement des paramètres application:', error);
-      setAppSettings({ premium_restrictions_enabled: true });
-    }
-  }, [currentUser]);
+    await loadAppSettings();
+  }, [currentUser, loadAppSettings]);
 
   useEffect(() => {
     refreshAppSettings();
@@ -190,8 +204,6 @@ function App() {
     window.addEventListener('app:settings-updated', handleAppSettingsUpdated);
     return () => window.removeEventListener('app:settings-updated', handleAppSettingsUpdated);
   }, [refreshAppSettings]);
-
-  const premiumRestrictionsEnabled = appSettings?.premium_restrictions_enabled ?? true;
 
   const hasPremiumAccess = React.useMemo(() => {
     if (!currentUser) return false;
@@ -342,15 +354,23 @@ function App() {
 
   // Gérer les événements de changement d'utilisateur - séparé pour éviter les conflits
   useEffect(() => {
-    const handleUserLogin = (event: any) => {
+    const handleUserLogin = async (event: any) => {
       const user = event.detail?.user;
-      if (user) {
-        setCurrentUser(user);
+      if (!user) return;
+      try {
+        const settings = await userService.getAppSettings();
+        setAppSettings(settings);
+      } catch (error) {
+        console.error('Erreur lors du chargement des paramètres application:', error);
+        setAppSettings({ premium_restrictions_enabled: false });
       }
+      setCurrentUser(user);
     };
 
     const handleUserLogout = () => {
       setCurrentUser(null);
+      setAppSettings(null);
+      setBillingStatus(null);
       setCurrentPage('home');
       window.location.hash = '';
     };
@@ -521,10 +541,11 @@ function App() {
             }
             return <CalculatorPage />;
           case 'billing':
-            return <BillingPage billingStatus={billingStatus} onSubscriptionChanged={refreshBillingStatus} />;
           case 'billing-success':
-            return <BillingPage billingStatus={billingStatus} onSubscriptionChanged={refreshBillingStatus} />;
           case 'billing-cancel':
+            if (!premiumRestrictionsEnabled) {
+              return <DashboardPage currentUser={currentUser} />;
+            }
             return <BillingPage billingStatus={billingStatus} onSubscriptionChanged={refreshBillingStatus} />;
           case 'subscription-required':
             return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -536,7 +557,7 @@ function App() {
           case 'settings':
             return (
               <SettingsPage
-                premiumRestrictionsEnabled={premiumRestrictionsEnabled}
+                premiumRestrictionsEnabled={premiumRestrictionsSetting}
                 onPremiumRestrictionsChange={async (enabled) => {
                   const updated = await userService.updateAppSettings({
                     premium_restrictions_enabled: enabled,

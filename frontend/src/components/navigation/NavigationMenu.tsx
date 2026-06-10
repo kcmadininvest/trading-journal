@@ -18,7 +18,7 @@ const NavigationMenu: React.FC<NavigationMenuProps> = ({
   currentPage,
   onNavigate,
   lockedPremiumPages = new Set(),
-  premiumRestrictionsEnabled = true,
+  premiumRestrictionsEnabled = false,
 }) => {
   const { t } = useI18nTranslation();
   const premiumBadge = t('billing:labels.premium');

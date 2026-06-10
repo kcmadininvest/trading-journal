@@ -17,6 +17,7 @@ import {
 import { needsMarketDataRefresh } from '../components/replay/marketTapeData';
 import { SessionStatePanel } from '../components/replay/SessionStatePanel';
 import { InsightsPanel } from '../components/replay/InsightsPanel';
+import { generateJournalDraft } from '../components/replay/generateJournalDraft';
 import { JournalDraftPanel } from '../components/replay/JournalDraftPanel';
 import {
   canNavigateSessionDate,
@@ -43,7 +44,7 @@ import {
   SessionInsightItem,
   TradingSessionReplay,
 } from '../services/sessionReplay';
-import { formatDateTimeShort, type DateFormatType } from '../utils/dateFormat';
+import { formatDateTimeShort, type DateFormatType, type LanguageType } from '../utils/dateFormat';
 import { formatCurrencyWithSign } from '../utils/numberFormat';
 
 const LOAD_DEBOUNCE_MS = 300;
@@ -500,11 +501,34 @@ const SessionReplayPage: React.FC = () => {
     void refreshSessionQuiet();
   }, [loadActiveDates, refreshSessionQuiet]);
 
+  const journalDraftContent = useMemo(() => {
+    if (!session) return '';
+    return generateJournalDraft({
+      session,
+      events,
+      insights,
+      t,
+      numberFormat: preferences.number_format,
+      dateFormat: (preferences.date_format || 'EU') as DateFormatType,
+      timezone: preferences.timezone || 'Europe/Paris',
+      language: (preferences.language?.split('-')[0] || 'fr') as LanguageType,
+    });
+  }, [
+    session,
+    events,
+    insights,
+    t,
+    preferences.number_format,
+    preferences.date_format,
+    preferences.timezone,
+    preferences.language,
+  ]);
+
   const applyJournalToSession = async (overwrite: boolean) => {
     if (!session) return;
     setApplyingJournal(true);
     try {
-      await sessionReplayService.applyJournal(session.id, overwrite);
+      await sessionReplayService.applyJournal(session.id, overwrite, journalDraftContent);
       toast.success(t('journalApplySuccess'));
       setShowOverwriteModal(false);
       cancelPendingRequests();
@@ -838,7 +862,7 @@ const SessionReplayPage: React.FC = () => {
           <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
             <InsightsPanel insights={insights} onJumpToTime={jumpToTime} />
             <JournalDraftPanel
-              content={session.journal_draft?.content || ''}
+              content={journalDraftContent}
               applied={journalApplied}
               loading={applyingJournal}
               onApply={handleApplyJournal}

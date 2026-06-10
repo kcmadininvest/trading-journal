@@ -1,6 +1,6 @@
 # 📋 Plan de Déploiement en Production - Trading Journal
 
-Basé sur l'analyse du projet, voici un plan complet pour déployer l'application Trading Journal sur votre serveur AlmaLinux 9 avec httpd et le domaine `app.kcmadininvest.fr`.
+Basé sur l'analyse du projet, voici un plan complet pour déployer l'application Trading Journal sur un serveur AlmaLinux 9 avec httpd. Remplacez `app.example.com` par votre domaine de production.
 
 ## 🎯 Vue d'ensemble du Projet
 
@@ -105,15 +105,15 @@ Configuration du fichier `.env` :
 # Django Configuration
 DEBUG=False
 SECRET_KEY=your-super-secret-key-change-this-in-production-$(openssl rand -base64 32)
-ALLOWED_HOSTS=app.kcmadininvest.fr,www.app.kcmadininvest.fr
-CORS_ALLOWED_ORIGINS=https://app.kcmadininvest.fr,https://www.app.kcmadininvest.fr
+ALLOWED_HOSTS=app.example.com,www.app.example.com
+CORS_ALLOWED_ORIGINS=https://app.example.com,https://www.app.example.com
 
 # Database Configuration (utilise le conteneur postgres17 existant)
 DB_ENGINE=django.db.backends.postgresql
 DB_NAME=trading_journal_prod
 DB_USER=postgres
 DB_PASSWORD=your-postgres-password
-DB_HOST=172.17.0.1
+DB_HOST=localhost
 DB_PORT=5432
 
 # Redis Configuration
@@ -123,7 +123,7 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 
 # Superuser Configuration
 DJANGO_SUPERUSER_USERNAME=admin
-DJANGO_SUPERUSER_EMAIL=admin@kcmadininvest.fr
+DJANGO_SUPERUSER_EMAIL=admin@example.com
 DJANGO_SUPERUSER_PASSWORD=your-secure-admin-password
 
 # Security Settings
@@ -199,7 +199,7 @@ cd /var/www/html/trading_journal/frontend
 
 # Configuration des variables d'environnement
 cat > .env.production << 'EOF'
-REACT_APP_API_URL=https://app.kcmadininvest.fr/api
+REACT_APP_API_URL=https://app.example.com/api
 REACT_APP_ENVIRONMENT=production
 EOF
 
@@ -217,8 +217,8 @@ sudo cp -r build/* /var/www/html/
 ```bash
 sudo tee /etc/httpd/conf.d/trading-journal.conf << 'EOF'
 <VirtualHost *:80>
-    ServerName app.kcmadininvest.fr
-    ServerAlias www.app.kcmadininvest.fr
+    ServerName app.example.com
+    ServerAlias www.app.example.com
     
     # Redirection vers HTTPS
     RewriteEngine On
@@ -227,13 +227,13 @@ sudo tee /etc/httpd/conf.d/trading-journal.conf << 'EOF'
 </VirtualHost>
 
 <VirtualHost *:443>
-    ServerName app.kcmadininvest.fr
-    ServerAlias www.app.kcmadininvest.fr
+    ServerName app.example.com
+    ServerAlias www.app.example.com
     
     # Configuration SSL (sera configurée par Let's Encrypt)
     SSLEngine on
-    SSLCertificateFile /etc/letsencrypt/live/app.kcmadininvest.fr/fullchain.pem
-    SSLCertificateKeyFile /etc/letsencrypt/live/app.kcmadininvest.fr/privkey.pem
+    SSLCertificateFile /etc/letsencrypt/live/app.example.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/app.example.com/privkey.pem
     
     # Headers de sécurité
     Header always set X-Frame-Options "SAMEORIGIN"
@@ -304,7 +304,7 @@ sudo dnf install -y certbot python3-certbot-apache
 
 #### 7.2 Obtenir le certificat SSL
 ```bash
-sudo certbot --apache -d app.kcmadininvest.fr -d www.app.kcmadininvest.fr
+sudo certbot --apache -d app.example.com -d www.app.example.com
 ```
 
 ### Phase 8 : Services Systemd
@@ -377,12 +377,12 @@ sudo tail -f /var/log/trading-journal/daphne.log
 #### 9.2 Tests de fonctionnement
 ```bash
 # Test de l'API
-curl -X GET https://app.kcmadininvest.fr/api/
+curl -X GET https://app.example.com/api/
 
 # Test de l'authentification
-curl -X POST https://app.kcmadininvest.fr/api/accounts/auth/login/ \
+curl -X POST https://app.example.com/api/accounts/auth/login/ \
   -H "Content-Type: application/json" \
-  -d '{"email": "admin@kcmadininvest.fr", "password": "your-password"}'
+  -d '{"email": "admin@example.com", "password": "your-password"}'
 ```
 
 ## 🔧 Scripts de Maintenance

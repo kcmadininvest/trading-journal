@@ -144,10 +144,14 @@ class TradingSessionReplayViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         overwrite = request.data.get('overwrite', False)
-        content = journal_draft_content_for_session(
-            session,
-            tz_name=_user_timezone_name(request),
-        )
+        content = request.data.get('content')
+        if not isinstance(content, str) or not content.strip():
+            content = journal_draft_content_for_session(
+                session,
+                tz_name=_user_timezone_name(request),
+            )
+        else:
+            content = content.strip()
         entry, created = DailyJournalEntry.objects.get_or_create(
             user=request.user,
             trading_account=session.trading_account,

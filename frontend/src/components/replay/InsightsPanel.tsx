@@ -1,7 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TFunction } from 'i18next';
+import { usePreferences } from '../../hooks/usePreferences';
 import { SessionInsightItem } from '../../services/sessionReplay';
+import { formatInsightMessage } from './insightMessage';
 import { replayPanelClass } from './replayStyles';
 
 interface InsightsPanelProps {
@@ -62,6 +64,7 @@ function RevengeSizeDetail({
 
 export const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights, onJumpToTime }) => {
   const { t } = useTranslation('replay');
+  const { preferences } = usePreferences();
 
   return (
     <div className={`${replayPanelClass} h-full flex flex-col`}>
@@ -84,7 +87,9 @@ export const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights, onJumpTo
                 <span className="font-medium text-gray-800 dark:text-gray-200">
                   {t(`insightCodes.${ins.code}`, { defaultValue: ins.code })}
                 </span>
-                <p className="text-gray-600 dark:text-gray-400 mt-0.5">{ins.message}</p>
+                <p className="text-gray-600 dark:text-gray-400 mt-0.5">
+                  {formatInsightMessage(ins, t, preferences.number_format)}
+                </p>
                 <RevengeSizeDetail insight={ins} t={t} />
               </button>
             </li>

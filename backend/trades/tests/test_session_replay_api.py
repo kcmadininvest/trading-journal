@@ -160,6 +160,13 @@ class SessionReplayApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertTrue(res.data.get('created'))
 
+    def test_apply_journal_uses_client_content_when_provided(self) -> None:
+        url = reverse('session-replay-apply-journal', kwargs={'pk': self.session.pk})
+        custom = '# Custom draft\n\n**Account** : TopStep'
+        res = self.client.post(url, {'content': custom}, format='json')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data.get('content'), custom)
+
     def test_timeline_planned_stop_loss_from_linked_trade(self) -> None:
         from datetime import datetime
         from zoneinfo import ZoneInfo

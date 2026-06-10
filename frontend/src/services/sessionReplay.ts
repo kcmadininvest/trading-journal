@@ -240,12 +240,20 @@ class SessionReplayService {
     return res.json();
   }
 
-  async applyJournal(sessionId: number, overwrite = false): Promise<{ entry_id: number; created: boolean }> {
+  async applyJournal(
+    sessionId: number,
+    overwrite = false,
+    content?: string,
+  ): Promise<{ entry_id: number; created: boolean }> {
+    const payload: { overwrite: boolean; content?: string } = { overwrite };
+    if (content?.trim()) {
+      payload.content = content.trim();
+    }
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/trades/replay/sessions/${sessionId}/apply-journal/`,
       {
         method: 'POST',
-        body: JSON.stringify({ overwrite }),
+        body: JSON.stringify(payload),
       },
     );
     if (res.status === 409) {
