@@ -82,7 +82,7 @@ export const TradeDurationPerformanceChart: React.FC<TradeDurationPerformanceCha
     () => getChartSvgFontSizes(preferences.font_size),
     [preferences.font_size],
   );
-  const winRateStroke = isDark ? '#e879f9' : '#c026d3';
+  const winRateStroke = '#10B981';
 
   const labels = useMemo(() => {
     if (chartKey !== 'sizePerformance') {

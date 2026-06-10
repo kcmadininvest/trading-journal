@@ -14,6 +14,7 @@ import {
   DASHBOARD_PANEL_SHELL_CLASS,
   DASHBOARD_PANEL_TITLE_CLASS,
   DASHBOARD_PNL_NEGATIVE_TEXT_CLASS,
+  DASHBOARD_PNL_NEUTRAL_TEXT_CLASS,
   DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
 } from './tickerShell';
 
@@ -48,7 +49,7 @@ function getPnLCardClasses(pnl: number): string {
 function getPnLTextClasses(pnl: number): string {
   if (pnl > 0) return DASHBOARD_PNL_POSITIVE_TEXT_CLASS;
   if (pnl < 0) return DASHBOARD_PNL_NEGATIVE_TEXT_CLASS;
-  return 'text-white/90';
+  return DASHBOARD_PNL_NEUTRAL_TEXT_CLASS;
 }
 
 function getChangeBadgeClasses(changePct: number): string {

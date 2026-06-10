@@ -162,7 +162,7 @@ export const CorrelationChart: React.FC<CorrelationChartProps> = ({
     [theme],
   );
 
-  const regressionStroke = theme === 'dark' ? '#e879f9' : '#c026d3';
+  const regressionStroke = '#10B981';
   const cellHoverStroke = theme === 'dark' ? '#e2e8f0' : '#1e293b';
 
   const handleCellEnter = useCallback((cell: DensityGridCell, event: React.MouseEvent) => {

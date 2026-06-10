@@ -67,6 +67,7 @@ export const DASHBOARD_PNL_NEGATIVE_BAR_BG = 'rgba(236, 72, 153, 0.8)';
 export const DASHBOARD_PNL_NEGATIVE_BAR_BORDER = '#ec4899';
 export const DASHBOARD_PNL_POSITIVE_TEXT_CLASS = 'text-blue-600 dark:text-blue-400';
 export const DASHBOARD_PNL_NEGATIVE_TEXT_CLASS = 'text-pink-600 dark:text-pink-400';
+export const DASHBOARD_PNL_NEUTRAL_TEXT_CLASS = 'text-gray-600 dark:text-gray-300';
 
 export function getDashboardPerformanceBadgeClasses(color?: string): string {
   switch (color) {
