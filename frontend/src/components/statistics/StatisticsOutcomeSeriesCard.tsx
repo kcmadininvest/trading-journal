@@ -22,7 +22,7 @@ export interface StatisticsOutcomeSeriesCardProps {
 
 const TOOLTIP_ICON = (
   <svg
-    className="block h-3.5 w-3.5 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
+    className="block h-4 w-4 shrink-0 cursor-help text-gray-400 dark:text-gray-500"
     fill="currentColor"
     viewBox="0 0 20 20"
     aria-hidden
