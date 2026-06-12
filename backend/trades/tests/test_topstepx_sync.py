@@ -1,5 +1,5 @@
 """Tests synchronisation TopStepX (insert-only, API mockée)."""
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
@@ -14,6 +14,7 @@ from accounts.models import User
 from integrations.credentials_crypto import encrypt_json
 from integrations.models import UserApiIntegration
 from trades.models import TopStepTrade, TradeSyncLog, TradingAccount
+from trades.replay.auto_build import ReplayAutoBuildSummary
 from trades.sync.topstepx_mapper import map_api_trades_to_parsed_rows, parse_api_timestamp
 from integrations.topstepx_accounts import resolve_projectx_account_id
 from trades.sync.topstepx_sync import TopStepXSyncService, SyncResult
@@ -304,6 +305,28 @@ class TopStepXTradeUpsertTests(TestCase):
         skipped = create_trade_from_parsed(self.user, self.account, self.parsed)
         self.assertIsNone(skipped)
 
+    def test_import_returns_created_trade_days(self) -> None:
+        tz = ZoneInfo('UTC')
+        parsed_day2 = {
+            **self.parsed,
+            'topstep_id': 'api-43',
+            'entered_at': datetime(2025, 8, 11, 16, 0, tzinfo=tz),
+            'exited_at': datetime(2025, 8, 11, 17, 0, tzinfo=tz),
+            'trade_day': date(2025, 8, 11),
+        }
+        result = import_parsed_trades(self.user, self.account, [self.parsed, parsed_day2])
+        self.assertEqual(result['created'], 2)
+        self.assertEqual(
+            result['created_trade_days'],
+            {date(2025, 8, 10), date(2025, 8, 11)},
+        )
+
+    def test_import_empty_trade_days_when_all_skipped(self) -> None:
+        create_trade_from_parsed(self.user, self.account, self.parsed)
+        result = import_parsed_trades(self.user, self.account, [self.parsed])
+        self.assertEqual(result['created'], 0)
+        self.assertEqual(result['created_trade_days'], set())
+
     def test_existing_trade_notes_preserved_on_skip(self) -> None:
         trade = TopStepTrade.objects.create(
             user=self.user,
@@ -327,6 +350,98 @@ class TopStepXTradeUpsertTests(TestCase):
         trade.refresh_from_db()
         self.assertEqual(trade.notes, 'Note utilisateur')
         self.assertEqual(trade.position_strategy, 'breakout')
+
+
+@override_settings(
+    INTEGRATIONS_CREDENTIALS_KEY='test-integrations-key-for-unit-tests-only',
+)
+class TopStepXSyncServiceReplayTests(TestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            email='sync-replay@example.com',
+            username='sync_replay',
+            password='testpass123',
+        )
+        self.account = TradingAccount.objects.create(
+            user=self.user,
+            name='TopStep Replay',
+            account_type='topstep',
+            broker_account_id='12345',
+            currency='USD',
+            status='active',
+        )
+        self.integration = UserApiIntegration.objects.create(
+            user=self.user,
+            provider='topstepx',
+            external_username='trader',
+            secrets_encrypted=encrypt_json({'api_key': 'key-123'}),
+            is_connected=True,
+        )
+        self.api_fills = [
+            {
+                'id': 9001,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2025-08-10T16:00:00.000Z',
+                'price': 25200.0,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': None,
+                'fees': 1.4,
+                'voided': False,
+            },
+            {
+                'id': 9002,
+                'contractId': 'CON.NQ',
+                'creationTimestamp': '2025-08-10T17:00:00.000Z',
+                'price': 25210.0,
+                'size': 1,
+                'side': 0,
+                'profitAndLoss': 200.0,
+                'fees': 1.4,
+                'voided': False,
+            },
+        ]
+
+    @patch('trades.replay.auto_build.build_replay_for_new_trade_days')
+    @patch('trades.sync.topstepx_sync.call_with_valid_session_token')
+    def test_sync_triggers_replay_build_when_trades_created(
+        self,
+        mock_call_token,
+        mock_build_replay,
+    ) -> None:
+        mock_call_token.return_value = (self.api_fills, timezone.now())
+        mock_build_replay.return_value = ReplayAutoBuildSummary(
+            built=1,
+            built_dates=['2025-08-10'],
+        )
+        mock_client = MagicMock()
+        service = TopStepXSyncService(client=mock_client)
+
+        result = service.sync_account(self.user, self.account)
+
+        self.assertEqual(result.created, 1)
+        self.assertIsNotNone(result.replay)
+        self.assertEqual(result.replay.built, 1)
+        mock_build_replay.assert_called_once()
+        trade_days = mock_build_replay.call_args.args[2]
+        self.assertIn(date(2025, 8, 10), trade_days)
+
+    @patch('trades.replay.auto_build.build_replay_for_new_trade_days')
+    @patch('trades.sync.topstepx_sync.call_with_valid_session_token')
+    def test_sync_skips_replay_build_when_no_trades_created(
+        self,
+        mock_call_token,
+        mock_build_replay,
+    ) -> None:
+        mock_call_token.return_value = ([], timezone.now())
+        mock_client = MagicMock()
+        service = TopStepXSyncService(client=mock_client)
+
+        result = service.sync_account(self.user, self.account)
+
+        self.assertEqual(result.created, 0)
+        self.assertIsNone(result.replay)
+        mock_build_replay.assert_not_called()
 
 
 @override_settings(

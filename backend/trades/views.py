@@ -274,7 +274,7 @@ class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 full_resync=full_resync,
             )
             status_payload = TopStepXSyncService().get_sync_status(account)
-            return Response({
+            payload = {
                 'message': 'Synchronisation terminée.',
                 'created': result.created,
                 'skipped': result.skipped,
@@ -282,7 +282,16 @@ class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 'last_sync_at': result.last_sync_at.isoformat(),
                 'errors': result.errors,
                 'status': status_payload,
-            })
+            }
+            if result.replay is not None:
+                payload['replay'] = {
+                    'built': result.replay.built,
+                    'failed': result.replay.failed,
+                    'skipped_cap': result.replay.skipped_cap,
+                    'built_dates': result.replay.built_dates,
+                    'failed_dates': result.replay.failed_dates,
+                }
+            return Response(payload)
         except ValueError as exc:
             payload: dict = {'error': str(exc)}
             error_code = getattr(exc, 'error_code', None)

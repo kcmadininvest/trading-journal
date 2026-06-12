@@ -1,6 +1,7 @@
 """Création idempotente de trades broker (CSV et API)."""
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal
 
 from django.db import transaction
@@ -44,14 +45,23 @@ def create_trade_from_parsed(user, trading_account, parsed: dict) -> TopStepTrad
 
 
 @transaction.atomic
-def import_parsed_trades(user, trading_account, parsed_rows: list[dict]) -> dict[str, int]:
+def import_parsed_trades(user, trading_account, parsed_rows: list[dict]) -> dict:
     created = 0
     skipped = 0
+    created_trade_days: set[date] = set()
     for parsed in parsed_rows:
-        if create_trade_from_parsed(user, trading_account, parsed):
+        trade = create_trade_from_parsed(user, trading_account, parsed)
+        if trade:
             created += 1
+            trade_day = trade.trade_day or parsed.get('trade_day')
+            if trade_day:
+                created_trade_days.add(trade_day)
         else:
             skipped += 1
     if created:
         _recalculate_mll_for_topstep_accounts([trading_account])
-    return {'created': created, 'skipped': skipped}
+    return {
+        'created': created,
+        'skipped': skipped,
+        'created_trade_days': created_trade_days,
+    }

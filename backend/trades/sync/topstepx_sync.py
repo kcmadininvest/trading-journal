@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.utils import timezone
 
@@ -21,6 +21,9 @@ from trades.models import TradeSyncLog, TradingAccount
 from .topstepx_mapper import map_api_trades_to_parsed_rows
 from .trade_upsert import import_parsed_trades
 
+if TYPE_CHECKING:
+    from trades.replay.auto_build import ReplayAutoBuildSummary
+
 
 DEFAULT_FIRST_SYNC_DAYS = 90
 SYNC_LOOKBACK_MARGIN = timedelta(days=1)
@@ -34,6 +37,7 @@ class SyncResult:
     errors: list[str]
     last_sync_at: datetime
     total_fetched: int
+    replay: 'ReplayAutoBuildSummary | None' = None
 
 
 class TopStepXSyncService:
@@ -124,6 +128,16 @@ class TopStepXSyncService:
         parsed_rows = map_api_trades_to_parsed_rows(api_trades)
         counts = import_parsed_trades(user, trading_account, parsed_rows)
 
+        from trades.replay.auto_build import build_replay_for_new_trade_days
+
+        replay_summary = None
+        if counts['created'] > 0:
+            replay_summary = build_replay_for_new_trade_days(
+                user,
+                trading_account,
+                counts['created_trade_days'],
+            )
+
         last_sync_at = now
         meta = self._get_broker_meta(trading_account)
         meta['last_sync_at'] = last_sync_at.isoformat()
@@ -147,6 +161,7 @@ class TopStepXSyncService:
             errors=errors,
             last_sync_at=last_sync_at,
             total_fetched=len(api_trades),
+            replay=replay_summary,
         )
 
     def _should_sync(self, trading_account: TradingAccount, integration) -> bool:
