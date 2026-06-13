@@ -80,7 +80,7 @@ export const formatCurrencyWithSign = (
     return '-';
   }
   
-  const sign = num > 0 ? '+' : (num < 0 ? '' : ''); // Pas de signe pour 0, + pour positif
+  const sign = num > 0 ? '+' : num < 0 ? '-' : '';
   const formatted = formatCurrency(Math.abs(num), currencySymbol, numberFormat, digits);
   
   if (formatted === '-') {

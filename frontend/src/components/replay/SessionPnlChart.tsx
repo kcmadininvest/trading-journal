@@ -16,7 +16,7 @@ import { SessionEventItem } from '../../services/sessionReplay';
 import { formatTime } from '../../utils/dateFormat';
 import { formatCurrencyWithSign, NumberFormatType } from '../../utils/numberFormat';
 import { buildPnlChartPoints } from './pnlChartData';
-import { replayPanelClass } from './replayStyles';
+import { getReplayPnlTextClass, replayPanelClass } from './replayStyles';
 
 interface SessionPnlChartProps {
   events: SessionEventItem[];
@@ -128,7 +128,7 @@ export const SessionPnlChart: React.FC<SessionPnlChartProps> = ({
                   return (
                     <div className="rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1.5 text-xs shadow-md">
                       <p className="text-gray-500 dark:text-gray-400">{row.timeLabel}</p>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      <p className={`font-semibold ${getReplayPnlTextClass(row.pnl)}`}>
                         {formatCurrencyWithSign(row.pnl, '', numberFormat, 2)}
                       </p>
                     </div>

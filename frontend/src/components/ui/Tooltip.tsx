@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 interface TooltipProps {
-  content: string;
+  content: React.ReactNode;
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
@@ -172,7 +172,11 @@ const Tooltip: React.FC<TooltipProps> = ({
               opacity: isPositioned ? 1 : 0,
             }}
           >
-            <span className={contentClassName}>{content}</span>
+            {typeof content === 'string' ? (
+              <span className={contentClassName}>{content}</span>
+            ) : (
+              <div className={contentClassName}>{content}</div>
+            )}
             <div className={getArrowClasses()} />
           </div>,
           document.body

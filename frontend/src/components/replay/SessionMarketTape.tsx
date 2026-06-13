@@ -7,6 +7,7 @@ import { usePreferences } from '../../hooks/usePreferences';
 import { SessionEventItem, SessionMarketData } from '../../services/sessionReplay';
 import { getStopLossLineTooltipText, getTapeMarkerTooltipText } from './eventDetail';
 import { buildTapeRenderModel, TapeMarker, TapePriceLine, TapeRenderModel } from './marketTapeData';
+import { formatCurrencyWithSign, NumberFormatType } from '../../utils/numberFormat';
 import {
   TAPE_VIEW_H,
   TAPE_VIEW_W,
@@ -25,8 +26,7 @@ import {
   TapeChartEntryMarkerGlyph,
   TapeExitMarkerGraphic,
 } from './marketTapeGlyphs';
-import { getMarketTapeTheme, MarketTapeTheme, replayCardClass } from './replayStyles';
-import { NumberFormatType } from '../../utils/numberFormat';
+import { getMarketTapeTheme, getReplayPnlTextClass, MarketTapeTheme, replayCardClass } from './replayStyles';
 
 interface SessionMarketTapeProps {
   marketData: SessionMarketData | null | undefined;
@@ -163,6 +163,35 @@ function hitPxClassForKind(kind: TapeMarker['kind']): string {
   }
 }
 
+const TapeMarkerTooltipContent: React.FC<{
+  marker: TapeMarker;
+  events: SessionEventItem[];
+  t: TFunction;
+  numberFormat: NumberFormatType;
+}> = ({ marker, events, t, numberFormat }) => {
+  const fullText = getTapeMarkerTooltipText(marker, t, numberFormat, events);
+  if (marker.kind !== 'exit' || marker.pnl == null || !Number.isFinite(marker.pnl)) {
+    return <>{fullText}</>;
+  }
+
+  const pnlLabel = t('eventDetail.pnl', {
+    defaultValue: 'PnL {{amount}}',
+    amount: formatCurrencyWithSign(marker.pnl, '', numberFormat, 2),
+  });
+  const idx = fullText.indexOf(pnlLabel);
+  if (idx === -1) {
+    return <>{fullText}</>;
+  }
+
+  return (
+    <>
+      {fullText.slice(0, idx)}
+      <span className={`font-semibold ${getReplayPnlTextClass(marker.pnl)}`}>{pnlLabel}</span>
+      {fullText.slice(idx + pnlLabel.length)}
+    </>
+  );
+};
+
 function lineSegmentBounds(
   line: TapePriceLine,
   model: TapeRenderModel,
@@ -252,7 +281,14 @@ const TapeMarkerHitLayer: React.FC<{
             style={pos}
           >
             <Tooltip
-              content={tooltip}
+              content={
+                <TapeMarkerTooltipContent
+                  marker={marker}
+                  events={events}
+                  t={t}
+                  numberFormat={numberFormat}
+                />
+              }
               position="top"
               delay={200}
               contentClassName="whitespace-pre-line block max-w-[240px]"

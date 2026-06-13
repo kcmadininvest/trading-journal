@@ -162,6 +162,7 @@ export function resolveEntryFillSize(
 export interface EventDetailOptions {
   sizeOverride?: number;
   contextEvents?: SessionEventItem[];
+  pnlOverride?: number;
 }
 
 function resolvePositionOpenSize(
@@ -269,8 +270,9 @@ export function getEventDetailText(
       const exit = pricePart(payload.exit_price, '@', numberFormat);
       if (size) parts.push(size);
       if (exit) parts.push(exit);
-      if (payload.pnl != null) {
-        const n = Number(payload.pnl);
+      if (payload.pnl != null || options?.pnlOverride != null) {
+        const rawPnl = options?.pnlOverride ?? payload.pnl;
+        const n = Number(rawPnl);
         if (Number.isFinite(n)) {
           parts.push(
             t('eventDetail.pnl', {
@@ -367,7 +369,9 @@ export function getTapeMarkerTooltipText(
     numberFormat,
     marker.kind === 'entry'
       ? { sizeOverride: marker.positionSize, contextEvents }
-      : undefined,
+      : marker.kind === 'exit' && marker.pnl != null
+        ? { pnlOverride: marker.pnl, contextEvents }
+        : { contextEvents },
   );
   const payload = evt.payload || {};
   const side = payload.trade_type != null ? String(payload.trade_type) : marker.side;
