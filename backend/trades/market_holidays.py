@@ -93,6 +93,15 @@ class MarketHolidaysService:
             return []
     
     @staticmethod
+    def _iter_holiday_rule_dates(rule_dates):
+        """Itère (date, nom) quelle que soit la forme renvoyée par exchange_calendars."""
+        if hasattr(rule_dates, 'items'):
+            yield from rule_dates.items()
+            return
+        for rule_date, name in rule_dates:
+            yield rule_date, name
+
+    @staticmethod
     def _get_holiday_name(calendar, holiday_date: date) -> str:
         """
         Récupère le nom d'un jour férié depuis le calendrier.
@@ -105,36 +114,41 @@ class MarketHolidaysService:
             Nom du jour férié ou nom générique
         """
         try:
-            # Essayer d'utiliser exchange_calendars pour obtenir le nom
-            if hasattr(calendar, 'calendar'):
-                xcal = calendar.calendar
-                if hasattr(xcal, 'regular_holidays'):
-                    # Vérifier chaque règle de jour férié
-                    for rule in xcal.regular_holidays:
-                        try:
-                            # Générer les dates pour cette règle
-                            rule_dates = rule.dates(
-                                pd.Timestamp(holiday_date.year, 1, 1),
-                                pd.Timestamp(holiday_date.year, 12, 31),
-                                return_name=True
-                            )
-                            # Chercher si notre date correspond
-                            for rule_date, name in rule_dates:
-                                if rule_date.date() == holiday_date:
-                                    return name
-                        except (AttributeError, ValueError, KeyError):
-                            continue
-                        except Exception as e:
-                            logger.debug(f"Erreur lors de la récupération du nom de règle: {str(e)}")
-                            continue
-                
-                # Vérifier les jours fériés ad-hoc
-                if hasattr(xcal, 'adhoc_holidays'):
-                    for adhoc_date, name in xcal.adhoc_holidays:
-                        if adhoc_date.date() == holiday_date:
-                            return name
-            
-            # Fallback: déterminer le nom basé sur des patterns communs
+            # pandas_market_calendars récent : regular_holidays sur l'instance directement
+            xcal = calendar.calendar if hasattr(calendar, 'calendar') else calendar
+            year_start = pd.Timestamp(holiday_date.year, 1, 1)
+            year_end = pd.Timestamp(holiday_date.year, 12, 31)
+
+            if hasattr(xcal, 'regular_holidays'):
+                rh = xcal.regular_holidays
+                rules = rh.rules if hasattr(rh, 'rules') else rh
+                for rule in rules:
+                    try:
+                        rule_dates = rule.dates(year_start, year_end, return_name=True)
+                        for rule_date, name in MarketHolidaysService._iter_holiday_rule_dates(
+                            rule_dates
+                        ):
+                            rd = rule_date.date() if hasattr(rule_date, 'date') else rule_date
+                            if rd == holiday_date:
+                                return str(name)
+                    except (AttributeError, ValueError, KeyError):
+                        continue
+                    except Exception as e:
+                        logger.debug(
+                            'Erreur lors de la récupération du nom de règle: %s', e
+                        )
+                        continue
+
+            if hasattr(xcal, 'adhoc_holidays'):
+                for entry in xcal.adhoc_holidays:
+                    if isinstance(entry, tuple) and len(entry) >= 2:
+                        adhoc_date, name = entry[0], entry[1]
+                    else:
+                        adhoc_date, name = entry, None
+                    ad = adhoc_date.date() if hasattr(adhoc_date, 'date') else adhoc_date
+                    if ad == holiday_date:
+                        return str(name) if name else 'Special Market Closure'
+
             return MarketHolidaysService._guess_holiday_name(holiday_date)
         except (AttributeError, ValueError) as e:
             logger.warning(f"Erreur lors de la récupération du nom du jour férié: {str(e)}")
@@ -160,7 +174,11 @@ class MarketHolidaysService:
         # Jours fériés fixes communs
         if month == 1 and day == 1:
             return "New Year's Day"
+        elif month == 6 and day == 19:
+            return "Juneteenth National Independence Day"
         elif month == 7 and day == 4:
+            return "Independence Day"
+        elif month == 7 and day == 3 and holiday_date.weekday() == 4:
             return "Independence Day"
         elif month == 12 and day == 25:
             return "Christmas Day"
