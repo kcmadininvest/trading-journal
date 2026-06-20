@@ -9,6 +9,22 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
+function loadEnvProduction() {
+  const envPath = path.join(__dirname, '..', '.env.production');
+  if (!fs.existsSync(envPath)) return;
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    const value = trimmed.slice(eq + 1).trim();
+    if (!process.env[key]) process.env[key] = value;
+  }
+}
+
+loadEnvProduction();
+
 const app = express();
 const PORT = 3001;
 
@@ -121,7 +137,7 @@ async function generatePrerenderedHTML(route, lang, query = '') {
     const currentSeo = pageSeo[lang] || pageSeo['en'] || seoDataByPage['/']['en'];
     
     // Forcer baseUrl à toujours être en HTTPS
-    const rawBaseUrl = process.env.REACT_APP_BASE_URL || 'https://app.kctradingjournal.com';
+    const rawBaseUrl = process.env.VITE_BASE_URL || 'https://app.kctradingjournal.com';
     const baseUrl = ensureHttps(rawBaseUrl);
     // URL canonique: la home canonique doit rester `/`
     const fullUrl = route === '/'

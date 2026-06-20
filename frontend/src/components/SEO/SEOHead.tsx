@@ -31,7 +31,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   };
   
   // Forcer baseUrl à toujours être en HTTPS
-  const rawBaseUrl = process.env.REACT_APP_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://app.kctradingjournal.com');
+  const rawBaseUrl = import.meta.env.VITE_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://app.kctradingjournal.com');
   const baseUrl = ensureHttps(rawBaseUrl);
   
   // Construire l'URL canonique en HTTPS.

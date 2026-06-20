@@ -191,9 +191,9 @@ STATICFILES_DIRS = []
 
 # En production, ajouter le répertoire build du frontend
 if not DEBUG:
-    frontend_static_dir = BASE_DIR.parent / 'frontend' / 'build' / 'static'
-    if frontend_static_dir.exists():
-        STATICFILES_DIRS.append(frontend_static_dir)
+    frontend_assets_dir = BASE_DIR.parent / 'frontend' / 'build' / 'assets'
+    if frontend_assets_dir.exists():
+        STATICFILES_DIRS.append(frontend_assets_dir)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

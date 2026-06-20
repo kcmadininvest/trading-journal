@@ -5,7 +5,7 @@ import { changeLanguage } from '../i18n/config';
 import i18n from '../i18n/config';
 
 const AboutPage: React.FC = () => {
-  const baseUrl = process.env.REACT_APP_BASE_URL || window.location.origin;
+  const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
   
   // URLs selon la langue
   const urlMap: Record<string, string> = {

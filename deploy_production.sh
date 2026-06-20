@@ -34,8 +34,9 @@ load_config() {
         API_URL="${API_URL:-https://app.kctradingjournal.com/api}"
         FRONTEND_URL="${FRONTEND_URL:-https://app.kctradingjournal.com}"
         ADMIN_URL="${ADMIN_URL:-https://app.kctradingjournal.com/admin}"
-        REACT_APP_API_URL="${REACT_APP_API_URL:-https://app.kctradingjournal.com/api}"
-        REACT_APP_ENVIRONMENT="${REACT_APP_ENVIRONMENT:-production}"
+VITE_API_URL="${VITE_API_URL:-https://app.kctradingjournal.com/api}"
+        VITE_BASE_URL="${VITE_BASE_URL:-https://app.kctradingjournal.com}"
+        VITE_ENVIRONMENT="${VITE_ENVIRONMENT:-production}"
     else
         # Charger les variables depuis le fichier de configuration
         # Ignorer les lignes de commentaires et les lignes vides
@@ -66,12 +67,13 @@ GIT_REPO_URL="${GIT_REPO_URL:-}"
 API_URL="${API_URL:-https://app.kctradingjournal.com/api}"
 FRONTEND_URL="${FRONTEND_URL:-https://app.kctradingjournal.com}"
 ADMIN_URL="${ADMIN_URL:-https://app.kctradingjournal.com/admin}"
-REACT_APP_API_URL="${REACT_APP_API_URL:-https://app.kctradingjournal.com/api}"
-REACT_APP_ENVIRONMENT="${REACT_APP_ENVIRONMENT:-production}"
+VITE_API_URL="${VITE_API_URL:-https://app.kctradingjournal.com/api}"
+VITE_BASE_URL="${VITE_BASE_URL:-https://app.kctradingjournal.com}"
+VITE_ENVIRONMENT="${VITE_ENVIRONMENT:-production}"
 
-# Variables pour les fichiers hashés (définies plus tard)
-JS_FILE=""
-CSS_FILE=""
+# Variables pour les assets Vite (définies après le build)
+VITE_JS_FILE=""
+VITE_CSS_FILE=""
 
 # Couleurs pour les messages
 RED='\033[0;31m'
@@ -357,21 +359,23 @@ info "Configuration du fichier .env.production..."
 if [ ! -f "$ENV_PRODUCTION" ]; then
     warn "Le fichier .env.production n'existe pas, création..."
     cat > "$ENV_PRODUCTION" << EOF
-REACT_APP_API_URL=${REACT_APP_API_URL}
-REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}
+VITE_API_URL=${VITE_API_URL}
+VITE_BASE_URL=${VITE_BASE_URL}
+VITE_ENVIRONMENT=${VITE_ENVIRONMENT}
 EOF
     info "✅ Fichier .env.production créé"
 else
     # Vérifier et mettre à jour le contenu si nécessaire
-    if ! grep -q "REACT_APP_API_URL=${REACT_APP_API_URL}" "$ENV_PRODUCTION"; then
-        warn "Mise à jour de REACT_APP_API_URL dans .env.production..."
+    if ! grep -q "VITE_API_URL=${VITE_API_URL}" "$ENV_PRODUCTION"; then
+        warn "Mise à jour de VITE_API_URL dans .env.production..."
         # Sauvegarder l'ancien fichier
         cp "$ENV_PRODUCTION" "$ENV_PRODUCTION.backup.$(date +%Y%m%d_%H%M%S)"
         
         # Créer le nouveau fichier avec les bonnes valeurs
         cat > "$ENV_PRODUCTION" << EOF
-REACT_APP_API_URL=${REACT_APP_API_URL}
-REACT_APP_ENVIRONMENT=${REACT_APP_ENVIRONMENT}
+VITE_API_URL=${VITE_API_URL}
+VITE_BASE_URL=${VITE_BASE_URL}
+VITE_ENVIRONMENT=${VITE_ENVIRONMENT}
 EOF
         info "✅ .env.production mis à jour"
     else
@@ -561,26 +565,16 @@ if [ -f "$TEMPLATE_FILE" ]; then
     cp "$TEMPLATE_FILE" "$BACKUP_DIR/index.html.backup.$(date +%Y%m%d_%H%M%S)" 2>/dev/null || true
 fi
 
-# Copier le nouveau template
+# Copier le nouveau template (Vite injecte déjà les hashes JS/CSS dans index.html)
 info "📝 Copie du nouveau template..."
 cp "$FRONTEND_DIR/build/index.html" "$TEMPLATE_FILE"
 
-# Extraire les noms de fichiers hashés du build
-info "🔍 Extraction des noms de fichiers hashés..."
-JS_FILE=$(ls "$FRONTEND_DIR/build/static/js/main."*.js 2>/dev/null | head -1 | xargs basename)
-CSS_FILE=$(ls "$FRONTEND_DIR/build/static/css/main."*.css 2>/dev/null | head -1 | xargs basename)
-
-if [ -z "$JS_FILE" ] || [ -z "$CSS_FILE" ]; then
-    warn "⚠️  Impossible de détecter les fichiers JS/CSS hashés, utilisation du template tel quel"
-else
-    info "📄 Fichiers détectés: JS=$JS_FILE, CSS=$CSS_FILE"
-    
-    # Mettre à jour le template avec les nouveaux noms de fichiers hashés
-    info "🔄 Mise à jour du template avec les nouveaux noms de fichiers..."
-    sed -i "s/main\.[a-f0-9]*\.js/$JS_FILE/g" "$TEMPLATE_FILE"
-    sed -i "s/main\.[a-f0-9]*\.css/$CSS_FILE/g" "$TEMPLATE_FILE"
-    info "✅ Template mis à jour avec les fichiers hashés"
+if [ -d "$FRONTEND_DIR/build/assets" ]; then
+    VITE_JS_FILE=$(ls "$FRONTEND_DIR/build/assets"/index-*.js 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
+    VITE_CSS_FILE=$(ls "$FRONTEND_DIR/build/assets"/index-*.css 2>/dev/null | head -1 | xargs basename 2>/dev/null || echo "")
+    info "📄 Assets Vite détectés: JS=${VITE_JS_FILE:-N/A}, CSS=${VITE_CSS_FILE:-N/A}"
 fi
+info "✅ Template copié avec les assets Vite référencés"
 
 # Copier les autres fichiers du template (manifest, favicon, logos)
 [ -f "$FRONTEND_DIR/build/manifest.json" ] && \cp -f "$FRONTEND_DIR/build/manifest.json" "$TEMPLATE_DIR/manifest.json"
@@ -597,15 +591,13 @@ fi
 # Créer les répertoires statiques Django s'ils n'existent pas
 info "📁 Création des répertoires statiques Django..."
 STATICFILES_DIR="$BACKEND_DIR/staticfiles"
-mkdir -p "$STATICFILES_DIR/static/js"
-mkdir -p "$STATICFILES_DIR/static/css"
+mkdir -p "$STATICFILES_DIR/assets"
 mkdir -p "$STATICFILES_DIR/static/media" 2>/dev/null || true
 
-# Copier les autres fichiers statiques (images, fonts, etc.) avant collectstatic
-if [ -d "$FRONTEND_DIR/build/static/media" ]; then
-    mkdir -p "$STATICFILES_DIR/static/media"
-    cp -r "$FRONTEND_DIR/build/static/media/"* "$STATICFILES_DIR/static/media/" 2>/dev/null || true
-    info "✅ Fichiers média copiés"
+# Copier les assets Vite (chunks JS/CSS hashés) pour collectstatic / fallback
+if [ -d "$FRONTEND_DIR/build/assets" ]; then
+    cp -r "$FRONTEND_DIR/build/assets/"* "$STATICFILES_DIR/assets/" 2>/dev/null || true
+    info "✅ Assets Vite copiés"
 fi
 
 # Copier robots.txt et autres fichiers racine si présents
@@ -622,7 +614,7 @@ if [ -f "$FRONTEND_DIR/build/google"*.html ]; then
     fi
 fi
 
-info "✅ Fichiers statiques préparés (JS/CSS seront copiés après collectstatic)"
+info "✅ Fichiers statiques préparés (assets Vite servis via Apache /assets/)"
 
 # 8. 🔐 Vérification de la configuration WSGI
 info "Vérification de la configuration WSGI..."
@@ -719,34 +711,12 @@ info "Collecte des fichiers statiques Django..."
 python manage.py collectstatic --noinput
 info "✅ Fichiers statiques Django collectés"
 
-# 12b. 📋 Copier les fichiers JS/CSS du build React APRÈS collectstatic
-info "📋 Copie des fichiers JS/CSS du build React..."
-if [ -d "$FRONTEND_DIR/build/static/js" ]; then
-    # Nettoyer les anciens fichiers JS avant de copier les nouveaux
-    rm -f "$STATICFILES_DIR/static/js/main."*.js 2>/dev/null || true
-    # Copier explicitement le fichier JS détecté
-    if [ ! -z "$JS_FILE" ] && [ -f "$FRONTEND_DIR/build/static/js/$JS_FILE" ]; then
-        cp -f "$FRONTEND_DIR/build/static/js/$JS_FILE" "$STATICFILES_DIR/static/js/$JS_FILE" 2>/dev/null || true
-        info "✅ Fichier JS copié: $JS_FILE"
-    else
-        # Fallback: copier tous les fichiers JS
-        cp -f "$FRONTEND_DIR/build/static/js/"* "$STATICFILES_DIR/static/js/" 2>/dev/null || true
-        info "✅ Fichiers JS copiés"
-    fi
-fi
-
-if [ -d "$FRONTEND_DIR/build/static/css" ]; then
-    # Nettoyer les anciens fichiers CSS avant de copier les nouveaux
-    rm -f "$STATICFILES_DIR/static/css/main."*.css 2>/dev/null || true
-    # Copier explicitement le fichier CSS détecté
-    if [ ! -z "$CSS_FILE" ] && [ -f "$FRONTEND_DIR/build/static/css/$CSS_FILE" ]; then
-        cp -f "$FRONTEND_DIR/build/static/css/$CSS_FILE" "$STATICFILES_DIR/static/css/$CSS_FILE" 2>/dev/null || true
-        info "✅ Fichier CSS copié: $CSS_FILE"
-    else
-        # Fallback: copier tous les fichiers CSS
-        cp -f "$FRONTEND_DIR/build/static/css/"* "$STATICFILES_DIR/static/css/" 2>/dev/null || true
-        info "✅ Fichiers CSS copiés"
-    fi
+# 12b. 📋 Copier les assets Vite APRÈS collectstatic (fallback Django)
+info "📋 Synchronisation des assets Vite..."
+if [ -d "$FRONTEND_DIR/build/assets" ]; then
+    mkdir -p "$STATICFILES_DIR/assets"
+    cp -r "$FRONTEND_DIR/build/assets/"* "$STATICFILES_DIR/assets/" 2>/dev/null || true
+    info "✅ Assets Vite synchronisés"
 fi
 
 info "✅ Fichiers statiques synchronisés"
@@ -1066,9 +1036,9 @@ Commit court: ${CURRENT_COMMIT_SHORT:-"N/A"}
 ## Fichiers déployés
 - Frontend build: $FRONTEND_DIR/build/
 - Templates Django: $BACKEND_DIR/trading_journal_api/templates/
-- Fichiers statiques: $BACKEND_DIR/staticfiles/static/
-- JS: ${JS_FILE:-"N/A"}
-- CSS: ${CSS_FILE:-"N/A"}
+- Fichiers statiques: $BACKEND_DIR/staticfiles/assets/
+- JS: ${VITE_JS_FILE:-"N/A"}
+- CSS: ${VITE_CSS_FILE:-"N/A"}
 - Configuration: $ENV_PRODUCTION
 
 ## Vérifications
@@ -1107,10 +1077,10 @@ fi
 echo "📦 Fichiers déployés:"
 echo "   - Frontend build: $FRONTEND_DIR/build/"
 echo "   - Templates Django: $BACKEND_DIR/trading_journal_api/templates/"
-echo "   - Fichiers statiques: $BACKEND_DIR/staticfiles/static/"
-if [ ! -z "$JS_FILE" ] && [ ! -z "$CSS_FILE" ]; then
-    echo "   - JS: $JS_FILE"
-    echo "   - CSS: $CSS_FILE"
+echo "   - Fichiers statiques: $BACKEND_DIR/staticfiles/assets/"
+if [ ! -z "$VITE_JS_FILE" ] && [ ! -z "$VITE_CSS_FILE" ]; then
+    echo "   - JS: $VITE_JS_FILE"
+    echo "   - CSS: $VITE_CSS_FILE"
 fi
 echo "   - Configuration: $ENV_PRODUCTION"
 echo ""

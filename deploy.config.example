@@ -49,9 +49,12 @@ ADMIN_URL=https://your-domain.com/admin
 # CONFIGURATION DU FRONTEND
 # ============================================================================
 
-# URL de l'API pour le fichier .env.production
-REACT_APP_API_URL=https://your-domain.com/api
+# URL de base de l'application (sans trailing slash)
+VITE_BASE_URL=https://your-domain.com
 
-# Environnement React
-REACT_APP_ENVIRONMENT=production
+# URL de l'API pour le fichier .env.production
+VITE_API_URL=https://your-domain.com/api
+
+# Environnement frontend
+VITE_ENVIRONMENT=production
 

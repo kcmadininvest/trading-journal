@@ -16,7 +16,7 @@ describe('theme utils', () => {
   beforeEach(() => {
     mediaQueryListeners = new Set();
     mediaQueryMatches = false;
-    window.matchMedia = jest.fn().mockImplementation(() => ({
+    window.matchMedia = vi.fn().mockImplementation(() => ({
       get matches() {
         return mediaQueryMatches;
       },
@@ -99,7 +99,7 @@ describe('theme utils', () => {
 
   describe('subscribeSystemTheme', () => {
     it('notifie lors d’un changement OS', () => {
-      const onChange = jest.fn();
+      const onChange = vi.fn();
       const unsubscribe = subscribeSystemTheme(onChange);
 
       dispatchSystemThemeChange(true);

@@ -1,3 +1,5 @@
+@import './styles/progress-gradients.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,9 +36,6 @@
     padding-bottom: 1.5rem;
   }
 }
-
-/* Import progress gradients for CSP compliance */
-@import './styles/progress-gradients.css';
 
 /* Scrollbar styles for dark mode */
 .dark ::-webkit-scrollbar {

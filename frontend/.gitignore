@@ -10,6 +10,8 @@
 
 # production
 /build
+/build.cra.backup
+/node_modules.cra.backup
 
 # misc
 .DS_Store

@@ -141,7 +141,7 @@ const HomePage: React.FC = () => {
     window.location.reload();
   };
 
-  const baseUrl = process.env.REACT_APP_BASE_URL || window.location.origin;
+  const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;
   const currentUrl = `${baseUrl}${window.location.pathname}`;
   
   // Données SEO selon la langue

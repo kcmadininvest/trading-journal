@@ -16,7 +16,7 @@ import {
   type MonteCarloSimulationResult,
 } from '../utils/monteCarloSimulation';
 
-const WORKER_PATH = `${process.env.PUBLIC_URL || ''}/workers/dashboardCalculations.worker.js`;
+const WORKER_PATH = `${import.meta.env.BASE_URL}workers/dashboardCalculations.worker.js`;
 
 export interface MonteCarloExposureInputs {
   medianRiskUnits: number | null;

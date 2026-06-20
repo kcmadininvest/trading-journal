@@ -1432,7 +1432,7 @@ const PositionStrategiesPage: React.FC = () => {
                     onClick={() => handleView(strategy)}
                   >
                     <img
-                      src={strategy.example_screenshot.startsWith('http') ? strategy.example_screenshot : `${process.env.REACT_APP_API_URL?.replace(/\/api\/?$/, '')}${strategy.example_screenshot}`}
+                      src={strategy.example_screenshot.startsWith('http') ? strategy.example_screenshot : `${import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '')}${strategy.example_screenshot}`}
                       alt={strategy.title}
                       className="w-full h-auto object-contain hover:scale-105 transition-transform duration-200"
                     />
@@ -2320,7 +2320,7 @@ const PositionStrategiesPage: React.FC = () => {
                     <div className="relative group max-w-2xl mx-auto">
                       <div className="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
                         <img
-                          src={selectedStrategy.example_screenshot.startsWith('http') ? selectedStrategy.example_screenshot : `${process.env.REACT_APP_API_URL?.replace(/\/api\/?$/, '')}${selectedStrategy.example_screenshot}`}
+                          src={selectedStrategy.example_screenshot.startsWith('http') ? selectedStrategy.example_screenshot : `${import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '')}${selectedStrategy.example_screenshot}`}
                           alt={selectedStrategy.title}
                           className="w-full h-auto"
                         />
@@ -2331,7 +2331,7 @@ const PositionStrategiesPage: React.FC = () => {
                             onClick={() => {
                               const url = selectedStrategy.example_screenshot!.startsWith('http') 
                                 ? selectedStrategy.example_screenshot! 
-                                : `${process.env.REACT_APP_API_URL?.replace(/\/api\/?$/, '')}${selectedStrategy.example_screenshot}`;
+                                : `${import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '')}${selectedStrategy.example_screenshot}`;
                               window.open(url, '_blank', 'noopener,noreferrer');
                             }}
                             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-medium"

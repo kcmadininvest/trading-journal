@@ -83,15 +83,15 @@ export const getFullMediaUrl = (url: string | undefined | null): string => {
 
   // Si l'URL commence par /media/, construire l'URL complète avec le backend
   if (url.startsWith('/media/')) {
-    const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-    // Retirer /api si présent dans REACT_APP_API_URL
+    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    // Retirer /api si présent dans VITE_API_URL
     const baseUrl = apiBaseUrl.replace(/\/api\/?$/, '');
     return `${baseUrl}${url}`;
   }
 
   // Images signées (chemins relatifs /api/.../journal-images/ ou protected-screenshot)
   if (url.startsWith('/api/') && (url.includes('/journal-images/') || url.includes('/protected-screenshot'))) {
-    const apiBaseUrl = (process.env.REACT_APP_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+    const apiBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
     return `${apiBaseUrl}${url.startsWith('/') ? url : `/${url}`}`;
   }
 
