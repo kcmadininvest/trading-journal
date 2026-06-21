@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Chart } from 'chart.js';
 import { chartTooltipResetPlugin } from './plugins/chartTooltipResetPlugin';
 import './index.css';
@@ -7,6 +8,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { PreferencesProvider } from './hooks/usePreferences';
 import { TradingAccountProvider } from './contexts/TradingAccountContext';
+import { queryClient } from './lib/queryClient';
 import {
   applyAppFontFamily,
   getStoredAppFontFamily,
@@ -40,11 +42,13 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
-    <PreferencesProvider>
-      <TradingAccountProvider>
-        <App />
-      </TradingAccountProvider>
-    </PreferencesProvider>
+    <QueryClientProvider client={queryClient}>
+      <PreferencesProvider>
+        <TradingAccountProvider>
+          <App />
+        </TradingAccountProvider>
+      </PreferencesProvider>
+    </QueryClientProvider>
   </React.StrictMode>
 );
 

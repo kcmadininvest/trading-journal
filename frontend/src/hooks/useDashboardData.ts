@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { dashboardService, DashboardActivitySummary, DashboardSummary } from '../services/dashboard';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
+import { queryKeys } from '../lib/queryKeys';
 
 interface DashboardDataParams {
-  accountId: number | null;
+  accountId: number | null | undefined;
   startDate?: string;
   endDate?: string;
   loading?: boolean;
@@ -11,95 +12,80 @@ interface DashboardDataParams {
   pnlDisplay?: PnlDisplayMode;
 }
 
-export function useDashboardData({ accountId, startDate, endDate, loading, positionStrategy, pnlDisplay = 'net' }: DashboardDataParams) {
-  const [data, setData] = useState<DashboardSummary | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useDashboardData({
+  accountId,
+  startDate,
+  endDate,
+  loading,
+  positionStrategy,
+  pnlDisplay = 'net',
+}: DashboardDataParams) {
+  const enabled = !loading && accountId !== undefined;
 
-  const fetchData = useCallback(async () => {
-    // Don't fetch if the context is still loading (determining default account)
-    if (loading) {
-      return;
-    }
+  const query = useQuery<DashboardSummary>({
+    queryKey: queryKeys.dashboard.summary({
+      accountId,
+      startDate,
+      endDate,
+      positionStrategy,
+      pnlDisplay,
+    }),
+    queryFn: () =>
+      dashboardService.getSummary({
+        ...(accountId != null ? { trading_account: accountId } : {}),
+        ...(startDate ? { start_date: startDate } : {}),
+        ...(endDate ? { end_date: endDate } : {}),
+        ...(positionStrategy ? { position_strategy: positionStrategy } : {}),
+        pnl_display: pnlDisplay,
+      }),
+    enabled,
+    placeholderData: keepPreviousData,
+  });
 
-    // Don't fetch if accountId is explicitly undefined (not yet loaded)
-    if (accountId === undefined) {
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const filters: any = {};
-      // Always include trading_account filter if we have an accountId
-      if (accountId !== null) {
-        filters.trading_account = accountId;
-      }
-      if (startDate) filters.start_date = startDate;
-      if (endDate) filters.end_date = endDate;
-      if (positionStrategy) filters.position_strategy = positionStrategy;
-      filters.pnl_display = pnlDisplay;
-
-      const result = await dashboardService.getSummary(filters);
-      setData(result);
-    } catch (err: any) {
-      console.error('Error fetching dashboard data:', err);
-      setError(err?.message || 'Failed to load dashboard data');
-      setData(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [accountId, startDate, endDate, loading, positionStrategy, pnlDisplay]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  return { data, isLoading, error, refetch: fetchData };
+  return {
+    data: query.data ?? null,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error ? (query.error as Error).message : null,
+    refetch: query.refetch,
+  };
 }
 
-export function useDashboardActivitySummary({ accountId, startDate, endDate, loading, positionStrategy, pnlDisplay = 'net' }: DashboardDataParams) {
-  const [data, setData] = useState<DashboardActivitySummary | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function useDashboardActivitySummary({
+  accountId,
+  startDate,
+  endDate,
+  loading,
+  positionStrategy,
+  pnlDisplay = 'net',
+}: DashboardDataParams) {
+  const enabled = !loading && accountId !== undefined;
 
-  const fetchData = useCallback(async () => {
-    if (loading) {
-      return;
-    }
+  const query = useQuery<DashboardActivitySummary>({
+    queryKey: queryKeys.dashboard.activity({
+      accountId,
+      startDate,
+      endDate,
+      positionStrategy,
+      pnlDisplay,
+    }),
+    queryFn: () =>
+      dashboardService.getActivitySummary({
+        ...(accountId != null ? { trading_account: accountId } : {}),
+        ...(startDate ? { start_date: startDate } : {}),
+        ...(endDate ? { end_date: endDate } : {}),
+        ...(positionStrategy ? { position_strategy: positionStrategy } : {}),
+        pnl_display: pnlDisplay,
+      }),
+    enabled,
+    placeholderData: keepPreviousData,
+  });
 
-    if (accountId === undefined) {
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const filters: any = {};
-      if (accountId !== null) {
-        filters.trading_account = accountId;
-      }
-      if (startDate) filters.start_date = startDate;
-      if (endDate) filters.end_date = endDate;
-      if (positionStrategy) filters.position_strategy = positionStrategy;
-      filters.pnl_display = pnlDisplay;
-
-      const result = await dashboardService.getActivitySummary(filters);
-      setData(result);
-    } catch (err: any) {
-      console.error('Error fetching dashboard activity summary:', err);
-      setError(err?.message || 'Failed to load dashboard activity summary');
-      setData(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [accountId, startDate, endDate, loading, positionStrategy, pnlDisplay]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  return { data, isLoading, error, refetch: fetchData };
+  return {
+    data: query.data ?? null,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error ? (query.error as Error).message : null,
+    refetch: query.refetch,
+  };
 }

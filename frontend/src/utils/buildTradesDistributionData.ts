@@ -16,15 +16,19 @@ export function buildTradesDistributionData(
   t: TFunction,
   pnlDisplayMode: PnlDisplayMode
 ): TradesDistributionChartData | null {
-  if (!trades.length || !statisticsData) return null;
+  if (!statisticsData) return null;
 
-  const tradesWithZeroPnl = trades.filter((trade) => {
-    const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
-    if (pnl === null) return false;
-    return Math.abs(pnl) < 0.001;
-  }).length;
+  const tradesWithZeroPnl = trades.length
+    ? trades.filter((trade) => {
+        const pnl = getTradeDisplayPnlValue(trade, pnlDisplayMode);
+        if (pnl === null) return false;
+        return Math.abs(pnl) < 0.001;
+      }).length
+    : (statisticsData.break_even_zero_trades || 0);
 
-  const winningTradesWithoutTp = Math.max(0, (statisticsData.break_even_trades || 0) - tradesWithZeroPnl);
+  const winningTradesWithoutTp = trades.length
+    ? Math.max(0, (statisticsData.break_even_trades || 0) - tradesWithZeroPnl)
+    : (statisticsData.break_even_positive_trades || 0);
   const winners = Math.max(0, (statisticsData.winning_trades || 0) - winningTradesWithoutTp);
   const losers = statisticsData.losing_trades || 0;
   const neutral = statisticsData.break_even_trades || 0;

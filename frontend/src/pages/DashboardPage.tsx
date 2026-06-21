@@ -5,6 +5,7 @@ import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday, MarketTodaySnapshot } from '../services/calendar';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useDashboardPrefetch } from '../hooks/useDashboardPrefetch';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
@@ -264,7 +265,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const shouldLoadGlobalStats = windowWidth >= 1536; // 2xl breakpoint
   
   // Use consolidated dashboard data hook for optimized loading
-  const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError, refetch } = useDashboardData({
+  const { data: dashboardData, isLoading: dashboardLoading, isFetching: dashboardFetching, error: dashboardError, refetch } = useDashboardData({
     accountId,
     startDate: selectedPeriod?.start,
     endDate: selectedPeriod?.end,
@@ -282,6 +283,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     pnlDisplay: pnlDisplayMode,
   });
 
+  useDashboardPrefetch({
+    accountId,
+    positionStrategy: selectedPositionStrategy,
+    pnlDisplay: pnlDisplayMode,
+    enabled: !accountLoading && accountId !== undefined,
+  });
+
   // Extract data from consolidated response
   const trades = useMemo(() => dashboardData?.trades || [], [dashboardData]);
   const dailyAggregates = useMemo(() => dashboardData?.daily_aggregates || [], [dashboardData]);
@@ -294,7 +302,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }
     return strategiesMap;
   }, [dashboardData]);
-  const isLoading = dashboardLoading;
+  const isLoading = dashboardLoading && !dashboardData;
+  const isRefreshing = dashboardFetching && !!dashboardData;
   const error = dashboardError;
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
@@ -313,11 +322,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     if (!shouldLoadGlobalStats) {
       return;
     }
-    if (
-      globalStatsLoadStateRef.current === 'loading' ||
-      globalStatsLoadStateRef.current === 'done' ||
-      globalStatsLoadStateRef.current === 'failed'
-    ) {
+    if (globalStatsLoadStateRef.current === 'done') {
       return;
     }
 
@@ -358,6 +363,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
     return () => {
       cancelled = true;
+      // StrictMode (dev) remonte le composant : libérer l'état loading pour permettre le 2e fetch.
+      if (globalStatsLoadStateRef.current === 'loading') {
+        globalStatsLoadStateRef.current = 'idle';
+      }
     };
   }, [shouldLoadGlobalStats]);
 
@@ -1670,7 +1679,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           </div>
         </div>
       ) : (
-        <div className="mt-3 flex flex-col gap-6">
+        <div className={clsx('mt-3 flex flex-col gap-6', isRefreshing && 'opacity-70 transition-opacity')}>
+          {isRefreshing && (
+            <div className="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+              <div className="h-full w-1/3 animate-pulse rounded-full bg-sky-500" />
+            </div>
+          )}
           {/* Bloc Trader Performance + stat cards (pleine largeur) */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
           {/* Graphique 1: Métriques de trading (jauges circulaires) */}

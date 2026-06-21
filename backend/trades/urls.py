@@ -35,6 +35,7 @@ urlpatterns = [
     ),
     path('', include(router.urls)),
     path('dashboard-summary/', views.dashboard_summary, name='dashboard-summary'),
+    path('stats-bundle/', views.stats_bundle, name='stats-bundle'),
     path('dashboard-activity-summary/', views.dashboard_activity_summary, name='dashboard-activity-summary'),
     path('market-holidays/', views.market_holidays, name='market-holidays'),
     path('market-holidays/today/', views.market_holidays_today, name='market-holidays-today'),

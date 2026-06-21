@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { combineQueryLoadingStates } from '../hooks/useQueryLoadingState';
 import clsx from 'clsx';
 import { useWindowWidth } from '../hooks/useWindowWidth';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
@@ -122,14 +124,11 @@ const AnalyticsPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [showImport, setShowImport] = useState(false);
-  const [trades, setTrades] = useState<TradeListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   const [error, setError] = useState<string | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   // accountId vient maintenant du contexte global
   const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   const windowWidth = useWindowWidth();
 
   const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
@@ -194,65 +193,57 @@ const AnalyticsPage: React.FC = () => {
   }, [selectedAccount, currencies]);
 
 
-  useEffect(() => {
-    // Attendre que le compte soit chargé avant de charger les données
-    if (accountLoading) {
-      return;
-    }
+  const tradesQueryKey = useMemo(
+    () => ['analytics', 'trades', accountId, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy],
+    [accountId, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy],
+  );
 
-    const loadTrades = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const filters: any = {
-          trading_account: accountId ?? undefined,
-          page_size: 1000, // Récupérer beaucoup de trades pour les analyses
-        };
-
-        // Ajouter le filtre de date selon la période sélectionnée
-        if (selectedPeriod) {
-          filters.start_date = selectedPeriod.start;
-          filters.end_date = selectedPeriod.end;
-        } else if (selectedYear) {
-          // Rétrocompatibilité avec l'ancien système
-          const startDate = selectedMonth 
-            ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
-            : `${selectedYear}-01-01`;
-          
-          let endDate: string;
-          if (selectedMonth) {
-            // Calculer le dernier jour du mois sélectionné
-            const lastDay = new Date(selectedYear, selectedMonth, 0);
-            const year = lastDay.getFullYear();
-            const month = String(lastDay.getMonth() + 1).padStart(2, '0');
-            const day = String(lastDay.getDate()).padStart(2, '0');
-            endDate = `${year}-${month}-${day}`;
-          } else {
-            endDate = `${selectedYear}-12-31`;
-          }
-          
-          filters.start_date = startDate;
-          filters.end_date = endDate;
+  const {
+    data: trades = [],
+    isLoading: tradesLoading,
+    isFetching: tradesFetching,
+    error: tradesError,
+  } = useQuery({
+    queryKey: tradesQueryKey,
+    queryFn: async () => {
+      const filters: Record<string, unknown> = {
+        trading_account: accountId ?? undefined,
+        page_size: 1000,
+      };
+      if (selectedPeriod) {
+        filters.start_date = selectedPeriod.start;
+        filters.end_date = selectedPeriod.end;
+      } else if (selectedYear) {
+        const startDate = selectedMonth
+          ? `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`
+          : `${selectedYear}-01-01`;
+        let endDate: string;
+        if (selectedMonth) {
+          const lastDay = new Date(selectedYear, selectedMonth, 0);
+          endDate = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+        } else {
+          endDate = `${selectedYear}-12-31`;
         }
-        
-        if (selectedPositionStrategy) {
-          filters.position_strategy = selectedPositionStrategy;
-        }
-
-        const response = await tradesService.list(filters);
-        
-        // Les filtres sont déjà appliqués côté serveur, pas besoin de filtrer à nouveau
-        setTrades(response.results);
-      } catch (err) {
-        setError(t('analytics:errorLoadingData'));
-        console.error(err);
-      } finally {
-        setIsLoading(false);
+        filters.start_date = startDate;
+        filters.end_date = endDate;
       }
-    };
+      if (selectedPositionStrategy) {
+        filters.position_strategy = selectedPositionStrategy;
+      }
+      const response = await tradesService.list(filters);
+      return response.results;
+    },
+    enabled: !accountLoading,
+    placeholderData: keepPreviousData,
+  });
 
-    loadTrades();
-  }, [accountId, selectedPeriod, selectedYear, selectedMonth, selectedPositionStrategy, accountLoading, t]);
+  useEffect(() => {
+    if (tradesError) {
+      setError(t('analytics:errorLoadingData'));
+    } else {
+      setError(null);
+    }
+  }, [tradesError, t]);
 
   const {
     balanceLoading,
@@ -268,7 +259,7 @@ const AnalyticsPage: React.FC = () => {
   });
 
   // Récupérer les statistiques pour le graphique radar
-  const { data: statisticsData, isLoading: statisticsLoading } = useStatistics(
+  const { data: statisticsData, isLoading: statisticsLoading, isFetching: statisticsFetching } = useStatistics(
     accountLoading ? undefined : accountId,
     selectedPeriod ? null : selectedYear,
     selectedPeriod ? null : selectedMonth,
@@ -1456,13 +1447,25 @@ const AnalyticsPage: React.FC = () => {
     },
   ];
 
-  // Afficher le skeleton pendant le chargement initial pour une expérience uniforme
-  if (accountLoading || isLoading || statisticsLoading) {
+  const { isInitialLoading, isRefreshing } = combineQueryLoadingStates([
+    { isLoading: accountLoading, isFetching: false, data: !accountLoading },
+    { isLoading: tradesLoading, isFetching: tradesFetching, data: trades },
+    { isLoading: statisticsLoading, isFetching: statisticsFetching, data: statisticsData },
+  ]);
+
+  // Afficher le skeleton uniquement au premier chargement
+  if (isInitialLoading) {
     return <AnalyticsPageSkeleton />;
   }
 
   return (
     <PageShell>
+      {isRefreshing && (
+        <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-sky-500" />
+        </div>
+      )}
+      <div className={clsx(isRefreshing && 'opacity-80 transition-opacity')}>
       {/* Filtres — même grille que Stratégies / Statistiques */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
         <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
@@ -1516,7 +1519,7 @@ const AnalyticsPage: React.FC = () => {
           hideConsistencyTarget={privacySettings.hideConsistencyTarget}
           balanceLoading={balanceLoading}
           peakLoading={peakLoading}
-          detailsLoading={isLoading || summaryLoading}
+          detailsLoading={(summaryLoading && !dashboardSummary) || isRefreshing}
           error={balanceError || error || summaryError}
         />
       )}
@@ -1700,6 +1703,8 @@ const AnalyticsPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      </div>
 
       <ImportTradesModal open={showImport} onClose={() => setShowImport(false)} />
     </PageShell>

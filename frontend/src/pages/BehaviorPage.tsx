@@ -30,15 +30,15 @@ import { useTradingAccount } from '../contexts/TradingAccountContext';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
-import { useDashboardData } from '../hooks/useDashboardData';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
-import { useAnalytics, useStatistics } from '../hooks/useStatistics';
+import { useStatsBundle } from '../hooks/useStatsBundle';
 import {
   buildBehaviorNarrative,
   buildBehaviorNarrativeContext,
 } from '../utils/behaviorNarrative';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
+import { parsePnlDisplayMode } from '../utils/pnlDisplay';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import {
   BehaviorDisciplinePanel,
@@ -47,7 +47,7 @@ import {
   PostWinSizingPanel,
 } from '../components/analytics';
 import { TabsFilter } from '../components/common/TabsFilter';
-import { parsePnlDisplayMode } from '../utils/pnlDisplay';
+import { combineQueryLoadingStates } from '../hooks/useQueryLoadingState';
 
 ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
@@ -119,40 +119,28 @@ const BehaviorPage: React.FC = () => {
     return financialAggregation.baseCurrency;
   }, [accountId, financialAggregation.mode, financialAggregation.baseCurrency]);
 
-  const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
-    accountId,
-    startDate: summaryStartDate,
-    endDate: summaryEndDate,
-    loading: accountLoading,
+  const {
+    statistics: statisticsData,
+    analytics: analyticsData,
+    dashboardSlice,
+    isLoading: bundleLoading,
+    isFetching: bundleFetching,
+    error: bundleError,
+  } = useStatsBundle({
+    tradingAccountId: accountLoading ? undefined : accountId,
+    year: selectedPeriod ? null : selectedYear,
+    month: selectedPeriod ? null : selectedMonth,
+    startDate: selectedPeriod?.start || null,
+    endDate: selectedPeriod?.end || null,
     positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
+    convertTo: statsConvertTo,
+    enabled: !accountLoading,
   });
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
     loading: accountLoading,
     pnlDisplay: pnlDisplayMode,
   });
-
-  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(
-    accountLoading ? undefined : accountId,
-    selectedPeriod ? null : selectedYear,
-    selectedPeriod ? null : selectedMonth,
-    selectedPeriod?.start || null,
-    selectedPeriod?.end || null,
-    selectedPositionStrategy,
-    pnlDisplayMode,
-    statsConvertTo,
-  );
-
-  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(
-    accountLoading ? undefined : accountId,
-    selectedPeriod ? null : selectedYear,
-    selectedPeriod ? null : selectedMonth,
-    selectedPeriod?.start || null,
-    selectedPeriod?.end || null,
-    selectedPositionStrategy,
-    pnlDisplayMode,
-    statsConvertTo,
-  );
 
   useEffect(() => {
     const loadFilteredTrades = async () => {
@@ -209,7 +197,7 @@ const BehaviorPage: React.FC = () => {
     selectedAccount,
     filteredTrades,
     analyticsData,
-    activeDays: dashboardSummary?.active_days,
+    activeDays: dashboardSlice?.active_days,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
   });
@@ -341,9 +329,13 @@ const BehaviorPage: React.FC = () => {
 
   const isLoading =
     accountLoading ||
-    analyticsLoading ||
-    statisticsLoading ||
+    bundleLoading ||
     (accountId == null && financialAggregation.fxLoading);
+
+  const { isInitialLoading, isRefreshing } = combineQueryLoadingStates([
+    { isLoading, isFetching: false, data: !isLoading },
+    { isLoading: bundleLoading, isFetching: bundleFetching, data: statisticsData && analyticsData },
+  ]);
 
   const narrativeSections = useMemo(() => {
     return buildBehaviorNarrative({
@@ -365,7 +357,7 @@ const BehaviorPage: React.FC = () => {
           <BehaviorNarrativePanel
             sections={narrativeSections}
             context={narrativeContext}
-            error={statisticsError ?? analyticsError}
+            error={bundleError}
             hideMoney={privacySettings.hideProfitLoss}
             currencySymbol={currencySymbol}
             showMultiCurrencyWarning={financialAggregation.maskAggregatedMoney}
@@ -416,8 +408,7 @@ const BehaviorPage: React.FC = () => {
     [
       narrativeSections,
       narrativeContext,
-      statisticsError,
-      analyticsError,
+      bundleError,
       privacySettings.hideProfitLoss,
       currencySymbol,
       financialAggregation.maskAggregatedMoney,
@@ -431,7 +422,7 @@ const BehaviorPage: React.FC = () => {
     ],
   );
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <PageShell>
         <div className="flex items-center justify-center min-h-[40vh]">
@@ -443,6 +434,12 @@ const BehaviorPage: React.FC = () => {
 
   return (
     <PageShell>
+      {isRefreshing && (
+        <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-sky-500" />
+        </div>
+      )}
+      <div className={isRefreshing ? 'opacity-80 transition-opacity' : undefined}>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 mb-4 sm:mb-6">
         <div className="flex min-w-0 flex-col lg:flex-row lg:items-end gap-4">
           <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
@@ -492,15 +489,15 @@ const BehaviorPage: React.FC = () => {
           hideConsistencyTarget={privacySettings.hideConsistencyTarget}
           balanceLoading={balanceLoading}
           peakLoading={peakLoading}
-          detailsLoading={summaryLoading}
-          error={balanceError || summaryError}
+          detailsLoading={bundleLoading && !dashboardSlice}
+          error={balanceError || bundleError?.message || null}
         />
       )}
 
-      {(analyticsError || statisticsError) && (
+      {bundleError && (
         <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <p className="text-red-800 dark:text-red-300">
-            {(analyticsError ?? statisticsError)?.message}
+            {bundleError.message}
           </p>
         </div>
       )}
@@ -515,6 +512,7 @@ const BehaviorPage: React.FC = () => {
         defaultTab="synthesis"
         tabs={behaviorTabs}
       />
+      </div>
     </PageShell>
   );
 };

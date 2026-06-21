@@ -486,6 +486,68 @@ class TradesService {
     return res.json();
   }
 
+  async statsBundle(
+    tradingAccountId?: number,
+    year?: number | null,
+    month?: number | null,
+    startDate?: string | null,
+    endDate?: string | null,
+    positionStrategy?: number | null,
+    convertTo?: string | null,
+    pnlDisplay: 'net' | 'gross' = 'net',
+  ): Promise<{
+    statistics: Record<string, unknown>;
+    analytics: Record<string, unknown>;
+    dashboard_slice: {
+      daily_aggregates: Array<Record<string, unknown>>;
+      active_days: number;
+      period_performance?: Record<string, unknown> | null;
+      compliance_stats?: Record<string, unknown> | null;
+    };
+  }> {
+    const queryParams = new URLSearchParams();
+    if (tradingAccountId) {
+      queryParams.append('trading_account', String(tradingAccountId));
+    }
+
+    if (startDate && endDate) {
+      queryParams.append('start_date', startDate);
+      queryParams.append('end_date', endDate);
+    } else if (year) {
+      const calculatedStartDate = month
+        ? `${year}-${month.toString().padStart(2, '0')}-01`
+        : `${year}-01-01`;
+
+      let calculatedEndDate: string;
+      if (month) {
+        const lastDay = new Date(year, month, 0);
+        const yearStr = lastDay.getFullYear();
+        const monthStr = String(lastDay.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(lastDay.getDate()).padStart(2, '0');
+        calculatedEndDate = `${yearStr}-${monthStr}-${dayStr}`;
+      } else {
+        calculatedEndDate = `${year}-12-31`;
+      }
+
+      queryParams.append('start_date', calculatedStartDate);
+      queryParams.append('end_date', calculatedEndDate);
+    }
+
+    if (positionStrategy) {
+      queryParams.append('position_strategy', String(positionStrategy));
+    }
+    if (convertTo && !tradingAccountId) {
+      queryParams.append('convert_to', convertTo);
+    }
+    queryParams.append('pnl_display', pnlDisplay);
+
+    const qs = queryParams.toString();
+    const url = `${this.BASE_URL}/api/trades/stats-bundle/${qs ? `?${qs}` : ''}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) throw new Error('Erreur lors du chargement du bundle stats');
+    return res.json();
+  }
+
   async bulkAssignStrategy(tradeIds: number[], positionStrategyId: number | null): Promise<{
     success: boolean;
     updated_count: number;

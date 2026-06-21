@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useStatistics, useAnalytics, useTradesUpdateInvalidation } from '../hooks/useStatistics';
+import { useTradesUpdateInvalidation } from '../hooks/useStatistics';
 import { useTradingAccounts } from '../hooks/useStatistics';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { AccountSelector } from '../components/accounts/AccountSelector';
@@ -19,10 +19,9 @@ import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility'
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
-import { useDashboardData } from '../hooks/useDashboardData';
+import { useStatsBundle } from '../hooks/useStatsBundle';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { ExportButton } from '../components/exports';
-import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
@@ -41,6 +40,7 @@ import {
   type StatisticsTabId,
 } from '../components/statistics/statisticsConstants';
 import type { PointsStats } from '../components/statistics/statisticsTypes';
+import { combineQueryLoadingStates } from '../hooks/useQueryLoadingState';
 
 function StatisticsPage() {
   const { t } = useI18nTranslation();
@@ -65,39 +65,24 @@ function StatisticsPage() {
 
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
   const { data: accounts, isLoading: accountsLoading } = useTradingAccounts();
-  const { data: statisticsData, isLoading: statisticsLoading, error: statisticsError } = useStatistics(
-    accountLoading ? undefined : selectedAccountId,
-    selectedPeriod ? null : selectedYear,
-    selectedPeriod ? null : selectedMonth,
-    selectedPeriod?.start || null,
-    selectedPeriod?.end || null,
-    selectedPositionStrategy,
-    pnlDisplayMode,
-  );
-  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useAnalytics(
-    accountLoading ? undefined : selectedAccountId,
-    selectedPeriod ? null : selectedYear,
-    selectedPeriod ? null : selectedMonth,
-    selectedPeriod?.start || null,
-    selectedPeriod?.end || null,
-    selectedPositionStrategy,
-    pnlDisplayMode,
-  );
-
-  const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
-    selectedPeriod,
-    selectedYear,
-    selectedMonth,
-  });
-
-  const { data: dashboardSummary, isLoading: summaryLoading, error: summaryError } = useDashboardData({
-    accountId: selectedAccountId,
-    startDate: summaryStartDate,
-    endDate: summaryEndDate,
-    loading: accountLoading,
+  const {
+    statistics: statisticsData,
+    analytics: analyticsData,
+    dashboardSlice,
+    isLoading: bundleLoading,
+    isFetching: bundleFetching,
+    error: bundleError,
+  } = useStatsBundle({
+    tradingAccountId: accountLoading ? undefined : selectedAccountId,
+    year: selectedPeriod ? null : selectedYear,
+    month: selectedPeriod ? null : selectedMonth,
+    startDate: selectedPeriod?.start || null,
+    endDate: selectedPeriod?.end || null,
     positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
+    enabled: !accountLoading,
   });
+
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
     loading: accountLoading,
     pnlDisplay: pnlDisplayMode,
@@ -144,8 +129,11 @@ function StatisticsPage() {
 
   useTradesUpdateInvalidation();
 
-  const isLoading = preferencesLoading || accountLoading || accountsLoading || statisticsLoading || analyticsLoading;
-  const hasError = statisticsError || analyticsError;
+  const { isInitialLoading, isRefreshing } = combineQueryLoadingStates([
+    { isLoading: preferencesLoading || accountLoading || accountsLoading, isFetching: false, data: !preferencesLoading && !accountLoading && !accountsLoading },
+    { isLoading: bundleLoading, isFetching: bundleFetching, data: statisticsData && analyticsData },
+  ]);
+  const hasError = bundleError;
 
   useEffect(() => {
     const loadAccount = async () => {
@@ -166,15 +154,18 @@ function StatisticsPage() {
 
   useEffect(() => {
     const loadFilteredTrades = async () => {
-      if (!selectedAccountId || accountLoading) {
+      if (accountLoading) {
         setFilteredTrades([]);
         return;
       }
       try {
         const params: Record<string, unknown> = {
-          trading_account: selectedAccountId,
           page_size: 10000,
         };
+
+        if (selectedAccountId != null) {
+          params.trading_account = selectedAccountId;
+        }
 
         if (selectedPeriod) {
           params.start_date = selectedPeriod.start;
@@ -216,7 +207,7 @@ function StatisticsPage() {
     selectedAccount,
     filteredTrades,
     analyticsData,
-    activeDays: dashboardSummary?.active_days,
+    activeDays: dashboardSlice?.active_days,
     pnlDisplay: pnlDisplayMode,
     timezone: preferences.timezone,
   });
@@ -365,13 +356,18 @@ function StatisticsPage() {
     );
   }
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return <StatisticsPageSkeleton />;
   }
 
   return (
     <PageShell>
-      <div className="w-full">
+      {isRefreshing && (
+        <div className="mb-2 h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-sky-500" />
+        </div>
+      )}
+      <div className={`w-full${isRefreshing ? ' opacity-80 transition-opacity' : ''}`}>
         <div className="mb-4 rounded-lg bg-white p-3 shadow dark:bg-gray-800 sm:mb-6 sm:p-4">
           <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-end">
             <div className="w-full min-w-0 lg:w-auto lg:flex-shrink-0">
@@ -431,8 +427,8 @@ function StatisticsPage() {
             hideConsistencyTarget={privacySettings.hideConsistencyTarget}
             balanceLoading={balanceLoading}
             peakLoading={peakLoading}
-            detailsLoading={isLoading || summaryLoading}
-            error={balanceError || (hasError ? t('statistics:errorLoadingData') : summaryError)}
+            detailsLoading={(bundleLoading && !dashboardSlice) || isRefreshing}
+            error={balanceError || (hasError ? t('statistics:errorLoadingData') : null)}
           />
         )}
 

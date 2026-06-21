@@ -2213,6 +2213,7 @@ from .models_statistics import (
     TradeStatistics,
     ConditionalProbability,
 )
+from .models_rollup import TradeDailyRollup
 
 __all__ = [
     'Currency',
@@ -2235,4 +2236,5 @@ __all__ = [
     'TradeTagAssignment',
     'TradeStatistics',
     'ConditionalProbability',
+    'TradeDailyRollup',
 ]

@@ -166,6 +166,57 @@ def delete_old_position_strategy_screenshot(sender, instance, **kwargs):
         logger.error(f"Erreur lors de la suppression automatique de l'ancien screenshot de PositionStrategy {instance.id}: {e}")
 
 
+@receiver(pre_save, sender=TopStepTrade)
+def capture_old_trade_for_rollup(sender, instance, **kwargs):
+    """Conserve l'état précédent pour recalcul rollup si stratégie/compte/jour change."""
+    if not instance.pk:
+        instance._rollup_old_instance = None  # type: ignore[attr-defined]
+        return
+    try:
+        instance._rollup_old_instance = TopStepTrade.objects.get(pk=instance.pk)  # type: ignore[attr-defined]
+    except TopStepTrade.DoesNotExist:
+        instance._rollup_old_instance = None  # type: ignore[attr-defined]
+
+
+def _invalidate_stats_after_trade_mutation(user_id: int) -> None:
+    from .tasks import schedule_debounced_stats_invalidation
+
+    schedule_debounced_stats_invalidation(user_id)
+
+
+@receiver(post_save, sender=TopStepTrade)
+def update_rollups_after_trade_save(sender, instance, created, **kwargs):
+    if not instance.user_id or not instance.trading_account_id:
+        return
+    try:
+        from .services.rollup_service import buckets_for_trade
+        from .tasks import schedule_debounced_rollup_rebuild
+
+        old_instance = getattr(instance, '_rollup_old_instance', None)
+        buckets = buckets_for_trade(instance)
+        if old_instance:
+            buckets.update(buckets_for_trade(old_instance))
+        schedule_debounced_rollup_rebuild(instance.user_id, buckets)
+        _invalidate_stats_after_trade_mutation(instance.user_id)
+    except Exception as e:
+        logger.error('Erreur rollup post_save trade %s: %s', instance.id, e)
+
+
+@receiver(post_delete, sender=TopStepTrade)
+def update_rollups_after_trade_delete(sender, instance, **kwargs):
+    if not instance.user_id or not instance.trading_account_id:
+        return
+    try:
+        from .services.rollup_service import buckets_for_trade
+        from .tasks import schedule_debounced_rollup_rebuild
+
+        buckets = buckets_for_trade(instance)
+        schedule_debounced_rollup_rebuild(instance.user_id, buckets)
+        _invalidate_stats_after_trade_mutation(instance.user_id)
+    except Exception as e:
+        logger.error('Erreur rollup post_delete trade %s: %s', instance.id, e)
+
+
 @receiver(post_save, sender=TopStepTrade)
 def recalculate_metrics_after_trade_save(sender, instance, created, **kwargs):
     """

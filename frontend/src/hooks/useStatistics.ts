@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { tradesService } from '../services/trades';
 import { tradingAccountsService, TradingAccount } from '../services/tradingAccounts';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
+import { queryKeys } from '../lib/queryKeys';
+import { queryClient } from '../lib/queryClient';
 
 export interface StatisticsData {
   total_trades: number;
@@ -181,9 +184,30 @@ export interface GlobalStrategyData {
   percentage: number;
 }
 
+function normalizeStatistics(result: Partial<StatisticsData>): StatisticsData {
+  return {
+    ...result,
+    avg_time_between_trades: result.avg_time_between_trades ?? '00:00:00',
+    avg_daily_exposure_time: result.avg_daily_exposure_time ?? '00:00:00',
+    max_runup: result.max_runup ?? 0,
+    max_runup_pct: result.max_runup_pct ?? 0,
+    max_runup_global: result.max_runup_global ?? 0,
+    max_runup_global_pct: result.max_runup_global_pct ?? 0,
+    avg_planned_rr: result.avg_planned_rr ?? 0,
+    avg_actual_rr: result.avg_actual_rr ?? 0,
+    trades_with_planned_rr: result.trades_with_planned_rr ?? 0,
+    trades_with_actual_rr: result.trades_with_actual_rr ?? 0,
+    trades_with_both_rr: result.trades_with_both_rr ?? 0,
+    plan_respect_rate: result.plan_respect_rate ?? 0,
+    break_even_zero_trades: result.break_even_zero_trades ?? 0,
+    break_even_positive_trades: result.break_even_positive_trades ?? 0,
+    sharpe_ratio_annualized: result.sharpe_ratio_annualized ?? 0,
+  } as StatisticsData;
+}
+
 export function useStatistics(
-  tradingAccountId?: number | null, 
-  year?: number | null, 
+  tradingAccountId?: number | null,
+  year?: number | null,
   month?: number | null,
   startDate?: string | null,
   endDate?: string | null,
@@ -191,65 +215,45 @@ export function useStatistics(
   _pnlDisplay: PnlDisplayMode = 'net',
   convertTo?: string | null,
 ) {
-  const [data, setData] = useState<StatisticsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const params = {
+    tradingAccountId,
+    year,
+    month,
+    startDate,
+    endDate,
+    positionStrategy,
+    convertTo,
+  };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // Si startDate/endDate sont fournis, les utiliser (priorité)
-        // Sinon, utiliser year/month (rétrocompatibilité)
-        const result = await tradesService.detailedStatistics(
-          tradingAccountId || undefined,
-          startDate && endDate ? undefined : (year || undefined),
-          startDate && endDate ? undefined : (month || undefined),
-          startDate || undefined,
-          endDate || undefined,
-          positionStrategy || undefined,
-          convertTo || undefined,
-        );
-        // S'assurer que toutes les propriétés requises sont présentes avec des valeurs par défaut
-        setData({
-          ...result,
-          avg_time_between_trades: result.avg_time_between_trades ?? '00:00:00',
-          avg_daily_exposure_time: result.avg_daily_exposure_time ?? '00:00:00',
-          max_runup: result.max_runup ?? 0,
-          max_runup_pct: result.max_runup_pct ?? 0,
-          max_runup_global: result.max_runup_global ?? 0,
-          max_runup_global_pct: result.max_runup_global_pct ?? 0,
-          avg_planned_rr: result.avg_planned_rr ?? 0,
-          avg_actual_rr: result.avg_actual_rr ?? 0,
-          trades_with_planned_rr: result.trades_with_planned_rr ?? 0,
-          trades_with_actual_rr: result.trades_with_actual_rr ?? 0,
-          trades_with_both_rr: result.trades_with_both_rr ?? 0,
-          plan_respect_rate: result.plan_respect_rate ?? 0,
-          break_even_zero_trades: result.break_even_zero_trades ?? 0,
-          break_even_positive_trades: result.break_even_positive_trades ?? 0,
-          sharpe_ratio_annualized: result.sharpe_ratio_annualized ?? 0,
-        } as StatisticsData);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Erreur lors du chargement des statistiques'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const query = useQuery<StatisticsData>({
+    queryKey: queryKeys.statistics(params),
+    queryFn: async () => {
+      const result = await tradesService.detailedStatistics(
+        tradingAccountId || undefined,
+        startDate && endDate ? undefined : (year || undefined),
+        startDate && endDate ? undefined : (month || undefined),
+        startDate || undefined,
+        endDate || undefined,
+        positionStrategy || undefined,
+        convertTo || undefined,
+      );
+      return normalizeStatistics(result);
+    },
+    enabled: tradingAccountId !== undefined,
+    placeholderData: keepPreviousData,
+  });
 
-    if (tradingAccountId !== undefined) {
-      fetchData();
-    } else {
-      setIsLoading(false);
-    }
-  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy, _pnlDisplay, convertTo]);
-
-  return { data, isLoading, error };
+  return {
+    data: query.data ?? null,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error instanceof Error ? query.error : null,
+  };
 }
 
 export function useAnalytics(
-  tradingAccountId?: number | null, 
-  year?: number | null, 
+  tradingAccountId?: number | null,
+  year?: number | null,
   month?: number | null,
   startDate?: string | null,
   endDate?: string | null,
@@ -257,118 +261,95 @@ export function useAnalytics(
   _pnlDisplay: PnlDisplayMode = 'net',
   convertTo?: string | null,
 ) {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const params = {
+    tradingAccountId,
+    year,
+    month,
+    startDate,
+    endDate,
+    positionStrategy,
+    convertTo,
+  };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // Si startDate/endDate sont fournis, les utiliser (priorité)
-        // Sinon, utiliser year/month (rétrocompatibilité)
-        const result = await tradesService.analytics(
-          tradingAccountId || undefined,
-          startDate && endDate ? undefined : (year || undefined),
-          startDate && endDate ? undefined : (month || undefined),
-          startDate || undefined,
-          endDate || undefined,
-          positionStrategy || undefined,
-          convertTo || undefined,
-        );
-        setData(result);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Erreur lors du chargement des analytics'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const query = useQuery<AnalyticsData>({
+    queryKey: queryKeys.analytics(params),
+    queryFn: () =>
+      tradesService.analytics(
+        tradingAccountId || undefined,
+        startDate && endDate ? undefined : (year || undefined),
+        startDate && endDate ? undefined : (month || undefined),
+        startDate || undefined,
+        endDate || undefined,
+        positionStrategy || undefined,
+        convertTo || undefined,
+      ),
+    enabled: tradingAccountId !== undefined,
+    placeholderData: keepPreviousData,
+  });
 
-    if (tradingAccountId !== undefined) {
-      fetchData();
-    } else {
-      setIsLoading(false);
-    }
-  }, [tradingAccountId, year, month, startDate, endDate, positionStrategy, _pnlDisplay, convertTo]);
-
-  return { data, isLoading, error };
+  return {
+    data: query.data ?? null,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error instanceof Error ? query.error : null,
+  };
 }
 
 export function useGlobalStrategyData() {
-  const [data, setData] = useState<GlobalStrategyData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const query = useQuery({
+    queryKey: ['globalStrategyData'],
+    queryFn: async () => {
+      const result = await tradeStrategiesService.statistics();
+      const total = result.all_time.total_strategies;
+      const respected = Math.round((total * result.all_time.respect_percentage) / 100);
+      return {
+        total,
+        respected,
+        percentage: result.all_time.respect_percentage,
+      } as GlobalStrategyData;
+    },
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await tradeStrategiesService.statistics();
-        const total = result.all_time.total_strategies;
-        const respected = Math.round((total * result.all_time.respect_percentage) / 100);
-        setData({
-          total,
-          respected,
-          percentage: result.all_time.respect_percentage,
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Erreur lors du chargement des statistiques de stratégie'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  return { data, isLoading, error };
+  return {
+    data: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error : null,
+  };
 }
 
 export function useTradingAccounts() {
-  const [data, setData] = useState<TradingAccount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const query = useQuery({
+    queryKey: ['tradingAccounts', 'active'],
+    queryFn: async () => {
+      const result = await tradingAccountsService.list();
+      return result.filter((acc) => acc.status === 'active');
+    },
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const result = await tradingAccountsService.list();
-        setData(result.filter(acc => acc.status === 'active'));
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Erreur lors du chargement des comptes'));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  return { data, isLoading, error };
+  return {
+    data: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error instanceof Error ? query.error : null,
+  };
 }
 
 export function useTradesUpdateInvalidation() {
-  // Hook pour invalider les caches quand les trades sont mis à jour
-  // Pour l'instant, on utilise juste un effet qui écoute les événements de mise à jour
   useEffect(() => {
-    const handleTradeUpdate = () => {
-      // Les données seront rechargées automatiquement lors du prochain rendu
-      // grâce aux dépendances des hooks useStatistics et useAnalytics
-      window.dispatchEvent(new CustomEvent('trades:updated'));
+    const invalidateAll = () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['statistics'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['statsBundle'] });
     };
 
-    window.addEventListener('trade:created', handleTradeUpdate);
-    window.addEventListener('trade:updated', handleTradeUpdate);
-    window.addEventListener('trade:deleted', handleTradeUpdate);
+    window.addEventListener('trade:created', invalidateAll);
+    window.addEventListener('trade:updated', invalidateAll);
+    window.addEventListener('trade:deleted', invalidateAll);
 
     return () => {
-      window.removeEventListener('trade:created', handleTradeUpdate);
-      window.removeEventListener('trade:updated', handleTradeUpdate);
-      window.removeEventListener('trade:deleted', handleTradeUpdate);
+      window.removeEventListener('trade:created', invalidateAll);
+      window.removeEventListener('trade:updated', invalidateAll);
+      window.removeEventListener('trade:deleted', invalidateAll);
     };
   }, []);
 }
@@ -376,4 +357,3 @@ export function useTradesUpdateInvalidation() {
 export function useSelectedAccountCurrency(account: TradingAccount | null): string {
   return account?.currency || '';
 }
-
