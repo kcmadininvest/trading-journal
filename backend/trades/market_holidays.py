@@ -38,6 +38,13 @@ def _get_cached_trading_calendar(market: str):
     return mcal.get_calendar(market)
 
 
+# Libellés bruts exchange_calendars (souvent basés sur la date) → noms usuels affichés.
+_CALENDAR_HOLIDAY_ALIASES = {
+    'July 4th': 'Independence Day',
+    'Christmas': 'Christmas Day',
+}
+
+
 class MarketHolidaysService:
     """Service pour récupérer les jours fériés et demi-journées des marchés boursiers."""
     
@@ -93,6 +100,13 @@ class MarketHolidaysService:
             return []
     
     @staticmethod
+    def _normalize_holiday_name(name: str) -> str:
+        """Aligne les libellés exchange_calendars avec des noms lisibles."""
+        if name.startswith('Weekend '):
+            name = name[len('Weekend '):]
+        return _CALENDAR_HOLIDAY_ALIASES.get(name, name)
+
+    @staticmethod
     def _iter_holiday_rule_dates(rule_dates):
         """Itère (date, nom) quelle que soit la forme renvoyée par exchange_calendars."""
         if hasattr(rule_dates, 'items'):
@@ -130,7 +144,7 @@ class MarketHolidaysService:
                         ):
                             rd = rule_date.date() if hasattr(rule_date, 'date') else rule_date
                             if rd == holiday_date:
-                                return str(name)
+                                return MarketHolidaysService._normalize_holiday_name(str(name))
                     except (AttributeError, ValueError, KeyError):
                         continue
                     except Exception as e:
@@ -147,7 +161,8 @@ class MarketHolidaysService:
                         adhoc_date, name = entry, None
                     ad = adhoc_date.date() if hasattr(adhoc_date, 'date') else adhoc_date
                     if ad == holiday_date:
-                        return str(name) if name else 'Special Market Closure'
+                        raw = str(name) if name else 'Special Market Closure'
+                        return MarketHolidaysService._normalize_holiday_name(raw)
 
             return MarketHolidaysService._guess_holiday_name(holiday_date)
         except (AttributeError, ValueError) as e:
