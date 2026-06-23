@@ -23,7 +23,8 @@ const TOGGLE_ITEM_CLASS =
   'inline-flex h-9 w-9 items-center justify-center rounded-md text-gray-500 transition-all duration-200 ' +
   'hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 ' +
   'data-[state=on]:bg-blue-600 data-[state=on]:text-white data-[state=on]:shadow-sm ' +
-  'data-[state=on]:hover:bg-blue-600 dark:data-[state=on]:bg-blue-500 dark:data-[state=on]:hover:bg-blue-500 ' +
+  'data-[state=on]:hover:bg-blue-600 data-[state=on]:hover:text-white ' +
+  'dark:data-[state=on]:bg-blue-500 dark:data-[state=on]:text-white dark:data-[state=on]:hover:bg-blue-500 dark:data-[state=on]:hover:text-white ' +
   'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-800';
 
 const TRIGGER_CLASS =

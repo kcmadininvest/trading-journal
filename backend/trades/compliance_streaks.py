@@ -4,9 +4,11 @@ Calcul unifié des streaks de respect de stratégie (dashboard + endpoint Strat�
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from django.db import models
+from django.utils import timezone
 
 from .models import (
     DayStrategyCompliance,
@@ -36,6 +38,13 @@ def get_position_strategy_family_ids(user, position_strategy_id):
         return [position_strategy_id]
 
 
+def get_rolling_twelve_month_date_range(user_tz) -> Tuple[str, str]:
+    """Fenêtre glissante 12 mois pour les séries de discipline (indépendante du filtre période UI)."""
+    today = timezone.now().astimezone(user_tz).date()
+    start = today - timedelta(days=365)
+    return start.isoformat(), today.isoformat()
+
+
 def compute_dashboard_next_badge(current_streak: int) -> Optional[Dict[str, Any]]:
     """Prochain badge pour la carte dashboard (progression basée sur le streak actuel)."""
     badge_thresholds = [
@@ -60,16 +69,29 @@ def compute_dashboard_next_badge(current_streak: int) -> Optional[Dict[str, Any]
     return None
 
 
-def _day_is_respected(
+def _day_streak_verdict(
     date_str: str,
     data: Dict[str, Any],
     day_compliances_dict: Dict[str, Any],
     *,
     forward_best_pass: bool,
-) -> bool:
-    """Règle unique pour qu'un jour compte comme respecté (alignée strategy_compliance_stats)."""
+) -> Optional[bool]:
+    """
+    Verdict discipline pour les séries : True (respecté), False (cassure), None (ignorer).
+
+    Les jours avec trades mais stratégie non renseignée sur tous les trades sont neutres :
+    ils ne prolongent pas la série mais ne la cassent pas non plus.
+    """
     if data["total"] > 0:
-        return data["with_strategy"] == data["total"] and data["not_respected"] == 0
+        if data["not_respected"] > 0:
+            return False
+        if data["with_strategy"] == data["total"]:
+            return True
+        if data["has_day_compliance"]:
+            compliance = day_compliances_dict.get(date_str)
+            if compliance and compliance.strategy_respected is not None:
+                return bool(compliance.strategy_respected is True)
+        return None
     if data["has_day_compliance"]:
         if forward_best_pass:
             compliance = day_compliances_dict.get(date_str)
@@ -79,7 +101,7 @@ def _day_is_respected(
         if compliance:
             is_respected = is_respected and compliance.strategy_respected is True
         return bool(is_respected)
-    return False
+    return None
 
 
 def _compute_streaks_from_aggregates(
@@ -92,27 +114,27 @@ def _compute_streaks_from_aggregates(
     temp_streak = 0
     for date_str in all_dates:
         data = daily_compliance[date_str]
-        is_respected = _day_is_respected(
+        verdict = _day_streak_verdict(
             date_str, data, day_compliances_dict, forward_best_pass=True
         )
-        if is_respected:
+        if verdict is True:
             temp_streak += 1
             if temp_streak > best_streak:
                 best_streak = temp_streak
-        else:
+        elif verdict is False:
             temp_streak = 0
 
     current_streak = 0
     current_streak_start = None
     for date_str in reversed(all_dates):
         data = daily_compliance[date_str]
-        is_respected = _day_is_respected(
+        verdict = _day_streak_verdict(
             date_str, data, day_compliances_dict, forward_best_pass=False
         )
-        if is_respected:
+        if verdict is True:
             current_streak_start = date_str
             current_streak += 1
-        else:
+        elif verdict is False:
             break
 
     return best_streak, current_streak, current_streak_start

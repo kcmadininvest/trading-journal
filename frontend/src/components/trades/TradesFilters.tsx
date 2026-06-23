@@ -11,11 +11,15 @@ const FILTER_TOGGLE_ROOT_CLASS =
   'flex h-10 w-full min-w-0 items-stretch gap-0.5 rounded-md border border-gray-300 bg-white p-1 shadow-sm dark:border-gray-600 dark:bg-gray-700';
 
 const FILTER_TOGGLE_ITEM_CLASS =
-  'min-w-0 flex-1 inline-flex items-center justify-center rounded-md px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium leading-tight transition-all duration-200 ' +
+  'group min-w-0 flex-1 inline-flex items-center justify-center rounded-md px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium leading-tight transition-all duration-200 ' +
   'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 ' +
   'data-[state=on]:bg-blue-600 data-[state=on]:font-semibold data-[state=on]:text-white data-[state=on]:shadow-sm ' +
-  'data-[state=on]:hover:bg-blue-600 dark:data-[state=on]:bg-blue-500 dark:data-[state=on]:hover:bg-blue-500 ' +
+  'data-[state=on]:hover:bg-blue-600 data-[state=on]:hover:text-white ' +
+  'dark:data-[state=on]:bg-blue-500 dark:data-[state=on]:text-white dark:data-[state=on]:hover:bg-blue-500 dark:data-[state=on]:hover:text-white ' +
   'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-700';
+
+const FILTER_TOGGLE_TEXT_CLASS =
+  'block min-w-0 max-w-full truncate text-center text-inherit group-data-[state=on]:text-white';
 
 const FILTER_LABEL_CLASS = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
 
@@ -135,7 +139,7 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
                 <TruncatingTooltipText
                   text={item.label}
                   wrapperClassName="flex h-full min-w-0 w-full max-w-full items-center justify-center"
-                  className="block min-w-0 max-w-full truncate text-center"
+                  className={FILTER_TOGGLE_TEXT_CLASS}
                 />
               </ToggleGroup.Item>
             ))}
@@ -177,7 +181,7 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
                 <TruncatingTooltipText
                   text={item.label}
                   wrapperClassName="flex h-full min-w-0 w-full max-w-full items-center justify-center"
-                  className="block min-w-0 max-w-full truncate text-center"
+                  className={FILTER_TOGGLE_TEXT_CLASS}
                 />
               </ToggleGroup.Item>
             ))}
@@ -205,7 +209,7 @@ export const TradesFilters: React.FC<TradesFiltersProps> = ({ values, instrument
                 <TruncatingTooltipText
                   text={item.label}
                   wrapperClassName="flex h-full min-w-0 w-full max-w-full items-center justify-center"
-                  className="block min-w-0 max-w-full truncate text-center"
+                  className={FILTER_TOGGLE_TEXT_CLASS}
                 />
               </ToggleGroup.Item>
             ))}

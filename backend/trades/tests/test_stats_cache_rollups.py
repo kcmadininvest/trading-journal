@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from trades.models import TopStepTrade, TradingAccount
+from trades.models import DayStrategyCompliance, TopStepTrade, TradeStrategy, TradingAccount
 from trades.models_rollup import STRATEGY_ROOT_UNASSIGNED, TradeDailyRollup
 from trades.services.rollup_service import (
     get_daily_aggregates_from_rollups,
@@ -125,3 +125,25 @@ class RollupServiceTests(TestCase):
         set_cached_stats_response(self.user.id, 'dashboard_summary', params, {'count': 0})
         self._create_trade('T3', date(2026, 6, 3), '10', '12')
         mock_schedule.assert_called_with(self.user.id)
+
+    @patch('trades.stats_response_cache.invalidate_user_stats_cache')
+    def test_trade_strategy_save_invalidates_cache(self, mock_invalidate):
+        trade = self._create_trade('T5', date(2026, 6, 5), '15', '15')
+        TradeStrategy.objects.create(
+            user=self.user,
+            trade=trade,
+            strategy_respected=True,
+            tp1_reached=False,
+            tp2_plus_reached=False,
+        )
+        mock_invalidate.assert_called_with(self.user.id)
+
+    @patch('trades.stats_response_cache.invalidate_user_stats_cache')
+    def test_day_compliance_save_invalidates_cache(self, mock_invalidate):
+        DayStrategyCompliance.objects.create(
+            user=self.user,
+            trading_account=self.account,
+            date=date(2026, 6, 6),
+            strategy_respected=True,
+        )
+        mock_invalidate.assert_called_with(self.user.id)

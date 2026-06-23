@@ -13,6 +13,7 @@ from ..compliance_streaks import (
     compute_dashboard_next_badge,
     compute_strategy_compliance_context,
     get_position_strategy_family_ids,
+    get_rolling_twelve_month_date_range,
 )
 from ..models import DayStrategyCompliance, TopStepTrade, TradingAccount
 from ..period_performance import compute_period_performance, resolve_initial_capital_for_dashboard
@@ -189,13 +190,25 @@ def compute_dashboard_summary_payload(request, *, include_lists: bool = True) ->
             year=None,
             month=None,
         )
-        compliance_stats = {
-            'current_streak': ctx['current_streak'],
-            'best_streak': ctx['best_streak'],
-            'current_streak_start': ctx['current_streak_start'],
-            'next_badge': compute_dashboard_next_badge(ctx['current_streak']),
-        }
         strategies_data = TradeStrategySerializer(ctx['strategies_queryset'], many=True).data if include_lists else []
+
+        streak_start, streak_end = get_rolling_twelve_month_date_range(user_tz)
+        # La série de discipline est une métrique compte (12 mois), indépendante du filtre stratégie du dashboard.
+        streak_ctx = compute_strategy_compliance_context(
+            request.user,
+            trading_account_id=ta_id,
+            position_strategy_id=None,
+            start_date=streak_start,
+            end_date=streak_end,
+            year=None,
+            month=None,
+        )
+        compliance_stats = {
+            'current_streak': streak_ctx['current_streak'],
+            'best_streak': streak_ctx['best_streak'],
+            'current_streak_start': streak_ctx['current_streak_start'],
+            'next_badge': compute_dashboard_next_badge(streak_ctx['current_streak']),
+        }
     except (ValueError, TypeError):
         strategies_data = []
     except Exception as exc:

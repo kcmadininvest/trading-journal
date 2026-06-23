@@ -313,3 +313,18 @@ def refresh_balance_cache_after_transaction_save(sender, instance, **kwargs):
 def refresh_balance_cache_after_transaction_delete(sender, instance, **kwargs):
     if instance.trading_account_id:
         _refresh_balance_cache_for_account(instance.trading_account_id)
+
+
+def _invalidate_stats_cache_after_compliance_mutation(user_id: int) -> None:
+    from .stats_response_cache import invalidate_user_stats_cache
+
+    if user_id:
+        invalidate_user_stats_cache(user_id)
+
+
+@receiver(post_save, sender=TradeStrategy)
+@receiver(post_delete, sender=TradeStrategy)
+@receiver(post_save, sender=DayStrategyCompliance)
+@receiver(post_delete, sender=DayStrategyCompliance)
+def invalidate_stats_after_compliance_mutation(sender, instance, **kwargs):
+    _invalidate_stats_cache_after_compliance_mutation(instance.user_id)

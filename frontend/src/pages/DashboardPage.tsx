@@ -5,6 +5,7 @@ import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { User } from '../services/auth';
 import { calendarService as marketCalendarService, MarketHoliday, MarketTodaySnapshot } from '../services/calendar';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useDashboardComplianceRefresh } from '../hooks/useDashboardComplianceRefresh';
 import { useDashboardPrefetch } from '../hooks/useDashboardPrefetch';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
 import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
@@ -265,7 +266,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const shouldLoadGlobalStats = windowWidth >= 1536; // 2xl breakpoint
   
   // Use consolidated dashboard data hook for optimized loading
-  const { data: dashboardData, isLoading: dashboardLoading, isFetching: dashboardFetching, error: dashboardError, refetch } = useDashboardData({
+  const { data: dashboardData, isLoading: dashboardLoading, isFetching: dashboardFetching, error: dashboardError } = useDashboardData({
     accountId,
     startDate: selectedPeriod?.start,
     endDate: selectedPeriod?.end,
@@ -288,6 +289,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
     enabled: !accountLoading && accountId !== undefined,
+  });
+
+  useDashboardComplianceRefresh({
+    accountId,
+    pnlDisplay: pnlDisplayMode,
   });
 
   // Extract data from consolidated response
@@ -554,22 +560,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       return localDay >= selectedPeriod.start && localDay <= selectedPeriod.end;
     });
   }, [transactions, selectedPeriod, preferences.timezone]);
-
-  // Compliance stats are now loaded from consolidated endpoint
-  // Listen for compliance updates to refetch dashboard data
-  useEffect(() => {
-    const handleComplianceUpdate = (event: CustomEvent) => {
-      const eventAccount = event.detail?.tradingAccount;
-      if (!eventAccount || eventAccount === accountId) {
-        refetch();
-      }
-    };
-
-    window.addEventListener('strategy-compliance-updated', handleComplianceUpdate as EventListener);
-    return () => {
-      window.removeEventListener('strategy-compliance-updated', handleComplianceUpdate as EventListener);
-    };
-  }, [accountId, refetch]);
 
   // Obtenir le symbole de devise
   const currencySymbol = useMemo(() => {
@@ -2098,45 +2088,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 <div className="h-full w-full">
                   <ModernStatCard
                     theme="default"
-                    label={(() => {
-                      // Utiliser complianceStats.current_streak si disponible (inclut les jours sans trades)
-                      // Sinon utiliser additionalStats (seulement les jours avec trades)
-                      const streakDays = complianceStats?.current_streak ?? 0;
-                      const notRespectedDays = additionalStats.currentConsecutiveDaysNotRespected;
-                      
-                      if (streakDays > 0) {
-                        return `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`;
-                      } else if (notRespectedDays > 0) {
-                        return `${t('dashboard:currentSeries')} - ${t('dashboard:sequenceNotRespect')}`;
-                      }
-                      return t('dashboard:currentSeries');
-                    })()}
-                    value={(() => {
-                      // Utiliser complianceStats.current_streak si disponible (inclut les jours sans trades)
-                      // Sinon utiliser additionalStats (seulement les jours avec trades)
-                      const streakDays = complianceStats?.current_streak ?? 0;
-                      const notRespectedDays = additionalStats.currentConsecutiveDaysNotRespected;
-                      
-                      if (streakDays > 0) {
-                        return `${streakDays} ${t('dashboard:days')}`;
-                      } else if (notRespectedDays > 0) {
-                        return `${notRespectedDays} ${t('dashboard:days')}`;
-                      }
-                      return `0 ${t('dashboard:days')}`;
-                    })()}
+                    label={`${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`}
+                    value={`${complianceStats?.current_streak ?? 0} ${t('dashboard:days')}`}
                     valueSubtext={(() => {
                       const streakDays = complianceStats?.current_streak ?? 0;
                       const streakStartDate = complianceStats?.current_streak_start;
-                      
+
                       if (streakDays > 0 && streakStartDate) {
                         return `${t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} ${formatDate(streakStartDate, preferences.date_format, false)}`;
                       }
                       return undefined;
                     })()}
-                    variant={(() => {
-                      const streakDays = complianceStats?.current_streak ?? 0;
-                      return streakDays > 0 ? 'success' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'danger' : 'default';
-                    })()}
+                    variant={complianceStats?.current_streak ? 'success' : 'default'}
                     size="small"
                     icon={
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -2145,18 +2108,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     }
                     subMetrics={[
                       {
-                        label: additionalStats.currentConsecutiveTradesRespected > 0 ? t('dashboard:currentRespectTrades') : t('dashboard:currentNotRespectTrades'),
-                        value: `${additionalStats.currentConsecutiveTradesRespected > 0 ? additionalStats.currentConsecutiveTradesRespected : additionalStats.currentConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
+                        label: t('dashboard:currentRespectTrades'),
+                        value: `${additionalStats.currentConsecutiveTradesRespected || 0} ${t('trades:trades')}`
                       }
                     ]}
-                    trend={(() => {
-                      const streakDays = complianceStats?.current_streak ?? 0;
-                      return streakDays > 0 ? 'up' : additionalStats.currentConsecutiveDaysNotRespected > 0 ? 'down' : undefined;
-                    })()}
-                    trendValue={(() => {
-                      const streakDays = complianceStats?.current_streak ?? 0;
-                      return streakDays > 0 ? t('dashboard:sequenceRespect') : additionalStats.currentConsecutiveDaysNotRespected > 0 ? t('dashboard:sequenceNotRespect') : undefined;
-                    })()}
+                    trend={complianceStats?.current_streak ? 'up' : undefined}
+                    trendValue={complianceStats?.current_streak ? t('dashboard:sequenceRespect') : undefined}
                   />
                 </div>
               </Tooltip>
