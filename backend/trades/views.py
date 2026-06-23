@@ -13,7 +13,7 @@ from datetime import timedelta, datetime
 import pytz
 from decimal import Decimal
 from collections import defaultdict
-from typing import cast, Any
+from typing import cast, Any, Dict, List
 import logging
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -4403,10 +4403,12 @@ def dashboard_activity_summary(request):
     })
 
 
-def _market_holidays_today_response(request):
-    """Réponse JSON pour le statut jour férié « journée entière » (date locale par marché)."""
-    markets_param = request.GET.get('markets', 'XNYS,XPAR,XLON,XTKS')
-    markets = [m.strip() for m in markets_param.split(',') if m.strip()]
+def _parse_market_holidays_markets(request, default: str = 'XNYS,XPAR,XLON,XTKS') -> List[str]:
+    markets_param = request.GET.get('markets', default)
+    return [m.strip() for m in markets_param.split(',') if m.strip()]
+
+
+def _compute_market_holidays_today_payload(markets: List[str]) -> Dict[str, Any]:
     out = {}
     for market_code in markets:
         info = MarketHolidaysService.get_local_today_market_info(market_code)
@@ -4416,7 +4418,27 @@ def _market_holidays_today_response(request):
             'is_early_close_day': info['is_early_close_day'],
             'regular_session_close_local': info['regular_session_close_local'],
         }
-    return Response({'markets': out})
+    return {'markets': out}
+
+
+def _market_holidays_today_response(request):
+    """Réponse JSON pour le statut jour férié « journée entière » (date locale par marché)."""
+    from .market_holidays_cache import (
+        extract_today_cache_params,
+        get_cached_market_holidays_response,
+        market_holidays_json_response,
+        set_cached_market_holidays_response,
+    )
+
+    markets = _parse_market_holidays_markets(request)
+    cache_params = extract_today_cache_params(markets)
+    cached = get_cached_market_holidays_response('today', cache_params)
+    if cached is not None:
+        return market_holidays_json_response(cached)
+
+    payload = _compute_market_holidays_today_payload(markets)
+    set_cached_market_holidays_response('today', cache_params, payload)
+    return market_holidays_json_response(payload)
 
 
 def _parse_market_holidays_count(request) -> int:
@@ -4430,29 +4452,38 @@ def _parse_market_holidays_count(request) -> int:
         return 1
 
 
+def _compute_market_holidays_bundle_payload(markets: List[str], count: int) -> Dict[str, Any]:
+    today_payload = _compute_market_holidays_today_payload(markets)
+    upcoming = MarketHolidaysService.get_next_holidays(count=count, markets=markets)
+    return {
+        'markets': today_payload['markets'],
+        'upcoming': upcoming,
+        'count': len(upcoming),
+    }
+
+
 def _market_holidays_bundle_response(request):
     """
     Une seule requête : statut « aujourd’hui » par marché + prochains jours fériés.
     Évite deux allers-retours HTTP et réutilise les calendriers mis en cache côté serveur.
     """
-    markets_param = request.GET.get('markets', 'XNYS,XPAR,XLON,XTKS')
-    markets = [m.strip() for m in markets_param.split(',') if m.strip()]
+    from .market_holidays_cache import (
+        extract_bundle_cache_params,
+        get_cached_market_holidays_response,
+        market_holidays_json_response,
+        set_cached_market_holidays_response,
+    )
+
+    markets = _parse_market_holidays_markets(request)
     count = _parse_market_holidays_count(request)
-    out_today = {}
-    for market_code in markets:
-        info = MarketHolidaysService.get_local_today_market_info(market_code)
-        out_today[market_code] = {
-            'date': info['date'],
-            'is_full_day_holiday': info['is_full_day_holiday'],
-            'is_early_close_day': info['is_early_close_day'],
-            'regular_session_close_local': info['regular_session_close_local'],
-        }
-    upcoming = MarketHolidaysService.get_next_holidays(count=count, markets=markets)
-    return Response({
-        'markets': out_today,
-        'upcoming': upcoming,
-        'count': len(upcoming),
-    })
+    cache_params = extract_bundle_cache_params(markets, count)
+    cached = get_cached_market_holidays_response('bundle', cache_params)
+    if cached is not None:
+        return market_holidays_json_response(cached)
+
+    payload = _compute_market_holidays_bundle_payload(markets, count)
+    set_cached_market_holidays_response('bundle', cache_params, payload)
+    return market_holidays_json_response(payload)
 
 
 @api_view(['GET'])
@@ -4473,18 +4504,27 @@ def market_holidays(request):
     if bundle_flag in ('1', 'true', 'yes'):
         return _market_holidays_bundle_response(request)
 
+    from .market_holidays_cache import (
+        extract_upcoming_cache_params,
+        get_cached_market_holidays_response,
+        market_holidays_json_response,
+        set_cached_market_holidays_response,
+    )
+
     count = _parse_market_holidays_count(request)
-    
-    # Récupérer les marchés demandés (par défaut: NYSE et Euronext Paris)
-    markets_param = request.GET.get('markets', 'XNYS,XPAR')
-    markets = [m.strip() for m in markets_param.split(',') if m.strip()]
-    
+    markets = _parse_market_holidays_markets(request, default='XNYS,XPAR')
+    cache_params = extract_upcoming_cache_params(markets, count)
+    cached = get_cached_market_holidays_response('upcoming', cache_params)
+    if cached is not None:
+        return market_holidays_json_response(cached)
+
     upcoming = MarketHolidaysService.get_next_holidays(count=count, markets=markets)
-    
-    return Response({
+    payload = {
         'upcoming': upcoming,
-        'count': len(upcoming)
-    })
+        'count': len(upcoming),
+    }
+    set_cached_market_holidays_response('upcoming', cache_params, payload)
+    return market_holidays_json_response(payload)
 
 
 @api_view(['GET'])

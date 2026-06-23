@@ -4,7 +4,7 @@ Utilitaire pour gérer les jours fériés et demi-journées des marchés boursie
 import logging
 from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
-from typing import List, Dict, Any, Optional
+from typing import Dict, FrozenSet, List, Any, Optional, Tuple
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -44,61 +44,143 @@ _CALENDAR_HOLIDAY_ALIASES = {
     'Christmas': 'Christmas Day',
 }
 
+# holidays: frozenset[(date, name)], early_closes: frozenset[date]
+MarketYearIndex = Tuple[FrozenSet[Tuple[date, str]], FrozenSet[date]]
+
+
+def _years_for_range(start_date: date, end_date: date) -> List[int]:
+    return list(range(start_date.year, end_date.year + 1))
+
+
+@lru_cache(maxsize=32)
+def _build_market_year_index(market: str, year: int) -> MarketYearIndex:
+    """
+    Index annuel : jours fériés (date, nom) + demi-journées, construit une fois par (marché, année).
+    """
+    if not CALENDARS_AVAILABLE:
+        return frozenset(), frozenset()
+
+    try:
+        calendar = _get_cached_trading_calendar(market)
+        start = date(year, 1, 1)
+        end = date(year, 12, 31)
+        schedule = calendar.schedule(start_date=start, end_date=end)
+
+        all_business_days = pd.date_range(start=start, end=end, freq='B')
+        market_open_days = pd.to_datetime(schedule.index.date)
+        holiday_dates = [
+            d.date() for d in all_business_days if d.date() not in market_open_days.date
+        ]
+
+        name_map = _build_holiday_name_map_for_year(calendar, year)
+
+        holidays: FrozenSet[Tuple[date, str]] = frozenset(
+            (
+                holiday_date,
+                MarketHolidaysService._normalize_holiday_name(
+                    name_map.get(holiday_date)
+                    or MarketHolidaysService._guess_holiday_name(holiday_date)
+                ),
+            )
+            for holiday_date in holiday_dates
+        )
+
+        early_close_dates: FrozenSet[date] = frozenset()
+        if schedule is not None and not schedule.empty:
+            early_closes = calendar.early_closes(schedule=schedule)
+            if early_closes is not None and len(early_closes) > 0:
+                early_close_dates = frozenset(d.date() for d in early_closes.index)
+
+        return holidays, early_close_dates
+    except Exception as e:
+        logger.error(
+            'Erreur lors de la construction de l\'index annuel %s %s: %s',
+            market,
+            year,
+            e,
+            exc_info=True,
+        )
+        return frozenset(), frozenset()
+
+
+def _build_holiday_name_map_for_year(calendar, year: int) -> Dict[date, str]:
+    """Construit date → nom brut depuis regular_holidays et adhoc_holidays pour une année."""
+    xcal = calendar.calendar if hasattr(calendar, 'calendar') else calendar
+    year_start = pd.Timestamp(year, 1, 1)
+    year_end = pd.Timestamp(year, 12, 31)
+    name_map: Dict[date, str] = {}
+
+    if hasattr(xcal, 'regular_holidays'):
+        rh = xcal.regular_holidays
+        rules = rh.rules if hasattr(rh, 'rules') else rh
+        for rule in rules:
+            try:
+                rule_dates = rule.dates(year_start, year_end, return_name=True)
+                for rule_date, name in MarketHolidaysService._iter_holiday_rule_dates(rule_dates):
+                    rd = rule_date.date() if hasattr(rule_date, 'date') else rule_date
+                    name_map[rd] = str(name)
+            except (AttributeError, ValueError, KeyError):
+                continue
+            except Exception as e:
+                logger.debug('Erreur lors de la lecture d\'une règle de férié: %s', e)
+
+    if hasattr(xcal, 'adhoc_holidays'):
+        for entry in xcal.adhoc_holidays:
+            if isinstance(entry, tuple) and len(entry) >= 2:
+                adhoc_date, name = entry[0], entry[1]
+            else:
+                adhoc_date, name = entry, None
+            ad = adhoc_date.date() if hasattr(adhoc_date, 'date') else adhoc_date
+            if date(year, 1, 1) <= ad <= date(year, 12, 31):
+                name_map[ad] = str(name) if name else 'Special Market Closure'
+
+    return name_map
+
+
+def _holidays_from_index(
+    market: str, start_date: date, end_date: date
+) -> List[Dict[str, Any]]:
+    result: List[Dict[str, Any]] = []
+    for year in _years_for_range(start_date, end_date):
+        holidays, _ = _build_market_year_index(market, year)
+        for holiday_date, holiday_name in holidays:
+            if start_date <= holiday_date <= end_date:
+                result.append({'date': holiday_date, 'name': holiday_name})
+    result.sort(key=lambda item: item['date'])
+    return result
+
+
+def _early_closes_from_index(market: str, start_date: date, end_date: date) -> List[date]:
+    dates: List[date] = []
+    for year in _years_for_range(start_date, end_date):
+        _, early_closes = _build_market_year_index(market, year)
+        dates.extend(d for d in early_closes if start_date <= d <= end_date)
+    return sorted(set(dates))
+
 
 class MarketHolidaysService:
     """Service pour récupérer les jours fériés et demi-journées des marchés boursiers."""
-    
+
     @staticmethod
     def get_market_holidays(market: str, start_date: date, end_date: date) -> List[Dict[str, Any]]:
         """
         Retourne la liste des jours fériés pour un marché donné avec leurs noms.
-        
-        Args:
-            market: Code du marché ('XNYS' pour NYSE, 'XPAR' pour Euronext Paris)
-            start_date: Date de début
-            end_date: Date de fin
-            
-        Returns:
-            Liste de dictionnaires avec date et nom du jour férié
         """
         if not CALENDARS_AVAILABLE:
             return []
-        
+
         try:
-            calendar = _get_cached_trading_calendar(market)
-            schedule = calendar.schedule(start_date=start_date, end_date=end_date)
-            
-            # Obtenir tous les jours ouvrables du calendrier
-            all_business_days = pd.date_range(start=start_date, end=end_date, freq='B')
-            
-            # Les jours fériés sont les jours ouvrables qui ne sont pas dans le schedule
-            # (même logique qu’avant : pas de set() sur index.date, types numpy/pandas variables selon versions)
-            market_open_days = pd.to_datetime(schedule.index.date)
-            holiday_dates = [
-                d.date() for d in all_business_days if d.date() not in market_open_days.date
-            ]
-            
-            # Récupérer les noms des jours fériés depuis le calendrier
-            holidays_with_names = []
-            for holiday_date in holiday_dates:
-                # Essayer de récupérer le nom du jour férié
-                holiday_name = MarketHolidaysService._get_holiday_name(calendar, holiday_date)
-                holidays_with_names.append({
-                    'date': holiday_date,
-                    'name': holiday_name
-                })
-            
-            return holidays_with_names
-        except ImportError as e:
-            logger.error(f"Impossible d'importer pandas_market_calendars: {str(e)}")
-            return []
+            return _holidays_from_index(market, start_date, end_date)
         except ValueError as e:
             logger.warning(f"Calendrier de marché invalide pour {market}: {str(e)}")
             return []
         except Exception as e:
-            logger.error(f"Erreur inattendue lors de la récupération des jours fériés: {str(e)}", exc_info=True)
+            logger.error(
+                f"Erreur inattendue lors de la récupération des jours fériés: {str(e)}",
+                exc_info=True,
+            )
             return []
-    
+
     @staticmethod
     def _normalize_holiday_name(name: str) -> str:
         """Aligne les libellés exchange_calendars avec des noms lisibles."""
@@ -119,74 +201,30 @@ class MarketHolidaysService:
     def _get_holiday_name(calendar, holiday_date: date) -> str:
         """
         Récupère le nom d'un jour férié depuis le calendrier.
-        
-        Args:
-            calendar: Instance du calendrier de marché
-            holiday_date: Date du jour férié
-            
-        Returns:
-            Nom du jour férié ou nom générique
         """
         try:
-            # pandas_market_calendars récent : regular_holidays sur l'instance directement
-            xcal = calendar.calendar if hasattr(calendar, 'calendar') else calendar
-            year_start = pd.Timestamp(holiday_date.year, 1, 1)
-            year_end = pd.Timestamp(holiday_date.year, 12, 31)
-
-            if hasattr(xcal, 'regular_holidays'):
-                rh = xcal.regular_holidays
-                rules = rh.rules if hasattr(rh, 'rules') else rh
-                for rule in rules:
-                    try:
-                        rule_dates = rule.dates(year_start, year_end, return_name=True)
-                        for rule_date, name in MarketHolidaysService._iter_holiday_rule_dates(
-                            rule_dates
-                        ):
-                            rd = rule_date.date() if hasattr(rule_date, 'date') else rule_date
-                            if rd == holiday_date:
-                                return MarketHolidaysService._normalize_holiday_name(str(name))
-                    except (AttributeError, ValueError, KeyError):
-                        continue
-                    except Exception as e:
-                        logger.debug(
-                            'Erreur lors de la récupération du nom de règle: %s', e
-                        )
-                        continue
-
-            if hasattr(xcal, 'adhoc_holidays'):
-                for entry in xcal.adhoc_holidays:
-                    if isinstance(entry, tuple) and len(entry) >= 2:
-                        adhoc_date, name = entry[0], entry[1]
-                    else:
-                        adhoc_date, name = entry, None
-                    ad = adhoc_date.date() if hasattr(adhoc_date, 'date') else adhoc_date
-                    if ad == holiday_date:
-                        raw = str(name) if name else 'Special Market Closure'
-                        return MarketHolidaysService._normalize_holiday_name(raw)
-
+            name_map = _build_holiday_name_map_for_year(calendar, holiday_date.year)
+            if holiday_date in name_map:
+                return MarketHolidaysService._normalize_holiday_name(name_map[holiday_date])
             return MarketHolidaysService._guess_holiday_name(holiday_date)
         except (AttributeError, ValueError) as e:
             logger.warning(f"Erreur lors de la récupération du nom du jour férié: {str(e)}")
             return MarketHolidaysService._guess_holiday_name(holiday_date)
         except Exception as e:
-            logger.error(f"Erreur inattendue lors de la récupération du nom du jour férié: {str(e)}", exc_info=True)
+            logger.error(
+                f"Erreur inattendue lors de la récupération du nom du jour férié: {str(e)}",
+                exc_info=True,
+            )
             return MarketHolidaysService._guess_holiday_name(holiday_date)
-    
+
     @staticmethod
     def _guess_holiday_name(holiday_date: date) -> str:
         """
         Devine le nom d'un jour férié basé sur la date.
-        
-        Args:
-            holiday_date: Date du jour férié
-            
-        Returns:
-            Nom probable du jour férié
         """
         month = holiday_date.month
         day = holiday_date.day
-        
-        # Jours fériés fixes communs
+
         if month == 1 and day == 1:
             return "New Year's Day"
         elif month == 6 and day == 19:
@@ -209,7 +247,7 @@ class MarketHolidaysService:
             return "Memorial Day"
         elif month == 9 and day <= 7 and holiday_date.weekday() == 0:
             return "Labor Day"
-        elif month == 4 and 1 <= day <= 30:  # Pâques varie
+        elif month == 4 and 1 <= day <= 30:
             return "Good Friday"
         elif month == 5 and day == 1:
             return "Labour Day"
@@ -223,7 +261,6 @@ class MarketHolidaysService:
             return "All Saints' Day"
         elif month == 11 and day == 11:
             return "Armistice Day"
-        # UK-specific holidays
         elif month == 1 and 1 <= day <= 3 and holiday_date.weekday() == 0:
             return "New Year's Day (observed)"
         elif month == 5 and day >= 25 and holiday_date.weekday() == 0:
@@ -232,41 +269,27 @@ class MarketHolidaysService:
             return "Summer Bank Holiday"
         elif month == 12 and 26 <= day <= 28:
             return "Boxing Day"
-        
+
         return "Market Holiday"
-    
+
     @staticmethod
     def get_early_closes(market: str, start_date: date, end_date: date) -> List[date]:
         """
         Retourne la liste des demi-journées (early closes) pour un marché donné.
-        
-        Args:
-            market: Code du marché ('XNYS' pour NYSE, 'XPAR' pour Euronext Paris)
-            start_date: Date de début
-            end_date: Date de fin
-            
-        Returns:
-            Liste des dates de demi-journées
         """
-        try:
-            calendar = _get_cached_trading_calendar(market)
-            schedule = calendar.schedule(start_date=start_date, end_date=end_date)
-            # Schedule vide (ex. jour unique hors séance) : colonnes object, early_closes() plante sur .dt
-            if schedule is None or schedule.empty:
-                return []
-            early_closes = calendar.early_closes(schedule=schedule)
+        if not CALENDARS_AVAILABLE:
+            return []
 
-            if early_closes is not None and len(early_closes) > 0:
-                return sorted([d.date() for d in early_closes.index])
-            return []
-        except ImportError as e:
-            logger.error(f"Impossible d'importer pandas_market_calendars: {str(e)}")
-            return []
+        try:
+            return _early_closes_from_index(market, start_date, end_date)
         except ValueError as e:
             logger.warning(f"Calendrier de marché invalide pour {market}: {str(e)}")
             return []
         except Exception as e:
-            logger.error(f"Erreur inattendue lors de la récupération des early closes: {str(e)}", exc_info=True)
+            logger.error(
+                f"Erreur inattendue lors de la récupération des early closes: {str(e)}",
+                exc_info=True,
+            )
             return []
 
     @staticmethod
@@ -316,13 +339,13 @@ class MarketHolidaysService:
         if not CALENDARS_AVAILABLE:
             return base
         try:
-            holidays = MarketHolidaysService.get_market_holidays(market_code, local_date, local_date)
-            is_full = len(holidays) > 0
+            holidays, early_closes = _build_market_year_index(market_code, local_date.year)
+            holiday_dates = {hd for hd, _ in holidays}
+            is_full = local_date in holiday_dates
             base['is_full_day_holiday'] = is_full
             if is_full:
                 return base
-            early_list = MarketHolidaysService.get_early_closes(market_code, local_date, local_date)
-            base['is_early_close_day'] = local_date in early_list
+            base['is_early_close_day'] = local_date in early_closes
             base['regular_session_close_local'] = MarketHolidaysService._session_close_local_hhmm(
                 market_code, local_date, tz_name
             )
@@ -335,19 +358,11 @@ class MarketHolidaysService:
     def get_next_holidays(count: int = 2, markets: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """
         Retourne les N prochains jours fériés ou demi-journées pour les marchés spécifiés.
-        
-        Args:
-            count: Nombre de jours à retourner par marché
-            markets: Liste des codes de marché (par défaut: ['XNYS', 'XPAR'])
-            
-        Returns:
-            Liste de dictionnaires avec date, nom, type et marché
         """
         if markets is None:
             markets = ['XNYS', 'XPAR']
-        
+
         today = date.today()
-        # Fenêtre adaptée au nombre d'événements demandés (évite 2 ans × N marchés à chaque requête)
         if count <= 2:
             search_days = 400
         elif count <= 5:
@@ -355,23 +370,22 @@ class MarketHolidaysService:
         else:
             search_days = 730
         end_date = today + timedelta(days=search_days)
-        
+
         market_names = {
             'XNYS': 'NYSE',
             'XPAR': 'Euronext Paris',
             'XLON': 'LSE',
-            'XTKS': 'Tokyo SE'
+            'XTKS': 'Tokyo SE',
         }
-        
+
         upcoming = []
-        
+
         for market_code in markets:
             market_name = market_names.get(market_code, market_code)
-            
-            # Récupérer les jours fériés avec leurs noms
+
             holidays_data = MarketHolidaysService.get_market_holidays(market_code, today, end_date)
-            holiday_dates = [h['date'] for h in holidays_data]
-            
+            holiday_dates = {h['date'] for h in holidays_data}
+
             for holiday_info in holidays_data:
                 holiday_date = holiday_info['date']
                 if holiday_date >= today:
@@ -379,10 +393,9 @@ class MarketHolidaysService:
                         'date': holiday_date.isoformat(),
                         'name': holiday_info['name'],
                         'type': 'holiday',
-                        'market': market_code
+                        'market': market_code,
                     })
-            
-            # Récupérer les demi-journées
+
             early_closes = MarketHolidaysService.get_early_closes(market_code, today, end_date)
             for early_date in early_closes:
                 if early_date >= today and early_date not in holiday_dates:
@@ -390,24 +403,21 @@ class MarketHolidaysService:
                         'date': early_date.isoformat(),
                         'name': f'{market_name} Early Close',
                         'type': 'early_close',
-                        'market': market_code
+                        'market': market_code,
                     })
-        
-        # Trier par date et retourner les N premiers par marché
+
         upcoming.sort(key=lambda x: x['date'])
-        
-        # Limiter à count événements par marché
+
         result = []
         market_counts = {m: 0 for m in markets}
-        
+
         for event in upcoming:
             market = event['market']
             if market_counts[market] < count:
                 result.append(event)
                 market_counts[market] += 1
-            
-            # Arrêter si on a count événements pour tous les marchés
+
             if all(c >= count for c in market_counts.values()):
                 break
-        
+
         return result
