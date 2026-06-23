@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { authService } from '../services/auth';
 import { MarketQuotesSnapshot, marketQuotesService } from '../services/marketQuotes';
 
 const POLL_INTERVAL_MS = 2500;
@@ -6,8 +7,8 @@ const WS_RECONNECT_BASE_MS = 1000;
 const WS_RECONNECT_MAX_MS = 30000;
 
 function buildWebSocketUrl(): string | null {
-  const token = localStorage.getItem('access_token');
-  if (!token) {
+  const token = authService.getAccessToken();
+  if (!token || !authService.isAuthenticated()) {
     return null;
   }
   const base = marketQuotesService.getWebSocketBaseUrl();
@@ -58,35 +59,6 @@ export function useMarketQuotes(enabled = true) {
     }
   }, []);
 
-  const refresh = useCallback(async () => {
-    if (!enabled) return;
-    try {
-      const data = await marketQuotesService.getSnapshot();
-      if (mountedRef.current) {
-        setSnapshot(data);
-        setError(null);
-      }
-    } catch (err) {
-      if (mountedRef.current) {
-        setError(err instanceof Error ? err.message : 'error');
-      }
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [enabled]);
-
-  const startPolling = useCallback(() => {
-    stopPolling();
-    setTransport('polling');
-    setWsConnected(false);
-    void refresh();
-    pollIntervalRef.current = window.setInterval(() => {
-      void refresh();
-    }, POLL_INTERVAL_MS);
-  }, [refresh, stopPolling]);
-
   const closeWebSocket = useCallback(() => {
     connectGenerationRef.current += 1;
     const ws = wsRef.current;
@@ -96,10 +68,49 @@ export function useMarketQuotes(enabled = true) {
     }
   }, []);
 
+  const authFailedRef = useRef(false);
+
+  const refresh = useCallback(async () => {
+    if (!enabled || !authService.isAuthenticated() || authFailedRef.current) return;
+    try {
+      const data = await marketQuotesService.getSnapshot();
+      if (mountedRef.current) {
+        setSnapshot(data);
+        setError(null);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'error';
+      if (message.includes('401')) {
+        authFailedRef.current = true;
+        stopPolling();
+        closeWebSocket();
+      }
+      if (mountedRef.current) {
+        setError(message);
+      }
+    } finally {
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+    }
+  }, [enabled, closeWebSocket, stopPolling]);
+
+  const startPolling = useCallback(() => {
+    if (!authService.isAuthenticated() || authFailedRef.current) return;
+    stopPolling();
+    setTransport('polling');
+    setWsConnected(false);
+    void refresh();
+    pollIntervalRef.current = window.setInterval(() => {
+      void refresh();
+    }, POLL_INTERVAL_MS);
+  }, [refresh, stopPolling]);
+
   useEffect(() => {
     mountedRef.current = true;
+    authFailedRef.current = false;
 
-    if (!enabled) {
+    if (!enabled || !authService.isAuthenticated()) {
       setLoading(false);
       return () => {
         mountedRef.current = false;
@@ -107,7 +118,7 @@ export function useMarketQuotes(enabled = true) {
     }
 
     const connect = () => {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || authFailedRef.current) return;
 
       closeWebSocket();
       const generation = connectGenerationRef.current;
@@ -157,6 +168,7 @@ export function useMarketQuotes(enabled = true) {
         ws.onclose = () => {
           if (generation !== connectGenerationRef.current || !mountedRef.current) return;
           setWsConnected(false);
+          if (authFailedRef.current) return;
           startPolling();
 
           const attempt = reconnectAttemptRef.current;
@@ -187,7 +199,24 @@ export function useMarketQuotes(enabled = true) {
         }
       }
     };
+
+    const onTokenRefreshed = () => {
+      authFailedRef.current = false;
+      connect();
+    };
+
+    const onLogout = () => {
+      authFailedRef.current = true;
+      stopPolling();
+      closeWebSocket();
+      setSnapshot(null);
+      setWsConnected(false);
+      setLoading(false);
+    };
+
     document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('auth:token-refreshed', onTokenRefreshed);
+    window.addEventListener('user:logout', onLogout);
 
     return () => {
       mountedRef.current = false;
@@ -198,6 +227,8 @@ export function useMarketQuotes(enabled = true) {
         reconnectTimerRef.current = null;
       }
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('auth:token-refreshed', onTokenRefreshed);
+      window.removeEventListener('user:logout', onLogout);
     };
   }, [closeWebSocket, enabled, refresh, startPolling, stopPolling]);
 

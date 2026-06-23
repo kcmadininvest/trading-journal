@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { authService } from './auth';
 
 export interface TradingAccount {
   id: number;
@@ -45,25 +46,8 @@ class TradingAccountsService {
   }
 
   private async refreshAccessToken(): Promise<boolean> {
-    const refresh = localStorage.getItem('refresh_token');
-    if (!refresh) return false;
-    try {
-      const res = await fetch(`${this.BASE_URL}/api/accounts/auth/refresh/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh })
-      });
-      if (!res.ok) return false;
-      const data = await res.json();
-      const newAccess = data.access as string | undefined;
-      if (newAccess) {
-        localStorage.setItem('access_token', newAccess);
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
+    const access = await authService.refreshAccessToken();
+    return !!access;
   }
 
   private async fetchWithAuth(input: string, init: RequestInit = {}, retry = true): Promise<Response> {

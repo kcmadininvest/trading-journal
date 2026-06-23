@@ -237,10 +237,16 @@ class AuthService {
 
       const data = await response.json();
       const newAccess = data.access as string | undefined;
+      const newRefresh = data.refresh as string | undefined;
 
       if (newAccess) {
         this.accessToken = newAccess;
         localStorage.setItem('access_token', newAccess);
+        if (newRefresh) {
+          this.refreshToken = newRefresh;
+          localStorage.setItem('refresh_token', newRefresh);
+        }
+        window.dispatchEvent(new CustomEvent('auth:token-refreshed', { detail: { access: newAccess } }));
         return newAccess;
       }
 

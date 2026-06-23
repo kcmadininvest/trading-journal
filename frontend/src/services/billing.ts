@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
+import { authService } from './auth';
 
 export type BillingAccessState = 'admin_bypass' | 'trialing' | 'active' | 'inactive';
 
@@ -24,20 +25,8 @@ class BillingService {
   }
 
   private async refreshAccessToken(): Promise<boolean> {
-    const refresh = localStorage.getItem('refresh_token');
-    if (!refresh) return false;
-    const res = await fetch(`${this.BASE_URL}/api/accounts/auth/refresh/`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh }),
-    });
-    if (!res.ok) return false;
-    const data = await res.json();
-    if (data.access) {
-      localStorage.setItem('access_token', data.access);
-      return true;
-    }
-    return false;
+    const access = await authService.refreshAccessToken();
+    return !!access;
   }
 
   private async fetchWithAuth(url: string, init: RequestInit = {}, retry = true): Promise<Response> {
