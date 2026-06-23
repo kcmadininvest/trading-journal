@@ -48,6 +48,7 @@
   "marketTapeLegendEntryShort": "Short entry",
   "marketTapeLegendExitWin": "Winning exit",
   "marketTapeLegendExitLoss": "Losing exit",
+  "marketTapeLegendExit": "Exit",
   "marketTapeLegendFill": "Fill",
   "marketTapeLegendOrder": "Order",
   "marketTapeLegendOrderTooltip": "Order placed or updated on the market (limit, market, stop…) during the session, before or without a full fill.",

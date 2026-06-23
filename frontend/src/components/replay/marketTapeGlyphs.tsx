@@ -3,7 +3,7 @@ import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
 import { TAPE_EXIT_DOT_R, TAPE_EXIT_TICK_R } from './marketTapeChartMetrics';
 import type { TapeExitMarkerLayout } from './marketTapeMarkerLayout';
 import type { TapeMarker } from './marketTapeData';
-import { getTripColor, getTripLegendSampleColors } from './marketTapeTripColors';
+import { getLegendTripColor, getTripColor, getTripLegendSampleColors } from './marketTapeTripColors';
 import { MarketTapeTheme } from './replayStyles';
 
 const ICON = 22;
@@ -43,6 +43,7 @@ const CHART_ARROW_DOWN = 'M0 5.5 L4.25 -4.5 H-4.25 Z';
 interface GlyphProps {
   theme: MarketTapeTheme;
   size?: number;
+  isDark?: boolean;
 }
 
 /** Bougie haussière — même forme que sur le graphique. */
@@ -72,15 +73,21 @@ export const TapeGlyphBearCandle: React.FC<GlyphProps> = ({ theme, size = ICON }
   </svg>
 );
 
-export const TapeGlyphEntryLong: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
+export const TapeGlyphEntryLong: React.FC<GlyphProps> = ({ theme, isDark = true, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <TapeArrowUp fill={theme.entryLong} d={LEGEND_ARROW_UP} />
+    <TapeArrowUp
+      fill={getLegendTripColor('long', isDark) ?? theme.entryLong}
+      d={LEGEND_ARROW_UP}
+    />
   </svg>
 );
 
-export const TapeGlyphEntryShort: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
+export const TapeGlyphEntryShort: React.FC<GlyphProps> = ({ theme, isDark = true, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <TapeArrowDown fill={theme.entryShort} d={LEGEND_ARROW_DOWN} />
+    <TapeArrowDown
+      fill={getLegendTripColor('short', isDark) ?? theme.entryShort}
+      d={LEGEND_ARROW_DOWN}
+    />
   </svg>
 );
 
@@ -105,15 +112,9 @@ const TapeExitLegendGraphic: React.FC<{ fill: string }> = ({ fill }) => (
   </>
 );
 
-export const TapeGlyphExitWin: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
+export const TapeGlyphExit: React.FC<GlyphProps> = ({ theme, isDark = true, size = ICON }) => (
   <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <TapeExitLegendGraphic fill={theme.exitWin} />
-  </svg>
-);
-
-export const TapeGlyphExitLoss: React.FC<GlyphProps> = ({ theme, size = ICON }) => (
-  <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden>
-    <TapeExitLegendGraphic fill={theme.exitLoss} />
+    <TapeExitLegendGraphic fill={getLegendTripColor('long', isDark) ?? theme.exitWin} />
   </svg>
 );
 
@@ -203,11 +204,11 @@ export const TapeGlyphStopLossBroker: React.FC<GlyphProps & { isDark?: boolean }
 );
 
 interface LegendItemProps {
-  Glyph: React.FC<GlyphProps & { isDark?: boolean }>;
+  Glyph: React.FC<GlyphProps>;
   theme: MarketTapeTheme;
   isDark: boolean;
   label: string;
-  tooltip?: string;
+  trailing?: React.ReactNode;
 }
 
 export const MarketTapeLegendItem: React.FC<LegendItemProps> = ({
@@ -215,7 +216,7 @@ export const MarketTapeLegendItem: React.FC<LegendItemProps> = ({
   theme,
   isDark,
   label,
-  tooltip,
+  trailing,
 }) => (
   <span
     className="inline-flex items-center gap-1 shrink-0"
@@ -230,7 +231,7 @@ export const MarketTapeLegendItem: React.FC<LegendItemProps> = ({
       <Glyph theme={theme} isDark={isDark} size={22} />
     </span>
     <span className="hidden md:inline text-[11px] text-gray-600 dark:text-gray-300 whitespace-nowrap">{label}</span>
-    {tooltip ? <ChartHelpTooltip content={tooltip} position="top" delay={200} /> : null}
+    {trailing}
   </span>
 );
 
@@ -240,11 +241,9 @@ interface MarketTapeLegendProps {
   labels: {
     entryLong: string;
     entryShort: string;
-    exitWin: string;
-    exitLoss: string;
+    exit: string;
     stopLossBroker: string;
-    tripColorHelp: string;
-    entryTripHelp: string;
+    help: string;
   };
 }
 
@@ -259,35 +258,25 @@ export const MarketTapeLegend: React.FC<MarketTapeLegendProps> = ({ theme, isDar
       theme={theme}
       isDark={isDark}
       label={labels.entryLong}
-      tooltip={labels.entryTripHelp}
     />
     <MarketTapeLegendItem
       Glyph={TapeGlyphEntryShort}
       theme={theme}
       isDark={isDark}
       label={labels.entryShort}
-      tooltip={labels.entryTripHelp}
     />
     <MarketTapeLegendItem
-      Glyph={TapeGlyphExitWin}
+      Glyph={TapeGlyphExit}
       theme={theme}
       isDark={isDark}
-      label={labels.exitWin}
-      tooltip={labels.entryTripHelp}
-    />
-    <MarketTapeLegendItem
-      Glyph={TapeGlyphExitLoss}
-      theme={theme}
-      isDark={isDark}
-      label={labels.exitLoss}
-      tooltip={labels.entryTripHelp}
+      label={labels.exit}
     />
     <MarketTapeLegendItem
       Glyph={TapeGlyphStopLossBroker}
       theme={theme}
       isDark={isDark}
       label={labels.stopLossBroker}
-      tooltip={labels.tripColorHelp}
+      trailing={<ChartHelpTooltip content={labels.help} position="top" delay={200} />}
     />
   </div>
 );

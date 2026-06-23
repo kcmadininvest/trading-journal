@@ -1,6 +1,6 @@
 /** Palettes de teintes distinctes par trade (replay bandeau marché). */
 
-const TRIP_PALETTE_LONG_DARK = ['#4ade80', '#2dd4bf', '#22d3ee', '#60a5fa', '#34d399', '#a3e635', '#38bdf8', '#4ade80'];
+const TRIP_PALETTE_LONG_DARK = ['#4ade80', '#2dd4bf', '#22d3ee', '#60a5fa', '#34d399', '#a3e635', '#38bdf8', '#86efac'];
 const TRIP_PALETTE_SHORT_DARK = ['#fb923c', '#fbbf24', '#f87171', '#f472b6', '#fb7185', '#fdba74', '#f97316', '#ea580c'];
 
 const TRIP_PALETTE_LONG_LIGHT = ['#16a34a', '#0d9488', '#0891b2', '#2563eb', '#059669', '#65a30d', '#0284c7', '#15803d'];
@@ -36,6 +36,14 @@ export function getTripColor(
       };
   const palette = normalized ? palettes[normalized] : palettes.neutral;
   return palette[tripIndex % palette.length];
+}
+
+/** Index trip utilisé comme exemple fixe dans la légende (trade #1). */
+export const LEGEND_SAMPLE_TRIP_INDEX = 0;
+
+/** Teinte représentative pour un glyphe de légende (palette index 0). */
+export function getLegendTripColor(side: 'long' | 'short', isDark: boolean): string {
+  return getTripColor(LEGEND_SAMPLE_TRIP_INDEX, side, isDark)!;
 }
 
 /** Échantillon de teintes pour la légende (long + short mélangés). */

@@ -1,5 +1,6 @@
 import {
   formatTripLabel,
+  getLegendTripColor,
   getTripColor,
   getTripLegendSampleColors,
   normalizeTradeSide,
@@ -18,6 +19,20 @@ describe('marketTapeTripColors', () => {
     const c2 = getTripColor(2, 'Long', true);
     expect(c0).not.toBe(c1);
     expect(c1).not.toBe(c2);
+  });
+
+  it('has unique colors in each palette', () => {
+    for (const isDark of [true, false]) {
+      for (const side of ['long', 'short'] as const) {
+        const colors = Array.from({ length: 8 }, (_, i) => getTripColor(i, side, isDark));
+        expect(new Set(colors).size).toBe(8);
+      }
+    }
+  });
+
+  it('returns fixed legend trip color matching trip index 0', () => {
+    expect(getLegendTripColor('long', true)).toBe(getTripColor(0, 'long', true));
+    expect(getLegendTripColor('short', false)).toBe(getTripColor(0, 'short', false));
   });
 
   it('wraps palette with modulo', () => {

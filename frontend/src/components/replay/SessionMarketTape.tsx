@@ -619,11 +619,9 @@ export const SessionMarketTape: React.FC<SessionMarketTapeProps> = ({
           labels={{
             entryLong: t('marketTapeLegendEntryLong'),
             entryShort: t('marketTapeLegendEntryShort'),
-            exitWin: t('marketTapeLegendExitWin'),
-            exitLoss: t('marketTapeLegendExitLoss'),
+            exit: t('marketTapeLegendExit'),
             stopLossBroker: t('marketTapeLegendStopLossBroker'),
-            tripColorHelp: t('marketTapeLegendTripColorHelp'),
-            entryTripHelp: t('marketTapeLegendEntryTripHelp'),
+            help: t('marketTapeLegendTripColorHelp'),
           }}
         />
       </div>
