@@ -104,40 +104,137 @@ def _day_streak_verdict(
     return None
 
 
-def _compute_streaks_from_aggregates(
+def _get_current_streak_day_dates(
     all_dates: List[str],
     daily_compliance: Any,
     day_compliances_dict: Dict[str, Any],
-) -> Tuple[int, int, Optional[str]]:
-    """Retourne (best_streak, current_streak, current_streak_start)."""
-    best_streak = 0
-    temp_streak = 0
-    for date_str in all_dates:
-        data = daily_compliance[date_str]
-        verdict = _day_streak_verdict(
-            date_str, data, day_compliances_dict, forward_best_pass=True
-        )
-        if verdict is True:
-            temp_streak += 1
-            if temp_streak > best_streak:
-                best_streak = temp_streak
-        elif verdict is False:
-            temp_streak = 0
-
-    current_streak = 0
-    current_streak_start = None
+) -> List[str]:
+    """Jours calendaires composant la série de discipline en cours (ordre chronologique)."""
+    streak_days: List[str] = []
     for date_str in reversed(all_dates):
         data = daily_compliance[date_str]
         verdict = _day_streak_verdict(
             date_str, data, day_compliances_dict, forward_best_pass=False
         )
         if verdict is True:
-            current_streak_start = date_str
-            current_streak += 1
+            streak_days.append(date_str)
         elif verdict is False:
             break
+    streak_days.reverse()
+    return streak_days
 
-    return best_streak, current_streak, current_streak_start
+
+def _count_trades_on_streak_days(
+    strategies_queryset,
+    streak_day_dates: List[str],
+    *,
+    respected: bool,
+) -> int:
+    """Compte les trades respectés ou non respectés sur les jours d'une série."""
+    if not streak_day_dates:
+        return 0
+    from datetime import date as date_type
+
+    streak_dates = [date_type.fromisoformat(d) for d in streak_day_dates]
+    return strategies_queryset.filter(
+        strategy_respected=respected,
+        trade__trade_day__in=streak_dates,
+    ).count()
+
+
+def _count_respected_trades_on_streak_days(
+    strategies_queryset,
+    streak_day_dates: List[str],
+) -> int:
+    """Compte les trades respectés sur les jours de la série en cours."""
+    return _count_trades_on_streak_days(
+        strategies_queryset, streak_day_dates, respected=True
+    )
+
+
+def _get_best_streak_day_dates(
+    all_dates: List[str],
+    daily_compliance: Any,
+    day_compliances_dict: Dict[str, Any],
+) -> List[str]:
+    """Jours composant la meilleure série de discipline (la plus récente en cas d'égalité)."""
+    best_streak = 0
+    best_streak_days: List[str] = []
+    temp_streak = 0
+    temp_days: List[str] = []
+    for date_str in all_dates:
+        data = daily_compliance[date_str]
+        verdict = _day_streak_verdict(
+            date_str, data, day_compliances_dict, forward_best_pass=True
+        )
+        if verdict is True:
+            temp_days.append(date_str)
+            temp_streak += 1
+            if temp_streak >= best_streak:
+                best_streak = temp_streak
+                best_streak_days = list(temp_days)
+        elif verdict is False:
+            temp_streak = 0
+            temp_days = []
+    return best_streak_days
+
+
+def _get_best_not_respect_streak_day_dates(
+    all_dates: List[str],
+    daily_compliance: Any,
+    day_compliances_dict: Dict[str, Any],
+) -> List[str]:
+    """Jours composant la plus longue série de non-respect (la plus récente en cas d'égalité)."""
+    best_streak = 0
+    best_streak_days: List[str] = []
+    temp_streak = 0
+    temp_days: List[str] = []
+    for date_str in all_dates:
+        data = daily_compliance[date_str]
+        verdict = _day_streak_verdict(
+            date_str, data, day_compliances_dict, forward_best_pass=True
+        )
+        if verdict is False:
+            temp_days.append(date_str)
+            temp_streak += 1
+            if temp_streak >= best_streak:
+                best_streak = temp_streak
+                best_streak_days = list(temp_days)
+        elif verdict is True:
+            temp_streak = 0
+            temp_days = []
+    return best_streak_days
+
+
+def _compute_streaks_from_aggregates(
+    all_dates: List[str],
+    daily_compliance: Any,
+    day_compliances_dict: Dict[str, Any],
+) -> Tuple[int, int, Optional[str], List[str], List[str], List[str]]:
+    """Retourne (best_streak, current_streak, current_streak_start, current_streak_days, best_streak_days, best_not_respect_streak_days)."""
+    best_streak_days = _get_best_streak_day_dates(
+        all_dates, daily_compliance, day_compliances_dict
+    )
+    best_streak = len(best_streak_days)
+
+    current_streak_days = _get_current_streak_day_dates(
+        all_dates, daily_compliance, day_compliances_dict
+    )
+    current_streak = len(current_streak_days)
+    current_streak_start = current_streak_days[0] if current_streak_days else None
+
+    best_not_respect_streak_days = _get_best_not_respect_streak_day_dates(
+        all_dates, daily_compliance, day_compliances_dict
+    )
+
+    return (
+        best_streak,
+        current_streak,
+        current_streak_start,
+        current_streak_days,
+        best_streak_days,
+        best_not_respect_streak_days,
+    )
 
 
 def compute_strategy_compliance_context(
@@ -272,8 +369,23 @@ def compute_strategy_compliance_context(
 
     all_dates.sort()
 
-    best_streak, current_streak, current_streak_start = _compute_streaks_from_aggregates(
-        all_dates, daily_compliance, day_compliances_dict
+    (
+        best_streak,
+        current_streak,
+        current_streak_start,
+        current_streak_days,
+        best_streak_days,
+        best_not_respect_streak_days,
+    ) = _compute_streaks_from_aggregates(all_dates, daily_compliance, day_compliances_dict)
+    current_streak_trades = _count_respected_trades_on_streak_days(
+        strategies_queryset, current_streak_days
+    )
+    best_streak_trades = _count_respected_trades_on_streak_days(
+        strategies_queryset, best_streak_days
+    )
+    best_not_respect_streak = len(best_not_respect_streak_days)
+    best_not_respect_streak_trades = _count_trades_on_streak_days(
+        strategies_queryset, best_not_respect_streak_days, respected=False
     )
 
     total_trades_with_strategy = sum(d["with_strategy"] for d in daily_compliance.values())
@@ -288,8 +400,12 @@ def compute_strategy_compliance_context(
         "daily_compliance": daily_compliance,
         "all_dates": all_dates,
         "best_streak": best_streak,
+        "best_streak_trades": best_streak_trades,
         "current_streak": current_streak,
         "current_streak_start": current_streak_start,
+        "current_streak_trades": current_streak_trades,
+        "best_not_respect_streak": best_not_respect_streak,
+        "best_not_respect_streak_trades": best_not_respect_streak_trades,
         "total_trades_with_strategy": total_trades_with_strategy,
         "total_respected": total_respected,
         "total_not_respected": total_not_respected,

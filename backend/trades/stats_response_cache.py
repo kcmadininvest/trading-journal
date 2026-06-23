@@ -8,7 +8,7 @@ from typing import Any, Dict, Mapping, Optional
 from django.core.cache import cache
 
 CACHE_TTL_SECONDS = 300
-CACHE_VERSION = 'v1'
+CACHE_VERSION = 'v2'
 
 
 def _canonical_params(params: Mapping[str, Any]) -> str:

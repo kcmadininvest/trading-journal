@@ -34,7 +34,11 @@ export interface TradeStrategy {
 export interface StrategyComplianceStats {
   current_streak: number;
   current_streak_start: string | null;
+  current_streak_trades: number;
   best_streak: number;
+  best_streak_trades: number;
+  best_not_respect_streak: number;
+  best_not_respect_streak_trades: number;
   overall_compliance_rate: number;
   compliance_7d: number;
   compliance_30d: number;

@@ -12,7 +12,11 @@ export interface DailyAggregate {
 export interface ComplianceStats {
   current_streak: number;
   best_streak: number;
+  best_streak_trades?: number;
   current_streak_start: string | null;
+  current_streak_trades?: number;
+  best_not_respect_streak?: number;
+  best_not_respect_streak_trades?: number;
   next_badge: any;
 }
 

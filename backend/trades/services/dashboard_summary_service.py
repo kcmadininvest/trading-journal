@@ -206,7 +206,11 @@ def compute_dashboard_summary_payload(request, *, include_lists: bool = True) ->
         compliance_stats = {
             'current_streak': streak_ctx['current_streak'],
             'best_streak': streak_ctx['best_streak'],
+            'best_streak_trades': streak_ctx['best_streak_trades'],
             'current_streak_start': streak_ctx['current_streak_start'],
+            'current_streak_trades': streak_ctx['current_streak_trades'],
+            'best_not_respect_streak': streak_ctx['best_not_respect_streak'],
+            'best_not_respect_streak_trades': streak_ctx['best_not_respect_streak_trades'],
             'next_badge': compute_dashboard_next_badge(streak_ctx['current_streak']),
         }
     except (ValueError, TypeError):

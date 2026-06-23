@@ -3198,6 +3198,10 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         current_streak = ctx['current_streak']
         best_streak = ctx['best_streak']
         current_streak_start = ctx['current_streak_start']
+        current_streak_trades = ctx['current_streak_trades']
+        best_streak_trades = ctx['best_streak_trades']
+        best_not_respect_streak = ctx['best_not_respect_streak']
+        best_not_respect_streak_trades = ctx['best_not_respect_streak_trades']
         total_trades_with_strategy = ctx['total_trades_with_strategy']
         total_respected = ctx['total_respected']
         total_not_respected = ctx['total_not_respected']
@@ -3385,7 +3389,11 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         response_data = {
             'current_streak': current_streak,
             'current_streak_start': current_streak_start,
+            'current_streak_trades': current_streak_trades,
             'best_streak': best_streak,
+            'best_streak_trades': best_streak_trades,
+            'best_not_respect_streak': best_not_respect_streak,
+            'best_not_respect_streak_trades': best_not_respect_streak_trades,
             'overall_compliance_rate': round(overall_compliance_rate, 2),
             'compliance_7d': round(compliance_7d, 2),
             'compliance_30d': round(compliance_30d, 2),

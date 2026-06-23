@@ -2109,7 +2109,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     subMetrics={[
                       {
                         label: t('dashboard:currentRespectTrades'),
-                        value: `${additionalStats.currentConsecutiveTradesRespected || 0} ${t('trades:trades')}`
+                        value: `${complianceStats?.current_streak_trades ?? 0} ${t('trades:trades')}`
                       }
                     ]}
                     trend={complianceStats?.current_streak ? 'up' : undefined}
@@ -2148,7 +2148,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     subMetrics={[
                       {
                         label: t('dashboard:maxTrades'),
-                        value: `${additionalStats.maxConsecutiveTradesRespected || 0} ${t('trades:trades')}`
+                        value: `${complianceStats?.best_streak_trades ?? 0} ${t('trades:trades')}`
                       },
                       {
                         label: '',
@@ -2176,8 +2176,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                   <ModernStatCard
                     theme="default"
                     label={t('dashboard:sequenceNotRespect')}
-                    value={`${additionalStats.maxConsecutiveDaysNotRespected || 0} ${t('dashboard:days')}`}
-                    variant={additionalStats.maxConsecutiveDaysNotRespected >= 3 ? 'danger' : additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'warning' : 'default'}
+                    value={`${complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0} ${t('dashboard:days')}`}
+                    variant={(complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0) >= 3 ? 'danger' : (complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0) > 0 ? 'warning' : 'default'}
                     size="small"
                     icon={
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -2187,15 +2187,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                     subMetrics={[
                       {
                         label: t('dashboard:maxTrades'),
-                        value: `${additionalStats.maxConsecutiveTradesNotRespected || 0} ${t('trades:trades')}`
+                        value: `${complianceStats?.best_not_respect_streak_trades ?? 0} ${t('trades:trades')}`
                       },
                       {
                         label: '',
                         value: ''
                       }
                     ]}
-                    trend={additionalStats.maxConsecutiveDaysNotRespected > 0 ? 'down' : undefined}
-                    trendValue={additionalStats.maxConsecutiveDaysNotRespected > 0 ? t('dashboard:needsAttention') : undefined}
+                    trend={(complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0) > 0 ? 'down' : undefined}
+                    trendValue={(complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0) > 0 ? t('dashboard:needsAttention') : undefined}
                   />
                 </div>
               </Tooltip>

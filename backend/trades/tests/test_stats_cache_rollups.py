@@ -27,7 +27,7 @@ class StatsResponseCacheTests(TestCase):
     def test_cache_roundtrip(self):
         params = {'start_date': '2026-01-01', 'end_date': '2026-01-31'}
         key = build_stats_cache_key(42, 'dashboard_summary', params)
-        self.assertIn('stats:v1:dashboard_summary:42:', key)
+        self.assertIn('stats:v2:dashboard_summary:42:', key)
         self.assertIsNone(get_cached_stats_response(42, 'dashboard_summary', params))
         payload = {'count': 1, 'daily_aggregates': []}
         set_cached_stats_response(42, 'dashboard_summary', params, payload)

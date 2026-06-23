@@ -39,13 +39,20 @@ export function useDashboardComplianceRefresh({
 
         const patchComplianceStats = (old: DashboardSummary | undefined) => {
           if (!old) return old;
+          const previous = old.compliance_stats;
           return {
             ...old,
             compliance_stats: {
+              ...previous,
               current_streak: stats.current_streak,
               best_streak: stats.best_streak,
+              best_streak_trades: stats.best_streak_trades ?? previous?.best_streak_trades ?? 0,
               current_streak_start: stats.current_streak_start,
-              next_badge: stats.next_badge,
+              current_streak_trades: stats.current_streak_trades ?? previous?.current_streak_trades ?? 0,
+              best_not_respect_streak: stats.best_not_respect_streak ?? previous?.best_not_respect_streak ?? 0,
+              best_not_respect_streak_trades:
+                stats.best_not_respect_streak_trades ?? previous?.best_not_respect_streak_trades ?? 0,
+              next_badge: stats.next_badge ?? previous?.next_badge ?? null,
             },
           };
         };
@@ -60,6 +67,10 @@ export function useDashboardComplianceRefresh({
     },
     [accountId, pnlDisplay, queryClient]
   );
+
+  useEffect(() => {
+    void refreshCompliance();
+  }, [refreshCompliance]);
 
   useEffect(() => {
     const handleComplianceUpdate = (event: CustomEvent<{ tradingAccount?: number }>) => {
