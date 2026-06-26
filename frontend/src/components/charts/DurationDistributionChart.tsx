@@ -20,8 +20,8 @@ import {
   DASHBOARD_PANEL_TITLE_CLASS,
   DASHBOARD_PNL_POSITIVE_BAR_BG,
   DASHBOARD_PNL_POSITIVE_BAR_BORDER,
-  getDashboardChartAxisColors,
 } from '../dashboard/tickerShell';
+import { getDashboardChartAxisColors } from '../dashboard/dashboardChartStyles';
 
 // Register Chart.js components
 ChartJS.register(

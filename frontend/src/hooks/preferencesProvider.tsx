@@ -2,7 +2,7 @@
  * Hook pour accéder aux préférences utilisateur dans toute l'application
  */
 
-import { useState, useEffect, useContext, createContext, useCallback } from 'react';
+import { useState, useEffect, useCallback, createContext } from 'react';
 import { Chart } from 'chart.js';
 import userService, { UserPreferences } from '../services/userService';
 import { changeLanguage } from '../i18n/config';
@@ -17,7 +17,7 @@ import {
 } from '../utils/chartConfig';
 import { applyThemePreference, isThemePreference, ThemePreference } from '../utils/theme';
 
-interface PreferencesContextType {
+export interface PreferencesContextType {
   preferences: UserPreferences;
   loading: boolean;
   refreshPreferences: () => Promise<void>;
@@ -25,7 +25,7 @@ interface PreferencesContextType {
   mergePreferences: (partial: Partial<UserPreferences>) => void;
 }
 
-const PreferencesContext = createContext<PreferencesContextType | null>(null);
+export const PreferencesContext = createContext<PreferencesContextType | null>(null);
 
 // Lire le thème depuis localStorage immédiatement pour éviter le flash
 const getInitialTheme = (): ThemePreference => {
@@ -42,7 +42,7 @@ const getInitialTheme = (): ThemePreference => {
 };
 
 // Lire la taille de police depuis localStorage immédiatement
-const getInitialFontSize = (): 'small' | 'medium' | 'large' => {
+export const getInitialFontSize = (): 'small' | 'medium' | 'large' => {
   try {
     const savedFontSize = localStorage.getItem('font_size');
     if (savedFontSize === 'small' || savedFontSize === 'medium' || savedFontSize === 'large') {
@@ -58,7 +58,7 @@ const getInitialFontSize = (): 'small' | 'medium' | 'large' => {
   return 'medium';
 };
 
-const DEFAULT_ITEMS_PER_PAGE = 20;
+export const DEFAULT_ITEMS_PER_PAGE = 20;
 const DEFAULT_FONT_FAMILY: AppFontFamily = 'inter';
 
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -265,47 +265,5 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
       {children}
     </PreferencesContext.Provider>
   );
-};
-
-export const usePreferences = (): PreferencesContextType => {
-  const context = useContext(PreferencesContext);
-  if (!context) {
-    // Retourner des valeurs par défaut si le contexte n'est pas disponible
-      const defaultFontSize = getInitialFontSize();
-      // Utiliser la langue détectée depuis i18n au lieu de 'fr'
-      const detectedLang = i18n.language?.split('-')[0] || 'en';
-      const supportedLangs: Array<'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh'> = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'];
-      const defaultLang = (supportedLangs.includes(detectedLang as any) ? detectedLang : 'en') as 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ja' | 'ko' | 'zh';
-      // Détecter automatiquement le timezone
-      const getDefaultTimezone = (): string => {
-        try {
-          const detectedTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-          if (detectedTimezone) {
-            return detectedTimezone;
-          }
-        } catch {
-          // Ignorer les erreurs
-        }
-        return 'Europe/Paris';
-      };
-      return {
-        preferences: {
-          language: defaultLang, // Utiliser la langue détectée au lieu de 'fr'
-          timezone: getDefaultTimezone(), // Détecter automatiquement le timezone
-          date_format: 'EU',
-          number_format: 'comma',
-          theme: 'light',
-          font_size: defaultFontSize,
-          font_family: getStoredAppFontFamily(),
-          items_per_page: DEFAULT_ITEMS_PER_PAGE,
-          email_goal_alerts: true,
-          show_pre_market: false,
-        },
-        loading: false,
-        refreshPreferences: async () => {},
-        mergePreferences: () => {},
-      };
-  }
-  return context;
 };
 

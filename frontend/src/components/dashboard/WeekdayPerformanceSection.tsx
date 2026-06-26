@@ -18,8 +18,8 @@ import {
   DASHBOARD_PNL_POSITIVE_BAR_BG,
   DASHBOARD_PNL_POSITIVE_BAR_BORDER,
   DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
-  getDashboardChartAxisColors,
 } from './tickerShell';
+import { getDashboardChartAxisColors } from './dashboardChartStyles';
 
 const WEEKDAY_PANEL_CLASS = `${DASHBOARD_PANEL_SHELL_CLASS} p-4 sm:p-6`;
 

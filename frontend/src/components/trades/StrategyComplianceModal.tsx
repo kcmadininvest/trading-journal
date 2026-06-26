@@ -7,7 +7,7 @@ import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import ImageUpload from '../ui/ImageUpload';
 import screenshotsService from '../../services/screenshots';
 import { usePreferences } from '../../hooks/usePreferences';
-import { useComplianceRefresh } from '../../contexts/ComplianceRefreshContext';
+import { useComplianceRefresh } from '../../contexts/useComplianceRefresh';
 import { formatCurrencyWithSign } from '../../utils/numberFormat';
 import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { openMediaUrl, isAppHostedImageUrl } from '../../utils/mediaUrl';

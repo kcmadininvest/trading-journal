@@ -8,21 +8,6 @@ import { MarketTapeTheme } from './replayStyles';
 
 const ICON = 22;
 
-/** Décalage vertical viewBox : entrées décalées sous/sur le prix ; sorties centrées sur le prix (+ empilement). */
-export function getTapeMarkerAnchorOffset(
-  marker: Pick<TapeMarker, 'kind' | 'side' | 'pnl' | 'offsetY'>,
-): number {
-  const stack = marker.offsetY ?? 0;
-  if (marker.kind === 'entry') {
-    const isLong = (marker.side || '').toLowerCase() === 'long';
-    return (isLong ? 14 : -14) + stack;
-  }
-  if (marker.kind === 'exit') {
-    return stack;
-  }
-  return stack;
-}
-
 const ARROW_STROKE = 'rgba(0,0,0,0.2)';
 
 /** Flèche entrée long (arrowUp) — repère : pointe en haut vers le prix. */

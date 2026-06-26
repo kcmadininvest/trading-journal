@@ -2,8 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { DateInput } from '../common/DateInput';
 import { PaginationControls } from '../ui';
 import {
-  TAX_PAYMENT_TYPES,
   TradingActivityTaxPayment,
+  isBuiltinTaxPaymentTypeCode,
   type BuiltinTaxPaymentLabels,
   type BuiltinTaxPaymentType,
   type TaxPaymentCustomType,
@@ -12,6 +12,12 @@ import {
 import { formatDate, type DateFormatType } from '../../utils/dateFormat';
 import { formatNumber, type NumberFormatType } from '../../utils/numberFormat';
 import { TradingActivityLedgerDeleteAction } from './TradingActivityLedgerDeleteAction';
+import {
+  buildTaxPaymentTypeSelectOptions,
+  taxPaymentTypeLabel,
+  type TradingActivityT,
+} from './taxPaymentTypeUtils';
+export type { TradingActivityT } from './taxPaymentTypeUtils';
 
 const MODAL_SELECT_CLASS =
   'w-full cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-10 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100';
@@ -27,45 +33,6 @@ function ModalSelectChevron(): React.ReactElement {
       </svg>
     </span>
   );
-}
-
-export type TradingActivityT = (key: string, options?: Record<string, string | number>) => string;
-
-function isBuiltinTaxPaymentTypeCode(code: string): code is BuiltinTaxPaymentType {
-  return (TAX_PAYMENT_TYPES as readonly string[]).includes(code);
-}
-
-export function taxPaymentTypeLabel(
-  t: TradingActivityT,
-  code: string,
-  customTypes?: TaxPaymentCustomType[],
-  builtinLabels?: BuiltinTaxPaymentLabels,
-): string {
-  const custom = customTypes?.find((row) => row.code === code);
-  if (custom) return custom.name;
-  if (isBuiltinTaxPaymentTypeCode(code) && builtinLabels?.[code]) {
-    return builtinLabels[code];
-  }
-  if (isBuiltinTaxPaymentTypeCode(code)) {
-    return t(`paymentType.${code}`);
-  }
-  return code;
-}
-
-export function buildTaxPaymentTypeSelectOptions(
-  t: TradingActivityT,
-  customTypes: TaxPaymentCustomType[],
-  builtinLabels?: BuiltinTaxPaymentLabels,
-): Array<{ value: TaxPaymentTypeCode; label: string }> {
-  const builtins = TAX_PAYMENT_TYPES.map((code) => ({
-    value: code,
-    label: taxPaymentTypeLabel(t, code, customTypes, builtinLabels),
-  }));
-  const customs = customTypes.map((row) => ({
-    value: row.code,
-    label: row.name,
-  }));
-  return [...builtins, ...customs];
 }
 
 function MobileTaxPaymentCard({
@@ -183,7 +150,7 @@ export function TradingActivityTaxPaymentModal({
     () => customPaymentTypes.find((row) => row.code === form.payment_type),
     [customPaymentTypes, form.payment_type],
   );
-  const selectedBuiltin = useMemo(() => {
+  const selectedBuiltin = useMemo((): BuiltinTaxPaymentType | null => {
     if (!isBuiltinTaxPaymentTypeCode(form.payment_type)) return null;
     return form.payment_type;
   }, [form.payment_type]);

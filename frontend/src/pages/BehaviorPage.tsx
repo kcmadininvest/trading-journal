@@ -26,7 +26,7 @@ import { formatDate as formatDateUtil, type LanguageType } from '../utils/dateFo
 import { useFinancialAggregationMode } from '../hooks/useFinancialAggregationMode';
 import { applyConvertedPnlToTrades } from '../utils/convertTradePnl';
 import { MultiCurrencyWarningBanner } from '../components/analytics/MultiCurrencyWarningBanner';
-import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useTradingAccount } from '../contexts/useTradingAccount';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
@@ -39,7 +39,6 @@ import {
 import { PageShell } from '../components/layout';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { parsePnlDisplayMode } from '../utils/pnlDisplay';
-import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import {
   BehaviorDisciplinePanel,
   BehaviorNarrativePanel,
@@ -99,12 +98,6 @@ const BehaviorPage: React.FC = () => {
   const [filteredTrades, setFilteredTrades] = useState<TradeListItem[]>([]);
 
   const { strategies: positionStrategies, loading: loadingStrategies } = usePositionStrategiesForFilter();
-
-  const { startDate: summaryStartDate, endDate: summaryEndDate } = usePeriodDateRange({
-    selectedPeriod,
-    selectedYear,
-    selectedMonth,
-  });
 
   const financialAggregation = useFinancialAggregationMode(
     accountId,

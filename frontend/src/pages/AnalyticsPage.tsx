@@ -33,7 +33,7 @@ import { useTheme } from '../hooks/useTheme';
 import { formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { formatDate } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useTradingAccount } from '../contexts/useTradingAccount';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';

@@ -6,7 +6,7 @@ import { chartTooltipResetPlugin } from './plugins/chartTooltipResetPlugin';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { PreferencesProvider } from './hooks/usePreferences';
+import { PreferencesProvider } from './hooks/preferencesProvider';
 import { TradingAccountProvider } from './contexts/TradingAccountContext';
 import { queryClient } from './lib/queryClient';
 import {

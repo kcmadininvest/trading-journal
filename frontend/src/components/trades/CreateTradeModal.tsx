@@ -7,7 +7,7 @@ import { CustomSelect } from '../common/CustomSelect';
 import { NumberInput } from '../common/NumberInput';
 import { SimpleDateTimeInput } from '../common/SimpleDateTimeInput';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { useTradingAccount } from '../../contexts/TradingAccountContext';
+import { useTradingAccount } from '../../contexts/useTradingAccount';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber } from '../../utils/numberFormat';
 

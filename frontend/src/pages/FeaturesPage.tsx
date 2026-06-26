@@ -61,7 +61,6 @@ const FeaturesPage: React.FC = () => {
       if (currentI18nLang !== savedLang) {
         // changeLanguage() sauvegarde automatiquement dans localStorage via LanguageDetector
         await changeLanguage(savedLang);
-      } else {
       }
       setIsLangApplied(true);
     };
@@ -76,7 +75,6 @@ const FeaturesPage: React.FC = () => {
     // Si la langue n'est pas déjà appliquée, l'appliquer
     if (!isLangApplied) {
       applyLang();
-    } else {
     }
     
     return () => {

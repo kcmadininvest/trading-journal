@@ -264,22 +264,14 @@ const TradingAccountsPage: React.FC = () => {
 
 
   const handleSaveAccount = async (accountId: number | null, data: Partial<TradingAccount>) => {
-    try {
-      if (accountId) {
-        // Mode édition
-        await tradingAccountsService.update(accountId, data);
-      } else {
-        // Mode création
-        await tradingAccountsService.create(data);
-      }
-      // Recharger depuis le backend pour refléter l'unicité du compte par défaut
-      await load();
-      // Fermer la modale après la sauvegarde
-      setShowAccountModal(false);
-      setEditingAccount(null);
-    } catch (error) {
-      throw error;
+    if (accountId) {
+      await tradingAccountsService.update(accountId, data);
+    } else {
+      await tradingAccountsService.create(data);
     }
+    await load();
+    setShowAccountModal(false);
+    setEditingAccount(null);
   };
 
   const handleCreateNew = () => {
@@ -296,7 +288,9 @@ const TradingAccountsPage: React.FC = () => {
     try {
       await tradingAccountsService.setDefault(id);
       await load();
-    } catch {}
+    } catch {
+      // échec silencieux — l’UI reste sur l’état précédent
+    }
   };
 
   const handleToggleStatus = async (acc: TradingAccount) => {
@@ -304,7 +298,9 @@ const TradingAccountsPage: React.FC = () => {
     try {
       const updated = await tradingAccountsService.update(acc.id, { status: nextStatus });
       setAllAccounts(prev => prev.map(a => (a.id === acc.id ? updated : a)));
-    } catch {}
+    } catch {
+      // échec silencieux — l’UI reste sur l’état précédent
+    }
   };
 
   const handleArchive = (acc: TradingAccount) => {

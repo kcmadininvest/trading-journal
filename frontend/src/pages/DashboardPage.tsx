@@ -14,14 +14,15 @@ import { accountTransactionsService, AccountTransaction } from '../services/acco
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import ModernStatCard from '../components/common/ModernStatCard';
-import { MetricGauge, GAUGE_CONFIGS } from '../components/statistics/MetricGauge';
+import { MetricGauge } from '../components/statistics/MetricGauge';
+import { GAUGE_CONFIGS } from '../components/statistics/gaugeConfigs';
 import Tooltip from '../components/ui/Tooltip';
 import { usePreferences } from '../hooks/usePreferences';
 import { useTheme } from '../hooks/useTheme';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../utils/numberFormat';
 import { formatDate, toIsoCalendarDateInTimezone } from '../utils/dateFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useTradingAccount } from '../contexts/useTradingAccount';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
@@ -33,14 +34,16 @@ import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformance
 import { WeekdayPerformanceSection } from '../components/dashboard/WeekdayPerformanceSection';
 import {
   DashboardPanel,
-  getDashboardChartAxisColors,
   DASHBOARD_GAUGE_TILE_CLASS,
   DASHBOARD_PANEL_HINT_CLASS,
   DASHBOARD_PANEL_TITLE_CLASS,
-  getDashboardPerformanceBadgeClasses,
   DASHBOARD_PNL_NEGATIVE_TEXT_CLASS,
   DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
 } from '../components/dashboard/tickerShell';
+import {
+  getDashboardChartAxisColors,
+  getDashboardPerformanceBadgeClasses,
+} from '../components/dashboard/dashboardChartStyles';
 import { useWeekdayPerformance } from '../hooks/useWeekdayPerformance';
 import { PageShell } from '../components/layout';
 import {

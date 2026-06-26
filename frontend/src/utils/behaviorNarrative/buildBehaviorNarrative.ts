@@ -1,4 +1,4 @@
-import { GAUGE_CONFIGS } from '../../components/statistics/MetricGauge';
+import { GAUGE_CONFIGS } from '../../components/statistics/gaugeConfigs';
 import { getGaugeVerdict } from '../getGaugeVerdict';
 import { WEEKDAY_WIN_RATE_MIN_TRADES } from './aggregateBehaviorTimeContext';
 import { resolveSectionTitle } from './resolveSectionTitle';

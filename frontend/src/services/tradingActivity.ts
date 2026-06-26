@@ -83,6 +83,10 @@ export function isCustomTaxPaymentTypeCode(code: string): boolean {
   return code.startsWith(CUSTOM_TAX_PAYMENT_TYPE_PREFIX);
 }
 
+export function isBuiltinTaxPaymentTypeCode(code: string): code is BuiltinTaxPaymentType {
+  return (TAX_PAYMENT_TYPES as readonly string[]).includes(code);
+}
+
 export function customTaxPaymentTypeIdFromCode(code: string): number | null {
   if (!isCustomTaxPaymentTypeCode(code)) return null;
   const id = Number(code.slice(CUSTOM_TAX_PAYMENT_TYPE_PREFIX.length));

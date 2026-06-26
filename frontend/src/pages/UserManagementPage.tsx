@@ -150,28 +150,21 @@ const UserManagementPage: React.FC = () => {
   };
 
   const handleSaveUser = async (userId: number, data: UserUpdateData) => {
-    try {
-      const updatedUser = await userService.updateUser(userId, data);
-      
-      // Mettre à jour l'utilisateur dans la liste locale au lieu de recharger
-      setUsers(prevUsers => 
-        prevUsers.map(u => u.id === userId ? { ...u, ...updatedUser } : u)
-      );
-      
-      // Si l'utilisateur modifié est l'utilisateur connecté, mettre à jour authService et déclencher l'événement
-      const currentUser = authService.getCurrentUser();
-      if (currentUser && currentUser.id === userId) {
-        authService.updateUser(updatedUser);
-        // Déclencher un événement pour mettre à jour l'interface (header, sidebar, etc.)
-        window.dispatchEvent(new CustomEvent('user:profile-updated', { 
-          detail: { user: updatedUser } 
-        }));
-      }
-      
-      toast.success(t('users:page.success.userUpdated'));
-    } catch (error: any) {
-      throw error; // L'erreur sera gérée par le modal
+    const updatedUser = await userService.updateUser(userId, data);
+
+    setUsers(prevUsers =>
+      prevUsers.map(u => u.id === userId ? { ...u, ...updatedUser } : u)
+    );
+
+    const currentUser = authService.getCurrentUser();
+    if (currentUser && currentUser.id === userId) {
+      authService.updateUser(updatedUser);
+      window.dispatchEvent(new CustomEvent('user:profile-updated', {
+        detail: { user: updatedUser }
+      }));
     }
+
+    toast.success(t('users:page.success.userUpdated'));
   };
 
   const handleToggleUserStatus = async (user: User) => {

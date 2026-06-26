@@ -369,7 +369,6 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
       }
       const uploaded: DailyJournalImage[] = [];
       for (const file of files) {
-        // eslint-disable-next-line no-await-in-loop
         const image = await dailyJournalService.uploadImage(currentEntry.id, file);
         uploaded.push(image);
       }

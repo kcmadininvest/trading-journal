@@ -21,11 +21,11 @@ import {
   resolveTapeTripStrokeColor,
 } from './marketTapeMarkerLayout';
 import {
-  getTapeMarkerAnchorOffset,
   MarketTapeLegend,
   TapeChartEntryMarkerGlyph,
   TapeExitMarkerGraphic,
 } from './marketTapeGlyphs';
+import { getTapeMarkerAnchorOffset } from './getTapeMarkerAnchorOffset';
 import { getMarketTapeTheme, getReplayPnlTextClass, MarketTapeTheme, replayCardClass } from './replayStyles';
 
 interface SessionMarketTapeProps {

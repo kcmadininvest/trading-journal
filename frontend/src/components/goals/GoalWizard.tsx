@@ -10,7 +10,7 @@ import DeleteConfirmModal from '../ui/DeleteConfirmModal';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatNumber, formatCurrency } from '../../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { useTradingAccount } from '../../contexts/TradingAccountContext';
+import { useTradingAccount } from '../../contexts/useTradingAccount';
 
 interface GoalWizardProps {
   isOpen: boolean;
@@ -162,7 +162,7 @@ export const GoalWizard: React.FC<GoalWizardProps> = ({
 
   const calculatePeriodDates = (periodType: string) => {
     const today = new Date();
-    let endDate = new Date(today);
+    const endDate = new Date(today);
 
     switch (periodType) {
       case 'monthly':

@@ -57,7 +57,6 @@ const AboutPage: React.FC = () => {
       if (currentI18nLang !== savedLang) {
         // changeLanguage() sauvegarde automatiquement dans localStorage via LanguageDetector
         await changeLanguage(savedLang);
-      } else {
       }
       setIsLangApplied(true);
     };

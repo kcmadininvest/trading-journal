@@ -8,7 +8,8 @@ import {
   formatMarketQuoteChangePercent,
   formatMarketQuotePrice,
 } from '../../utils/marketQuotesFormat';
-import { MarketQuoteInstrumentIcon, quoteIconContainerClass } from './marketQuoteIcons';
+import { MarketQuoteInstrumentIcon } from './marketQuoteIcons';
+import { quoteIconContainerClass } from './quoteIconContainerClass';
 import { TickerShell } from './tickerShell';
 
 const FATAL_MESSAGES = new Set([

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
+import { createContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { tradingAccountsService } from '../services/tradingAccounts';
 import { authService } from '../services/auth';
 
@@ -8,7 +8,7 @@ interface TradingAccountContextType {
   loading: boolean;
 }
 
-const TradingAccountContext = createContext<TradingAccountContextType | null>(null);
+export const TradingAccountContext = createContext<TradingAccountContextType | null>(null);
 
 export const TradingAccountProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [selectedAccountId, setSelectedAccountIdState] = useState<number | null>(null);
@@ -208,13 +208,5 @@ export const TradingAccountProvider: React.FC<{ children: ReactNode }> = ({ chil
       {children}
     </TradingAccountContext.Provider>
   );
-};
-
-export const useTradingAccount = (): TradingAccountContextType => {
-  const context = useContext(TradingAccountContext);
-  if (!context) {
-    throw new Error('useTradingAccount must be used within TradingAccountProvider');
-  }
-  return context;
 };
 

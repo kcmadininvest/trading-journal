@@ -14,7 +14,7 @@ import { PageShell } from '../components/layout';
 import { DeleteConfirmModal } from '../components/ui';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useTradingAccount } from '../contexts/useTradingAccount';
 import { usePreferences } from '../hooks/usePreferences';
 import userService from '../services/userService';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
@@ -334,7 +334,9 @@ const TradesPage: React.FC = () => {
           position_strategy: filters.position_strategy ? Number(filters.position_strategy) : undefined,
         });
         setStats(s);
-      } catch {}
+      } catch {
+        // stats optionnelles après suppression
+      }
       // Si la page courante est vide après suppression, reculer d'une page
       setTimeout(() => {
         if (items.length === 1 && page > 1) {
@@ -383,7 +385,9 @@ const TradesPage: React.FC = () => {
           position_strategy: filters.position_strategy ? Number(filters.position_strategy) : undefined,
         });
         setStats(s);
-      } catch {}
+      } catch {
+        // stats optionnelles après suppression
+      }
       // Ajuster pagination
       setTimeout(() => {
         if (items.length === 0 && page > 1) {

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import Tooltip from '../ui/Tooltip';
 import { maskValue } from '../../hooks/usePrivacySettings';
 import type { StatisticsData } from '../../hooks/useStatistics';
-import { GAUGE_CONFIGS } from './MetricGauge';
+import { GAUGE_CONFIGS } from './gaugeConfigs';
 import {
   getExpectancyVerdict,
   getGaugeVerdict,

@@ -10,7 +10,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { SkeletonGrid } from '../components/ui/SkeletonLoader';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useTradingAccount } from '../contexts/useTradingAccount';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { PageShell } from '../components/layout';
 
@@ -209,10 +209,7 @@ const GoalsPage: React.FC = () => {
       activeRequestsRef.current = Math.max(0, activeRequestsRef.current - 1);
       isFetchingRef.current = activeRequestsRef.current > 0;
 
-      if (requestId !== latestRequestIdRef.current) {
-        return;
-      }
-      if (showLoading) {
+      if (requestId === latestRequestIdRef.current && showLoading) {
         setLoading(false);
       }
     }

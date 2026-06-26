@@ -11,7 +11,7 @@ import { formatDateLong, LanguageType } from '../utils/dateFormat';
 import { AccountSelector } from '../components/accounts/AccountSelector';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';
 import { Tooltip } from '../components/ui';
-import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useTradingAccount } from '../contexts/useTradingAccount';
 import { getMonthNames } from '../utils/dateFormat';
 import { DateInput } from '../components/common/DateInput';
 import { PageShell } from '../components/layout';

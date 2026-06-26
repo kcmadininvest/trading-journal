@@ -10,7 +10,8 @@ import {
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
-import { ChartHoverTooltip, rechartsTooltipWrapperProps } from '../charts/ChartHoverTooltip';
+import { ChartHoverTooltip } from '../charts/ChartHoverTooltip';
+import { rechartsTooltipWrapperProps } from '../charts/rechartsTooltipWrapperProps';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 import { usePreferences } from '../../hooks/usePreferences';

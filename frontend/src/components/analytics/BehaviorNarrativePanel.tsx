@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { BehaviorNarrativeContext, NarrativeSection, NarrativeTone } from '../../utils/behaviorNarrative';
 import type { NarrativeHighlight } from '../../utils/behaviorNarrative/types';
 import { maskValue } from '../../hooks/usePrivacySettings';
-import { GAUGE_CONFIGS } from '../statistics/MetricGauge';
+import { GAUGE_CONFIGS } from '../statistics/gaugeConfigs';
 import {
   getGaugeVerdict,
   VERDICT_CARD_CLASSES,

@@ -9,9 +9,9 @@ import { usePreferences } from '../hooks/usePreferences';
 import {
   TradingActivityTaxPaymentModal,
   TradingActivityTaxPaymentsLedgerPanel,
-  buildTaxPaymentTypeSelectOptions,
   type TaxPaymentFormState,
 } from '../components/tradingActivity/TradingActivityTaxPaymentsPanel';
+import { buildTaxPaymentTypeSelectOptions } from '../components/tradingActivity/taxPaymentTypeUtils';
 import { TradingActivityLedgerDeleteAction } from '../components/tradingActivity/TradingActivityLedgerDeleteAction';
 import {
   tradingActivityService,
@@ -623,7 +623,6 @@ const TradingActivityPage: React.FC = () => {
     setCreditsPage(1);
     setTaxPaymentsPage(1);
     setLedgerBump((b) => b + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     ledgerFilters.date_from,
     ledgerFilters.date_to,

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
-import { GAUGE_CONFIGS, MetricGauge } from '../statistics/MetricGauge';
+import { MetricGauge } from '../statistics/MetricGauge';
+import { GAUGE_CONFIGS } from '../statistics/gaugeConfigs';
 import type { PostLossSizingCategory, PostTradeSizingI18nPrefix } from '../../hooks/useStatistics';
 import {
   evaluateLargerPct,

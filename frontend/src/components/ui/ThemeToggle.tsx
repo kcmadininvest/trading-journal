@@ -6,7 +6,7 @@ import { Tooltip } from './index';
  * Composant pour basculer entre les modes dark et light
  */
 const ThemeToggle: React.FC = () => {
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   return (
     <Tooltip content={isDark ? 'Mode clair' : 'Mode sombre'} position="left">

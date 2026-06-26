@@ -12,7 +12,7 @@ import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesFo
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { usePreferences } from '../hooks/usePreferences';
 import { PeriodSelector } from '../components/common/PeriodSelector';
-import { useTradingAccount } from '../contexts/TradingAccountContext';
+import { useTradingAccount } from '../contexts/useTradingAccount';
 import { usePersistedPeriodAndStrategyFilters } from '../hooks/usePersistedPeriodAndStrategyFilters';
 import { ImportTradesModal } from '../components/trades/ImportTradesModal';
 import { useAccountNumberVisibility } from '../hooks/useAccountNumberVisibility';

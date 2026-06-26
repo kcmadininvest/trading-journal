@@ -1,7 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { MetricCard, MetricItem } from './MetricCard';
-import { MetricGauge, GAUGE_CONFIGS } from './MetricGauge';
+import { MetricGauge } from './MetricGauge';
+import { GAUGE_CONFIGS } from './gaugeConfigs';
 import { TradeOutcomeStrip } from './TradeOutcomeStrip';
 import { TradesDistributionChart } from '../analytics/TradesDistributionChart';
 import type { TradesDistributionChartData } from '../../utils/buildTradesDistributionData';

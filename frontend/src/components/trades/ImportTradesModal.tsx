@@ -6,7 +6,7 @@ import { useAccountNumberVisibility } from '../../hooks/useAccountNumberVisibili
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatCurrencyWithSign, formatNumber } from '../../utils/numberFormat';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { useTradingAccount } from '../../contexts/TradingAccountContext';
+import { useTradingAccount } from '../../contexts/useTradingAccount';
 import userService from '../../services/userService';
 import Tooltip from '../ui/Tooltip';
 import { SettingsStyleToggle } from '../ui/SettingsStyleToggle';
@@ -127,7 +127,6 @@ export const ImportTradesModal: React.FC<ImportTradesModalProps> = ({ open, onCl
       // Réinitialiser les références précédentes pour éviter les faux positifs dans le useEffect suivant
       previousFileRef.current = null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, contextAccountId, preferences.import_guide_collapsed]);
 
   // Réinitialiser l'aperçu si le fichier ou le compte change

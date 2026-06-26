@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MetricCard, MetricItem } from './MetricCard';
-import { MetricGauge, GAUGE_CONFIGS } from './MetricGauge';
+import { MetricGauge } from './MetricGauge';
+import { GAUGE_CONFIGS } from './gaugeConfigs';
 import { STATS_GRID } from './statisticsConstants';
 import type { StatisticsTabBaseProps } from './statisticsTypes';
 import { buildTradeOutcomeSeries } from '../../utils/computeRollingPeakWinRate';

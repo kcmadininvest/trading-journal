@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback } from 'react';
 
 interface ComplianceRefreshContextType {
   refreshCount: number;
   triggerRefresh: () => void;
 }
 
-const ComplianceRefreshContext = createContext<ComplianceRefreshContextType>({
+export const ComplianceRefreshContext = createContext<ComplianceRefreshContextType>({
   refreshCount: 0,
   triggerRefresh: () => {},
 });
@@ -23,5 +23,3 @@ export const ComplianceRefreshProvider: React.FC<{ children: React.ReactNode }> 
     </ComplianceRefreshContext.Provider>
   );
 };
-
-export const useComplianceRefresh = () => useContext(ComplianceRefreshContext);
