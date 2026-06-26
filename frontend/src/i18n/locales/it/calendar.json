@@ -20,6 +20,12 @@
   "viewJournal": "View journal",
   "importTrades": "Importer des trades",
   "trade": "trade",
-  "trades": "trades"
+  "trades": "trades",
+  "depositOnDay": "Deposito: {{amount}}",
+  "depositsOnDay": "{{count}} depositi: {{amount}}",
+  "withdrawalOnDay": "Prelievo: {{amount}}",
+  "withdrawalsOnDay": "{{count}} prelievi: {{amount}}",
+  "depositIconLabel": "Giorno con deposito",
+  "withdrawalIconLabel": "Giorno con prelievo"
 }
 

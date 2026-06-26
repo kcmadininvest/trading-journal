@@ -25,5 +25,11 @@
   "viewJournal": "Tagebuch ansehen",
   "importTrades": "Trades importieren",
   "trade": "Trade",
-  "trades": "Trades"
+  "trades": "Trades",
+  "depositOnDay": "Einzahlung: {{amount}}",
+  "depositsOnDay": "{{count}} Einzahlungen: {{amount}}",
+  "withdrawalOnDay": "Auszahlung: {{amount}}",
+  "withdrawalsOnDay": "{{count}} Auszahlungen: {{amount}}",
+  "depositIconLabel": "Tag mit Einzahlung",
+  "withdrawalIconLabel": "Tag mit Auszahlung"
 }

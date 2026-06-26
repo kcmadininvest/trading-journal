@@ -20,6 +20,12 @@
   "viewJournal": "View journal",
   "importTrades": "Importer des trades",
   "trade": "trade",
-  "trades": "trades"
+  "trades": "trades",
+  "depositOnDay": "입금: {{amount}}",
+  "depositsOnDay": "입금 {{count}}건: {{amount}}",
+  "withdrawalOnDay": "출금: {{amount}}",
+  "withdrawalsOnDay": "출금 {{count}}건: {{amount}}",
+  "depositIconLabel": "입금이 있는 날",
+  "withdrawalIconLabel": "출금이 있는 날"
 }
 

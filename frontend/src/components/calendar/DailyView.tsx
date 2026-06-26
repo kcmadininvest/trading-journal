@@ -132,6 +132,72 @@ const DailyView: React.FC<DailyViewProps> = ({
     setSelectedDateForJournal(formatDateForApi(day));
   };
 
+  const formatTransactionAmount = (raw: string | undefined, sign: '+' | '-'): string => {
+    const n = parseFloat(raw ?? '0');
+    const signed = sign === '-' ? -Math.abs(n) : Math.abs(n);
+    return formatCurrencyWithSign(signed, currencySymbol, preferences.number_format, 2);
+  };
+
+  const getDepositTooltip = (dayData: DailyCalendarData): string => {
+    const count = dayData.deposit_count ?? 0;
+    const amount = formatTransactionAmount(dayData.deposit_total, '+');
+    if (count <= 1) {
+      return t('calendar:depositOnDay', { amount });
+    }
+    return t('calendar:depositsOnDay', { count, amount });
+  };
+
+  const getWithdrawalTooltip = (dayData: DailyCalendarData): string => {
+    const count = dayData.withdrawal_count ?? 0;
+    const amount = formatTransactionAmount(dayData.withdrawal_total, '-');
+    if (count <= 1) {
+      return t('calendar:withdrawalOnDay', { amount });
+    }
+    return t('calendar:withdrawalsOnDay', { count, amount });
+  };
+
+  const renderDayTransactionIcons = (dayData: DailyCalendarData | undefined) => {
+    if (!dayData) return null;
+    return (
+      <>
+        {dayData.has_deposit ? (
+          <Tooltip content={getDepositTooltip(dayData)} position="top">
+            <span
+              className="p-0.5 sm:p-1 rounded text-green-600 dark:text-green-400 flex-shrink-0"
+              aria-label={t('calendar:depositIconLabel')}
+            >
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12L12 16.5 16.5 12M12 7.5v9"
+                />
+              </svg>
+            </span>
+          </Tooltip>
+        ) : null}
+        {dayData.has_withdrawal ? (
+          <Tooltip content={getWithdrawalTooltip(dayData)} position="top">
+            <span
+              className="p-0.5 sm:p-1 rounded text-orange-600 dark:text-orange-400 flex-shrink-0"
+              aria-label={t('calendar:withdrawalIconLabel')}
+            >
+              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 7.5 7.5 12M12 7.5v9"
+                />
+              </svg>
+            </span>
+          </Tooltip>
+        ) : null}
+      </>
+    );
+  };
+
   const handleCloseTradesModal = () => {
     setSelectedDateForTrades(null);
   };
@@ -415,6 +481,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                                 </button>
                               </Tooltip>
                             )}
+                            {renderDayTransactionIcons(dayData)}
                             {/* Action pour les jours sans trades - permettre de cliquer pour gérer la compliance */}
                             {tradeCount === 0 && (
                               <Tooltip content={t('calendar:manageStrategyCompliance', { defaultValue: 'Gérer le respect de la stratégie' })} position="top">
@@ -571,6 +638,7 @@ const DailyView: React.FC<DailyViewProps> = ({
 
                               {/* Badge de trades et actions */}
                               <div className="flex items-center gap-2">
+                                {renderDayTransactionIcons(dayData)}
                                 {tradeCount > 0 && (
                                   <>
                                     {/* Pastille de statut de stratégie */}

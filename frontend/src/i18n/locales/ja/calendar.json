@@ -20,6 +20,12 @@
   "viewJournal": "View journal",
   "importTrades": "Importer des trades",
   "trade": "trade",
-  "trades": "trades"
+  "trades": "trades",
+  "depositOnDay": "入金: {{amount}}",
+  "depositsOnDay": "入金 {{count}} 件: {{amount}}",
+  "withdrawalOnDay": "出金: {{amount}}",
+  "withdrawalsOnDay": "出金 {{count}} 件: {{amount}}",
+  "depositIconLabel": "入金のある日",
+  "withdrawalIconLabel": "出金のある日"
 }
 

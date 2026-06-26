@@ -9,6 +9,12 @@ export interface DailyCalendarData {
   strategy_compliance_status?: 'compliant' | 'non_compliant' | 'partial' | 'unknown';
   has_journal_entry?: boolean;
   journal_entry_id?: number | null;
+  has_deposit?: boolean;
+  has_withdrawal?: boolean;
+  deposit_count?: number;
+  withdrawal_count?: number;
+  deposit_total?: string;
+  withdrawal_total?: string;
 }
 
 export interface WeeklyCalendarData {

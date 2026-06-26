@@ -138,6 +138,18 @@ const CalendarPage: React.FC = () => {
     }
   }, [viewType, currentYear, currentMonth, yearlyYear, selectedAccount, accountLoading, loadDailyData, loadYearlyData]);
 
+  useEffect(() => {
+    const handleTransactionUpdate = () => {
+      if (viewType === 'daily') {
+        void loadDailyData();
+      }
+    };
+    window.addEventListener('account-transaction:updated', handleTransactionUpdate);
+    return () => {
+      window.removeEventListener('account-transaction:updated', handleTransactionUpdate);
+    };
+  }, [viewType, loadDailyData]);
+
   const handleMonthChange = (year: number, month: number) => {
     setCurrentYear(year);
     setCurrentMonth(month);

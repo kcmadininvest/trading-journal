@@ -1494,6 +1494,47 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         if trading_account_id:
             journal_entries = journal_entries.filter(trading_account_id=trading_account_id)
         journal_entries_by_day = {entry.date.day: entry.id for entry in journal_entries}
+
+        month_transactions = AccountTransaction.objects.filter(
+            user=request.user,
+            transaction_date__gte=start_date,
+            transaction_date__lt=end_date,
+        )
+        if trading_account_id:
+            month_transactions = month_transactions.filter(trading_account_id=trading_account_id)
+
+        transactions_by_day = defaultdict(
+            lambda: {
+                'deposit_count': 0,
+                'withdrawal_count': 0,
+                'deposit_total': Decimal('0'),
+                'withdrawal_total': Decimal('0'),
+            }
+        )
+        for tx in month_transactions:
+            day = tx.transaction_date.astimezone(user_tz).day
+            bucket = transactions_by_day[day]
+            if tx.transaction_type == 'deposit':
+                bucket['deposit_count'] += 1
+                bucket['deposit_total'] += tx.amount
+            elif tx.transaction_type == 'withdrawal':
+                bucket['withdrawal_count'] += 1
+                bucket['withdrawal_total'] += tx.amount
+
+        def _tx_fields_for_day(day: int) -> dict:
+            tx_day = transactions_by_day.get(day, {})
+            dep_count = tx_day.get('deposit_count', 0)
+            wit_count = tx_day.get('withdrawal_count', 0)
+            dep_total = tx_day.get('deposit_total', Decimal('0'))
+            wit_total = tx_day.get('withdrawal_total', Decimal('0'))
+            return {
+                'has_deposit': dep_count > 0,
+                'has_withdrawal': wit_count > 0,
+                'deposit_count': dep_count,
+                'withdrawal_count': wit_count,
+                'deposit_total': str(dep_total),
+                'withdrawal_total': str(wit_total),
+            }
         
         # Créer une map des compliances par jour (pour jours sans trades)
         compliances_by_day = {}
@@ -1588,7 +1629,8 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     'trade_count': daily_data[day]['trade_count'],
                     'strategy_compliance_status': compliance_status,
                     'has_journal_entry': day in journal_entries_by_day,
-                    'journal_entry_id': journal_entries_by_day.get(day)
+                    'journal_entry_id': journal_entries_by_day.get(day),
+                    **_tx_fields_for_day(day),
                 })
             else:
                 # Jour sans trade - vérifier s'il y a une compliance
@@ -1599,7 +1641,8 @@ class TopStepTradeViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     'trade_count': 0,
                     'strategy_compliance_status': compliance_status,
                     'has_journal_entry': day in journal_entries_by_day,
-                    'journal_entry_id': journal_entries_by_day.get(day)
+                    'journal_entry_id': journal_entries_by_day.get(day),
+                    **_tx_fields_for_day(day),
                 })
         
         # Agréger par semaine (vraies semaines du calendrier - dimanche à samedi)
