@@ -88,7 +88,14 @@ const DailyView: React.FC<DailyViewProps> = ({
     return 'text-gray-400 dark:text-gray-500';
   };
 
-  const getDayBgColor = (day: number, pnl: number): string => {
+  const getTransactionFlags = (dayData?: DailyCalendarData) => {
+    const hasDeposit = !!dayData?.has_deposit;
+    const hasWithdrawal = !!dayData?.has_withdrawal;
+    return { hasDeposit, hasWithdrawal, hasBoth: hasDeposit && hasWithdrawal };
+  };
+
+  const getDayBgColor = (day: number, pnl: number, dayData?: DailyCalendarData): string => {
+    const { hasDeposit, hasWithdrawal } = getTransactionFlags(dayData);
     const isToday = year === currentYear && month === currentMonth && day === currentDay;
     if (isToday) {
       return pnl > 0 ? 'bg-green-100 dark:bg-green-900/30 border-2 border-blue-500 dark:border-blue-400' :
@@ -97,7 +104,44 @@ const DailyView: React.FC<DailyViewProps> = ({
     }
     if (pnl > 0) return 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30';
     if (pnl < 0) return 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30';
+    if (hasWithdrawal && !hasDeposit) {
+      return 'bg-amber-50 dark:bg-amber-900/25 hover:bg-amber-100 dark:hover:bg-amber-900/35';
+    }
+    if (hasDeposit && !hasWithdrawal) {
+      return 'bg-indigo-50 dark:bg-indigo-900/25 hover:bg-indigo-100 dark:hover:bg-indigo-900/35';
+    }
     return 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700';
+  };
+
+  const getMobileDayClasses = (
+    dayData: DailyCalendarData | undefined,
+    pnl: number,
+    isToday: boolean
+  ): string => {
+    const { hasDeposit, hasWithdrawal } = getTransactionFlags(dayData);
+    const classes: string[] = [];
+
+    if (isToday) {
+      classes.push('bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400');
+    } else if (pnl === 0) {
+      if (hasWithdrawal && !hasDeposit) {
+        classes.push('bg-amber-50 dark:bg-amber-900/25 hover:bg-amber-100 dark:hover:bg-amber-900/35');
+      } else if (hasDeposit && !hasWithdrawal) {
+        classes.push('bg-indigo-50 dark:bg-indigo-900/25 hover:bg-indigo-100 dark:hover:bg-indigo-900/35');
+      } else {
+        classes.push('bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700');
+      }
+    } else {
+      classes.push('bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700');
+    }
+
+    if (pnl > 0) {
+      classes.push('border-l-4 border-green-500');
+    } else if (pnl < 0) {
+      classes.push('border-l-4 border-red-500');
+    }
+
+    return classes.join(' ');
   };
 
   const getStrategyStatusColor = (status?: 'compliant' | 'non_compliant' | 'partial' | 'unknown'): string => {
@@ -156,42 +200,50 @@ const DailyView: React.FC<DailyViewProps> = ({
     return t('calendar:withdrawalsOnDay', { count, amount });
   };
 
+  const depositTransactionIconClassName =
+    'p-0.5 sm:p-1 rounded-md bg-indigo-100 dark:bg-indigo-900/40 ring-1 ring-indigo-300/80 dark:ring-indigo-600/40 text-indigo-600 dark:text-indigo-400 flex-shrink-0 animate-pulse motion-reduce:animate-none';
+  const withdrawalTransactionIconClassName =
+    'p-0.5 sm:p-1 rounded-md bg-amber-100 dark:bg-amber-900/40 ring-1 ring-amber-300/80 dark:ring-amber-600/40 text-amber-700 dark:text-amber-400 flex-shrink-0 animate-pulse motion-reduce:animate-none';
+  const transactionIconSvgClassName = 'w-4 h-4 sm:w-5 sm:h-5';
+
+  const renderDepositTransactionIcon = (ariaLabel?: string) => (
+    <span className={depositTransactionIconClassName} aria-label={ariaLabel} aria-hidden={ariaLabel ? undefined : true}>
+      <svg className={transactionIconSvgClassName} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12L12 16.5 16.5 12M12 7.5v9"
+        />
+      </svg>
+    </span>
+  );
+
+  const renderWithdrawalTransactionIcon = (ariaLabel?: string) => (
+    <span className={withdrawalTransactionIconClassName} aria-label={ariaLabel} aria-hidden={ariaLabel ? undefined : true}>
+      <svg className={transactionIconSvgClassName} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 7.5 7.5 12M12 7.5v9"
+        />
+      </svg>
+    </span>
+  );
+
   const renderDayTransactionIcons = (dayData: DailyCalendarData | undefined) => {
     if (!dayData) return null;
     return (
       <>
         {dayData.has_deposit ? (
           <Tooltip content={getDepositTooltip(dayData)} position="top">
-            <span
-              className="p-0.5 sm:p-1 rounded text-green-600 dark:text-green-400 flex-shrink-0"
-              aria-label={t('calendar:depositIconLabel')}
-            >
-              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M7.5 12L12 16.5 16.5 12M12 7.5v9"
-                />
-              </svg>
-            </span>
+            {renderDepositTransactionIcon(t('calendar:depositIconLabel'))}
           </Tooltip>
         ) : null}
         {dayData.has_withdrawal ? (
           <Tooltip content={getWithdrawalTooltip(dayData)} position="top">
-            <span
-              className="p-0.5 sm:p-1 rounded text-orange-600 dark:text-orange-400 flex-shrink-0"
-              aria-label={t('calendar:withdrawalIconLabel')}
-            >
-              <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 7.5 7.5 12M12 7.5v9"
-                />
-              </svg>
-            </span>
+            {renderWithdrawalTransactionIcon(t('calendar:withdrawalIconLabel'))}
           </Tooltip>
         ) : null}
       </>
@@ -410,7 +462,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                       className={`h-24 sm:h-32 p-1 sm:p-2 cursor-pointer ${
                         colIndex < 6 ? 'border-r border-gray-200 dark:border-gray-700' : 
                         colIndex === 6 ? 'border-r-2 border-gray-400 dark:border-gray-500' : ''
-                      } ${getDayBgColor(dayNumber, pnl)} ${isToday ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-inset' : ''}`}
+                      } ${getDayBgColor(dayNumber, pnl, dayData)} ${isToday ? 'ring-2 ring-blue-500 dark:ring-blue-400 ring-inset' : ''}`}
                     >
                       {/* Affichage normal pour tous les jours (y compris samedi) */}
                       <div className="flex flex-col h-full relative">
@@ -597,11 +649,7 @@ const DailyView: React.FC<DailyViewProps> = ({
                       return (
                         <div
                           key={dayNumber}
-                          className={`px-4 py-3 rounded-lg ${
-                            isToday 
-                              ? 'bg-blue-50 dark:bg-blue-900/30 border-2 border-blue-500 dark:border-blue-400' 
-                              : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          } ${pnl > 0 ? 'border-l-4 border-green-500' : pnl < 0 ? 'border-l-4 border-red-500' : ''}`}
+                          className={`px-4 py-3 rounded-lg ${getMobileDayClasses(dayData, pnl, isToday)}`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
