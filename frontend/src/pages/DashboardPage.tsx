@@ -28,6 +28,8 @@ import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { ModernMarketInfo } from '../components/market/ModernMarketInfo';
+
+const MALTZ_MILESTONE_DAYS = 21;
 import { MarketQuotesTicker } from '../components/dashboard/MarketQuotesTicker';
 import { DashboardFilterBar } from '../components/dashboard/DashboardFilterBar';
 import { PeriodPerformanceKpis } from '../components/dashboard/PeriodPerformanceKpis';
@@ -1556,13 +1558,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     };
   }, [trades, strategies, allTradesForSequences, allStrategiesForSequences, pnlDisplayMode]);
 
-  /** Meilleure série (respect stratégie) : API consolidée si présente, sinon fallback client (échantillon trades). */
+  /** Records discipline (12 mois) : API consolidée, selon le filtre compte (un compte ou tous les actifs). */
   const disciplineBestStreakDays = useMemo(() => {
     if (complianceStats != null) {
       return complianceStats.best_streak ?? 0;
     }
-    return additionalStats?.maxConsecutiveDaysRespected ?? 0;
-  }, [complianceStats, additionalStats?.maxConsecutiveDaysRespected]);
+    return 0;
+  }, [complianceStats]);
+
+  const disciplineRecordNotRespectDays = useMemo(() => {
+    if (complianceStats != null) {
+      return complianceStats.best_not_respect_streak ?? 0;
+    }
+    return 0;
+  }, [complianceStats]);
 
   // Utiliser le hook pour calculer les indicateurs de compte de manière cohérente
   const {
@@ -1935,7 +1944,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           {/* Cartes de statistiques à droite */}
           {additionalStats && tradingMetrics && (
             <div className="h-full flex flex-col min-h-0">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 flex-1 items-stretch">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 flex-1 items-stretch">
               <ModernStatCard
                 theme="default"
                 label={t('dashboard:totalPnL')}
@@ -2083,125 +2092,203 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
                 trendValue={`${t('dashboard:avg')}: ${formatCurrency(Math.abs(tradingMetrics.avgWinningTrade), currencySymbol)} / ${formatCurrency(Math.abs(tradingMetrics.avgLosingTrade), currencySymbol)}`}
               />
               
-              <Tooltip
-                content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}
-                triggerDisplay="block"
-                className="h-full w-full"
-              >
-                <div className="h-full w-full">
-                  <ModernStatCard
-                    theme="default"
-                    label={`${t('dashboard:currentSeries')} - ${t('dashboard:sequenceRespect')}`}
-                    value={`${complianceStats?.current_streak ?? 0} ${t('dashboard:days')}`}
-                    valueSubtext={(() => {
-                      const streakDays = complianceStats?.current_streak ?? 0;
-                      const streakStartDate = complianceStats?.current_streak_start;
+              <ModernStatCard
+                theme="default"
+                label={(() => {
+                  const respectDays = complianceStats?.current_streak ?? 0;
+                  const notRespectDays = complianceStats?.current_not_respect_streak ?? 0;
+                  if (respectDays > 0) return t('dashboard:disciplineStreakRespect');
+                  if (notRespectDays > 0) return t('dashboard:disciplineStreakNotRespect');
+                  return t('dashboard:disciplineStreak');
+                })()}
+                labelTooltip={(() => {
+                  const respectDays = complianceStats?.current_streak ?? 0;
+                  const notRespectDays = complianceStats?.current_not_respect_streak ?? 0;
+                  if (respectDays > 0) return t('dashboard:disciplineStreakRespectTooltip');
+                  if (notRespectDays > 0) return t('dashboard:disciplineStreakNotRespectTooltip');
+                  return t('dashboard:disciplineStreakTooltip');
+                })()}
+                value={(() => {
+                  const respectDays = complianceStats?.current_streak ?? 0;
+                  const notRespectDays = complianceStats?.current_not_respect_streak ?? 0;
+                  if (respectDays > 0) return `${respectDays} ${t('dashboard:days')}`;
+                  if (notRespectDays > 0) return `${notRespectDays} ${t('dashboard:days')}`;
+                  return `0 ${t('dashboard:days')}`;
+                })()}
+                valueSubtext={(() => {
+                  const respectDays = complianceStats?.current_streak ?? 0;
+                  const notRespectDays = complianceStats?.current_not_respect_streak ?? 0;
+                  const streakStartDate =
+                    respectDays > 0
+                      ? complianceStats?.current_streak_start
+                      : notRespectDays > 0
+                        ? complianceStats?.current_not_respect_streak_start
+                        : null;
+                  const activeDays = respectDays > 0 ? respectDays : notRespectDays;
 
-                      if (streakDays > 0 && streakStartDate) {
-                        return `${t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} ${formatDate(streakStartDate, preferences.date_format, false)}`;
-                      }
-                      return undefined;
-                    })()}
-                    variant={complianceStats?.current_streak ? 'success' : 'default'}
-                    size="small"
-                    icon={
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    }
-                    subMetrics={[
+                  if (activeDays > 0 && streakStartDate) {
+                    return `${t('strategy:streak.sinceWithArticle', { defaultValue: 'depuis le' })} ${formatDate(streakStartDate, preferences.date_format, false)}`;
+                  }
+                  return undefined;
+                })()}
+                variant={(() => {
+                  const respectDays = complianceStats?.current_streak ?? 0;
+                  const notRespectDays = complianceStats?.current_not_respect_streak ?? 0;
+                  if (respectDays > 0) return 'success';
+                  if (notRespectDays > 0) return 'danger';
+                  return 'default';
+                })()}
+                size="small"
+                icon={
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+                subMetrics={(() => {
+                  const respectDays = complianceStats?.current_streak ?? 0;
+                  const notRespectDays = complianceStats?.current_not_respect_streak ?? 0;
+                  if (respectDays > 0) {
+                    return [
                       {
                         label: t('dashboard:currentRespectTrades'),
-                        value: `${complianceStats?.current_streak_trades ?? 0} ${t('trades:trades')}`
-                      }
-                    ]}
-                    trend={complianceStats?.current_streak ? 'up' : undefined}
-                    trendValue={complianceStats?.current_streak ? t('dashboard:sequenceRespect') : undefined}
-                  />
-                </div>
-              </Tooltip>
-              
-              <Tooltip
-                content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}
-                triggerDisplay="block"
-                className="h-full w-full"
-              >
-                <div className="h-full w-full">
-                  <ModernStatCard
-                    theme="default"
-                    label={t('dashboard:sequenceRespect')}
-                    value={(() => {
-                      return `${disciplineBestStreakDays} ${t('dashboard:days')}`;
-                    })()}
-                    variant={(() => {
-                      const value = disciplineBestStreakDays;
-                      return value >= 21 ? 'success' : value > 0 ? 'info' : 'default';
-                    })()}
-                    size="small"
-                    icon={
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    }
-                    progressValue={(() => {
-                      return disciplineBestStreakDays;
-                    })()}
-                    progressMax={21}
-                    progressLabel={t('dashboard:objective')}
-                    subMetrics={[
-                      {
-                        label: t('dashboard:maxTrades'),
-                        value: `${complianceStats?.best_streak_trades ?? 0} ${t('trades:trades')}`
+                        value: `${complianceStats?.current_streak_trades ?? 0} ${t('trades:trades')}`,
                       },
+                    ];
+                  }
+                  if (notRespectDays > 0) {
+                    return [
                       {
-                        label: '',
-                        value: ''
-                      }
-                    ]}
-                    trend={(() => {
-                      const value = disciplineBestStreakDays;
-                      return value >= 21 ? 'up' : value > 0 ? 'up' : undefined;
-                    })()}
-                    trendValue={(() => {
-                      const value = disciplineBestStreakDays;
-                      return value >= 21 ? t('dashboard:objectiveAchieved') : value > 0 ? `${21 - value} ${t('dashboard:daysRemaining')}` : undefined;
-                    })()}
-                  />
-                </div>
-              </Tooltip>
-              
-              <Tooltip
-                content={t('dashboard:sequencesPeriodTooltip', { defaultValue: 'Calculé sur les 12 derniers mois glissants' })}
-                triggerDisplay="block"
-                className="h-full w-full"
-              >
-                <div className="h-full w-full">
-                  <ModernStatCard
-                    theme="default"
-                    label={t('dashboard:sequenceNotRespect')}
-                    value={`${complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0} ${t('dashboard:days')}`}
-                    variant={(complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0) >= 3 ? 'danger' : (complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0) > 0 ? 'warning' : 'default'}
-                    size="small"
-                    icon={
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    }
-                    subMetrics={[
-                      {
-                        label: t('dashboard:maxTrades'),
-                        value: `${complianceStats?.best_not_respect_streak_trades ?? 0} ${t('trades:trades')}`
+                        label: t('dashboard:currentNotRespectTrades'),
+                        value: `${complianceStats?.current_not_respect_streak_trades ?? 0} ${t('trades:trades')}`,
                       },
-                      {
-                        label: '',
-                        value: ''
-                      }
-                    ]}
-                    trend={(complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0) > 0 ? 'down' : undefined}
-                    trendValue={(complianceStats?.best_not_respect_streak ?? additionalStats?.maxConsecutiveDaysNotRespected ?? 0) > 0 ? t('dashboard:needsAttention') : undefined}
-                  />
-                </div>
-              </Tooltip>
+                    ];
+                  }
+                  return undefined;
+                })()}
+                trend={(() => {
+                  const respectDays = complianceStats?.current_streak ?? 0;
+                  const notRespectDays = complianceStats?.current_not_respect_streak ?? 0;
+                  if (respectDays > 0) return 'up';
+                  if (notRespectDays > 0) return 'down';
+                  return undefined;
+                })()}
+                trendValue={(() => {
+                  const respectDays = complianceStats?.current_streak ?? 0;
+                  const notRespectDays = complianceStats?.current_not_respect_streak ?? 0;
+                  if (respectDays > 0) return t('dashboard:disciplineStreakRespectLine');
+                  if (notRespectDays > 0) return t('dashboard:needsAttention');
+                  return undefined;
+                })()}
+              />
+
+              <ModernStatCard
+                theme="default"
+                label={t('dashboard:disciplineRecordRespect')}
+                labelTooltip={t('dashboard:disciplineRecordRespectTooltip')}
+                value={`${disciplineBestStreakDays} ${t('dashboard:days')}`}
+                variant={(() => {
+                  const value = disciplineBestStreakDays;
+                  return value >= MALTZ_MILESTONE_DAYS ? 'success' : value > 0 ? 'info' : 'default';
+                })()}
+                size="small"
+                icon={
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+                progressValue={(() => {
+                  const value = disciplineBestStreakDays;
+                  const nextRecord = complianceStats?.next_record_milestone;
+                  if (value < MALTZ_MILESTONE_DAYS) return value;
+                  if (nextRecord) return value;
+                  return value > 0 ? value : undefined;
+                })()}
+                progressMax={(() => {
+                  const value = disciplineBestStreakDays;
+                  const nextRecord = complianceStats?.next_record_milestone;
+                  if (value < MALTZ_MILESTONE_DAYS) return MALTZ_MILESTONE_DAYS;
+                  if (nextRecord) return nextRecord.days;
+                  return value > 0 ? value : undefined;
+                })()}
+                progressLabel={(() => {
+                  const value = disciplineBestStreakDays;
+                  const nextRecord = complianceStats?.next_record_milestone;
+                  if (value < MALTZ_MILESTONE_DAYS) {
+                    return t('dashboard:disciplineRecordRespectObjective');
+                  }
+                  if (nextRecord) {
+                    const badgeLabel = t(`strategy:badges.labels.${nextRecord.id}`, {
+                      defaultValue: nextRecord.name,
+                    });
+                    return t('dashboard:disciplineRecordNextMilestone', {
+                      days: nextRecord.days,
+                      badge: badgeLabel,
+                    });
+                  }
+                  return t('dashboard:disciplineRecordRespectObjective');
+                })()}
+                subMetrics={[
+                  {
+                    label: t('dashboard:maxTrades'),
+                    value: `${complianceStats?.best_streak_trades ?? 0} ${t('trades:trades')}`,
+                  },
+                  {
+                    label: '',
+                    value: '',
+                  },
+                ]}
+                trend={(() => {
+                  const value = disciplineBestStreakDays;
+                  return value >= MALTZ_MILESTONE_DAYS ? 'up' : value > 0 ? 'up' : undefined;
+                })()}
+                trendValue={(() => {
+                  const value = disciplineBestStreakDays;
+                  const nextRecord = complianceStats?.next_record_milestone;
+                  if (value < MALTZ_MILESTONE_DAYS) {
+                    return value > 0
+                      ? `${MALTZ_MILESTONE_DAYS - value} ${t('dashboard:daysRemaining')}`
+                      : undefined;
+                  }
+                  if (nextRecord) {
+                    const remaining = nextRecord.days - value;
+                    if (remaining > 0) {
+                      return `${remaining} ${t('dashboard:daysRemaining')}`;
+                    }
+                  }
+                  return t('dashboard:objectiveMaltzAchieved');
+                })()}
+              />
+
+              <ModernStatCard
+                theme="default"
+                label={t('dashboard:disciplineRecordNotRespect')}
+                labelTooltip={t('dashboard:disciplineRecordNotRespectTooltip')}
+                value={`${disciplineRecordNotRespectDays} ${t('dashboard:days')}`}
+                variant={(() => {
+                  const value = disciplineRecordNotRespectDays;
+                  return value >= 3 ? 'danger' : value > 0 ? 'warning' : 'default';
+                })()}
+                size="small"
+                icon={
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                }
+                subMetrics={[
+                  {
+                    label: t('dashboard:maxTrades'),
+                    value: `${complianceStats?.best_not_respect_streak_trades ?? 0} ${t('trades:trades')}`,
+                  },
+                  {
+                    label: '',
+                    value: '',
+                  },
+                ]}
+                trend={disciplineRecordNotRespectDays > 0 ? 'down' : undefined}
+                trendValue={
+                  disciplineRecordNotRespectDays > 0 ? t('dashboard:disciplineRecordNotRespect') : undefined
+                }
+              />
               </div>
             </div>
           )}

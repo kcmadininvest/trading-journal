@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { tradeStrategiesService } from '../services/tradeStrategies';
-import type { DashboardSummary } from '../services/dashboard';
+import type { DashboardSummary, DashboardFilters } from '../services/dashboard';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
 import { getRollingTwelveMonthDateRange } from '../utils/complianceStreakPeriod';
 
@@ -49,16 +49,34 @@ export function useDashboardComplianceRefresh({
               best_streak_trades: stats.best_streak_trades ?? previous?.best_streak_trades ?? 0,
               current_streak_start: stats.current_streak_start,
               current_streak_trades: stats.current_streak_trades ?? previous?.current_streak_trades ?? 0,
-              best_not_respect_streak: stats.best_not_respect_streak ?? previous?.best_not_respect_streak ?? 0,
+              best_not_respect_streak:
+                stats.best_not_respect_streak ?? previous?.best_not_respect_streak ?? 0,
               best_not_respect_streak_trades:
                 stats.best_not_respect_streak_trades ?? previous?.best_not_respect_streak_trades ?? 0,
+              current_not_respect_streak:
+                stats.current_not_respect_streak ?? previous?.current_not_respect_streak ?? 0,
+              current_not_respect_streak_start:
+                stats.current_not_respect_streak_start ?? previous?.current_not_respect_streak_start ?? null,
+              current_not_respect_streak_trades:
+                stats.current_not_respect_streak_trades ?? previous?.current_not_respect_streak_trades ?? 0,
               next_badge: stats.next_badge ?? previous?.next_badge ?? null,
+              next_record_milestone:
+                stats.next_record_milestone ?? previous?.next_record_milestone ?? null,
             },
           };
         };
 
         queryClient.setQueriesData<DashboardSummary>(
-          { queryKey: ['dashboard', 'summary'] },
+          {
+            queryKey: ['dashboard', 'summary'],
+            predicate: (query) => {
+              const filters = query.queryKey[2] as DashboardFilters | undefined;
+              if (accountId != null) {
+                return filters?.trading_account === accountId;
+              }
+              return filters?.trading_account === undefined;
+            },
+          },
           patchComplianceStats
         );
       } catch (err) {

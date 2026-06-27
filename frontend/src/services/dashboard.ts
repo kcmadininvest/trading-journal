@@ -9,6 +9,13 @@ export interface DailyAggregate {
   losing_count: number;
 }
 
+export interface DisciplineMilestone {
+  id: string;
+  name: string;
+  days: number;
+  progress?: number;
+}
+
 export interface ComplianceStats {
   current_streak: number;
   best_streak: number;
@@ -17,7 +24,11 @@ export interface ComplianceStats {
   current_streak_trades?: number;
   best_not_respect_streak?: number;
   best_not_respect_streak_trades?: number;
-  next_badge: any;
+  current_not_respect_streak?: number;
+  current_not_respect_streak_start?: string | null;
+  current_not_respect_streak_trades?: number;
+  next_badge: DisciplineMilestone | null;
+  next_record_milestone?: DisciplineMilestone | null;
 }
 
 export type YearComparisonBasis =

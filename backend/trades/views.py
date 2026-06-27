@@ -154,7 +154,9 @@ from .risk_metrics import (
     compute_sharpe_per_trade,
 )
 from .compliance_streaks import (
+    DISCIPLINE_BADGE_DEFINITIONS,
     compute_dashboard_next_badge,
+    compute_next_record_milestone,
     compute_strategy_compliance_context,
     get_position_strategy_family_ids,
 )
@@ -3245,6 +3247,9 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         best_streak_trades = ctx['best_streak_trades']
         best_not_respect_streak = ctx['best_not_respect_streak']
         best_not_respect_streak_trades = ctx['best_not_respect_streak_trades']
+        current_not_respect_streak = ctx['current_not_respect_streak']
+        current_not_respect_streak_start = ctx['current_not_respect_streak_start']
+        current_not_respect_streak_trades = ctx['current_not_respect_streak_trades']
         total_trades_with_strategy = ctx['total_trades_with_strategy']
         total_respected = ctx['total_respected']
         total_not_respected = ctx['total_not_respected']
@@ -3278,16 +3283,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         # Calculer les badges obtenus de manière séquentielle
         # Un badge ne peut être obtenu que si tous les badges précédents sont obtenus
         badges = []
-        badge_definitions = [
-            {'id': 'beginner', 'name': 'Débutant discipliné', 'days': 3},
-            {'id': 'week', 'name': 'Semaine parfaite', 'days': 7},
-            {'id': 'two_weeks', 'name': 'Deux semaines exemplaires', 'days': 14},
-            {'id': 'month', 'name': 'Mois de discipline', 'days': 30},
-            {'id': 'two_months', 'name': 'Maître de la discipline', 'days': 60},
-            {'id': 'three_months', 'name': 'Légende de la stratégie', 'days': 90},
-            {'id': 'centurion', 'name': 'Centurion', 'days': 100},
-            {'id': 'year', 'name': 'Année parfaite', 'days': 365},
-        ]
+        badge_definitions = DISCIPLINE_BADGE_DEFINITIONS
         
         # Utiliser le streak actuel pour déterminer les badges obtenus
         # Les badges doivent être obtenus séquentiellement
@@ -3437,6 +3433,9 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'best_streak_trades': best_streak_trades,
             'best_not_respect_streak': best_not_respect_streak,
             'best_not_respect_streak_trades': best_not_respect_streak_trades,
+            'current_not_respect_streak': current_not_respect_streak,
+            'current_not_respect_streak_start': current_not_respect_streak_start,
+            'current_not_respect_streak_trades': current_not_respect_streak_trades,
             'overall_compliance_rate': round(overall_compliance_rate, 2),
             'compliance_7d': round(compliance_7d, 2),
             'compliance_30d': round(compliance_30d, 2),
@@ -3446,6 +3445,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'total_not_respected': total_not_respected,
             'badges': badges,
             'next_badge': next_badge,
+            'next_record_milestone': compute_next_record_milestone(best_streak),
             'performance_comparison': {
                 'respected': {
                     'count': performance_comparison['respected']['count'],

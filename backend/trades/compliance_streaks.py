@@ -45,21 +45,47 @@ def get_rolling_twelve_month_date_range(user_tz) -> Tuple[str, str]:
     return start.isoformat(), today.isoformat()
 
 
+MALTZ_MILESTONE_DAYS = 21
+
+DISCIPLINE_BADGE_DEFINITIONS: List[Dict[str, Any]] = [
+    {"id": "beginner", "name": "Débutant discipliné", "days": 3},
+    {"id": "week", "name": "Semaine parfaite", "days": 7},
+    {"id": "two_weeks", "name": "Deux semaines exemplaires", "days": 14},
+    {"id": "maltz", "name": "Routine installée", "days": MALTZ_MILESTONE_DAYS},
+    {"id": "month", "name": "Mois de discipline", "days": 30},
+    {"id": "two_months", "name": "Maître de la discipline", "days": 60},
+    {"id": "three_months", "name": "Légende de la stratégie", "days": 90},
+    {"id": "centurion", "name": "Centurion", "days": 100},
+    {"id": "year", "name": "Année parfaite", "days": 365},
+]
+
+
 def compute_dashboard_next_badge(current_streak: int) -> Optional[Dict[str, Any]]:
     """Prochain badge pour la carte dashboard (progression basée sur le streak actuel)."""
-    badge_thresholds = [
-        {"id": "beginner", "name": "Débutant discipliné", "days": 3},
-        {"id": "week", "name": "Semaine parfaite", "days": 7},
-        {"id": "two_weeks", "name": "Deux semaines exemplaires", "days": 14},
-        {"id": "month", "name": "Mois de discipline", "days": 30},
-        {"id": "two_months", "name": "Maître de la discipline", "days": 60},
-        {"id": "three_months", "name": "Légende de la stratégie", "days": 90},
-        {"id": "centurion", "name": "Centurion", "days": 100},
-        {"id": "year", "name": "Année parfaite", "days": 365},
-    ]
-    for badge in badge_thresholds:
+    for badge in DISCIPLINE_BADGE_DEFINITIONS:
         if current_streak < badge["days"]:
             progress = (current_streak / badge["days"]) * 100
+            return {
+                "id": badge["id"],
+                "name": badge["name"],
+                "days": badge["days"],
+                "progress": progress,
+            }
+    return None
+
+
+def compute_next_record_milestone(best_streak: int) -> Optional[Dict[str, Any]]:
+    """
+    Prochain palier record non encore atteint par best_streak (après le jalon Maltz à 21 j).
+    Retourne None si tous les paliers sont atteints ou si best_streak < MALTZ_MILESTONE_DAYS.
+    """
+    if best_streak < MALTZ_MILESTONE_DAYS:
+        return None
+    for badge in DISCIPLINE_BADGE_DEFINITIONS:
+        if badge["days"] <= MALTZ_MILESTONE_DAYS:
+            continue
+        if best_streak < badge["days"]:
+            progress = (best_streak / badge["days"]) * 100
             return {
                 "id": badge["id"],
                 "name": badge["name"],
@@ -119,6 +145,26 @@ def _get_current_streak_day_dates(
         if verdict is True:
             streak_days.append(date_str)
         elif verdict is False:
+            break
+    streak_days.reverse()
+    return streak_days
+
+
+def _get_current_not_respect_streak_day_dates(
+    all_dates: List[str],
+    daily_compliance: Any,
+    day_compliances_dict: Dict[str, Any],
+) -> List[str]:
+    """Jours calendaires composant la série de non-respect en cours (ordre chronologique)."""
+    streak_days: List[str] = []
+    for date_str in reversed(all_dates):
+        data = daily_compliance[date_str]
+        verdict = _day_streak_verdict(
+            date_str, data, day_compliances_dict, forward_best_pass=False
+        )
+        if verdict is False:
+            streak_days.append(date_str)
+        elif verdict is True:
             break
     streak_days.reverse()
     return streak_days
@@ -210,8 +256,18 @@ def _compute_streaks_from_aggregates(
     all_dates: List[str],
     daily_compliance: Any,
     day_compliances_dict: Dict[str, Any],
-) -> Tuple[int, int, Optional[str], List[str], List[str], List[str]]:
-    """Retourne (best_streak, current_streak, current_streak_start, current_streak_days, best_streak_days, best_not_respect_streak_days)."""
+) -> Tuple[
+    int,
+    int,
+    Optional[str],
+    List[str],
+    List[str],
+    List[str],
+    int,
+    Optional[str],
+    List[str],
+]:
+    """Retourne streaks respect/non-respect (courants et records)."""
     best_streak_days = _get_best_streak_day_dates(
         all_dates, daily_compliance, day_compliances_dict
     )
@@ -227,6 +283,14 @@ def _compute_streaks_from_aggregates(
         all_dates, daily_compliance, day_compliances_dict
     )
 
+    current_not_respect_streak_days = _get_current_not_respect_streak_day_dates(
+        all_dates, daily_compliance, day_compliances_dict
+    )
+    current_not_respect_streak = len(current_not_respect_streak_days)
+    current_not_respect_streak_start = (
+        current_not_respect_streak_days[0] if current_not_respect_streak_days else None
+    )
+
     return (
         best_streak,
         current_streak,
@@ -234,6 +298,9 @@ def _compute_streaks_from_aggregates(
         current_streak_days,
         best_streak_days,
         best_not_respect_streak_days,
+        current_not_respect_streak,
+        current_not_respect_streak_start,
+        current_not_respect_streak_days,
     )
 
 
@@ -376,6 +443,9 @@ def compute_strategy_compliance_context(
         current_streak_days,
         best_streak_days,
         best_not_respect_streak_days,
+        current_not_respect_streak,
+        current_not_respect_streak_start,
+        current_not_respect_streak_days,
     ) = _compute_streaks_from_aggregates(all_dates, daily_compliance, day_compliances_dict)
     current_streak_trades = _count_respected_trades_on_streak_days(
         strategies_queryset, current_streak_days
@@ -386,6 +456,9 @@ def compute_strategy_compliance_context(
     best_not_respect_streak = len(best_not_respect_streak_days)
     best_not_respect_streak_trades = _count_trades_on_streak_days(
         strategies_queryset, best_not_respect_streak_days, respected=False
+    )
+    current_not_respect_streak_trades = _count_trades_on_streak_days(
+        strategies_queryset, current_not_respect_streak_days, respected=False
     )
 
     total_trades_with_strategy = sum(d["with_strategy"] for d in daily_compliance.values())
@@ -406,6 +479,9 @@ def compute_strategy_compliance_context(
         "current_streak_trades": current_streak_trades,
         "best_not_respect_streak": best_not_respect_streak,
         "best_not_respect_streak_trades": best_not_respect_streak_trades,
+        "current_not_respect_streak": current_not_respect_streak,
+        "current_not_respect_streak_start": current_not_respect_streak_start,
+        "current_not_respect_streak_trades": current_not_respect_streak_trades,
         "total_trades_with_strategy": total_trades_with_strategy,
         "total_respected": total_respected,
         "total_not_respected": total_not_respected,

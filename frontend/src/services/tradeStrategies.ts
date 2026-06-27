@@ -39,6 +39,9 @@ export interface StrategyComplianceStats {
   best_streak_trades: number;
   best_not_respect_streak: number;
   best_not_respect_streak_trades: number;
+  current_not_respect_streak: number;
+  current_not_respect_streak_start: string | null;
+  current_not_respect_streak_trades: number;
   overall_compliance_rate: number;
   compliance_7d: number;
   compliance_30d: number;
@@ -48,6 +51,7 @@ export interface StrategyComplianceStats {
   total_not_respected: number;
   badges: Badge[];
   next_badge: Badge | null;
+  next_record_milestone?: Badge | null;
   performance_comparison: {
     respected: {
       count: number;

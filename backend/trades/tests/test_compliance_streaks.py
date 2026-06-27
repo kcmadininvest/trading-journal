@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 
 from trades.compliance_streaks import compute_strategy_compliance_context
 from trades.models import DayStrategyCompliance, TradingAccount
@@ -240,6 +240,42 @@ class ComplianceStreakTests(TestCase):
         self.assertEqual(ctx['best_streak_trades'], 3)
         self.assertEqual(ctx['best_not_respect_streak'], 2)
         self.assertEqual(ctx['best_not_respect_streak_trades'], 2)
+        self.assertEqual(ctx['current_not_respect_streak'], 0)
+
+    def test_current_not_respect_streak_during_non_compliance_run(self):
+        """La série en cours de non-respect compte les jours consécutifs non respectés depuis aujourd'hui."""
+        self._create_day_compliance(date(2026, 6, 20), respected=False)
+        self._create_day_compliance(date(2026, 6, 21), respected=False)
+        self._create_day_compliance(date(2026, 6, 22), respected=False)
+
+        ctx = compute_strategy_compliance_context(
+            self.user,
+            trading_account_id=self.account.id,
+            position_strategy_id=None,
+            start_date='2026-06-01',
+            end_date='2026-06-22',
+        )
+        self.assertEqual(ctx['current_not_respect_streak'], 3)
+        self.assertEqual(ctx['current_not_respect_streak_start'], '2026-06-20')
+        self.assertEqual(ctx['current_streak'], 0)
+
+    def test_current_not_respect_streak_resets_after_respected_days(self):
+        """Après une série de respect en cours, la série de non-respect en cours doit être à 0."""
+        self._create_day_compliance(date(2026, 6, 10), respected=False)
+        self._create_day_compliance(date(2026, 6, 11), respected=False)
+        self._create_day_compliance(date(2026, 6, 12), respected=True)
+        self._create_day_compliance(date(2026, 6, 13), respected=True)
+
+        ctx = compute_strategy_compliance_context(
+            self.user,
+            trading_account_id=self.account.id,
+            position_strategy_id=None,
+            start_date='2026-06-01',
+            end_date='2026-06-13',
+        )
+        self.assertEqual(ctx['current_streak'], 2)
+        self.assertEqual(ctx['current_not_respect_streak'], 0)
+        self.assertEqual(ctx['best_not_respect_streak'], 2)
 
     def test_current_streak_uses_twelve_month_window_not_single_day_period(self):
         """Avec un filtre période « aujourd'hui » seul, la série doit quand même compter l'historique récent."""
@@ -264,3 +300,46 @@ class ComplianceStreakTests(TestCase):
             end_date='2026-06-23',
         )
         self.assertEqual(ctx_twelve_months['current_streak'], 3)
+
+
+class DisciplineBadgeMilestoneTests(SimpleTestCase):
+    def test_next_badge_at_20_targets_maltz(self):
+        from trades.compliance_streaks import compute_dashboard_next_badge
+
+        badge = compute_dashboard_next_badge(20)
+        self.assertIsNotNone(badge)
+        assert badge is not None
+        self.assertEqual(badge['id'], 'maltz')
+        self.assertEqual(badge['days'], 21)
+
+    def test_next_badge_at_21_targets_month(self):
+        from trades.compliance_streaks import compute_dashboard_next_badge
+
+        badge = compute_dashboard_next_badge(21)
+        self.assertIsNotNone(badge)
+        assert badge is not None
+        self.assertEqual(badge['id'], 'month')
+        self.assertEqual(badge['days'], 30)
+
+    def test_next_record_milestone_before_maltz_is_none(self):
+        from trades.compliance_streaks import compute_next_record_milestone
+
+        self.assertIsNone(compute_next_record_milestone(20))
+
+    def test_next_record_milestone_at_25_targets_month(self):
+        from trades.compliance_streaks import compute_next_record_milestone
+
+        milestone = compute_next_record_milestone(25)
+        self.assertIsNotNone(milestone)
+        assert milestone is not None
+        self.assertEqual(milestone['id'], 'month')
+        self.assertEqual(milestone['days'], 30)
+        self.assertAlmostEqual(milestone['progress'], (25 / 30) * 100)
+
+    def test_next_record_milestone_skips_maltz_tier(self):
+        from trades.compliance_streaks import compute_next_record_milestone
+
+        milestone = compute_next_record_milestone(21)
+        self.assertIsNotNone(milestone)
+        assert milestone is not None
+        self.assertEqual(milestone['id'], 'month')

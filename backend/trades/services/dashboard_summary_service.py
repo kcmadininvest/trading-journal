@@ -11,6 +11,7 @@ from django.db.models.functions import Coalesce, TruncDate
 from ..account_balance import build_dashboard_balance_context
 from ..compliance_streaks import (
     compute_dashboard_next_badge,
+    compute_next_record_milestone,
     compute_strategy_compliance_context,
     get_position_strategy_family_ids,
     get_rolling_twelve_month_date_range,
@@ -205,13 +206,17 @@ def compute_dashboard_summary_payload(request, *, include_lists: bool = True) ->
         )
         compliance_stats = {
             'current_streak': streak_ctx['current_streak'],
-            'best_streak': streak_ctx['best_streak'],
-            'best_streak_trades': streak_ctx['best_streak_trades'],
             'current_streak_start': streak_ctx['current_streak_start'],
             'current_streak_trades': streak_ctx['current_streak_trades'],
+            'current_not_respect_streak': streak_ctx['current_not_respect_streak'],
+            'current_not_respect_streak_start': streak_ctx['current_not_respect_streak_start'],
+            'current_not_respect_streak_trades': streak_ctx['current_not_respect_streak_trades'],
+            'best_streak': streak_ctx['best_streak'],
+            'best_streak_trades': streak_ctx['best_streak_trades'],
             'best_not_respect_streak': streak_ctx['best_not_respect_streak'],
             'best_not_respect_streak_trades': streak_ctx['best_not_respect_streak_trades'],
             'next_badge': compute_dashboard_next_badge(streak_ctx['current_streak']),
+            'next_record_milestone': compute_next_record_milestone(streak_ctx['best_streak']),
         }
     except (ValueError, TypeError):
         strategies_data = []
