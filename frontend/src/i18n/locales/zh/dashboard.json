@@ -90,7 +90,7 @@
   "disciplineStreakTooltip": "从今天往回统计的遵守与未遵守当前连续天数。\n\n遵守：策略被遵守的连续天数。未遵守：未遵守的连续天数（遵守连续进行时为0）。\n\n滚动12个月 · 与期间筛选无关。无交易日或当日全部交易未填写策略的日子不会中断遵守连续。",
   "disciplineStreakRespectTooltip": "从今天往回统计的连续遵守天数。\n\n滚动12个月 · 与期间筛选无关。无交易日或当日全部交易未填写策略的日子不会中断连续。",
   "disciplineStreakNotRespectTooltip": "从今天往回统计的连续未遵守天数。\n\n滚动12个月 · 与期间筛选无关。",
-  "disciplineRecordRespectTooltip": "过去12个月中最长的连续遵守天数。\n\n历史纪录，不是当前进行中的连续。\n\n21日目标：马克斯韦尔·马尔茨（*Psycho-Cybernetics*）推广的、用于巩固新习惯的参考标准。交易中常被引用；马克·道格拉斯更强调执行一致性而非固定天数。进度条将您的纪录与此参照及后续里程碑对比。",
+  "disciplineRecordRespectTooltip": "过去12个月中最长的连续遵守天数。\n\n历史纪录，不是当前进行中的连续。\n\n21日目标：马克斯韦尔·马尔茨（*Psycho-Cybernetics*）推广的、用于巩固新习惯的参考标准。",
   "disciplineRecordRespectObjective": "目标 · 21天 (马克斯韦尔·马尔茨)",
   "disciplineRecordNotRespectTooltip": "过去12个月中最长的连续未遵守天数。\n\n历史纪录；在遵守连续期间不会减少，除非新的连续超过此纪录。",
   "profitable": "Rentable",

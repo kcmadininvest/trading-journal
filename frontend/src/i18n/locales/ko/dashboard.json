@@ -88,7 +88,7 @@
   "disciplineStreakTooltip": "오늘부터 거슬러 올라가는 준수·미준수 현재 연속 일수.\n\n준수: 전략을 준수한 연속 일수. 미준수: 미준수 연속 일수(준수 연속 중에는 0).\n\n최근 12개월 롤링 · 기간 필터와 무관. 거래가 없거나 모든 거래에 전략이 없는 날은 준수 연속을 끊지 않습니다.",
   "disciplineStreakRespectTooltip": "오늘부터 거슬러 올라가며 전략을 준수한 연속 일수.\n\n최근 12개월 롤링 · 기간 필터와 무관. 거래가 없거나 모든 거래에 전략이 없는 날은 연속을 끊지 않습니다.",
   "disciplineStreakNotRespectTooltip": "오늘부터 거슬러 올라가며 전략을 준수하지 않은 연속 일수.\n\n최근 12개월 롤링 · 기간 필터와 무관.",
-  "disciplineRecordRespectTooltip": "최근 12개월 중 최장 준수 연속 일수.\n\n역사적 기록이며 현재 진행 중인 연속이 아닙니다.\n\n21일 목표: 맥스웰 말츠(*Psycho-Cybernetics*)가 보급한, 새로운 루틴을 정착시키기 위한 기준. 트레이딩에서 자주 인용되며, 마크 더글러스는 고정 일수보다 실행의 일관성을 강조합니다. 진행 막대는 기록을 이 기준과 다음 이정표와 비교합니다.",
+  "disciplineRecordRespectTooltip": "최근 12개월 중 최장 준수 연속 일수.\n\n역사적 기록이며 현재 진행 중인 연속이 아닙니다.\n\n21일 목표: 맥스웰 말츠(*Psycho-Cybernetics*)가 보급한, 새로운 루틴을 정착시키기 위한 기준.",
   "disciplineRecordRespectObjective": "목표 · 21일 (맥스웰 말츠)",
   "disciplineRecordNotRespectTooltip": "최근 12개월 중 최장 미준수 연속 일수.\n\n역사적 기록이며, 새 연속이 이 기록을 넘지 않는 한 준수 연속 중에도 줄지 않습니다.",
   "profitable": "Rentable",
