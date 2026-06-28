@@ -343,3 +343,34 @@ class DisciplineBadgeMilestoneTests(SimpleTestCase):
         self.assertIsNotNone(milestone)
         assert milestone is not None
         self.assertEqual(milestone['id'], 'month')
+
+
+class RollingTradeComplianceRatesTests(SimpleTestCase):
+    def test_calculate_rolling_rates_from_daily_compliance(self):
+        from trades.compliance_streaks import calculate_rolling_trade_compliance_rates
+
+        daily = {
+            '2026-06-20': {'with_strategy': 2, 'respected': 2, 'not_respected': 0},
+            '2026-06-25': {'with_strategy': 1, 'respected': 0, 'not_respected': 1},
+            '2026-06-27': {'with_strategy': 4, 'respected': 3, 'not_respected': 1},
+        }
+        rates = calculate_rolling_trade_compliance_rates(
+            daily,
+            anchor_date=date(2026, 6, 28),
+        )
+        # 7 j. (>= 2026-06-21) : 1 + 4 = 5 trades, 3 respectés
+        self.assertEqual(rates['compliance_7d'], 60.0)
+        # 30 / 90 j. incluent aussi le 2026-06-20 : 7 trades, 5 respectés
+        self.assertEqual(rates['compliance_30d'], round(5 / 7 * 100, 2))
+        self.assertEqual(rates['compliance_90d'], round(5 / 7 * 100, 2))
+
+    def test_calculate_rolling_rates_returns_none_without_data(self):
+        from trades.compliance_streaks import calculate_rolling_trade_compliance_rates
+
+        rates = calculate_rolling_trade_compliance_rates(
+            {},
+            anchor_date=date(2026, 6, 28),
+        )
+        self.assertIsNone(rates['compliance_7d'])
+        self.assertIsNone(rates['compliance_30d'])
+        self.assertIsNone(rates['compliance_90d'])

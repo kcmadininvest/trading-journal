@@ -1,7 +1,65 @@
-import { useMemo, useRef } from 'react';
-import type { EasingFunction } from 'chart.js';
+import { useMemo, useRef, type MutableRefObject } from 'react';
+import type { ActiveElement, Chart, ChartEvent, EasingFunction } from 'chart.js';
 import { WeekdayComplianceChartData } from './useWeekdayCompliance';
 import { buildChartTooltipPlugin, type ChartColors } from '../utils/chartConfig';
+import type { StrategyChartDrillDownPayload } from '../utils/strategyDrillDown';
+
+function resolveRespectPeriodBounds(dateStr: string): {
+  trade_day?: string;
+  start_date?: string;
+  end_date?: string;
+} {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return { trade_day: dateStr };
+  }
+  if (/^\d{4}-\d{2}$/.test(dateStr)) {
+    const [year, month] = dateStr.split('-').map(Number);
+    const lastDay = new Date(year, month, 0).getDate();
+    return {
+      start_date: `${dateStr}-01`,
+      end_date: `${dateStr}-${String(lastDay).padStart(2, '0')}`,
+    };
+  }
+  return {};
+}
+
+function resolveEvolutionPeriodBounds(
+  aggregation: string,
+  dayData: { date?: Date; key?: string }
+): { start_date: string; end_date: string } | null {
+  if (aggregation === 'day') {
+    return null;
+  }
+  const dateObj = dayData.date;
+  if (!(dateObj instanceof Date) || Number.isNaN(dateObj.getTime())) {
+    if (typeof dayData.key === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dayData.key)) {
+      return { start_date: dayData.key, end_date: dayData.key };
+    }
+    return null;
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  if (aggregation === 'year') {
+    const year = dateObj.getFullYear();
+    return { start_date: `${year}-01-01`, end_date: `${year}-12-31` };
+  }
+  if (aggregation === 'month') {
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    return {
+      start_date: `${year}-${pad(month + 1)}-01`,
+      end_date: `${year}-${pad(month + 1)}-${pad(lastDay)}`,
+    };
+  }
+  if (aggregation === 'week') {
+    const monday = new Date(dateObj);
+    const sunday = new Date(dateObj);
+    sunday.setDate(monday.getDate() + 6);
+    return { start_date: iso(monday), end_date: iso(sunday) };
+  }
+  return null;
+}
 
 interface UseChartOptionsParams {
   chartColors: ChartColors;
@@ -18,6 +76,9 @@ interface UseChartOptionsParams {
   emotionsData: any;
   evolutionData: any;
   weekdayComplianceData: WeekdayComplianceChartData | null;
+  onChartDrillDownRef?: MutableRefObject<
+    ((payload: StrategyChartDrillDownPayload) => void) | null
+  >;
 }
 
 export const useChartOptions = ({
@@ -34,6 +95,7 @@ export const useChartOptions = ({
   emotionsData,
   evolutionData,
   weekdayComplianceData,
+  onChartDrillDownRef,
 }: UseChartOptionsParams) => {
   // Store volatile data in refs so tooltip callbacks always read the latest value
   // without being listed as useMemo dependencies (which would invalidate the memo)
@@ -52,6 +114,9 @@ export const useChartOptions = ({
   const weekdayComplianceDataRef = useRef(weekdayComplianceData);
   weekdayComplianceDataRef.current = weekdayComplianceData;
 
+  const onChartDrillDownRefLocal = useRef(onChartDrillDownRef);
+  onChartDrillDownRefLocal.current = onChartDrillDownRef;
+
   const formatNumberRef = useRef(formatNumber);
   formatNumberRef.current = formatNumber;
 
@@ -69,6 +134,26 @@ export const useChartOptions = ({
     responsive: true,
     maintainAspectRatio: false,
     animation: optimizedAnimation,
+    onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
+      if (!elements.length) return;
+      const element = elements[0];
+      const handler = onChartDrillDownRefLocal.current?.current;
+      const enrichedRow = (respectChartDataRef.current as { enrichedData?: { date?: string }[] })
+        ?.enrichedData?.[element.index];
+      if (!handler || !enrichedRow?.date) return;
+      const respected = element.datasetIndex === 0;
+      handler({
+        type: 'respect',
+        respected,
+        ...resolveRespectPeriodBounds(enrichedRow.date),
+      });
+    },
+    onHover: (event: ChartEvent, elements: ActiveElement[]) => {
+      const canvas = event.native?.target as HTMLElement | undefined;
+      if (canvas) {
+        canvas.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
     plugins: {
       datalabels: {
         display: true,
@@ -129,7 +214,7 @@ export const useChartOptions = ({
               const fallbackData = statisticsRef.current?.statistics?.period_data?.[context.dataIndex];
               const totalTrades = fallbackData?.total || 0;
               const count = Math.round((value / 100) * totalTrades);
-              return `${label}: ${fn(value, 2)}% (${count} ${tr('strategies:trades')} ${tr('strategies:on', { defaultValue: 'sur' })} ${totalTrades})`;
+              return `${label}: ${fn(value, 2)}% (${fn(count, 0)} ${tr('strategies:trades')} ${tr('strategies:on', { defaultValue: 'sur' })} ${fn(totalTrades, 0)})`;
             }
             
             const isRespected = label === tr('strategies:respected');
@@ -150,9 +235,9 @@ export const useChartOptions = ({
             }
             
             if (elementDays > 0) {
-              return `${label}: ${fn(value, 2)}% (${elementTrades} ${tr('strategies:trades')} + ${elementDays} ${elementDays === 1 ? 'jour sans trade' : 'jours sans trades'} ${tr('strategies:on', { defaultValue: 'sur' })} ${totalWithStrategy})`;
+              return `${label}: ${fn(value, 2)}% (${fn(elementTrades, 0)} ${tr('strategies:trades')} + ${fn(elementDays, 0)} ${elementDays === 1 ? 'jour sans trade' : 'jours sans trades'} ${tr('strategies:on', { defaultValue: 'sur' })} ${fn(totalWithStrategy, 0)})`;
             } else {
-              return `${label}: ${fn(value, 2)}% (${elementTrades} ${tr('strategies:trades')} ${tr('strategies:on', { defaultValue: 'sur' })} ${totalWithStrategy})`;
+              return `${label}: ${fn(value, 2)}% (${fn(elementTrades, 0)} ${tr('strategies:trades')} ${tr('strategies:on', { defaultValue: 'sur' })} ${fn(totalWithStrategy, 0)})`;
             }
           },
         },
@@ -166,7 +251,7 @@ export const useChartOptions = ({
         max: 100,
         ticks: {
           callback: function(value: any) {
-            return value + '%';
+            return `${formatNumberRef.current(Number(value), 0)}%`;
           },
           color: chartColors.textSecondary,
           font: {
@@ -211,6 +296,21 @@ export const useChartOptions = ({
     responsive: true,
     maintainAspectRatio: false,
     animation: optimizedAnimation,
+    onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
+      if (!elements.length) return;
+      const handler = onChartDrillDownRefLocal.current?.current;
+      if (!handler) return;
+      handler({
+        type: 'respect',
+        respected: elements[0].datasetIndex === 0,
+      });
+    },
+    onHover: (event: ChartEvent, elements: ActiveElement[]) => {
+      const canvas = event.native?.target as HTMLElement | undefined;
+      if (canvas) {
+        canvas.style.cursor = elements.length ? 'pointer' : 'default';
+      }
+    },
     plugins: {
       datalabels: {
         display: true,
@@ -255,7 +355,7 @@ export const useChartOptions = ({
         beginAtZero: true,
         ticks: {
           callback: function(value: any) {
-            return value + '%';
+            return `${formatNumberRef.current(Number(value), 0)}%`;
           },
           color: chartColors.textSecondary,
           font: {
@@ -309,6 +409,21 @@ export const useChartOptions = ({
       responsive: true,
       maintainAspectRatio: false,
       animation: optimizedAnimation,
+      onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
+        if (!elements.length) return;
+        const handler = onChartDrillDownRefLocal.current?.current;
+        if (!handler) return;
+        const buckets: Array<'tp1' | 'tp2_plus' | 'no_tp'> = ['tp1', 'tp2_plus', 'no_tp'];
+        const bucket = buckets[elements[0].index];
+        if (!bucket) return;
+        handler({ type: 'winning_session', bucket });
+      },
+      onHover: (event: ChartEvent, elements: ActiveElement[]) => {
+        const canvas = event.native?.target as HTMLElement | undefined;
+        if (canvas) {
+          canvas.style.cursor = elements.length ? 'pointer' : 'default';
+        }
+      },
       plugins: {
         datalabels: {
           display: true,
@@ -318,7 +433,7 @@ export const useChartOptions = ({
             size: windowSize.isMobile ? 10 : 13,
           },
           formatter: function(value: number) {
-            return value > 0 ? value.toString() : '';
+            return value > 0 ? formatNumberRef.current(value, 0) : '';
           },
           anchor: 'center' as const,
           align: 'center' as const,
@@ -346,7 +461,7 @@ export const useChartOptions = ({
               const value = context.parsed.y || 0;
               const total = statisticsRef.current?.statistics?.winning_sessions_distribution?.total_winning || 1;
               const percentage = total > 0 ? (value / total) * 100 : 0;
-              return `${label}: ${value} (${formatNumberRef.current(percentage, 1)}%)`;
+              return `${label}: ${formatNumberRef.current(value, 0)} (${formatNumberRef.current(percentage, 1)}%)`;
             },
           },
           }),
@@ -409,6 +524,21 @@ export const useChartOptions = ({
     responsive: true,
     maintainAspectRatio: false,
     animation: optimizedAnimation,
+    onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
+      if (!elements.length) return;
+      const handler = onChartDrillDownRefLocal.current?.current;
+      const emotionKeys = (emotionsDataRef.current as { emotionKeys?: string[] })?.emotionKeys;
+      const emotion = emotionKeys?.[elements[0].index];
+      if (!handler || !emotion) return;
+      handler({ type: 'emotion', emotion });
+    },
+    onHover: (event: ChartEvent, elements: ActiveElement[]) => {
+      const canvas = event.native?.target as HTMLElement | undefined;
+      if (!canvas) return;
+      const emotionKeys = (emotionsDataRef.current as { emotionKeys?: string[] })?.emotionKeys;
+      const emotion = elements[0] ? emotionKeys?.[elements[0].index] : undefined;
+      canvas.style.cursor = elements.length && emotion ? 'pointer' : 'default';
+    },
     layout: {
       padding: {
         top: 10,
@@ -492,7 +622,7 @@ export const useChartOptions = ({
             const value = context.parsed || 0;
             const total = emotionsDataRef.current?.total || 1;
             const percentage = total > 0 ? (value / total) * 100 : 0;
-            return `${label}: ${value} (${formatNumberRef.current(percentage, 1)}%)`;
+            return `${label}: ${formatNumberRef.current(value, 0)} (${formatNumberRef.current(percentage, 1)}%)`;
           },
         },
         }),
@@ -510,6 +640,42 @@ export const useChartOptions = ({
       interaction: {
         intersect: false,
         mode: 'index' as const,
+      },
+      onClick: (_event: ChartEvent, elements: ActiveElement[], chart: Chart) => {
+        if (!elements.length) return;
+        const element = elements[0];
+        const datasetType = (chart.data.datasets[element.datasetIndex] as { type?: string }).type;
+        if (datasetType === 'line') return;
+        const aggregation = evolutionDataRef.current?.aggregation;
+        const dayData = evolutionDataRef.current?.rawData?.[element.index];
+        const handler = onChartDrillDownRefLocal.current?.current;
+        if (!handler || !dayData) return;
+        if (aggregation === 'day') {
+          const dateObj = dayData.date as Date | undefined;
+          let iso: string | null = null;
+          if (dateObj instanceof Date && !Number.isNaN(dateObj.getTime())) {
+            iso = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+          } else if (typeof dayData.key === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dayData.key)) {
+            iso = dayData.key.slice(0, 10);
+          }
+          if (iso) {
+            handler({ type: 'compliance_day', date: iso });
+          }
+          return;
+        }
+        const range = resolveEvolutionPeriodBounds(aggregation ?? 'day', dayData);
+        if (range) {
+          handler({ type: 'period_range', ...range });
+        }
+      },
+      onHover: (event: ChartEvent, elements: ActiveElement[], chart: Chart) => {
+        const canvas = event.native?.target as HTMLElement | undefined;
+        if (!canvas) return;
+        const element = elements[0];
+        const datasetType = element
+          ? (chart.data.datasets[element.datasetIndex] as { type?: string }).type
+          : undefined;
+        canvas.style.cursor = element && datasetType !== 'line' ? 'pointer' : 'default';
       },
       plugins: {
         legend: {
@@ -597,12 +763,12 @@ export const useChartOptions = ({
               
               let periodLabel = '';
               if (aggregation === 'week' || aggregation === 'month' || aggregation === 'year') {
-                periodLabel = count === 1 
-                  ? `(${count} ${tr('strategies:day', { defaultValue: 'jour' })})`
-                  : `(${count} ${tr('strategies:days', { defaultValue: 'jours' })})`;
+                periodLabel = count === 1
+                  ? `(${fn(count, 0)} ${tr('strategies:day', { defaultValue: 'jour' })})`
+                  : `(${fn(count, 0)} ${tr('strategies:days', { defaultValue: 'jours' })})`;
               }
-              
-              return `${datasetLabel}: ${fn(value, 2)}% ${totalStrategies > 0 ? `(${respected}/${totalStrategies})` : ''} ${periodLabel}`;
+
+              return `${datasetLabel}: ${fn(value, 2)}% ${totalStrategies > 0 ? `(${fn(respected, 0)}/${fn(totalStrategies, 0)})` : ''} ${periodLabel}`;
             },
           },
           }),
@@ -614,7 +780,7 @@ export const useChartOptions = ({
           max: 100,
           ticks: {
             callback: function(value: any) {
-              return value + '%';
+              return `${formatNumberRef.current(Number(value), 0)}%`;
             },
             color: chartColors.textSecondary,
             font: {
@@ -679,6 +845,21 @@ export const useChartOptions = ({
     maintainAspectRatio: false,
     animation: optimizedAnimation,
     indexAxis: 'x' as const,
+    onClick: (_event: ChartEvent, elements: ActiveElement[]) => {
+      if (!elements.length) return;
+      const handler = onChartDrillDownRefLocal.current?.current;
+      const dayStats = weekdayComplianceDataRef.current?.dayStats;
+      const dayData = dayStats?.[elements[0].index];
+      if (!handler || !dayData || dayData.count === 0) return;
+      handler({ type: 'weekday', dayIndex: dayData.dayIndex });
+    },
+    onHover: (event: ChartEvent, elements: ActiveElement[]) => {
+      const canvas = event.native?.target as HTMLElement | undefined;
+      if (!canvas) return;
+      const dayStats = weekdayComplianceDataRef.current?.dayStats;
+      const dayData = elements[0] ? dayStats?.[elements[0].index] : undefined;
+      canvas.style.cursor = elements.length && dayData && dayData.count > 0 ? 'pointer' : 'default';
+    },
     plugins: {
       legend: {
         display: false,
@@ -732,7 +913,7 @@ export const useChartOptions = ({
             const baseParams = {
               label: context.dataset.label,
               value: fn(value, 2),
-              count,
+              count: fn(count, 0),
               day: dayLabel,
               dayLabel,
               dayOriginal: dayName,
@@ -760,7 +941,7 @@ export const useChartOptions = ({
         max: 100,
         ticks: {
           callback: function(value: any) {
-            return value + '%';
+            return `${formatNumberRef.current(Number(value), 0)}%`;
           },
           color: chartColors.textSecondary,
           font: {

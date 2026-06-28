@@ -1,29 +1,71 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { formatCurrency } from '../../utils/formatCurrency';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '../../utils/numberFormat';
 import { StrategyComplianceStats } from '../../services/tradeStrategies';
 import { maskValue } from '../../hooks/usePrivacySettings';
+import type { StrategyDrillDownRequest } from '../../utils/strategyDrillDown';
 
 interface PerformanceComparisonProps {
   performanceComparison: StrategyComplianceStats['performance_comparison'];
   currencySymbol: string;
   hideProfitLoss: boolean;
+  onDrillDown?: (request: StrategyDrillDownRequest) => void;
 }
 
 export const PerformanceComparison: React.FC<PerformanceComparisonProps> = React.memo(({
   performanceComparison,
   currencySymbol,
   hideProfitLoss,
+  onDrillDown,
 }) => {
   const { t } = useTranslation();
+  const { preferences } = usePreferences();
+
+  const formatNumber = useCallback(
+    (value: number, digits: number = 2) => formatNumberUtil(value, digits, preferences.number_format),
+    [preferences.number_format]
+  );
+  const formatCurrency = useCallback(
+    (value: number, symbol: string = currencySymbol) =>
+      formatCurrencyUtil(value, symbol, preferences.number_format, 2),
+    [preferences.number_format, currencySymbol]
+  );
 
   const { respected, not_respected } = performanceComparison;
 
   const winRateDiff = respected.win_rate - not_respected.win_rate;
   const avgPnlDiff = parseFloat(respected.avg_pnl) - parseFloat(not_respected.avg_pnl);
 
+  const openTrades = (respectedFlag: boolean, count: number) => {
+    if (!onDrillDown || count <= 0) return;
+    onDrillDown({
+      title: respectedFlag
+        ? t('strategies:drillDown.respectedTrades')
+        : t('strategies:drillDown.notRespectedTrades'),
+      filters: { strategy_respected: respectedFlag },
+    });
+  };
+
+  const renderTradeCount = (count: number, respectedFlag: boolean, className: string) => {
+    const label = formatNumber(count, 0);
+    if (!onDrillDown || count <= 0) {
+      return <span className={className}>{label}</span>;
+    }
+    return (
+      <button
+        type="button"
+        onClick={() => openTrades(respectedFlag, count)}
+        className={`${className} hover:underline cursor-pointer`}
+        title={t('strategies:drillDown.viewTrades')}
+      >
+        {label}
+      </button>
+    );
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow p-6 h-full flex flex-col">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow p-6">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         {t('strategy:performance.title', { defaultValue: 'Impact du Respect de la Stratégie' })}
       </h3>
@@ -45,14 +87,18 @@ export const PerformanceComparison: React.FC<PerformanceComparisonProps> = React
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {t('strategy:performance.trades', { defaultValue: 'Trades' })}
               </span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{respected.count}</span>
+              {renderTradeCount(
+                respected.count,
+                true,
+                'font-semibold text-gray-900 dark:text-gray-100 tabular-nums'
+              )}
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {t('strategy:performance.winRate', { defaultValue: 'Win Rate' })}
               </span>
               <span className="font-semibold text-green-600 dark:text-green-400">
-                {respected.win_rate.toFixed(1)}%
+                {formatNumber(respected.win_rate, 1)}%
               </span>
             </div>
             <div className="flex justify-between">
@@ -90,14 +136,18 @@ export const PerformanceComparison: React.FC<PerformanceComparisonProps> = React
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {t('strategy:performance.trades', { defaultValue: 'Trades' })}
               </span>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{not_respected.count}</span>
+              {renderTradeCount(
+                not_respected.count,
+                false,
+                'font-semibold text-gray-900 dark:text-gray-100 tabular-nums'
+              )}
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {t('strategy:performance.winRate', { defaultValue: 'Win Rate' })}
               </span>
               <span className="font-semibold text-red-600 dark:text-red-400">
-                {not_respected.win_rate.toFixed(1)}%
+                {formatNumber(not_respected.win_rate, 1)}%
               </span>
             </div>
             <div className="flex justify-between">
@@ -132,9 +182,9 @@ export const PerformanceComparison: React.FC<PerformanceComparisonProps> = React
             </svg>
             <div>
               <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                {t('strategy:performance.insight', { 
-                  diff: winRateDiff.toFixed(1),
-                  pnlDiff: formatCurrency(avgPnlDiff, currencySymbol)
+                {t('strategy:performance.insight', {
+                  diff: formatNumber(winRateDiff, 1),
+                  pnlDiff: formatCurrency(avgPnlDiff),
                 })}
               </p>
             </div>

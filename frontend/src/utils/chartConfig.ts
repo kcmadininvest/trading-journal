@@ -122,6 +122,35 @@ export const syncChartFontFamily = (fontFamily: string): void => {
   CHART_FONT_FAMILY = fontFamily;
 };
 
+/** Hauteur standard des graphiques (onglet Graphiques — cartes principales). */
+export const STRATEGY_CHART_LAZY_HEIGHT = 'h-64 sm:h-72 md:h-80';
+
+/** Min-height équivalente (graphique qui remplit une cellule extensible). */
+export const STRATEGY_CHART_LAZY_MIN_HEIGHT = 'min-h-64 sm:min-h-72 md:min-h-80';
+
+/** Graphique en flex : remplit l'espace tout en gardant la hauteur mini des autres onglets. */
+export const STRATEGY_CHART_LAZY_FILL_HEIGHT =
+  'h-full min-h-0 flex-1 min-h-64 sm:min-h-72 md:min-h-80';
+
+/** Hauteur minimale d'une tuile (en-tête + graphique standard), pour grilles à hauteur fixe. */
+export const STRATEGY_CHART_TILE_MIN_HEIGHT_CLASS =
+  'min-h-[22rem] sm:min-h-[24rem] md:min-h-[26rem]';
+
+/** Colonne insights (2 cartes empilées) = une tuile graphique standard. */
+export const STRATEGY_INSIGHTS_LEFT_COLUMN_CLASS =
+  'flex h-full min-h-0 flex-col gap-2 sm:gap-3';
+
+/** Carte insights dans une colonne empilée : moitié de la tuile standard. */
+export const STRATEGY_INSIGHTS_STACKED_CARD_CLASS =
+  'flex min-h-0 flex-1 basis-0 flex-col overflow-hidden';
+
+/** Coquille compacte pour cartes insights empilées. */
+export const STRATEGY_INSIGHTS_COMPACT_SHELL_CLASS =
+  'bg-white dark:bg-gray-800 rounded-lg shadow p-2 sm:p-3 border border-gray-200 dark:border-gray-700';
+
+/** Coquille visuelle alignée sur `ChartSection` (Stratégies). */
+export const STRATEGY_CHART_SECTION_SHELL_CLASS =
+  'bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6';
 /** Carte graphique standard (page Analytics). */
 export const ANALYTICS_CHART_CARD_CLASS =
   'h-full bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 hover:shadow-xl transition-shadow duration-300 min-h-[450px] flex flex-col';

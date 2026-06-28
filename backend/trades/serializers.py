@@ -581,6 +581,7 @@ class TradeStrategySerializer(serializers.ModelSerializer):
             'trade_type': obj.trade.trade_type,
             'size': str(obj.trade.size),
             'net_pnl': str(obj.trade.net_pnl) if obj.trade.net_pnl else None,
+            'trade_day': obj.trade.trade_day.isoformat() if obj.trade.trade_day else None,
             'entered_at': obj.trade.entered_at,
             'exited_at': obj.trade.exited_at,
         }

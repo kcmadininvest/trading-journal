@@ -4,7 +4,7 @@ Calcul unifié des streaks de respect de stratégie (dashboard + endpoint Strat�
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 from django.db import models
@@ -58,6 +58,33 @@ DISCIPLINE_BADGE_DEFINITIONS: List[Dict[str, Any]] = [
     {"id": "centurion", "name": "Centurion", "days": 100},
     {"id": "year", "name": "Année parfaite", "days": 365},
 ]
+
+
+def calculate_rolling_trade_compliance_rates(
+    daily_compliance: Dict[str, Any],
+    *,
+    anchor_date: date,
+    windows: Tuple[int, ...] = (7, 30, 90),
+) -> Dict[str, Optional[float]]:
+    """
+    Taux de respect au niveau trade sur fenêtres glissantes (jours calendaires).
+
+    Retourne None pour une fenêtre sans trade évalué (strategy_respected renseigné).
+    """
+    results: Dict[str, Optional[float]] = {}
+    for days in windows:
+        start = (anchor_date - timedelta(days=days)).isoformat()
+        with_strategy = 0
+        respected = 0
+        for date_str, data in daily_compliance.items():
+            if date_str >= start:
+                with_strategy += data.get("with_strategy", 0)
+                respected += data.get("respected", 0)
+        if with_strategy > 0:
+            results[f"compliance_{days}d"] = round(respected / with_strategy * 100, 2)
+        else:
+            results[f"compliance_{days}d"] = None
+    return results
 
 
 def compute_dashboard_next_badge(current_streak: int) -> Optional[Dict[str, Any]]:

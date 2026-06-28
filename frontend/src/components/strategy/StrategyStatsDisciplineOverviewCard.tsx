@@ -54,10 +54,11 @@ function getWeekdayInTimezone(isoDateKey: string, timezone: string | undefined):
 interface StrategyStatsDisciplineOverviewCardProps {
   compliance: StrategyComplianceStats | null | undefined;
   periodEnd: string | null | undefined;
+  onHeatmapDayClick?: (date: string) => void;
 }
 
 export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDisciplineOverviewCardProps> = React.memo(
-  ({ compliance, periodEnd }) => {
+  ({ compliance, periodEnd, onHeatmapDayClick }) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
 
@@ -200,13 +201,21 @@ export const StrategyStatsDisciplineOverviewCard: React.FC<StrategyStatsDiscipli
                 {row.map((c) => (
                   <Tooltip
                     key={c.key}
-                    content={`${c.displayDate}: ${t(`strategies:statsInsights.heatmapState.${c.state}`)}`}
+                    content={`${c.displayDate}: ${t(`strategies:statsInsights.heatmapState.${c.state}`)}${c.state !== 'empty' && onHeatmapDayClick ? ` · ${t('strategies:drillDown.openDay')}` : ''}`}
                     position="top"
                     delay={200}
                     className="w-full min-w-0"
                   >
-                    <div
-                      className={`h-[26px] sm:h-[30px] w-full min-w-0 rounded-sm ${cellClass(c.state)}`}
+                    <button
+                      type="button"
+                      disabled={c.state === 'empty' || !onHeatmapDayClick}
+                      onClick={() => c.state !== 'empty' && onHeatmapDayClick?.(c.key)}
+                      className={`h-[26px] sm:h-[30px] w-full min-w-0 rounded-sm ${cellClass(c.state)} ${
+                        c.state !== 'empty' && onHeatmapDayClick
+                          ? 'cursor-pointer hover:ring-2 hover:ring-blue-400/70 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                          : 'cursor-default'
+                      }`}
+                      aria-label={`${c.displayDate}: ${t(`strategies:statsInsights.heatmapState.${c.state}`)}`}
                     />
                   </Tooltip>
                 ))}

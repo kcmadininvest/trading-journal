@@ -155,10 +155,16 @@ from .risk_metrics import (
 )
 from .compliance_streaks import (
     DISCIPLINE_BADGE_DEFINITIONS,
+    calculate_rolling_trade_compliance_rates,
     compute_dashboard_next_badge,
     compute_next_record_milestone,
     compute_strategy_compliance_context,
     get_position_strategy_family_ids,
+)
+from .strategy_discipline_insights import (
+    aggregate_compliance_completion_stats,
+    aggregate_emotions_by_respect,
+    aggregate_gain_if_strategy_stats,
 )
 from billing.permissions import IsPremiumBundleSubscriberOrAdmin
 
@@ -2210,8 +2216,7 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         
         # Optimisation des requêtes DB avec select_related/prefetch_related
         queryset = TradeStrategy.objects.filter(user=self.request.user)\
-            .select_related('trade', 'trade__trading_account', 'trade__trading_account__currency')\
-            .prefetch_related('dominant_emotions')\
+            .select_related('trade', 'trade__trading_account')\
             .only(
                 'id', 'strategy_respected', 'tp1_reached', 'tp2_plus_reached',
                 'session_rating', 'created_at', 'updated_at', 'emotion_details',
@@ -2219,21 +2224,77 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 'trade__id', 'trade__topstep_id', 'trade__contract_name', 'trade__trade_type',
                 'trade__pnl', 'trade__net_pnl', 'trade__entered_at', 'trade__exited_at', 'trade__trade_day',
                 'trade__trading_account__id', 'trade__trading_account__name',
-                'trade__trading_account__currency__code', 'trade__trading_account__currency__symbol'
+                'trade__trading_account__currency',
             )  # type: ignore
         
         # Filtres optionnels
         trade_id = self.request.query_params.get('trade_id', None)
         strategy_respected = self.request.query_params.get('strategy_respected', None)
         contract_name = self.request.query_params.get('contract_name', None)
+        start_date = self.request.query_params.get('start_date', None)
+        end_date = self.request.query_params.get('end_date', None)
+        trade_day = self.request.query_params.get('trade_day', None)
+        gain_if_strategy_respected = self.request.query_params.get('gain_if_strategy_respected', None)
+        gain_if_isnull = self.request.query_params.get('gain_if_strategy_respected__isnull', None)
+        strategy_respected_isnull = self.request.query_params.get('strategy_respected__isnull', None)
+        dominant_emotion = self.request.query_params.get('dominant_emotion', None)
+        trade_weekday = self.request.query_params.get('trade_weekday', None)
+        winning_session = self.request.query_params.get('winning_session', None)
+        trading_account_id = self.request.query_params.get('trading_account', None)
+        position_strategy_id = self.request.query_params.get('position_strategy', None)
         
         if trade_id:
             queryset = queryset.filter(trade__topstep_id=trade_id)
-            ta_f = self.request.query_params.get('trading_account')
-            if ta_f:
-                queryset = queryset.filter(trade__trading_account_id=ta_f)
+            if trading_account_id:
+                queryset = queryset.filter(trade__trading_account_id=trading_account_id)
+        else:
+            if trading_account_id:
+                queryset = queryset.filter(trade__trading_account_id=trading_account_id)
+            if start_date:
+                queryset = queryset.filter(trade__trade_day__gte=start_date)
+            if end_date:
+                queryset = queryset.filter(trade__trade_day__lte=end_date)
+            if trade_day:
+                queryset = queryset.filter(trade__trade_day=trade_day)
+            if position_strategy_id:
+                try:
+                    family_ids = get_position_strategy_family_ids(
+                        self.request.user, int(position_strategy_id)
+                    )
+                    queryset = queryset.filter(trade__position_strategy_id__in=family_ids)
+                except (ValueError, TypeError):
+                    pass
         if strategy_respected is not None:
             queryset = queryset.filter(strategy_respected=strategy_respected.lower() == 'true')  # type: ignore
+        if strategy_respected_isnull is not None:
+            if strategy_respected_isnull.lower() == 'true':
+                queryset = queryset.filter(strategy_respected__isnull=True)
+            elif strategy_respected_isnull.lower() == 'false':
+                queryset = queryset.filter(strategy_respected__isnull=False)
+        if gain_if_strategy_respected is not None:
+            queryset = queryset.filter(
+                gain_if_strategy_respected=gain_if_strategy_respected.lower() == 'true'
+            )
+        if gain_if_isnull is not None:
+            if gain_if_isnull.lower() == 'true':
+                queryset = queryset.filter(gain_if_strategy_respected__isnull=True)
+            elif gain_if_isnull.lower() == 'false':
+                queryset = queryset.filter(gain_if_strategy_respected__isnull=False)
+        if dominant_emotion:
+            queryset = queryset.filter(dominant_emotions__contains=[dominant_emotion])
+        if trade_weekday is not None:
+            try:
+                queryset = queryset.filter(trade__trade_day__week_day=int(trade_weekday))
+            except (ValueError, TypeError):
+                pass
+        if winning_session:
+            queryset = queryset.filter(trade__net_pnl__gt=0)
+            if winning_session == 'tp1':
+                queryset = queryset.filter(tp1_reached=True)
+            elif winning_session == 'tp2_plus':
+                queryset = queryset.filter(tp2_plus_reached=True)
+            elif winning_session == 'no_tp':
+                queryset = queryset.filter(tp1_reached=False, tp2_plus_reached=False)
         if contract_name:
             queryset = queryset.filter(trade__contract_name__icontains=contract_name)
         
@@ -2832,6 +2893,10 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             {'emotion': emotion, 'count': count}
             for emotion, count in sorted(emotion_counts.items(), key=lambda x: x[1], reverse=True)
         ]
+
+        gain_if_strategy_stats = aggregate_gain_if_strategy_stats(queryset)
+        emotions_by_respect = aggregate_emotions_by_respect(queryset)
+        compliance_completion_stats = aggregate_compliance_completion_stats(queryset)
         
         # 5. Respect par période (pour graphique temporel)
         # Agrégations SQL bulk pour les données par période
@@ -3029,6 +3094,9 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                     'total_winning': winning_count
                 },
                 'emotions_distribution': emotions_data,
+                'gain_if_strategy_stats': gain_if_strategy_stats,
+                'emotions_by_respect': emotions_by_respect,
+                'compliance_completion_stats': compliance_completion_stats,
                 'period_data': period_data,
             },
             'all_time': {
@@ -3260,25 +3328,26 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         # (les compliances sont déjà comptées dans 'with_strategy', 'respected' et 'not_respected')
         overall_compliance_rate = (total_respected / total_trades_with_strategy * 100) if total_trades_with_strategy > 0 else 0
         
-        # Calculer les taux pour différentes périodes dans le timezone utilisateur
+        # Fenêtres glissantes 7/30/90 j. : toujours ancrées sur aujourd'hui (filtre période UI ignoré)
         user_tz = get_user_timezone(request)
         now = timezone.now().astimezone(user_tz).date()
-        last_7_days = (now - timedelta(days=7)).isoformat()
-        last_30_days = (now - timedelta(days=30)).isoformat()
         last_90_days = (now - timedelta(days=90)).isoformat()
-        
-        def calculate_period_rate(start_date_str):
-            period_trades_with_strategy = 0
-            period_respected = 0
-            for date_str, data in daily_compliance.items():
-                if date_str >= start_date_str:
-                    period_trades_with_strategy += data['with_strategy']
-                    period_respected += data['respected']
-            return (period_respected / period_trades_with_strategy * 100) if period_trades_with_strategy > 0 else 0
-        
-        compliance_7d = calculate_period_rate(last_7_days)
-        compliance_30d = calculate_period_rate(last_30_days)
-        compliance_90d = calculate_period_rate(last_90_days)
+        rolling_ctx = compute_strategy_compliance_context(
+            self.request.user,
+            trading_account_id=trading_account_id,
+            position_strategy_id=position_strategy_id,
+            start_date=last_90_days,
+            end_date=now.isoformat(),
+            year=None,
+            month=None,
+        )
+        rolling_rates = calculate_rolling_trade_compliance_rates(
+            rolling_ctx["daily_compliance"],
+            anchor_date=now,
+        )
+        compliance_7d = rolling_rates["compliance_7d"]
+        compliance_30d = rolling_rates["compliance_30d"]
+        compliance_90d = rolling_rates["compliance_90d"]
         
         # Calculer les badges obtenus de manière séquentielle
         # Un badge ne peut être obtenu que si tous les badges précédents sont obtenus
@@ -3437,9 +3506,9 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'current_not_respect_streak_start': current_not_respect_streak_start,
             'current_not_respect_streak_trades': current_not_respect_streak_trades,
             'overall_compliance_rate': round(overall_compliance_rate, 2),
-            'compliance_7d': round(compliance_7d, 2),
-            'compliance_30d': round(compliance_30d, 2),
-            'compliance_90d': round(compliance_90d, 2),
+            'compliance_7d': compliance_7d,
+            'compliance_30d': compliance_30d,
+            'compliance_90d': compliance_90d,
             'total_trades': total_trades_with_strategy,
             'total_respected': total_respected,
             'total_not_respected': total_not_respected,

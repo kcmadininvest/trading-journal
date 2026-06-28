@@ -8,6 +8,8 @@ interface ChartSectionProps {
   tooltip?: string;
   children: React.ReactNode;
   className?: string;
+  /** Étire le contenu pour remplir la hauteur disponible (grilles à hauteur égale). */
+  fillHeight?: boolean;
 }
 
 /**
@@ -18,11 +20,30 @@ export const ChartSection: React.FC<ChartSectionProps> = React.memo(({
   title, 
   tooltip, 
   children, 
-  className = '' 
+  className = '',
+  fillHeight = false,
 }) => {
+  const body = (
+    <Suspense fallback={<ChartSkeleton />}>
+      <ChartTooltipResetContainer
+        className={
+          fillHeight
+            ? 'relative flex h-full min-h-0 w-full flex-1 flex-col'
+            : 'relative h-full w-full min-h-0'
+        }
+      >
+        {children}
+      </ChartTooltipResetContainer>
+    </Suspense>
+  );
+
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6 ${className}`}>
-      <div className="flex items-center gap-2 mb-3 sm:mb-4">
+    <div
+      className={`bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6 ${
+        fillHeight ? 'flex h-full flex-col min-h-0' : ''
+      } ${className}`}
+    >
+      <div className="flex items-center gap-2 mb-3 sm:mb-4 shrink-0">
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
           {title}
         </h2>
@@ -36,9 +57,7 @@ export const ChartSection: React.FC<ChartSectionProps> = React.memo(({
           </Tooltip>
         )}
       </div>
-      <Suspense fallback={<ChartSkeleton />}>
-        <ChartTooltipResetContainer>{children}</ChartTooltipResetContainer>
-      </Suspense>
+      {fillHeight ? <div className="flex min-h-0 flex-1 flex-col">{body}</div> : body}
     </div>
   );
 });

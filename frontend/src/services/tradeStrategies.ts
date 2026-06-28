@@ -13,6 +13,7 @@ export interface TradeStrategy {
     trade_type: 'Long' | 'Short';
     size: string;
     net_pnl: string | null;
+    trade_day: string | null;
     entered_at: string;
     exited_at: string | null;
   };
@@ -43,9 +44,9 @@ export interface StrategyComplianceStats {
   current_not_respect_streak_start: string | null;
   current_not_respect_streak_trades: number;
   overall_compliance_rate: number;
-  compliance_7d: number;
-  compliance_30d: number;
-  compliance_90d: number;
+  compliance_7d: number | null;
+  compliance_30d: number | null;
+  compliance_90d: number | null;
   total_trades: number;
   total_respected: number;
   total_not_respected: number;
@@ -145,6 +146,28 @@ class TradeStrategiesService {
       }
     }
     return res;
+  }
+
+  /**
+   * Liste les stratégies de trade avec filtres (drill-down page Stratégies).
+   */
+  async listFiltered(
+    params: Record<string, string>,
+    pageSize = 200
+  ): Promise<{ results: TradeStrategy[]; count: number }> {
+    const search = new URLSearchParams({ page_size: String(pageSize), ...params });
+    const res = await this.fetchWithAuth(
+      `${this.BASE_URL}/api/trades/trade-strategies/?${search}`
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || err.detail || 'Erreur lors du chargement des trades');
+    }
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      return { results: data, count: data.length };
+    }
+    return { results: data.results ?? [], count: data.count ?? 0 };
   }
 
   /**
@@ -326,6 +349,29 @@ class TradeStrategiesService {
         emotion: string;
         count: number;
       }>;
+      gain_if_strategy_stats?: {
+        total_not_respected: number;
+        total_answered: number;
+        unanswered: number;
+        would_have_won: number;
+        would_have_lost: number;
+        would_have_won_pct: number | null;
+        would_have_lost_pct: number | null;
+      };
+      emotions_by_respect?: {
+        respected: Array<{ emotion: string; count: number }>;
+        not_respected: Array<{ emotion: string; count: number }>;
+      };
+      compliance_completion_stats?: {
+        total_trades: number;
+        evaluated_trades: number;
+        unevaluated_trades: number;
+        trade_completion_rate_pct: number | null;
+        total_trading_days: number;
+        days_fully_evaluated: number;
+        days_partially_unevaluated: number;
+        day_completion_rate_pct: number | null;
+      };
       period_data: Array<{
         period: string;
         date: string;

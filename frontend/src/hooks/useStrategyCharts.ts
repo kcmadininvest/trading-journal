@@ -141,10 +141,12 @@ export const useStrategyCharts = ({
     
     const labels = top5Emotions.map((e: any) => getEmotionLabel(e.emotion));
     const data = top5Emotions.map((e: any) => e.count);
+    const emotionKeys = top5Emotions.map((e: any) => e.emotion as string);
     
     if (othersCount > 0) {
       labels.push(t('strategies:others'));
       data.push(othersCount);
+      emotionKeys.push('');
     }
     
     const colors = generateChartColors(labels.length);
@@ -163,6 +165,7 @@ export const useStrategyCharts = ({
         },
       ],
       total,
+      emotionKeys,
       totalEmotions: sortedEmotions.length,
       topEmotion: top5Emotions.length > 0 ? {
         label: getEmotionLabel(top5Emotions[0].emotion),

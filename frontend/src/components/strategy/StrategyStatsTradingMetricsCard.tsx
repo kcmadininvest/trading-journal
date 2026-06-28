@@ -1,5 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { usePreferences } from '../../hooks/usePreferences';
+import { formatNumber as formatNumberUtil } from '../../utils/numberFormat';
 import { StrategyComplianceStats } from '../../services/tradeStrategies';
 import { SAMPLE_MODERATE_MIN, SAMPLE_STRONG_MAX } from '../../utils/tradingSampleThresholds';
 
@@ -9,13 +11,14 @@ function appendSampleWarnings(
   count: number,
   bucket: 'Respected' | 'NotRespected',
   warnings: string[],
-  t: (k: string, o?: Record<string, unknown>) => string
+  t: (k: string, o?: Record<string, unknown>) => string,
+  formatCount: (value: number) => string
 ): void {
   if (count <= 0) return;
   const params = {
-    count,
-    minModerate: SAMPLE_MODERATE_MIN,
-    minStrong: SAMPLE_STRONG_MAX,
+    count: formatCount(count),
+    minModerate: formatCount(SAMPLE_MODERATE_MIN),
+    minStrong: formatCount(SAMPLE_STRONG_MAX),
   };
   if (count < SAMPLE_STRONG_MAX) {
     warnings.push(t(`strategies:statsInsights.lowSampleStrong${bucket}`, params));
@@ -26,21 +29,22 @@ function appendSampleWarnings(
 
 function formatProfitFactorForSide(
   side: PerformanceSide,
-  t: (k: string, o?: Record<string, unknown>) => string
+  t: (k: string, o?: Record<string, unknown>) => string,
+  formatNumber: (value: number, digits?: number) => string
 ): string {
   if (side.profit_factor_infinite) {
     return t('strategies:statsInsights.profitFactorInfinite');
   }
   const apiPf = side.profit_factor;
   if (apiPf != null && Number.isFinite(Number(apiPf))) {
-    return Number(apiPf).toFixed(2);
+    return formatNumber(Number(apiPf), 2);
   }
   const gw = parseFloat(String(side.gross_wins ?? '0'));
   const gl = parseFloat(String(side.gross_losses ?? '0'));
   if (Number.isFinite(gw) && Number.isFinite(gl) && gl < 0) {
     const absLoss = Math.abs(gl);
     if (absLoss > 0) {
-      return (gw / absLoss).toFixed(2);
+      return formatNumber(gw / absLoss, 2);
     }
   }
   if (gw > 0 && gl >= 0) {
@@ -49,19 +53,31 @@ function formatProfitFactorForSide(
   return t('strategies:statsInsights.profitFactorNA');
 }
 
-function formatExpectancy(avgPnl: string): string {
+function formatExpectancy(avgPnl: string, formatNumber: (value: number, digits?: number) => string): string {
   const n = parseFloat(avgPnl);
   if (!Number.isFinite(n)) return avgPnl;
-  return n.toFixed(2);
+  return formatNumber(n, 2);
 }
+
+import type { StrategyDrillDownRequest } from '../../utils/strategyDrillDown';
 
 interface StrategyStatsTradingMetricsCardProps {
   performanceComparison: StrategyComplianceStats['performance_comparison'] | null | undefined;
+  onDrillDown?: (request: StrategyDrillDownRequest) => void;
 }
 
 export const StrategyStatsTradingMetricsCard: React.FC<StrategyStatsTradingMetricsCardProps> = React.memo(
-  ({ performanceComparison }) => {
+  ({ performanceComparison, onDrillDown }) => {
     const { t } = useTranslation();
+    const { preferences } = usePreferences();
+    const formatNumber = useCallback(
+      (value: number, digits: number = 2) => formatNumberUtil(value, digits, preferences.number_format),
+      [preferences.number_format]
+    );
+    const formatCount = useCallback(
+      (value: number) => formatNumberUtil(value, 0, preferences.number_format),
+      [preferences.number_format]
+    );
 
     const { warnings, expectancyDiff, expectancyGapUnreliable } = useMemo(() => {
       if (!performanceComparison) {
@@ -73,8 +89,8 @@ export const StrategyStatsTradingMetricsCard: React.FC<StrategyStatsTradingMetri
       }
       const w: string[] = [];
       const { respected, not_respected } = performanceComparison;
-      appendSampleWarnings(respected.count, 'Respected', w, t);
-      appendSampleWarnings(not_respected.count, 'NotRespected', w, t);
+      appendSampleWarnings(respected.count, 'Respected', w, t, formatCount);
+      appendSampleWarnings(not_respected.count, 'NotRespected', w, t, formatCount);
 
       const ar = parseFloat(respected.avg_pnl);
       const an = parseFloat(not_respected.avg_pnl);
@@ -87,7 +103,7 @@ export const StrategyStatsTradingMetricsCard: React.FC<StrategyStatsTradingMetri
         respected.count > 0 && not_respected.count > 0 && !canCompareExpectancy;
 
       return { warnings: w, expectancyDiff: diff, expectancyGapUnreliable: gapUnreliable };
-    }, [performanceComparison, t]);
+    }, [performanceComparison, t, formatCount]);
 
     if (!performanceComparison) {
       return null;
@@ -115,7 +131,7 @@ export const StrategyStatsTradingMetricsCard: React.FC<StrategyStatsTradingMetri
                 {t('strategies:statsInsights.expectancyPerTrade')}
               </dt>
               <dd className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums text-sm">
-                {formatExpectancy(side.avg_pnl)}
+                {formatExpectancy(side.avg_pnl, formatNumber)}
               </dd>
             </div>
             <div className="flex justify-between gap-2">
@@ -123,12 +139,33 @@ export const StrategyStatsTradingMetricsCard: React.FC<StrategyStatsTradingMetri
                 {t('strategies:statsInsights.profitFactor')}
               </dt>
               <dd className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums text-sm">
-                {formatProfitFactorForSide(side, t)}
+                {formatProfitFactorForSide(side, t, formatNumber)}
               </dd>
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-sm text-gray-600 dark:text-gray-400">{t('strategies:statsInsights.tradesEvaluated')}</dt>
-              <dd className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums text-sm">{side.count}</dd>
+              <dd className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums text-sm">
+                {onDrillDown && side.count > 0 ? (
+                  <button
+                    type="button"
+                    className="hover:underline cursor-pointer"
+                    onClick={() =>
+                      onDrillDown({
+                        title: t(
+                          tone === 'green'
+                            ? 'strategies:drillDown.respectedTrades'
+                            : 'strategies:drillDown.notRespectedTrades'
+                        ),
+                        filters: { strategy_respected: tone === 'green' },
+                      })
+                    }
+                  >
+                    {formatCount(side.count)}
+                  </button>
+                ) : (
+                  formatCount(side.count)
+                )}
+              </dd>
             </div>
           </dl>
         </div>
@@ -167,7 +204,7 @@ export const StrategyStatsTradingMetricsCard: React.FC<StrategyStatsTradingMetri
         {expectancyGapUnreliable && (
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             {t('strategies:statsInsights.expectancyComparisonUnreliable', {
-              minBoth: SAMPLE_STRONG_MAX,
+              minBoth: formatCount(SAMPLE_STRONG_MAX),
             })}
           </p>
         )}
@@ -177,7 +214,7 @@ export const StrategyStatsTradingMetricsCard: React.FC<StrategyStatsTradingMetri
             <span className="font-medium">{t('strategies:statsInsights.expectancyGapLabel')}</span>{' '}
             <span className="tabular-nums font-semibold text-gray-900 dark:text-gray-100">
               {expectancyDiff > 0 ? '+' : ''}
-              {expectancyDiff.toFixed(2)}
+              {formatNumber(expectancyDiff, 2)}
             </span>
             <span className="text-gray-500 dark:text-gray-400"> {t('strategies:statsInsights.perTradeVsNot')}</span>
           </p>
