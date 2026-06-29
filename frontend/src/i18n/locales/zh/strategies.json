@@ -112,6 +112,8 @@
     "openDay": "打开纪律记录",
     "openCompliance": "打开当日纪律记录",
     "count": "{{formatted}} 笔交易",
+    "showingPartial": "已显示 {{shown}} / {{total}}",
+    "loadMore": "加载更多",
     "empty": "没有符合此筛选条件的交易。",
     "errorLoading": "无法加载交易。",
     "notEvaluated": "未填写",

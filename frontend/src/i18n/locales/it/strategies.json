@@ -112,6 +112,8 @@
     "openDay": "Apri registrazione disciplina",
     "openCompliance": "Apri registrazione del giorno",
     "count": "{{formatted}} trade",
+    "showingPartial": "{{shown}} su {{total}} visualizzati",
+    "loadMore": "Carica altri",
     "empty": "Nessun trade corrisponde a questo filtro.",
     "errorLoading": "Impossibile caricare i trade.",
     "notEvaluated": "Non compilato",

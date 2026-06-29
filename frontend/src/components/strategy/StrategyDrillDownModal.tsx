@@ -6,6 +6,7 @@ import { formatCurrencyWithSign, formatNumber as formatNumberUtil } from '../../
 import { formatDate, formatTime } from '../../utils/dateFormat';
 import {
   mergeDrillDownQuery,
+  STRATEGY_DRILL_DOWN_PAGE_SIZE,
   type StrategyDrillDownRequest,
   type StrategyPeriodContext,
 } from '../../utils/strategyDrillDown';
@@ -17,6 +18,18 @@ interface StrategyDrillDownModalProps {
   period: StrategyPeriodContext;
   onClose: () => void;
   onOpenCompliance?: (date: string) => void;
+}
+
+function mergeUniqueStrategies(existing: TradeStrategy[], incoming: TradeStrategy[]): TradeStrategy[] {
+  const seen = new Set(existing.map((item) => item.id));
+  const merged = [...existing];
+  for (const item of incoming) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      merged.push(item);
+    }
+  }
+  return merged;
 }
 
 export const StrategyDrillDownModal: React.FC<StrategyDrillDownModalProps> = ({
@@ -31,40 +44,70 @@ export const StrategyDrillDownModal: React.FC<StrategyDrillDownModalProps> = ({
   const pnlMode = parsePnlDisplayMode(preferences.pnl_display);
   const [items, setItems] = useState<TradeStrategy[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!request) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const params = mergeDrillDownQuery(period, request.filters);
-      const response = await tradeStrategiesService.listFiltered(params);
-      const sorted = [...response.results].sort((a, b) => {
-        const dayA = a.trade_info.trade_day ?? a.trade_info.entered_at;
-        const dayB = b.trade_info.trade_day ?? b.trade_info.entered_at;
-        return new Date(dayA).getTime() - new Date(dayB).getTime();
-      });
-      setItems(sorted);
-      setTotal(response.count);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : t('strategies:drillDown.errorLoading');
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [period, request, t]);
+  const formatEmotions = useCallback(
+    (emotions: string[] | undefined) => {
+      if (!emotions?.length) return null;
+      return emotions
+        .map((emotion) => t(`strategies:emotions.${emotion}` as const, { defaultValue: emotion }))
+        .join(', ');
+    },
+    [t]
+  );
+
+  const loadPage = useCallback(
+    async (pageToLoad: number, append: boolean) => {
+      if (!request) return;
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
+      setError(null);
+      try {
+        const params = mergeDrillDownQuery(period, request.filters);
+        const response = await tradeStrategiesService.listFiltered(params, {
+          page: pageToLoad,
+          pageSize: STRATEGY_DRILL_DOWN_PAGE_SIZE,
+          ordering: 'trade_day',
+        });
+        setTotal(response.count);
+        setPage(pageToLoad);
+        setHasMore(response.next != null);
+        setItems((prev) =>
+          append ? mergeUniqueStrategies(prev, response.results) : response.results
+        );
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : t('strategies:drillDown.errorLoading');
+        setError(message);
+      } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [period, request, t]
+  );
 
   useEffect(() => {
     if (open && request) {
-      void load();
+      setItems([]);
+      setTotal(0);
+      setPage(1);
+      setHasMore(false);
+      void loadPage(1, false);
     } else {
       setItems([]);
       setTotal(0);
+      setPage(1);
+      setHasMore(false);
       setError(null);
     }
-  }, [open, request, load]);
+  }, [open, request, loadPage]);
 
   if (!open || !request) return null;
 
@@ -89,6 +132,10 @@ export const StrategyDrillDownModal: React.FC<StrategyDrillDownModalProps> = ({
     return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300';
   };
 
+  const shownCount = items.length;
+  const formattedTotal = formatNumberUtil(total, 0, preferences.number_format);
+  const formattedShown = formatNumberUtil(shownCount, 0, preferences.number_format);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -104,10 +151,16 @@ export const StrategyDrillDownModal: React.FC<StrategyDrillDownModalProps> = ({
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{request.title}</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {t('strategies:drillDown.count', {
-                formatted: formatNumberUtil(total, 0, preferences.number_format),
-              })}
+              {t('strategies:drillDown.count', { formatted: formattedTotal })}
             </p>
+            {!isLoading && total > 0 && (
+              <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                {t('strategies:drillDown.showingPartial', {
+                  shown: formattedShown,
+                  total: formattedTotal,
+                })}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -136,7 +189,7 @@ export const StrategyDrillDownModal: React.FC<StrategyDrillDownModalProps> = ({
               {t('strategies:drillDown.empty')}
             </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-2" aria-busy={isLoadingMore}>
               {items.map((strategy) => {
                 const tradeDay = strategy.trade_info.trade_day;
                 const enteredAt = strategy.trade_info.entered_at;
@@ -161,9 +214,9 @@ export const StrategyDrillDownModal: React.FC<StrategyDrillDownModalProps> = ({
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                           {dateLabel} · {timeLabel}
                         </div>
-                        {strategy.emotions_display && (
+                        {strategy.dominant_emotions?.length > 0 && (
                           <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                            {strategy.emotions_display}
+                            {formatEmotions(strategy.dominant_emotions)}
                           </div>
                         )}
                       </div>
@@ -193,6 +246,29 @@ export const StrategyDrillDownModal: React.FC<StrategyDrillDownModalProps> = ({
             </ul>
           )}
         </div>
+
+        {hasMore && !isLoading && !error && (
+          <div className="px-4 sm:px-5 py-3 border-t border-gray-200 dark:border-gray-700 shrink-0">
+            <button
+              type="button"
+              disabled={isLoadingMore}
+              onClick={() => void loadPage(page + 1, true)}
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoadingMore ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {t('strategies:drillDown.loadMore')}
+                </>
+              ) : (
+                t('strategies:drillDown.loadMore')
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

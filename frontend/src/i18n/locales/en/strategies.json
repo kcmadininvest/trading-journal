@@ -124,6 +124,8 @@
     "openDay": "Open discipline entry",
     "openCompliance": "Open discipline entry for this day",
     "count": "{{formatted}} trade(s)",
+    "showingPartial": "{{shown}} of {{total}} shown",
+    "loadMore": "Load more",
     "empty": "No trades match this filter.",
     "errorLoading": "Could not load trades.",
     "notEvaluated": "Not set",

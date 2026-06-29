@@ -112,6 +112,8 @@
     "openDay": "규율 입력 열기",
     "openCompliance": "해당 일자 규율 입력 열기",
     "count": "트레이드 {{formatted}}건",
+    "showingPartial": "{{total}}건 중 {{shown}}건 표시",
+    "loadMore": "더 불러오기",
     "empty": "이 필터에 맞는 트레이드가 없습니다.",
     "errorLoading": "트레이드를 불러올 수 없습니다.",
     "notEvaluated": "미입력",

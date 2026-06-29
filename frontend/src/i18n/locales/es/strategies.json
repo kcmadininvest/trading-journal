@@ -124,6 +124,8 @@
     "openDay": "Abrir registro de disciplina",
     "openCompliance": "Abrir registro del día",
     "count": "{{formatted}} operación(es)",
+    "showingPartial": "{{shown}} de {{total}} mostrados",
+    "loadMore": "Cargar más",
     "empty": "Ninguna operación coincide con este filtro.",
     "errorLoading": "No se pudieron cargar las operaciones.",
     "notEvaluated": "Sin registrar",

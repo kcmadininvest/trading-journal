@@ -1,3 +1,5 @@
+export const STRATEGY_DRILL_DOWN_PAGE_SIZE = 10;
+
 export interface StrategyPeriodContext {
   start_date?: string;
   end_date?: string;

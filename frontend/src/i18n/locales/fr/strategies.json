@@ -124,6 +124,8 @@
     "openDay": "Ouvrir la saisie discipline",
     "openCompliance": "Ouvrir la saisie discipline du jour",
     "count": "{{formatted}} trade(s)",
+    "showingPartial": "{{shown}} sur {{total}} affichés",
+    "loadMore": "Charger plus",
     "empty": "Aucun trade ne correspond à ce filtre.",
     "errorLoading": "Impossible de charger les trades.",
     "notEvaluated": "Non renseigné",

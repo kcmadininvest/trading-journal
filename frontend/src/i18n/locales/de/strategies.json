@@ -124,6 +124,8 @@
     "openDay": "Disziplin-Erfassung öffnen",
     "openCompliance": "Tages-Erfassung öffnen",
     "count": "{{formatted}} Trade(s)",
+    "showingPartial": "{{shown}} von {{total}} angezeigt",
+    "loadMore": "Mehr laden",
     "empty": "Keine Trades für diesen Filter.",
     "errorLoading": "Trades konnten nicht geladen werden.",
     "notEvaluated": "Nicht erfasst",

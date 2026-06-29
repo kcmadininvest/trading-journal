@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { authService } from './auth';
 import type { PnlDisplayMode } from '../utils/pnlDisplay';
+import { STRATEGY_DRILL_DOWN_PAGE_SIZE } from '../utils/strategyDrillDown';
 
 export interface TradeStrategy {
   id: number;
@@ -153,9 +154,21 @@ class TradeStrategiesService {
    */
   async listFiltered(
     params: Record<string, string>,
-    pageSize = 200
-  ): Promise<{ results: TradeStrategy[]; count: number }> {
-    const search = new URLSearchParams({ page_size: String(pageSize), ...params });
+    options: {
+      page?: number;
+      pageSize?: number;
+      ordering?: 'trade_day' | '-trade_day';
+    } = {}
+  ): Promise<{ results: TradeStrategy[]; count: number; next: string | null; page: number }> {
+    const page = options.page ?? 1;
+    const pageSize = options.pageSize ?? STRATEGY_DRILL_DOWN_PAGE_SIZE;
+    const ordering = options.ordering ?? 'trade_day';
+    const search = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize),
+      ordering,
+      ...params,
+    });
     const res = await this.fetchWithAuth(
       `${this.BASE_URL}/api/trades/trade-strategies/?${search}`
     );
@@ -165,9 +178,14 @@ class TradeStrategiesService {
     }
     const data = await res.json();
     if (Array.isArray(data)) {
-      return { results: data, count: data.length };
+      return { results: data, count: data.length, next: null, page };
     }
-    return { results: data.results ?? [], count: data.count ?? 0 };
+    return {
+      results: data.results ?? [],
+      count: data.count ?? 0,
+      next: data.next ?? null,
+      page,
+    };
   }
 
   /**

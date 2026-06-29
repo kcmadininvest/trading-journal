@@ -2297,7 +2297,13 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 queryset = queryset.filter(tp1_reached=False, tp2_plus_reached=False)
         if contract_name:
             queryset = queryset.filter(trade__contract_name__icontains=contract_name)
-        
+
+        ordering = self.request.query_params.get('ordering', None)
+        if ordering == 'trade_day':
+            return queryset.order_by('trade__trade_day', 'trade__entered_at', 'id')
+        if ordering == '-trade_day':
+            return queryset.order_by('-trade__trade_day', '-trade__entered_at', '-id')
+
         return queryset.order_by('-created_at')
 
     def perform_create(self, serializer):

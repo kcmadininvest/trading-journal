@@ -158,3 +158,29 @@ class TradeStrategyDrilldownFiltersTests(TestCase):
 
     def test_filter_winning_session_tp1(self):
         self.assertEqual(self._ids({'winning_session': 'tp1'}), {'R4'})
+
+    def _paginated(self, params):
+        response = self.client.get('/api/trades/trade-strategies/', params)
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        self.assertIn('results', data)
+        return data
+
+    def test_pagination_page_size_and_count(self):
+        data = self._paginated({'page': '1', 'page_size': '2', 'ordering': 'trade_day'})
+        self.assertEqual(data['count'], 4)
+        self.assertEqual(len(data['results']), 2)
+        self.assertIsNotNone(data.get('next'))
+
+    def test_pagination_page_two_disjoint(self):
+        page1 = self._paginated({'page': '1', 'page_size': '2', 'ordering': 'trade_day'})
+        page2 = self._paginated({'page': '2', 'page_size': '2', 'ordering': 'trade_day'})
+        ids1 = {row['trade_info']['topstep_id'] for row in page1['results']}
+        ids2 = {row['trade_info']['topstep_id'] for row in page2['results']}
+        self.assertEqual(len(ids1 & ids2), 0)
+        self.assertEqual(len(ids1 | ids2), 4)
+
+    def test_ordering_trade_day_chronological(self):
+        data = self._paginated({'ordering': 'trade_day', 'page_size': '10'})
+        ids = [row['trade_info']['topstep_id'] for row in data['results']]
+        self.assertEqual(ids, ['R1', 'R2', 'R3', 'R4'])

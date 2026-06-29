@@ -112,6 +112,8 @@
     "openDay": "規律入力を開く",
     "openCompliance": "当日の規律入力を開く",
     "count": "{{formatted}} 件のトレード",
+    "showingPartial": "{{total}} 件中 {{shown}} 件を表示",
+    "loadMore": "さらに読み込む",
     "empty": "この条件に一致するトレードはありません。",
     "errorLoading": "トレードを読み込めませんでした。",
     "notEvaluated": "未入力",

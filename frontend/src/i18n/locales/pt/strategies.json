@@ -122,6 +122,8 @@
     "openDay": "Abrir registo de disciplina",
     "openCompliance": "Abrir registo do dia",
     "count": "{{formatted}} trade(s)",
+    "showingPartial": "{{shown}} de {{total}} exibidos",
+    "loadMore": "Carregar mais",
     "empty": "Nenhum trade corresponde a este filtro.",
     "errorLoading": "Não foi possível carregar os trades.",
     "notEvaluated": "Não preenchido",
