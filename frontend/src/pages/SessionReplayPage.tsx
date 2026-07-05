@@ -93,7 +93,7 @@ const SessionReplayPage: React.FC = () => {
   const { t } = useTranslation('replay');
   const { preferences } = usePreferences();
   const hideAccountNumber = useAccountNumberVisibility();
-  const { selectedAccountId, setSelectedAccountId } = useTradingAccount();
+  const { selectedAccountId, setSelectedAccountId, loading: accountContextLoading } = useTradingAccount();
   const hashParams = useMemo(() => parseHashParams(), []);
 
   const [sessionDate, setSessionDate] = useState(
@@ -102,7 +102,7 @@ const SessionReplayPage: React.FC = () => {
   const [session, setSession] = useState<TradingSessionReplay | null>(null);
   const [events, setEvents] = useState<SessionEventItem[]>([]);
   const [insights, setInsights] = useState<SessionInsightItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [building, setBuilding] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -389,6 +389,7 @@ const SessionReplayPage: React.FC = () => {
   const loadSessionForSelection = useCallback(async () => {
     if (!accountId || !sessionDate) {
       clearSessionState();
+      setLoading(false);
       return;
     }
     if (eligibilityLoadingRef.current) {
@@ -423,7 +424,7 @@ const SessionReplayPage: React.FC = () => {
       clearSessionState();
       toastReplayError(error, t('loadError'));
     } finally {
-      if (generation === generationRef.current) {
+      if (generation === generationRef.current && !signal.aborted) {
         setLoading(false);
       }
     }
@@ -439,13 +440,17 @@ const SessionReplayPage: React.FC = () => {
   ]);
 
   useEffect(() => {
-    setLoading(false);
     setBuilding(false);
     clearSessionState();
     setActiveDates([]);
+    setLoading(Boolean(accountId));
   }, [accountId, clearSessionState]);
 
   useEffect(() => {
+    if (!accountId || !sessionDate || eligibilityLoading) {
+      return;
+    }
+
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
@@ -459,10 +464,9 @@ const SessionReplayPage: React.FC = () => {
         debounceTimerRef.current = null;
       }
       abortRef.current?.abort();
-      setLoading(false);
-      setBuilding(false);
+      generationRef.current += 1;
     };
-  }, [accountId, sessionDate, canSync, eligibilityLoading, loadSessionForSelection]);
+  }, [accountId, sessionDate, eligibilityLoading, loadSessionForSelection]);
 
   const refreshSessionQuiet = useCallback(async () => {
     if (!accountId || !sessionDate || !canSync) return;
@@ -696,7 +700,8 @@ const SessionReplayPage: React.FC = () => {
     return start || end || '—';
   }, [session?.started_at, session?.ended_at, dateFormat, timezone, t]);
 
-  const busy = loading || building;
+  const busy = loading || building || accountContextLoading || eligibilityLoading;
+  const showEmptySession = !hasBuiltSession && !busy;
 
   return (
     <PageShell>
@@ -773,21 +778,20 @@ const SessionReplayPage: React.FC = () => {
         )}
       </div>
 
-      {(loading || eligibilityLoading) && !building ? (
+      {(loading || eligibilityLoading || accountContextLoading || building) ? (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4" />
-            <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              {building ? t('building') : t('loading')}
+            </p>
           </div>
         </div>
-      ) : !hasBuiltSession ? (
+      ) : showEmptySession ? (
         <div className={`${replayCardClass} p-8 text-center`}>
           <p className="text-gray-600 dark:text-gray-400">{t('noSession')}</p>
-          {building && (
-            <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{t('building')}</p>
-          )}
         </div>
-      ) : (
+      ) : session && hasBuiltSession ? (
         <div className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
             <StatCard label={t('tradeCount')} value={String(session.trade_count)} />
@@ -869,7 +873,7 @@ const SessionReplayPage: React.FC = () => {
             />
           </div>
         </div>
-      )}
+      ) : null}
 
       <ConfirmModal
         isOpen={showOverwriteModal}

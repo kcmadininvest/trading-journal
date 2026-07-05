@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from '../utils/apiConfig';
 import { authService } from './auth';
 import { AppFontFamily } from '../utils/chartConfig';
+import type { TradingAccount } from './tradingAccounts';
 
 export interface User {
   id: number;
@@ -60,6 +61,14 @@ export type JournalPositionStrategiesMap = Record<string, number | null>;
 export interface AppSettings {
   premium_restrictions_enabled: boolean;
   updated_at?: string;
+}
+
+export interface BootstrapPayload {
+  preferences: UserPreferences | null;
+  app_settings: AppSettings;
+  default_account: TradingAccount | null;
+  has_accounts: boolean;
+  _errors?: Record<string, string>;
 }
 
 export interface UserPreferences {
@@ -332,6 +341,16 @@ class UserService {
 
     if (!response.ok) {
       throw new Error('Erreur lors de la récupération des paramètres application');
+    }
+
+    return response.json();
+  }
+
+  async getBootstrap(): Promise<BootstrapPayload> {
+    const response = await this.fetchWithAuth(`${this.BASE_URL}/api/accounts/bootstrap/`);
+
+    if (!response.ok) {
+      throw new Error('Erreur lors du chargement bootstrap');
     }
 
     return response.json();

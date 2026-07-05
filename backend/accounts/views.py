@@ -117,6 +117,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                             user_agent=request.META.get('HTTP_USER_AGENT', ''),
                             success=True
                         )
+                        from trades.tasks import schedule_warm_stats_cache
+                        schedule_warm_stats_cache(user_id)
                     except Exception as e:  # User.DoesNotExist ou autre exception
                         # Logger l'erreur pour debug mais ne pas faire échouer la connexion
                         import logging
@@ -634,6 +636,8 @@ class LogoutView(APIView):
                         
                         # Créer une entrée BlacklistedToken
                         BlacklistedToken.objects.get_or_create(token=outstanding_token)
+                        from .jwt_blacklist_cache import mark_jti_blacklisted
+                        mark_jti_blacklisted(jti)
                         
                 except Exception as e:
                     print(f"Erreur lors de la blacklist du token d'accès: {e}")
@@ -645,7 +649,11 @@ class LogoutView(APIView):
                 try:
                     # Blacklister le refresh token
                     token = RefreshToken(refresh_token)
+                    refresh_jti = token.get('jti')
                     token.blacklist()
+                    if refresh_jti:
+                        from .jwt_blacklist_cache import mark_jti_blacklisted
+                        mark_jti_blacklisted(refresh_jti)
                 except Exception as e:
                     print(f"Erreur lors de la blacklist du refresh token: {e}")
             
@@ -1306,6 +1314,73 @@ class UserPreferencesView(APIView):
                 'preferences': serializer.data
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class BootstrapView(APIView):
+    """
+    Données initiales pour le 1er écran authentifié (preferences + settings + compte défaut).
+    Dégradation gracieuse : champs partiels + _errors si un sous-ensemble échoue.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        errors: dict = {}
+        preferences_data = None
+        app_settings_data = None
+        default_account_data = None
+        has_accounts = False
+
+        try:
+            preferences, created = UserPreferences.objects.get_or_create(user=request.user)
+            if created:
+                accept_language = request.META.get('HTTP_ACCEPT_LANGUAGE', '')
+                detected_lang = 'en'
+                if accept_language:
+                    lang_code = accept_language.split(',')[0].split('-')[0].split(';')[0].lower()
+                    supported_langs = ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh']
+                    if lang_code in supported_langs:
+                        detected_lang = lang_code
+                preferences.language = detected_lang
+                preferences.save(update_fields=['language'])
+            preferences_data = UserPreferencesSerializer(preferences).data
+        except Exception as exc:
+            errors['preferences'] = str(exc)
+
+        try:
+            settings_obj = AppSettings.get_solo()
+            app_settings_data = AppSettingsSerializer(settings_obj).data
+        except Exception as exc:
+            errors['app_settings'] = str(exc)
+            app_settings_data = {'premium_restrictions_enabled': False}
+
+        try:
+            from trades.models import TradingAccount
+            from trades.serializers import TradingAccountSerializer
+
+            accounts_qs = TradingAccount.objects.filter(user=request.user).exclude(status='archived')
+            has_accounts = accounts_qs.exists()
+            default_account = accounts_qs.filter(is_default=True).first()
+            if not default_account and has_accounts:
+                default_account = (
+                    accounts_qs.filter(status='active').order_by('created_at').first()
+                )
+                if default_account and not default_account.is_default:
+                    default_account.is_default = True
+                    default_account.save(update_fields=['is_default'])
+            if default_account:
+                default_account_data = TradingAccountSerializer(default_account).data
+        except Exception as exc:
+            errors['default_account'] = str(exc)
+
+        payload = {
+            'preferences': preferences_data,
+            'app_settings': app_settings_data,
+            'default_account': default_account_data,
+            'has_accounts': has_accounts,
+        }
+        if errors:
+            payload['_errors'] = errors
+        return Response(payload)
 
 
 class AppSettingsView(APIView):

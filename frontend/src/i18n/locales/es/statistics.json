@@ -167,7 +167,7 @@
     "consecutiveLossesGlobalTooltip": "Secuencia más larga de operaciones perdedoras consecutivas en orden cronológico",
     "outcomeSeriesTitle": "Forma reciente",
     "outcomeSeriesSummary": "{{wins}}G · {{losses}}P · {{breakEvens}}BE",
-    "outcomeSeriesTooltip": "Resultados de tus últimos {{count}} trades en el período filtrado, del más antiguo (izquierda) al más reciente (derecha).",
+    "outcomeSeriesTooltip": "Resultados de tus últimos {{count}} trades en el período filtrado, del más reciente (izquierda) al más antiguo (derecha).",
     "outcomeSeriesEmpty": "No hay operaciones en este período.",
     "outcomeSeriesWin": "Ganancia",
     "outcomeSeriesLoss": "Pérdida",

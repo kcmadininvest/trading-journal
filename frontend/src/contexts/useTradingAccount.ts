@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { TradingAccountContext } from './TradingAccountContext';
+import { TradingAccountContext } from './tradingAccountContext';
 
 export const useTradingAccount = () => {
   const context = useContext(TradingAccountContext);

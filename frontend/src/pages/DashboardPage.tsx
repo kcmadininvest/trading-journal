@@ -8,9 +8,9 @@ import { useDashboardData } from '../hooks/useDashboardData';
 import { useDashboardComplianceRefresh } from '../hooks/useDashboardComplianceRefresh';
 import { useDashboardPrefetch } from '../hooks/useDashboardPrefetch';
 import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActivity';
-import { tradingAccountsService, TradingAccount, AccountDailyMetric } from '../services/tradingAccounts';
+import { tradingAccountsService, AccountDailyMetric } from '../services/tradingAccounts';
 import { currenciesService, Currency } from '../services/currencies';
-import { accountTransactionsService, AccountTransaction } from '../services/accountTransactions';
+import { accountTransactionsService } from '../services/accountTransactions';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import { usePositionStrategiesForFilter } from '../hooks/usePositionStrategiesForFilter';
 import ModernStatCard from '../components/common/ModernStatCard';
@@ -242,7 +242,7 @@ const MARKET_CLOCK_TIMEZONES: Array<[string, string]> = [
 ];
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
-  const { preferences } = usePreferences();
+  const { preferences, loading: preferencesLoading } = usePreferences();
   const pnlDisplayMode = parsePnlDisplayMode(preferences.pnl_display);
   const { theme } = useTheme();
   const { t, i18n } = useI18nTranslation();
@@ -252,7 +252,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     privacySettings.hideProfitLoss || privacySettings.hideCurrentBalance;
   const isDark = theme === 'dark';
   const [showImport, setShowImport] = useState(false);
-  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading } = useTradingAccount();
+  const { selectedAccountId: accountId, setSelectedAccountId: setAccountId, loading: accountLoading, selectedAccount, accounts: tradingAccountsList } = useTradingAccount();
+  const filtersReady = !preferencesLoading;
+  const dashboardGateLoading = accountLoading || !filtersReady;
   const { selectedPeriod, setSelectedPeriod, selectedPositionStrategy, setSelectedPositionStrategy } =
     usePersistedPeriodAndStrategyFilters(accountId);
 
@@ -275,17 +277,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     accountId,
     startDate: selectedPeriod?.start,
     endDate: selectedPeriod?.end,
-    loading: accountLoading,
+    loading: dashboardGateLoading,
     positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
   });
 
-  // Données globales all-time (tous comptes) — KPI du bandeau sur grands écrans
   const { data: globalDashboardData, isLoading: globalDashboardLoading } = useDashboardData({
     accountId: null,
     startDate: undefined,
     endDate: undefined,
-    loading: accountLoading,
+    loading: dashboardGateLoading,
     pnlDisplay: pnlDisplayMode,
   });
 
@@ -293,12 +294,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     accountId,
     positionStrategy: selectedPositionStrategy,
     pnlDisplay: pnlDisplayMode,
-    enabled: !accountLoading && accountId !== undefined,
+    enabled: !dashboardGateLoading && accountId !== undefined,
+    primaryDashboardReady: !!dashboardData,
   });
 
   useDashboardComplianceRefresh({
     accountId,
     pnlDisplay: pnlDisplayMode,
+    enabled: !!dashboardData,
   });
 
   // Extract data from consolidated response
@@ -316,7 +319,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   const isLoading = dashboardLoading && !dashboardData;
   const isRefreshing = dashboardFetching && !!dashboardData;
   const error = dashboardError;
-  const [selectedAccount, setSelectedAccount] = useState<TradingAccount | null>(null);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [globalStrategyStats, setGlobalStrategyStats] = useState<any>(null);
   const [globalStatsLoading, setGlobalStatsLoading] = useState(false);
@@ -370,11 +372,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       }
     };
 
-    loadGlobalStrategyStats();
+    if (typeof requestIdleCallback !== 'undefined') {
+      const idleId = requestIdleCallback(() => {
+        void loadGlobalStrategyStats();
+      }, { timeout: 3000 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(idleId);
+        if (globalStatsLoadStateRef.current === 'loading') {
+          globalStatsLoadStateRef.current = 'idle';
+        }
+      };
+    }
+
+    void loadGlobalStrategyStats();
 
     return () => {
       cancelled = true;
-      // StrictMode (dev) remonte le composant : libérer l'état loading pour permettre le 2e fetch.
       if (globalStatsLoadStateRef.current === 'loading') {
         globalStatsLoadStateRef.current = 'idle';
       }
@@ -445,11 +459,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   /** Cumul tous comptes / toute période — pour la carte Total trades */
   const { globalAllAccountsActivity } = useGlobalAllAccountsActivity({
-    loading: accountLoading,
+    loading: dashboardGateLoading,
     pnlDisplay: pnlDisplayMode,
   });
   
-  const [transactions, setTransactions] = useState<AccountTransaction[]>([]);
+  const [transactionsByDate, setTransactionsByDate] = useState<Record<string, number>>({});
   const [dailyMetrics, setDailyMetrics] = useState<AccountDailyMetric[]>([]);
   const [marketHolidays, setMarketHolidays] = useState<MarketHoliday[]>([]);
   const [holidaysLoading, setHolidaysLoading] = useState(true);
@@ -471,100 +485,70 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
 
   // Devises distinctes des comptes actifs (PnL global = agrégat sans conversion)
   useEffect(() => {
-    let cancelled = false;
-    const loadActiveCurrencies = async () => {
-      try {
-        const list = await tradingAccountsService.list({ include_archived: false });
-        if (cancelled) return;
-        const active = list.filter((a) => a.status === 'active');
-        const codes = Array.from(new Set(active.map((a) => a.currency).filter(Boolean))) as string[];
-        setActiveAccountCurrencyCodes(codes);
-      } catch {
-        if (!cancelled) setActiveAccountCurrencyCodes([]);
-      }
-    };
-    loadActiveCurrencies();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    const active = tradingAccountsList.filter((a) => a.status === 'active');
+    const codes = Array.from(new Set(active.map((a) => a.currency).filter(Boolean))) as string[];
+    setActiveAccountCurrencyCodes(codes);
+  }, [tradingAccountsList]);
 
   const globalPnlCurrencyMode = activeAccountCurrencyCodes.length > 1 ? 'mixed' : 'single';
 
-  // Récupérer le compte sélectionné pour obtenir sa devise
+  // Série journalière des flux (balance-series) — après dashboard-summary
   useEffect(() => {
-    const loadAccount = async () => {
-      if (!accountId) {
-        setSelectedAccount(null);
-        return;
-      }
-      try {
-        const account = await tradingAccountsService.get(accountId);
-        setSelectedAccount(account);
-      } catch (err: any) {
-        // Si le compte n'existe pas (404) ou n'appartient pas à l'utilisateur, réinitialiser
-        if (err?.status === 404) {
-          console.warn('Le compte sélectionné n\'existe plus, réinitialisation...');
-          setAccountId(null); // Réinitialiser le compte sélectionné dans le contexte
-        } else {
-          console.error('Erreur lors du chargement du compte', err);
-        }
-        setSelectedAccount(null);
-      }
-    };
-    loadAccount();
-  }, [accountId, setAccountId]);
+    if (!dashboardData) return;
 
-  // Charger les transactions du compte
-  useEffect(() => {
-    const loadTransactions = async () => {
+    let cancelled = false;
+    const loadBalanceSeries = async () => {
       const tz = preferences.timezone?.trim() || 'Europe/Paris';
+      const common = {
+        start_date: selectedPeriod?.start,
+        end_date: selectedPeriod?.end,
+        timezone: tz,
+      };
       try {
-        // Compte unique : filtrer par compte. « Tous les comptes » : toutes les transactions
-        // utilisateur (aligné sur daily_aggregates du dashboard sans trading_account).
-        const common = {
-          start_date: selectedPeriod?.start,
-          end_date: selectedPeriod?.end,
-          timezone: tz,
-          page: 1,
-          page_size: 10000,
-        };
-        const data = accountId
-          ? await accountTransactionsService.list({
-              ...common,
-              trading_account: accountId,
-            })
-          : await accountTransactionsService.list(common);
-        setTransactions(data.results);
+        const response = accountId
+          ? await tradingAccountsService.getBalanceSeries(accountId, common)
+          : await accountTransactionsService.getBalanceSeries(common);
+        if (cancelled) return;
+        const map: Record<string, number> = {};
+        response.points.forEach((point) => {
+          map[point.date] = parseFloat(point.net_transactions);
+        });
+        setTransactionsByDate(map);
       } catch (err) {
-        console.error('Erreur lors du chargement des transactions', err);
-        setTransactions([]);
+        console.error('Erreur balance-series, fallback transactions', err);
+        try {
+          const fallbackCommon = { ...common, page: 1, page_size: 10000 };
+          const data = accountId
+            ? await accountTransactionsService.list({ ...fallbackCommon, trading_account: accountId })
+            : await accountTransactionsService.list(fallbackCommon);
+          if (cancelled) return;
+          const map: Record<string, number> = {};
+          data.results.forEach((transaction) => {
+            const date = toIsoCalendarDateInTimezone(transaction.transaction_date, tz);
+            if (!date) return;
+            const amount = parseFloat(transaction.amount.toString());
+            const signedAmount = transaction.transaction_type === 'deposit' ? amount : -amount;
+            map[date] = (map[date] || 0) + signedAmount;
+          });
+          setTransactionsByDate(map);
+        } catch (fallbackErr) {
+          console.error('Erreur fallback transactions', fallbackErr);
+          if (!cancelled) setTransactionsByDate({});
+        }
       }
     };
-    loadTransactions();
 
-    // Écouter les événements de mise à jour des transactions
+    loadBalanceSeries();
+
     const handleTransactionUpdate = () => {
-      loadTransactions();
+      loadBalanceSeries();
     };
     window.addEventListener('account-transaction:updated', handleTransactionUpdate);
     return () => {
+      cancelled = true;
       window.removeEventListener('account-transaction:updated', handleTransactionUpdate);
     };
-  }, [accountId, selectedPeriod?.start, selectedPeriod?.end, preferences.timezone]);
-
-  const transactionsInSelectedPeriod = useMemo(() => {
-    const tz = preferences.timezone;
-    if (!selectedPeriod?.start || !selectedPeriod?.end) {
-      return transactions;
-    }
-
-    return transactions.filter((transaction) => {
-      const localDay = toIsoCalendarDateInTimezone(transaction.transaction_date, tz);
-      if (!localDay) return false;
-      return localDay >= selectedPeriod.start && localDay <= selectedPeriod.end;
-    });
-  }, [transactions, selectedPeriod, preferences.timezone]);
+  }, [accountId, selectedPeriod?.start, selectedPeriod?.end, preferences.timezone, dashboardData]);
 
   // Obtenir le symbole de devise
   const currencySymbol = useMemo(() => {
@@ -750,19 +734,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       ];
     };
 
-    // Grouper les transactions par date (triées chronologiquement)
-    const transactionsByDate: { [date: string]: number } = {};
-    // Trier les transactions par date pour garantir l'ordre chronologique
-    const sortedTransactions = [...transactionsInSelectedPeriod].sort((a, b) => 
-      new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime()
-    );
-    sortedTransactions.forEach(transaction => {
-      const date = toIsoCalendarDateInTimezone(transaction.transaction_date, tz);
-      if (!date) return;
-      const amount = parseFloat(transaction.amount.toString());
-      const signedAmount = transaction.transaction_type === 'deposit' ? amount : -amount;
-      transactionsByDate[date] = (transactionsByDate[date] || 0) + signedAmount;
-    });
+    // Flux journaliers (balance-series API)
+    const txByDate = transactionsByDate;
 
     // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
     if (dailyAggregates.length > 0) {
@@ -771,7 +744,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       // Créer un ensemble de toutes les dates (trades + transactions)
       const allDates = new Set<string>();
       sortedDates.forEach(item => allDates.add(item.date));
-      Object.keys(transactionsByDate).forEach(date => allDates.add(date));
+      Object.keys(txByDate).forEach(date => allDates.add(date));
       const sortedAllDates = Array.from(allDates).sort();
 
       let cumulativePnl = 0;
@@ -780,8 +753,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       
       const result = sortedAllDates.map(date => {
         // Appliquer les transactions AVANT les trades du jour (logique : dépôts/retraits en début de journée)
-        if (transactionsByDate[date]) {
-          cumulativeTransactions += transactionsByDate[date];
+        if (txByDate[date]) {
+          cumulativeTransactions += txByDate[date];
         }
 
         // Ajouter le PnL du jour si disponible (après les transactions)
@@ -791,7 +764,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         }
 
         const dailyPnl = dailyAggregate?.pnl || 0;
-        const dailyNetTransactions = transactionsByDate[date] || 0;
+        const dailyNetTransactions = txByDate[date] || 0;
         const cumulative = openingBalance + cumulativePnl + cumulativeTransactions;
         
         // Mettre à jour le solde maximum vu
@@ -835,7 +808,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     // Créer un ensemble de toutes les dates (trades + transactions)
     const allDates = new Set<string>();
     Object.keys(dailyPnlData).forEach(date => allDates.add(date));
-    Object.keys(transactionsByDate).forEach(date => allDates.add(date));
+    Object.keys(txByDate).forEach(date => allDates.add(date));
     const sortedDates = Array.from(allDates).sort();
 
     let cumulativePnl = 0;
@@ -844,7 +817,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     
     const result = sortedDates.map(date => {
       const dailyPnl = dailyPnlData[date] || 0;
-      const dailyTransaction = transactionsByDate[date] || 0;
+      const dailyTransaction = txByDate[date] || 0;
       
       // Appliquer les transactions AVANT les trades du jour (logique : dépôts/retraits en début de journée)
       if (dailyTransaction !== 0) {
@@ -872,7 +845,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     });
 
     return prependOpeningAnchor(result);
-  }, [dailyAggregates, trades, transactionsInSelectedPeriod, dailyMetrics, pnlDisplayMode, preferences.timezone, chartConfig, selectedPeriod?.start]);
+  }, [dailyAggregates, trades, transactionsByDate, dailyMetrics, pnlDisplayMode, preferences.timezone, chartConfig, selectedPeriod?.start]);
 
   // Série affichée (agrégation auto) pour le graphique du solde uniquement.
   const balanceDisplay = useMemo(() => {
@@ -978,16 +951,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
   // Préparer les données pour le graphique waterfall
   // Utiliser les données agrégées si disponibles
   const waterfallData = useMemo(() => {
-    const tz = preferences.timezone;
-    const transactionsByDate: { [date: string]: number } = {};
-    transactionsInSelectedPeriod.forEach(transaction => {
-      const date = toIsoCalendarDateInTimezone(transaction.transaction_date, tz);
-      if (!date) return;
-      const amount = parseFloat(String(transaction.amount));
-      if (Number.isNaN(amount)) return;
-      const signedAmount = transaction.transaction_type === 'deposit' ? amount : -amount;
-      transactionsByDate[date] = (transactionsByDate[date] || 0) + signedAmount;
-    });
+    const txByDate = transactionsByDate;
 
     // Utiliser les données agrégées si disponibles (beaucoup plus rapide)
     if (dailyAggregates.length > 0) {
@@ -997,13 +961,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
       });
 
       const allDates = new Set<string>(Object.keys(tradingPnlByDate));
-      Object.keys(transactionsByDate).forEach(date => allDates.add(date));
+      Object.keys(txByDate).forEach(date => allDates.add(date));
       const sortedDates = Array.from(allDates).sort();
       let cumulativeBalance = 0;
       
       return sortedDates.map(date => {
         const pnlTrading = tradingPnlByDate[date] || 0;
-        const dailyNetTransactions = transactionsByDate[date] || 0;
+        const dailyNetTransactions = txByDate[date] || 0;
         const dailyTotalVariation = pnlTrading + dailyNetTransactions;
         cumulativeBalance += dailyTotalVariation;
 
@@ -1020,6 +984,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     }
     
     // Fallback: utiliser les trades individuels
+    const tz = preferences.timezone;
     const tradesWithDatesWaterfall = trades
       .map(trade => {
         const pv = getTradeDisplayPnlValue(trade, pnlDisplayMode);
@@ -1040,13 +1005,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
     });
 
     const allDates = new Set<string>(Object.keys(dailyData));
-    Object.keys(transactionsByDate).forEach(date => allDates.add(date));
+    Object.keys(txByDate).forEach(date => allDates.add(date));
     const sortedDates = Array.from(allDates).sort();
     let cumulativeBalance = 0;
     
     return sortedDates.map(date => {
       const pnlTrading = dailyData[date] || 0;
-      const dailyNetTransactions = transactionsByDate[date] || 0;
+      const dailyNetTransactions = txByDate[date] || 0;
       const dailyTotalVariation = pnlTrading + dailyNetTransactions;
       cumulativeBalance += dailyTotalVariation;
 
@@ -1060,7 +1025,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         hasTradingData: Object.prototype.hasOwnProperty.call(dailyData, date),
       };
     });
-  }, [dailyAggregates, trades, transactionsInSelectedPeriod, pnlDisplayMode, preferences.timezone]);
+  }, [dailyAggregates, trades, transactionsByDate, pnlDisplayMode, preferences.timezone]);
 
   // Série affichée (agrégation auto) pour le graphique uniquement — waterfallStats reste sur waterfallData journalier.
   const waterfallDisplay = useMemo(() => {
@@ -1619,6 +1584,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
         onPositionStrategyChange={setSelectedPositionStrategy}
         positionStrategies={positionStrategies}
         loadingStrategies={loadingStrategies}
+        prefetchedAccounts={tradingAccountsList}
         globalStatsLoading={globalStatsLoading}
         globalDashboardLoading={globalDashboardLoading}
         globalStats={globalStats}

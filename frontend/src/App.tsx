@@ -3,29 +3,6 @@ import { toast } from 'react-hot-toast/headless';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import HomePage from './pages/HomePage';
 import DashboardPage from './pages/DashboardPage';
-import CalendarPage from './pages/CalendarPage';
-import UserManagementPage from './pages/UserManagementPage';
-import TradesPage from './pages/TradesPage';
-import StatisticsPage from './pages/StatisticsPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import BehaviorPage from './pages/BehaviorPage';
-import TradingAccountsPage from './pages/TradingAccountsPage';
-import TransactionsPage from './pages/TransactionsPage';
-import TradingActivityPage from './pages/TradingActivityPage';
-import SettingsPage from './pages/SettingsPage';
-import ActivateAccountPage from './pages/ActivateAccountPage';
-import PositionStrategiesPage from './pages/PositionStrategiesPage';
-import StrategyChecklistPopup from './pages/StrategyChecklistPopup';
-import GoalsPage from './pages/GoalsPage';
-import LegalNoticePage from './pages/LegalNoticePage';
-import AboutPage from './pages/AboutPage';
-import FeaturesPage from './pages/FeaturesPage';
-import DailyJournalPage from './pages/DailyJournalPage';
-import SessionReplayPage from './pages/SessionReplayPage';
-import CalculatorPage from './pages/CalculatorPage';
-import CalculatorPopup from './pages/CalculatorPopup';
-import BillingPage from './pages/BillingPage';
-import SubscriptionRequiredPage from './pages/SubscriptionRequiredPage';
 import OrganizationSchema from './components/SEO/OrganizationSchema';
 import { Layout } from './components/layout';
 import { authService, User } from './services/auth';
@@ -33,13 +10,46 @@ import { billingService, SubscriptionStatus } from './services/billing';
 import userService, { AppSettings } from './services/userService';
 import { useTheme } from './hooks/useTheme';
 import { goalsService, TradingGoal } from './services/goals';
-import { tradingAccountsService } from './services/tradingAccounts';
 import ToastViewport from './components/ui/ToastViewport';
 import { ComplianceRefreshProvider } from './contexts/ComplianceRefreshContext';
 import { ImageLightboxProvider } from './contexts/ImageLightboxContext';
+import { useBootstrap } from './hooks/useBootstrap';
+import { useTradingAccounts } from './hooks/useTradingAccounts';
 
-// Lazy load StrategiesPage pour améliorer le temps de chargement initial
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const UserManagementPage = lazy(() => import('./pages/UserManagementPage'));
+const TradesPage = lazy(() => import('./pages/TradesPage'));
+const StatisticsPage = lazy(() => import('./pages/StatisticsPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
+const BehaviorPage = lazy(() => import('./pages/BehaviorPage'));
+const TradingAccountsPage = lazy(() => import('./pages/TradingAccountsPage'));
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
+const TradingActivityPage = lazy(() => import('./pages/TradingActivityPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ActivateAccountPage = lazy(() => import('./pages/ActivateAccountPage'));
+const PositionStrategiesPage = lazy(() => import('./pages/PositionStrategiesPage'));
+const StrategyChecklistPopup = lazy(() => import('./pages/StrategyChecklistPopup'));
+const GoalsPage = lazy(() => import('./pages/GoalsPage'));
+const LegalNoticePage = lazy(() => import('./pages/LegalNoticePage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
+const DailyJournalPage = lazy(() => import('./pages/DailyJournalPage'));
+const SessionReplayPage = lazy(() => import('./pages/SessionReplayPage'));
+const CalculatorPage = lazy(() => import('./pages/CalculatorPage'));
+const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
+const BillingPage = lazy(() => import('./pages/BillingPage'));
+const SubscriptionRequiredPage = lazy(() => import('./pages/SubscriptionRequiredPage'));
 const StrategiesPage = lazy(() => import('./pages/StrategiesPage'));
+
+const PageLoader = () => (
+  <div className="flex min-h-[40vh] items-center justify-center">
+    <div className="h-12 w-12 animate-spin rounded-full border-2 border-gray-200 border-t-sky-500 dark:border-gray-700 dark:border-t-sky-400" />
+  </div>
+);
+
+const LazyPage = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
+);
 const PREMIUM_LOCKED_PAGES = new Set([
   'statistics',
   'analytics',
@@ -61,11 +71,45 @@ const ALWAYS_ACCESSIBLE_PAGES = new Set([
   'settings',
 ]);
 
+const VALID_HASH_PAGES = [
+  'dashboard',
+  'calendar',
+  'daily-journal',
+  'session-replay',
+  'trades',
+  'statistics',
+  'behavior',
+  'strategies',
+  'position-strategies',
+  'analytics',
+  'users',
+  'settings',
+  'accounts',
+  'transactions',
+  'trading-activity',
+  'goals',
+  'calculator',
+  'legal-notice',
+  'billing',
+  'billing-success',
+  'billing-cancel',
+  'subscription-required',
+] as const;
+
+function getPageFromHash(): string {
+  const hashRaw = window.location.hash.replace('#', '').trim();
+  const hash = hashRaw.split('?')[0];
+  if (hash && (VALID_HASH_PAGES as readonly string[]).includes(hash)) {
+    return hash;
+  }
+  return authService.isAuthenticated() ? 'dashboard' : 'home';
+}
+
 function App() {
   const { t } = useI18nTranslation();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState(getPageFromHash);
   const currentPageRef = useRef(currentPage);
   const [showAccountCreationPrompt, setShowAccountCreationPrompt] = useState(false);
   const [billingStatus, setBillingStatus] = useState<SubscriptionStatus | null>(null);
@@ -73,7 +117,13 @@ function App() {
   const [billingError, setBillingError] = useState<string | null>(null);
   const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   useTheme();
-  const notifiedGoalsRef = useRef<Set<number>>(new Set()); // Objectifs pour lesquels on a déjà notifié
+  const notifiedGoalsRef = useRef<Set<number>>(new Set());
+  const isAuthenticated = !!currentUser || authService.isAuthenticated();
+  const { data: bootstrap } = useBootstrap(isAuthenticated);
+  const { data: allAccounts } = useTradingAccounts({
+    includeArchived: true,
+    enabled: !!currentUser,
+  });
   
   // Maintenir la ref à jour
   useEffect(() => {
@@ -91,13 +141,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // Vérifier l'authentification au chargement
-    const checkAuth = async () => {
+    const checkAuth = () => {
       try {
         if (authService.isAuthenticated()) {
-          const user = authService.getCurrentUser();
-          setCurrentUser(user);
-          await loadAppSettings();
+          setCurrentUser(authService.getCurrentUser());
         }
       } catch (error) {
         console.error('Erreur lors de la vérification de l\'authentification:', error);
@@ -107,7 +154,18 @@ function App() {
     };
 
     checkAuth();
-  }, [loadAppSettings]);
+  }, []);
+
+  useEffect(() => {
+    if (bootstrap?.app_settings) {
+      setAppSettings(bootstrap.app_settings);
+    }
+  }, [bootstrap]);
+
+  useEffect(() => {
+    if (!currentUser || bootstrap?.app_settings) return;
+    void loadAppSettings();
+  }, [currentUser, bootstrap, loadAppSettings]);
 
   // Déclencher l'onboarding "comptes de trading" pour les nouveaux utilisateurs
   useEffect(() => {
@@ -122,10 +180,11 @@ function App() {
 
     const ensureAccountSetup = async () => {
       try {
-        const accounts = await tradingAccountsService.list({ include_archived: true, include_inactive: true });
-        if (!isMounted) return;
+        const hasAccounts =
+          bootstrap?.has_accounts ??
+          (Array.isArray(allAccounts) && allAccounts.length > 0);
 
-        const hasAccounts = Array.isArray(accounts) && accounts.length > 0;
+        if (!isMounted) return;
 
         if (!hasAccounts && !alreadyShown) {
           setShowAccountCreationPrompt(true);
@@ -148,7 +207,7 @@ function App() {
     return () => {
       isMounted = false;
     };
-  }, [currentUser]);
+  }, [currentUser, bootstrap, allAccounts]);
 
   const premiumRestrictionsEnabled = appSettings?.premium_restrictions_enabled === true;
   const premiumRestrictionsSetting = appSettings?.premium_restrictions_enabled ?? true;
@@ -177,20 +236,26 @@ function App() {
       setBillingLoading(false);
       return;
     }
-    refreshBillingStatus();
-  }, [refreshBillingStatus, premiumRestrictionsEnabled]);
+    if (!currentUser) return;
 
-  const refreshAppSettings = React.useCallback(async () => {
-    if (!currentUser) {
-      setAppSettings(null);
+    const billingPages = new Set(['billing', 'billing-success', 'billing-cancel', 'settings']);
+    if (billingPages.has(currentPageRef.current)) {
+      refreshBillingStatus();
       return;
     }
-    await loadAppSettings();
-  }, [currentUser, loadAppSettings]);
+
+    const timer = window.setTimeout(() => {
+      refreshBillingStatus();
+    }, 2000);
+    return () => window.clearTimeout(timer);
+  }, [refreshBillingStatus, premiumRestrictionsEnabled, currentUser]);
 
   useEffect(() => {
-    refreshAppSettings();
-  }, [refreshAppSettings]);
+    if (currentUser) {
+      return;
+    }
+    setAppSettings(null);
+  }, [currentUser, loadAppSettings]);
 
   useEffect(() => {
     const handleAppSettingsUpdated = (event: Event) => {
@@ -198,12 +263,12 @@ function App() {
       if (detail?.appSettings) {
         setAppSettings(detail.appSettings);
       } else {
-        refreshAppSettings();
+        void loadAppSettings();
       }
     };
     window.addEventListener('app:settings-updated', handleAppSettingsUpdated);
     return () => window.removeEventListener('app:settings-updated', handleAppSettingsUpdated);
-  }, [refreshAppSettings]);
+  }, [loadAppSettings]);
 
   const hasPremiumAccess = React.useMemo(() => {
     if (!currentUser) return false;
@@ -276,13 +341,18 @@ function App() {
       }
     };
 
-    // Vérifier immédiatement au chargement
-    checkRecentAchievements();
+    let interval: number | undefined;
+    const startTimer = window.setTimeout(() => {
+      void checkRecentAchievements();
+      interval = window.setInterval(checkRecentAchievements, 30000);
+    }, 1500);
 
-    // Vérifier périodiquement (toutes les 30 secondes)
-    const interval = setInterval(checkRecentAchievements, 30000);
-
-    return () => clearInterval(interval);
+    return () => {
+      if (startTimer !== undefined) {
+        window.clearTimeout(startTimer);
+      }
+      if (interval) window.clearInterval(interval);
+    };
   }, [currentUser, t]);
 
   // Gérer la navigation par hash - séparé pour avoir accès à currentUser à jour
@@ -295,11 +365,10 @@ function App() {
     const handleHashChange = () => {
       const hashRaw = window.location.hash.replace('#', '').trim();
       const hash = hashRaw.split('?')[0];
-      const validPages = ['dashboard', 'calendar', 'daily-journal', 'session-replay', 'trades', 'statistics', 'behavior', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'trading-activity', 'goals', 'calculator', 'legal-notice', 'billing', 'billing-success', 'billing-cancel', 'subscription-required'];
       const page = currentPageRef.current;
       
       // Si on a un hash valide et qu'il est différent de la page actuelle
-      if (hash && validPages.includes(hash) && hash !== page) {
+      if (hash && (VALID_HASH_PAGES as readonly string[]).includes(hash) && hash !== page) {
         if (lockedPremiumPages.has(hash)) {
           setCurrentPage('subscription-required');
           window.location.hash = 'subscription-required';
@@ -310,7 +379,7 @@ function App() {
       }
       
       // Si pas de hash ou hash invalide, et qu'on n'est pas déjà sur dashboard, aller au dashboard
-      if ((!hash || !validPages.includes(hash)) && page !== 'dashboard') {
+      if ((!hash || !(VALID_HASH_PAGES as readonly string[]).includes(hash)) && page !== 'dashboard') {
         // Éviter les boucles en vérifiant le hash actuel
         if (window.location.hash !== '#dashboard') {
           window.location.hash = 'dashboard';
@@ -325,10 +394,9 @@ function App() {
     // Initialiser la page selon le hash actuel au premier rendu
     const currentHashRaw = window.location.hash.replace('#', '').trim();
     const currentHash = currentHashRaw.split('?')[0];
-    const validPages = ['dashboard', 'calendar', 'daily-journal', 'session-replay', 'trades', 'statistics', 'behavior', 'strategies', 'position-strategies', 'analytics', 'users', 'settings', 'accounts', 'transactions', 'trading-activity', 'goals', 'calculator', 'legal-notice', 'billing', 'billing-success', 'billing-cancel', 'subscription-required'];
     const page = currentPageRef.current;
     
-    if (currentHash && validPages.includes(currentHash)) {
+    if (currentHash && (VALID_HASH_PAGES as readonly string[]).includes(currentHash)) {
       if (lockedPremiumPages.has(currentHash)) {
         window.location.hash = 'subscription-required';
         setCurrentPage('subscription-required');
@@ -338,7 +406,7 @@ function App() {
       if (currentHash !== page) {
         setCurrentPage(currentHash);
       }
-    } else if (!currentHash || !validPages.includes(currentHash)) {
+    } else if (!currentHash || !(VALID_HASH_PAGES as readonly string[]).includes(currentHash)) {
       // Si pas de hash valide, aller au dashboard seulement si on n'y est pas déjà
       if (page !== 'dashboard') {
         window.location.hash = 'dashboard';
@@ -354,17 +422,13 @@ function App() {
 
   // Gérer les événements de changement d'utilisateur - séparé pour éviter les conflits
   useEffect(() => {
-    const handleUserLogin = async (event: any) => {
-      const user = event.detail?.user;
+    const handleUserLogin = (event: Event) => {
+      const user = (event as CustomEvent).detail?.user;
       if (!user) return;
-      try {
-        const settings = await userService.getAppSettings();
-        setAppSettings(settings);
-      } catch (error) {
-        console.error('Erreur lors du chargement des paramètres application:', error);
-        setAppSettings({ premium_restrictions_enabled: false });
-      }
+      void loadAppSettings();
       setCurrentUser(user);
+      window.location.hash = 'dashboard';
+      setCurrentPage('dashboard');
     };
 
     const handleUserLogout = () => {
@@ -399,7 +463,7 @@ function App() {
       window.removeEventListener('user:logout', handleUserLogout);
       window.removeEventListener('user:profile-updated', handleUserProfileUpdated);
     };
-  }, []);
+  }, [loadAppSettings]);
 
   const renderPage = () => {
     // Vérifier si on est sur la page d'activation
@@ -411,7 +475,7 @@ function App() {
           setCurrentPage('dashboard');
         }} />;
       }
-      return <StrategyChecklistPopup />;
+      return <LazyPage><StrategyChecklistPopup /></LazyPage>;
     }
 
     if (pathname === '/calculator-popup') {
@@ -421,14 +485,14 @@ function App() {
           setCurrentPage('dashboard');
         }} />;
       }
-      return <CalculatorPopup />;
+      return <LazyPage><CalculatorPopup /></LazyPage>;
     }
 
     
     const activateMatch = pathname.match(/^\/activate-account\/([^/]+)\/?$/);
     if (activateMatch) {
       const token = activateMatch[1];
-      return <ActivateAccountPage token={token} />;
+      return <LazyPage><ActivateAccountPage token={token} /></LazyPage>;
     }
 
     // Pages publiques accessibles via pathname (SEO) - Support multilingue
@@ -436,10 +500,10 @@ function App() {
     const featuresPaths = ['/fonctionnalites', '/features', '/funcionalidades', '/funktionen'];
     
     if (aboutPaths.includes(pathname)) {
-      return <AboutPage />;
+      return <LazyPage><AboutPage /></LazyPage>;
     }
     if (featuresPaths.includes(pathname)) {
-      return <FeaturesPage />;
+      return <LazyPage><FeaturesPage /></LazyPage>;
     }
 
     // La page des mentions légales est accessible sans authentification
@@ -453,11 +517,11 @@ function App() {
 
         switch (currentPage) {
           case 'trades':
-            return <TradesPage />;
+            return <LazyPage><TradesPage /></LazyPage>;
           case 'calendar':
-            return <CalendarPage />;
+            return <LazyPage><CalendarPage /></LazyPage>;
           case 'daily-journal':
-            return <DailyJournalPage />;
+            return <LazyPage><DailyJournalPage /></LazyPage>;
           case 'session-replay':
             if (lockedPremiumPages.has('session-replay')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -465,7 +529,7 @@ function App() {
                 setCurrentPage('dashboard');
               }} />;
             }
-            return <SessionReplayPage />;
+            return <LazyPage><SessionReplayPage /></LazyPage>;
           case 'statistics':
             if (lockedPremiumPages.has('statistics')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -473,7 +537,7 @@ function App() {
                 setCurrentPage('dashboard');
               }} />;
             }
-            return <StatisticsPage />;
+            return <LazyPage><StatisticsPage /></LazyPage>;
           case 'strategies':
             if (lockedPremiumPages.has('strategies')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -482,11 +546,9 @@ function App() {
               }} />;
             }
             return (
-              <Suspense fallback={<div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-              </div>}>
+              <LazyPage>
                 <StrategiesPage />
-              </Suspense>
+              </LazyPage>
             );
           case 'position-strategies':
             if (lockedPremiumPages.has('position-strategies')) {
@@ -495,7 +557,7 @@ function App() {
                 setCurrentPage('dashboard');
               }} />;
             }
-            return <PositionStrategiesPage />;
+            return <LazyPage><PositionStrategiesPage /></LazyPage>;
           case 'analytics':
             if (lockedPremiumPages.has('analytics')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -503,7 +565,7 @@ function App() {
                 setCurrentPage('dashboard');
               }} />;
             }
-            return <AnalyticsPage />;
+            return <LazyPage><AnalyticsPage /></LazyPage>;
           case 'behavior':
             if (lockedPremiumPages.has('behavior')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -511,11 +573,11 @@ function App() {
                 setCurrentPage('dashboard');
               }} />;
             }
-            return <BehaviorPage />;
+            return <LazyPage><BehaviorPage /></LazyPage>;
           case 'accounts':
-            return <TradingAccountsPage />;
+            return <LazyPage><TradingAccountsPage /></LazyPage>;
           case 'transactions':
-            return <TransactionsPage />;
+            return <LazyPage><TransactionsPage /></LazyPage>;
           case 'trading-activity':
             if (lockedPremiumPages.has('trading-activity')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -523,7 +585,7 @@ function App() {
                 setCurrentPage('dashboard');
               }} />;
             }
-            return <TradingActivityPage />;
+            return <LazyPage><TradingActivityPage /></LazyPage>;
           case 'goals':
             if (lockedPremiumPages.has('goals')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -531,7 +593,7 @@ function App() {
                 setCurrentPage('dashboard');
               }} />;
             }
-            return <GoalsPage />;
+            return <LazyPage><GoalsPage /></LazyPage>;
           case 'calculator':
             if (lockedPremiumPages.has('calculator')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {
@@ -539,24 +601,25 @@ function App() {
                 setCurrentPage('dashboard');
               }} />;
             }
-            return <CalculatorPage />;
+            return <LazyPage><CalculatorPage /></LazyPage>;
           case 'billing':
           case 'billing-success':
           case 'billing-cancel':
             if (!premiumRestrictionsEnabled) {
               return <DashboardPage currentUser={currentUser} />;
             }
-            return <BillingPage billingStatus={billingStatus} onSubscriptionChanged={refreshBillingStatus} />;
+            return <LazyPage><BillingPage billingStatus={billingStatus} onSubscriptionChanged={refreshBillingStatus} /></LazyPage>;
           case 'subscription-required':
-            return <SubscriptionRequiredPage onBackToDashboard={() => {
+            return <LazyPage><SubscriptionRequiredPage onBackToDashboard={() => {
               window.location.hash = 'dashboard';
               setCurrentPage('dashboard');
-            }} />;
+            }} /></LazyPage>;
           case 'users':
-            return <UserManagementPage />;
+            return <LazyPage><UserManagementPage /></LazyPage>;
           case 'settings':
             return (
-              <SettingsPage
+              <LazyPage>
+                <SettingsPage
                 premiumRestrictionsEnabled={premiumRestrictionsSetting}
                 onPremiumRestrictionsChange={async (enabled) => {
                   const updated = await userService.updateAppSettings({
@@ -568,9 +631,10 @@ function App() {
                   );
                 }}
               />
+              </LazyPage>
             );
           case 'legal-notice':
-            return <LegalNoticePage />;
+            return <LazyPage><LegalNoticePage /></LazyPage>;
           case 'dashboard':
           default:
             return <DashboardPage currentUser={currentUser} />;

@@ -9,7 +9,7 @@
   "winRateRecentWindowTooltip": "Hauptwert: Gewinnrate über die gewählte Periode.\nOrangefarbener Wert: Gewinnrate nur auf Ihre letzten {{count}} Trades innerhalb dieser Periode.",
   "winRateRecentLegend": "Schwarz = Periode · Orange = letzte {{count}} Trades",
   "recentOutcomeSeries": "Aktuelle Form (letzte {{count}} Trades)",
-  "recentOutcomeSeriesTooltip": "Ergebnisse Ihrer letzten {{count}} Trades, vom ältesten (links) zum neuesten (rechts). Unabhängig vom Periodenfilter oben.",
+  "recentOutcomeSeriesTooltip": "Ergebnisse Ihrer letzten {{count}} Trades, vom neuesten (links) zum ältesten (rechts). Unabhängig vom Periodenfilter oben.",
   "avgWinning": "Durchschn. Gewinn",
   "avgLosing": "Durchschn. Verlust",
   "objective": "Ziel",
@@ -235,6 +235,7 @@
     "returnOnCapitalTooltip": "Perioden-PnL in Prozent des Anfangskapitals der angezeigten Konten. Beträge nutzen die Standardwährung aus den Einstellungen.",
     "outcomeSeries": "Aktuelle Form",
     "outcomeSeriesSummary": "{{wins}}G · {{losses}}V · {{breakEvens}}BE",
+    "outcomeSeriesWinRate": "{{pct}}% Win Rate",
     "outcomeSeriesEmpty": "Keine aktuellen Trades"
   },
   "marketQuotes": {

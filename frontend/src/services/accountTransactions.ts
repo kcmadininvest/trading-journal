@@ -61,6 +61,15 @@ export interface AccountTransactionsListResponse {
   results: AccountTransaction[];
 }
 
+export interface BalanceSeriesPoint {
+  date: string;
+  net_transactions: string;
+}
+
+export interface BalanceSeriesResponse {
+  points: BalanceSeriesPoint[];
+}
+
 export interface AccountTransactionsStats {
   total: number;
   deposits_count: number;
@@ -282,6 +291,16 @@ class AccountTransactionsService {
     });
     return this.request<AccountBalanceConsistencyResponse>(
       `account-transactions/balance/consistency/?${params.toString()}`
+    );
+  }
+
+  async getBalanceSeries(
+    params: Pick<AccountTransactionsListParams, 'start_date' | 'end_date' | 'timezone' | 'trading_account'>,
+  ): Promise<BalanceSeriesResponse> {
+    const queryParams = new URLSearchParams();
+    this.appendListQueryParams(queryParams, params);
+    return this.request<BalanceSeriesResponse>(
+      `account-transactions/balance-series/?${queryParams.toString()}`
     );
   }
 }

@@ -137,8 +137,7 @@ const HomePage: React.FC = () => {
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
-    // L'utilisateur sera redirigé automatiquement vers l'application
-    window.location.reload();
+    window.location.hash = 'dashboard';
   };
 
   const baseUrl = import.meta.env.VITE_BASE_URL || window.location.origin;

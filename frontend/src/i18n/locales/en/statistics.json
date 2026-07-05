@@ -168,7 +168,7 @@
     "consecutiveLossesGlobalTooltip": "Longest sequence of consecutive losing trades in chronological order",
     "outcomeSeriesTitle": "Recent form",
     "outcomeSeriesSummary": "{{wins}}W · {{losses}}L · {{breakEvens}}BE",
-    "outcomeSeriesTooltip": "Results of your last {{count}} trades in the filtered period, oldest (left) to most recent (right).",
+    "outcomeSeriesTooltip": "Results of your last {{count}} trades in the filtered period, most recent (left) to oldest (right).",
     "outcomeSeriesEmpty": "No trades in this period.",
     "outcomeSeriesWin": "Win",
     "outcomeSeriesLoss": "Loss",

@@ -106,7 +106,14 @@ def warm_stats_cache_for_user(self, user_id: int) -> None:
     from trades.services.stats_bundle_service import compute_stats_bundle_payload
 
     today = timezone.localdate()
+    month = today.month - 3
+    year = today.year
+    while month <= 0:
+        month += 12
+        year -= 1
+    last3_months_start = date(year, month, 1)
     presets = [
+        ('last3m', last3_months_start, today),
         ('7d', today - timedelta(days=7), today),
         ('30d', today - timedelta(days=30), today),
         ('90d', today - timedelta(days=90), today),

@@ -139,7 +139,64 @@ function StatusContent({
 export const MarketQuotesTicker: React.FC = () => {
   const { t } = useTranslation();
   const { preferences } = usePreferences();
-  const { snapshot, loading, wsConnected } = useMarketQuotes(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [quotesEnabled, setQuotesEnabled] = useState(false);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) {
+      return;
+    }
+
+    let idleId: number | undefined;
+    let cancelled = false;
+
+    const enable = () => {
+      if (!cancelled) {
+        setQuotesEnabled(true);
+      }
+    };
+
+    if (typeof IntersectionObserver !== 'undefined') {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            enable();
+            observer.disconnect();
+          }
+        },
+        { rootMargin: '120px' },
+      );
+      observer.observe(node);
+      if (typeof requestIdleCallback !== 'undefined') {
+        idleId = requestIdleCallback(enable, { timeout: 4000 });
+      }
+      return () => {
+        cancelled = true;
+        observer.disconnect();
+        if (idleId !== undefined) {
+          cancelIdleCallback(idleId);
+        }
+      };
+    }
+
+    if (typeof requestIdleCallback !== 'undefined') {
+      idleId = requestIdleCallback(enable, { timeout: 3000 });
+      return () => {
+        cancelled = true;
+        if (idleId !== undefined) {
+          cancelIdleCallback(idleId);
+        }
+      };
+    }
+
+    enable();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const { snapshot, loading, wsConnected } = useMarketQuotes(quotesEnabled);
   const numberFormat = preferences.number_format;
 
   const quotes = useMemo(
@@ -177,20 +234,14 @@ export const MarketQuotesTicker: React.FC = () => {
 
   const isLive = hasPrices && (snapshot?.connected === true || wsConnected);
 
-  if (statusMessage) {
-    return (
-      <TickerShell ariaLabel={tickerTitle}>
-        <div className={TICKER_ROW_CLASS}>
-          <LiveStatus live={false} />
-          <VerticalRule />
-          <StatusContent message={statusMessage} pulse={statusPulse} />
-        </div>
-      </TickerShell>
-    );
-  }
-
-  return (
-    <TickerShell ariaLabel={tickerTitle}>
+  const tickerContent = statusMessage ? (
+    <div className={TICKER_ROW_CLASS}>
+      <LiveStatus live={false} />
+      <VerticalRule />
+      <StatusContent message={statusMessage} pulse={statusPulse} />
+    </div>
+  ) : (
+    <>
       <div className={TICKER_ROW_CLASS} aria-live="polite">
         <LiveStatus live={isLive} />
         <VerticalRule />
@@ -219,7 +270,13 @@ export const MarketQuotesTicker: React.FC = () => {
           animation: marketQuoteFlashDown 0.5s ease-out;
         }
       `}</style>
-    </TickerShell>
+    </>
+  );
+
+  return (
+    <div ref={containerRef}>
+      <TickerShell ariaLabel={tickerTitle}>{tickerContent}</TickerShell>
+    </div>
   );
 };
 

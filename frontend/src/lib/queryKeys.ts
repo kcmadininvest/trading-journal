@@ -28,6 +28,8 @@ export const queryKeys = {
     activity: (params: DashboardQueryParams) =>
       ['dashboard', 'activity', dashboardFiltersFromParams(params)] as const,
   },
+  bootstrap: () => ['bootstrap'] as const,
+  tradingAccounts: (includeArchived: boolean) => ['tradingAccounts', { includeArchived }] as const,
   statistics: (params: {
     tradingAccountId?: number | null;
     year?: number | null;

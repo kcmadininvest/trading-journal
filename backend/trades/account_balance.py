@@ -589,3 +589,73 @@ def refresh_trading_account_balance_after_mutation(trading_account_id: int) -> N
     )
     if consistency:
         set_cached_consistency(trading_account_id, consistency)
+
+
+def aggregate_daily_net_transactions(
+    user,
+    *,
+    trading_account_id=None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    timezone_str: Optional[str] = None,
+) -> list[Dict[str, str]]:
+    """
+    Agrège les dépôts/retraits par jour calendaire (fuseau utilisateur).
+    deposit = +amount, withdrawal = -amount (aligné frontend DashboardPage).
+    """
+    import pytz
+    from datetime import datetime
+
+    from .models import AccountTransaction
+
+    user_timezone = timezone_str or getattr(
+        getattr(user, 'preferences', None), 'timezone', None
+    )
+    try:
+        user_tz = pytz.timezone(user_timezone) if user_timezone else pytz.timezone('Europe/Paris')
+    except pytz.exceptions.UnknownTimeZoneError:
+        user_tz = pytz.timezone('Europe/Paris')
+
+    qs = AccountTransaction.objects.filter(user=user)  # type: ignore
+    if trading_account_id is not None:
+        qs = qs.filter(trading_account_id=trading_account_id)
+
+    if start_date:
+        try:
+            start_dt = user_tz.localize(datetime.strptime(start_date, '%Y-%m-%d'))
+            qs = qs.filter(transaction_date__gte=start_dt)
+        except ValueError:
+            pass
+
+    if end_date:
+        try:
+            end_dt = user_tz.localize(
+                datetime.strptime(end_date, '%Y-%m-%d').replace(
+                    hour=23, minute=59, second=59
+                )
+            )
+            qs = qs.filter(transaction_date__lte=end_dt)
+        except ValueError:
+            pass
+
+    from django.db.models.functions import TruncDate
+
+    signed = Case(
+        When(transaction_type='deposit', then=F('amount')),
+        default=-F('amount'),
+        output_field=DecimalField(max_digits=20, decimal_places=8),
+    )
+    rows = (
+        qs.annotate(calendar_day=TruncDate('transaction_date', tzinfo=user_tz))
+        .values('calendar_day')
+        .annotate(net_transactions=Sum(signed))
+        .order_by('calendar_day')
+    )
+    return [
+        {
+            'date': row['calendar_day'].isoformat(),
+            'net_transactions': str(row['net_transactions'] or Decimal('0')),
+        }
+        for row in rows
+        if row['calendar_day']
+    ]

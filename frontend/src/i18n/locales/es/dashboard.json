@@ -9,7 +9,7 @@
   "winRateRecentWindowTooltip": "Cifra principal: tasa de acierto del periodo seleccionado.\nCifra naranja: tasa de acierto solo de sus últimos {{count}} trades dentro de este periodo.",
   "winRateRecentLegend": "Negro = periodo · Naranja = últimos {{count}} trades",
   "recentOutcomeSeries": "Forma reciente (últimos {{count}} trades)",
-  "recentOutcomeSeriesTooltip": "Resultados de tus últimos {{count}} trades, del más antiguo (izquierda) al más reciente (derecha). Independiente del filtro de periodo de arriba.",
+  "recentOutcomeSeriesTooltip": "Resultados de tus últimos {{count}} trades, del más reciente (izquierda) al más antiguo (derecha). Independiente del filtro de periodo de arriba.",
   "avgWinning": "Promedio ganador",
   "avgLosing": "Promedio perdedor",
   "objective": "Objetivo",
@@ -235,6 +235,7 @@
     "returnOnCapitalTooltip": "Rendimiento del PnL del período respecto al capital inicial de la(s) cuenta(s) mostrada(s). Los importes usan la divisa predeterminada de Ajustes.",
     "outcomeSeries": "Forma reciente",
     "outcomeSeriesSummary": "{{wins}}G · {{losses}}P · {{breakEvens}}BE",
+    "outcomeSeriesWinRate": "{{pct}}% win rate",
     "outcomeSeriesEmpty": "Sin operaciones recientes"
   },
   "marketQuotes": {

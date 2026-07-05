@@ -43,6 +43,12 @@ def _parse_user_tz(user):
 
 
 def compute_dashboard_summary_payload(request, *, include_lists: bool = True) -> dict:
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    if getattr(request, 'user', None) and request.user.is_authenticated:
+        request.user = User.objects.select_related('preferences').get(pk=request.user.pk)
+
     trading_account_id = request.GET.get('trading_account')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')

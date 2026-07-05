@@ -68,7 +68,7 @@ export const StatisticsOutcomeSeriesCard: React.FC<StatisticsOutcomeSeriesCardPr
       content={t('statistics:advancedAnalysis.outcomeSeriesTooltip', {
         count: WIN_RATE_ROLLING_WINDOW,
         defaultValue:
-          'Résultats de vos {{count}} derniers trades dans la période filtrée, du plus ancien (gauche) au plus récent (droite).',
+          'Résultats de vos {{count}} derniers trades dans la période filtrée, du plus récent (gauche) au plus ancien (droite).',
       })}
       position="bottom"
       className="shrink-0 items-center leading-none"
@@ -114,8 +114,9 @@ export const StatisticsOutcomeSeriesCard: React.FC<StatisticsOutcomeSeriesCardPr
           timezone={timezone}
           hideMoney={hideMoney}
           showLegend={false}
-          highlightLatest={false}
-          centered
+          highlightLatest
+          layout="grid"
+          displayOrder="newestFirst"
           className="min-w-0 space-y-0"
         />
       ) : (

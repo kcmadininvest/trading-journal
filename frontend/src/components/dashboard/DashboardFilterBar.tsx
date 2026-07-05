@@ -26,6 +26,7 @@ export interface DashboardFilterBarProps {
   accountId: number | null;
   onAccountChange: (accountId: number | null) => void;
   hideAccountNumber?: boolean;
+  prefetchedAccounts?: import('../../services/tradingAccounts').TradingAccount[] | null;
   selectedPeriod: PeriodRange | null;
   onPeriodChange: (period: PeriodRange) => void;
   selectedPositionStrategy: number | null;
@@ -48,6 +49,7 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
   accountId,
   onAccountChange,
   hideAccountNumber = false,
+  prefetchedAccounts,
   selectedPeriod,
   onPeriodChange,
   selectedPositionStrategy,
@@ -83,6 +85,7 @@ export const DashboardFilterBar: React.FC<DashboardFilterBarProps> = ({
                 onChange={onAccountChange}
                 hideLabel
                 hideAccountNumber={hideAccountNumber}
+                prefetchedAccounts={prefetchedAccounts}
                 variant="default"
               />
             </div>

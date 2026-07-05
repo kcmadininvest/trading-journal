@@ -61,6 +61,10 @@ def extract_dashboard_cache_params(request) -> Dict[str, Any]:
     }
 
 
+def extract_activity_cache_params(request) -> Dict[str, Any]:
+    return extract_dashboard_cache_params(request)
+
+
 def extract_viewset_cache_params(request) -> Dict[str, Any]:
     return {
         'trading_account': request.query_params.get('trading_account') or '',

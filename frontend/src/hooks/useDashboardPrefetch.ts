@@ -10,44 +10,56 @@ interface PrefetchDashboardParams {
   positionStrategy?: number | null;
   pnlDisplay?: PnlDisplayMode;
   enabled?: boolean;
+  /** Attendre que la requête dashboard courante soit résolue avant prefetch idle */
+  primaryDashboardReady?: boolean;
 }
 
-/** Précharge les presets fréquents pour un affichage instantané au changement de période. */
+/** Précharge les presets fréquents après le 1er paint (requestIdleCallback). */
 export function useDashboardPrefetch({
   accountId,
   positionStrategy,
   pnlDisplay = 'net',
   enabled = true,
+  primaryDashboardReady = false,
 }: PrefetchDashboardParams) {
   useEffect(() => {
-    if (!enabled || accountId === undefined) return;
+    if (!enabled || accountId === undefined || !primaryDashboardReady) return;
 
-    const presets = computePeriodPresetRanges(new Date());
-    const keysToPrefetch: Array<{ start?: string; end?: string }> = [
-      presets.last3Months,
-      presets.thisYear,
-      presets.allTime,
-    ];
+    const runPrefetch = () => {
+      const presets = computePeriodPresetRanges(new Date());
+      const keysToPrefetch: Array<{ start?: string; end?: string }> = [
+        presets.last3Months,
+        presets.thisYear,
+        presets.allTime,
+      ];
 
-    keysToPrefetch.forEach(({ start, end }) => {
-      const params = {
-        accountId,
-        startDate: start,
-        endDate: end,
-        positionStrategy,
-        pnlDisplay,
-      };
-      void queryClient.prefetchQuery({
-        queryKey: queryKeys.dashboard.summary(params),
-        queryFn: () =>
-          dashboardService.getSummary({
-            ...(accountId != null ? { trading_account: accountId } : {}),
-            ...(start ? { start_date: start } : {}),
-            ...(end ? { end_date: end } : {}),
-            ...(positionStrategy ? { position_strategy: positionStrategy } : {}),
-            pnl_display: pnlDisplay,
-          }),
+      keysToPrefetch.forEach(({ start, end }) => {
+        const params = {
+          accountId,
+          startDate: start,
+          endDate: end,
+          positionStrategy,
+          pnlDisplay,
+        };
+        void queryClient.prefetchQuery({
+          queryKey: queryKeys.dashboard.summary(params),
+          queryFn: () =>
+            dashboardService.getSummary({
+              ...(accountId != null ? { trading_account: accountId } : {}),
+              ...(start ? { start_date: start } : {}),
+              ...(end ? { end_date: end } : {}),
+              ...(positionStrategy ? { position_strategy: positionStrategy } : {}),
+              pnl_display: pnlDisplay,
+            }),
+        });
       });
-    });
-  }, [accountId, positionStrategy, pnlDisplay, enabled]);
+    };
+
+    if (typeof requestIdleCallback !== 'undefined') {
+      const idleId = requestIdleCallback(runPrefetch, { timeout: 3000 });
+      return () => cancelIdleCallback(idleId);
+    }
+    const timer = setTimeout(runPrefetch, 500);
+    return () => clearTimeout(timer);
+  }, [accountId, positionStrategy, pnlDisplay, enabled, primaryDashboardReady]);
 }

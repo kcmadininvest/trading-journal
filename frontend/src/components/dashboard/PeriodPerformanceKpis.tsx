@@ -110,6 +110,8 @@ const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
   const wins = series.filter((item) => item.letter === 'W').length;
   const losses = series.filter((item) => item.letter === 'L').length;
   const breakEvens = series.filter((item) => item.letter === 'B').length;
+  const winRatePct =
+    series.length > 0 ? Math.round((wins / series.length) * 100) : null;
 
   const summaryLabel =
     series.length > 0
@@ -123,6 +125,14 @@ const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
           defaultValue: 'Aucun trade récent',
         });
 
+  const winRateLabel =
+    winRatePct != null && !hideMoney
+      ? t('dashboard:periodPerformance.outcomeSeriesWinRate', {
+          pct: winRatePct,
+          defaultValue: '{{pct}}% win rate',
+        })
+      : null;
+
   return (
     <div
       className={clsx(
@@ -131,7 +141,7 @@ const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
         getOutcomeSeriesCardClasses(series),
       )}
     >
-      <div className="flex min-w-0 items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-col gap-1.5">
         <div className="inline-flex min-w-0 items-center gap-1">
           <span className={DASHBOARD_INNER_LABEL_CLASS}>
             {t('dashboard:periodPerformance.outcomeSeries', {
@@ -143,7 +153,7 @@ const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
             content={t('dashboard:recentOutcomeSeriesTooltip', {
               count: WIN_RATE_ROLLING_WINDOW,
               defaultValue:
-                'Résultats de vos {{count}} derniers trades, du plus ancien (gauche) au plus récent (droite). Indépendant du filtre de période ci-dessus.',
+                'Résultats de vos {{count}} derniers trades, du plus récent (gauche) au plus ancien (droite). Indépendant du filtre de période ci-dessus.',
             })}
             position="bottom"
             className="shrink-0 items-center leading-none"
@@ -164,9 +174,16 @@ const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
           </Tooltip>
         </div>
         {series.length > 0 ? (
-          <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium tabular-nums text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-            {hideMoney ? maskValue(null) : summaryLabel}
-          </span>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium tabular-nums leading-tight text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              {hideMoney ? maskValue(null) : summaryLabel}
+            </span>
+            {winRateLabel ? (
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium tabular-nums leading-tight text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                {winRateLabel}
+              </span>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -179,9 +196,11 @@ const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
           dateFormat={dateFormat}
           timezone={timezone}
           hideMoney={hideMoney}
-          compact
           showLegend={false}
-          highlightLatest={false}
+          highlightLatest
+          layout="grid"
+          displayOrder="newestFirst"
+          maxGridRows={2}
           className="min-w-0 space-y-0"
         />
       ) : (
@@ -446,10 +465,17 @@ export const PeriodPerformanceKpis: React.FC<PeriodPerformanceKpisProps> = ({
         ))}
           <div className={clsx(DASHBOARD_INNER_CARD_CLASS, 'animate-pulse p-4')}>
             <div className="mb-3 h-3 w-24 rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="mb-3 h-8 w-20 rounded bg-gray-200 dark:bg-gray-700" />
-            <div className="h-5 w-full rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="mb-2 h-5 w-full rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="grid grid-cols-10 grid-rows-2 gap-0.5">
+              {Array.from({ length: 20 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-4 rounded bg-gray-200 dark:bg-gray-700"
+                />
+              ))}
+            </div>
           </div>
-      </div>
+        </div>
       </div>
     );
   }

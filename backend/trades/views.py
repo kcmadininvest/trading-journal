@@ -114,6 +114,7 @@ class PnlPreferenceMixin:
     def get_pnl_field(self) -> str:
         return get_trade_pnl_field(self.request.user)
 from .account_balance import (
+    aggregate_daily_net_transactions,
     build_dashboard_balance_context,
     compute_trading_account_balance,
     resolve_account_balance,
@@ -497,6 +498,19 @@ class TradingAccountViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    @action(detail=True, methods=['get'], url_path='balance-series')
+    def balance_series(self, request, pk=None):
+        """Agrégats journaliers des flux (dépôts/retraits) pour le graphique dashboard."""
+        account = self.get_object()
+        points = aggregate_daily_net_transactions(
+            request.user,
+            trading_account_id=account.pk,
+            start_date=request.query_params.get('start_date'),
+            end_date=request.query_params.get('end_date'),
+            timezone_str=request.query_params.get('timezone'),
+        )
+        return Response({'points': points})
+
 
 class CurrencyViewSet(viewsets.ReadOnlyModelViewSet):
     """Liste des devises disponibles."""
@@ -602,6 +616,20 @@ class AccountTransactionViewSet(viewsets.ModelViewSet):
                 'net_flow': str(net_flow),
             }
         )
+
+    @action(detail=False, methods=['get'], url_path='balance-series')
+    def balance_series(self, request):
+        """Agrégats journaliers tous comptes (mode « tous les comptes » dashboard)."""
+        trading_account_id = request.query_params.get('trading_account')
+        account_id = int(trading_account_id) if trading_account_id else None
+        points = aggregate_daily_net_transactions(
+            request.user,
+            trading_account_id=account_id,
+            start_date=request.query_params.get('start_date'),
+            end_date=request.query_params.get('end_date'),
+            timezone_str=request.query_params.get('timezone'),
+        )
+        return Response({'points': points})
     
     def perform_create(self, serializer):
         """Associe automatiquement la transaction à l'utilisateur connecté."""
@@ -4435,6 +4463,17 @@ def dashboard_activity_summary(request):
     Lightweight dashboard endpoint for activity counters only.
     Returns total positions and active days without loading heavy payloads.
     """
+    from .stats_response_cache import (
+        extract_activity_cache_params,
+        get_cached_stats_response,
+        set_cached_stats_response,
+    )
+
+    cache_params = extract_activity_cache_params(request)
+    cached = get_cached_stats_response(request.user.id, 'dashboard_activity', cache_params)
+    if cached is not None:
+        return Response(cached)
+
     from django.db.models.functions import Coalesce
 
     trading_account_id = request.GET.get('trading_account')
@@ -4523,10 +4562,12 @@ def dashboard_activity_summary(request):
     )
     active_days_count = len(trade_dates.union(compliance_dates))
 
-    return Response({
+    response_data = {
         'total_positions': total_positions,
         'active_days': active_days_count,
-    })
+    }
+    set_cached_stats_response(request.user.id, 'dashboard_activity', cache_params, response_data)
+    return Response(response_data)
 
 
 def _parse_market_holidays_markets(request, default: str = 'XNYS,XPAR,XLON,XTKS') -> List[str]:

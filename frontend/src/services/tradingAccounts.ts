@@ -199,6 +199,23 @@ class TradingAccountsService {
     }
     return body as RepairTopStepBrokerIdsResponse;
   }
+
+  async getBalanceSeries(
+    accountId: number,
+    params: { start_date?: string; end_date?: string; timezone?: string },
+  ): Promise<{ points: Array<{ date: string; net_transactions: string }> }> {
+    const queryParams = new URLSearchParams();
+    if (params.start_date) queryParams.append('start_date', params.start_date);
+    if (params.end_date) queryParams.append('end_date', params.end_date);
+    if (params.timezone) queryParams.append('timezone', params.timezone);
+    const qs = queryParams.toString();
+    const url = `${this.BASE_URL}/api/trades/trading-accounts/${accountId}/balance-series${qs ? `?${qs}` : ''}`;
+    const res = await this.fetchWithAuth(url);
+    if (!res.ok) {
+      throw new Error('Erreur lors du chargement de la série de solde');
+    }
+    return res.json();
+  }
 }
 
 export interface RepairTopStepBrokerIdsResponse {

@@ -348,6 +348,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
     
     def validate(self, attrs):
+        email = attrs.get(self.username_field)
+        if isinstance(email, str):
+            attrs[self.username_field] = email.strip().lower()
         data = super().validate(attrs)
         
         # Ajouter des informations de session à la réponse

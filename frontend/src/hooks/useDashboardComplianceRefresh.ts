@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { tradeStrategiesService } from '../services/tradeStrategies';
 import type { DashboardSummary, DashboardFilters } from '../services/dashboard';
@@ -8,13 +8,19 @@ import { getRollingTwelveMonthDateRange } from '../utils/complianceStreakPeriod'
 interface UseDashboardComplianceRefreshParams {
   accountId: number | null | undefined;
   pnlDisplay?: PnlDisplayMode;
+  /** Attendre que le dashboard principal soit affiché */
+  enabled?: boolean;
 }
+
+const INITIAL_DEFER_MS = 1500;
 
 export function useDashboardComplianceRefresh({
   accountId,
   pnlDisplay = 'net',
+  enabled = true,
 }: UseDashboardComplianceRefreshParams) {
   const queryClient = useQueryClient();
+  const initialRunRef = useRef(false);
 
   const refreshCompliance = useCallback(
     async (eventAccount?: number) => {
@@ -87,8 +93,18 @@ export function useDashboardComplianceRefresh({
   );
 
   useEffect(() => {
+    if (!enabled || accountId === undefined) return;
+
+    if (!initialRunRef.current) {
+      initialRunRef.current = true;
+      const timer = setTimeout(() => {
+        void refreshCompliance();
+      }, INITIAL_DEFER_MS);
+      return () => clearTimeout(timer);
+    }
+
     void refreshCompliance();
-  }, [refreshCompliance]);
+  }, [refreshCompliance, enabled, accountId]);
 
   useEffect(() => {
     const handleComplianceUpdate = (event: CustomEvent<{ tradingAccount?: number }>) => {
