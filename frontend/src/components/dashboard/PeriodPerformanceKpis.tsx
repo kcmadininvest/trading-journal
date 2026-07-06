@@ -141,8 +141,8 @@ const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
         getOutcomeSeriesCardClasses(series),
       )}
     >
-      <div className="flex min-w-0 flex-col gap-1.5">
-        <div className="inline-flex min-w-0 items-center gap-1">
+      <div className="flex min-w-0 items-center justify-between gap-x-2 gap-y-1">
+        <div className="inline-flex min-w-0 shrink-0 items-center gap-1">
           <span className={DASHBOARD_INNER_LABEL_CLASS}>
             {t('dashboard:periodPerformance.outcomeSeries', {
               count: WIN_RATE_ROLLING_WINDOW,
@@ -174,15 +174,15 @@ const OutcomeSeriesCard: React.FC<OutcomeSeriesCardProps> = ({
           </Tooltip>
         </div>
         {series.length > 0 ? (
-          <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
-            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium tabular-nums leading-tight text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-              {hideMoney ? maskValue(null) : summaryLabel}
-            </span>
+          <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5">
             {winRateLabel ? (
               <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium tabular-nums leading-tight text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                 {winRateLabel}
               </span>
             ) : null}
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium tabular-nums leading-tight text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              {hideMoney ? maskValue(null) : summaryLabel}
+            </span>
           </div>
         ) : null}
       </div>
