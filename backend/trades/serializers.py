@@ -723,7 +723,8 @@ class PositionStrategySerializer(serializers.ModelSerializer):
             'example_screenshot',
             'example_screenshot_thumbnail',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'version_published_at'
         ]
         read_only_fields = ['user', 'version', 'parent_strategy']
     
@@ -837,9 +838,10 @@ class PositionStrategyVersionSerializer(serializers.ModelSerializer):
             'is_current',
             'is_latest_version',
             'created_at',
-            'updated_at'
+            'updated_at',
+            'version_published_at'
         ]
-        read_only_fields = ['version', 'created_at', 'updated_at']
+        read_only_fields = ['version', 'created_at', 'updated_at', 'version_published_at']
 
 
 def _normalize_position_strategy_screenshot(value, context):

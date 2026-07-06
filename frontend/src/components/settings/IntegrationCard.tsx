@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import integrationsService, { IntegrationStatus } from '../../services/integrationsService';
+import { useTopStepApiPaused } from '../../hooks/useTopStepApiPaused';
 import { SettingsInput } from './SettingsInput';
 import { INTEGRATION_HELP_URLS } from './integrationUiConfig';
 import { translateIntegrationError } from '../../utils/integrationErrors';
@@ -29,6 +30,7 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const { paused, saving: pauseSaving, setPaused } = useTopStepApiPaused();
 
   useEffect(() => {
     setUsername(integration.external_username || '');
@@ -250,6 +252,56 @@ export const IntegrationCard: React.FC<IntegrationCardProps> = ({
               {t('integrations.helpLink')}
             </a>
           </p>
+        )}
+
+        {provider === 'topstepx' && integration.configured && (
+          <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900">
+            <div className="flex min-w-0 items-center gap-3">
+              <svg
+                className="h-5 w-5 flex-shrink-0 text-gray-600 dark:text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                />
+              </svg>
+              <div className="min-w-0">
+                <span className="block text-sm text-gray-700 dark:text-gray-300">
+                  {t('integrations.topstepApiToggleLabel')}
+                </span>
+                <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
+                  {t('integrations.topstepApiPausedHelp')}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!paused}
+              aria-label={t('integrations.topstepApiToggleLabel')}
+              disabled={pauseSaving}
+              onClick={() => {
+                void setPaused(!paused).catch(() => {
+                  onMessage('error', t('integrations.pauseToggleError'));
+                });
+              }}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                !paused ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  !paused ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         )}
 
         <div className="flex flex-wrap gap-2 pt-2">

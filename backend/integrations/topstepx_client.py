@@ -52,6 +52,27 @@ class TopStepXApiClient:
                 expires_at = expires_at.replace(tzinfo=timezone.utc)
         return TopStepXAuthResult(token=str(token), expires_at=expires_at)
 
+    def validate_session(self, auth_token: str) -> TopStepXAuthResult:
+        payload = self._request_json(
+            'POST',
+            '/api/Auth/validate',
+            body=None,
+            auth_token=auth_token,
+        )
+        if not payload.get('success') or payload.get('errorCode', 0) != 0:
+            raise TopStepXApiError(
+                payload.get('errorMessage') or 'Validation de session TopStepX échouée.',
+                error_code=str(payload.get('errorCode', 'validate_failed')),
+            )
+        token = payload.get('newToken') or payload.get('token') or auth_token
+        expires_raw = payload.get('expires') or payload.get('expiration') or payload.get('expiresAt')
+        expires_at = None
+        if expires_raw:
+            expires_at = parse_datetime(str(expires_raw))
+            if expires_at and expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+        return TopStepXAuthResult(token=str(token), expires_at=expires_at)
+
     def search_trades(
         self,
         auth_token: str,

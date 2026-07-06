@@ -163,6 +163,9 @@
     "loadError": "Integrationen konnten nicht geladen werden.",
     "empty": "Keine Integrationen verfügbar.",
     "lastValidated": "Zuletzt validiert: {{date}}",
+    "topstepApiToggleLabel": "TopStep-API-Verbindung",
+    "topstepApiPausedHelp": "TopStep erlaubt nur eine Sitzung gleichzeitig. Standardmäßig aus, damit Sie auf der Handelsplattform verbunden bleiben. Auch über das Dashboard-Banner steuerbar.",
+    "pauseToggleError": "TopStep-API-Pause konnte nicht aktualisiert werden.",
     "status": {
       "notConfigured": "Nicht konfiguriert",
       "configured": "Konfiguriert",

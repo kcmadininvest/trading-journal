@@ -91,6 +91,10 @@ export interface UserPreferences {
   journal_position_strategies?: JournalPositionStrategiesMap | null;
   /** Agrégats / graphiques : net (défaut API) ou gross (PnL brut). */
   pnl_display?: 'net' | 'gross';
+  /** Si true (défaut), le journal n'appelle pas l'API TopStep. */
+  topstep_api_paused?: boolean;
+  /** Cours live activés explicitement sur le dashboard. */
+  market_quotes_enabled?: boolean;
   created_at?: string;
   updated_at?: string;
 }

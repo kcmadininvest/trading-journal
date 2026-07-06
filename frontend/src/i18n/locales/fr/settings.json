@@ -165,6 +165,9 @@
     "loadError": "Impossible de charger les intégrations.",
     "empty": "Aucune intégration disponible.",
     "lastValidated": "Dernière validation : {{date}}",
+    "topstepApiToggleLabel": "Connexion API TopStep",
+    "topstepApiPausedHelp": "TopStep n'autorise qu'une session à la fois. Désactivé par défaut pour ne pas vous déconnecter de la plateforme de trading. Gérable aussi depuis le bandeau du dashboard.",
+    "pauseToggleError": "Impossible de mettre à jour la pause API TopStep.",
     "status": {
       "notConfigured": "Non configuré",
       "configured": "Configuré",

@@ -9,6 +9,7 @@ import { Tooltip } from '../components/ui';
 import { downloadStrategyPdf, printStrategy } from '../utils/pdfGenerator';
 import { ImageUpload } from '../components/ui/ImageUpload';
 import { screenshotsService } from '../services/screenshots';
+import { TopStepApiToolbarButton } from '../components/integrations/TopStepApiToolbarButton';
 import {
   DndContext,
   closestCenter,
@@ -1033,6 +1034,11 @@ const PositionStrategiesPage: React.FC = () => {
       // Utiliser le titre de la version la plus récente
       group.title = group.strategies[0].title;
     });
+    result.sort((a, b) => {
+      const aDate = a.strategies[0]?.version_published_at || a.strategies[0]?.updated_at || '';
+      const bDate = b.strategies[0]?.version_published_at || b.strategies[0]?.updated_at || '';
+      return bDate.localeCompare(aDate);
+    });
 
     return result;
   }, [filteredStrategies, filterStatus]);
@@ -1295,8 +1301,20 @@ const PositionStrategiesPage: React.FC = () => {
                               </p>
                             )}
 
-                            <div className="text-xs text-gray-500 dark:text-gray-500 mb-4">
-                              {t('positionStrategies:createdAt', { defaultValue: 'Créé le' })} {formatDate(strategy.created_at, preferences.date_format, false, preferences.timezone)}
+                            <div className="text-xs text-gray-500 dark:text-gray-500 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <span>
+                                {t('positionStrategies:createdAt', { defaultValue: 'Créé le' })}{' '}
+                                {formatDate(strategy.created_at, preferences.date_format, false, preferences.timezone)}
+                              </span>
+                              <span>
+                                {t('positionStrategies:versionPublishedAt', { defaultValue: 'Version du' })}{' '}
+                                {formatDate(
+                                  strategy.version_published_at || strategy.updated_at,
+                                  preferences.date_format,
+                                  false,
+                                  preferences.timezone
+                                )}
+                              </span>
                             </div>
 
                             {/* Menu d'actions */}
@@ -1355,6 +1373,7 @@ const PositionStrategiesPage: React.FC = () => {
                                     </svg>
                                   </button>
                                 </Tooltip>
+                                <TopStepApiToolbarButton tooltipPosition="top" size="card" />
                               </div>
                               
                               {/* Menu dropdown pour actions supplémentaires */}
@@ -1499,10 +1518,17 @@ const PositionStrategiesPage: React.FC = () => {
                   )}
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-gray-500 dark:text-gray-500 mb-4">
-                      {t('positionStrategies:createdAt', { defaultValue: 'Créé le' })} {formatDate(strategy.created_at, preferences.date_format, false, preferences.timezone)}
-                    </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-500 mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <span>
+                      {t('positionStrategies:createdAt', { defaultValue: 'Créé le' })}{' '}
+                      {formatDate(strategy.created_at, preferences.date_format, false, preferences.timezone)}
+                    </span>
+                    {strategy.updated_at && strategy.updated_at !== strategy.created_at && (
+                      <span>
+                        {t('positionStrategies:updatedAt', { defaultValue: 'Mis à jour le' })}{' '}
+                        {formatDate(strategy.updated_at, preferences.date_format, false, preferences.timezone)}
+                      </span>
+                    )}
                   </div>
 
                 {/* Menu d'actions moderne */}
@@ -1573,6 +1599,7 @@ const PositionStrategiesPage: React.FC = () => {
                         </svg>
                       </button>
                     </Tooltip>
+                    <TopStepApiToolbarButton tooltipPosition="top" size="card" />
                   </div>
                   
                   {/* Menu dropdown pour actions supplémentaires */}
@@ -2039,7 +2066,13 @@ const PositionStrategiesPage: React.FC = () => {
                               </span>
                             </div>
                             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                              {formatDate(version.created_at, preferences.date_format, false, preferences.timezone)}
+                              {t('positionStrategies:versionPublishedAt', { defaultValue: 'Version du' })}{' '}
+                              {formatDate(
+                                version.version_published_at || version.created_at,
+                                preferences.date_format,
+                                false,
+                                preferences.timezone
+                              )}
                             </p>
                           </div>
                           {!version.is_current && (
@@ -2147,6 +2180,7 @@ const PositionStrategiesPage: React.FC = () => {
                       </svg>
                     </button>
                   </Tooltip>
+                  <TopStepApiToolbarButton tooltipPosition="bottom" size="modal" />
                   <button
                     onClick={handleCloseViewModal}
                     className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"

@@ -1,11 +1,11 @@
 """Tests gestion de session TopStepX."""
 from datetime import timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from accounts.models import User
+from accounts.models import User, UserPreferences
 from integrations.credentials_crypto import encrypt_json
 from integrations.models import UserApiIntegration
 from integrations.topstepx_auth import (
@@ -27,6 +27,7 @@ class TopStepXAuthTests(TestCase):
             username='topstep_auth',
             password='testpass123',
         )
+        UserPreferences.objects.create(user=self.user, topstep_api_paused=False)
         self.integration = UserApiIntegration.objects.create(
             user=self.user,
             provider='topstepx',
@@ -52,14 +53,46 @@ class TopStepXAuthTests(TestCase):
         self.assertIn('api_key', secrets)
 
     @patch.object(TopStepXApiClient, 'login_key')
-    def test_get_valid_session_token_refreshes_without_expiry(self, mock_login) -> None:
-        mock_login.return_value = TopStepXAuthResult(
-            token='fresh-token',
+    def test_get_valid_session_token_reuses_without_expiry(self, mock_login) -> None:
+        token = get_valid_session_token(self.integration)
+        self.assertEqual(token, 'stale-token')
+        mock_login.assert_not_called()
+
+    @patch.object(TopStepXApiClient, 'login_key')
+    def test_get_valid_session_token_blocked_when_api_paused(self, mock_login) -> None:
+        prefs = UserPreferences.objects.get(user=self.user)
+        prefs.topstep_api_paused = True
+        prefs.save(update_fields=['topstep_api_paused'])
+
+        with self.assertRaises(TopStepXApiError) as ctx:
+            get_valid_session_token(self.integration)
+        self.assertEqual(ctx.exception.error_code, 'topstep_api_paused')
+        mock_login.assert_not_called()
+
+    @patch.object(TopStepXApiClient, 'validate_session')
+    @patch.object(TopStepXApiClient, 'login_key')
+    def test_get_valid_session_token_validates_when_expired(
+        self,
+        mock_login,
+        mock_validate,
+    ) -> None:
+        expired = timezone.now() - timedelta(hours=1)
+        secrets = encrypt_json({
+            'api_key': 'key-123',
+            'session_token': 'old-token',
+            'token_expires_at': expired.isoformat(),
+        })
+        self.integration.secrets_encrypted = secrets
+        self.integration.save(update_fields=['secrets_encrypted'])
+        mock_validate.return_value = TopStepXAuthResult(
+            token='validated-token',
             expires_at=timezone.now() + timedelta(hours=12),
         )
+
         token = get_valid_session_token(self.integration)
-        self.assertEqual(token, 'fresh-token')
-        mock_login.assert_called_once()
+        self.assertEqual(token, 'validated-token')
+        mock_validate.assert_called_once_with('old-token')
+        mock_login.assert_not_called()
 
     @patch.object(TopStepXApiClient, 'login_key')
     def test_call_with_valid_session_token_retries_on_expired_session(self, mock_login) -> None:

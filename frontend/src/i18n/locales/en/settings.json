@@ -165,6 +165,9 @@
     "loadError": "Unable to load integrations.",
     "empty": "No integrations available.",
     "lastValidated": "Last validated: {{date}}",
+    "topstepApiToggleLabel": "TopStep API connection",
+    "topstepApiPausedHelp": "TopStep allows only one session at a time. Off by default so you stay connected on the trading platform. Also manageable from the dashboard ticker.",
+    "pauseToggleError": "Could not update TopStep API pause setting.",
     "status": {
       "notConfigured": "Not configured",
       "configured": "Configured",

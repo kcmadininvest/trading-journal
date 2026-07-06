@@ -243,6 +243,7 @@ export interface TradeSyncStatus {
   last_sync_at?: string | null;
   integration_configured: boolean;
   integration_connected: boolean;
+  topstep_api_paused?: boolean;
   /** true si un POST sync est recommandé (dernière sync > sync_stale_minutes). */
   should_sync?: boolean;
   sync_stale_minutes?: number;

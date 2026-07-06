@@ -120,8 +120,11 @@
     "neverSynced": "Noch nicht synchronisiert",
     "brokerIdRequired": "Verwenden Sie den exakten TopStepX-Kontonamen (Kontomenü) oder eine gültige ProjectX-ID. Die ID wird bei Namensübereinstimmung automatisch gesetzt.",
     "integrationRequired": "Richten Sie die TopStepX-Integration unter Einstellungen → Trading ein.",
+    "apiPaused": "TopStep-API pausiert — im Dashboard oder in den Einstellungen reaktivieren.",
+    "apiActiveWarning": "API-Sync kann TopStep trennen, wenn Sie parallel traden.",
     "errors": {
-      "credentialsDecryptFailed": "Gespeicherte Zugangsdaten können nicht gelesen werden. Verbinden Sie TopStepX unter Einstellungen → Trading erneut und geben Sie Ihren API-Schlüssel erneut ein."
+      "credentialsDecryptFailed": "Gespeicherte Zugangsdaten können nicht gelesen werden. Verbinden Sie TopStepX unter Einstellungen → Trading erneut und geben Sie Ihren API-Schlüssel erneut ein.",
+      "apiPaused": "TopStep-API ist pausiert. Reaktivieren Sie sie im Dashboard oder in den Einstellungen."
     }
   }
 }

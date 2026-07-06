@@ -24,6 +24,7 @@ export interface PositionStrategy {
   example_screenshot_thumbnail?: string;
   created_at: string;
   updated_at: string;
+  version_published_at?: string | null;
 }
 
 export interface PositionStrategyVersion {
@@ -36,6 +37,7 @@ export interface PositionStrategyVersion {
   is_latest_version: boolean;
   created_at: string;
   updated_at: string;
+  version_published_at?: string | null;
 }
 
 export interface PositionStrategyFilters {

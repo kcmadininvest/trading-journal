@@ -1298,6 +1298,12 @@ class PositionStrategy(models.Model):
         auto_now=True,
         verbose_name='Modifié le'
     )
+    version_published_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Version publiée le',
+        help_text='Date de publication de cette version (distincte de la création de la stratégie parente)',
+    )
     
     class Meta:
         ordering = ['-created_at']
@@ -1316,6 +1322,9 @@ class PositionStrategy(models.Model):
     
     def save(self, *args, **kwargs):
         """Override save pour gérer le versioning automatique."""
+        if not self.pk and not self.version_published_at:
+            from django.utils import timezone
+            self.version_published_at = timezone.now()
         if not self.pk:  # Nouvelle stratégie
             # Marquer toutes les autres versions comme non actuelles
             if self.parent_strategy:
@@ -1421,6 +1430,9 @@ class PositionStrategy(models.Model):
         # Préserver created_at de la version originale (parent_strategy)
         original_created_at = parent.created_at
         
+        from django.utils import timezone
+        published_at = timezone.now()
+
         new_strategy = PositionStrategy.objects.create(  # type: ignore
             user=self.user,
             parent_strategy=parent,
@@ -1432,7 +1444,8 @@ class PositionStrategy(models.Model):
             version=new_version,
             is_current=True,  # La nouvelle version est actuelle
             example_screenshot=self.example_screenshot,
-            example_screenshot_thumbnail=self.example_screenshot_thumbnail
+            example_screenshot_thumbnail=self.example_screenshot_thumbnail,
+            version_published_at=published_at,
         )
         
         # Préserver created_at de la version originale en faisant un update

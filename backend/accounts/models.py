@@ -260,6 +260,18 @@ class UserPreferences(models.Model):
         verbose_name=_('Stratégies de position par compte'),
         help_text=str(_('Carte compte_id ou "all" vers id de stratégie de position (null = toutes)')),
     )
+    topstep_api_paused = models.BooleanField(
+        default=True,
+        verbose_name=_('API TopStep en pause'),
+        help_text=str(_(
+            'Si activé, le journal n’appelle pas l’API TopStep (évite le conflit de session unique).'
+        )),
+    )
+    market_quotes_enabled = models.BooleanField(
+        default=False,
+        verbose_name=_('Bandeau cours marché activé'),
+        help_text=str(_('Cours live activés explicitement par l’utilisateur sur le dashboard.')),
+    )
 
     # Métadonnées
     created_at = models.DateTimeField(

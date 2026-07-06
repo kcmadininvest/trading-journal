@@ -99,6 +99,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     items_per_page: DEFAULT_ITEMS_PER_PAGE,
     show_pre_market: false,
     pnl_display: 'net',
+    topstep_api_paused: true,
+    market_quotes_enabled: false,
   });
   const [loading, setLoading] = useState(true);
   const { data: bootstrap, isError: bootstrapError, isLoading: bootstrapLoading } = useBootstrap(
@@ -204,6 +206,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
           email_goal_alerts: true,
           show_pre_market: false,
           pnl_display: 'net',
+          topstep_api_paused: true,
+          market_quotes_enabled: false,
         });
         const root = document.documentElement;
         root.classList.remove('font-size-small', 'font-size-medium', 'font-size-large');

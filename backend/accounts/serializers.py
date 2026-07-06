@@ -470,6 +470,7 @@ class UserPreferencesSerializer(serializers.ModelSerializer):
             'theme', 'font_size', 'font_family', 'sidebar_collapsed', 'email_goal_alerts',
             'import_guide_collapsed', 'items_per_page', 'privacy_overrides',
             'show_pre_market', 'journal_period', 'journal_position_strategies',
+            'topstep_api_paused', 'market_quotes_enabled',
             'created_at', 'updated_at',
         )
         read_only_fields = ('created_at', 'updated_at')
