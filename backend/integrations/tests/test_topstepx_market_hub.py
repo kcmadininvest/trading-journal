@@ -4,6 +4,7 @@ from unittest.mock import patch
 from django.test import TestCase, override_settings
 
 from integrations.market_quotes_config import ResolvedMarketContract
+from integrations.topstepx_client import TopStepXApiError
 from integrations.topstepx_market_hub import (
     TopStepXMarketHubRunner,
     extract_gateway_quote_payload,
@@ -107,12 +108,29 @@ class TopStepXMarketHubRunnerQuoteTests(TestCase):
         runner._stop_event.set()
         with patch.object(runner, '_build_hub') as mock_build:
             mock_hub = mock_build.return_value
+            mock_hub.start.return_value = True
             runner.start()
         saved = mock_save.call_args[0][0]
         nasdaq = next(q for q in saved['quotes'] if q['key'] == 'nasdaq')
         self.assertEqual(nasdaq['last_price_display'], '30000')
         self.assertEqual(saved['message'], 'connecting')
         mock_hub.start.assert_called_once()
+
+    @patch('integrations.topstepx_market_hub.save_snapshot')
+    @patch('integrations.topstepx_market_hub.load_snapshot')
+    def test_start_raises_when_hub_start_returns_false(self, mock_load, mock_save) -> None:
+        mock_load.return_value = {
+            'connected': False,
+            'message': None,
+            'quotes': [],
+        }
+        runner = self._runner()
+        with patch.object(runner, '_build_hub') as mock_build:
+            mock_hub = mock_build.return_value
+            mock_hub.start.return_value = False
+            with self.assertRaises(TopStepXApiError) as ctx:
+                runner.start()
+        self.assertEqual(ctx.exception.error_code, 'market_hub_start_failed')
 
     @patch('integrations.topstepx_market_hub.update_quote_in_snapshot')
     def test_on_gateway_quote_resolves_contract_from_list_hint(self, mock_update) -> None:

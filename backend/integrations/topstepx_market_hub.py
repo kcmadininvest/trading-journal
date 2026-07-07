@@ -195,11 +195,18 @@ class TopStepXMarketHubRunner:
         save_snapshot(initial, self.user_id)
 
         self._hub = self._build_hub()
-        self._hub.start()
+        started = self._hub.start()
+        if not started:
+            logger.warning('Market Hub TopStepX start() a échoué user_id=%s', self.user_id)
+            raise TopStepXApiError(
+                'Connexion Market Hub TopStepX impossible.',
+                error_code='market_hub_start_failed',
+            )
         while not self._stop_event.is_set():
             time.sleep(1)
 
-    def stop(self) -> None:
+    def stop(self, *, reason: str = 'unknown') -> None:
+        logger.info('Arrêt Market Hub user_id=%s raison=%s', self.user_id, reason)
         self._stop_event.set()
         if self._hub is not None:
             try:

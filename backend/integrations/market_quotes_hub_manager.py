@@ -11,7 +11,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from django.contrib.auth import get_user_model
 
-from integrations.market_quotes_config import resolve_market_quote_contracts
+from integrations.market_quotes_config import ResolvedMarketContract, resolve_market_quote_contracts
 from integrations.market_quotes_hub_control import CONTROL_CHANNEL
 from integrations.market_quotes_service import (
     build_empty_snapshot,
@@ -26,6 +26,10 @@ from integrations.topstepx_market_hub import TopStepXMarketHubRunner, login_quot
 logger = logging.getLogger(__name__)
 
 CONTRACT_REFRESH_INTERVAL = timedelta(hours=12)
+
+
+def _contracts_summary(contracts: list[ResolvedMarketContract]) -> str:
+    return ', '.join(f'{item.key}={item.contract_id}' for item in contracts)
 
 
 @dataclass
@@ -45,11 +49,15 @@ class MarketQuotesHubManager:
         self._global_lock = threading.Lock()
         self._stop = threading.Event()
         self._idle_ttl_seconds = 180
+        self._cycle_backoff_seconds = 5
 
     def run(self) -> None:
         from django.conf import settings
 
         self._idle_ttl_seconds = int(getattr(settings, 'MARKET_QUOTES_HUB_IDLE_TTL_SECONDS', 180))
+        self._cycle_backoff_seconds = int(
+            getattr(settings, 'MARKET_QUOTES_HUB_CYCLE_BACKOFF_SECONDS', 5),
+        )
         signal.signal(signal.SIGINT, self._shutdown_signal)
         signal.signal(signal.SIGTERM, self._shutdown_signal)
 
@@ -133,7 +141,7 @@ class MarketQuotesHubManager:
                         st = self._users.get(user_id)
                         if st is None or st.ref_count > 0:
                             return
-                    self._stop_user_hub(user_id)
+                    self._stop_user_hub(user_id, reason='idle_ttl')
 
                 state.shutdown_timer = threading.Timer(self._idle_ttl_seconds, _delayed_stop)
                 state.shutdown_timer.daemon = True
@@ -168,8 +176,19 @@ class MarketQuotesHubManager:
                 logger.exception('Hub cycle user_id=%s', user_id)
                 save_snapshot(build_empty_snapshot(connected=False, message='hub_error'), user_id)
                 time.sleep(30)
+            else:
+                with self._global_lock:
+                    still_registered = user_id in self._users
+                if self._stop.is_set() or not still_registered:
+                    break
+                logger.info(
+                    'Hub cycle terminé user_id=%s, redémarrage dans %ss',
+                    user_id,
+                    self._cycle_backoff_seconds,
+                )
+                time.sleep(self._cycle_backoff_seconds)
 
-        self._stop_user_hub(user_id)
+        self._stop_user_hub(user_id, reason='thread_exit')
 
     def _run_hub_cycle(self, user) -> None:
         user_id = user.id
@@ -195,6 +214,13 @@ class MarketQuotesHubManager:
                 if user_id in self._users:
                     self._users[user_id].last_contract_refresh = datetime.now(timezone.utc)
 
+        logger.info(
+            '%d contrat(s) résolu(s) user_id=%s: %s',
+            len(contracts),
+            user_id,
+            _contracts_summary(contracts),
+        )
+
         runner = TopStepXMarketHubRunner(
             user_id=user_id,
             auth_token=token,
@@ -203,9 +229,10 @@ class MarketQuotesHubManager:
         with self._global_lock:
             if user_id in self._users:
                 self._users[user_id].runner = runner
+        logger.info('Démarrage Market Hub user_id=%s (%d contrats)', user_id, len(contracts))
         runner.start()
 
-    def _stop_user_hub(self, user_id: int) -> None:
+    def _stop_user_hub(self, user_id: int, *, reason: str = 'unknown') -> None:
         with self._global_lock:
             state = self._users.pop(user_id, None)
         if state is None:
@@ -214,11 +241,11 @@ class MarketQuotesHubManager:
             if state.shutdown_timer is not None:
                 state.shutdown_timer.cancel()
             if state.runner is not None:
-                state.runner.stop()
+                state.runner.stop(reason=reason)
                 state.runner = None
 
     def _stop_all(self) -> None:
         with self._global_lock:
             user_ids = list(self._users.keys())
         for user_id in user_ids:
-            self._stop_user_hub(user_id)
+            self._stop_user_hub(user_id, reason='shutdown')
