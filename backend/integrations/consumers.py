@@ -50,7 +50,10 @@ class MarketQuotesConsumer(AsyncJsonWebsocketConsumer):
         await self.accept()
 
         await database_sync_to_async(bootstrap_market_quotes_for_user)(self.user)
-        await database_sync_to_async(signal_user_active)(self.user.id)
+        from integrations.topstep_api_pause import is_topstep_api_paused
+
+        if not await database_sync_to_async(is_topstep_api_paused)(self.user):
+            await database_sync_to_async(signal_user_active)(self.user.id)
         snapshot = await database_sync_to_async(load_snapshot)(self.user.id)
         await self.send_json(snapshot)
 

@@ -12,6 +12,7 @@ Environment="PATH=/var/www/html/trading_journal/backend/venv/bin:/usr/local/bin:
 Environment="VIRTUAL_ENV=/var/www/html/trading_journal/backend/venv"
 Environment="DJANGO_ENV=production"
 Environment="DJANGO_SETTINGS_MODULE=trading_journal_api.settings"
+Environment="MPLCONFIGDIR=/var/www/html/trading_journal/backend/var/mplconfig"
 ExecStart=/bin/bash /var/www/html/trading_journal/backend/start-daphne.sh
 Restart=always
 RestartSec=10

@@ -22,6 +22,7 @@ from integrations.market_quotes_service import (
 )
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 from integrations.topstepx_market_hub import TopStepXMarketHubRunner, login_quotes_session_for_user
+from integrations.topstep_api_pause import is_topstep_api_paused
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +193,16 @@ class MarketQuotesHubManager:
 
     def _run_hub_cycle(self, user) -> None:
         user_id = user.id
+        if is_topstep_api_paused(user):
+            save_snapshot(
+                build_empty_snapshot(connected=False, message='topstep_api_paused'),
+                user_id,
+            )
+            raise TopStepXApiError(
+                'API TopStep en pause.',
+                error_code='topstep_api_paused',
+            )
+
         token = login_quotes_session_for_user(user)
         client = TopStepXApiClient()
 
@@ -200,19 +211,32 @@ class MarketQuotesHubManager:
             last_refresh = state.last_contract_refresh if state else None
 
         cached = load_contracts_resolved(user_id)
-        if cached and last_refresh and datetime.now(timezone.utc) - last_refresh < CONTRACT_REFRESH_INTERVAL:
+        now = datetime.now(timezone.utc)
+        cache_fresh = (
+            bool(cached)
+            and last_refresh is not None
+            and now - last_refresh < CONTRACT_REFRESH_INTERVAL
+        )
+        if cache_fresh:
             contracts = cached
         else:
             contracts = resolve_market_quote_contracts(client, token, today=date.today())
-            if not contracts:
+            if contracts:
+                save_contracts_resolved(contracts, user_id)
+                with self._global_lock:
+                    if user_id in self._users:
+                        self._users[user_id].last_contract_refresh = now
+            elif cached:
+                logger.warning(
+                    'Résolution vide, repli sur contrats en cache user_id=%s',
+                    user_id,
+                )
+                contracts = cached
+            else:
                 raise TopStepXApiError(
                     'Aucun contrat résolu pour le bandeau cours.',
                     error_code='no_contracts',
                 )
-            save_contracts_resolved(contracts, user_id)
-            with self._global_lock:
-                if user_id in self._users:
-                    self._users[user_id].last_contract_refresh = datetime.now(timezone.utc)
 
         logger.info(
             '%d contrat(s) résolu(s) user_id=%s: %s',
