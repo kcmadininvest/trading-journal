@@ -16,6 +16,7 @@ from integrations.credentials_crypto import (
 )
 from integrations.models import UserApiIntegration
 from integrations.topstep_api_pause import assert_topstep_api_allowed
+from integrations.services import apply_test_result
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 
 T = TypeVar('T')
@@ -61,6 +62,7 @@ def clear_session_token(integration: UserApiIntegration) -> None:
     secrets.pop('token_expires_at', None)
     integration.secrets_encrypted = encrypt_json(secrets)
     integration.save(update_fields=['secrets_encrypted', 'updated_at'])
+    apply_test_result(integration, False)
 
 
 def _parse_expires_at(expires_raw: object) -> datetime | None:
@@ -91,6 +93,7 @@ def _persist_auth_result(
     secrets['token_expires_at'] = expires_at.isoformat()
     integration.secrets_encrypted = encrypt_json(secrets)
     integration.save(update_fields=['secrets_encrypted', 'updated_at'])
+    apply_test_result(integration, True)
     return auth.token
 
 

@@ -45,7 +45,9 @@ export function useTopStepSyncEligibility(
         const integrations = await integrationsService.listIntegrations();
         if (cancelled) return;
         const topstepx = integrations.integrations.find((i) => i.provider === 'topstepx');
-        setIntegrationConnected(Boolean(topstepx?.configured && topstepx?.is_connected));
+        // configured suffit : is_connected reflète le dernier test Paramètres, pas la session
+        // active (cours live / sync peuvent fonctionner sans test manuel).
+        setIntegrationConnected(Boolean(topstepx?.configured));
       } catch {
         if (!cancelled) {
           setAccount(null);

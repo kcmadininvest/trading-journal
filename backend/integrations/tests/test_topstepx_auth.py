@@ -51,6 +51,20 @@ class TopStepXAuthTests(TestCase):
         secrets = decrypt_json(self.integration.secrets_encrypted)
         self.assertNotIn('session_token', secrets)
         self.assertIn('api_key', secrets)
+        self.assertFalse(self.integration.is_connected)
+
+    @patch.object(TopStepXApiClient, 'login_key')
+    def test_get_valid_session_token_login_marks_connected(self, mock_login) -> None:
+        clear_session_token(self.integration)
+        self.integration.refresh_from_db()
+        mock_login.return_value = TopStepXAuthResult(
+            token='new-token',
+            expires_at=timezone.now() + timedelta(hours=12),
+        )
+        token = get_valid_session_token(self.integration)
+        self.assertEqual(token, 'new-token')
+        self.integration.refresh_from_db()
+        self.assertTrue(self.integration.is_connected)
 
     @patch.object(TopStepXApiClient, 'login_key')
     def test_get_valid_session_token_reuses_without_expiry(self, mock_login) -> None:

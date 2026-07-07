@@ -22,6 +22,7 @@ from integrations.market_quotes_service import (
 )
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 from integrations.topstepx_auth import get_valid_session_token
+from integrations.services import apply_test_result
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,19 @@ class TopStepXMarketHubRunner:
             return self._token_factory()
         return self.auth_token
 
+    def _mark_integration_connected(self) -> None:
+        from django.contrib.auth import get_user_model
+
+        from integrations.market_quotes_service import get_user_quotes_integration
+
+        try:
+            user = get_user_model().objects.get(id=self.user_id)
+        except get_user_model().DoesNotExist:
+            return
+        integration = get_user_quotes_integration(user)
+        if integration is not None and not integration.is_connected:
+            apply_test_result(integration, True)
+
     def _build_hub(self) -> Any:
         from signalrcore.hub_connection_builder import HubConnectionBuilder
 
@@ -163,6 +177,7 @@ class TopStepXMarketHubRunner:
 
     def _on_open(self) -> None:
         logger.info('Market Hub TopStepX connecté user_id=%s', self.user_id)
+        self._mark_integration_connected()
         if self._hub is None:
             return
         for contract in self.contracts:

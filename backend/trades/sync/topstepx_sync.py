@@ -172,7 +172,7 @@ class TopStepXSyncService:
         )
 
     def _should_sync(self, trading_account: TradingAccount, integration) -> bool:
-        if not integration or not integration.secrets_encrypted or not integration.is_connected:
+        if not integration or not integration.secrets_encrypted:
             return False
         if trading_account.account_type != 'topstep' or trading_account.status != 'active':
             return False
