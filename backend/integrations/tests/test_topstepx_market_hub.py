@@ -1,5 +1,6 @@
 """Tests parsing GatewayQuote SignalR TopStepX."""
 from unittest.mock import patch
+from urllib.error import HTTPError
 
 from django.test import TestCase, override_settings
 
@@ -131,6 +132,41 @@ class TopStepXMarketHubRunnerQuoteTests(TestCase):
             with self.assertRaises(TopStepXApiError) as ctx:
                 runner.start()
         self.assertEqual(ctx.exception.error_code, 'market_hub_start_failed')
+
+    @patch('integrations.topstepx_market_hub.save_snapshot')
+    @patch('integrations.topstepx_market_hub.load_snapshot')
+    def test_start_raises_session_expired_on_negotiate_401(self, mock_load, mock_save) -> None:
+        mock_load.return_value = {
+            'connected': False,
+            'message': None,
+            'quotes': [],
+        }
+        runner = self._runner()
+        with patch.object(runner, '_build_hub') as mock_build:
+            mock_hub = mock_build.return_value
+            mock_hub.start.side_effect = HTTPError(
+                'https://rtc.topstepx.com/hubs/market/negotiate',
+                401,
+                'Unauthorized',
+                {},
+                None,
+            )
+            with self.assertRaises(TopStepXApiError) as ctx:
+                runner.start()
+        self.assertEqual(ctx.exception.error_code, 'session_expired')
+
+    def test_resolve_access_token_prefers_factory(self) -> None:
+        runner = TopStepXMarketHubRunner(
+            user_id=42,
+            auth_token='static',
+            contracts=self._runner().contracts,
+            token_factory=lambda: 'dynamic',
+        )
+        self.assertEqual(runner._resolve_access_token(), 'dynamic')
+
+    def test_resolve_access_token_falls_back_to_auth_token(self) -> None:
+        runner = self._runner()
+        self.assertEqual(runner._resolve_access_token(), 'token')
 
     @patch('integrations.topstepx_market_hub.update_quote_in_snapshot')
     def test_on_gateway_quote_resolves_contract_from_list_hint(self, mock_update) -> None:

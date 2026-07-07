@@ -15,11 +15,13 @@ from integrations.market_quotes_config import ResolvedMarketContract, resolve_ma
 from integrations.market_quotes_hub_control import CONTROL_CHANNEL
 from integrations.market_quotes_service import (
     build_empty_snapshot,
+    get_user_quotes_integration,
     load_contracts_resolved,
     save_contracts_resolved,
     save_snapshot,
     user_has_quotes_credentials,
 )
+from integrations.topstepx_auth import clear_session_token, get_valid_session_token
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 from integrations.topstepx_market_hub import TopStepXMarketHubRunner, login_quotes_session_for_user
 from integrations.topstep_api_pause import is_topstep_api_paused
@@ -168,6 +170,10 @@ class MarketQuotesHubManager:
                 self._run_hub_cycle(user)
             except TopStepXApiError as exc:
                 logger.error('TopStep hub user_id=%s: %s', user_id, exc)
+                if exc.error_code == 'session_expired':
+                    integration = get_user_quotes_integration(user)
+                    if integration is not None:
+                        clear_session_token(integration)
                 save_snapshot(
                     build_empty_snapshot(connected=False, message=str(exc.error_code or 'api_error')),
                     user_id,
@@ -245,10 +251,16 @@ class MarketQuotesHubManager:
             _contracts_summary(contracts),
         )
 
+        integration = get_user_quotes_integration(user)
+        token_factory = None
+        if integration is not None:
+            token_factory = lambda integ=integration: get_valid_session_token(integ)
+
         runner = TopStepXMarketHubRunner(
             user_id=user_id,
             auth_token=token,
             contracts=contracts,
+            token_factory=token_factory,
         )
         with self._global_lock:
             if user_id in self._users:

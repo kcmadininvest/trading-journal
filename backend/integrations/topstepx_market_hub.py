@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 from typing import Any, Callable
+from urllib.error import HTTPError
 
 from django.conf import settings
 
@@ -25,6 +26,7 @@ from integrations.topstepx_auth import get_valid_session_token
 logger = logging.getLogger(__name__)
 
 QuoteHandler = Callable[[dict[str, Any]], None]
+TokenFactory = Callable[[], str]
 
 
 def extract_gateway_quote_payload(*args: Any) -> tuple[dict[str, Any] | None, str | None]:
@@ -65,11 +67,13 @@ class TopStepXMarketHubRunner:
         auth_token: str,
         contracts: list[ResolvedMarketContract],
         hub_url: str | None = None,
+        token_factory: TokenFactory | None = None,
         on_connected: Callable[[], None] | None = None,
         on_disconnected: Callable[[], None] | None = None,
     ) -> None:
         self.user_id = user_id
         self.auth_token = auth_token
+        self._token_factory = token_factory
         self.contracts = contracts
         self.hub_url = hub_url or getattr(
             settings,
@@ -87,17 +91,20 @@ class TopStepXMarketHubRunner:
             c.symbol_id.upper(): c.key for c in contracts
         }
 
+    def _resolve_access_token(self) -> str:
+        if self._token_factory is not None:
+            return self._token_factory()
+        return self.auth_token
+
     def _build_hub(self) -> Any:
         from signalrcore.hub_connection_builder import HubConnectionBuilder
-
-        token = self.auth_token
 
         hub = (
             HubConnectionBuilder()
             .with_url(
                 self.hub_url,
                 options={
-                    'access_token_factory': lambda: token,
+                    'access_token_factory': self._resolve_access_token,
                     'verify_ssl': True,
                 },
             )
@@ -195,7 +202,22 @@ class TopStepXMarketHubRunner:
         save_snapshot(initial, self.user_id)
 
         self._hub = self._build_hub()
-        started = self._hub.start()
+        try:
+            started = self._hub.start()
+        except HTTPError as exc:
+            if exc.code == 401:
+                logger.warning(
+                    'Market Hub negotiate 401 user_id=%s',
+                    self.user_id,
+                )
+                raise TopStepXApiError(
+                    'Session TopStep expirée ou invalide (Market Hub).',
+                    error_code='session_expired',
+                ) from exc
+            raise TopStepXApiError(
+                f'Connexion Market Hub TopStepX impossible (HTTP {exc.code}).',
+                error_code='market_hub_start_failed',
+            ) from exc
         if not started:
             logger.warning('Market Hub TopStepX start() a échoué user_id=%s', self.user_id)
             raise TopStepXApiError(
