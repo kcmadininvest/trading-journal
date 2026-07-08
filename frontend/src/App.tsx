@@ -299,7 +299,7 @@ function App() {
 
   // Vérification globale des objectifs récemment atteints (même si pas sur la page Goals)
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.is_admin) return;
 
     const checkRecentAchievements = async () => {
       try {
