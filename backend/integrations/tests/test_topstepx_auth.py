@@ -41,6 +41,12 @@ class TopStepXAuthTests(TestCase):
 
     def test_is_session_expired_error(self) -> None:
         self.assertTrue(is_session_expired_error(TopStepXApiError('Session expirée')))
+        self.assertTrue(
+            is_session_expired_error(
+                TopStepXApiError('Erreur HTTP 401', error_code='session_expired'),
+            ),
+        )
+        self.assertTrue(is_session_expired_error(TopStepXApiError('Erreur HTTP 401')))
         self.assertFalse(is_session_expired_error(TopStepXApiError('Compte introuvable')))
 
     def test_clear_session_token(self) -> None:

@@ -291,6 +291,10 @@ class TopStepXApiClient:
             except Exception:
                 msg = f'Erreur HTTP {exc.code}'
                 code = 'http_error'
+            if exc.code == 401:
+                code = 'session_expired'
+                if msg == f'Erreur HTTP {exc.code}':
+                    msg = 'Session TopStep expirée ou invalide.'
             raise TopStepXApiError(msg, error_code=code) from exc
         except urllib.error.URLError as exc:
             raise TopStepXApiError(

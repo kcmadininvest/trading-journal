@@ -38,8 +38,10 @@ def get_topstepx_integration(user) -> UserApiIntegration | None:
 
 
 def is_session_expired_error(exc: TopStepXApiError) -> bool:
+    if getattr(exc, 'error_code', None) == 'session_expired':
+        return True
     msg = str(exc).lower()
-    return any(marker in msg for marker in SESSION_EXPIRED_MARKERS)
+    return any(marker in msg for marker in SESSION_EXPIRED_MARKERS) or '401' in msg
 
 
 def _secrets_or_raise(integration: UserApiIntegration) -> dict:

@@ -21,7 +21,12 @@ from integrations.market_quotes_service import (
     save_snapshot,
     user_has_quotes_credentials,
 )
-from integrations.topstepx_auth import clear_session_token, get_valid_session_token
+from integrations.topstepx_auth import (
+    call_with_valid_session_token,
+    clear_session_token,
+    get_valid_session_token,
+    is_session_expired_error,
+)
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 from integrations.topstepx_market_hub import TopStepXMarketHubRunner, login_quotes_session_for_user
 from integrations.topstep_api_pause import is_topstep_api_paused
@@ -170,7 +175,7 @@ class MarketQuotesHubManager:
                 self._run_hub_cycle(user)
             except TopStepXApiError as exc:
                 logger.error('TopStep hub user_id=%s: %s', user_id, exc)
-                if exc.error_code == 'session_expired':
+                if is_session_expired_error(exc):
                     integration = get_user_quotes_integration(user)
                     if integration is not None:
                         clear_session_token(integration)
@@ -210,7 +215,24 @@ class MarketQuotesHubManager:
                 error_code='topstep_api_paused',
             )
 
-        token = login_quotes_session_for_user(user)
+        integration = get_user_quotes_integration(user)
+
+        def _run_with_token(active_token: str) -> None:
+            self._run_hub_cycle_with_token(user, active_token, integration=integration)
+
+        if integration is not None:
+            call_with_valid_session_token(integration, _run_with_token)
+        else:
+            _run_with_token(login_quotes_session_for_user(user))
+
+    def _run_hub_cycle_with_token(
+        self,
+        user,
+        token: str,
+        *,
+        integration,
+    ) -> None:
+        user_id = user.id
         client = TopStepXApiClient()
 
         with self._global_lock:
@@ -252,7 +274,6 @@ class MarketQuotesHubManager:
             _contracts_summary(contracts),
         )
 
-        integration = get_user_quotes_integration(user)
         token_factory = None
         if integration is not None:
             token_factory = lambda integ=integration: get_valid_session_token(integ)

@@ -269,6 +269,17 @@ class TopStepXMarketHubRunner:
                 f'Connexion Market Hub TopStepX impossible (HTTP {exc.code}).',
                 error_code='market_hub_start_failed',
             ) from exc
+        except Exception as exc:
+            if '401' in str(exc):
+                logger.warning(
+                    'Market Hub handshake 401 user_id=%s',
+                    self.user_id,
+                )
+                raise TopStepXApiError(
+                    'Session TopStep expirée ou invalide (Market Hub).',
+                    error_code='session_expired',
+                ) from exc
+            raise
         if not started:
             logger.warning('Market Hub TopStepX start() a échoué user_id=%s', self.user_id)
             raise TopStepXApiError(

@@ -1,4 +1,6 @@
 """Tests client TopStepX search_orders."""
+import io
+import urllib.error
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
@@ -39,3 +41,17 @@ class TopStepXOrderSearchTests(TestCase):
                     704,
                     datetime(2025, 7, 18, tzinfo=timezone.utc),
                 )
+
+    def test_http_401_maps_to_session_expired(self) -> None:
+        client = TopStepXApiClient(base_url='https://api.example.com')
+        err = urllib.error.HTTPError(
+            url='https://api.example.com/api/Contract/available',
+            code=401,
+            msg='Unauthorized',
+            hdrs={},
+            fp=io.BytesIO(b''),
+        )
+        with patch('urllib.request.urlopen', side_effect=err):
+            with self.assertRaises(TopStepXApiError) as ctx:
+                client._request_json('POST', '/api/Contract/available', auth_token='bad')
+        self.assertEqual(ctx.exception.error_code, 'session_expired')
