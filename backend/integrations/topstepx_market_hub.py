@@ -112,6 +112,21 @@ class TopStepXMarketHubRunner:
         if integration is not None and not integration.is_connected:
             apply_test_result(integration, True)
 
+    def _hub_url_with_access_token(self, token: str) -> str:
+        """URL conforme à la doc ProjectX : token JWT en query string."""
+        base = self.hub_url.split('?')[0].rstrip('/')
+        return f'{base}?access_token={token}'
+
+    def _subscribe_all_contracts(self) -> None:
+        if self._hub is None:
+            return
+        for contract in self.contracts:
+            try:
+                self._hub.send('SubscribeContractQuotes', [contract.contract_id])
+                logger.debug('Subscribed quotes %s user_id=%s', contract.contract_id, self.user_id)
+            except Exception:
+                logger.exception('Échec subscribe %s', contract.contract_id)
+
     def _on_rate_limited(self) -> None:
         self._rate_limit_count += 1
         logger.warning(
@@ -130,36 +145,36 @@ class TopStepXMarketHubRunner:
         apply_signalrcore_patches()
         set_rate_limited_callback(self._on_rate_limited)
         from signalrcore.hub_connection_builder import HubConnectionBuilder
+        from signalrcore.types import HttpTransportType
 
-        reconnect_intervals = getattr(
-            settings,
-            'MARKET_QUOTES_HUB_RECONNECT_INTERVALS',
-            [30, 60, 120, 300, 600],
-        )
+        token = self._resolve_access_token()
+        hub_url = self._hub_url_with_access_token(token)
 
+        # Doc officielle ProjectX : skipNegotiation + WebSockets + access_token en URL.
+        # Évite les POST /negotiate à chaque reconnexion (source fréquente de 429).
         hub = (
             HubConnectionBuilder()
             .with_url(
-                self.hub_url,
+                hub_url,
                 options={
                     'access_token_factory': self._resolve_access_token,
                     'verify_ssl': True,
+                    'skip_negotiation': True,
+                    'transport': HttpTransportType.web_sockets,
                 },
             )
             .configure_logging(logging.WARNING)
-            .with_automatic_reconnect(
-                {
-                    'type': 'interval',
-                    'keep_alive_interval': 15,
-                    'intervals': reconnect_intervals,
-                }
-            )
             .build()
         )
         hub.on('GatewayQuote', self._on_gateway_quote)
         hub.on_open(self._on_open)
         hub.on_close(self._on_close)
+        hub.on_reconnect(self._on_reconnect)
         return hub
+
+    def _on_reconnect(self) -> None:
+        logger.info('Market Hub TopStepX reconnecté user_id=%s, re-subscribe', self.user_id)
+        self._subscribe_all_contracts()
 
     def _resolve_contract_for_quote(
         self,
@@ -200,15 +215,9 @@ class TopStepXMarketHubRunner:
 
     def _on_open(self) -> None:
         logger.info('Market Hub TopStepX connecté user_id=%s', self.user_id)
+        self._rate_limit_count = 0
         self._mark_integration_connected()
-        if self._hub is None:
-            return
-        for contract in self.contracts:
-            try:
-                self._hub.send('SubscribeContractQuotes', [contract.contract_id])
-                logger.debug('Subscribed quotes %s user_id=%s', contract.contract_id, self.user_id)
-            except Exception:
-                logger.exception('Échec subscribe %s', contract.contract_id)
+        self._subscribe_all_contracts()
         snapshot = load_snapshot_with_connected(self.user_id, True)
         save_snapshot(snapshot, self.user_id)
         if self.on_connected:
@@ -216,10 +225,14 @@ class TopStepXMarketHubRunner:
 
     def _on_close(self) -> None:
         logger.warning('Market Hub TopStepX déconnecté user_id=%s', self.user_id)
-        # Pas de diffusion « disconnected » : reconnexion SignalR fréquente ; conserver
-        # les derniers cours évite le clignotement « en attente des cotations ».
         if self.on_disconnected:
             self.on_disconnected()
+        if not self._stop_event.is_set():
+            logger.info(
+                'Market Hub fermeture inattendue user_id=%s, fin du cycle (backoff manager)',
+                self.user_id,
+            )
+            self._stop_event.set()
 
     def start(self) -> None:
         existing = load_snapshot(self.user_id)

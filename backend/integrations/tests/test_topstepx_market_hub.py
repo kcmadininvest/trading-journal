@@ -168,6 +168,11 @@ class TopStepXMarketHubRunnerQuoteTests(TestCase):
         runner = self._runner()
         self.assertEqual(runner._resolve_access_token(), 'token')
 
+    def test_hub_url_with_access_token(self) -> None:
+        runner = self._runner()
+        url = runner._hub_url_with_access_token('abc123')
+        self.assertEqual(url, 'https://rtc.topstepx.com/hubs/market?access_token=abc123')
+
     @patch('integrations.topstepx_market_hub.update_quote_in_snapshot')
     def test_on_gateway_quote_resolves_contract_from_list_hint(self, mock_update) -> None:
         """Quote partiel sans champ contract : résolution via contract_id en tête de liste."""

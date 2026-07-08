@@ -268,6 +268,14 @@ class MarketQuotesHubManager:
                 self._users[user_id].runner = runner
         logger.info('Démarrage Market Hub user_id=%s (%d contrats)', user_id, len(contracts))
         runner.start()
+        rate_limit_hits = getattr(runner, '_rate_limit_count', 0)
+        if rate_limit_hits > 0:
+            logger.warning(
+                'Hub cycle user_id=%s terminé après %s rate limit(s), pause 120s',
+                user_id,
+                rate_limit_hits,
+            )
+            time.sleep(120)
 
     def _stop_user_hub(self, user_id: int, *, reason: str = 'unknown') -> None:
         with self._global_lock:

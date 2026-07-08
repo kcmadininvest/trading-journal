@@ -48,7 +48,7 @@ class SignalrcorePatchesTests(SimpleTestCase):
     @patch('integrations.topstepx_market_hub.apply_signalrcore_patches')
     @patch('integrations.topstepx_market_hub.set_rate_limited_callback')
     @patch('signalrcore.hub_connection_builder.HubConnectionBuilder')
-    def test_build_hub_uses_interval_reconnect(
+    def test_build_hub_uses_projectx_connection_options(
         self,
         mock_builder_cls,
         mock_set_callback,
@@ -56,12 +56,12 @@ class SignalrcorePatchesTests(SimpleTestCase):
     ) -> None:
         from integrations.market_quotes_config import ResolvedMarketContract
         from integrations.topstepx_market_hub import TopStepXMarketHubRunner
+        from signalrcore.types import HttpTransportType
 
         mock_builder = MagicMock()
         mock_builder_cls.return_value = mock_builder
         mock_builder.with_url.return_value = mock_builder
         mock_builder.configure_logging.return_value = mock_builder
-        mock_builder.with_automatic_reconnect.return_value = mock_builder
         mock_builder.build.return_value = MagicMock()
 
         contracts = [
@@ -74,14 +74,17 @@ class SignalrcorePatchesTests(SimpleTestCase):
                 name='NQ',
             ),
         ]
-        runner = TopStepXMarketHubRunner(user_id=1, auth_token='token', contracts=contracts)
+        runner = TopStepXMarketHubRunner(user_id=1, auth_token='jwt-token', contracts=contracts)
         runner._build_hub()
 
         mock_apply_patches.assert_called_once()
         mock_set_callback.assert_called_once_with(runner._on_rate_limited)
-        reconnect_args = mock_builder.with_automatic_reconnect.call_args[0][0]
-        self.assertEqual(reconnect_args['type'], 'interval')
-        self.assertEqual(reconnect_args['intervals'], [30, 60, 120, 300, 600])
+        url_args, url_kwargs = mock_builder.with_url.call_args
+        self.assertIn('access_token=jwt-token', url_args[0])
+        options = url_kwargs.get('options') or url_args[1]
+        self.assertTrue(options['skip_negotiation'])
+        self.assertEqual(options['transport'], HttpTransportType.web_sockets)
+        mock_builder.with_automatic_reconnect.assert_not_called()
 
     def test_rate_limited_stops_runner_after_three_hits(self) -> None:
         from integrations.market_quotes_config import ResolvedMarketContract
