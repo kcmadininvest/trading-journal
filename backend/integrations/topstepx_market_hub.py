@@ -20,6 +20,7 @@ from integrations.market_quotes_service import (
     update_quote_in_snapshot,
     user_has_quotes_credentials,
 )
+from integrations.signalrcore_patches import apply_signalrcore_patches, set_rate_limited_callback
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 from integrations.topstepx_auth import get_valid_session_token
 from integrations.services import apply_test_result
@@ -91,6 +92,7 @@ class TopStepXMarketHubRunner:
         self._symbol_to_key: dict[str, str] = {
             c.symbol_id.upper(): c.key for c in contracts
         }
+        self._rate_limit_count = 0
 
     def _resolve_access_token(self) -> str:
         if self._token_factory is not None:
@@ -110,8 +112,30 @@ class TopStepXMarketHubRunner:
         if integration is not None and not integration.is_connected:
             apply_test_result(integration, True)
 
+    def _on_rate_limited(self) -> None:
+        self._rate_limit_count += 1
+        logger.warning(
+            'Market Hub TopStepX rate limited (429) user_id=%s tentative=%s',
+            self.user_id,
+            self._rate_limit_count,
+        )
+        if self._rate_limit_count >= 3:
+            logger.warning(
+                'Market Hub TopStepX arrêt après rate limit répété user_id=%s',
+                self.user_id,
+            )
+            self._stop_event.set()
+
     def _build_hub(self) -> Any:
+        apply_signalrcore_patches()
+        set_rate_limited_callback(self._on_rate_limited)
         from signalrcore.hub_connection_builder import HubConnectionBuilder
+
+        reconnect_intervals = getattr(
+            settings,
+            'MARKET_QUOTES_HUB_RECONNECT_INTERVALS',
+            [30, 60, 120, 300, 600],
+        )
 
         hub = (
             HubConnectionBuilder()
@@ -125,10 +149,9 @@ class TopStepXMarketHubRunner:
             .configure_logging(logging.WARNING)
             .with_automatic_reconnect(
                 {
-                    'type': 'raw',
-                    'keep_alive_interval': 10,
-                    'reconnect_interval': 5,
-                    'max_attempts': 0,
+                    'type': 'interval',
+                    'keep_alive_interval': 15,
+                    'intervals': reconnect_intervals,
                 }
             )
             .build()
@@ -244,6 +267,7 @@ class TopStepXMarketHubRunner:
 
     def stop(self, *, reason: str = 'unknown') -> None:
         logger.info('Arrêt Market Hub user_id=%s raison=%s', self.user_id, reason)
+        set_rate_limited_callback(None)
         self._stop_event.set()
         if self._hub is not None:
             try:

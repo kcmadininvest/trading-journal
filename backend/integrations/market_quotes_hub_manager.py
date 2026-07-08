@@ -178,7 +178,8 @@ class MarketQuotesHubManager:
                     build_empty_snapshot(connected=False, message=str(exc.error_code or 'api_error')),
                     user_id,
                 )
-                time.sleep(30)
+                sleep_seconds = 120 if exc.error_code == 'market_hub_rate_limited' else 30
+                time.sleep(sleep_seconds)
             except Exception:
                 logger.exception('Hub cycle user_id=%s', user_id)
                 save_snapshot(build_empty_snapshot(connected=False, message='hub_error'), user_id)

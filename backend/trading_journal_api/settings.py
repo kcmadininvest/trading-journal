@@ -305,9 +305,17 @@ MARKET_QUOTES_WS_DEBOUNCE_MS = config('MARKET_QUOTES_WS_DEBOUNCE_MS', default=30
 MARKET_QUOTES_HUB_IDLE_TTL_SECONDS = config('MARKET_QUOTES_HUB_IDLE_TTL_SECONDS', default=180, cast=int)
 MARKET_QUOTES_HUB_CYCLE_BACKOFF_SECONDS = config(
     'MARKET_QUOTES_HUB_CYCLE_BACKOFF_SECONDS',
-    default=5,
+    default=30,
     cast=int,
 )
+MARKET_QUOTES_HUB_RECONNECT_INTERVALS = [
+    int(value.strip())
+    for value in config(
+        'MARKET_QUOTES_HUB_RECONNECT_INTERVALS',
+        default='30,60,120,300,600',
+    ).split(',')
+    if value.strip()
+]
 MARKET_QUOTES_WS_INACTIVE_DEBOUNCE_SECONDS = config(
     'MARKET_QUOTES_WS_INACTIVE_DEBOUNCE_SECONDS',
     default=5,
