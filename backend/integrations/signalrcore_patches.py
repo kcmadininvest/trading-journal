@@ -33,6 +33,16 @@ def apply_signalrcore_patches() -> None:
 
     WebsocketTransport.__init__ = _patched_ws_init
 
+    _orig_evaluate = WebsocketTransport.evaluate_handshake
+
+    def _patched_evaluate_handshake(self, message):
+        messages = _orig_evaluate(self, message)
+        if self.handshake_received and not self.connection_checker.running:
+            self.connection_checker.start()
+        return messages
+
+    WebsocketTransport.evaluate_handshake = _patched_evaluate_handshake
+
     _orig_deferred = BaseTransport.deferred_reconnect
 
     def _patched_deferred_reconnect(self, sleep_time):

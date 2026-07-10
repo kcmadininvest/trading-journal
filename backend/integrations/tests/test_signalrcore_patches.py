@@ -17,6 +17,24 @@ class SignalrcorePatchesTests(SimpleTestCase):
         transport = WebsocketTransport(keep_alive_interval=15)
         self.assertFalse(transport.connection_alive)
 
+    def test_evaluate_handshake_starts_keepalive_without_reconnect_handler(self) -> None:
+        apply_signalrcore_patches()
+        from signalrcore.transport.websockets.websocket_transport import WebsocketTransport
+        from unittest.mock import MagicMock
+
+        transport = WebsocketTransport(keep_alive_interval=15)
+        transport.logger = MagicMock()
+        transport.reconnection_handler = None
+        transport._set_state = MagicMock()
+        transport.protocol = MagicMock()
+        transport.protocol.decode_handshake.return_value = (MagicMock(error=''), [])
+        transport.connection_checker = MagicMock()
+        transport.connection_checker.running = False
+
+        transport.evaluate_handshake('{}')
+
+        transport.connection_checker.start.assert_called_once()
+
     def test_handle_reconnect_backoff_on_429(self) -> None:
         apply_signalrcore_patches()
         from signalrcore.transport.base_transport import BaseTransport, TransportState
@@ -84,6 +102,7 @@ class SignalrcorePatchesTests(SimpleTestCase):
         options = url_kwargs.get('options') or url_args[1]
         self.assertTrue(options['skip_negotiation'])
         self.assertEqual(options['transport'], HttpTransportType.web_sockets)
+        self.assertNotIn('access_token_factory', options)
         mock_builder.with_automatic_reconnect.assert_not_called()
 
     def test_rate_limited_stops_runner_after_three_hits(self) -> None:

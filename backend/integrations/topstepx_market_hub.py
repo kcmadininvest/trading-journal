@@ -93,6 +93,8 @@ class TopStepXMarketHubRunner:
             c.symbol_id.upper(): c.key for c in contracts
         }
         self._rate_limit_count = 0
+        self._reconnect_attempt = 0
+        self._subscribe_timer: threading.Timer | None = None
 
     def _resolve_access_token(self) -> str:
         if self._token_factory is not None:
@@ -117,15 +119,59 @@ class TopStepXMarketHubRunner:
         base = self.hub_url.split('?')[0].rstrip('/')
         return f'{base}?access_token={token}'
 
-    def _subscribe_all_contracts(self) -> None:
+    def _cancel_subscribe_timer(self) -> None:
+        if self._subscribe_timer is not None:
+            self._subscribe_timer.cancel()
+            self._subscribe_timer = None
+
+    def _hub_is_connected(self) -> bool:
         if self._hub is None:
+            return False
+        transport = getattr(self._hub, 'transport', None)
+        return transport is not None and transport.is_connected()
+
+    def _subscribe_all_contracts(self) -> None:
+        if not self._hub_is_connected():
             return
         for contract in self.contracts:
             try:
                 self._hub.send('SubscribeContractQuotes', [contract.contract_id])
-                logger.debug('Subscribed quotes %s user_id=%s', contract.contract_id, self.user_id)
+                logger.info(
+                    'SubscribeContractQuotes %s user_id=%s',
+                    contract.contract_id,
+                    self.user_id,
+                )
             except Exception:
-                logger.exception('Échec subscribe %s', contract.contract_id)
+                logger.exception(
+                    'Échec subscribe %s user_id=%s',
+                    contract.contract_id,
+                    self.user_id,
+                )
+
+    def _schedule_subscribe_after_open(self) -> None:
+        """Subscribe après le handshake complet (évite invoke pendant l'ouverture WS)."""
+        self._cancel_subscribe_timer()
+
+        def _run() -> None:
+            self._subscribe_timer = None
+            if self._stop_event.is_set() or not self._hub_is_connected():
+                return
+            self._subscribe_all_contracts()
+            snapshot = load_snapshot_with_connected(self.user_id, True)
+            save_snapshot(snapshot, self.user_id)
+
+        self._subscribe_timer = threading.Timer(0.25, _run)
+        self._subscribe_timer.daemon = True
+        self._subscribe_timer.start()
+
+    def _on_hub_error(self, error: Any) -> None:
+        error_text = getattr(error, 'error', None) or str(error)
+        if error_text:
+            logger.warning(
+                'Market Hub erreur SignalR user_id=%s: %s',
+                self.user_id,
+                error_text,
+            )
 
     def _on_rate_limited(self) -> None:
         self._rate_limit_count += 1
@@ -150,14 +196,13 @@ class TopStepXMarketHubRunner:
         token = self._resolve_access_token()
         hub_url = self._hub_url_with_access_token(token)
 
-        # Doc officielle ProjectX : skipNegotiation + WebSockets + access_token en URL.
-        # Évite les POST /negotiate à chaque reconnexion (source fréquente de 429).
+        # Doc ProjectX : token JWT uniquement en query string (pas de header Authorization
+        # sur le WebSocket — access_token_factory activerait AuthHubConnection).
         hub = (
             HubConnectionBuilder()
             .with_url(
                 hub_url,
                 options={
-                    'access_token_factory': self._resolve_access_token,
                     'verify_ssl': True,
                     'skip_negotiation': True,
                     'transport': HttpTransportType.web_sockets,
@@ -169,6 +214,7 @@ class TopStepXMarketHubRunner:
         hub.on('GatewayQuote', self._on_gateway_quote)
         hub.on_open(self._on_open)
         hub.on_close(self._on_close)
+        hub.on_error(self._on_hub_error)
         hub.on_reconnect(self._on_reconnect)
         return hub
 
@@ -216,42 +262,45 @@ class TopStepXMarketHubRunner:
     def _on_open(self) -> None:
         logger.info('Market Hub TopStepX connecté user_id=%s', self.user_id)
         self._rate_limit_count = 0
+        self._reconnect_attempt = 0
         self._mark_integration_connected()
-        self._subscribe_all_contracts()
-        snapshot = load_snapshot_with_connected(self.user_id, True)
-        save_snapshot(snapshot, self.user_id)
+        self._schedule_subscribe_after_open()
         if self.on_connected:
             self.on_connected()
 
     def _on_close(self) -> None:
         logger.warning('Market Hub TopStepX déconnecté user_id=%s', self.user_id)
+        self._cancel_subscribe_timer()
         if self.on_disconnected:
             self.on_disconnected()
-        if not self._stop_event.is_set():
-            logger.info(
-                'Market Hub fermeture inattendue user_id=%s, fin du cycle (backoff manager)',
-                self.user_id,
-            )
-            self._stop_event.set()
 
-    def start(self) -> None:
-        existing = load_snapshot(self.user_id)
-        has_prices = any(
-            q.get('last_price_display') for q in (existing.get('quotes') or [])
+    def _reconnect_delay_seconds(self) -> int:
+        intervals = getattr(
+            settings,
+            'MARKET_QUOTES_HUB_RECONNECT_INTERVALS',
+            [30, 60, 120, 300, 600],
         )
-        if has_prices:
-            initial = existing
-            initial['connected'] = False
-            initial['message'] = 'connecting'
-        else:
-            initial = build_empty_snapshot(connected=False, message='connecting')
-        for contract in self.contracts:
-            for row in initial['quotes']:
-                if row['key'] == contract.key:
-                    row['contract_id'] = contract.contract_id
-                    row['label'] = contract.label
-        save_snapshot(initial, self.user_id)
+        if not intervals:
+            return 30
+        index = min(self._reconnect_attempt, len(intervals) - 1)
+        return int(intervals[index])
 
+    def _dispose_hub(self) -> None:
+        self._cancel_subscribe_timer()
+        if self._hub is None:
+            return
+        try:
+            for contract in self.contracts:
+                try:
+                    self._hub.send('UnsubscribeContractQuotes', [contract.contract_id])
+                except Exception:
+                    pass
+            self._hub.stop()
+        except Exception:
+            logger.exception('Erreur fermeture Market Hub user_id=%s', self.user_id)
+        self._hub = None
+
+    def _start_hub_once(self) -> None:
         self._hub = self._build_hub()
         try:
             started = self._hub.start()
@@ -286,24 +335,50 @@ class TopStepXMarketHubRunner:
                 'Connexion Market Hub TopStepX impossible.',
                 error_code='market_hub_start_failed',
             )
+
+    def start(self) -> None:
+        existing = load_snapshot(self.user_id)
+        has_prices = any(
+            q.get('last_price_display') for q in (existing.get('quotes') or [])
+        )
+        if has_prices:
+            initial = existing
+            initial['connected'] = False
+            initial['message'] = 'connecting'
+        else:
+            initial = build_empty_snapshot(connected=False, message='connecting')
+        for contract in self.contracts:
+            for row in initial['quotes']:
+                if row['key'] == contract.key:
+                    row['contract_id'] = contract.contract_id
+                    row['label'] = contract.label
+        save_snapshot(initial, self.user_id)
+
         while not self._stop_event.is_set():
-            time.sleep(1)
+            self._start_hub_once()
+            while not self._stop_event.is_set() and self._hub_is_connected():
+                time.sleep(1)
+            if self._stop_event.is_set():
+                break
+            self._dispose_hub()
+            delay = self._reconnect_delay_seconds()
+            self._reconnect_attempt += 1
+            logger.info(
+                'Market Hub reconnexion user_id=%s dans %ss (tentative %s)',
+                self.user_id,
+                delay,
+                self._reconnect_attempt,
+            )
+            if self._stop_event.wait(delay):
+                break
+
+        self._dispose_hub()
 
     def stop(self, *, reason: str = 'unknown') -> None:
         logger.info('Arrêt Market Hub user_id=%s raison=%s', self.user_id, reason)
         set_rate_limited_callback(None)
         self._stop_event.set()
-        if self._hub is not None:
-            try:
-                for contract in self.contracts:
-                    try:
-                        self._hub.send('UnsubscribeContractQuotes', [contract.contract_id])
-                    except Exception:
-                        pass
-                self._hub.stop()
-            except Exception:
-                logger.exception('Erreur arrêt Market Hub user_id=%s', self.user_id)
-            self._hub = None
+        self._dispose_hub()
         snapshot = load_snapshot(self.user_id)
         snapshot['connected'] = False
         if snapshot.get('message') == 'connecting':

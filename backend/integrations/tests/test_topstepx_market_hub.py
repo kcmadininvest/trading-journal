@@ -106,16 +106,17 @@ class TopStepXMarketHubRunnerQuoteTests(TestCase):
             ],
         }
         runner = self._runner()
-        runner._stop_event.set()
-        with patch.object(runner, '_build_hub') as mock_build:
-            mock_hub = mock_build.return_value
-            mock_hub.start.return_value = True
+        with patch.object(runner, '_start_hub_once') as mock_start_once:
+            def _start_and_stop() -> None:
+                runner._stop_event.set()
+
+            mock_start_once.side_effect = _start_and_stop
             runner.start()
         saved = mock_save.call_args[0][0]
         nasdaq = next(q for q in saved['quotes'] if q['key'] == 'nasdaq')
         self.assertEqual(nasdaq['last_price_display'], '30000')
         self.assertEqual(saved['message'], 'connecting')
-        mock_hub.start.assert_called_once()
+        mock_start_once.assert_called_once()
 
     @patch('integrations.topstepx_market_hub.save_snapshot')
     @patch('integrations.topstepx_market_hub.load_snapshot')
@@ -132,6 +133,32 @@ class TopStepXMarketHubRunnerQuoteTests(TestCase):
             with self.assertRaises(TopStepXApiError) as ctx:
                 runner.start()
         self.assertEqual(ctx.exception.error_code, 'market_hub_start_failed')
+
+    @patch('integrations.topstepx_market_hub.time.sleep')
+    @patch('integrations.topstepx_market_hub.save_snapshot')
+    @patch('integrations.topstepx_market_hub.load_snapshot')
+    def test_start_reconnects_after_disconnect(self, mock_load, mock_save, mock_sleep) -> None:
+        mock_load.return_value = {
+            'connected': False,
+            'message': None,
+            'quotes': [],
+        }
+        runner = self._runner()
+        poll_count = {'n': 0}
+
+        def _connected_side_effect() -> bool:
+            poll_count['n'] += 1
+            if poll_count['n'] == 1:
+                runner._stop_event.set()
+                return True
+            return False
+
+        with patch.object(runner, '_build_hub') as mock_build:
+            mock_hub = mock_build.return_value
+            mock_hub.start.return_value = True
+            with patch.object(runner, '_hub_is_connected', side_effect=_connected_side_effect):
+                runner.start()
+        mock_build.assert_called_once()
 
     @patch('integrations.topstepx_market_hub.save_snapshot')
     @patch('integrations.topstepx_market_hub.load_snapshot')
