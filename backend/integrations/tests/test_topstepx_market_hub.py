@@ -148,17 +148,40 @@ class TopStepXMarketHubRunnerQuoteTests(TestCase):
 
         def _connected_side_effect() -> bool:
             poll_count['n'] += 1
-            if poll_count['n'] == 1:
+            if poll_count['n'] > 1:
                 runner._stop_event.set()
-                return True
-            return False
+            return poll_count['n'] == 1
 
         with patch.object(runner, '_build_hub') as mock_build:
             mock_hub = mock_build.return_value
             mock_hub.start.return_value = True
-            with patch.object(runner, '_hub_is_connected', side_effect=_connected_side_effect):
-                runner.start()
+            with patch.object(runner, '_wait_for_hub_connection', return_value=True):
+                with patch.object(runner, '_hub_is_connected', side_effect=_connected_side_effect):
+                    runner.start()
         mock_build.assert_called_once()
+
+    @patch('integrations.topstepx_market_hub.time.sleep')
+    @patch('integrations.topstepx_market_hub.save_snapshot')
+    @patch('integrations.topstepx_market_hub.load_snapshot')
+    def test_start_waits_for_handshake_before_dispose(self, mock_load, mock_save, mock_sleep) -> None:
+        mock_load.return_value = {
+            'connected': False,
+            'message': None,
+            'quotes': [],
+        }
+        runner = self._runner()
+
+        def _wait_and_stop() -> bool:
+            runner._stop_event.set()
+            return True
+
+        with patch.object(runner, '_build_hub') as mock_build:
+            mock_hub = mock_build.return_value
+            mock_hub.start.return_value = True
+            with patch.object(runner, '_wait_for_hub_connection', side_effect=_wait_and_stop) as mock_wait:
+                with patch.object(runner, '_hub_is_connected', return_value=False):
+                    runner.start()
+        mock_wait.assert_called_once()
 
     @patch('integrations.topstepx_market_hub.save_snapshot')
     @patch('integrations.topstepx_market_hub.load_snapshot')

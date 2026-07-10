@@ -321,6 +321,11 @@ MARKET_QUOTES_WS_INACTIVE_DEBOUNCE_SECONDS = config(
     default=5,
     cast=int,
 )
+MARKET_QUOTES_HUB_HANDSHAKE_TIMEOUT_SECONDS = config(
+    'MARKET_QUOTES_HUB_HANDSHAKE_TIMEOUT_SECONDS',
+    default=30,
+    cast=int,
+)
 MARKET_QUOTES_CONTROL_REDIS_URL = config(
     'MARKET_QUOTES_CONTROL_REDIS_URL',
     default=config('CELERY_BROKER_URL', default='redis://localhost:6379/0'),

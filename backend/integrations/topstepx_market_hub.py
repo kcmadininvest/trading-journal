@@ -95,6 +95,7 @@ class TopStepXMarketHubRunner:
         self._rate_limit_count = 0
         self._reconnect_attempt = 0
         self._subscribe_timer: threading.Timer | None = None
+        self._connected_event = threading.Event()
 
     def _resolve_access_token(self) -> str:
         if self._token_factory is not None:
@@ -129,6 +130,17 @@ class TopStepXMarketHubRunner:
             return False
         transport = getattr(self._hub, 'transport', None)
         return transport is not None and transport.is_connected()
+
+    def _handshake_timeout_seconds(self) -> float:
+        return float(
+            getattr(settings, 'MARKET_QUOTES_HUB_HANDSHAKE_TIMEOUT_SECONDS', 30),
+        )
+
+    def _wait_for_hub_connection(self) -> bool:
+        """Attend le callback on_open (start SignalR est asynchrone)."""
+        if self._hub_is_connected():
+            return True
+        return self._connected_event.wait(self._handshake_timeout_seconds())
 
     def _subscribe_all_contracts(self) -> None:
         if not self._hub_is_connected():
@@ -261,6 +273,7 @@ class TopStepXMarketHubRunner:
 
     def _on_open(self) -> None:
         logger.info('Market Hub TopStepX connecté user_id=%s', self.user_id)
+        self._connected_event.set()
         self._rate_limit_count = 0
         self._reconnect_attempt = 0
         self._mark_integration_connected()
@@ -270,6 +283,7 @@ class TopStepXMarketHubRunner:
 
     def _on_close(self) -> None:
         logger.warning('Market Hub TopStepX déconnecté user_id=%s', self.user_id)
+        self._connected_event.clear()
         self._cancel_subscribe_timer()
         if self.on_disconnected:
             self.on_disconnected()
@@ -301,6 +315,7 @@ class TopStepXMarketHubRunner:
         self._hub = None
 
     def _start_hub_once(self) -> None:
+        self._connected_event.clear()
         self._hub = self._build_hub()
         try:
             started = self._hub.start()
@@ -356,10 +371,19 @@ class TopStepXMarketHubRunner:
 
         while not self._stop_event.is_set():
             self._start_hub_once()
-            while not self._stop_event.is_set() and self._hub_is_connected():
-                time.sleep(1)
-            if self._stop_event.is_set():
-                break
+            if not self._wait_for_hub_connection():
+                if self._stop_event.is_set():
+                    break
+                logger.warning(
+                    'Market Hub handshake timeout user_id=%s (pas de connexion en %ss)',
+                    self.user_id,
+                    self._handshake_timeout_seconds(),
+                )
+            else:
+                while not self._stop_event.is_set() and self._hub_is_connected():
+                    time.sleep(1)
+                if self._stop_event.is_set():
+                    break
             self._dispose_hub()
             delay = self._reconnect_delay_seconds()
             self._reconnect_attempt += 1
