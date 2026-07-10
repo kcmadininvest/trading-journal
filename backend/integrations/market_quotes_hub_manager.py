@@ -22,7 +22,6 @@ from integrations.market_quotes_service import (
     user_has_quotes_credentials,
 )
 from integrations.topstepx_auth import (
-    call_with_valid_session_token,
     clear_session_token,
     get_rtc_session_token_for_hub,
     get_valid_session_token,
@@ -204,16 +203,21 @@ class MarketQuotesHubManager:
         self._stop_user_hub(user_id, reason='thread_exit')
 
     def _run_hub_cycle(self, user) -> None:
-        user_id = user.id
         integration = get_user_quotes_integration(user)
 
-        def _run_with_token(active_token: str) -> None:
-            self._run_hub_cycle_with_token(user, active_token, integration=integration)
-
         if integration is not None:
-            call_with_valid_session_token(integration, _run_with_token)
+            logger.info(
+                'Market Hub loginKey user_id=%s (jeton RTC streaming)',
+                user.id,
+            )
+            token = get_rtc_session_token_for_hub(integration)
+            self._run_hub_cycle_with_token(user, token, integration=integration)
         else:
-            _run_with_token(login_quotes_session_for_user(user))
+            self._run_hub_cycle_with_token(
+                user,
+                login_quotes_session_for_user(user),
+                integration=None,
+            )
 
     def _run_hub_cycle_with_token(
         self,

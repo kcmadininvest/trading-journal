@@ -103,21 +103,20 @@ class TopStepXAuthTests(TestCase):
         mock_validate.assert_called_once_with('old-token')
         mock_login.assert_not_called()
 
-    @patch.object(TopStepXApiClient, 'validate_session')
     @patch.object(TopStepXApiClient, 'login_key')
-    def test_get_rtc_session_token_for_hub_prefers_validate(
+    def test_get_rtc_session_token_for_hub_uses_login_key(
         self,
         mock_login,
-        mock_validate,
     ) -> None:
-        mock_validate.return_value = TopStepXAuthResult(
-            token='rtc-validated',
+        mock_login.return_value = TopStepXAuthResult(
+            token='rtc-login-key',
             expires_at=timezone.now() + timedelta(hours=12),
         )
         token = get_rtc_session_token_for_hub(self.integration)
-        self.assertEqual(token, 'rtc-validated')
-        mock_validate.assert_called_once_with('stale-token')
-        mock_login.assert_not_called()
+        self.assertEqual(token, 'rtc-login-key')
+        mock_login.assert_called_once_with('trader', 'key-123')
+        self.integration.refresh_from_db()
+        self.assertTrue(self.integration.is_connected)
 
     @patch.object(TopStepXApiClient, 'login_key')
     def test_call_with_valid_session_token_retries_on_expired_session(self, mock_login) -> None:

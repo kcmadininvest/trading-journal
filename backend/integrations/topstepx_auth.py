@@ -167,21 +167,22 @@ def get_valid_session_token(integration: UserApiIntegration) -> str:
 
 def get_rtc_session_token_for_hub(integration: UserApiIntegration) -> str:
     """
-    Jeton pour le Market Hub RTC : privilégie validate_session pour éviter
-    loginKey inutile (chaque loginKey peut invalider une autre connexion RTC).
+    Jeton pour le Market Hub RTC.
+
+    Un loginKey frais est requis : validate_session / jeton cache REST suffit
+    pour sync et replay mais pas pour le streaming GatewayQuote (coupure ~150 ms).
     """
     secrets = _secrets_or_raise(integration)
-    session_token = secrets.get('session_token', '')
-    if session_token:
-        client = TopStepXApiClient()
-        try:
-            auth = client.validate_session(session_token)
-            refreshed = _persist_auth_result(integration, secrets, auth)
-            return refreshed
-        except TopStepXApiError as exc:
-            if not is_session_expired_error(exc):
-                raise
-    return get_valid_session_token(integration)
+    username = integration.external_username
+    api_key = secrets.get('api_key', '')
+    if not api_key or not username:
+        raise TopStepXApiError('Identifiants TopStepX incomplets.', error_code='missing_credentials')
+    return _login_new_session(
+        integration,
+        secrets,
+        username=username,
+        api_key=api_key,
+    )
 
 
 def get_ephemeral_login_token(integration: UserApiIntegration) -> str:
