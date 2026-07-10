@@ -13,6 +13,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from integrations.market_quotes_config import ResolvedMarketContract, resolve_market_quote_contracts
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
+from integrations.topstepx_auth import get_ephemeral_login_token, get_topstepx_integration
 from integrations.topstepx_market_hub import TopStepXMarketHubRunner, login_quotes_session_for_user
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,10 @@ class DiagnosticMarketHubRunner(TopStepXMarketHubRunner):
     def _subscribe_all_contracts(self) -> None:
         if not self._hub_is_connected():
             return
-        for contract in self.contracts:
+        interval = self._subscribe_interval_seconds()
+        for index, contract in enumerate(self.contracts):
+            if index > 0 and interval > 0:
+                time.sleep(interval)
             contract_id = contract.contract_id
             self._report.subscribe_sent.append(contract_id)
 
@@ -137,11 +141,18 @@ class Command(BaseCommand):
             help='Active les logs DEBUG signalrcore',
         )
 
+        parser.add_argument(
+            '--fresh-login',
+            action='store_true',
+            help='Utilise loginKey éphémère (sans écraser le jeton en base)',
+        )
+
     def handle(self, *args, **options) -> None:
         user_id = int(options['user_id'])
         hold_seconds = max(1, int(options['hold_seconds']))
         max_contracts = int(options['max_contracts'])
         verbose_signalr = bool(options['verbose_signalr'])
+        fresh_login = bool(options['fresh_login'])
 
         logging.getLogger('integrations.topstepx_market_hub').setLevel(logging.INFO)
         logging.getLogger('signalrcore').setLevel(
@@ -157,7 +168,14 @@ class Command(BaseCommand):
 
         self._step(3, 'Authentification REST TopStep (loginKey / session cache)')
         try:
-            token = login_quotes_session_for_user(user)
+            if fresh_login:
+                integration = get_topstepx_integration(user)
+                if integration is None:
+                    raise CommandError('Intégration TopStepX non configurée pour cet utilisateur.')
+                token = get_ephemeral_login_token(integration)
+                self.stdout.write(self.style.WARNING('  Mode --fresh-login (loginKey éphémère, non persisté)'))
+            else:
+                token = login_quotes_session_for_user(user)
         except TopStepXApiError as exc:
             raise CommandError(f'Authentification échouée: {exc}') from exc
         self.stdout.write(self.style.SUCCESS(f'  OK — jeton obtenu ({len(token)} caractères)'))
@@ -287,17 +305,25 @@ class Command(BaseCommand):
             f'({report.quotes_received} quote(s) reçue(s))',
         ))
 
-        if duration is not None and duration < 500 and not report.subscribe_acks:
-            self.stdout.write(self.style.WARNING(
-                '  Cause probable: subscribe trop tardif ou rejeté avant ack '
-                '(MARKET_QUOTES_HUB_SUBSCRIBE_DELAY_MS doit être 0).',
-            ))
-        elif duration is not None and duration < 500 and report.subscribe_sent and not report.quotes_received:
-            self.stdout.write(self.style.WARNING(
-                '  Cause probable: TopStep ferme après subscribe — vérifiez droits '
-                'cours temps réel, contrats invalides, ou session RTC concurrente '
-                '(plateforme TopStep ouverte).',
-            ))
+        if duration is not None and duration < 2000:
+            if report.subscribe_sent and not report.subscribe_acks and not report.subscribe_errors:
+                self.stdout.write(self.style.WARNING(
+                    '  Cause probable: TopStep ferme le WebSocket juste après subscribe, '
+                    'sans Completion ni CloseMessage (coupure brutale ~100–200 ms).',
+                ))
+                self.stdout.write(self.style.WARNING(
+                    '  Pistes: --max-contracts 1, --fresh-login, plateforme TopStep fermée, '
+                    'droits cours temps réel API (contacter le support TopStep).',
+                ))
+            elif not report.subscribe_sent:
+                self.stdout.write(self.style.WARNING(
+                    '  Cause probable: subscribe non envoyé '
+                    '(MARKET_QUOTES_HUB_SUBSCRIBE_DELAY_MS doit être 0).',
+                ))
+            elif report.subscribe_sent and not report.quotes_received:
+                self.stdout.write(self.style.WARNING(
+                    '  Subscribe envoyé mais aucune GatewayQuote reçue avant la coupure.',
+                ))
         elif report.quotes_received > 0:
             self.stdout.write(self.style.SUCCESS(
                 '  Des quotes ont été reçues avant la coupure — la connexion RTC fonctionne.',

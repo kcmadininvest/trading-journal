@@ -172,10 +172,17 @@ class TopStepXMarketHubRunner:
             return True
         return self._connected_event.wait(self._handshake_timeout_seconds())
 
+    def _subscribe_interval_seconds(self) -> float:
+        interval_ms = int(getattr(settings, 'MARKET_QUOTES_HUB_SUBSCRIBE_INTERVAL_MS', 50))
+        return max(0.0, interval_ms / 1000.0)
+
     def _subscribe_all_contracts(self) -> None:
         if not self._hub_is_connected():
             return
-        for contract in self.contracts:
+        interval = self._subscribe_interval_seconds()
+        for index, contract in enumerate(self.contracts):
+            if index > 0 and interval > 0:
+                time.sleep(interval)
             try:
                 self._hub.send('SubscribeContractQuotes', [contract.contract_id])
                 logger.info(

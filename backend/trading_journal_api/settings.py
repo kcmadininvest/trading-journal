@@ -331,6 +331,11 @@ MARKET_QUOTES_HUB_SUBSCRIBE_DELAY_MS = config(
     default=0,
     cast=int,
 )
+MARKET_QUOTES_HUB_SUBSCRIBE_INTERVAL_MS = config(
+    'MARKET_QUOTES_HUB_SUBSCRIBE_INTERVAL_MS',
+    default=50,
+    cast=int,
+)
 MARKET_QUOTES_CONTROL_REDIS_URL = config(
     'MARKET_QUOTES_CONTROL_REDIS_URL',
     default=config('CELERY_BROKER_URL', default='redis://localhost:6379/0'),

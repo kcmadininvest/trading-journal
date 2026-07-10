@@ -184,6 +184,18 @@ def get_rtc_session_token_for_hub(integration: UserApiIntegration) -> str:
     return get_valid_session_token(integration)
 
 
+def get_ephemeral_login_token(integration: UserApiIntegration) -> str:
+    """loginKey sans persistance (tests diagnostic isolés)."""
+    secrets = _secrets_or_raise(integration)
+    api_key = secrets.get('api_key', '')
+    username = integration.external_username
+    if not api_key or not username:
+        raise TopStepXApiError('Identifiants TopStepX incomplets.', error_code='missing_credentials')
+    client = TopStepXApiClient()
+    auth = client.login_key(username, api_key)
+    return auth.token
+
+
 def call_with_valid_session_token(
     integration: UserApiIntegration,
     callback: Callable[[str], T],
