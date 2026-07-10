@@ -24,6 +24,7 @@ from integrations.market_quotes_service import (
 from integrations.topstepx_auth import (
     call_with_valid_session_token,
     clear_session_token,
+    get_rtc_session_token_for_hub,
     get_valid_session_token,
     is_session_expired_error,
 )
@@ -265,7 +266,7 @@ class MarketQuotesHubManager:
 
         token_factory = None
         if integration is not None:
-            token_factory = lambda integ=integration: get_valid_session_token(integ)
+            token_factory = lambda integ=integration: get_rtc_session_token_for_hub(integ)
 
         runner = TopStepXMarketHubRunner(
             user_id=user_id,

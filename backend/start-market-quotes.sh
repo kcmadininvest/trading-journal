@@ -19,4 +19,10 @@ export MARKET_QUOTES_DATA_DIR="${MARKET_QUOTES_DATA_DIR:-/var/www/html/trading_j
 
 mkdir -p "$MPLCONFIGDIR" "$MARKET_QUOTES_DATA_DIR"
 
-exec python manage.py run_market_quotes_hub
+LOCK_FILE="${MARKET_QUOTES_DATA_DIR}/market-quotes-hub.lock"
+if ! command -v flock >/dev/null 2>&1; then
+  echo "flock introuvable (paquet util-linux) — requis pour un seul worker market-quotes" >&2
+  exit 1
+fi
+
+exec flock -n "$LOCK_FILE" python manage.py run_market_quotes_hub

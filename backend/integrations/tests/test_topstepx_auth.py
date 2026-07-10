@@ -11,6 +11,7 @@ from integrations.models import UserApiIntegration
 from integrations.topstepx_auth import (
     call_with_valid_session_token,
     clear_session_token,
+    get_rtc_session_token_for_hub,
     get_valid_session_token,
     is_session_expired_error,
 )
@@ -100,6 +101,22 @@ class TopStepXAuthTests(TestCase):
         token = get_valid_session_token(self.integration)
         self.assertEqual(token, 'validated-token')
         mock_validate.assert_called_once_with('old-token')
+        mock_login.assert_not_called()
+
+    @patch.object(TopStepXApiClient, 'validate_session')
+    @patch.object(TopStepXApiClient, 'login_key')
+    def test_get_rtc_session_token_for_hub_prefers_validate(
+        self,
+        mock_login,
+        mock_validate,
+    ) -> None:
+        mock_validate.return_value = TopStepXAuthResult(
+            token='rtc-validated',
+            expires_at=timezone.now() + timedelta(hours=12),
+        )
+        token = get_rtc_session_token_for_hub(self.integration)
+        self.assertEqual(token, 'rtc-validated')
+        mock_validate.assert_called_once_with('stale-token')
         mock_login.assert_not_called()
 
     @patch.object(TopStepXApiClient, 'login_key')

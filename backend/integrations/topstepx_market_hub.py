@@ -6,6 +6,7 @@ import threading
 import time
 from typing import Any, Callable
 from urllib.error import HTTPError
+from urllib.parse import urlencode
 
 from django.conf import settings
 
@@ -20,7 +21,7 @@ from integrations.market_quotes_service import (
     update_quote_in_snapshot,
     user_has_quotes_credentials,
 )
-from integrations.signalrcore_patches import apply_signalrcore_patches, set_rate_limited_callback
+from integrations.signalrcore_patches import apply_signalrcore_patches, set_hub_close_message_callback, set_rate_limited_callback
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 from integrations.topstepx_auth import get_valid_session_token
 from integrations.services import apply_test_result
@@ -96,6 +97,7 @@ class TopStepXMarketHubRunner:
         self._reconnect_attempt = 0
         self._subscribe_timer: threading.Timer | None = None
         self._connected_event = threading.Event()
+        self._connected_at: float | None = None
 
     def _resolve_access_token(self) -> str:
         if self._token_factory is not None:
@@ -118,7 +120,35 @@ class TopStepXMarketHubRunner:
     def _hub_url_with_access_token(self, token: str) -> str:
         """URL conforme à la doc ProjectX : token JWT en query string."""
         base = self.hub_url.split('?')[0].rstrip('/')
-        return f'{base}?access_token={token}'
+        return f'{base}?{urlencode({"access_token": token})}'
+
+    def _subscribe_delay_seconds(self) -> float:
+        delay_ms = int(getattr(settings, 'MARKET_QUOTES_HUB_SUBSCRIBE_DELAY_MS', 0))
+        return max(0.0, delay_ms / 1000.0)
+
+    def _subscribe_after_open(self) -> None:
+        """Subscribe dès on_open (handshake terminé). Doc ProjectX : invoke immédiat."""
+        if self._stop_event.is_set() or not self._hub_is_connected():
+            return
+        self._subscribe_all_contracts()
+        snapshot = load_snapshot_with_connected(self.user_id, True)
+        save_snapshot(snapshot, self.user_id)
+
+    def _schedule_subscribe_after_open(self) -> None:
+        """Subscribe après on_open ; délai 0 par défaut (TopStep ferme les connexions inactives)."""
+        self._cancel_subscribe_timer()
+        delay = self._subscribe_delay_seconds()
+        if delay <= 0:
+            self._subscribe_after_open()
+            return
+
+        def _run() -> None:
+            self._subscribe_timer = None
+            self._subscribe_after_open()
+
+        self._subscribe_timer = threading.Timer(delay, _run)
+        self._subscribe_timer.daemon = True
+        self._subscribe_timer.start()
 
     def _cancel_subscribe_timer(self) -> None:
         if self._subscribe_timer is not None:
@@ -160,28 +190,16 @@ class TopStepXMarketHubRunner:
                     self.user_id,
                 )
 
-    def _schedule_subscribe_after_open(self) -> None:
-        """Subscribe après le handshake complet (évite invoke pendant l'ouverture WS)."""
-        self._cancel_subscribe_timer()
-
-        def _run() -> None:
-            self._subscribe_timer = None
-            if self._stop_event.is_set() or not self._hub_is_connected():
-                return
-            self._subscribe_all_contracts()
-            snapshot = load_snapshot_with_connected(self.user_id, True)
-            save_snapshot(snapshot, self.user_id)
-
-        self._subscribe_timer = threading.Timer(0.25, _run)
-        self._subscribe_timer.daemon = True
-        self._subscribe_timer.start()
-
     def _on_hub_error(self, error: Any) -> None:
-        error_text = getattr(error, 'error', None) or str(error)
+        invocation_id = getattr(error, 'invocation_id', None)
+        error_text = getattr(error, 'error', None)
+        if not error_text:
+            error_text = str(error) if error else ''
         if error_text:
             logger.warning(
-                'Market Hub erreur SignalR user_id=%s: %s',
+                'Market Hub erreur SignalR user_id=%s invocationId=%s: %s',
                 self.user_id,
+                invocation_id or '-',
                 error_text,
             )
 
@@ -199,9 +217,22 @@ class TopStepXMarketHubRunner:
             )
             self._stop_event.set()
 
+    def _on_server_close_message(
+        self,
+        error_text: str | None,
+        allow_reconnect: bool | None,
+    ) -> None:
+        logger.warning(
+            'Market Hub CloseMessage TopStep user_id=%s error=%s allowReconnect=%s',
+            self.user_id,
+            error_text or '(aucune)',
+            allow_reconnect,
+        )
+
     def _build_hub(self) -> Any:
         apply_signalrcore_patches()
         set_rate_limited_callback(self._on_rate_limited)
+        set_hub_close_message_callback(self._on_server_close_message)
         from signalrcore.hub_connection_builder import HubConnectionBuilder
         from signalrcore.types import HttpTransportType
 
@@ -272,6 +303,7 @@ class TopStepXMarketHubRunner:
         update_quote_in_snapshot(quote, self.user_id)
 
     def _on_open(self) -> None:
+        self._connected_at = time.monotonic()
         logger.info('Market Hub TopStepX connecté user_id=%s', self.user_id)
         self._connected_event.set()
         self._rate_limit_count = 0
@@ -282,7 +314,22 @@ class TopStepXMarketHubRunner:
             self.on_connected()
 
     def _on_close(self) -> None:
-        logger.warning('Market Hub TopStepX déconnecté user_id=%s', self.user_id)
+        duration_ms: int | None = None
+        if self._connected_at is not None:
+            duration_ms = int((time.monotonic() - self._connected_at) * 1000)
+        self._connected_at = None
+        logger.warning(
+            'Market Hub TopStepX déconnecté user_id=%s%s',
+            self.user_id,
+            f' après {duration_ms}ms' if duration_ms is not None else '',
+        )
+        if duration_ms is not None and duration_ms < 2000:
+            logger.warning(
+                'Market Hub session courte user_id=%s — vérifiez qu’un seul worker '
+                'market-quotes tourne (ps aux | grep run_market_quotes_hub) et que la '
+                'plateforme TopStep n’est pas ouverte en parallèle (une session RTC).',
+                self.user_id,
+            )
         self._connected_event.clear()
         self._cancel_subscribe_timer()
         if self.on_disconnected:
@@ -401,6 +448,7 @@ class TopStepXMarketHubRunner:
     def stop(self, *, reason: str = 'unknown') -> None:
         logger.info('Arrêt Market Hub user_id=%s raison=%s', self.user_id, reason)
         set_rate_limited_callback(None)
+        set_hub_close_message_callback(None)
         self._stop_event.set()
         self._dispose_hub()
         snapshot = load_snapshot(self.user_id)

@@ -165,6 +165,25 @@ def get_valid_session_token(integration: UserApiIntegration) -> str:
     )
 
 
+def get_rtc_session_token_for_hub(integration: UserApiIntegration) -> str:
+    """
+    Jeton pour le Market Hub RTC : privilégie validate_session pour éviter
+    loginKey inutile (chaque loginKey peut invalider une autre connexion RTC).
+    """
+    secrets = _secrets_or_raise(integration)
+    session_token = secrets.get('session_token', '')
+    if session_token:
+        client = TopStepXApiClient()
+        try:
+            auth = client.validate_session(session_token)
+            refreshed = _persist_auth_result(integration, secrets, auth)
+            return refreshed
+        except TopStepXApiError as exc:
+            if not is_session_expired_error(exc):
+                raise
+    return get_valid_session_token(integration)
+
+
 def call_with_valid_session_token(
     integration: UserApiIntegration,
     callback: Callable[[str], T],

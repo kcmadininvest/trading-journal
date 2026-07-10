@@ -326,6 +326,11 @@ MARKET_QUOTES_HUB_HANDSHAKE_TIMEOUT_SECONDS = config(
     default=30,
     cast=int,
 )
+MARKET_QUOTES_HUB_SUBSCRIBE_DELAY_MS = config(
+    'MARKET_QUOTES_HUB_SUBSCRIBE_DELAY_MS',
+    default=0,
+    cast=int,
+)
 MARKET_QUOTES_CONTROL_REDIS_URL = config(
     'MARKET_QUOTES_CONTROL_REDIS_URL',
     default=config('CELERY_BROKER_URL', default='redis://localhost:6379/0'),

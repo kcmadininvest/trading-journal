@@ -8,11 +8,19 @@ logger = logging.getLogger(__name__)
 
 _PATCHED = False
 _on_rate_limited: Callable[[], None] | None = None
+_on_hub_close_message: Callable[[str | None, bool | None], None] | None = None
 
 
 def set_rate_limited_callback(callback: Callable[[], None] | None) -> None:
     global _on_rate_limited
     _on_rate_limited = callback
+
+
+def set_hub_close_message_callback(
+    callback: Callable[[str | None, bool | None], None] | None,
+) -> None:
+    global _on_hub_close_message
+    _on_hub_close_message = callback
 
 
 def apply_signalrcore_patches() -> None:
@@ -90,3 +98,40 @@ def apply_signalrcore_patches() -> None:
         return True
 
     BaseTransport.handle_reconnect = _patched_handle_reconnect
+
+    from signalrcore.hub.base_hub_connection import BaseHubConnection
+
+    _orig_close_message = BaseHubConnection._BaseHubConnection__on_close_message
+
+    def _patched_on_close_message(self, message) -> None:
+        error_text = getattr(message, 'error', None)
+        allow_reconnect = getattr(message, 'allow_reconnect', None)
+        if error_text or allow_reconnect is not None:
+            if _on_hub_close_message is not None:
+                try:
+                    _on_hub_close_message(error_text, allow_reconnect)
+                except Exception:
+                    logger.exception('Callback CloseMessage signalrcore en échec')
+            else:
+                logger.warning(
+                    'SignalR CloseMessage serveur: %s (allowReconnect=%s)',
+                    error_text or '(aucune)',
+                    allow_reconnect,
+                )
+        return _orig_close_message(self, message)
+
+    BaseHubConnection._BaseHubConnection__on_close_message = _patched_on_close_message
+
+    _orig_completion = BaseHubConnection._BaseHubConnection__on_completion_message
+
+    def _patched_on_completion_message(self, message) -> None:
+        error_text = getattr(message, 'error', None)
+        if error_text:
+            logger.warning(
+                'SignalR Completion erreur invocationId=%s: %s',
+                getattr(message, 'invocation_id', '-'),
+                error_text,
+            )
+        return _orig_completion(self, message)
+
+    BaseHubConnection._BaseHubConnection__on_completion_message = _patched_on_completion_message
