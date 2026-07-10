@@ -9,7 +9,6 @@ import { Tooltip } from '../components/ui';
 import { downloadStrategyPdf, printStrategy } from '../utils/pdfGenerator';
 import { ImageUpload } from '../components/ui/ImageUpload';
 import { screenshotsService } from '../services/screenshots';
-import { TopStepApiToolbarButton } from '../components/integrations/TopStepApiToolbarButton';
 import {
   DndContext,
   closestCenter,
@@ -1373,7 +1372,7 @@ const PositionStrategiesPage: React.FC = () => {
                                     </svg>
                                   </button>
                                 </Tooltip>
-                                <TopStepApiToolbarButton tooltipPosition="top" size="card" />
+
                               </div>
                               
                               {/* Menu dropdown pour actions supplémentaires */}
@@ -1599,7 +1598,7 @@ const PositionStrategiesPage: React.FC = () => {
                         </svg>
                       </button>
                     </Tooltip>
-                    <TopStepApiToolbarButton tooltipPosition="top" size="card" />
+
                   </div>
                   
                   {/* Menu dropdown pour actions supplémentaires */}
@@ -2180,7 +2179,7 @@ const PositionStrategiesPage: React.FC = () => {
                       </svg>
                     </button>
                   </Tooltip>
-                  <TopStepApiToolbarButton tooltipPosition="bottom" size="modal" />
+
                   <button
                     onClick={handleCloseViewModal}
                     className="w-8 h-8 rounded-lg text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center transition-colors"

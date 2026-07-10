@@ -29,7 +29,6 @@ from integrations.topstepx_auth import (
 )
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 from integrations.topstepx_market_hub import TopStepXMarketHubRunner, login_quotes_session_for_user
-from integrations.topstep_api_pause import is_topstep_api_paused
 
 logger = logging.getLogger(__name__)
 
@@ -205,16 +204,6 @@ class MarketQuotesHubManager:
 
     def _run_hub_cycle(self, user) -> None:
         user_id = user.id
-        if is_topstep_api_paused(user):
-            save_snapshot(
-                build_empty_snapshot(connected=False, message='topstep_api_paused'),
-                user_id,
-            )
-            raise TopStepXApiError(
-                'API TopStep en pause.',
-                error_code='topstep_api_paused',
-            )
-
         integration = get_user_quotes_integration(user)
 
         def _run_with_token(active_token: str) -> None:

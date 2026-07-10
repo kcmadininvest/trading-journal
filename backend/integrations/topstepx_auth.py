@@ -15,7 +15,6 @@ from integrations.credentials_crypto import (
     encrypt_json,
 )
 from integrations.models import UserApiIntegration
-from integrations.topstep_api_pause import assert_topstep_api_allowed
 from integrations.services import apply_test_result
 from integrations.topstepx_client import TopStepXApiClient, TopStepXApiError
 
@@ -106,7 +105,6 @@ def _login_new_session(
     username: str,
     api_key: str,
 ) -> str:
-    assert_topstep_api_allowed(integration.user)
     client = TopStepXApiClient()
     auth = client.login_key(username, api_key)
     return _persist_auth_result(integration, secrets, auth)
@@ -138,7 +136,6 @@ def _refresh_expired_session(
 
 
 def get_valid_session_token(integration: UserApiIntegration) -> str:
-    assert_topstep_api_allowed(integration.user)
     secrets = _secrets_or_raise(integration)
     api_key = secrets.get('api_key', '')
     session_token = secrets.get('session_token', '')

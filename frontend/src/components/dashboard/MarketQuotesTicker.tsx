@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMarketQuotes } from '../../hooks/useMarketQuotes';
 import { usePreferences } from '../../hooks/usePreferences';
-import { useTopStepApiPaused } from '../../hooks/useTopStepApiPaused';
 import integrationsService from '../../services/integrationsService';
 import type { MarketQuoteItem } from '../../services/marketQuotes';
 import { getPriceFlashDirection, type PriceFlashDirection } from '../../utils/marketQuoteFlash';
@@ -10,7 +9,6 @@ import {
   formatMarketQuoteChangePercent,
   formatMarketQuotePrice,
 } from '../../utils/marketQuotesFormat';
-import ConfirmModal from '../ui/ConfirmModal';
 import { MarketQuoteInstrumentIcon } from './marketQuoteIcons';
 import { quoteIconContainerClass } from './quoteIconContainerClass';
 import { TickerShell } from './tickerShell';
@@ -56,46 +54,6 @@ function LiveStatus({ live }: { live: boolean }) {
   );
 }
 
-function TopStepApiBandeauButton({
-  paused,
-  marketQuotesEnabled,
-  saving,
-  onActivate,
-  onPause,
-}: {
-  paused: boolean;
-  marketQuotesEnabled: boolean;
-  saving: boolean;
-  onActivate: () => void;
-  onPause: () => void;
-}) {
-  const { t } = useTranslation();
-
-  if (paused || !marketQuotesEnabled) {
-    return (
-      <button
-        type="button"
-        onClick={onActivate}
-        disabled={saving}
-        className="shrink-0 rounded-full border border-teal-400/40 bg-teal-500/15 px-3 py-1 text-xs font-semibold text-teal-300 transition hover:bg-teal-500/25 disabled:opacity-50 sm:text-sm"
-      >
-        {t('dashboard:marketQuotes.activateLive')}
-      </button>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={onPause}
-      disabled={saving}
-      className="shrink-0 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/70 transition hover:bg-white/10 disabled:opacity-50 sm:text-sm"
-    >
-      {t('dashboard:marketQuotes.pauseApi')}
-    </button>
-  );
-}
-
 function QuoteRow({
   quote,
   numberFormat,
@@ -106,7 +64,7 @@ function QuoteRow({
   showSeparator: boolean;
 }) {
   const { t } = useTranslation();
-  const prevPriceRef = React.useRef<number | null | undefined>(undefined);
+  const prevPriceRef = useRef<number | null | undefined>(undefined);
   const [flash, setFlash] = useState<PriceFlashDirection>(null);
 
   useEffect(() => {
@@ -163,33 +121,11 @@ function QuoteRow({
 
 function StatusContent({
   message,
-  detail,
   pulse,
 }: {
   message: string;
-  detail?: string;
   pulse: boolean;
 }) {
-  if (detail) {
-    return (
-      <span
-        className={`text-center text-sm text-white/80 ${pulse ? 'animate-pulse' : ''}`}
-        role="status"
-        aria-live="polite"
-      >
-        <span className="flex flex-col items-center justify-center gap-0.5 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-2">
-          <span className="whitespace-nowrap font-medium text-white/90">{message}</span>
-          <span className="hidden text-white/30 sm:inline" aria-hidden>
-            ·
-          </span>
-          <span className="max-w-xs text-center text-xs leading-snug text-white/60 max-sm:whitespace-normal sm:max-w-none sm:whitespace-nowrap">
-            {detail}
-          </span>
-        </span>
-      </span>
-    );
-  }
-
   return (
     <span
       className={`whitespace-nowrap text-center text-sm text-white/80 ${pulse ? 'animate-pulse' : ''}`}
@@ -204,11 +140,7 @@ function StatusContent({
 export const MarketQuotesTicker: React.FC = () => {
   const { t } = useTranslation();
   const { preferences } = usePreferences();
-  const { paused, marketQuotesEnabled, saving, activateLiveApi, pauseApi, setPaused } =
-    useTopStepApiPaused();
   const [topStepConfigured, setTopStepConfigured] = useState<boolean | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmLoading, setConfirmLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -230,10 +162,7 @@ export const MarketQuotesTicker: React.FC = () => {
     };
   }, []);
 
-  const quotesActive = Boolean(
-    topStepConfigured && !paused && marketQuotesEnabled,
-  );
-  const { snapshot, loading, wsConnected } = useMarketQuotes(quotesActive);
+  const { snapshot, loading, wsConnected } = useMarketQuotes(topStepConfigured === true);
   const numberFormat = preferences.number_format;
 
   const quotes = useMemo(
@@ -246,103 +175,44 @@ export const MarketQuotesTicker: React.FC = () => {
 
   const statusMessage = useMemo(() => {
     if (topStepConfigured === false) {
-      return { message: t('dashboard:marketQuotes.missing_credentials') };
-    }
-    if (paused) {
-      return {
-        message: t('dashboard:marketQuotes.topstep_api_paused_title'),
-        detail: t('dashboard:marketQuotes.topstep_api_paused_reason'),
-      };
-    }
-    if (!marketQuotesEnabled) {
-      return { message: t('dashboard:marketQuotes.quotesDisabled') };
+      return t('dashboard:marketQuotes.missing_credentials');
     }
     if (hasPrices) {
       return null;
     }
     const message = snapshot?.message;
     if (loading && !snapshot) {
-      return { message: t('dashboard:marketQuotes.loading') };
+      return t('dashboard:marketQuotes.loading');
     }
     if (message === 'connecting') {
-      return { message: t('dashboard:marketQuotes.connecting') };
-    }
-    if (message === 'topstep_api_paused') {
-      return {
-        message: t('dashboard:marketQuotes.topstep_api_paused_title'),
-        detail: t('dashboard:marketQuotes.topstep_api_paused_reason'),
-      };
+      return t('dashboard:marketQuotes.connecting');
     }
     if (message != null && FATAL_MESSAGES.has(message)) {
-      return {
-        message: t(`dashboard:marketQuotes.${message}`, {
-          defaultValue: t('dashboard:marketQuotes.unavailable'),
-        }),
-      };
+      return t(`dashboard:marketQuotes.${message}`, {
+        defaultValue: t('dashboard:marketQuotes.unavailable'),
+      });
     }
     if (snapshot?.connected) {
-      return { message: t('dashboard:marketQuotes.awaitingQuotes') };
+      return t('dashboard:marketQuotes.awaitingQuotes');
     }
-    return { message: t('dashboard:marketQuotes.unavailable') };
-  }, [hasPrices, loading, marketQuotesEnabled, paused, snapshot, t, topStepConfigured]);
+    return t('dashboard:marketQuotes.unavailable');
+  }, [hasPrices, loading, snapshot, t, topStepConfigured]);
 
   const statusPulse =
-    quotesActive && ((loading && !snapshot) || snapshot?.message === 'connecting');
+    (loading && !snapshot) || snapshot?.message === 'connecting';
 
   const isLive = hasPrices && (snapshot?.connected === true || wsConnected);
-
-  const handleActivateClick = () => {
-    setConfirmOpen(true);
-  };
-
-  const handleConfirmActivate = async () => {
-    setConfirmLoading(true);
-    try {
-      if (paused) {
-        await activateLiveApi();
-      } else {
-        await setPaused(false, { market_quotes_enabled: true });
-      }
-      setConfirmOpen(false);
-    } finally {
-      setConfirmLoading(false);
-    }
-  };
-
-  const showApiControls = topStepConfigured === true;
 
   const tickerContent = statusMessage ? (
     <div className={TICKER_ROW_CLASS}>
       <LiveStatus live={false} />
-      {showApiControls ? (
-        <TopStepApiBandeauButton
-          paused={paused}
-          marketQuotesEnabled={marketQuotesEnabled}
-          saving={saving}
-          onActivate={handleActivateClick}
-          onPause={() => void pauseApi()}
-        />
-      ) : null}
       <VerticalRule />
-      <StatusContent
-        message={statusMessage.message}
-        detail={statusMessage.detail}
-        pulse={statusPulse}
-      />
+      <StatusContent message={statusMessage} pulse={statusPulse} />
     </div>
   ) : (
     <>
       <div className={TICKER_ROW_CLASS} aria-live="polite">
         <LiveStatus live={isLive} />
-        {showApiControls ? (
-          <TopStepApiBandeauButton
-            paused={paused}
-            marketQuotesEnabled={marketQuotesEnabled}
-            saving={saving}
-            onActivate={handleActivateClick}
-            onPause={() => void pauseApi()}
-          />
-        ) : null}
         <VerticalRule />
         {quotes.map((quote, index) => (
           <QuoteRow
@@ -372,25 +242,7 @@ export const MarketQuotesTicker: React.FC = () => {
     </>
   );
 
-  return (
-    <>
-      <TickerShell ariaLabel={tickerTitle}>{tickerContent}</TickerShell>
-      <ConfirmModal
-        isOpen={confirmOpen}
-        onClose={() => {
-          if (!confirmLoading) {
-            setConfirmOpen(false);
-          }
-        }}
-        onConfirm={handleConfirmActivate}
-        isLoading={confirmLoading}
-        variant="warning"
-        title={t('dashboard:marketQuotes.confirmActivateTitle')}
-        message={t('dashboard:marketQuotes.confirmActivateMessage')}
-        confirmButtonText={t('dashboard:marketQuotes.confirmActivateButton')}
-      />
-    </>
-  );
+  return <TickerShell ariaLabel={tickerTitle}>{tickerContent}</TickerShell>;
 };
 
 export default MarketQuotesTicker;

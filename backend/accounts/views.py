@@ -1306,22 +1306,9 @@ class UserPreferencesView(APIView):
     def put(self, request):
         """Mettre à jour les préférences de l'utilisateur"""
         preferences, created = UserPreferences.objects.get_or_create(user=request.user)
-        was_paused = preferences.topstep_api_paused
         serializer = UserPreferencesSerializer(preferences, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            if serializer.validated_data.get('topstep_api_paused') is True and not was_paused:
-                from integrations.market_quotes_hub_control import signal_user_inactive
-                from integrations.market_quotes_service import (
-                    build_empty_snapshot,
-                    save_snapshot,
-                )
-
-                signal_user_inactive(request.user.id)
-                save_snapshot(
-                    build_empty_snapshot(connected=False, message='topstep_api_paused'),
-                    request.user.id,
-                )
             return Response({
                 'message': 'Préférences mises à jour avec succès',
                 'preferences': serializer.data

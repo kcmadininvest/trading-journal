@@ -39,8 +39,6 @@ export const usePreferences = (): PreferencesContextType => {
         email_goal_alerts: true,
         show_pre_market: false,
         pnl_display: 'net',
-        topstep_api_paused: true,
-        market_quotes_enabled: false,
       },
       loading: false,
       refreshPreferences: async () => {},

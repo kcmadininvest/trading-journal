@@ -91,13 +91,6 @@ class TopStepXSyncService:
         if integration is None or not integration.secrets_encrypted:
             raise ValueError('Configurez l\'intégration TopStepX dans les paramètres.')
 
-        from integrations.topstep_api_pause import assert_topstep_api_allowed
-
-        try:
-            assert_topstep_api_allowed(user)
-        except TopStepXApiError as exc:
-            raise ValueError(str(exc)) from exc
-
         def _run_sync(token: str) -> tuple[list, datetime]:
             account_id, _needs_broker_id_update = resolve_projectx_account_id(
                 self.client, token, trading_account
@@ -196,16 +189,12 @@ class TopStepXSyncService:
             .first()
         )
         integration = get_topstepx_integration(trading_account.user)
-        from integrations.topstep_api_pause import is_topstep_api_paused
-
-        paused = is_topstep_api_paused(trading_account.user)
         return {
             'broker_account_id': trading_account.broker_account_id,
             'last_sync_at': meta.get('last_sync_at'),
             'integration_configured': bool(integration and integration.secrets_encrypted),
             'integration_connected': integration.is_connected if integration else False,
-            'topstep_api_paused': paused,
-            'should_sync': self._should_sync(trading_account, integration) and not paused,
+            'should_sync': self._should_sync(trading_account, integration),
             'sync_stale_minutes': SYNC_STALE_MINUTES,
             'last_log': {
                 'synced_at': last_log.synced_at.isoformat() if last_log else None,

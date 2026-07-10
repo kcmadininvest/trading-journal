@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { tradingAccountsService, TradeSyncStatus } from '../../services/tradingAccounts';
 import { useTopStepSyncEligibility } from '../../hooks/useTopStepSyncEligibility';
 import { useTopStepSyncPolling } from '../../hooks/useTopStepSyncPolling';
-import { useTopStepApiPaused } from '../../hooks/useTopStepApiPaused';
 import { usePreferences } from '../../hooks/usePreferences';
 import { formatDateTimeShort, type DateFormatType } from '../../utils/dateFormat';
 import Tooltip from '../ui/Tooltip';
@@ -55,7 +54,6 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
   const { preferences } = usePreferences();
   const { loading, canSync, missingBrokerId, integrationConnected, account } =
     useTopStepSyncEligibility(accountId);
-  const { paused: topstepApiPaused } = useTopStepApiPaused();
   const [syncing, setSyncing] = useState(false);
   const [status, setStatus] = useState<TradeSyncStatus | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -98,7 +96,7 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
   }, [onPollingSynced, onSynced, refreshStatus]);
 
   useTopStepSyncPolling(accountId, {
-    enabled: enablePolling && canSync && !topstepApiPaused,
+    enabled: enablePolling && canSync,
     onStatusUpdate: setStatus,
     onSynced: (result) => {
       if (!onPollingSynced || result.created > 0) {
@@ -114,7 +112,7 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
   });
 
   const handleManualSync = async () => {
-    if (!accountId || !canSync || topstepApiPaused) return;
+    if (!accountId || !canSync) return;
     setSyncing(true);
     try {
       const result = await tradingAccountsService.sync(accountId);
@@ -152,15 +150,10 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
   const actionLabel = syncing ? t('sync.syncing') : t('sync.button');
 
   const tooltipContent = useMemo(() => {
-    const lines = [actionLabel, lastLabel];
-    if (topstepApiPaused) {
-      lines.unshift(t('sync.apiPaused'));
-    } else {
-      lines.push(t('sync.apiActiveWarning'));
-    }
+    const lines = [actionLabel, lastLabel, t('sync.apiActiveWarning')];
     if (toast) lines.push(toast);
     return lines.join('\n');
-  }, [actionLabel, lastLabel, toast, topstepApiPaused, t]);
+  }, [actionLabel, lastLabel, toast, t]);
 
   if (loading || !accountId || account?.account_type !== 'topstep') {
     return null;
@@ -198,21 +191,6 @@ export const TopStepSyncControls: React.FC<TopStepSyncControlsProps> = ({
 
   if (!canSync) {
     return null;
-  }
-
-  if (topstepApiPaused) {
-    return (
-      <Tooltip content={tooltipContent} position="top" contentClassName="whitespace-pre-line block">
-        <span
-          className={`inline-flex items-center justify-center rounded-md border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 p-2 text-amber-700 dark:text-amber-300 ${className}`}
-          aria-label={t('sync.apiPaused')}
-        >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </span>
-      </Tooltip>
-    );
   }
 
   const useResponsiveIcon = iconOnly === 'responsive';
