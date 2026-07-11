@@ -28,6 +28,7 @@ import { useAccountIndicators } from '../hooks/useAccountIndicators';
 import { AccountSummaryCard } from '../components/common/AccountSummaryCard';
 import { usePrivacySettings } from '../hooks/usePrivacySettings';
 import { ModernMarketInfo } from '../components/market/ModernMarketInfo';
+import { MarketPhaseCapturePanel } from '../components/marketPhases/MarketPhaseCapturePanel';
 
 const MALTZ_MILESTONE_DAYS = 21;
 import { MarketQuotesTicker } from '../components/dashboard/MarketQuotesTicker';
@@ -1572,6 +1573,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ currentUser }) => {
           marketTodayByCode={marketTodayByCode}
         />
       </div>
+
+      {accountId != null && (
+        <div className="mb-4 min-w-0">
+          <MarketPhaseCapturePanel
+            tradingAccountId={accountId}
+            source="live"
+            compact
+          />
+        </div>
+      )}
 
       <DashboardFilterBar
         className="mb-6"

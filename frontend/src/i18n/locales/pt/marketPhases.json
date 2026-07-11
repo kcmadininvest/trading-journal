@@ -1,0 +1,111 @@
+{
+  "title": "Fases de mercado",
+  "captureTitle": "Captura de fases",
+  "instrument": "Ativo",
+  "startBlock": "Iniciar bloco",
+  "closeBlock": "Fechar bloco",
+  "selectPhase": "Fase",
+  "context": "Contexto",
+  "contextOptions": {
+    "none": "Nenhum",
+    "after_bullish_push": "Após impulso altista",
+    "after_bearish_push": "Após impulso baixista",
+    "after_range": "Após range",
+    "after_news": "Após notícias"
+  },
+  "events": {
+    "captureHint": "Cada clique regista o evento de imediato à hora atual da sessão.",
+    "captureHintReplay": "Cada clique regista o evento a meio do intervalo ({{time}}).",
+    "savedFeedback": "Guardado às {{time}}: {{summary}}",
+    "selectHint": "Clique num evento para o selecionar e remova-o com a cruz.",
+    "removeEvent": "Remover este evento",
+    "saveAt": "Guardar às {{time}}: {{summary}}",
+    "saveAtLive": "Guardar agora: {{summary}}",
+    "breakoutUpBody": "Rompimento ↑ · corpo",
+    "breakoutUpWick": "Rompimento ↑ · pavio",
+    "breakoutDownBody": "Rompimento ↓ · corpo",
+    "breakoutDownWick": "Rompimento ↓ · pavio",
+    "reentry": "Reentrada no range",
+    "savePreview": {
+      "breakoutUpBody": "Rompimento altista do range — corpo da vela, manutenção",
+      "breakoutUpWick": "Rompimento altista do range — apenas pavio",
+      "breakoutDownBody": "Rompimento baixista do range — corpo da vela, manutenção",
+      "breakoutDownWick": "Rompimento baixista do range — apenas pavio",
+      "reentry": "Reentrada no range"
+    },
+    "types": {
+      "range_breakout_up": "Rompimento altista do range",
+      "range_breakout_down": "Rompimento baixista do range",
+      "range_reentry": "Reentrada no range"
+    }
+  },
+  "eventMeta": {
+    "candlePart": {
+      "body": "corpo da vela",
+      "wick": "pavio"
+    },
+    "outcome": {
+      "hold": "manutenção",
+      "reentry": "reentrada"
+    }
+  },
+  "openBlock": "Bloco em curso",
+  "noData": "Sem captura hoje",
+  "viewStats": "Ver estatísticas",
+  "saving": "A guardar…",
+  "saved": "Guardado",
+  "settings": {
+    "title": "Observatório de fases de mercado",
+    "defaultInstrument": "Ativo predefinido",
+    "analyticalPeriods": "Períodos analíticos",
+    "periodLabel": "Etiqueta",
+    "periodStart": "Início",
+    "periodEnd": "Fim",
+    "addPeriod": "Adicionar período",
+    "slotMode": "Modo de agregação",
+    "modes": {
+      "hour": "Horas cheias",
+      "fixed": "Grelha fixa",
+      "custom": "Personalizado"
+    }
+  },
+  "analytics": {
+    "title": "Fases de mercado × desempenho",
+    "assetProfileTab": "Perfil do ativo",
+    "periodProfileTab": "Intervalos × desempenho",
+    "dominantRegime": "Regime dominante",
+    "winRate": "Taxa de acerto",
+    "expectancy": "Expectativa",
+    "sampleSessions": "Sessões documentadas",
+    "tradeCount": "Trades",
+    "verdict": {
+      "favor": "Intervalo favorável",
+      "avoid": "Evitar",
+      "neutral": "Neutro",
+      "insufficient_data": "Dados insuficientes"
+    },
+    "rankingTitle": "Classificação dos intervalos",
+    "period": "Período",
+    "regimePct": "% regime",
+    "noRanking": "Dados insuficientes — documente as suas sessões de mercado."
+  },
+  "replay": {
+    "slotsTitle": "Fases por intervalo horário",
+    "emptySlot": "— Não definido",
+    "addSlot": "Adicionar",
+    "addSlotHint": "Adicione apenas os intervalos úteis para esta sessão (abertura, meio da sessão, fecho, etc.).",
+    "optionalLabel": "Opcional",
+    "noSlotsYet": "Sem intervalos — adicione os que deseja documentar.",
+    "removeSlot": "Remover este intervalo",
+    "invalidSlotTimes": "Horários inválidos.",
+    "duplicateSlot": "Este intervalo já existe.",
+    "usingSettingsTemplate": "Intervalos carregados das Definições (modo personalizado).",
+    "clearSessionSlots": "Limpar todos os intervalos",
+    "freeRangeTitle": "Intervalo livre (horários precisos)",
+    "noFreeBlocks": "Sem intervalo livre",
+    "columnPeriod": "Intervalo",
+    "columnEvents": "Eventos",
+    "selectPhaseFirst": "Escolha uma fase para adicionar eventos",
+    "recordedEvents": "Registados neste intervalo"
+  }
+}

@@ -42,6 +42,7 @@ import { useGlobalAllAccountsActivity } from '../hooks/useGlobalAllAccountsActiv
 import { useStatistics } from '../hooks/useStatistics';
 import { AnalyticsPageSkeleton } from '../components/ui/AnalyticsPageSkeleton';
 import { PageShell } from '../components/layout';
+import { MarketPhaseAnalyticsSection } from '../components/marketPhases/MarketPhaseAnalyticsSection';
 import { PnlBasisToggle } from '../components/common/PnlBasisToggle';
 import { usePeriodDateRange } from '../hooks/usePeriodDateRange';
 import {
@@ -1445,6 +1446,15 @@ const AnalyticsPage: React.FC = () => {
         </svg>
       )
     },
+    {
+      id: 'marketPhases',
+      label: t('analytics:tabs.marketPhases'),
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h10M4 18h6" />
+        </svg>
+      ),
+    },
   ];
 
   const { isInitialLoading, isRefreshing } = combineQueryLoadingStates([
@@ -1669,6 +1679,16 @@ const AnalyticsPage: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Onglet Phases de marché */}
+      {activeTab === 'marketPhases' && (
+        <MarketPhaseAnalyticsSection
+          tradingAccountId={accountId}
+          currencySymbol={currencySymbol}
+          dateFrom={selectedPeriod?.start || summaryStartDate || undefined}
+          dateTo={selectedPeriod?.end || summaryEndDate || undefined}
+        />
       )}
 
       {/* Onglet Corrélations & Patterns */}

@@ -60,6 +60,16 @@
   "marketTapeStopLossBrokerTooltip": "Broker stop (TopStep order) @ {{price}}",
   "marketTapeLegendCursor": "Cursor",
   "insightsTitle": "Alerts",
+  "tabs": {
+    "replay": "Session replay",
+    "insights": "Alerts",
+    "journal": "Journal",
+    "marketPhases": "Market phases"
+  },
+  "marketPhasesIntro": {
+    "title": "What is this tab for?",
+    "description": "During or after a session, document market behavior by time slot: dominant phase (range, trend, news…), context, and key events (breakouts, re-entries). These notes feed the market phase observatory and the cross-analysis with your results in Analytics — to spot slots to favor or avoid."
+  },
   "noInsights": "No alerts detected",
   "journalDraftTitle": "Journal draft",
   "applyJournal": "Apply to journal",

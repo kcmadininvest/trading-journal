@@ -118,6 +118,7 @@
     "riskCapital": "리스크 및 자본",
     "projection": "예측",
     "timeAnalysis": "시간 분석",
+    "marketPhases": "시장 단계",
     "patterns": "상관관계 및 패턴"
   },
   "monteCarlo": {

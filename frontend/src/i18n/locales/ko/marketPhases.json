@@ -1,0 +1,111 @@
+{
+  "title": "시장 단계",
+  "captureTitle": "단계 기록",
+  "instrument": "종목",
+  "startBlock": "블록 시작",
+  "closeBlock": "블록 종료",
+  "selectPhase": "단계",
+  "context": "맥락",
+  "contextOptions": {
+    "none": "없음",
+    "after_bullish_push": "상승 추진 후",
+    "after_bearish_push": "하락 추진 후",
+    "after_range": "레인지 후",
+    "after_news": "뉴스 후"
+  },
+  "events": {
+    "captureHint": "클릭하면 현재 세션 시각에 이벤트가 즉시 기록됩니다.",
+    "captureHintReplay": "클릭하면 구간 중간({{time}})에 이벤트가 기록됩니다.",
+    "savedFeedback": "{{time}}에 저장됨: {{summary}}",
+    "selectHint": "이벤트를 클릭해 선택한 뒤 ×로 삭제하세요.",
+    "removeEvent": "이 이벤트 삭제",
+    "saveAt": "{{time}}에 저장: {{summary}}",
+    "saveAtLive": "지금 저장: {{summary}}",
+    "breakoutUpBody": "상향 돌파 ↑ · 몸통",
+    "breakoutUpWick": "상향 돌파 ↑ · 꼬리",
+    "breakoutDownBody": "하향 돌파 ↓ · 몸통",
+    "breakoutDownWick": "하향 돌파 ↓ · 꼬리",
+    "reentry": "레인지 재진입",
+    "savePreview": {
+      "breakoutUpBody": "레인지 상향 돌파 — 캔들 몸통, 유지",
+      "breakoutUpWick": "레인지 상향 돌파 — 꼬리만",
+      "breakoutDownBody": "레인지 하향 돌파 — 캔들 몸통, 유지",
+      "breakoutDownWick": "레인지 하향 돌파 — 꼬리만",
+      "reentry": "레인지 재진입"
+    },
+    "types": {
+      "range_breakout_up": "레인지 상향 돌파",
+      "range_breakout_down": "레인지 하향 돌파",
+      "range_reentry": "레인지 재진입"
+    }
+  },
+  "eventMeta": {
+    "candlePart": {
+      "body": "캔들 몸통",
+      "wick": "꼬리"
+    },
+    "outcome": {
+      "hold": "유지",
+      "reentry": "재진입"
+    }
+  },
+  "openBlock": "진행 중인 블록",
+  "noData": "오늘 기록 없음",
+  "viewStats": "통계 보기",
+  "saving": "저장 중…",
+  "saved": "저장됨",
+  "settings": {
+    "title": "시장 단계 관측소",
+    "defaultInstrument": "기본 종목",
+    "analyticalPeriods": "분석 기간",
+    "periodLabel": "라벨",
+    "periodStart": "시작",
+    "periodEnd": "종료",
+    "addPeriod": "기간 추가",
+    "slotMode": "집계 모드",
+    "modes": {
+      "hour": "정시",
+      "fixed": "고정 그리드",
+      "custom": "사용자 지정"
+    }
+  },
+  "analytics": {
+    "title": "시장 단계 × 성과",
+    "assetProfileTab": "종목 프로필",
+    "periodProfileTab": "구간 × 성과",
+    "dominantRegime": "지배적 레짐",
+    "winRate": "승률",
+    "expectancy": "기댓값",
+    "sampleSessions": "기록된 세션",
+    "tradeCount": "거래 수",
+    "verdict": {
+      "favor": "유리한 구간",
+      "avoid": "회피",
+      "neutral": "중립",
+      "insufficient_data": "데이터 부족"
+    },
+    "rankingTitle": "구간 순위",
+    "period": "기간",
+    "regimePct": "레짐 %",
+    "noRanking": "데이터 부족 — 시장 세션을 기록하세요."
+  },
+  "replay": {
+    "slotsTitle": "시간대별 단계",
+    "emptySlot": "— 미설정",
+    "addSlot": "추가",
+    "addSlotHint": "이 세션에 필요한 구간만 추가하세요(시가, 중반, 종가 등).",
+    "optionalLabel": "선택",
+    "noSlotsYet": "구간 없음 — 기록할 구간을 추가하세요.",
+    "removeSlot": "이 구간 제거",
+    "invalidSlotTimes": "잘못된 시각입니다.",
+    "duplicateSlot": "이 구간이 이미 있습니다.",
+    "usingSettingsTemplate": "설정에서 불러온 구간(사용자 지정 모드).",
+    "clearSessionSlots": "모든 구간 지우기",
+    "freeRangeTitle": "자유 범위(정확한 시각)",
+    "noFreeBlocks": "자유 범위 없음",
+    "columnPeriod": "구간",
+    "columnEvents": "이벤트",
+    "selectPhaseFirst": "단계를 선택해 이벤트 추가",
+    "recordedEvents": "이 구간에 기록됨"
+  }
+}

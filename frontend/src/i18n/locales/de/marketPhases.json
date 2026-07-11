@@ -1,0 +1,111 @@
+{
+  "title": "Marktphasen",
+  "captureTitle": "Phasenerfassung",
+  "instrument": "Instrument",
+  "startBlock": "Block starten",
+  "closeBlock": "Block schließen",
+  "selectPhase": "Phase",
+  "context": "Kontext",
+  "contextOptions": {
+    "none": "Keiner",
+    "after_bullish_push": "Nach bullischem Push",
+    "after_bearish_push": "Nach bärischem Push",
+    "after_range": "Nach Range",
+    "after_news": "Nach News"
+  },
+  "events": {
+    "captureHint": "Ein Klick speichert das Ereignis sofort zur aktuellen Sitzungszeit.",
+    "captureHintReplay": "Ein Klick speichert das Ereignis in der Mitte des Zeitfensters ({{time}}).",
+    "savedFeedback": "Gespeichert um {{time}}: {{summary}}",
+    "selectHint": "Klicken Sie ein Ereignis an, um es auszuwählen, und entfernen Sie es mit dem Kreuz.",
+    "removeEvent": "Dieses Ereignis löschen",
+    "saveAt": "Speichern um {{time}}: {{summary}}",
+    "saveAtLive": "Jetzt speichern: {{summary}}",
+    "breakoutUpBody": "Ausbruch ↑ · Körper",
+    "breakoutUpWick": "Ausbruch ↑ · Docht",
+    "breakoutDownBody": "Ausbruch ↓ · Körper",
+    "breakoutDownWick": "Ausbruch ↓ · Docht",
+    "reentry": "Range-Reentry",
+    "savePreview": {
+      "breakoutUpBody": "Aufwärtsausbruch aus der Range — Kerzenkörper, Halt",
+      "breakoutUpWick": "Aufwärtsausbruch aus der Range — nur Docht",
+      "breakoutDownBody": "Abwärtsausbruch aus der Range — Kerzenkörper, Halt",
+      "breakoutDownWick": "Abwärtsausbruch aus der Range — nur Docht",
+      "reentry": "Wiedereintritt in die Range"
+    },
+    "types": {
+      "range_breakout_up": "Aufwärtsausbruch aus der Range",
+      "range_breakout_down": "Abwärtsausbruch aus der Range",
+      "range_reentry": "Wiedereintritt in die Range"
+    }
+  },
+  "eventMeta": {
+    "candlePart": {
+      "body": "Kerzenkörper",
+      "wick": "Docht"
+    },
+    "outcome": {
+      "hold": "Halt",
+      "reentry": "Wiedereintritt"
+    }
+  },
+  "openBlock": "Laufender Block",
+  "noData": "Keine Erfassung heute",
+  "viewStats": "Statistiken anzeigen",
+  "saving": "Speichern…",
+  "saved": "Gespeichert",
+  "settings": {
+    "title": "Marktphasen-Observatorium",
+    "defaultInstrument": "Standardinstrument",
+    "analyticalPeriods": "Analytische Zeiträume",
+    "periodLabel": "Bezeichnung",
+    "periodStart": "Beginn",
+    "periodEnd": "Ende",
+    "addPeriod": "Zeitraum hinzufügen",
+    "slotMode": "Aggregationsmodus",
+    "modes": {
+      "hour": "Volle Stunden",
+      "fixed": "Festes Raster",
+      "custom": "Benutzerdefiniert"
+    }
+  },
+  "analytics": {
+    "title": "Marktphasen × Performance",
+    "assetProfileTab": "Asset-Profil",
+    "periodProfileTab": "Zeitfenster × Performance",
+    "dominantRegime": "Dominantes Regime",
+    "winRate": "Trefferquote",
+    "expectancy": "Erwartungswert",
+    "sampleSessions": "Dokumentierte Sitzungen",
+    "tradeCount": "Trades",
+    "verdict": {
+      "favor": "Günstiges Zeitfenster",
+      "avoid": "Meiden",
+      "neutral": "Neutral",
+      "insufficient_data": "Unzureichende Daten"
+    },
+    "rankingTitle": "Rangliste der Zeitfenster",
+    "period": "Zeitraum",
+    "regimePct": "% Regime",
+    "noRanking": "Zu wenig Daten — dokumentieren Sie Ihre Marktsitzungen."
+  },
+  "replay": {
+    "slotsTitle": "Phasen nach Zeitfenster",
+    "emptySlot": "— Nicht gesetzt",
+    "addSlot": "Hinzufügen",
+    "addSlotHint": "Fügen Sie nur die für diese Sitzung nötigen Zeitfenster hinzu (Eröffnung, Mitte, Schluss usw.).",
+    "optionalLabel": "Optional",
+    "noSlotsYet": "Keine Zeitfenster — fügen Sie die zu dokumentierenden hinzu.",
+    "removeSlot": "Dieses Zeitfenster entfernen",
+    "invalidSlotTimes": "Ungültige Zeiten.",
+    "duplicateSlot": "Dieses Zeitfenster existiert bereits.",
+    "usingSettingsTemplate": "Zeitfenster aus Einstellungen geladen (benutzerdefinierter Modus).",
+    "clearSessionSlots": "Alle Zeitfenster löschen",
+    "freeRangeTitle": "Freier Bereich (genaue Zeiten)",
+    "noFreeBlocks": "Kein freier Bereich",
+    "columnPeriod": "Zeitfenster",
+    "columnEvents": "Ereignisse",
+    "selectPhaseFirst": "Wählen Sie eine Phase, um Ereignisse hinzuzufügen",
+    "recordedEvents": "In diesem Zeitfenster gespeichert"
+  }
+}

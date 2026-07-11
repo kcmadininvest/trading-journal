@@ -173,9 +173,18 @@ import esCalculator from './locales/es/calculator.json';
 import deCalculator from './locales/de/calculator.json';
 import frBilling from './locales/fr/billing.json';
 import frReplay from './locales/fr/replay.json';
+import frMarketPhases from './locales/fr/marketPhases.json';
 import enReplay from './locales/en/replay.json';
+import enMarketPhases from './locales/en/marketPhases.json';
 import esReplay from './locales/es/replay.json';
+import esMarketPhases from './locales/es/marketPhases.json';
 import deReplay from './locales/de/replay.json';
+import deMarketPhases from './locales/de/marketPhases.json';
+import itMarketPhases from './locales/it/marketPhases.json';
+import ptMarketPhases from './locales/pt/marketPhases.json';
+import jaMarketPhases from './locales/ja/marketPhases.json';
+import koMarketPhases from './locales/ko/marketPhases.json';
+import zhMarketPhases from './locales/zh/marketPhases.json';
 import enBilling from './locales/en/billing.json';
 import esBilling from './locales/es/billing.json';
 import deBilling from './locales/de/billing.json';
@@ -258,6 +267,7 @@ const resources = {
     calculator: frCalculator,
     billing: frBilling,
     replay: frReplay,
+    marketPhases: frMarketPhases,
     trading_activity: frTradingActivity,
   },
   en: {
@@ -285,6 +295,7 @@ const resources = {
     calculator: enCalculator,
     billing: enBilling,
     replay: enReplay,
+    marketPhases: enMarketPhases,
     trading_activity: enTradingActivity,
   },
   es: {
@@ -312,6 +323,7 @@ const resources = {
     calculator: esCalculator,
     billing: esBilling,
     replay: esReplay,
+    marketPhases: esMarketPhases,
     trading_activity: esTradingActivity,
   },
   de: {
@@ -339,6 +351,7 @@ const resources = {
     calculator: deCalculator,
     billing: deBilling,
     replay: deReplay,
+    marketPhases: deMarketPhases,
     trading_activity: deTradingActivity,
   },
   it: {
@@ -356,6 +369,7 @@ const resources = {
     auth: itAuth,
     billing: itBilling,
     replay: enReplay,
+    marketPhases: itMarketPhases,
     trading_activity: enTradingActivity,
   },
   pt: {
@@ -373,6 +387,7 @@ const resources = {
     auth: ptAuth,
     billing: ptBilling,
     replay: enReplay,
+    marketPhases: ptMarketPhases,
     trading_activity: enTradingActivity,
   },
   ja: {
@@ -390,6 +405,7 @@ const resources = {
     auth: jaAuth,
     billing: jaBilling,
     replay: enReplay,
+    marketPhases: jaMarketPhases,
     trading_activity: enTradingActivity,
   },
   ko: {
@@ -407,6 +423,7 @@ const resources = {
     auth: koAuth,
     billing: koBilling,
     replay: enReplay,
+    marketPhases: koMarketPhases,
     trading_activity: enTradingActivity,
   },
   zh: {
@@ -424,6 +441,7 @@ const resources = {
     auth: zhAuth,
     billing: zhBilling,
     replay: enReplay,
+    marketPhases: zhMarketPhases,
     trading_activity: enTradingActivity,
   },
 };
@@ -488,7 +506,7 @@ i18n
     fallbackLng: getDefaultLanguage(),
     supportedLngs: ['fr', 'en', 'es', 'de', 'it', 'pt', 'ja', 'ko', 'zh'],
     defaultNS: 'common',
-    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity'],
+    ns: ['common', 'trades', 'settings', 'navigation', 'dashboard', 'calendar', 'strategies', 'statistics', 'analytics', 'users', 'accounts', 'auth', 'home', 'strategy', 'positionStrategies', 'goals', 'transactions', 'legal', 'about', 'features', 'contact', 'calculator', 'billing', 'replay', 'trading_activity', 'marketPhases'],
     
     interpolation: {
       escapeValue: false, // React échappe déjà les valeurs

@@ -19,6 +19,7 @@ import { SessionStatePanel } from '../components/replay/SessionStatePanel';
 import { InsightsPanel } from '../components/replay/InsightsPanel';
 import { generateJournalDraft } from '../components/replay/generateJournalDraft';
 import { JournalDraftPanel } from '../components/replay/JournalDraftPanel';
+import { MarketPhaseSlotCapturePanel } from '../components/marketPhases/MarketPhaseSlotCapturePanel';
 import {
   canNavigateSessionDate,
   formatSessionDuration,
@@ -89,6 +90,9 @@ function toastReplayError(error: unknown, fallback: string): void {
   toast.error(error instanceof Error ? error.message : fallback);
 }
 
+const REPLAY_PAGE_TAB_KEY = 'replay-page-tab';
+const REPLAY_BOTTOM_TAB_KEY = 'replay-bottom-tab';
+
 const SessionReplayPage: React.FC = () => {
   const { t } = useTranslation('replay');
   const { preferences } = usePreferences();
@@ -114,6 +118,26 @@ const SessionReplayPage: React.FC = () => {
     () => new Set(TIMELINE_FILTER_KEYS),
   );
   const [marketDataLoading, setMarketDataLoading] = useState(false);
+  const [pageTab, setPageTab] = useState<'replay' | 'marketPhases'>(() => {
+    const savedPage = localStorage.getItem(REPLAY_PAGE_TAB_KEY);
+    if (savedPage === 'replay' || savedPage === 'marketPhases') return savedPage;
+    const legacyBottom = localStorage.getItem(REPLAY_BOTTOM_TAB_KEY);
+    if (legacyBottom === 'marketPhases') return 'marketPhases';
+    return 'replay';
+  });
+  const [bottomTab, setBottomTab] = useState<'insights' | 'journal'>(() => {
+    const saved = localStorage.getItem(REPLAY_BOTTOM_TAB_KEY);
+    if (saved === 'insights' || saved === 'journal') return saved;
+    return 'insights';
+  });
+
+  useEffect(() => {
+    localStorage.setItem(REPLAY_PAGE_TAB_KEY, pageTab);
+  }, [pageTab]);
+
+  useEffect(() => {
+    localStorage.setItem(REPLAY_BOTTOM_TAB_KEY, bottomTab);
+  }, [bottomTab]);
 
   const playRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -571,6 +595,27 @@ const SessionReplayPage: React.FC = () => {
     setCurrentIndex(idx >= 0 ? idx : events.length - 1);
   };
 
+  const jumpToSessionClock = useCallback(
+    (clock: string) => {
+      const [h, m] = clock.split(':').map((x) => parseInt(x, 10) || 0);
+      const targetMinutes = h * 60 + m;
+      const idx = events.findIndex((e) => {
+        const formatter = new Intl.DateTimeFormat('en-GB', {
+          timeZone: preferences.timezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        });
+        const parts = formatter.formatToParts(new Date(e.occurred_at));
+        const eh = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
+        const em = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+        return eh * 60 + em >= targetMinutes;
+      });
+      setCurrentIndex(idx >= 0 ? idx : events.length - 1);
+    },
+    [events, preferences.timezone],
+  );
+
   const hasBuiltSession = session?.status === 'built';
 
   const visibleEventIndices = useMemo(
@@ -778,7 +823,65 @@ const SessionReplayPage: React.FC = () => {
         )}
       </div>
 
-      {(loading || eligibilityLoading || accountContextLoading || building) ? (
+      <div className={`${replayCardClass} mb-4 sm:mb-6 px-3 sm:px-4 pt-2`}>
+        <nav className="-mb-px flex gap-6 overflow-x-auto border-b border-gray-200 dark:border-gray-700" aria-label="Session replay sections">
+          {([
+            { id: 'replay' as const, label: t('tabs.replay') },
+            { id: 'marketPhases' as const, label: t('tabs.marketPhases') },
+          ]).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setPageTab(tab.id)}
+              className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
+                pageTab === tab.id
+                  ? 'border-sky-500 text-sky-600 dark:text-sky-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              }`}
+              aria-current={pageTab === tab.id ? 'page' : undefined}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {pageTab === 'marketPhases' ? (
+        busy ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4" />
+              <p className="text-gray-600 dark:text-gray-400">
+                {building ? t('building') : t('loading')}
+              </p>
+            </div>
+          </div>
+        ) : accountId == null ? (
+          <div className={`${replayCardClass} p-8 text-center`}>
+            <p className="text-gray-600 dark:text-gray-400">{t('selectAccount')}</p>
+          </div>
+        ) : (
+          <div className={`${replayCardClass} p-4 sm:p-5 space-y-4`}>
+            <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-800/50 dark:bg-sky-950/20">
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {t('marketPhasesIntro.title')}
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                {t('marketPhasesIntro.description')}
+              </p>
+            </div>
+            <MarketPhaseSlotCapturePanel
+              tradingAccountId={accountId}
+              sessionDate={sessionDate}
+              tradingSessionId={session?.id}
+              onSelectTimestamp={(clock) => {
+                jumpToSessionClock(clock);
+                setPageTab('replay');
+              }}
+            />
+          </div>
+        )
+      ) : (loading || eligibilityLoading || accountContextLoading || building) ? (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500 mx-auto mb-4" />
@@ -863,14 +966,40 @@ const SessionReplayPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
-            <InsightsPanel insights={insights} onJumpToTime={jumpToTime} />
-            <JournalDraftPanel
-              content={journalDraftContent}
-              applied={journalApplied}
-              loading={applyingJournal}
-              onApply={handleApplyJournal}
-            />
+          <div className={`${replayCardClass} p-4 sm:p-5`}>
+            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+              <nav className="-mb-px flex gap-4 overflow-x-auto" aria-label="Replay bottom tabs">
+                {([
+                  { id: 'insights' as const, label: t('tabs.insights') },
+                  { id: 'journal' as const, label: t('tabs.journal') },
+                ]).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setBottomTab(tab.id)}
+                    className={`whitespace-nowrap border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
+                      bottomTab === tab.id
+                        ? 'border-sky-500 text-sky-600 dark:text-sky-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                    aria-current={bottomTab === tab.id ? 'page' : undefined}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {bottomTab === 'insights' ? (
+              <InsightsPanel insights={insights} onJumpToTime={jumpToTime} />
+            ) : (
+              <JournalDraftPanel
+                content={journalDraftContent}
+                applied={journalApplied}
+                loading={applyingJournal}
+                onApply={handleApplyJournal}
+              />
+            )}
           </div>
         </div>
       ) : null}

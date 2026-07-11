@@ -59,6 +59,16 @@
   "marketTapeStopLossPlannedTooltip": "Geplanter Stop-Loss (Journal) @ {{price}}",
   "marketTapeStopLossBrokerTooltip": "Broker-Stop (TopStep-Order) @ {{price}}",
   "marketTapeLegendCursor": "Cursor",
+  "tabs": {
+    "replay": "Session-Replay",
+    "insights": "Hinweise",
+    "journal": "Tagebuch",
+    "marketPhases": "Marktphasen"
+  },
+  "marketPhasesIntro": {
+    "title": "Wozu dient dieser Tab?",
+    "description": "Während oder nach einer Sitzung dokumentieren Sie das Marktverhalten nach Zeitfenster: dominante Phase (Range, Trend, News…), Kontext und Schlüsselereignisse (Ausbrüche, Wiedereintritte). Diese Notizen speisen das Marktphasen-Observatorium und den Abgleich mit Ihren Ergebnissen in Analytik — um günstige oder zu meidende Zeitfenster zu erkennen."
+  },
   "insightsTitle": "Hinweise",
   "noInsights": "Keine Hinweise erkannt",
   "journalDraftTitle": "Tagebuch-Entwurf",

@@ -1,0 +1,111 @@
+{
+  "title": "市場フェーズ",
+  "captureTitle": "フェーズ記録",
+  "instrument": "銘柄",
+  "startBlock": "ブロック開始",
+  "closeBlock": "ブロック終了",
+  "selectPhase": "フェーズ",
+  "context": "コンテキスト",
+  "contextOptions": {
+    "none": "なし",
+    "after_bullish_push": "上昇プッシュ後",
+    "after_bearish_push": "下落プッシュ後",
+    "after_range": "レンジ後",
+    "after_news": "ニュース後"
+  },
+  "events": {
+    "captureHint": "クリックすると、現在のセッション時刻でイベントが即座に記録されます。",
+    "captureHintReplay": "クリックすると、時間帯の中間（{{time}}）でイベントが記録されます。",
+    "savedFeedback": "{{time}} に保存: {{summary}}",
+    "selectHint": "イベントをクリックして選択し、×で削除します。",
+    "removeEvent": "このイベントを削除",
+    "saveAt": "{{time}} に保存: {{summary}}",
+    "saveAtLive": "今すぐ保存: {{summary}}",
+    "breakoutUpBody": "上抜け ↑ · 実体",
+    "breakoutUpWick": "上抜け ↑ · ヒゲ",
+    "breakoutDownBody": "下抜け ↓ · 実体",
+    "breakoutDownWick": "下抜け ↓ · ヒゲ",
+    "reentry": "レンジ内戻り",
+    "savePreview": {
+      "breakoutUpBody": "レンジ上抜け — 実体、維持",
+      "breakoutUpWick": "レンジ上抜け — ヒゲのみ",
+      "breakoutDownBody": "レンジ下抜け — 実体、維持",
+      "breakoutDownWick": "レンジ下抜け — ヒゲのみ",
+      "reentry": "レンジ内への戻り"
+    },
+    "types": {
+      "range_breakout_up": "レンジ上抜け",
+      "range_breakout_down": "レンジ下抜け",
+      "range_reentry": "レンジ内への戻り"
+    }
+  },
+  "eventMeta": {
+    "candlePart": {
+      "body": "実体",
+      "wick": "ヒゲ"
+    },
+    "outcome": {
+      "hold": "維持",
+      "reentry": "内戻り"
+    }
+  },
+  "openBlock": "進行中のブロック",
+  "noData": "本日の記録なし",
+  "viewStats": "統計を見る",
+  "saving": "保存中…",
+  "saved": "保存済み",
+  "settings": {
+    "title": "市場フェーズ観測",
+    "defaultInstrument": "デフォルト銘柄",
+    "analyticalPeriods": "分析期間",
+    "periodLabel": "ラベル",
+    "periodStart": "開始",
+    "periodEnd": "終了",
+    "addPeriod": "期間を追加",
+    "slotMode": "集計モード",
+    "modes": {
+      "hour": "正時",
+      "fixed": "固定グリッド",
+      "custom": "カスタム"
+    }
+  },
+  "analytics": {
+    "title": "市場フェーズ × パフォーマンス",
+    "assetProfileTab": "銘柄プロファイル",
+    "periodProfileTab": "時間帯 × パフォーマンス",
+    "dominantRegime": "支配的レジーム",
+    "winRate": "勝率",
+    "expectancy": "期待値",
+    "sampleSessions": "記録セッション数",
+    "tradeCount": "トレード数",
+    "verdict": {
+      "favor": "有利な時間帯",
+      "avoid": "回避",
+      "neutral": "中立",
+      "insufficient_data": "データ不足"
+    },
+    "rankingTitle": "時間帯ランキング",
+    "period": "期間",
+    "regimePct": "レジーム %",
+    "noRanking": "データ不足 — 市場セッションを記録してください。"
+  },
+  "replay": {
+    "slotsTitle": "時間帯別フェーズ",
+    "emptySlot": "— 未設定",
+    "addSlot": "追加",
+    "addSlotHint": "このセッションで必要な時間帯のみ追加してください（寄り付き、中盤、引けなど）。",
+    "optionalLabel": "任意",
+    "noSlotsYet": "時間帯なし — 記録したいものを追加してください。",
+    "removeSlot": "この時間帯を削除",
+    "invalidSlotTimes": "無効な時刻です。",
+    "duplicateSlot": "この時間帯は既に存在します。",
+    "usingSettingsTemplate": "設定から読み込んだ時間帯（カスタムモード）。",
+    "clearSessionSlots": "すべての時間帯をクリア",
+    "freeRangeTitle": "自由範囲（正確な時刻）",
+    "noFreeBlocks": "自由範囲なし",
+    "columnPeriod": "時間帯",
+    "columnEvents": "イベント",
+    "selectPhaseFirst": "フェーズを選択してイベントを追加",
+    "recordedEvents": "この時間帯で記録済み"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "title": "Market phases",
+  "captureTitle": "Phase capture",
+  "instrument": "Instrument",
+  "startBlock": "Start block",
+  "closeBlock": "Close block",
+  "selectPhase": "Phase",
+  "context": "Context",
+  "contextOptions": {
+    "none": "None",
+    "after_bullish_push": "After bullish push",
+    "after_bearish_push": "After bearish push",
+    "after_range": "After range",
+    "after_news": "After news"
+  },
+  "events": {
+    "captureHint": "Each click immediately records the event at the current session time.",
+    "captureHintReplay": "Each click records the event at the middle of the slot ({{time}}).",
+    "savedFeedback": "Saved at {{time}}: {{summary}}",
+    "selectHint": "Click an event to select it, then remove it with the cross.",
+    "removeEvent": "Remove this event",
+    "saveAt": "Save at {{time}}: {{summary}}",
+    "saveAtLive": "Save now: {{summary}}",
+    "breakoutUpBody": "Breakout ↑ · body",
+    "breakoutUpWick": "Breakout ↑ · wick",
+    "breakoutDownBody": "Breakout ↓ · body",
+    "breakoutDownWick": "Breakout ↓ · wick",
+    "reentry": "Range re-entry",
+    "savePreview": {
+      "breakoutUpBody": "Upside range breakout — candle body, hold",
+      "breakoutUpWick": "Upside range breakout — wick only",
+      "breakoutDownBody": "Downside range breakout — candle body, hold",
+      "breakoutDownWick": "Downside range breakout — wick only",
+      "reentry": "Range re-entry"
+    },
+    "types": {
+      "range_breakout_up": "Upside range breakout",
+      "range_breakout_down": "Downside range breakout",
+      "range_reentry": "Range re-entry"
+    }
+  },
+  "eventMeta": {
+    "candlePart": {
+      "body": "candle body",
+      "wick": "wick"
+    },
+    "outcome": {
+      "hold": "hold",
+      "reentry": "re-entry"
+    }
+  },
+  "openBlock": "Open block",
+  "noData": "No capture today",
+  "viewStats": "View stats",
+  "saving": "Saving…",
+  "saved": "Saved",
+  "settings": {
+    "title": "Market phase observatory",
+    "defaultInstrument": "Default instrument",
+    "analyticalPeriods": "Analytical periods",
+    "periodLabel": "Label",
+    "periodStart": "Start",
+    "periodEnd": "End",
+    "addPeriod": "Add period",
+    "slotMode": "Aggregation mode",
+    "modes": {
+      "hour": "Full hours",
+      "fixed": "Fixed grid",
+      "custom": "Custom"
+    }
+  },
+  "analytics": {
+    "title": "Market phases × performance",
+    "assetProfileTab": "Asset profile",
+    "periodProfileTab": "Slots × performance",
+    "dominantRegime": "Dominant regime",
+    "winRate": "Win rate",
+    "expectancy": "Expectancy",
+    "sampleSessions": "Documented sessions",
+    "tradeCount": "Trades",
+    "verdict": {
+      "favor": "Favorable slot",
+      "avoid": "Avoid",
+      "neutral": "Neutral",
+      "insufficient_data": "Insufficient data"
+    },
+    "rankingTitle": "Slot ranking",
+    "period": "Period",
+    "regimePct": "Regime %",
+    "noRanking": "Not enough data — document your market sessions."
+  },
+  "replay": {
+    "slotsTitle": "Phases by time slot",
+    "emptySlot": "— Not set",
+    "addSlot": "Add",
+    "addSlotHint": "Add only the slots you need for this session (e.g. open, mid-session, close).",
+    "optionalLabel": "Optional",
+    "noSlotsYet": "No slots yet — add the ones you want to document.",
+    "removeSlot": "Remove this slot",
+    "invalidSlotTimes": "Invalid times.",
+    "duplicateSlot": "This slot already exists.",
+    "usingSettingsTemplate": "Slots loaded from Settings (custom mode).",
+    "clearSessionSlots": "Clear all slots",
+    "freeRangeTitle": "Free range (precise times)",
+    "noFreeBlocks": "No free-range blocks",
+    "columnPeriod": "Slot",
+    "columnEvents": "Events",
+    "selectPhaseFirst": "Select a phase to add events",
+    "recordedEvents": "Recorded on this slot"
+  }
+}

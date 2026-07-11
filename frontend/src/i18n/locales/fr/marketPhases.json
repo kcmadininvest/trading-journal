@@ -1,0 +1,111 @@
+{
+  "title": "Phases de marché",
+  "captureTitle": "Capture des phases",
+  "instrument": "Actif",
+  "startBlock": "Démarrer bloc",
+  "closeBlock": "Clôturer bloc",
+  "selectPhase": "Phase",
+  "context": "Contexte",
+  "contextOptions": {
+    "none": "Aucun",
+    "after_bullish_push": "Après poussée haussière",
+    "after_bearish_push": "Après poussée baissière",
+    "after_range": "Après range",
+    "after_news": "Après news"
+  },
+  "events": {
+    "captureHint": "Un clic enregistre immédiatement l'événement à l'heure actuelle de la session.",
+    "captureHintReplay": "Un clic enregistre l'événement au milieu de la tranche ({{time}}).",
+    "savedFeedback": "Enregistré à {{time}} : {{summary}}",
+    "selectHint": "Cliquez un événement pour le sélectionner, puis supprimez-le avec la croix.",
+    "removeEvent": "Supprimer cet événement",
+    "saveAt": "Enregistrer à {{time}} : {{summary}}",
+    "saveAtLive": "Enregistrer maintenant : {{summary}}",
+    "breakoutUpBody": "Cassure ↑ · corps",
+    "breakoutUpWick": "Cassure ↑ · mèche",
+    "breakoutDownBody": "Cassure ↓ · corps",
+    "breakoutDownWick": "Cassure ↓ · mèche",
+    "reentry": "Réintégration range",
+    "savePreview": {
+      "breakoutUpBody": "Cassure range par le haut — corps de bougie, maintien",
+      "breakoutUpWick": "Cassure range par le haut — mèche seulement",
+      "breakoutDownBody": "Cassure range par le bas — corps de bougie, maintien",
+      "breakoutDownWick": "Cassure range par le bas — mèche seulement",
+      "reentry": "Réintégration du range"
+    },
+    "types": {
+      "range_breakout_up": "Cassure range par le haut",
+      "range_breakout_down": "Cassure range par le bas",
+      "range_reentry": "Réintégration du range"
+    }
+  },
+  "eventMeta": {
+    "candlePart": {
+      "body": "corps de bougie",
+      "wick": "mèche"
+    },
+    "outcome": {
+      "hold": "maintien",
+      "reentry": "réintégration"
+    }
+  },
+  "openBlock": "Bloc en cours",
+  "noData": "Aucune capture aujourd'hui",
+  "viewStats": "Voir les stats",
+  "saving": "Enregistrement…",
+  "saved": "Enregistré",
+  "settings": {
+    "title": "Observatoire phases marché",
+    "defaultInstrument": "Actif par défaut",
+    "analyticalPeriods": "Périodes analytiques",
+    "periodLabel": "Libellé",
+    "periodStart": "Début",
+    "periodEnd": "Fin",
+    "addPeriod": "Ajouter une période",
+    "slotMode": "Mode d'agrégation",
+    "modes": {
+      "hour": "Heures pleines",
+      "fixed": "Grille fixe",
+      "custom": "Personnalisé"
+    }
+  },
+  "analytics": {
+    "title": "Phases marché × performance",
+    "assetProfileTab": "Profil de l'actif",
+    "periodProfileTab": "Créneaux × performance",
+    "dominantRegime": "Régime dominant",
+    "winRate": "Taux de réussite",
+    "expectancy": "Expectancy",
+    "sampleSessions": "Sessions documentées",
+    "tradeCount": "Trades",
+    "verdict": {
+      "favor": "Créneau favorable",
+      "avoid": "À éviter",
+      "neutral": "Neutre",
+      "insufficient_data": "Données insuffisantes"
+    },
+    "rankingTitle": "Classement des créneaux",
+    "period": "Période",
+    "regimePct": "% régime",
+    "noRanking": "Pas assez de données — documentez vos sessions de marché."
+  },
+  "replay": {
+    "slotsTitle": "Phases par tranche horaire",
+    "emptySlot": "— Non renseigné",
+    "addSlot": "Ajouter",
+    "addSlotHint": "Ajoutez uniquement les créneaux utiles pour cette session (ex. ouverture, mid-session, clôture).",
+    "optionalLabel": "Optionnel",
+    "noSlotsYet": "Aucun créneau — ajoutez ceux que vous souhaitez documenter.",
+    "removeSlot": "Retirer ce créneau",
+    "invalidSlotTimes": "Horaires invalides.",
+    "duplicateSlot": "Ce créneau existe déjà.",
+    "usingSettingsTemplate": "Créneaux chargés depuis Paramètres (mode personnalisé).",
+    "clearSessionSlots": "Effacer tous les créneaux",
+    "freeRangeTitle": "Plage libre (horaires précis)",
+    "noFreeBlocks": "Aucune plage libre",
+    "columnPeriod": "Tranche",
+    "columnEvents": "Événements",
+    "selectPhaseFirst": "Choisissez une phase pour ajouter des événements",
+    "recordedEvents": "Enregistrés sur cette tranche"
+  }
+}

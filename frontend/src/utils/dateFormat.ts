@@ -323,6 +323,18 @@ export const formatTime = (
 };
 
 /**
+ * Affiche une heure de session (HH:mm) telle qu'enregistrée — pas de conversion fuseau.
+ */
+export const formatSessionClockLabel = (clock: string): string => {
+  if (!clock) return '';
+  const parts = clock.split(':');
+  if (parts.length < 2) return clock;
+  const h = parts[0].padStart(2, '0');
+  const m = parts[1].padStart(2, '0');
+  return `${h}:${m}`;
+};
+
+/**
  * Horloge marché (HH:mm:ss) selon la langue des paramètres et le fuseau du marché.
  */
 export const formatClockTime = (

@@ -47,4 +47,5 @@ urlpatterns = [
     path('calculator/breakeven/', calculator_views.calculate_breakeven, name='calculate-breakeven'),
     path('calculator/margin/', calculator_views.calculate_margin, name='calculate-margin'),
     path('calculator/forex-lot-size/', calculator_views.calculate_forex_lot_size, name='calculate-forex-lot-size'),
+    path('market-phases/', include('trades.market_phases.urls')),
 ]

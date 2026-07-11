@@ -109,6 +109,7 @@
     "riskCapital": "风险与资本",
     "projection": "预测",
     "timeAnalysis": "时间分析",
+    "marketPhases": "市场阶段",
     "patterns": "相关性与模式"
   },
   "monteCarlo": {

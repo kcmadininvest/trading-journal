@@ -59,6 +59,16 @@
   "marketTapeStopLossPlannedTooltip": "Stop loss planificado (diario) @ {{price}}",
   "marketTapeStopLossBrokerTooltip": "Stop broker (orden TopStep) @ {{price}}",
   "marketTapeLegendCursor": "Cursor",
+  "tabs": {
+    "replay": "Replay de sesión",
+    "insights": "Alertas",
+    "journal": "Diario",
+    "marketPhases": "Fases de mercado"
+  },
+  "marketPhasesIntro": {
+    "title": "¿Para qué sirve esta pestaña?",
+    "description": "Durante o después de una sesión, documente el comportamiento del mercado por tramo horario: fase dominante (rango, tendencia, noticias…), contexto y eventos clave (rupturas, reentradas). Estas notas alimentan el observatorio de fases de mercado y el cruce con sus resultados en Analítica, para identificar tramos favorables o a evitar."
+  },
   "insightsTitle": "Alertas",
   "noInsights": "Ninguna alerta detectada",
   "journalDraftTitle": "Borrador del diario",

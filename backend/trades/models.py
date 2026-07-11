@@ -2227,6 +2227,13 @@ from .models_statistics import (
     ConditionalProbability,
 )
 from .models_rollup import TradeDailyRollup
+from .market_phases.models import (
+    MarketPhaseDefinition,
+    MarketPhaseEventDefinition,
+    MarketPhaseSlotConfig,
+    SessionMarketPhaseBlock,
+    SessionMarketPhaseEvent,
+)
 
 __all__ = [
     'Currency',

@@ -1,0 +1,111 @@
+{
+  "title": "市场阶段",
+  "captureTitle": "阶段记录",
+  "instrument": "品种",
+  "startBlock": "开始区块",
+  "closeBlock": "结束区块",
+  "selectPhase": "阶段",
+  "context": "背景",
+  "contextOptions": {
+    "none": "无",
+    "after_bullish_push": "多头推动后",
+    "after_bearish_push": "空头推动后",
+    "after_range": "盘整后",
+    "after_news": "新闻后"
+  },
+  "events": {
+    "captureHint": "每次点击会立即按当前会话时间记录事件。",
+    "captureHintReplay": "每次点击会在时段中点（{{time}}）记录事件。",
+    "savedFeedback": "已保存于 {{time}}：{{summary}}",
+    "selectHint": "点击事件进行选择，然后用叉号删除。",
+    "removeEvent": "删除此事件",
+    "saveAt": "保存于 {{time}}：{{summary}}",
+    "saveAtLive": "立即保存：{{summary}}",
+    "breakoutUpBody": "向上突破 ↑ · 实体",
+    "breakoutUpWick": "向上突破 ↑ · 影线",
+    "breakoutDownBody": "向下突破 ↓ · 实体",
+    "breakoutDownWick": "向下突破 ↓ · 影线",
+    "reentry": "重回区间",
+    "savePreview": {
+      "breakoutUpBody": "区间向上突破 — 蜡烛实体，维持",
+      "breakoutUpWick": "区间向上突破 — 仅影线",
+      "breakoutDownBody": "区间向下突破 — 蜡烛实体，维持",
+      "breakoutDownWick": "区间向下突破 — 仅影线",
+      "reentry": "重回区间"
+    },
+    "types": {
+      "range_breakout_up": "区间向上突破",
+      "range_breakout_down": "区间向下突破",
+      "range_reentry": "重回区间"
+    }
+  },
+  "eventMeta": {
+    "candlePart": {
+      "body": "蜡烛实体",
+      "wick": "影线"
+    },
+    "outcome": {
+      "hold": "维持",
+      "reentry": "重回"
+    }
+  },
+  "openBlock": "进行中的区块",
+  "noData": "今日无记录",
+  "viewStats": "查看统计",
+  "saving": "保存中…",
+  "saved": "已保存",
+  "settings": {
+    "title": "市场阶段观察",
+    "defaultInstrument": "默认品种",
+    "analyticalPeriods": "分析时段",
+    "periodLabel": "标签",
+    "periodStart": "开始",
+    "periodEnd": "结束",
+    "addPeriod": "添加时段",
+    "slotMode": "汇总模式",
+    "modes": {
+      "hour": "整点",
+      "fixed": "固定网格",
+      "custom": "自定义"
+    }
+  },
+  "analytics": {
+    "title": "市场阶段 × 表现",
+    "assetProfileTab": "品种概况",
+    "periodProfileTab": "时段 × 表现",
+    "dominantRegime": "主导状态",
+    "winRate": "胜率",
+    "expectancy": "期望值",
+    "sampleSessions": "已记录会话",
+    "tradeCount": "交易数",
+    "verdict": {
+      "favor": "有利时段",
+      "avoid": "避免",
+      "neutral": "中性",
+      "insufficient_data": "数据不足"
+    },
+    "rankingTitle": "时段排名",
+    "period": "时段",
+    "regimePct": "状态 %",
+    "noRanking": "数据不足 — 请记录您的市场会话。"
+  },
+  "replay": {
+    "slotsTitle": "按时段划分阶段",
+    "emptySlot": "— 未设置",
+    "addSlot": "添加",
+    "addSlotHint": "仅添加本会话需要的时段（开盘、盘中、收盘等）。",
+    "optionalLabel": "可选",
+    "noSlotsYet": "暂无时段 — 请添加要记录的时段。",
+    "removeSlot": "移除此时段",
+    "invalidSlotTimes": "时间无效。",
+    "duplicateSlot": "该时段已存在。",
+    "usingSettingsTemplate": "从设置加载的时段（自定义模式）。",
+    "clearSessionSlots": "清除所有时段",
+    "freeRangeTitle": "自由范围（精确时间）",
+    "noFreeBlocks": "无自由范围",
+    "columnPeriod": "时段",
+    "columnEvents": "事件",
+    "selectPhaseFirst": "选择阶段以添加事件",
+    "recordedEvents": "本时段已记录"
+  }
+}

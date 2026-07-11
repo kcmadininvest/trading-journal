@@ -1,0 +1,111 @@
+{
+  "title": "Fasi di mercato",
+  "captureTitle": "Acquisizione fasi",
+  "instrument": "Strumento",
+  "startBlock": "Avvia blocco",
+  "closeBlock": "Chiudi blocco",
+  "selectPhase": "Fase",
+  "context": "Contesto",
+  "contextOptions": {
+    "none": "Nessuno",
+    "after_bullish_push": "Dopo spinta rialzista",
+    "after_bearish_push": "Dopo spinta ribassista",
+    "after_range": "Dopo range",
+    "after_news": "Dopo news"
+  },
+  "events": {
+    "captureHint": "Ogni clic registra subito l'evento all'ora attuale della sessione.",
+    "captureHintReplay": "Ogni clic registra l'evento a metà della fascia ({{time}}).",
+    "savedFeedback": "Salvato alle {{time}}: {{summary}}",
+    "selectHint": "Clicca un evento per selezionarlo, poi rimuovilo con la croce.",
+    "removeEvent": "Rimuovi questo evento",
+    "saveAt": "Salva alle {{time}}: {{summary}}",
+    "saveAtLive": "Salva ora: {{summary}}",
+    "breakoutUpBody": "Rottura ↑ · corpo",
+    "breakoutUpWick": "Rottura ↑ · ombra",
+    "breakoutDownBody": "Rottura ↓ · corpo",
+    "breakoutDownWick": "Rottura ↓ · ombra",
+    "reentry": "Reingresso nel range",
+    "savePreview": {
+      "breakoutUpBody": "Rottura rialzista del range — corpo candela, mantenimento",
+      "breakoutUpWick": "Rottura rialzista del range — solo ombra",
+      "breakoutDownBody": "Rottura ribassista del range — corpo candela, mantenimento",
+      "breakoutDownWick": "Rottura ribassista del range — solo ombra",
+      "reentry": "Reingresso nel range"
+    },
+    "types": {
+      "range_breakout_up": "Rottura rialzista del range",
+      "range_breakout_down": "Rottura ribassista del range",
+      "range_reentry": "Reingresso nel range"
+    }
+  },
+  "eventMeta": {
+    "candlePart": {
+      "body": "corpo candela",
+      "wick": "ombra"
+    },
+    "outcome": {
+      "hold": "mantenimento",
+      "reentry": "reingresso"
+    }
+  },
+  "openBlock": "Blocco in corso",
+  "noData": "Nessuna acquisizione oggi",
+  "viewStats": "Vedi statistiche",
+  "saving": "Salvataggio…",
+  "saved": "Salvato",
+  "settings": {
+    "title": "Osservatorio fasi di mercato",
+    "defaultInstrument": "Strumento predefinito",
+    "analyticalPeriods": "Periodi analitici",
+    "periodLabel": "Etichetta",
+    "periodStart": "Inizio",
+    "periodEnd": "Fine",
+    "addPeriod": "Aggiungi periodo",
+    "slotMode": "Modalità di aggregazione",
+    "modes": {
+      "hour": "Ore intere",
+      "fixed": "Griglia fissa",
+      "custom": "Personalizzato"
+    }
+  },
+  "analytics": {
+    "title": "Fasi di mercato × performance",
+    "assetProfileTab": "Profilo dello strumento",
+    "periodProfileTab": "Fasce × performance",
+    "dominantRegime": "Regime dominante",
+    "winRate": "Tasso di successo",
+    "expectancy": "Expectancy",
+    "sampleSessions": "Sessioni documentate",
+    "tradeCount": "Trade",
+    "verdict": {
+      "favor": "Fascia favorevole",
+      "avoid": "Da evitare",
+      "neutral": "Neutro",
+      "insufficient_data": "Dati insufficienti"
+    },
+    "rankingTitle": "Classifica delle fasce",
+    "period": "Periodo",
+    "regimePct": "% regime",
+    "noRanking": "Dati insufficienti — documenta le tue sessioni di mercato."
+  },
+  "replay": {
+    "slotsTitle": "Fasi per fascia oraria",
+    "emptySlot": "— Non impostato",
+    "addSlot": "Aggiungi",
+    "addSlotHint": "Aggiungi solo le fasce utili per questa sessione (apertura, metà sessione, chiusura, ecc.).",
+    "optionalLabel": "Opzionale",
+    "noSlotsYet": "Nessuna fascia — aggiungi quelle da documentare.",
+    "removeSlot": "Rimuovi questa fascia",
+    "invalidSlotTimes": "Orari non validi.",
+    "duplicateSlot": "Questa fascia esiste già.",
+    "usingSettingsTemplate": "Fasce caricate da Impostazioni (modalità personalizzata).",
+    "clearSessionSlots": "Cancella tutte le fasce",
+    "freeRangeTitle": "Intervallo libero (orari precisi)",
+    "noFreeBlocks": "Nessun intervallo libero",
+    "columnPeriod": "Fascia",
+    "columnEvents": "Eventi",
+    "selectPhaseFirst": "Scegli una fase per aggiungere eventi",
+    "recordedEvents": "Registrati in questa fascia"
+  }
+}
