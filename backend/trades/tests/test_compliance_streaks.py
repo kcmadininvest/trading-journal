@@ -358,11 +358,20 @@ class RollingTradeComplianceRatesTests(SimpleTestCase):
             daily,
             anchor_date=date(2026, 6, 28),
         )
-        # 7 j. (>= 2026-06-21) : 1 + 4 = 5 trades, 3 respectés
+        # 7 j. (>= 2026-06-21) : 1 + 4 = 5 trades, 3 respectés, 2 non respectés
         self.assertEqual(rates['compliance_7d'], 60.0)
-        # 30 / 90 j. incluent aussi le 2026-06-20 : 7 trades, 5 respectés
+        self.assertEqual(rates['compliance_7d_respected'], 3)
+        self.assertEqual(rates['compliance_7d_not_respected'], 2)
+        self.assertEqual(rates['compliance_7d_total'], 5)
+        # 30 / 90 j. incluent aussi le 2026-06-20 : 7 trades, 5 respectés, 2 non respectés
         self.assertEqual(rates['compliance_30d'], round(5 / 7 * 100, 2))
         self.assertEqual(rates['compliance_90d'], round(5 / 7 * 100, 2))
+        self.assertEqual(rates['compliance_30d_respected'], 5)
+        self.assertEqual(rates['compliance_30d_not_respected'], 2)
+        self.assertEqual(rates['compliance_30d_total'], 7)
+        self.assertEqual(rates['compliance_90d_respected'], 5)
+        self.assertEqual(rates['compliance_90d_not_respected'], 2)
+        self.assertEqual(rates['compliance_90d_total'], 7)
 
     def test_calculate_rolling_rates_returns_none_without_data(self):
         from trades.compliance_streaks import calculate_rolling_trade_compliance_rates
@@ -374,3 +383,12 @@ class RollingTradeComplianceRatesTests(SimpleTestCase):
         self.assertIsNone(rates['compliance_7d'])
         self.assertIsNone(rates['compliance_30d'])
         self.assertIsNone(rates['compliance_90d'])
+        self.assertEqual(rates['compliance_7d_respected'], 0)
+        self.assertEqual(rates['compliance_7d_not_respected'], 0)
+        self.assertEqual(rates['compliance_7d_total'], 0)
+        self.assertEqual(rates['compliance_30d_respected'], 0)
+        self.assertEqual(rates['compliance_30d_not_respected'], 0)
+        self.assertEqual(rates['compliance_30d_total'], 0)
+        self.assertEqual(rates['compliance_90d_respected'], 0)
+        self.assertEqual(rates['compliance_90d_not_respected'], 0)
+        self.assertEqual(rates['compliance_90d_total'], 0)

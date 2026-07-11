@@ -48,6 +48,15 @@ export interface StrategyComplianceStats {
   compliance_7d: number | null;
   compliance_30d: number | null;
   compliance_90d: number | null;
+  compliance_7d_respected: number;
+  compliance_7d_not_respected: number;
+  compliance_7d_total: number;
+  compliance_30d_respected: number;
+  compliance_30d_not_respected: number;
+  compliance_30d_total: number;
+  compliance_90d_respected: number;
+  compliance_90d_not_respected: number;
+  compliance_90d_total: number;
   total_trades: number;
   total_respected: number;
   total_not_respected: number;

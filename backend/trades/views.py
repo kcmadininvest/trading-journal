@@ -3382,6 +3382,15 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
         compliance_7d = rolling_rates["compliance_7d"]
         compliance_30d = rolling_rates["compliance_30d"]
         compliance_90d = rolling_rates["compliance_90d"]
+        compliance_7d_respected = rolling_rates["compliance_7d_respected"]
+        compliance_7d_not_respected = rolling_rates["compliance_7d_not_respected"]
+        compliance_7d_total = rolling_rates["compliance_7d_total"]
+        compliance_30d_respected = rolling_rates["compliance_30d_respected"]
+        compliance_30d_not_respected = rolling_rates["compliance_30d_not_respected"]
+        compliance_30d_total = rolling_rates["compliance_30d_total"]
+        compliance_90d_respected = rolling_rates["compliance_90d_respected"]
+        compliance_90d_not_respected = rolling_rates["compliance_90d_not_respected"]
+        compliance_90d_total = rolling_rates["compliance_90d_total"]
         
         # Calculer les badges obtenus de manière séquentielle
         # Un badge ne peut être obtenu que si tous les badges précédents sont obtenus
@@ -3543,6 +3552,15 @@ class TradeStrategyViewSet(PnlPreferenceMixin, viewsets.ModelViewSet):
             'compliance_7d': compliance_7d,
             'compliance_30d': compliance_30d,
             'compliance_90d': compliance_90d,
+            'compliance_7d_respected': compliance_7d_respected,
+            'compliance_7d_not_respected': compliance_7d_not_respected,
+            'compliance_7d_total': compliance_7d_total,
+            'compliance_30d_respected': compliance_30d_respected,
+            'compliance_30d_not_respected': compliance_30d_not_respected,
+            'compliance_30d_total': compliance_30d_total,
+            'compliance_90d_respected': compliance_90d_respected,
+            'compliance_90d_not_respected': compliance_90d_not_respected,
+            'compliance_90d_total': compliance_90d_total,
             'total_trades': total_trades_with_strategy,
             'total_respected': total_respected,
             'total_not_respected': total_not_respected,

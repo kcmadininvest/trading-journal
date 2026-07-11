@@ -30,6 +30,36 @@ function MetricLabel({ label, tooltip }: { label: string; tooltip: string }) {
   );
 }
 
+function TradeCountBreakdown({
+  respected,
+  notRespected,
+  total,
+  formatCount,
+  tradesLabel,
+}: {
+  respected: number;
+  notRespected: number;
+  total: number;
+  formatCount: (value: number) => string;
+  tradesLabel: string;
+}) {
+  if (total <= 0) {
+    return null;
+  }
+
+  return (
+    <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug tabular-nums">
+      <span className="text-emerald-600 dark:text-emerald-400">{formatCount(respected)}</span>
+      {' / '}
+      <span className="text-rose-600 dark:text-rose-400">{formatCount(notRespected)}</span>
+      <span className="text-gray-400 dark:text-gray-500">
+        {' '}
+        ({formatCount(total)} {tradesLabel})
+      </span>
+    </div>
+  );
+}
+
 export const StrategyComplianceTrendCard: React.FC<StrategyComplianceTrendCardProps> = React.memo(
   ({ compliance }) => {
     const { t } = useTranslation();
@@ -58,22 +88,47 @@ export const StrategyComplianceTrendCard: React.FC<StrategyComplianceTrendCardPr
             label: t('strategy:metrics.last7Days'),
             tooltip: t('strategies:statsInsights.trendTooltip7d'),
             value: compliance?.compliance_7d,
+            respected: compliance?.compliance_7d_respected ?? 0,
+            notRespected: compliance?.compliance_7d_not_respected ?? 0,
+            total: compliance?.compliance_7d_total ?? 0,
           },
           {
             key: '30d' as const,
             label: t('strategy:metrics.last30Days'),
             tooltip: t('strategies:statsInsights.trendTooltip30d'),
             value: compliance?.compliance_30d,
+            respected: compliance?.compliance_30d_respected ?? 0,
+            notRespected: compliance?.compliance_30d_not_respected ?? 0,
+            total: compliance?.compliance_30d_total ?? 0,
           },
           {
             key: '90d' as const,
             label: t('strategy:metrics.last90Days'),
             tooltip: t('strategies:statsInsights.trendTooltip90d'),
             value: compliance?.compliance_90d,
+            respected: compliance?.compliance_90d_respected ?? 0,
+            notRespected: compliance?.compliance_90d_not_respected ?? 0,
+            total: compliance?.compliance_90d_total ?? 0,
           },
         ] as const,
-      [compliance?.compliance_7d, compliance?.compliance_30d, compliance?.compliance_90d, t]
+      [
+        compliance?.compliance_7d,
+        compliance?.compliance_7d_not_respected,
+        compliance?.compliance_7d_respected,
+        compliance?.compliance_7d_total,
+        compliance?.compliance_30d,
+        compliance?.compliance_30d_not_respected,
+        compliance?.compliance_30d_respected,
+        compliance?.compliance_30d_total,
+        compliance?.compliance_90d,
+        compliance?.compliance_90d_not_respected,
+        compliance?.compliance_90d_respected,
+        compliance?.compliance_90d_total,
+        t,
+      ]
     );
+
+    const tradesLabel = t('trades:trades');
 
     const tradeRate = compliance?.overall_compliance_rate;
     const totalTrades = compliance?.total_trades ?? 0;
@@ -95,13 +150,20 @@ export const StrategyComplianceTrendCard: React.FC<StrategyComplianceTrendCardPr
               <MetricLabel label={window.label} tooltip={window.tooltip} />
               <div
                 className={`text-xl font-bold tabular-nums leading-tight ${
-                  window.value != null && Number.isFinite(window.value)
+                  window.value != null && Number.isFinite(window.value) && window.total > 0
                     ? getRateToneClass(window.value)
                     : 'text-gray-400 dark:text-gray-500'
                 }`}
               >
-                {formatPercent(window.value)}
+                {window.total > 0 ? formatPercent(window.value) : t('strategies:statsInsights.trendNoData')}
               </div>
+              <TradeCountBreakdown
+                respected={window.respected}
+                notRespected={window.notRespected}
+                total={window.total}
+                formatCount={formatCount}
+                tradesLabel={tradesLabel}
+              />
             </div>
           ))}
 
@@ -119,17 +181,13 @@ export const StrategyComplianceTrendCard: React.FC<StrategyComplianceTrendCardPr
             >
               {totalTrades > 0 ? formatPercent(tradeRate) : t('strategies:statsInsights.trendNoData')}
             </div>
-            {totalTrades > 0 && (
-              <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug tabular-nums">
-                <span className="text-emerald-600 dark:text-emerald-400">{formatCount(totalRespected)}</span>
-                {' / '}
-                <span className="text-rose-600 dark:text-rose-400">{formatCount(totalNotRespected)}</span>
-                <span className="text-gray-400 dark:text-gray-500">
-                  {' '}
-                  ({formatCount(totalTrades)} {t('trades:trades')})
-                </span>
-              </div>
-            )}
+            <TradeCountBreakdown
+              respected={totalRespected}
+              notRespected={totalNotRespected}
+              total={totalTrades}
+              formatCount={formatCount}
+              tradesLabel={tradesLabel}
+            />
           </div>
         </div>
       </div>

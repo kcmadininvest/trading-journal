@@ -65,25 +65,31 @@ def calculate_rolling_trade_compliance_rates(
     *,
     anchor_date: date,
     windows: Tuple[int, ...] = (7, 30, 90),
-) -> Dict[str, Optional[float]]:
+) -> Dict[str, Optional[float] | int]:
     """
     Taux de respect au niveau trade sur fenêtres glissantes (jours calendaires).
 
-    Retourne None pour une fenêtre sans trade évalué (strategy_respected renseigné).
+    Retourne None pour le taux d'une fenêtre sans trade évalué (strategy_respected renseigné).
+    Les compteurs respectés / non respectés / total valent 0 dans ce cas.
     """
-    results: Dict[str, Optional[float]] = {}
+    results: Dict[str, Optional[float] | int] = {}
     for days in windows:
         start = (anchor_date - timedelta(days=days)).isoformat()
         with_strategy = 0
         respected = 0
+        not_respected = 0
         for date_str, data in daily_compliance.items():
             if date_str >= start:
                 with_strategy += data.get("with_strategy", 0)
                 respected += data.get("respected", 0)
+                not_respected += data.get("not_respected", 0)
         if with_strategy > 0:
             results[f"compliance_{days}d"] = round(respected / with_strategy * 100, 2)
         else:
             results[f"compliance_{days}d"] = None
+        results[f"compliance_{days}d_respected"] = respected
+        results[f"compliance_{days}d_not_respected"] = not_respected
+        results[f"compliance_{days}d_total"] = with_strategy
     return results
 
 
