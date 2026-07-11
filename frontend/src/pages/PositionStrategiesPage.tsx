@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { positionStrategiesService, PositionStrategy, PositionStrategyVersion } from '../services/positionStrategies';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
-import { formatDate } from '../utils/dateFormat';
+import { formatDate, toIsoCalendarDateInTimezone } from '../utils/dateFormat';
 import { usePreferences } from '../hooks/usePreferences';
+import { useTradingAccount } from '../contexts/useTradingAccount';
+import { MarketPhaseSlotCapturePanel } from '../components/marketPhases/MarketPhaseSlotCapturePanel';
 import DeleteConfirmModal from '../components/ui/DeleteConfirmModal';
 import { PageShell } from '../components/layout';
 import { Tooltip } from '../components/ui';
@@ -298,6 +300,7 @@ const SortableRule: React.FC<SortableRuleProps> = ({
 const PositionStrategiesPage: React.FC = () => {
   const { t } = useI18nTranslation();
   const { preferences } = usePreferences();
+  const { selectedAccountId: accountId, loading: accountLoading } = useTradingAccount();
 
   const [strategies, setStrategies] = useState<PositionStrategy[]>([]);
   const [counts, setCounts] = useState({ total: 0, active: 0, draft: 0, archived: 0 }); // Toutes les stratégies pour les compteurs
@@ -308,6 +311,7 @@ const PositionStrategiesPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [showVersionsModal, setShowVersionsModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [viewModalTab, setViewModalTab] = useState<'checklist' | 'marketPhases'>('checklist');
   const [versions, setVersions] = useState<PositionStrategyVersion[]>([]);
   const [previousVersion, setPreviousVersion] = useState<PositionStrategy | null>(null);
   const [filterStatus, setFilterStatus] = useState<'active' | 'draft' | 'archived'>('active');
@@ -530,6 +534,7 @@ const PositionStrategiesPage: React.FC = () => {
     setSelectedStrategy(strategy);
     // Réinitialiser les cases cochées à chaque ouverture
     setCheckedRules({});
+    setViewModalTab('checklist');
     setPreviousVersion(null);
     setShowViewModal(true);
     
@@ -569,6 +574,7 @@ const PositionStrategiesPage: React.FC = () => {
     setSelectedStrategy(null);
     setPreviousVersion(null);
     setCheckedRules({});
+    setViewModalTab('checklist');
   };
 
   // Détacher la checklist dans une fenêtre popup
@@ -2191,8 +2197,65 @@ const PositionStrategiesPage: React.FC = () => {
                 </div>
               </div>
 
+              <div className="px-3 sm:px-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+                <nav
+                  className="-mb-px flex gap-4 sm:gap-6 overflow-x-auto"
+                  aria-label={t('positionStrategies:viewModalSections', { defaultValue: 'Sections de la stratégie' })}
+                >
+                  {([
+                    { id: 'checklist' as const, label: t('positionStrategies:strategyChecklist', { defaultValue: 'Checklist' }) },
+                    { id: 'marketPhases' as const, label: t('positionStrategies:marketPhasesTab', { defaultValue: 'Phases marché' }) },
+                  ]).map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setViewModalTab(tab.id)}
+                      className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
+                        viewModalTab === tab.id
+                          ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                      }`}
+                      aria-current={viewModalTab === tab.id ? 'page' : undefined}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
               {/* Contenu scrollable */}
               <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+                {viewModalTab === 'marketPhases' ? (
+                  accountLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 dark:border-purple-400" />
+                    </div>
+                  ) : accountId == null ? (
+                    <div className="p-8 text-center">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('positionStrategies:selectTradingAccount', { defaultValue: 'Sélectionnez un compte de trading dans la barre supérieure.' })}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-800/50 dark:bg-sky-950/20">
+                        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                          {t('positionStrategies:marketPhasesIntroTitle', { defaultValue: 'Phases de marché' })}
+                        </h2>
+                        <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                          {t('positionStrategies:marketPhasesIntroDescription', {
+                            defaultValue: 'Documentez le comportement du marché par tranche horaire pendant votre session : phase dominante, contexte et événements clés. Ces notes alimentent l\'observatoire des phases de marché dans Analytique.',
+                          })}
+                        </p>
+                      </div>
+                      <MarketPhaseSlotCapturePanel
+                        tradingAccountId={accountId}
+                        sessionDate={toIsoCalendarDateInTimezone(new Date(), preferences.timezone)}
+                      />
+                    </div>
+                  )
+                ) : (
+                <>
                 {/* Bandeau de comparaison avec version précédente (uniquement pour les versions archivées) */}
                 {previousVersion && selectedStrategy.status !== 'active' && (() => {
                   const changes = getVersionChanges(selectedStrategy, previousVersion);
@@ -2577,6 +2640,8 @@ const PositionStrategiesPage: React.FC = () => {
                     </div>
                   );
                 })()}
+                </>
+                )}
               </div>
 
               {/* Footer */}
