@@ -119,8 +119,8 @@ function App() {
   useTheme();
   const notifiedGoalsRef = useRef<Set<number>>(new Set());
   const isAuthenticated = !!currentUser || authService.isAuthenticated();
-  const { data: bootstrap } = useBootstrap(isAuthenticated);
-  const { data: allAccounts } = useTradingAccounts({
+  const { data: bootstrap, isFetched: bootstrapFetched } = useBootstrap(isAuthenticated);
+  const { data: allAccounts, isFetched: accountsFetched } = useTradingAccounts({
     includeArchived: true,
     enabled: !!currentUser,
   });
@@ -174,40 +174,39 @@ function App() {
       return;
     }
 
-    let isMounted = true;
+    if (!bootstrapFetched && !accountsFetched) {
+      return;
+    }
+
     const storageKey = `account_onboarding_prompt_shown_${currentUser.id}`;
     const alreadyShown = localStorage.getItem(storageKey) === 'true';
 
-    const ensureAccountSetup = async () => {
-      try {
-        const hasAccounts =
-          bootstrap?.has_accounts ??
-          (Array.isArray(allAccounts) && allAccounts.length > 0);
+    let hasAccounts: boolean | null = null;
+    if (bootstrapFetched && bootstrap && typeof bootstrap.has_accounts === 'boolean') {
+      hasAccounts = bootstrap.has_accounts;
+    } else if (accountsFetched) {
+      hasAccounts = (allAccounts?.length ?? 0) > 0;
+    }
 
-        if (!isMounted) return;
+    if (hasAccounts === null) {
+      return;
+    }
 
-        if (!hasAccounts && !alreadyShown) {
-          setShowAccountCreationPrompt(true);
-          localStorage.setItem(storageKey, 'true');
-          if (currentPageRef.current !== 'accounts') {
-            window.location.hash = 'accounts';
-            setCurrentPage('accounts');
-          }
-        } else if (hasAccounts) {
-          localStorage.setItem(storageKey, 'true');
-          setShowAccountCreationPrompt(false);
-        }
-      } catch (error) {
-        console.error('Erreur lors de la vérification des comptes de trading:', error);
+    if (hasAccounts) {
+      localStorage.setItem(storageKey, 'true');
+      setShowAccountCreationPrompt(false);
+      return;
+    }
+
+    if (!alreadyShown) {
+      setShowAccountCreationPrompt(true);
+      localStorage.setItem(storageKey, 'true');
+      if (currentPageRef.current !== 'accounts') {
+        window.location.hash = 'accounts';
+        setCurrentPage('accounts');
       }
-    };
-
-    ensureAccountSetup();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentUser, bootstrap, allAccounts]);
+    }
+  }, [currentUser, bootstrap, bootstrapFetched, allAccounts, accountsFetched]);
 
   const premiumRestrictionsEnabled = appSettings?.premium_restrictions_enabled === true;
   const premiumRestrictionsSetting = appSettings?.premium_restrictions_enabled ?? true;
@@ -762,7 +761,15 @@ function App() {
                 {t('accounts:onboarding.openTab', { defaultValue: 'Aller aux comptes' })}
               </button>
               <button
-                onClick={() => setShowAccountCreationPrompt(false)}
+                onClick={() => {
+                  if (currentUser) {
+                    localStorage.setItem(
+                      `account_onboarding_prompt_shown_${currentUser.id}`,
+                      'true',
+                    );
+                  }
+                  setShowAccountCreationPrompt(false);
+                }}
                 className="flex-1 rounded-xl bg-gray-900 text-white px-4 py-2.5 font-medium hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200 transition"
               >
                 {t('common:gotIt', { defaultValue: 'Compris' })}

@@ -751,7 +751,7 @@ const PositionStrategiesPage: React.FC = () => {
       strategy_content: {
         sections: normalizedSections
       },
-      version_notes: '',
+      version_notes: strategy.version_notes || '',
       example_screenshot: strategy.example_screenshot || '',
       example_screenshot_thumbnail: strategy.example_screenshot_thumbnail || '',
     };
