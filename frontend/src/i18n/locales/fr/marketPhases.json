@@ -99,8 +99,13 @@
     "removeSlot": "Retirer ce créneau",
     "invalidSlotTimes": "Horaires invalides.",
     "duplicateSlot": "Ce créneau existe déjà.",
-    "usingSettingsTemplate": "Créneaux chargés depuis Paramètres (mode personnalisé).",
     "clearSessionSlots": "Effacer tous les créneaux",
+    "quickFill": {
+      "label": "Remplissage rapide",
+      "market30": "Grille 30 min (marché)",
+      "market60": "Grille 60 min (marché)",
+      "hourly": "Heures pleines"
+    },
     "freeRangeTitle": "Plage libre (horaires précis)",
     "noFreeBlocks": "Aucune plage libre",
     "columnPeriod": "Tranche",

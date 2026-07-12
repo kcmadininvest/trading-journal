@@ -99,8 +99,13 @@
     "removeSlot": "Dieses Zeitfenster entfernen",
     "invalidSlotTimes": "Ungültige Zeiten.",
     "duplicateSlot": "Dieses Zeitfenster existiert bereits.",
-    "usingSettingsTemplate": "Zeitfenster aus Einstellungen geladen (benutzerdefinierter Modus).",
     "clearSessionSlots": "Alle Zeitfenster löschen",
+    "quickFill": {
+      "label": "Schnellfüllung",
+      "market30": "30-Min-Raster (Markt)",
+      "market60": "60-Min-Raster (Markt)",
+      "hourly": "Volle Stunden"
+    },
     "freeRangeTitle": "Freier Bereich (genaue Zeiten)",
     "noFreeBlocks": "Kein freier Bereich",
     "columnPeriod": "Zeitfenster",

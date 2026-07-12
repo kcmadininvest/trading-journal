@@ -130,6 +130,26 @@ def generate_fixed_slots(
     return slots
 
 
+def periods_from_captured_blocks(
+    blocks_qs,
+) -> list[AnalyticalPeriod]:
+    """Périodes distinctes dérivées des blocs capturés (outil de saisie)."""
+    seen: set[str] = set()
+    result: list[AnalyticalPeriod] = []
+    for block in blocks_qs.only('range_start', 'range_end'):
+        if not block.range_end:
+            continue
+        key = f'{block.range_start.strftime("%H:%M")}-{block.range_end.strftime("%H:%M")}'
+        if key in seen:
+            continue
+        seen.add(key)
+        parsed = parse_period_key(key)
+        if parsed:
+            result.append(parsed)
+    result.sort(key=lambda p: _time_to_minutes(p.start))
+    return result
+
+
 def periods_from_config(
     custom_periods: list[dict] | None,
     mode: str,

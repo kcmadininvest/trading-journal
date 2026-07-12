@@ -99,8 +99,13 @@
     "removeSlot": "Quitar este tramo",
     "invalidSlotTimes": "Horarios no válidos.",
     "duplicateSlot": "Este tramo ya existe.",
-    "usingSettingsTemplate": "Tramos cargados desde Ajustes (modo personalizado).",
     "clearSessionSlots": "Borrar todos los tramos",
+    "quickFill": {
+      "label": "Relleno rápido",
+      "market30": "Cuadrícula 30 min (mercado)",
+      "market60": "Cuadrícula 60 min (mercado)",
+      "hourly": "Horas completas"
+    },
     "freeRangeTitle": "Rango libre (horarios precisos)",
     "noFreeBlocks": "Sin rango libre",
     "columnPeriod": "Tramo",

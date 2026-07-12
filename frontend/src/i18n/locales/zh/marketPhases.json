@@ -99,8 +99,13 @@
     "removeSlot": "移除此时段",
     "invalidSlotTimes": "时间无效。",
     "duplicateSlot": "该时段已存在。",
-    "usingSettingsTemplate": "从设置加载的时段（自定义模式）。",
     "clearSessionSlots": "清除所有时段",
+    "quickFill": {
+      "label": "快速填充",
+      "market30": "30分钟网格（市场）",
+      "market60": "60分钟网格（市场）",
+      "hourly": "整点小时"
+    },
     "freeRangeTitle": "自由范围（精确时间）",
     "noFreeBlocks": "无自由范围",
     "columnPeriod": "时段",

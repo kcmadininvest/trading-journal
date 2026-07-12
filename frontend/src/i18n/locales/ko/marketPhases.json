@@ -99,8 +99,13 @@
     "removeSlot": "이 구간 제거",
     "invalidSlotTimes": "잘못된 시각입니다.",
     "duplicateSlot": "이 구간이 이미 있습니다.",
-    "usingSettingsTemplate": "설정에서 불러온 구간(사용자 지정 모드).",
     "clearSessionSlots": "모든 구간 지우기",
+    "quickFill": {
+      "label": "빠른 채우기",
+      "market30": "30분 그리드 (시장)",
+      "market60": "60분 그리드 (시장)",
+      "hourly": "정시 단위"
+    },
     "freeRangeTitle": "자유 범위(정확한 시각)",
     "noFreeBlocks": "자유 범위 없음",
     "columnPeriod": "구간",

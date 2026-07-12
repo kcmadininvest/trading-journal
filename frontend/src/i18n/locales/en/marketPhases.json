@@ -99,8 +99,13 @@
     "removeSlot": "Remove this slot",
     "invalidSlotTimes": "Invalid times.",
     "duplicateSlot": "This slot already exists.",
-    "usingSettingsTemplate": "Slots loaded from Settings (custom mode).",
     "clearSessionSlots": "Clear all slots",
+    "quickFill": {
+      "label": "Quick fill",
+      "market30": "30 min grid (market)",
+      "market60": "60 min grid (market)",
+      "hourly": "Full hours"
+    },
     "freeRangeTitle": "Free range (precise times)",
     "noFreeBlocks": "No free-range blocks",
     "columnPeriod": "Slot",

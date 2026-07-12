@@ -163,18 +163,12 @@ export function generateSessionSlots(options: GenerateSessionSlotsOptions): Anal
   return periodsFromConfig(options.config);
 }
 
-/** Créneaux affichés en replay : override session, sinon modèle custom Settings, sinon liste vide. */
-export function getReplayCaptureSlots(options: {
-  config: SlotConfig;
-  sessionOverrides?: AnalyticalPeriod[] | null;
-}): AnalyticalPeriod[] {
-  if (options.sessionOverrides !== null && options.sessionOverrides !== undefined) {
-    return sortSlotsByStart(options.sessionOverrides);
+/** Créneaux affichés en replay : uniquement ceux définis dans l'outil de saisie (session). */
+export function getReplayCaptureSlots(sessionOverrides?: AnalyticalPeriod[] | null): AnalyticalPeriod[] {
+  if (sessionOverrides === null || sessionOverrides === undefined) {
+    return [];
   }
-  if (options.config.mode === 'custom' && options.config.custom_analytical_periods?.length) {
-    return sortSlotsByStart(periodsFromCustomList(options.config.custom_analytical_periods));
-  }
-  return [];
+  return sortSlotsByStart(sessionOverrides);
 }
 
 export function sortSlotsByStart(slots: AnalyticalPeriod[]): AnalyticalPeriod[] {

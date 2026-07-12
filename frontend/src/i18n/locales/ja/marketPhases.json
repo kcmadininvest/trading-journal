@@ -99,8 +99,13 @@
     "removeSlot": "この時間帯を削除",
     "invalidSlotTimes": "無効な時刻です。",
     "duplicateSlot": "この時間帯は既に存在します。",
-    "usingSettingsTemplate": "設定から読み込んだ時間帯（カスタムモード）。",
     "clearSessionSlots": "すべての時間帯をクリア",
+    "quickFill": {
+      "label": "クイック入力",
+      "market30": "30分グリッド（市場）",
+      "market60": "60分グリッド（市場）",
+      "hourly": "1時間単位"
+    },
     "freeRangeTitle": "自由範囲（正確な時刻）",
     "noFreeBlocks": "自由範囲なし",
     "columnPeriod": "時間帯",

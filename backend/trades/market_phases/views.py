@@ -32,7 +32,7 @@ from .models import (
     SessionMarketPhaseBlock,
     SessionMarketPhaseEvent,
 )
-from .period_projection import parse_period_key, periods_from_config
+from .period_projection import parse_period_key, periods_from_captured_blocks, periods_from_config
 from .serializers import (
     CaptureBulkSerializer,
     MarketPhaseDefinitionCreateSerializer,
@@ -218,13 +218,15 @@ class MarketPhaseAnalyticsView(APIView):
             request, instrument_key, date_from, date_to
         )
         config, _ = MarketPhaseSlotConfig.objects.get_or_create(user=request.user)
-        periods = periods_from_config(
-            config.custom_analytical_periods if config.mode == 'custom' else None,
-            config.mode,
-            duration_minutes=config.duration_minutes,
-            anchor=config.anchor,
-            market_code=config.market_code,
-        )
+        periods = periods_from_captured_blocks(blocks_qs)
+        if not periods:
+            periods = periods_from_config(
+                config.custom_analytical_periods if config.mode == 'custom' else None,
+                config.mode,
+                duration_minutes=config.duration_minutes,
+                anchor=config.anchor,
+                market_code=config.market_code,
+            )
 
         if analysis_type == 'asset-profile':
             period_key = request.query_params.get('period_key')

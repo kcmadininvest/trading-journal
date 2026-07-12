@@ -16,6 +16,8 @@ import {
   AnalyticalPeriod,
   blockMatchesSlot,
   eventInPeriod,
+  generateFixedSlots,
+  generateHourlyPeriods,
   getReplayCaptureSlots,
   isSessionClockAfter,
   normalizeSlotPeriod,
@@ -87,22 +89,18 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
     [t],
   );
 
-  const slots = useMemo(() => {
-    if (!capture.slotConfig || sessionSlotOverrides === undefined) return [];
-    return getReplayCaptureSlots({
-      config: capture.slotConfig,
-      sessionOverrides: sessionSlotOverrides,
-    });
-  }, [capture.slotConfig, sessionSlotOverrides]);
+  const slots = useMemo(
+    () => getReplayCaptureSlots(sessionSlotOverrides),
+    [sessionSlotOverrides],
+  );
 
-  const usesSettingsTemplate = useMemo(
-    () =>
-      Boolean(
-        capture.slotConfig?.mode === 'custom'
-        && capture.slotConfig.custom_analytical_periods?.length
-        && sessionSlotOverrides === null,
-      ),
-    [capture.slotConfig, sessionSlotOverrides],
+  const quickFillOptions = useMemo(
+    () => [
+      { value: 'market_30', label: t('replay.quickFill.market30') },
+      { value: 'market_60', label: t('replay.quickFill.market60') },
+      { value: 'hourly', label: t('replay.quickFill.hourly') },
+    ],
+    [t],
   );
 
   useEffect(() => {
@@ -212,6 +210,22 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
     [capture, persistSessionSlots, slots],
   );
 
+  const handleQuickFill = useCallback(
+    (mode: string) => {
+      let generated: AnalyticalPeriod[] = [];
+      if (mode === 'market_30') {
+        generated = generateFixedSlots(30, '09:30', '16:00');
+      } else if (mode === 'market_60') {
+        generated = generateFixedSlots(60, '09:30', '16:00');
+      } else if (mode === 'hourly') {
+        generated = generateHourlyPeriods();
+      }
+      persistSessionSlots(sortSlotsByStart(generated));
+      setSlotFormError(null);
+    },
+    [persistSessionSlots],
+  );
+
   const handleClearSessionSlots = useCallback(() => {
     persistSessionSlots([]);
     setNewSlotDraft(EMPTY_SLOT_DRAFT);
@@ -257,6 +271,21 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
 
       <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900/40">
         <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">{t('replay.addSlotHint')}</p>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+            {t('replay.quickFill.label')}
+          </span>
+          {quickFillOptions.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className="rounded-md border border-gray-200 bg-white px-2.5 py-1 text-xs text-gray-700 transition-colors hover:border-sky-300 hover:text-sky-700 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-sky-500 dark:hover:text-sky-300"
+              onClick={() => handleQuickFill(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
         <div className={MARKET_PHASE_PERIOD_FORM_GRID_CLASS}>
           <div className="min-w-0">
             <label className={MARKET_PHASE_FORM_LABEL_CLASS}>
@@ -301,9 +330,6 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
         </div>
         {slotFormError && (
           <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">{slotFormError}</p>
-        )}
-        {usesSettingsTemplate && (
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t('replay.usingSettingsTemplate')}</p>
         )}
         {slots.length > 0 && (
           <button

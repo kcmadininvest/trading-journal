@@ -19,7 +19,6 @@ import { SessionCard } from '../components/settings/SessionCard';
 import { DangerZoneCard } from '../components/settings/DangerZoneCard';
 import { SettingsToast } from '../components/settings/SettingsToast';
 import { IntegrationsSection } from '../components/settings/IntegrationsSection';
-import { MarketPhaseSettingsSection } from '../components/marketPhases/MarketPhaseSettingsSection';
 import {
   AppFontFamily,
   applyAppFontFamily,
@@ -991,7 +990,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               </div>
 
               <IntegrationsSection onMessage={showMessage} />
-              <MarketPhaseSettingsSection />
             </div>
           </SettingsSection>
         )}

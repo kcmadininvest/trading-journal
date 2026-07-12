@@ -66,43 +66,21 @@ describe('marketPhaseSlots', () => {
     expect(slots[0].label).toBe('Midi');
   });
 
-  it('getReplayCaptureSlots empty for hour mode without session override', () => {
-    const slots = getReplayCaptureSlots({ config: { mode: 'hour' } });
-    expect(slots).toHaveLength(0);
+  it('getReplayCaptureSlots empty without session slots', () => {
+    expect(getReplayCaptureSlots()).toHaveLength(0);
+    expect(getReplayCaptureSlots(null)).toHaveLength(0);
   });
 
-  it('getReplayCaptureSlots uses custom settings template', () => {
-    const slots = getReplayCaptureSlots({
-      config: {
-        mode: 'custom',
-        custom_analytical_periods: [{ label: 'Midi', start: '12:00', end: '14:00' }],
-      },
-    });
-    expect(slots).toHaveLength(1);
-    expect(slots[0].label).toBe('Midi');
-  });
-
-  it('getReplayCaptureSlots prefers session overrides', () => {
-    const slots = getReplayCaptureSlots({
-      config: {
-        mode: 'custom',
-        custom_analytical_periods: [{ label: 'Midi', start: '12:00', end: '14:00' }],
-      },
-      sessionOverrides: [{ key: '09:30-10:00', label: 'Open', start: '09:30', end: '10:00' }],
-    });
+  it('getReplayCaptureSlots returns session slots only', () => {
+    const slots = getReplayCaptureSlots([
+      { key: '09:30-10:00', label: 'Open', start: '09:30', end: '10:00' },
+    ]);
     expect(slots).toHaveLength(1);
     expect(slots[0].label).toBe('Open');
   });
 
   it('getReplayCaptureSlots honors explicit empty session override', () => {
-    const slots = getReplayCaptureSlots({
-      config: {
-        mode: 'custom',
-        custom_analytical_periods: [{ label: 'Midi', start: '12:00', end: '14:00' }],
-      },
-      sessionOverrides: [],
-    });
-    expect(slots).toHaveLength(0);
+    expect(getReplayCaptureSlots([])).toHaveLength(0);
   });
 
   it('normalizeSlotPeriod', () => {

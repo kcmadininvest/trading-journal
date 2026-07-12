@@ -6,7 +6,6 @@ import {
   MarketPhaseDefinition,
   MarketPhaseEvent,
   MarketInstrument,
-  MarketPhaseSlotConfig,
 } from '../services/marketPhases';
 import { toIsoCalendarDateInTimezone } from '../utils/dateFormat';
 import {
@@ -45,7 +44,6 @@ export function useMarketPhaseCapture({
   const { preferences } = usePreferences();
   const [phases, setPhases] = useState<MarketPhaseDefinition[]>([]);
   const [instruments, setInstruments] = useState<MarketInstrument[]>([]);
-  const [slotConfig, setSlotConfig] = useState<MarketPhaseSlotConfig | null>(null);
   const [instrumentKey, setInstrumentKey] = useState(instrumentKeyProp || 'nasdaq');
   const [blocks, setBlocks] = useState<MarketPhaseBlock[]>([]);
   const [orphanEvents, setOrphanEvents] = useState<MarketPhaseEvent[]>([]);
@@ -61,21 +59,17 @@ export function useMarketPhaseCapture({
   const effectiveDate = sessionDate || toIsoCalendarDateInTimezone(new Date(), preferences.timezone);
 
   const loadMeta = useCallback(async () => {
-    const [p, inst, cfg] = await Promise.all([
+    const [p, inst] = await Promise.all([
       marketPhasesService.getPhaseDefinitions(),
       marketPhasesService.getInstruments(tradingAccountId),
-      marketPhasesService.getSlotConfig().catch(() => null),
     ]);
     setPhases(p);
     const list = inst.instruments;
     setInstruments(list);
-    setSlotConfig(cfg);
     setInstrumentKey((current) => {
       const keys = list.map((i) => i.key);
       if (instrumentKeyProp && keys.includes(instrumentKeyProp)) return instrumentKeyProp;
       if (keys.includes(current)) return current;
-      const preferred = cfg?.default_instrument_key;
-      if (preferred && keys.includes(preferred)) return preferred;
       return keys[0] || current;
     });
   }, [instrumentKeyProp, tradingAccountId]);
@@ -206,7 +200,6 @@ export function useMarketPhaseCapture({
   return {
     phases,
     instruments,
-    slotConfig,
     instrumentKey,
     setInstrumentKey,
     blocks,

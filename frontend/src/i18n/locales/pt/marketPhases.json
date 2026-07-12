@@ -99,8 +99,13 @@
     "removeSlot": "Remover este intervalo",
     "invalidSlotTimes": "Horários inválidos.",
     "duplicateSlot": "Este intervalo já existe.",
-    "usingSettingsTemplate": "Intervalos carregados das Definições (modo personalizado).",
     "clearSessionSlots": "Limpar todos os intervalos",
+    "quickFill": {
+      "label": "Preenchimento rápido",
+      "market30": "Grelha 30 min (mercado)",
+      "market60": "Grelha 60 min (mercado)",
+      "hourly": "Horas cheias"
+    },
     "freeRangeTitle": "Intervalo livre (horários precisos)",
     "noFreeBlocks": "Sem intervalo livre",
     "columnPeriod": "Intervalo",

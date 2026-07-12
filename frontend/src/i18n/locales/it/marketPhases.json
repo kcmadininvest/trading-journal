@@ -99,8 +99,13 @@
     "removeSlot": "Rimuovi questa fascia",
     "invalidSlotTimes": "Orari non validi.",
     "duplicateSlot": "Questa fascia esiste già.",
-    "usingSettingsTemplate": "Fasce caricate da Impostazioni (modalità personalizzata).",
     "clearSessionSlots": "Cancella tutte le fasce",
+    "quickFill": {
+      "label": "Riempimento rapido",
+      "market30": "Griglia 30 min (mercato)",
+      "market60": "Griglia 60 min (mercato)",
+      "hourly": "Ore intere"
+    },
     "freeRangeTitle": "Intervallo libero (orari precisi)",
     "noFreeBlocks": "Nessun intervallo libero",
     "columnPeriod": "Fascia",
