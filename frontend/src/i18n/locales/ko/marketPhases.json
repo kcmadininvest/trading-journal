@@ -14,8 +14,9 @@
     "after_news": "뉴스 후"
   },
   "events": {
-    "captureHint": "클릭하면 현재 세션 시각에 이벤트가 즉시 기록됩니다.",
-    "captureHintReplay": "클릭하면 구간 중간({{time}})에 이벤트가 기록됩니다.",
+    "captureHint": "목록에서 이벤트를 선택하면 현재 세션 시각에 기록됩니다.",
+    "captureHintReplay": "목록에서 이벤트를 선택하면 구간 중간({{time}})에 기록됩니다.",
+    "selectEvent": "이벤트 선택",
     "savedFeedback": "{{time}}에 저장됨: {{summary}}",
     "selectHint": "이벤트를 클릭해 선택한 뒤 ×로 삭제하세요.",
     "removeEvent": "이 이벤트 삭제",
@@ -23,20 +24,30 @@
     "saveAtLive": "지금 저장: {{summary}}",
     "breakoutUpBody": "상향 돌파 ↑ · 몸통",
     "breakoutUpWick": "상향 돌파 ↑ · 꼬리",
+    "breakoutUpWickFakeout": "상향 돌파 ↑ · 꼬리 + 재진입",
     "breakoutDownBody": "하향 돌파 ↓ · 몸통",
     "breakoutDownWick": "하향 돌파 ↓ · 꼬리",
+    "breakoutDownWickFakeout": "하향 돌파 ↓ · 꼬리 + 재진입",
+    "wickSweepHigh": "레인지 위 꼬리",
+    "wickSweepLow": "레인지 아래 꼬리",
     "reentry": "레인지 재진입",
     "savePreview": {
       "breakoutUpBody": "레인지 상향 돌파 — 캔들 몸통, 유지",
       "breakoutUpWick": "레인지 상향 돌파 — 꼬리만",
+      "breakoutUpWickFakeout": "레인지 상향 돌파 — 꼬리, 재진입 (페이크아웃)",
       "breakoutDownBody": "레인지 하향 돌파 — 캔들 몸통, 유지",
       "breakoutDownWick": "레인지 하향 돌파 — 꼬리만",
+      "breakoutDownWickFakeout": "레인지 하향 돌파 — 꼬리, 재진입 (페이크아웃)",
+      "wickSweepHigh": "레인지 위 꼬리 — 유동성 스윕",
+      "wickSweepLow": "레인지 아래 꼬리 — 유동성 스윕",
       "reentry": "레인지 재진입"
     },
     "types": {
       "range_breakout_up": "레인지 상향 돌파",
       "range_breakout_down": "레인지 하향 돌파",
-      "range_reentry": "레인지 재진입"
+      "range_reentry": "레인지 재진입",
+      "wick_sweep_high": "레인지 위 꼬리",
+      "wick_sweep_low": "레인지 아래 꼬리"
     }
   },
   "eventMeta": {

@@ -41,6 +41,14 @@ function timeToMinutes(hhmm: string): number {
   return (h || 0) * 60 + (m || 0);
 }
 
+export function createEmptySlotDraft(start: string): Pick<AnalyticalPeriod, 'label' | 'start' | 'end'> {
+  return {
+    label: '',
+    start,
+    end: suggestSlotEndFromStart(start),
+  };
+}
+
 export function suggestSlotEndFromStart(start: string, durationMinutes = 30): string {
   if (!/^\d{1,2}:\d{2}$/.test(start.trim())) {
     return minutesToHHMM(durationMinutes);

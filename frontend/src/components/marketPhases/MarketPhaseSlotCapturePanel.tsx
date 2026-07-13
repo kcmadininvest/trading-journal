@@ -9,12 +9,14 @@ import {
   MARKET_PHASE_FORM_CLOCK_CLASS,
   MARKET_PHASE_FORM_BUTTON_CLASS,
 } from '../common/SessionClockInput';
-import { useMarketPhaseCapture } from '../../hooks/useMarketPhaseCapture';
+import { nowTimeInTz, useMarketPhaseCapture } from '../../hooks/useMarketPhaseCapture';
+import { usePreferences } from '../../hooks/usePreferences';
 import { MarketPhaseEventButtons, MarketPhaseRecordedEvents } from './MarketPhaseEventButtons';
 import { MarketPhaseBlock, MarketPhaseEvent } from '../../services/marketPhases';
 import {
   AnalyticalPeriod,
   blockMatchesSlot,
+  createEmptySlotDraft,
   eventInPeriod,
   generateFixedSlots,
   generateHourlyPeriods,
@@ -25,8 +27,6 @@ import {
   slotMidpoint,
   sortSlotsByStart,
 } from '../../utils/marketPhaseSlots';
-
-const EMPTY_SLOT_DRAFT = { label: '', start: '09:30', end: '10:00' };
 
 function eventsForSlot(slot: AnalyticalPeriod, allEvents: MarketPhaseEvent[]): MarketPhaseEvent[] {
   return allEvents
@@ -56,6 +56,7 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
   className = '',
 }) => {
   const { t } = useTranslation(['marketPhases', 'common']);
+  const { preferences } = usePreferences();
   const capture = useMarketPhaseCapture({
     tradingAccountId,
     sessionDate,
@@ -65,7 +66,9 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
   });
 
   const [sessionSlotOverrides, setSessionSlotOverrides] = useState<AnalyticalPeriod[] | null | undefined>(undefined);
-  const [newSlotDraft, setNewSlotDraft] = useState(EMPTY_SLOT_DRAFT);
+  const [newSlotDraft, setNewSlotDraft] = useState(() =>
+    createEmptySlotDraft(nowTimeInTz(preferences.timezone)),
+  );
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
 
   const instrumentOptions = useMemo(
@@ -228,8 +231,8 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
 
   const handleClearSessionSlots = useCallback(() => {
     persistSessionSlots([]);
-    setNewSlotDraft(EMPTY_SLOT_DRAFT);
-  }, [persistSessionSlots]);
+    setNewSlotDraft(createEmptySlotDraft(nowTimeInTz(preferences.timezone)));
+  }, [persistSessionSlots, preferences.timezone]);
 
   if (!tradingAccountId) return null;
 

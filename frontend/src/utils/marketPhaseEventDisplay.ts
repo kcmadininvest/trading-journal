@@ -19,6 +19,14 @@ export const MARKET_PHASE_EVENT_ACTIONS = [
     previewKey: 'events.savePreview.breakoutUpWick',
   },
   {
+    code: 'range_breakout_up',
+    direction: 'up',
+    candlePart: 'wick',
+    outcome: 'reentry',
+    labelKey: 'events.breakoutUpWickFakeout',
+    previewKey: 'events.savePreview.breakoutUpWickFakeout',
+  },
+  {
     code: 'range_breakout_down',
     direction: 'down',
     candlePart: 'body',
@@ -35,6 +43,30 @@ export const MARKET_PHASE_EVENT_ACTIONS = [
     previewKey: 'events.savePreview.breakoutDownWick',
   },
   {
+    code: 'range_breakout_down',
+    direction: 'down',
+    candlePart: 'wick',
+    outcome: 'reentry',
+    labelKey: 'events.breakoutDownWickFakeout',
+    previewKey: 'events.savePreview.breakoutDownWickFakeout',
+  },
+  {
+    code: 'wick_sweep_high',
+    direction: 'up',
+    candlePart: 'wick',
+    outcome: 'unknown',
+    labelKey: 'events.wickSweepHigh',
+    previewKey: 'events.savePreview.wickSweepHigh',
+  },
+  {
+    code: 'wick_sweep_low',
+    direction: 'down',
+    candlePart: 'wick',
+    outcome: 'unknown',
+    labelKey: 'events.wickSweepLow',
+    previewKey: 'events.savePreview.wickSweepLow',
+  },
+  {
     code: 'range_reentry',
     direction: 'neutral',
     candlePart: 'unknown',
@@ -45,6 +77,14 @@ export const MARKET_PHASE_EVENT_ACTIONS = [
 ] as const;
 
 export type MarketPhaseEventAction = (typeof MARKET_PHASE_EVENT_ACTIONS)[number];
+
+export function marketPhaseEventActionKey(action: MarketPhaseEventAction): string {
+  return `${action.code}:${action.candlePart}:${action.outcome}`;
+}
+
+export function getMarketPhaseEventActionByKey(key: string): MarketPhaseEventAction | undefined {
+  return MARKET_PHASE_EVENT_ACTIONS.find((action) => marketPhaseEventActionKey(action) === key);
+}
 
 export function marketPhaseEventKey(ev: Pick<MarketPhaseEvent, 'id' | 'occurred_at' | 'event_type_code' | 'candle_part' | 'outcome' | 'direction'>): string {
   if (ev.id != null) return `id:${ev.id}`;

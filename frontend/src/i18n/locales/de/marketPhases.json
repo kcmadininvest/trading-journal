@@ -14,8 +14,9 @@
     "after_news": "Nach News"
   },
   "events": {
-    "captureHint": "Ein Klick speichert das Ereignis sofort zur aktuellen Sitzungszeit.",
-    "captureHintReplay": "Ein Klick speichert das Ereignis in der Mitte des Zeitfensters ({{time}}).",
+    "captureHint": "Wählen Sie ein Ereignis aus der Liste, um es zur aktuellen Sitzungszeit zu speichern.",
+    "captureHintReplay": "Wählen Sie ein Ereignis aus der Liste, um es in der Mitte des Zeitfensters ({{time}}) zu speichern.",
+    "selectEvent": "Ereignis wählen",
     "savedFeedback": "Gespeichert um {{time}}: {{summary}}",
     "selectHint": "Klicken Sie ein Ereignis an, um es auszuwählen, und entfernen Sie es mit dem Kreuz.",
     "removeEvent": "Dieses Ereignis löschen",
@@ -23,20 +24,30 @@
     "saveAtLive": "Jetzt speichern: {{summary}}",
     "breakoutUpBody": "Ausbruch ↑ · Körper",
     "breakoutUpWick": "Ausbruch ↑ · Docht",
+    "breakoutUpWickFakeout": "Ausbruch ↑ · Docht + Wiedereintritt",
     "breakoutDownBody": "Ausbruch ↓ · Körper",
     "breakoutDownWick": "Ausbruch ↓ · Docht",
+    "breakoutDownWickFakeout": "Ausbruch ↓ · Docht + Wiedereintritt",
+    "wickSweepHigh": "Docht über der Range",
+    "wickSweepLow": "Docht unter der Range",
     "reentry": "Range-Reentry",
     "savePreview": {
       "breakoutUpBody": "Aufwärtsausbruch aus der Range — Kerzenkörper, Halt",
       "breakoutUpWick": "Aufwärtsausbruch aus der Range — nur Docht",
+      "breakoutUpWickFakeout": "Aufwärtsausbruch aus der Range — Docht, Wiedereintritt (Fakeout)",
       "breakoutDownBody": "Abwärtsausbruch aus der Range — Kerzenkörper, Halt",
       "breakoutDownWick": "Abwärtsausbruch aus der Range — nur Docht",
+      "breakoutDownWickFakeout": "Abwärtsausbruch aus der Range — Docht, Wiedereintritt (Fakeout)",
+      "wickSweepHigh": "Docht über der Range — Liquiditäts-Sweep",
+      "wickSweepLow": "Docht unter der Range — Liquiditäts-Sweep",
       "reentry": "Wiedereintritt in die Range"
     },
     "types": {
       "range_breakout_up": "Aufwärtsausbruch aus der Range",
       "range_breakout_down": "Abwärtsausbruch aus der Range",
-      "range_reentry": "Wiedereintritt in die Range"
+      "range_reentry": "Wiedereintritt in die Range",
+      "wick_sweep_high": "Docht über der Range",
+      "wick_sweep_low": "Docht unter der Range"
     }
   },
   "eventMeta": {

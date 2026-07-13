@@ -14,8 +14,9 @@
     "after_news": "After news"
   },
   "events": {
-    "captureHint": "Each click immediately records the event at the current session time.",
-    "captureHintReplay": "Each click records the event at the middle of the slot ({{time}}).",
+    "captureHint": "Choose an event from the list to record it at the current session time.",
+    "captureHintReplay": "Choose an event from the list to record it at the middle of the slot ({{time}}).",
+    "selectEvent": "Choose an event",
     "savedFeedback": "Saved at {{time}}: {{summary}}",
     "selectHint": "Click an event to select it, then remove it with the cross.",
     "removeEvent": "Remove this event",
@@ -23,20 +24,30 @@
     "saveAtLive": "Save now: {{summary}}",
     "breakoutUpBody": "Breakout ↑ · body",
     "breakoutUpWick": "Breakout ↑ · wick",
+    "breakoutUpWickFakeout": "Breakout ↑ · wick + re-entry",
     "breakoutDownBody": "Breakout ↓ · body",
     "breakoutDownWick": "Breakout ↓ · wick",
+    "breakoutDownWickFakeout": "Breakout ↓ · wick + re-entry",
+    "wickSweepHigh": "Wick above range",
+    "wickSweepLow": "Wick below range",
     "reentry": "Range re-entry",
     "savePreview": {
       "breakoutUpBody": "Upside range breakout — candle body, hold",
       "breakoutUpWick": "Upside range breakout — wick only",
+      "breakoutUpWickFakeout": "Upside range breakout — wick, re-entry (fakeout)",
       "breakoutDownBody": "Downside range breakout — candle body, hold",
       "breakoutDownWick": "Downside range breakout — wick only",
+      "breakoutDownWickFakeout": "Downside range breakout — wick, re-entry (fakeout)",
+      "wickSweepHigh": "Wick above range — liquidity sweep",
+      "wickSweepLow": "Wick below range — liquidity sweep",
       "reentry": "Range re-entry"
     },
     "types": {
       "range_breakout_up": "Upside range breakout",
       "range_breakout_down": "Downside range breakout",
-      "range_reentry": "Range re-entry"
+      "range_reentry": "Range re-entry",
+      "wick_sweep_high": "Wick above range",
+      "wick_sweep_low": "Wick below range"
     }
   },
   "eventMeta": {

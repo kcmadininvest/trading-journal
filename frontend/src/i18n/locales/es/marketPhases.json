@@ -14,8 +14,9 @@
     "after_news": "Tras noticias"
   },
   "events": {
-    "captureHint": "Cada clic registra el evento de inmediato a la hora actual de la sesión.",
-    "captureHintReplay": "Cada clic registra el evento en el punto medio del tramo ({{time}}).",
+    "captureHint": "Elija un evento de la lista para registrarlo a la hora actual de la sesión.",
+    "captureHintReplay": "Elija un evento de la lista para registrarlo en el punto medio del tramo ({{time}}).",
+    "selectEvent": "Elegir un evento",
     "savedFeedback": "Guardado a las {{time}}: {{summary}}",
     "selectHint": "Haga clic en un evento para seleccionarlo y elimínelo con la cruz.",
     "removeEvent": "Eliminar este evento",
@@ -23,20 +24,30 @@
     "saveAtLive": "Guardar ahora: {{summary}}",
     "breakoutUpBody": "Ruptura ↑ · cuerpo",
     "breakoutUpWick": "Ruptura ↑ · mecha",
+    "breakoutUpWickFakeout": "Ruptura ↑ · mecha + reentrada",
     "breakoutDownBody": "Ruptura ↓ · cuerpo",
     "breakoutDownWick": "Ruptura ↓ · mecha",
+    "breakoutDownWickFakeout": "Ruptura ↓ · mecha + reentrada",
+    "wickSweepHigh": "Mecha por encima del rango",
+    "wickSweepLow": "Mecha por debajo del rango",
     "reentry": "Reentrada al rango",
     "savePreview": {
       "breakoutUpBody": "Ruptura alcista del rango — cuerpo de vela, mantenimiento",
       "breakoutUpWick": "Ruptura alcista del rango — solo mecha",
+      "breakoutUpWickFakeout": "Ruptura alcista del rango — mecha, reentrada (fakeout)",
       "breakoutDownBody": "Ruptura bajista del rango — cuerpo de vela, mantenimiento",
       "breakoutDownWick": "Ruptura bajista del rango — solo mecha",
+      "breakoutDownWickFakeout": "Ruptura bajista del rango — mecha, reentrada (fakeout)",
+      "wickSweepHigh": "Mecha por encima del rango — barrido de liquidez",
+      "wickSweepLow": "Mecha por debajo del rango — barrido de liquidez",
       "reentry": "Reentrada al rango"
     },
     "types": {
       "range_breakout_up": "Ruptura alcista del rango",
       "range_breakout_down": "Ruptura bajista del rango",
-      "range_reentry": "Reentrada al rango"
+      "range_reentry": "Reentrada al rango",
+      "wick_sweep_high": "Mecha por encima del rango",
+      "wick_sweep_low": "Mecha por debajo del rango"
     }
   },
   "eventMeta": {

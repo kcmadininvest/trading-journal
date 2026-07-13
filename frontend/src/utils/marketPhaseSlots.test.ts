@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseSessionClock } from '../components/common/SessionClockInput';
 import {
   blockMatchesSlot,
+  createEmptySlotDraft,
   generateFixedSlots,
   generateSessionSlots,
   getReplayCaptureSlots,
@@ -86,6 +87,14 @@ describe('marketPhaseSlots', () => {
   it('normalizeSlotPeriod', () => {
     expect(normalizeSlotPeriod({ label: '', start: '09:30', end: '10:00' })?.key).toBe('09:30-10:00');
     expect(normalizeSlotPeriod({ label: 'x', start: '', end: '10:00' })).toBeNull();
+  });
+
+  it('createEmptySlotDraft uses start and suggests end', () => {
+    expect(createEmptySlotDraft('07:15')).toEqual({
+      label: '',
+      start: '07:15',
+      end: '07:45',
+    });
   });
 
   it('suggestSlotEndFromStart', () => {

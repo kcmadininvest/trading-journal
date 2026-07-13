@@ -14,8 +14,9 @@
     "after_news": "新闻后"
   },
   "events": {
-    "captureHint": "每次点击会立即按当前会话时间记录事件。",
-    "captureHintReplay": "每次点击会在时段中点（{{time}}）记录事件。",
+    "captureHint": "从列表中选择事件，即可按当前会话时间记录。",
+    "captureHintReplay": "从列表中选择事件，即可在时段中点（{{time}}）记录。",
+    "selectEvent": "选择事件",
     "savedFeedback": "已保存于 {{time}}：{{summary}}",
     "selectHint": "点击事件进行选择，然后用叉号删除。",
     "removeEvent": "删除此事件",
@@ -23,20 +24,30 @@
     "saveAtLive": "立即保存：{{summary}}",
     "breakoutUpBody": "向上突破 ↑ · 实体",
     "breakoutUpWick": "向上突破 ↑ · 影线",
+    "breakoutUpWickFakeout": "向上突破 ↑ · 影线 + 重回",
     "breakoutDownBody": "向下突破 ↓ · 实体",
     "breakoutDownWick": "向下突破 ↓ · 影线",
+    "breakoutDownWickFakeout": "向下突破 ↓ · 影线 + 重回",
+    "wickSweepHigh": "区间上方影线",
+    "wickSweepLow": "区间下方影线",
     "reentry": "重回区间",
     "savePreview": {
       "breakoutUpBody": "区间向上突破 — 蜡烛实体，维持",
       "breakoutUpWick": "区间向上突破 — 仅影线",
+      "breakoutUpWickFakeout": "区间向上突破 — 影线，重回（假突破）",
       "breakoutDownBody": "区间向下突破 — 蜡烛实体，维持",
       "breakoutDownWick": "区间向下突破 — 仅影线",
+      "breakoutDownWickFakeout": "区间向下突破 — 影线，重回（假突破）",
+      "wickSweepHigh": "区间上方影线 — 流动性扫荡",
+      "wickSweepLow": "区间下方影线 — 流动性扫荡",
       "reentry": "重回区间"
     },
     "types": {
       "range_breakout_up": "区间向上突破",
       "range_breakout_down": "区间向下突破",
-      "range_reentry": "重回区间"
+      "range_reentry": "重回区间",
+      "wick_sweep_high": "区间上方影线",
+      "wick_sweep_low": "区间下方影线"
     }
   },
   "eventMeta": {

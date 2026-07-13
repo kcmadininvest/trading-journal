@@ -57,6 +57,46 @@ class MarketPhaseAnalyticsTests(TestCase):
     def test_verdict_insufficient(self):
         self.assertEqual(compute_verdict(20, -50, 5, 45), 'insufficient_data')
 
+    def test_fakeout_rate_from_explicit_wick_reentry(self):
+        bulk_upsert_capture(
+            user=self.user,
+            trading_account=self.account,
+            session_date=date(2026, 7, 10),
+            instrument_key='nasdaq',
+            blocks_data=[{
+                'phase_code': 'range_bound',
+                'range_start': time(12, 0),
+                'range_end': time(14, 0),
+            }],
+            events_data=[
+                {
+                    'event_type_code': 'range_breakout_up',
+                    'occurred_at': time(12, 30),
+                    'candle_part': 'wick',
+                    'outcome': 'reentry',
+                    'direction': 'up',
+                },
+                {
+                    'event_type_code': 'wick_sweep_low',
+                    'occurred_at': time(12, 45),
+                    'candle_part': 'wick',
+                    'outcome': 'unknown',
+                    'direction': 'down',
+                },
+            ],
+        )
+        from trades.market_phases.models import SessionMarketPhaseBlock, SessionMarketPhaseEvent
+        period = parse_period_key('12:00-14:00')
+        assert period is not None
+        profile = build_asset_market_profile(
+            blocks_qs=SessionMarketPhaseBlock.objects.filter(user=self.user),
+            events_qs=SessionMarketPhaseEvent.objects.filter(user=self.user),
+            period=period,
+            instrument_key='nasdaq',
+        )
+        self.assertEqual(profile['fakeout_rate'], 100.0)
+        self.assertEqual(profile['breakout_body_vs_wick'], {'body': 0, 'wick': 2})
+
     def test_periods_from_config_fixed_mode(self):
         periods = periods_from_config(None, 'fixed', duration_minutes=30, anchor='market_open', market_code='NYSE')
         self.assertGreater(len(periods), 0)

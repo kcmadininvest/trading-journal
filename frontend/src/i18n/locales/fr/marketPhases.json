@@ -14,8 +14,9 @@
     "after_news": "Après news"
   },
   "events": {
-    "captureHint": "Un clic enregistre immédiatement l'événement à l'heure actuelle de la session.",
-    "captureHintReplay": "Un clic enregistre l'événement au milieu de la tranche ({{time}}).",
+    "captureHint": "Choisissez un événement dans la liste pour l'enregistrer à l'heure actuelle de la session.",
+    "captureHintReplay": "Choisissez un événement dans la liste pour l'enregistrer au milieu de la tranche ({{time}}).",
+    "selectEvent": "Choisir un événement",
     "savedFeedback": "Enregistré à {{time}} : {{summary}}",
     "selectHint": "Cliquez un événement pour le sélectionner, puis supprimez-le avec la croix.",
     "removeEvent": "Supprimer cet événement",
@@ -23,20 +24,30 @@
     "saveAtLive": "Enregistrer maintenant : {{summary}}",
     "breakoutUpBody": "Cassure ↑ · corps",
     "breakoutUpWick": "Cassure ↑ · mèche",
+    "breakoutUpWickFakeout": "Cassure ↑ · mèche + réintégration",
     "breakoutDownBody": "Cassure ↓ · corps",
     "breakoutDownWick": "Cassure ↓ · mèche",
+    "breakoutDownWickFakeout": "Cassure ↓ · mèche + réintégration",
+    "wickSweepHigh": "Mèche au-dessus du range",
+    "wickSweepLow": "Mèche sous le range",
     "reentry": "Réintégration range",
     "savePreview": {
       "breakoutUpBody": "Cassure range par le haut — corps de bougie, maintien",
       "breakoutUpWick": "Cassure range par le haut — mèche seulement",
+      "breakoutUpWickFakeout": "Cassure range par le haut — mèche, réintégration (fakeout)",
       "breakoutDownBody": "Cassure range par le bas — corps de bougie, maintien",
       "breakoutDownWick": "Cassure range par le bas — mèche seulement",
+      "breakoutDownWickFakeout": "Cassure range par le bas — mèche, réintégration (fakeout)",
+      "wickSweepHigh": "Mèche au-dessus du range — sweep de liquidité",
+      "wickSweepLow": "Mèche sous le range — sweep de liquidité",
       "reentry": "Réintégration du range"
     },
     "types": {
       "range_breakout_up": "Cassure range par le haut",
       "range_breakout_down": "Cassure range par le bas",
-      "range_reentry": "Réintégration du range"
+      "range_reentry": "Réintégration du range",
+      "wick_sweep_high": "Mèche au-dessus du range",
+      "wick_sweep_low": "Mèche sous le range"
     }
   },
   "eventMeta": {

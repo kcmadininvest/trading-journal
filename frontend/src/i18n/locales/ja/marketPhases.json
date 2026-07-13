@@ -14,8 +14,9 @@
     "after_news": "ニュース後"
   },
   "events": {
-    "captureHint": "クリックすると、現在のセッション時刻でイベントが即座に記録されます。",
-    "captureHintReplay": "クリックすると、時間帯の中間（{{time}}）でイベントが記録されます。",
+    "captureHint": "リストからイベントを選ぶと、現在のセッション時刻で記録されます。",
+    "captureHintReplay": "リストからイベントを選ぶと、時間帯の中間（{{time}}）で記録されます。",
+    "selectEvent": "イベントを選択",
     "savedFeedback": "{{time}} に保存: {{summary}}",
     "selectHint": "イベントをクリックして選択し、×で削除します。",
     "removeEvent": "このイベントを削除",
@@ -23,20 +24,30 @@
     "saveAtLive": "今すぐ保存: {{summary}}",
     "breakoutUpBody": "上抜け ↑ · 実体",
     "breakoutUpWick": "上抜け ↑ · ヒゲ",
+    "breakoutUpWickFakeout": "上抜け ↑ · ヒゲ + 内戻り",
     "breakoutDownBody": "下抜け ↓ · 実体",
     "breakoutDownWick": "下抜け ↓ · ヒゲ",
+    "breakoutDownWickFakeout": "下抜け ↓ · ヒゲ + 内戻り",
+    "wickSweepHigh": "レンジ上のヒゲ",
+    "wickSweepLow": "レンジ下のヒゲ",
     "reentry": "レンジ内戻り",
     "savePreview": {
       "breakoutUpBody": "レンジ上抜け — 実体、維持",
       "breakoutUpWick": "レンジ上抜け — ヒゲのみ",
+      "breakoutUpWickFakeout": "レンジ上抜け — ヒゲ、内戻り（フェイクアウト）",
       "breakoutDownBody": "レンジ下抜け — 実体、維持",
       "breakoutDownWick": "レンジ下抜け — ヒゲのみ",
+      "breakoutDownWickFakeout": "レンジ下抜け — ヒゲ、内戻り（フェイクアウト）",
+      "wickSweepHigh": "レンジ上のヒゲ — 流動性スイープ",
+      "wickSweepLow": "レンジ下のヒゲ — 流動性スイープ",
       "reentry": "レンジ内への戻り"
     },
     "types": {
       "range_breakout_up": "レンジ上抜け",
       "range_breakout_down": "レンジ下抜け",
-      "range_reentry": "レンジ内への戻り"
+      "range_reentry": "レンジ内への戻り",
+      "wick_sweep_high": "レンジ上のヒゲ",
+      "wick_sweep_low": "レンジ下のヒゲ"
     }
   },
   "eventMeta": {

@@ -36,7 +36,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const dropdownMenuRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, minWidth: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+    minWidth: 0,
+    maxHeight: 288,
+    placement: 'bottom' as 'bottom' | 'top',
+  });
 
   const optionMatchesValue = (optVal: string | number | null, val: string | number | null) =>
     optVal === val ||
@@ -75,57 +82,78 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     setOpen(false);
   };
 
-  // Calculer la position et la largeur du dropdown
+  // Calculer la position, la largeur et la hauteur max selon le viewport (comme AccountSelector / PeriodSelector)
   useEffect(() => {
     if (open && buttonRef.current) {
       const updatePosition = () => {
-        if (buttonRef.current && dropdownMenuRef.current) {
-          const rect = buttonRef.current.getBoundingClientRect();
-          const minWidth = rect.width;
-          
-          // Calculer la largeur nécessaire pour le contenu le plus long
-          // Créer un élément temporaire pour mesurer le texte
-          const tempElement = document.createElement('span');
-          tempElement.style.visibility = 'hidden';
-          tempElement.style.position = 'absolute';
-          tempElement.style.whiteSpace = 'nowrap';
-          tempElement.style.fontSize = window.getComputedStyle(buttonRef.current).fontSize;
-          tempElement.style.fontFamily = window.getComputedStyle(buttonRef.current).fontFamily;
-          tempElement.style.padding = '0 12px'; // px-3
-          document.body.appendChild(tempElement);
-          
-          let maxContentWidth = minWidth;
-          options.forEach(opt => {
-            tempElement.textContent = opt.label;
-            const contentWidth = tempElement.offsetWidth;
-            if (contentWidth > maxContentWidth) {
-              maxContentWidth = contentWidth;
-            }
-          });
-          
-          document.body.removeChild(tempElement);
-          
-          // Utiliser le maximum entre la largeur minimale (bouton) et la largeur du contenu
-          // Ajouter 40px de marge pour le padding et les bordures
-          const finalWidth = Math.max(minWidth, maxContentWidth + 40);
-          
-          setDropdownPosition({
-            // Le dropdown est en `position: fixed` => coordonnées viewport, sans offset scroll.
-            top: rect.bottom + 4,
-            left: rect.left,
-            width: finalWidth,
-            minWidth: minWidth,
-          });
+        if (!buttonRef.current) return;
+
+        const rect = buttonRef.current.getBoundingClientRect();
+        const minWidth = rect.width;
+        const viewportMargin = 16;
+        const minDropdownHeight = 120;
+
+        const tempElement = document.createElement('span');
+        tempElement.style.visibility = 'hidden';
+        tempElement.style.position = 'absolute';
+        tempElement.style.whiteSpace = 'nowrap';
+        tempElement.style.fontSize = window.getComputedStyle(buttonRef.current).fontSize;
+        tempElement.style.fontFamily = window.getComputedStyle(buttonRef.current).fontFamily;
+        tempElement.style.padding = '0 12px';
+        document.body.appendChild(tempElement);
+
+        let maxContentWidth = minWidth;
+        options.forEach((opt) => {
+          tempElement.textContent = opt.label;
+          const contentWidth = tempElement.offsetWidth;
+          if (contentWidth > maxContentWidth) {
+            maxContentWidth = contentWidth;
+          }
+        });
+
+        document.body.removeChild(tempElement);
+
+        const maxViewportWidth = window.innerWidth - viewportMargin * 2;
+        const idealWidth = Math.max(minWidth, maxContentWidth + 40);
+        const finalWidth = Math.min(idealWidth, maxViewportWidth);
+        const left = Math.max(
+          viewportMargin,
+          Math.min(rect.left, window.innerWidth - finalWidth - viewportMargin),
+        );
+
+        const spaceBelow = window.innerHeight - rect.bottom - viewportMargin;
+        const spaceAbove = rect.top - viewportMargin;
+        let placement: 'bottom' | 'top' = 'bottom';
+        let maxHeight = Math.max(minDropdownHeight, spaceBelow);
+        let top = rect.bottom + 4;
+
+        if (spaceBelow < minDropdownHeight && spaceAbove > spaceBelow) {
+          placement = 'top';
+          maxHeight = Math.max(minDropdownHeight, spaceAbove);
+          top = rect.top - 4;
+        } else if (spaceBelow < spaceAbove) {
+          maxHeight = Math.max(minDropdownHeight, Math.max(spaceBelow, spaceAbove));
+          if (spaceAbove > spaceBelow) {
+            placement = 'top';
+            top = rect.top - 4;
+          }
         }
+
+        setDropdownPosition({
+          top,
+          left,
+          width: finalWidth,
+          minWidth,
+          maxHeight,
+          placement,
+        });
       };
-      
-      // Attendre un tick pour que le DOM soit prêt
+
       setTimeout(updatePosition, 0);
-      
-      // Mettre à jour la position lors du scroll ou du resize
+
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
-      
+
       return () => {
         window.removeEventListener('scroll', updatePosition, true);
         window.removeEventListener('resize', updatePosition);
@@ -159,17 +187,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const dropdownContent = open && (
     <div
       ref={dropdownMenuRef}
-      className="fixed z-[9999] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg max-h-72 overflow-auto"
+      className="fixed z-[9999] overflow-y-auto overflow-x-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
       style={{
-        '--dropdown-top': `${dropdownPosition.top}px`,
-        '--dropdown-left': `${dropdownPosition.left}px`,
-        '--dropdown-width': `${dropdownPosition.width}px`,
-        '--dropdown-min-width': `${dropdownPosition.minWidth}px`,
-        top: 'var(--dropdown-top)',
-        left: 'var(--dropdown-left)',
-        width: 'var(--dropdown-width)',
-        minWidth: 'var(--dropdown-min-width)',
-      } as React.CSSProperties}
+        top: `${dropdownPosition.top}px`,
+        left: `${dropdownPosition.left}px`,
+        width: `${dropdownPosition.width}px`,
+        minWidth: `${dropdownPosition.minWidth}px`,
+        maxHeight: `${dropdownPosition.maxHeight}px`,
+        ...(dropdownPosition.placement === 'top' ? { transform: 'translateY(-100%)' } : {}),
+      }}
     >
       <ul className="py-1 text-sm sm:text-base text-gray-700 dark:text-gray-300">
         {searchable && (
@@ -189,11 +215,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             <button
               type="button"
               onClick={() => handleSelect(opt.value)}
-              className={`w-full flex items-center justify-start px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+              className={`flex w-full items-start justify-start px-2 py-1.5 sm:px-3 sm:py-2 hover:bg-gray-50 dark:hover:bg-gray-700 ${
                 optionMatchesValue(opt.value, value) ? 'bg-gray-50 dark:bg-gray-700' : ''
               }`}
             >
-              <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{opt.label}</span>
+              <span className="min-w-0 flex-1 whitespace-normal break-words text-left leading-snug text-gray-900 dark:text-gray-100">
+                {opt.label}
+              </span>
             </button>
           </li>
         ))}

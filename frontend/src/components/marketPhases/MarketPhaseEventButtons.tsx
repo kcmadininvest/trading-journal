@@ -1,17 +1,17 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { replaySecondaryButtonClass } from '../replay/replayStyles';
+import { CustomSelect } from '../common/CustomSelect';
 import { formatSessionClockLabel } from '../../utils/dateFormat';
 import {
   formatMarketPhaseEventActionPreview,
   formatMarketPhaseEventSummary,
+  getMarketPhaseEventActionByKey,
+  marketPhaseEventActionKey,
   marketPhaseEventKey,
   MARKET_PHASE_EVENT_ACTIONS,
   type MarketPhaseEventAction,
 } from '../../utils/marketPhaseEventDisplay';
 import type { MarketPhaseEvent } from '../../services/marketPhases';
-
-const eventChipClass = `${replaySecondaryButtonClass} !h-8 !px-2.5 text-xs shrink-0`;
 
 export interface MarketPhaseEventButtonsProps {
   onRecord: (action: MarketPhaseEventAction, occurredAt?: string) => void;
@@ -29,13 +29,18 @@ export const MarketPhaseEventButtons: React.FC<MarketPhaseEventButtonsProps> = (
   className = '',
 }) => {
   const { t } = useTranslation('marketPhases');
+  const [selectedActionKey, setSelectedActionKey] = useState('');
 
-  const hint = useMemo(() => {
-    if (mode === 'replay') {
-      return t('events.captureHintReplay', { time: formatSessionClockLabel(occurredAt) });
-    }
-    return t('events.captureHint');
-  }, [mode, occurredAt, t]);
+  const eventOptions = useMemo(
+    () => [
+      { value: '', label: t('events.selectEvent', { defaultValue: 'Choisir un événement' }) },
+      ...MARKET_PHASE_EVENT_ACTIONS.map((action) => ({
+        value: marketPhaseEventActionKey(action),
+        label: formatMarketPhaseEventActionPreview(t, action),
+      })),
+    ],
+    [t],
+  );
 
   const feedback = useMemo(() => {
     if (!lastRecordedEvent) return null;
@@ -45,31 +50,27 @@ export const MarketPhaseEventButtons: React.FC<MarketPhaseEventButtonsProps> = (
     });
   }, [lastRecordedEvent, t]);
 
+  const handleEventSelect = (value: string | number | null) => {
+    const key = String(value ?? '');
+    if (!key) {
+      setSelectedActionKey('');
+      return;
+    }
+    const action = getMarketPhaseEventActionByKey(key);
+    if (!action) return;
+    onRecord(action, mode === 'replay' ? occurredAt : undefined);
+    setSelectedActionKey('');
+  };
+
   return (
     <div className={`space-y-2 ${className}`}>
-      <p className="text-[11px] leading-snug text-gray-500 dark:text-gray-400">{hint}</p>
-      <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5">
-        {MARKET_PHASE_EVENT_ACTIONS.map((action) => (
-          <button
-            key={`${action.code}-${action.candlePart}`}
-            type="button"
-            className={eventChipClass}
-            title={
-              mode === 'replay'
-                ? t('events.saveAt', {
-                    time: formatSessionClockLabel(occurredAt),
-                    summary: formatMarketPhaseEventActionPreview(t, action),
-                  })
-                : t('events.saveAtLive', {
-                    summary: formatMarketPhaseEventActionPreview(t, action),
-                  })
-            }
-            onClick={() => onRecord(action, mode === 'replay' ? occurredAt : undefined)}
-          >
-            {t(action.labelKey)}
-          </button>
-        ))}
-      </div>
+      <CustomSelect
+        value={selectedActionKey}
+        onChange={handleEventSelect}
+        options={eventOptions}
+        variant="compact"
+        className="!max-w-none w-full min-w-[11rem]"
+      />
       {feedback && (
         <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400" role="status">
           {feedback}
