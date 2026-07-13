@@ -486,6 +486,17 @@ const StrategyChecklistPopup: React.FC = () => {
             {t('positionStrategies:noSections', { defaultValue: 'Aucune section définie' })}
           </p>
         )}
+
+        {popupTab === 'checklist' && strategy.version_notes?.trim() && (
+          <div className="mt-1 pt-3 border-t border-gray-200 dark:border-gray-700">
+            <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-1.5">
+              {t('positionStrategies:versionNotes', { defaultValue: 'Notes de version' })}
+            </h4>
+            <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words leading-relaxed">
+              {strategy.version_notes}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Footer compact */}
