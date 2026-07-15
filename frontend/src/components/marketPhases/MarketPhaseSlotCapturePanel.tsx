@@ -11,7 +11,7 @@ import {
 } from '../common/SessionClockInput';
 import { nowTimeInTz, useMarketPhaseCapture } from '../../hooks/useMarketPhaseCapture';
 import { usePreferences } from '../../hooks/usePreferences';
-import { MarketPhaseEventButtons, MarketPhaseRecordedEvents } from './MarketPhaseEventButtons';
+import { MarketPhaseEventButtons } from './MarketPhaseEventButtons';
 import { MarketPhaseBlock, MarketPhaseEvent } from '../../services/marketPhases';
 import {
   AnalyticalPeriod,
@@ -21,9 +21,7 @@ import {
   generateFixedSlots,
   generateHourlyPeriods,
   getReplayCaptureSlots,
-  isSessionClockAfter,
   normalizeSlotPeriod,
-  suggestSlotEndFromStart,
   slotMidpoint,
   sortSlotsByStart,
 } from '../../utils/marketPhaseSlots';
@@ -141,8 +139,11 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
   const handleSlotPhaseChange = useCallback(
     (slot: AnalyticalPeriod, phaseCode: string) => {
       const others = capture.blocks.filter((b) => !blockMatchesSlot(b, slot));
+      const eventsOutsideSlot = capture.allEvents.filter(
+        (ev) => !eventInPeriod(ev.occurred_at, slot.start, slot.end),
+      );
       if (!phaseCode) {
-        capture.setBlocksAndPersist(others);
+        capture.setBlocksAndPersist(others, eventsOutsideSlot);
         return;
       }
       const existing = getBlockForSlot(slot);
@@ -155,7 +156,7 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
         preceding_context: existing?.preceding_context || 'none',
         source: 'replay',
       };
-      capture.setBlocksAndPersist([...others, updated]);
+      capture.setBlocksAndPersist([...others, updated], capture.allEvents);
     },
     [capture, getBlockForSlot],
   );
@@ -185,20 +186,13 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
     setNewSlotDraft({
       label: '',
       start: normalized.end,
-      end: suggestSlotEndFromStart(normalized.end),
+      end: '',
     });
     setSlotFormError(null);
   }, [newSlotDraft, persistSessionSlots, slots, t]);
 
   const handleStartChange = useCallback((start: string) => {
-    setNewSlotDraft((draft) => ({
-      ...draft,
-      start,
-      end:
-        !draft.end || !isSessionClockAfter(start, draft.end)
-          ? suggestSlotEndFromStart(start)
-          : draft.end,
-    }));
+    setNewSlotDraft((draft) => ({ ...draft, start }));
   }, []);
 
   const handleRemoveSlot = useCallback(
@@ -206,8 +200,11 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
       const next = slots.filter((item) => item.key !== slot.key);
       persistSessionSlots(next);
       const others = capture.blocks.filter((b) => !blockMatchesSlot(b, slot));
-      if (others.length !== capture.blocks.length) {
-        capture.setBlocksAndPersist(others);
+      const eventsOutsideSlot = capture.allEvents.filter(
+        (ev) => !eventInPeriod(ev.occurred_at, slot.start, slot.end),
+      );
+      if (others.length !== capture.blocks.length || eventsOutsideSlot.length !== capture.allEvents.length) {
+        capture.setBlocksAndPersist(others, eventsOutsideSlot);
       }
     },
     [capture, persistSessionSlots, slots],
@@ -396,38 +393,26 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
                       disabled={!block}
                     />
                   </td>
-                  <td className="px-3 py-2 align-top">
+                  <td className="px-3 py-2">
                     {!block ? (
                       <p className="text-xs text-gray-400 dark:text-gray-500">{t('replay.selectPhaseFirst')}</p>
                     ) : (
-                      <div className="space-y-2">
-                        <MarketPhaseEventButtons
-                          mode="replay"
-                          occurredAt={slotMidpoint(slot)}
-                          lastRecordedEvent={
-                            capture.lastRecordedEvent &&
-                            eventInPeriod(capture.lastRecordedEvent.occurred_at, slot.start, slot.end)
-                              ? capture.lastRecordedEvent
-                              : null
-                          }
-                          onRecord={(action, at) =>
-                            capture.handleQuickEvent(
-                              action.code,
-                              action.direction,
-                              action.candlePart,
-                              action.outcome,
-                              at,
-                            )
-                          }
-                        />
-                        <MarketPhaseRecordedEvents
-                          events={slotEvents}
-                          selectedEventKey={capture.selectedEventKey}
-                          onSelectEvent={capture.handleSelectEvent}
-                          onRemoveEvent={capture.handleRemoveEvent}
-                          onSelectTimestamp={onSelectTimestamp}
-                        />
-                      </div>
+                      <MarketPhaseEventButtons
+                        mode="replay"
+                        occurredAt={slotMidpoint(slot)}
+                        recordedEvent={slotEvents[0] ?? null}
+                        onRemoveEvent={capture.handleRemoveEvent}
+                        onSelectTimestamp={onSelectTimestamp}
+                        onRecord={(action, at) =>
+                          capture.handleQuickEvent(
+                            action.code,
+                            action.direction,
+                            action.candlePart,
+                            action.outcome,
+                            at,
+                          )
+                        }
+                      />
                     )}
                   </td>
                 </tr>

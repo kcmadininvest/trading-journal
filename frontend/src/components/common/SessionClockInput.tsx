@@ -116,7 +116,8 @@ export const SessionClockInput: React.FC<SessionClockInputProps> = ({
   const minutesInputRef = useRef<HTMLInputElement>(null);
 
   const commitValue = useCallback(
-    (nextRaw: string) => {
+    (nextRaw: string, options?: { enforceMin?: boolean }) => {
+      const enforceMin = options?.enforceMin !== false;
       const parsed = parseSessionClock(nextRaw);
       if (!parsed) {
         if (!nextRaw.trim()) {
@@ -126,12 +127,14 @@ export const SessionClockInput: React.FC<SessionClockInputProps> = ({
         return false;
       }
 
-      const minMinutes = minTime ? timeToMinutes(minTime) : null;
-      const nextMinutes = timeToMinutes(parsed);
-      if (minMinutes != null && nextMinutes != null && nextMinutes < minMinutes) {
-        onChange(minTime!);
-        setDisplayValue(minTime!);
-        return true;
+      if (enforceMin) {
+        const minMinutes = minTime ? timeToMinutes(minTime) : null;
+        const nextMinutes = timeToMinutes(parsed);
+        if (minMinutes != null && nextMinutes != null && nextMinutes < minMinutes) {
+          onChange(minTime!);
+          setDisplayValue(minTime!);
+          return true;
+        }
       }
 
       onChange(parsed);
@@ -144,10 +147,10 @@ export const SessionClockInput: React.FC<SessionClockInputProps> = ({
   const getCurrentParts = useCallback((): ClockParts => partsFromValue(value || displayValue), [displayValue, value]);
 
   const updateParts = useCallback(
-    (hours: number, minutes: number) => {
-      const clampedHours = Math.max(0, Math.min(23, hours));
-      const clampedMinutes = Math.max(0, Math.min(59, minutes));
-      commitValue(partsToClock({ hours: clampedHours, minutes: clampedMinutes }));
+    (hours: number, minutes: number, options?: { enforceMin?: boolean }) => {
+      const wrappedHours = ((hours % 24) + 24) % 24;
+      const wrappedMinutes = ((minutes % 60) + 60) % 60;
+      commitValue(partsToClock({ hours: wrappedHours, minutes: wrappedMinutes }), options);
     },
     [commitValue],
   );
@@ -155,10 +158,12 @@ export const SessionClockInput: React.FC<SessionClockInputProps> = ({
   const adjustParts = useCallback(
     (type: 'hours' | 'minutes', delta: number) => {
       const { hours, minutes } = getCurrentParts();
+      // Pas de clamp minTime sur le stepper : sinon les flèches « bas » semblent HS
+      // quand la valeur affichée est déjà au plancher (ex. fin vide = maintenant ≈ début).
       if (type === 'hours') {
-        updateParts(hours + delta, minutes);
+        updateParts(hours + delta, minutes, { enforceMin: false });
       } else {
-        updateParts(hours, minutes + delta);
+        updateParts(hours, minutes + delta, { enforceMin: false });
       }
     },
     [getCurrentParts, updateParts],
@@ -363,6 +368,8 @@ export const SessionClockInput: React.FC<SessionClockInputProps> = ({
         <button
           type="button"
           onClick={() => {
+            const parts = getCurrentParts();
+            updateParts(parts.hours, parts.minutes, { enforceMin: true });
             setPickerOpen(false);
             setEditingHours(null);
             setEditingMinutes(null);

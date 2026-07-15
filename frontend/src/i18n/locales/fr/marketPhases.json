@@ -121,7 +121,7 @@
     "noFreeBlocks": "Aucune plage libre",
     "columnPeriod": "Tranche",
     "columnEvents": "Événements",
-    "selectPhaseFirst": "Choisissez une phase pour ajouter des événements",
-    "recordedEvents": "Enregistrés sur cette tranche"
+    "selectPhaseFirst": "Choisissez une phase pour ajouter un événement",
+    "recordedEvents": "Enregistré sur cette tranche"
   }
 }

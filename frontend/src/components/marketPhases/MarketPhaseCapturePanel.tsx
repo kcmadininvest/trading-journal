@@ -141,7 +141,6 @@ export const MarketPhaseCapturePanel: React.FC<MarketPhaseCapturePanelProps> = (
           <MarketPhaseEventButtons
             mode={source}
             occurredAt={liveClock}
-            lastRecordedEvent={capture.lastRecordedEvent}
             onRecord={(action, at) =>
               capture.handleQuickEvent(
                 action.code,

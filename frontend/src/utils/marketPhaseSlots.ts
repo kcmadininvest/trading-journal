@@ -45,7 +45,7 @@ export function createEmptySlotDraft(start: string): Pick<AnalyticalPeriod, 'lab
   return {
     label: '',
     start,
-    end: suggestSlotEndFromStart(start),
+    end: '',
   };
 }
 

@@ -17,7 +17,10 @@ export interface MarketPhaseEventButtonsProps {
   onRecord: (action: MarketPhaseEventAction, occurredAt?: string) => void;
   occurredAt: string;
   mode: 'live' | 'replay';
-  lastRecordedEvent?: MarketPhaseEvent | null;
+  /** Si défini, remplace la liste déroulante par cet événement (1 max par phase). */
+  recordedEvent?: MarketPhaseEvent | null;
+  onRemoveEvent?: (event: MarketPhaseEvent) => void;
+  onSelectTimestamp?: (time: string) => void;
   className?: string;
 }
 
@@ -25,7 +28,9 @@ export const MarketPhaseEventButtons: React.FC<MarketPhaseEventButtonsProps> = (
   onRecord,
   occurredAt,
   mode,
-  lastRecordedEvent,
+  recordedEvent = null,
+  onRemoveEvent,
+  onSelectTimestamp,
   className = '',
 }) => {
   const { t } = useTranslation('marketPhases');
@@ -42,14 +47,6 @@ export const MarketPhaseEventButtons: React.FC<MarketPhaseEventButtonsProps> = (
     [t],
   );
 
-  const feedback = useMemo(() => {
-    if (!lastRecordedEvent) return null;
-    return t('events.savedFeedback', {
-      time: formatSessionClockLabel(lastRecordedEvent.occurred_at),
-      summary: formatMarketPhaseEventSummary(t, lastRecordedEvent),
-    });
-  }, [lastRecordedEvent, t]);
-
   const handleEventSelect = (value: string | number | null) => {
     const key = String(value ?? '');
     if (!key) {
@@ -62,6 +59,31 @@ export const MarketPhaseEventButtons: React.FC<MarketPhaseEventButtonsProps> = (
     setSelectedActionKey('');
   };
 
+  if (recordedEvent) {
+    return (
+      <div className={`flex min-w-0 items-center gap-1 ${className}`}>
+        <button
+          type="button"
+          className="inline-flex h-10 min-w-0 flex-1 items-center rounded-md border border-violet-200 bg-violet-50/80 px-3 text-left text-sm font-medium text-violet-900 hover:underline dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100"
+          onClick={() => onSelectTimestamp?.(recordedEvent.occurred_at)}
+        >
+          <span className="truncate">{formatMarketPhaseEventSummary(t, recordedEvent)}</span>
+        </button>
+        {onRemoveEvent && (
+          <button
+            type="button"
+            className="inline-flex h-10 w-8 shrink-0 items-center justify-center rounded text-base font-semibold leading-none text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
+            title={t('events.removeEvent')}
+            aria-label={t('events.removeEvent')}
+            onClick={() => onRemoveEvent(recordedEvent)}
+          >
+            ×
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-2 ${className}`}>
       <CustomSelect
@@ -71,11 +93,6 @@ export const MarketPhaseEventButtons: React.FC<MarketPhaseEventButtonsProps> = (
         variant="compact"
         className="!max-w-none w-full min-w-[11rem]"
       />
-      {feedback && (
-        <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400" role="status">
-          {feedback}
-        </p>
-      )}
     </div>
   );
 };

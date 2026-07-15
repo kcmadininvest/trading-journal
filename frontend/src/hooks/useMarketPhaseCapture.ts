@@ -12,6 +12,7 @@ import {
   marketPhaseEventKey,
   removeMarketPhaseEvent,
 } from '../utils/marketPhaseEventDisplay';
+import { eventInPeriod } from '../utils/marketPhaseSlots';
 
 export interface UseMarketPhaseCaptureOptions {
   tradingAccountId?: number;
@@ -19,6 +20,38 @@ export interface UseMarketPhaseCaptureOptions {
   instrumentKey?: string;
   source?: 'live' | 'replay';
   tradingSessionId?: number;
+}
+
+function eventBelongsToBlock(occurredAt: string, block: MarketPhaseBlock): boolean {
+  if (!block.range_end) {
+    const t = occurredAt.trim();
+    const start = block.range_start.trim();
+    if (!/^\d{1,2}:\d{2}$/.test(t) || !/^\d{1,2}:\d{2}$/.test(start)) return false;
+    const [th, tm] = t.split(':').map((x) => parseInt(x, 10));
+    const [sh, sm] = start.split(':').map((x) => parseInt(x, 10));
+    return th * 60 + tm >= sh * 60 + sm;
+  }
+  return eventInPeriod(occurredAt, block.range_start, block.range_end);
+}
+
+/** Projette les événements sur les blocs pour un affichage immédiat (avant retour API). */
+function projectEventsOntoBlocks(
+  blocks: MarketPhaseBlock[],
+  events: MarketPhaseEvent[],
+): { blocks: MarketPhaseBlock[]; orphans: MarketPhaseEvent[] } {
+  const assigned = new Set<string>();
+  const nextBlocks = blocks.map((block) => {
+    const blockEvents = events.filter((ev) => {
+      const key = marketPhaseEventKey(ev);
+      if (assigned.has(key)) return false;
+      if (!eventBelongsToBlock(ev.occurred_at, block)) return false;
+      assigned.add(key);
+      return true;
+    });
+    return { ...block, events: blockEvents };
+  });
+  const orphans = events.filter((ev) => !assigned.has(marketPhaseEventKey(ev)));
+  return { blocks: nextBlocks, orphans };
 }
 
 export function nowTimeInTz(timezone: string): string {
@@ -51,10 +84,10 @@ export function useMarketPhaseCapture({
   const [precedingContext, setPrecedingContext] = useState('none');
   const [openBlockStart, setOpenBlockStart] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [lastRecordedEvent, setLastRecordedEvent] = useState<MarketPhaseEvent | null>(null);
   const [selectedEventKey, setSelectedEventKey] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Invalide les GET / captures en vol pour ne pas écraser une saisie locale (ex. 1ère phase). */
+  const captureRequestId = useRef(0);
 
   const effectiveDate = sessionDate || toIsoCalendarDateInTimezone(new Date(), preferences.timezone);
 
@@ -76,11 +109,13 @@ export function useMarketPhaseCapture({
 
   const loadCapture = useCallback(async () => {
     if (!tradingAccountId) return;
+    const requestId = ++captureRequestId.current;
     const data = await marketPhasesService.getCapture({
       session_date: effectiveDate,
       trading_account: tradingAccountId,
       instrument_key: instrumentKey,
     });
+    if (requestId !== captureRequestId.current) return;
     setBlocks(data.blocks);
     setOrphanEvents(data.orphan_events);
     setSelectedEventKey(null);
@@ -106,7 +141,11 @@ export function useMarketPhaseCapture({
   const persist = useCallback(
     (nextBlocks: MarketPhaseBlock[], nextEvents: MarketPhaseEvent[]) => {
       if (!tradingAccountId) return;
-      setBlocks(nextBlocks);
+      // Annule tout GET en cours : sinon le chargement initial peut réinitialiser la 1ʳᵉ saisie.
+      const requestId = ++captureRequestId.current;
+      const projected = projectEventsOntoBlocks(nextBlocks, nextEvents);
+      setBlocks(projected.blocks);
+      setOrphanEvents(projected.orphans);
       setSaveState('saving');
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(async () => {
@@ -120,14 +159,26 @@ export function useMarketPhaseCapture({
             blocks: nextBlocks,
             events: nextEvents,
           });
+          if (requestId !== captureRequestId.current) return;
           setSaveState('saved');
-          await loadCapture();
+          const data = await marketPhasesService.getCapture({
+            session_date: effectiveDate,
+            trading_account: tradingAccountId,
+            instrument_key: instrumentKey,
+          });
+          if (requestId !== captureRequestId.current) return;
+          setBlocks(data.blocks);
+          setOrphanEvents(data.orphan_events);
+          const open = data.blocks.find((b) => !b.range_end);
+          setOpenBlockStart(open?.range_start ?? null);
         } catch {
-          setSaveState('idle');
+          if (requestId === captureRequestId.current) {
+            setSaveState('idle');
+          }
         }
       }, 500);
     },
-    [tradingAccountId, effectiveDate, instrumentKey, source, tradingSessionId, loadCapture],
+    [tradingAccountId, effectiveDate, instrumentKey, source, tradingSessionId],
   );
 
   const handleStartBlock = useCallback(() => {
@@ -166,11 +217,13 @@ export function useMarketPhaseCapture({
         outcome,
         source,
       };
-      setLastRecordedEvent(ev);
+      // Une seule saisie d'événement par phase / bloc.
+      const targetBlock = blocks.find((block) => eventBelongsToBlock(occurredAt, block));
+      const nextEvents = targetBlock
+        ? [...allEvents.filter((existing) => !eventBelongsToBlock(existing.occurred_at, targetBlock)), ev]
+        : [...allEvents.filter((existing) => existing.occurred_at !== occurredAt), ev];
       setSelectedEventKey(marketPhaseEventKey(ev));
-      if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-      feedbackTimer.current = setTimeout(() => setLastRecordedEvent(null), 4000);
-      persist(blocks, [...allEvents, ev]);
+      persist(blocks, nextEvents);
     },
     [preferences.timezone, source, blocks, allEvents, persist],
   );
@@ -184,7 +237,6 @@ export function useMarketPhaseCapture({
     (ev: MarketPhaseEvent) => {
       const next = removeMarketPhaseEvent(allEvents, ev);
       setSelectedEventKey(null);
-      setLastRecordedEvent(null);
       persist(blocks, next);
     },
     [allEvents, blocks, persist],
@@ -222,6 +274,5 @@ export function useMarketPhaseCapture({
     handleSelectEvent,
     handleRemoveEvent,
     selectedEventKey,
-    lastRecordedEvent,
   };
 }

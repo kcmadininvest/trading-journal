@@ -121,7 +121,7 @@
     "noFreeBlocks": "No free-range blocks",
     "columnPeriod": "Slot",
     "columnEvents": "Events",
-    "selectPhaseFirst": "Select a phase to add events",
+    "selectPhaseFirst": "Select a phase to add an event",
     "recordedEvents": "Recorded on this slot"
   }
 }

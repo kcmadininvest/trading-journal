@@ -89,11 +89,11 @@ describe('marketPhaseSlots', () => {
     expect(normalizeSlotPeriod({ label: 'x', start: '', end: '10:00' })).toBeNull();
   });
 
-  it('createEmptySlotDraft uses start and suggests end', () => {
+  it('createEmptySlotDraft uses start and leaves end empty', () => {
     expect(createEmptySlotDraft('07:15')).toEqual({
       label: '',
       start: '07:15',
-      end: '07:45',
+      end: '',
     });
   });
 
