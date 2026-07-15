@@ -1,5 +1,12 @@
 import React, { useMemo } from 'react';
-import { Chart as ChartJS, Plugin } from 'chart.js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+  Plugin,
+} from 'chart.js';
 import { drawPoint } from 'chart.js/helpers';
 import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot';
 import { Chart } from 'react-chartjs-2';
@@ -7,7 +14,15 @@ import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
-ChartJS.register(BoxPlotController, BoxAndWiskers);
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  ChartTooltip,
+  ChartLegend,
+  BoxPlotController,
+  BoxAndWiskers
+);
 
 const OUTLIER_GAIN_COLOR = '#3b82f6';
 const OUTLIER_LOSS_COLOR = '#ec4899';

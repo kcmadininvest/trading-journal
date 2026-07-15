@@ -1,10 +1,20 @@
 import React, { useMemo } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
 import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatCurrency } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTooltip, ChartLegend);
 interface HourlyPerformanceBarsChartProps {
   data: { hour: string; hourNum: number; pnl: number }[];
   currencySymbol: string;

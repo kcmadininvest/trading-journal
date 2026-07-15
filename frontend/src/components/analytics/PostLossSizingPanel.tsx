@@ -1,4 +1,10 @@
 import React, { useMemo } from 'react';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import TooltipComponent from '../ui/Tooltip';
@@ -11,6 +17,8 @@ import type {
   PostWinSizingData,
 } from '../../hooks/useStatistics';
 import { PostTradeSizingKpiBar } from './PostTradeSizingKpiBar';
+
+ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
 type SizeCategory = 'larger' | 'equal' | 'smaller';
 

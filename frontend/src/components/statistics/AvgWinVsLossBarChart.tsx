@@ -1,5 +1,13 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
 import { Bar as ChartBar } from 'react-chartjs-2';
 import { useTheme } from '../../hooks/useTheme';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
@@ -12,6 +20,8 @@ import {
   type ChartColors,
 } from '../../utils/chartConfig';
 import { maskValue } from '../../hooks/usePrivacySettings';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTooltip, ChartLegend);
 
 interface AvgWinVsLossBarChartProps {
   avgWin: number | null | undefined;

@@ -1,5 +1,13 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
 import { Bar as ChartBar } from 'react-chartjs-2';
 import { buildChartTooltipPlugin, type ChartColors } from '../../utils/chartConfig';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
@@ -20,6 +28,8 @@ import {
   DASHBOARD_PNL_POSITIVE_TEXT_CLASS,
 } from './tickerShell';
 import { getDashboardChartAxisColors } from './dashboardChartStyles';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTooltip, ChartLegend);
 
 const WEEKDAY_PANEL_CLASS = `${DASHBOARD_PANEL_SHELL_CLASS} p-4 sm:p-6`;
 

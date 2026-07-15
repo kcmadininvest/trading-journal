@@ -1,11 +1,19 @@
 import React from 'react';
 import clsx from 'clsx';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
 import { Doughnut as ChartDoughnut } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
 import { ChartHelpTooltip } from '../charts/ChartHelpTooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+
+ChartJS.register(ArcElement, ChartTooltip, ChartLegend);
 
 interface TradesDistributionChartProps {
   data: {

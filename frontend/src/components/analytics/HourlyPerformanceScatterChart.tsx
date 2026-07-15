@@ -1,9 +1,18 @@
 import React, { useMemo } from 'react';
+import {
+  Chart as ChartJS,
+  LinearScale,
+  PointElement,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
 import { Scatter as ChartScatter } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../utils/numberFormat';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+
+ChartJS.register(LinearScale, PointElement, ChartTooltip, ChartLegend);
 
 interface HourlyPerformanceScatterChartProps {
   data: {

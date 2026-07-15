@@ -1,4 +1,14 @@
 import React, { useMemo } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Filler,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
 import { Line as ChartLine } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -6,6 +16,16 @@ import TooltipComponent from '../ui/Tooltip';
 import { formatCurrency, formatNumber } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Filler,
+  ChartTooltip,
+  ChartLegend
+);
 
 interface EquityCurveChartProps {
   data: any;

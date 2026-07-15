@@ -1,5 +1,14 @@
 import React, { useMemo } from 'react';
 import clsx from 'clsx';
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip as ChartTooltip,
+  Legend as ChartLegend,
+} from 'chart.js';
 import { Radar as ChartRadar } from 'react-chartjs-2';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../hooks/useTheme';
@@ -7,6 +16,15 @@ import TooltipComponent from '../ui/Tooltip';
 import { ChartTooltipResetContainer } from '../charts/ChartTooltipResetContainer';
 import { formatNumber } from '../../utils/numberFormat';
 import { CHART_FONT_FAMILY, buildChartTooltipPlugin } from '../../utils/chartConfig';
+
+ChartJS.register(
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  ChartTooltip,
+  ChartLegend
+);
 
 interface RadarChartProps {
   data: any;
