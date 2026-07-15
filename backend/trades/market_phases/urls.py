@@ -7,6 +7,7 @@ from .views import (
     MarketPhaseDefinitionViewSet,
     MarketPhaseEventDefinitionViewSet,
     MarketPhaseInstrumentsView,
+    MarketPhasePeriodCapturesDeleteView,
     MarketPhaseSlotConfigView,
 )
 
@@ -35,5 +36,10 @@ urlpatterns = [
         MarketPhaseAnalyticsView.as_view(),
         {'analysis_type': 'ranking'},
         name='market-phase-ranking',
+    ),
+    path(
+        'analytics/period-captures/',
+        MarketPhasePeriodCapturesDeleteView.as_view(),
+        name='market-phase-period-captures-delete',
     ),
 ] + router.urls

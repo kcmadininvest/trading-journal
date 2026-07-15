@@ -22,7 +22,6 @@ from .period_projection import (
     event_in_period,
     overlap_minutes,
     parse_period_key,
-    periods_from_config,
 )
 
 
@@ -93,18 +92,18 @@ def build_asset_market_profile(
     blocks = list(blocks_qs.select_related('phase'))
     events = list(events_qs.select_related('event_type'))
 
-    sessions: set[date] = set()
+    sessions_documented: set[date] = set()
     regime_weights: dict[str, float] = defaultdict(float)
     total_block_minutes = 0.0
     phase_durations: dict[str, list[float]] = defaultdict(list)
 
     blocks_by_session: dict[date, list[SessionMarketPhaseBlock]] = defaultdict(list)
     for block in blocks:
-        sessions.add(block.session_date)
         blocks_by_session[block.session_date].append(block)
         overlap = overlap_minutes(block.range_start, block.range_end, period.start, period.end)
         if overlap <= 0:
             continue
+        sessions_documented.add(block.session_date)
         regime_weights[block.phase.code] += overlap
         total_block_minutes += overlap
         dur = block_duration_minutes(block.range_start, block.range_end)
@@ -129,7 +128,7 @@ def build_asset_market_profile(
         if dom:
             session_dominant_counts[dom] += 1
 
-    sample_sessions = len(sessions)
+    sample_sessions = len(sessions_documented)
     session_regime_pct: dict[str, float] = {}
     if sample_sessions:
         for code, cnt in session_dominant_counts.items():
@@ -256,7 +255,7 @@ def build_ranking(
             period=period,
             instrument_key=instrument_key,
         )
-        if asset['sample_sessions'] == 0 and asset.get('trade_count', 0) == 0:
+        if asset['sample_sessions'] == 0 or not asset.get('dominant_regime'):
             continue
         profile = build_period_profile(
             asset_profile=asset,

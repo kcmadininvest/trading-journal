@@ -13,6 +13,19 @@
     "after_range": "Nach Range",
     "after_news": "Nach News"
   },
+  "phases": {
+    "consolidation": "Konsolidierung",
+    "bullish_trend": "Bullischer Trend",
+    "bearish_trend": "Bärischer Trend",
+    "bullish_push": "Bullischer Stoß",
+    "bearish_push": "Bärischer Stoß",
+    "range_bound": "Range",
+    "breakout_sequence": "Breakout-Sequenz",
+    "high_volatility": "Hohe Volatilität",
+    "low_volatility": "Niedrige Volatilität",
+    "news_driven": "News-getrieben",
+    "unclear": "Unklar"
+  },
   "events": {
     "captureHint": "Wählen Sie ein Ereignis aus der Liste, um es zur aktuellen Sitzungszeit zu speichern.",
     "captureHintReplay": "Wählen Sie ein Ereignis aus der Liste, um es in der Mitte des Zeitfensters ({{time}}) zu speichern.",
@@ -98,7 +111,14 @@
     "rankingTitle": "Rangliste der Zeitfenster",
     "period": "Zeitraum",
     "regimePct": "% Regime",
-    "noRanking": "Zu wenig Daten — dokumentieren Sie Ihre Marktsitzungen."
+    "noRanking": "Zu wenig Daten — dokumentieren Sie Ihre Marktsitzungen.",
+    "removePeriod": "Dieses Zeitfenster entfernen",
+    "confirmDeletePeriod": "Alle dokumentierten Erfassungen für „{{period}}“ im gefilterten Zeitraum löschen? Dies kann nicht rückgängig gemacht werden.",
+    "selectedCount": "{{count}} ausgewählt",
+    "deleteSelected": "Auswahl löschen",
+    "deleteMultipleTitle": "Zeitfenster löschen",
+    "confirmDeleteMultiple": "Alle dokumentierten Erfassungen für {{count}} Zeitfenster im gefilterten Zeitraum löschen? Dies kann nicht rückgängig gemacht werden.",
+    "selectAll": "Alle auswählen"
   },
   "replay": {
     "slotsTitle": "Phasen nach Zeitfenster",

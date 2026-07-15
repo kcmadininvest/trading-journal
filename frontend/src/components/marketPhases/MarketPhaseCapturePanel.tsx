@@ -47,8 +47,12 @@ export const MarketPhaseCapturePanel: React.FC<MarketPhaseCapturePanelProps> = (
   );
 
   const phaseOptions = useMemo(
-    () => capture.phases.map((p) => ({ value: p.code, label: p.label })),
-    [capture.phases],
+    () =>
+      capture.phases.map((p) => ({
+        value: p.code,
+        label: t(`phases.${p.code}`, { defaultValue: p.label }),
+      })),
+    [capture.phases, t],
   );
 
   const contextOptions = useMemo(

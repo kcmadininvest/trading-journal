@@ -161,3 +161,78 @@ def bulk_upsert_capture(
         events.append(ev)
 
     return blocks, events
+
+
+@transaction.atomic
+def delete_period_captures(
+    *,
+    user,
+    instrument_key: str,
+    date_from,
+    date_to,
+    trading_account_id: int | None = None,
+    range_start: time | None = None,
+    range_end: time | None = None,
+    ranges: list[tuple[time, time]] | None = None,
+) -> dict[str, int]:
+    """Supprime les blocs (et événements liés) d'un ou plusieurs créneaux exacts sur une plage de dates."""
+    from django.db.models import Q
+
+    from .period_projection import event_in_period
+
+    period_ranges: list[tuple[time, time]] = list(ranges or [])
+    if range_start is not None and range_end is not None:
+        period_ranges.append((range_start, range_end))
+    # Déduplication en conservant l'ordre
+    seen: set[tuple[time, time]] = set()
+    unique_ranges: list[tuple[time, time]] = []
+    for item in period_ranges:
+        if item in seen:
+            continue
+        seen.add(item)
+        unique_ranges.append(item)
+    if not unique_ranges:
+        return {'deleted_blocks': 0, 'deleted_events': 0}
+
+    blocks_qs = SessionMarketPhaseBlock.objects.filter(
+        user=user,
+        instrument_key=instrument_key,
+        session_date__gte=date_from,
+        session_date__lte=date_to,
+    )
+    if trading_account_id is not None:
+        blocks_qs = blocks_qs.filter(trading_account_id=trading_account_id)
+
+    range_filter = Q()
+    for start, end in unique_ranges:
+        range_filter |= Q(range_start=start, range_end=end)
+    blocks_qs = blocks_qs.filter(range_filter)
+
+    block_ids = list(blocks_qs.values_list('id', flat=True))
+
+    events_qs = SessionMarketPhaseEvent.objects.filter(
+        user=user,
+        instrument_key=instrument_key,
+        session_date__gte=date_from,
+        session_date__lte=date_to,
+    )
+    if trading_account_id is not None:
+        events_qs = events_qs.filter(trading_account_id=trading_account_id)
+
+    event_ids: list[int] = []
+    for ev in events_qs.only('id', 'occurred_at', 'parent_block_id'):
+        if ev.parent_block_id in block_ids:
+            event_ids.append(ev.id)
+            continue
+        if any(event_in_period(ev.occurred_at, start, end) for start, end in unique_ranges):
+            event_ids.append(ev.id)
+
+    deleted_events = 0
+    if event_ids:
+        deleted_events, _ = SessionMarketPhaseEvent.objects.filter(id__in=event_ids).delete()
+
+    deleted_blocks = 0
+    if block_ids:
+        deleted_blocks, _ = SessionMarketPhaseBlock.objects.filter(id__in=block_ids).delete()
+
+    return {'deleted_blocks': deleted_blocks, 'deleted_events': deleted_events}

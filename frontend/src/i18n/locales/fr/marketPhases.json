@@ -13,6 +13,19 @@
     "after_range": "Après range",
     "after_news": "Après news"
   },
+  "phases": {
+    "consolidation": "Consolidation",
+    "bullish_trend": "Tendance haussière",
+    "bearish_trend": "Tendance baissière",
+    "bullish_push": "Poussée haussière",
+    "bearish_push": "Poussée baissière",
+    "range_bound": "Range",
+    "breakout_sequence": "Séquence breakout",
+    "high_volatility": "Haute volatilité",
+    "low_volatility": "Basse volatilité",
+    "news_driven": "Piloté par les news",
+    "unclear": "Peu clair"
+  },
   "events": {
     "captureHint": "Choisissez un événement dans la liste pour l'enregistrer à l'heure actuelle de la session.",
     "captureHintReplay": "Choisissez un événement dans la liste pour l'enregistrer au milieu de la tranche ({{time}}).",
@@ -98,7 +111,14 @@
     "rankingTitle": "Classement des créneaux",
     "period": "Période",
     "regimePct": "% régime",
-    "noRanking": "Pas assez de données — documentez vos sessions de marché."
+    "noRanking": "Pas assez de données — documentez vos sessions de marché.",
+    "removePeriod": "Supprimer ce créneau",
+    "confirmDeletePeriod": "Supprimer toutes les captures documentées pour « {{period}} » sur la période filtrée ? Cette action est irréversible.",
+    "selectedCount": "{{count}} sélectionné(s)",
+    "deleteSelected": "Supprimer la sélection",
+    "deleteMultipleTitle": "Supprimer les créneaux",
+    "confirmDeleteMultiple": "Supprimer toutes les captures documentées pour {{count}} créneau(x) sur la période filtrée ? Cette action est irréversible.",
+    "selectAll": "Tout sélectionner"
   },
   "replay": {
     "slotsTitle": "Phases par tranche horaire",

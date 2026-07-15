@@ -219,6 +219,27 @@ class MarketPhasesService {
     });
     return fetchJson(`${BASE}/analytics/ranking/?${q}`);
   }
+
+  async deletePeriodCaptures(params: {
+    instrument_key: string;
+    period_key?: string;
+    period_keys?: string[];
+    date_from?: string;
+    date_to?: string;
+    trading_account?: number;
+  }): Promise<{ deleted_blocks: number; deleted_events: number; deleted_periods?: number }> {
+    const q = new URLSearchParams();
+    if (params.instrument_key) q.set('instrument_key', params.instrument_key);
+    if (params.date_from) q.set('date_from', params.date_from);
+    if (params.date_to) q.set('date_to', params.date_to);
+    if (params.trading_account != null) q.set('trading_account', String(params.trading_account));
+    const keys = [
+      ...(params.period_keys ?? []),
+      ...(params.period_key ? [params.period_key] : []),
+    ];
+    keys.forEach((key) => q.append('period_key', key));
+    return fetchJson(`${BASE}/analytics/period-captures/?${q}`, { method: 'DELETE' });
+  }
 }
 
 export const marketPhasesService = new MarketPhasesService();

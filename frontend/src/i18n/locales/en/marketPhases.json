@@ -13,6 +13,19 @@
     "after_range": "After range",
     "after_news": "After news"
   },
+  "phases": {
+    "consolidation": "Consolidation",
+    "bullish_trend": "Bullish trend",
+    "bearish_trend": "Bearish trend",
+    "bullish_push": "Bullish push",
+    "bearish_push": "Bearish push",
+    "range_bound": "Range",
+    "breakout_sequence": "Breakout sequence",
+    "high_volatility": "High volatility",
+    "low_volatility": "Low volatility",
+    "news_driven": "News-driven",
+    "unclear": "Unclear"
+  },
   "events": {
     "captureHint": "Choose an event from the list to record it at the current session time.",
     "captureHintReplay": "Choose an event from the list to record it at the middle of the slot ({{time}}).",
@@ -98,7 +111,14 @@
     "rankingTitle": "Slot ranking",
     "period": "Period",
     "regimePct": "Regime %",
-    "noRanking": "Not enough data — document your market sessions."
+    "noRanking": "Not enough data — document your market sessions.",
+    "removePeriod": "Remove this slot",
+    "confirmDeletePeriod": "Delete all documented captures for “{{period}}” in the filtered date range? This cannot be undone.",
+    "selectedCount": "{{count}} selected",
+    "deleteSelected": "Delete selected",
+    "deleteMultipleTitle": "Delete slots",
+    "confirmDeleteMultiple": "Delete all documented captures for {{count}} slot(s) in the filtered date range? This cannot be undone.",
+    "selectAll": "Select all"
   },
   "replay": {
     "slotsTitle": "Phases by time slot",

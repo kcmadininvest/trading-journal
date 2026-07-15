@@ -13,6 +13,19 @@
     "after_range": "Dopo range",
     "after_news": "Dopo news"
   },
+  "phases": {
+    "consolidation": "Consolidamento",
+    "bullish_trend": "Trend rialzista",
+    "bearish_trend": "Trend ribassista",
+    "bullish_push": "Spinta rialzista",
+    "bearish_push": "Spinta ribassista",
+    "range_bound": "Range",
+    "breakout_sequence": "Sequenza di breakout",
+    "high_volatility": "Alta volatilità",
+    "low_volatility": "Bassa volatilità",
+    "news_driven": "Guidato dalle news",
+    "unclear": "Poco chiaro"
+  },
   "events": {
     "captureHint": "Scegli un evento dall'elenco per registrarlo all'ora attuale della sessione.",
     "captureHintReplay": "Scegli un evento dall'elenco per registrarlo a metà della fascia ({{time}}).",
@@ -98,7 +111,14 @@
     "rankingTitle": "Classifica delle fasce",
     "period": "Periodo",
     "regimePct": "% regime",
-    "noRanking": "Dati insufficienti — documenta le tue sessioni di mercato."
+    "noRanking": "Dati insufficienti — documenta le tue sessioni di mercato.",
+    "removePeriod": "Rimuovi questa fascia",
+    "confirmDeletePeriod": "Eliminare tutte le catture documentate per “{{period}}” nell’intervallo filtrato? L’azione è irreversibile.",
+    "selectedCount": "{{count}} selezionato/i",
+    "deleteSelected": "Elimina selezione",
+    "deleteMultipleTitle": "Elimina fasce",
+    "confirmDeleteMultiple": "Eliminare tutte le catture documentate per {{count}} fascia/e nell’intervallo filtrato? L’azione è irreversibile.",
+    "selectAll": "Seleziona tutto"
   },
   "replay": {
     "slotsTitle": "Fasi per fascia oraria",

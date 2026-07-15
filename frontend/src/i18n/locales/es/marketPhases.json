@@ -13,6 +13,19 @@
     "after_range": "Tras rango",
     "after_news": "Tras noticias"
   },
+  "phases": {
+    "consolidation": "Consolidación",
+    "bullish_trend": "Tendencia alcista",
+    "bearish_trend": "Tendencia bajista",
+    "bullish_push": "Impulso alcista",
+    "bearish_push": "Impulso bajista",
+    "range_bound": "Rango",
+    "breakout_sequence": "Secuencia de ruptura",
+    "high_volatility": "Alta volatilidad",
+    "low_volatility": "Baja volatilidad",
+    "news_driven": "Impulsado por noticias",
+    "unclear": "Poco claro"
+  },
   "events": {
     "captureHint": "Elija un evento de la lista para registrarlo a la hora actual de la sesión.",
     "captureHintReplay": "Elija un evento de la lista para registrarlo en el punto medio del tramo ({{time}}).",
@@ -98,7 +111,14 @@
     "rankingTitle": "Clasificación de tramos",
     "period": "Período",
     "regimePct": "% régimen",
-    "noRanking": "Datos insuficientes — documente sus sesiones de mercado."
+    "noRanking": "Datos insuficientes — documente sus sesiones de mercado.",
+    "removePeriod": "Eliminar este tramo",
+    "confirmDeletePeriod": "¿Eliminar todas las capturas documentadas de “{{period}}” en el rango de fechas filtrado? Esta acción no se puede deshacer.",
+    "selectedCount": "{{count}} seleccionado(s)",
+    "deleteSelected": "Eliminar selección",
+    "deleteMultipleTitle": "Eliminar tramos",
+    "confirmDeleteMultiple": "¿Eliminar todas las capturas documentadas de {{count}} tramo(s) en el rango filtrado? Esta acción no se puede deshacer.",
+    "selectAll": "Seleccionar todo"
   },
   "replay": {
     "slotsTitle": "Fases por tramo horario",

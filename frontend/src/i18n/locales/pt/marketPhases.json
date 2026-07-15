@@ -13,6 +13,19 @@
     "after_range": "Após range",
     "after_news": "Após notícias"
   },
+  "phases": {
+    "consolidation": "Consolidação",
+    "bullish_trend": "Tendência de alta",
+    "bearish_trend": "Tendência de baixa",
+    "bullish_push": "Impulso de alta",
+    "bearish_push": "Impulso de baixa",
+    "range_bound": "Range",
+    "breakout_sequence": "Sequência de breakout",
+    "high_volatility": "Alta volatilidade",
+    "low_volatility": "Baixa volatilidade",
+    "news_driven": "Impulsionado por notícias",
+    "unclear": "Pouco claro"
+  },
   "events": {
     "captureHint": "Escolha um evento na lista para o registar à hora atual da sessão.",
     "captureHintReplay": "Escolha um evento na lista para o registar a meio do intervalo ({{time}}).",
@@ -98,7 +111,14 @@
     "rankingTitle": "Classificação dos intervalos",
     "period": "Período",
     "regimePct": "% regime",
-    "noRanking": "Dados insuficientes — documente as suas sessões de mercado."
+    "noRanking": "Dados insuficientes — documente as suas sessões de mercado.",
+    "removePeriod": "Remover este intervalo",
+    "confirmDeletePeriod": "Eliminar todas as capturas documentadas de “{{period}}” no intervalo filtrado? Esta ação é irreversível.",
+    "selectedCount": "{{count}} selecionado(s)",
+    "deleteSelected": "Eliminar seleção",
+    "deleteMultipleTitle": "Eliminar intervalos",
+    "confirmDeleteMultiple": "Eliminar todas as capturas documentadas de {{count}} intervalo(s) no período filtrado? Esta ação é irreversível.",
+    "selectAll": "Selecionar tudo"
   },
   "replay": {
     "slotsTitle": "Fases por intervalo horário",

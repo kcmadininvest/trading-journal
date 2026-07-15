@@ -13,6 +13,19 @@
     "after_range": "レンジ後",
     "after_news": "ニュース後"
   },
+  "phases": {
+    "consolidation": "調整",
+    "bullish_trend": "上昇トレンド",
+    "bearish_trend": "下降トレンド",
+    "bullish_push": "上昇プッシュ",
+    "bearish_push": "下降プッシュ",
+    "range_bound": "レンジ",
+    "breakout_sequence": "ブレイクアウト局面",
+    "high_volatility": "高ボラティリティ",
+    "low_volatility": "低ボラティリティ",
+    "news_driven": "ニュース主導",
+    "unclear": "不明瞭"
+  },
   "events": {
     "captureHint": "リストからイベントを選ぶと、現在のセッション時刻で記録されます。",
     "captureHintReplay": "リストからイベントを選ぶと、時間帯の中間（{{time}}）で記録されます。",
@@ -98,7 +111,14 @@
     "rankingTitle": "時間帯ランキング",
     "period": "期間",
     "regimePct": "レジーム %",
-    "noRanking": "データ不足 — 市場セッションを記録してください。"
+    "noRanking": "データ不足 — 市場セッションを記録してください。",
+    "removePeriod": "この時間帯を削除",
+    "confirmDeletePeriod": "フィルタ期間内の「{{period}}」に関する記録をすべて削除しますか？この操作は取り消せません。",
+    "selectedCount": "{{count}} 件選択",
+    "deleteSelected": "選択を削除",
+    "deleteMultipleTitle": "時間帯を削除",
+    "confirmDeleteMultiple": "フィルタ期間内の {{count}} 件の時間帯の記録をすべて削除しますか？この操作は取り消せません。",
+    "selectAll": "すべて選択"
   },
   "replay": {
     "slotsTitle": "時間帯別フェーズ",

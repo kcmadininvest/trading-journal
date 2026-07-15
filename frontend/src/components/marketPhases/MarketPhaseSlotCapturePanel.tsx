@@ -77,7 +77,10 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
   const phaseOptions = useMemo(
     () => [
       { value: '', label: t('replay.emptySlot') },
-      ...capture.phases.map((p) => ({ value: p.code, label: p.label })),
+      ...capture.phases.map((p) => ({
+        value: p.code,
+        label: t(`phases.${p.code}`, { defaultValue: p.label }),
+      })),
     ],
     [capture.phases, t],
   );

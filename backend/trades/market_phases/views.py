@@ -19,7 +19,7 @@ from .analytics import (
     build_ranking,
     filter_trades_for_instrument,
 )
-from .capture_service import bulk_upsert_capture
+from .capture_service import bulk_upsert_capture, delete_period_captures
 from trades.contract_utils.market_quote_mapping import (
     instruments_from_contract_names,
     market_quote_instrument_label,
@@ -32,7 +32,7 @@ from .models import (
     SessionMarketPhaseBlock,
     SessionMarketPhaseEvent,
 )
-from .period_projection import parse_period_key, periods_from_captured_blocks, periods_from_config
+from .period_projection import parse_period_key, periods_from_captured_blocks
 from .serializers import (
     CaptureBulkSerializer,
     MarketPhaseDefinitionCreateSerializer,
@@ -217,16 +217,8 @@ class MarketPhaseAnalyticsView(APIView):
         blocks_qs, events_qs, trades_qs = self._base_querysets(
             request, instrument_key, date_from, date_to
         )
-        config, _ = MarketPhaseSlotConfig.objects.get_or_create(user=request.user)
+        # Uniquement les créneaux réellement documentés — pas de grille préremplie
         periods = periods_from_captured_blocks(blocks_qs)
-        if not periods:
-            periods = periods_from_config(
-                config.custom_analytical_periods if config.mode == 'custom' else None,
-                config.mode,
-                duration_minutes=config.duration_minutes,
-                anchor=config.anchor,
-                market_code=config.market_code,
-            )
 
         if analysis_type == 'asset-profile':
             period_key = request.query_params.get('period_key')
@@ -249,7 +241,7 @@ class MarketPhaseAnalyticsView(APIView):
                     period=p,
                     instrument_key=instrument_key,
                 )
-                if profile['sample_sessions'] > 0:
+                if profile['sample_sessions'] > 0 and profile.get('dominant_regime'):
                     profiles.append(profile)
             return Response({'profiles': profiles, 'date_from': date_from, 'date_to': date_to})
 
@@ -295,6 +287,58 @@ class MarketPhaseAnalyticsView(APIView):
             })
 
         return Response({'detail': 'Type analytics inconnu.'}, status=404)
+
+
+class MarketPhasePeriodCapturesDeleteView(APIView):
+    """Supprime les captures documentées d'un ou plusieurs créneaux (lignes analytics)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request):
+        instrument_key = request.query_params.get('instrument_key')
+        if not instrument_key:
+            return Response({'detail': 'instrument_key requis.'}, status=400)
+
+        period_keys = [k for k in request.query_params.getlist('period_key') if k]
+        period_keys_csv = request.query_params.get('period_keys')
+        if period_keys_csv:
+            period_keys.extend(k.strip() for k in period_keys_csv.split(',') if k.strip())
+        # Déduplication en conservant l'ordre
+        seen: set[str] = set()
+        unique_keys: list[str] = []
+        for key in period_keys:
+            if key in seen:
+                continue
+            seen.add(key)
+            unique_keys.append(key)
+        if not unique_keys:
+            return Response({'detail': 'period_key ou period_keys requis.'}, status=400)
+
+        ranges = []
+        for period_key in unique_keys:
+            period = parse_period_key(period_key)
+            if not period:
+                return Response({'detail': f'period_key invalide: {period_key}'}, status=400)
+            ranges.append((period.start, period.end))
+
+        date_from, date_to = _parse_date_range(request)
+        account_id = request.query_params.get('trading_account')
+        trading_account_id = None
+        if account_id:
+            try:
+                trading_account_id = int(account_id)
+            except (ValueError, TypeError):
+                return Response({'detail': 'trading_account invalide.'}, status=400)
+
+        result = delete_period_captures(
+            user=request.user,
+            instrument_key=instrument_key,
+            ranges=ranges,
+            date_from=date_from,
+            date_to=date_to,
+            trading_account_id=trading_account_id,
+        )
+        return Response({**result, 'deleted_periods': len(unique_keys)})
 
 
 class MarketPhaseInstrumentsView(APIView):

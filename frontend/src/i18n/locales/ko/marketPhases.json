@@ -13,6 +13,19 @@
     "after_range": "레인지 후",
     "after_news": "뉴스 후"
   },
+  "phases": {
+    "consolidation": "조정",
+    "bullish_trend": "상승 추세",
+    "bearish_trend": "하락 추세",
+    "bullish_push": "상승 추진",
+    "bearish_push": "하락 추진",
+    "range_bound": "횡보",
+    "breakout_sequence": "돌파 구간",
+    "high_volatility": "고변동성",
+    "low_volatility": "저변동성",
+    "news_driven": "뉴스 주도",
+    "unclear": "불명확"
+  },
   "events": {
     "captureHint": "목록에서 이벤트를 선택하면 현재 세션 시각에 기록됩니다.",
     "captureHintReplay": "목록에서 이벤트를 선택하면 구간 중간({{time}})에 기록됩니다.",
@@ -98,7 +111,14 @@
     "rankingTitle": "구간 순위",
     "period": "기간",
     "regimePct": "레짐 %",
-    "noRanking": "데이터 부족 — 시장 세션을 기록하세요."
+    "noRanking": "데이터 부족 — 시장 세션을 기록하세요.",
+    "removePeriod": "이 구간 삭제",
+    "confirmDeletePeriod": "필터된 기간에서 “{{period}}”의 기록된 캡처를 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+    "selectedCount": "{{count}}개 선택됨",
+    "deleteSelected": "선택 삭제",
+    "deleteMultipleTitle": "구간 삭제",
+    "confirmDeleteMultiple": "필터된 기간에서 {{count}}개 구간의 기록된 캡처를 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
+    "selectAll": "전체 선택"
   },
   "replay": {
     "slotsTitle": "시간대별 단계",
