@@ -37,20 +37,16 @@
     "saveAtLive": "今すぐ保存: {{summary}}",
     "breakoutUpBody": "上抜け ↑ · 実体",
     "breakoutUpWick": "上抜け ↑ · ヒゲ",
-    "breakoutUpWickFakeout": "上抜け ↑ · ヒゲ + 内戻り",
     "breakoutDownBody": "下抜け ↓ · 実体",
     "breakoutDownWick": "下抜け ↓ · ヒゲ",
-    "breakoutDownWickFakeout": "下抜け ↓ · ヒゲ + 内戻り",
     "wickSweepHigh": "レンジ上のヒゲ",
     "wickSweepLow": "レンジ下のヒゲ",
     "reentry": "レンジ内戻り",
     "savePreview": {
       "breakoutUpBody": "レンジ上抜け — 実体、維持",
       "breakoutUpWick": "レンジ上抜け — ヒゲのみ",
-      "breakoutUpWickFakeout": "レンジ上抜け — ヒゲ、内戻り（フェイクアウト）",
       "breakoutDownBody": "レンジ下抜け — 実体、維持",
       "breakoutDownWick": "レンジ下抜け — ヒゲのみ",
-      "breakoutDownWickFakeout": "レンジ下抜け — ヒゲ、内戻り（フェイクアウト）",
       "wickSweepHigh": "レンジ上のヒゲ — 流動性スイープ",
       "wickSweepLow": "レンジ下のヒゲ — 流動性スイープ",
       "reentry": "レンジ内への戻り"
@@ -118,7 +114,11 @@
     "deleteSelected": "選択を削除",
     "deleteMultipleTitle": "時間帯を削除",
     "confirmDeleteMultiple": "フィルタ期間内の {{count}} 件の時間帯の記録をすべて削除しますか？この操作は取り消せません。",
-    "selectAll": "すべて選択"
+    "selectAll": "すべて選択",
+    "rangeBoundPct": "レンジセッション%",
+    "breakoutBodyVsWick": "ブレイク 実体 / ヒゲ",
+    "fakeoutRate": "フェイクアウト率（ヒゲ）",
+    "reentryRate": "再参入率"
   },
   "replay": {
     "slotsTitle": "時間帯別フェーズ",

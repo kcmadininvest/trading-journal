@@ -58,7 +58,7 @@
   "viewModalSections": "Strategy sections",
   "selectTradingAccount": "Select a trading account in the top bar.",
   "marketPhasesIntroTitle": "Market phases",
-  "marketPhasesIntroDescription": "Document market behavior by time slot during your session: dominant phase, context, and key events. These notes feed the market phases observatory in Analytics.",
+  "marketPhasesIntroDescription": "Document market behavior by time slot: phase (e.g. Range), context, and event sequence (breakouts, re-entries). These notes feed the Analytics observatory.",
   "rulesFollowed": "{{checked}} / {{total}} rules followed",
   "allRulesFollowed": "All rules are followed!",
   "exampleScreenshot": "Example Screenshot",
@@ -67,4 +67,3 @@
   "exampleVisual": "Visual Example",
   "enlargeImage": "Enlarge Image"
 }
-

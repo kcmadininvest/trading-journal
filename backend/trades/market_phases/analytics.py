@@ -134,24 +134,44 @@ def build_asset_market_profile(
         for code, cnt in session_dominant_counts.items():
             session_regime_pct[code] = round(cnt / sample_sessions * 100.0, 1)
 
-    # Fakeout rate: wick breakout followed by reentry within events in period
+    # Fakeout rate: wick range breakout with outcome=reentry (sweeps counted separately in body vs wick)
     wick_breakouts = 0
     fakeouts = 0
     body_breakouts = 0
+    wick_events = 0
     for ev in events:
         if not event_in_period(ev.occurred_at, period.start, period.end):
             continue
         code = ev.event_type.code
-        if code in ('range_breakout_up', 'range_breakout_down', 'wick_sweep_low', 'wick_sweep_high'):
+        if code in ('range_breakout_up', 'range_breakout_down'):
             if ev.candle_part == 'wick':
                 wick_breakouts += 1
+                wick_events += 1
                 if ev.outcome == 'reentry':
                     fakeouts += 1
             elif ev.candle_part == 'body':
                 body_breakouts += 1
+        elif code in ('wick_sweep_low', 'wick_sweep_high'):
+            if ev.candle_part == 'wick':
+                wick_events += 1
 
     fakeout_rate = round(fakeouts / wick_breakouts * 100.0, 1) if wick_breakouts else None
-    breakout_body_vs_wick: dict[str, int] = {'body': body_breakouts, 'wick': wick_breakouts}
+    breakout_body_vs_wick: dict[str, int] = {'body': body_breakouts, 'wick': wick_events}
+
+    reentry_count = 0
+    total_breakouts = 0
+    for ev in events:
+        if not event_in_period(ev.occurred_at, period.start, period.end):
+            continue
+        code = ev.event_type.code
+        if code == 'range_reentry':
+            reentry_count += 1
+        if code in ('range_breakout_up', 'range_breakout_down'):
+            total_breakouts += 1
+    reentry_rate = (
+        round(reentry_count / total_breakouts * 100.0, 1) if total_breakouts else None
+    )
+    range_bound_session_pct = session_regime_pct.get('range_bound')
 
     avg_phase_duration: dict[str, float] = {}
     for code, durations in phase_durations.items():
@@ -168,9 +188,12 @@ def build_asset_market_profile(
             max(session_regime_pct.values()) if session_regime_pct else 0.0
         ),
         'session_regime_frequency': session_regime_pct,
+        'range_bound_session_pct': range_bound_session_pct,
         'avg_phase_duration_min': avg_phase_duration,
         'fakeout_rate': fakeout_rate,
         'breakout_body_vs_wick': breakout_body_vs_wick,
+        'reentry_count': reentry_count,
+        'reentry_rate': reentry_rate,
     }
 
 

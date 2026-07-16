@@ -80,8 +80,12 @@ export interface AssetMarketProfile {
   regime_breakdown: Record<string, number>;
   dominant_regime: string | null;
   dominant_regime_pct: number;
+  session_regime_frequency?: Record<string, number>;
+  range_bound_session_pct?: number | null;
   fakeout_rate: number | null;
   breakout_body_vs_wick?: { body: number; wick: number };
+  reentry_count?: number;
+  reentry_rate?: number | null;
 }
 
 export interface PeriodProfile extends AssetMarketProfile {

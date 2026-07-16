@@ -1,188 +1,156 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CustomSelect } from '../common/CustomSelect';
-import { formatSessionClockLabel } from '../../utils/dateFormat';
 import {
-  formatMarketPhaseEventActionPreview,
-  formatMarketPhaseEventSummary,
-  getMarketPhaseEventActionByKey,
-  marketPhaseEventActionKey,
-  marketPhaseEventKey,
+  formatMarketPhaseEventActionLabel,
   MARKET_PHASE_EVENT_ACTIONS,
   type MarketPhaseEventAction,
 } from '../../utils/marketPhaseEventDisplay';
+import { activeExclusiveSlotEvent } from '../../utils/marketPhaseEventCapture';
 import type { MarketPhaseEvent } from '../../services/marketPhases';
 
+type EventDirection = 'up' | 'down' | 'neutral';
+
+const DIRECTION_GROUPS: EventDirection[] = ['up', 'down', 'neutral'];
+
+const ACTION_ORDER: Record<string, number> = {
+  'range_breakout_up:body': 0,
+  'range_breakout_up:wick': 1,
+  'wick_sweep_high:wick': 2,
+  'range_breakout_down:body': 0,
+  'range_breakout_down:wick': 1,
+  'wick_sweep_low:wick': 2,
+  'range_reentry:unknown': 0,
+};
+
+function actionSortKey(action: MarketPhaseEventAction): number {
+  return ACTION_ORDER[`${action.code}:${action.candlePart}`] ?? 99;
+}
+
+/** Associe un événement enregistré à une action bouton (outcome ignoré pour les cassures : fakeout). */
+export function eventMatchesAction(ev: MarketPhaseEvent, action: MarketPhaseEventAction): boolean {
+  if (ev.event_type_code !== action.code) return false;
+  if ((ev.candle_part || 'unknown') !== action.candlePart) return false;
+  if ((ev.direction || 'neutral') !== action.direction) return false;
+  return true;
+}
+
+export function findEventForAction(
+  events: MarketPhaseEvent[],
+  action: MarketPhaseEventAction,
+): MarketPhaseEvent | undefined {
+  return events.find((ev) => eventMatchesAction(ev, action));
+}
+
+function buttonClassForDirection(direction: EventDirection, selected: boolean): string {
+  const base =
+    'inline-flex h-10 min-h-10 max-h-10 min-w-0 flex-1 items-center justify-center rounded-lg border px-2.5 font-sans text-sm font-medium leading-none transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900';
+  if (direction === 'up') {
+    return selected
+      ? `${base} border-emerald-500/80 bg-emerald-600 text-white shadow-[0_0_0_3px_rgba(16,185,129,0.28)] dark:border-emerald-400 dark:bg-emerald-500 dark:shadow-[0_0_0_3px_rgba(52,211,153,0.28)] focus-visible:ring-emerald-400`
+      : `${base} border-emerald-200/90 bg-emerald-50/90 text-emerald-800 shadow-sm hover:border-emerald-400 hover:bg-emerald-100 hover:shadow dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:border-emerald-600 dark:hover:bg-emerald-900/50 focus-visible:ring-emerald-400`;
+  }
+  if (direction === 'down') {
+    return selected
+      ? `${base} border-rose-500/80 bg-rose-600 text-white shadow-[0_0_0_3px_rgba(244,63,94,0.28)] dark:border-rose-400 dark:bg-rose-500 dark:shadow-[0_0_0_3px_rgba(251,113,133,0.28)] focus-visible:ring-rose-400`
+      : `${base} border-rose-200/90 bg-rose-50/90 text-rose-800 shadow-sm hover:border-rose-400 hover:bg-rose-100 hover:shadow dark:border-rose-800/80 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:border-rose-600 dark:hover:bg-rose-900/50 focus-visible:ring-rose-400`;
+  }
+  return selected
+    ? `${base} border-sky-500/80 bg-sky-600 text-white shadow-[0_0_0_3px_rgba(14,165,233,0.28)] dark:border-sky-400 dark:bg-sky-500 dark:shadow-[0_0_0_3px_rgba(56,189,248,0.28)] focus-visible:ring-sky-400`
+    : `${base} border-gray-200/90 bg-white text-gray-700 shadow-sm hover:border-sky-300 hover:bg-sky-50/80 hover:shadow dark:border-gray-600/80 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sky-600 dark:hover:bg-gray-700 focus-visible:ring-sky-400`;
+}
+
+function groupLabelClass(direction: EventDirection): string {
+  if (direction === 'up') {
+    return 'font-sans text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300';
+  }
+  if (direction === 'down') {
+    return 'font-sans text-[10px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300';
+  }
+  return 'font-sans text-[10px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400';
+}
+
+/** Direction d’affichage pour un événement enregistré (champ ou code). */
+export function resolveEventDisplayDirection(ev: MarketPhaseEvent): EventDirection {
+  if (ev.direction === 'up' || ev.direction === 'down' || ev.direction === 'neutral') {
+    return ev.direction;
+  }
+  const code = ev.event_type_code || '';
+  if (code === 'range_breakout_up' || code === 'wick_sweep_high') return 'up';
+  if (code === 'range_breakout_down' || code === 'wick_sweep_low') return 'down';
+  return 'neutral';
+}
+
 export interface MarketPhaseEventButtonsProps {
-  onRecord: (action: MarketPhaseEventAction, occurredAt?: string) => void;
   occurredAt: string;
   mode: 'live' | 'replay';
-  /** Si défini, remplace la liste déroulante par cet événement (1 max par phase). */
-  recordedEvent?: MarketPhaseEvent | null;
-  onRemoveEvent?: (event: MarketPhaseEvent) => void;
-  onSelectTimestamp?: (time: string) => void;
+  events?: MarketPhaseEvent[];
+  /** Sélection exclusive : sélectionne, annule (reclic) ou remplace l’événement de la tranche. */
+  onToggle: (action: MarketPhaseEventAction, occurredAt?: string) => void;
   className?: string;
 }
 
 export const MarketPhaseEventButtons: React.FC<MarketPhaseEventButtonsProps> = ({
-  onRecord,
   occurredAt,
   mode,
-  recordedEvent = null,
-  onRemoveEvent,
-  onSelectTimestamp,
+  events = [],
+  onToggle,
   className = '',
 }) => {
   const { t } = useTranslation('marketPhases');
-  const [selectedActionKey, setSelectedActionKey] = useState('');
 
-  const eventOptions = useMemo(
-    () => [
-      { value: '', label: t('events.selectEvent', { defaultValue: 'Choisir un événement' }) },
-      ...MARKET_PHASE_EVENT_ACTIONS.map((action) => ({
-        value: marketPhaseEventActionKey(action),
-        label: formatMarketPhaseEventActionPreview(t, action),
-      })),
-    ],
-    [t],
-  );
-
-  const handleEventSelect = (value: string | number | null) => {
-    const key = String(value ?? '');
-    if (!key) {
-      setSelectedActionKey('');
-      return;
+  const groupedActions = useMemo(() => {
+    const map: Record<EventDirection, MarketPhaseEventAction[]> = {
+      up: [],
+      down: [],
+      neutral: [],
+    };
+    for (const action of MARKET_PHASE_EVENT_ACTIONS) {
+      map[action.direction].push(action);
     }
-    const action = getMarketPhaseEventActionByKey(key);
-    if (!action) return;
-    onRecord(action, mode === 'replay' ? occurredAt : undefined);
-    setSelectedActionKey('');
+    for (const dir of DIRECTION_GROUPS) {
+      map[dir].sort((a, b) => actionSortKey(a) - actionSortKey(b));
+    }
+    return map;
+  }, []);
+
+  const handleToggle = (action: MarketPhaseEventAction) => {
+    onToggle(action, mode === 'replay' ? occurredAt : undefined);
   };
 
-  if (recordedEvent) {
-    return (
-      <div className={`flex min-w-0 items-center gap-1 ${className}`}>
-        <button
-          type="button"
-          className="inline-flex h-10 min-w-0 flex-1 items-center rounded-md border border-violet-200 bg-violet-50/80 px-3 text-left text-sm font-medium text-violet-900 hover:underline dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-100"
-          onClick={() => onSelectTimestamp?.(recordedEvent.occurred_at)}
-        >
-          <span className="truncate">{formatMarketPhaseEventSummary(t, recordedEvent)}</span>
-        </button>
-        {onRemoveEvent && (
-          <button
-            type="button"
-            className="inline-flex h-10 w-8 shrink-0 items-center justify-center rounded text-base font-semibold leading-none text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
-            title={t('events.removeEvent')}
-            aria-label={t('events.removeEvent')}
-            onClick={() => onRemoveEvent(recordedEvent)}
-          >
-            ×
-          </button>
-        )}
-      </div>
-    );
-  }
+  const activeEvent = useMemo(() => activeExclusiveSlotEvent(events), [events]);
 
   return (
-    <div className={`space-y-2 ${className}`}>
-      <CustomSelect
-        value={selectedActionKey}
-        onChange={handleEventSelect}
-        options={eventOptions}
-        variant="compact"
-        className="!max-w-none w-full min-w-[11rem]"
-      />
-    </div>
-  );
-};
-
-export interface MarketPhaseRecordedEventsProps {
-  events: MarketPhaseEvent[];
-  selectedEventKey?: string | null;
-  onSelectEvent?: (event: MarketPhaseEvent) => void;
-  onRemoveEvent?: (event: MarketPhaseEvent) => void;
-  onSelectTimestamp?: (time: string) => void;
-  variant?: 'panel' | 'inline';
-  className?: string;
-}
-
-export const MarketPhaseRecordedEvents: React.FC<MarketPhaseRecordedEventsProps> = ({
-  events,
-  selectedEventKey = null,
-  onSelectEvent,
-  onRemoveEvent,
-  onSelectTimestamp,
-  variant = 'panel',
-  className = '',
-}) => {
-  const { t } = useTranslation('marketPhases');
-  if (events.length === 0) return null;
-
-  const list = (
-    <ul className="space-y-1">
-      {events.map((ev) => {
-        const key = marketPhaseEventKey(ev);
-        const selected = selectedEventKey === key;
-        return (
-          <li
-            key={key}
-            className={
-              selected
-                ? 'rounded-md border border-violet-300 bg-violet-100/80 px-2 py-1 dark:border-violet-700 dark:bg-violet-950/40'
-                : 'rounded-md px-2 py-1'
-            }
-          >
-            <div className="flex items-start gap-1">
-              <button
-                type="button"
-                className={`min-w-0 flex-1 text-left text-xs hover:underline ${
-                  selected
-                    ? 'font-medium text-violet-900 dark:text-violet-100'
-                    : 'text-gray-700 dark:text-gray-300'
-                }`}
-                onClick={() => {
-                  onSelectEvent?.(ev);
-                  onSelectTimestamp?.(ev.occurred_at);
-                }}
-              >
-                <span className="font-medium tabular-nums">{formatSessionClockLabel(ev.occurred_at)}</span>
-                {' — '}
-                {formatMarketPhaseEventSummary(t, ev)}
-              </button>
-              {selected && onRemoveEvent && (
-                <button
-                  type="button"
-                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded text-sm font-semibold leading-none text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
-                  title={t('events.removeEvent')}
-                  aria-label={t('events.removeEvent')}
-                  onClick={() => onRemoveEvent(ev)}
-                >
-                  ×
-                </button>
-              )}
+    <div className={`w-full font-sans ${className}`}>
+      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_minmax(6rem,0.7fr)]">
+        {DIRECTION_GROUPS.map((direction) => {
+          const actions = groupedActions[direction];
+          if (actions.length === 0) return null;
+          return (
+            <div key={direction} className="flex h-10 min-w-0 items-center gap-1">
+              <span className={`shrink-0 ${groupLabelClass(direction)}`} title={t(`events.directionGroup.${direction}`)}>
+                {t(`events.directionGroup.${direction}`)}
+              </span>
+              <div className="flex h-10 min-w-0 flex-1 gap-1.5">
+                {actions.map((action) => {
+                  const selected = Boolean(activeEvent && eventMatchesAction(activeEvent, action));
+                  return (
+                    <button
+                      key={`${action.code}:${action.candlePart}:${action.outcome}`}
+                      type="button"
+                      aria-pressed={selected}
+                      className={buttonClassForDirection(direction, selected)}
+                      title={t(action.previewKey)}
+                      onClick={() => handleToggle(action)}
+                    >
+                      <span className="truncate">{formatMarketPhaseEventActionLabel(t, action)}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-
-  if (variant === 'inline') {
-    return <div className={className}>{list}</div>;
-  }
-
-  return (
-    <div
-      className={`rounded-md border border-gray-200 bg-gray-50 p-2 dark:border-gray-700 dark:bg-gray-900/40 ${className}`}
-    >
-      <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        {t('replay.recordedEvents')}
-      </p>
-      <p className="mb-2 text-[11px] leading-snug text-gray-500 dark:text-gray-400">
-        {t('events.selectHint')}
-      </p>
-      {list}
+          );
+        })}
+      </div>
     </div>
   );
 };

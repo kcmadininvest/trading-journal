@@ -27,30 +27,26 @@
     "unclear": "Unklar"
   },
   "events": {
-    "captureHint": "Wählen Sie ein Ereignis aus der Liste, um es zur aktuellen Sitzungszeit zu speichern.",
-    "captureHintReplay": "Wählen Sie ein Ereignis aus der Liste, um es in der Mitte des Zeitfensters ({{time}}) zu speichern.",
+    "captureHint": "Ein Klick wählt das Ereignis; ein erneuter Klick darauf entfernt es, ein Klick auf ein anderes ersetzt es.",
+    "captureHintReplay": "Ein Klick wählt das Ereignis in diesem Zeitfenster; ein erneuter Klick darauf entfernt es, ein Klick auf ein anderes ersetzt es.",
     "selectEvent": "Ereignis wählen",
     "savedFeedback": "Gespeichert um {{time}}: {{summary}}",
-    "selectHint": "Klicken Sie ein Ereignis an, um es auszuwählen, und entfernen Sie es mit dem Kreuz.",
+    "selectHint": "Ein Klick wählt; ein zweiter Klick auf dasselbe entfernt; ein Klick auf ein anderes ersetzt.",
     "removeEvent": "Dieses Ereignis löschen",
     "saveAt": "Speichern um {{time}}: {{summary}}",
     "saveAtLive": "Jetzt speichern: {{summary}}",
-    "breakoutUpBody": "Ausbruch ↑ · Körper",
-    "breakoutUpWick": "Ausbruch ↑ · Docht",
-    "breakoutUpWickFakeout": "Ausbruch ↑ · Docht + Wiedereintritt",
-    "breakoutDownBody": "Ausbruch ↓ · Körper",
-    "breakoutDownWick": "Ausbruch ↓ · Docht",
-    "breakoutDownWickFakeout": "Ausbruch ↓ · Docht + Wiedereintritt",
-    "wickSweepHigh": "Docht über der Range",
-    "wickSweepLow": "Docht unter der Range",
-    "reentry": "Range-Reentry",
+    "breakoutUpBody": "↑ Körper",
+    "breakoutUpWick": "↑ Docht",
+    "breakoutDownBody": "↓ Körper",
+    "breakoutDownWick": "↓ Docht",
+    "wickSweepHigh": "↑ Sweep",
+    "wickSweepLow": "↓ Sweep",
+    "reentry": "Reentry",
     "savePreview": {
       "breakoutUpBody": "Aufwärtsausbruch aus der Range — Kerzenkörper, Halt",
       "breakoutUpWick": "Aufwärtsausbruch aus der Range — nur Docht",
-      "breakoutUpWickFakeout": "Aufwärtsausbruch aus der Range — Docht, Wiedereintritt (Fakeout)",
       "breakoutDownBody": "Abwärtsausbruch aus der Range — Kerzenkörper, Halt",
       "breakoutDownWick": "Abwärtsausbruch aus der Range — nur Docht",
-      "breakoutDownWickFakeout": "Abwärtsausbruch aus der Range — Docht, Wiedereintritt (Fakeout)",
       "wickSweepHigh": "Docht über der Range — Liquiditäts-Sweep",
       "wickSweepLow": "Docht unter der Range — Liquiditäts-Sweep",
       "reentry": "Wiedereintritt in die Range"
@@ -61,6 +57,11 @@
       "range_reentry": "Wiedereintritt in die Range",
       "wick_sweep_high": "Docht über der Range",
       "wick_sweep_low": "Docht unter der Range"
+    },
+    "directionGroup": {
+      "up": "↑",
+      "down": "↓",
+      "neutral": "·"
     }
   },
   "eventMeta": {
@@ -94,8 +95,8 @@
     }
   },
   "analytics": {
-    "title": "Marktphasen × Performance",
-    "assetProfileTab": "Asset-Profil",
+    "title": "Range-Observatorium × Performance",
+    "assetProfileTab": "Range-Profil",
     "periodProfileTab": "Zeitfenster × Performance",
     "dominantRegime": "Dominantes Regime",
     "winRate": "Trefferquote",
@@ -118,7 +119,11 @@
     "deleteSelected": "Auswahl löschen",
     "deleteMultipleTitle": "Zeitfenster löschen",
     "confirmDeleteMultiple": "Alle dokumentierten Erfassungen für {{count}} Zeitfenster im gefilterten Zeitraum löschen? Dies kann nicht rückgängig gemacht werden.",
-    "selectAll": "Alle auswählen"
+    "selectAll": "Alle auswählen",
+    "rangeBoundPct": "% Sitzungen in Range",
+    "breakoutBodyVsWick": "Ausbrüche Körper / Docht",
+    "fakeoutRate": "Fakeout-Rate (Docht)",
+    "reentryRate": "Reentry-Rate"
   },
   "replay": {
     "slotsTitle": "Phasen nach Zeitfenster",

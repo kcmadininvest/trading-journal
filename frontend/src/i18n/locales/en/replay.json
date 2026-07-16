@@ -68,7 +68,7 @@
   },
   "marketPhasesIntro": {
     "title": "What is this tab for?",
-    "description": "During or after a session, document market behavior by time slot: dominant phase (range, trend, news…), context, and key events (breakouts, re-entries). These notes feed the market phase observatory and the cross-analysis with your results in Analytics — to spot slots to favor or avoid."
+    "description": "Manually document market behavior by time slot: phase (e.g. Range), context, and a sequence of events (body/wick breakouts, re-entries, sweeps). These notes feed the Analytics observatory — range frequency, typical hours, and exit patterns."
   },
   "noInsights": "No alerts detected",
   "journalDraftTitle": "Journal draft",

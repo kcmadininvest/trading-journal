@@ -27,30 +27,26 @@
     "unclear": "Poco claro"
   },
   "events": {
-    "captureHint": "Elija un evento de la lista para registrarlo a la hora actual de la sesión.",
-    "captureHintReplay": "Elija un evento de la lista para registrarlo en el punto medio del tramo ({{time}}).",
+    "captureHint": "Un clic selecciona el evento; otro clic en el mismo lo anula, o en otro lo reemplaza.",
+    "captureHintReplay": "Un clic selecciona el evento en este tramo; otro clic en el mismo lo anula, o en otro lo reemplaza.",
     "selectEvent": "Elegir un evento",
     "savedFeedback": "Guardado a las {{time}}: {{summary}}",
-    "selectHint": "Haga clic en un evento para seleccionarlo y elimínelo con la cruz.",
+    "selectHint": "Un clic selecciona; un segundo clic en el mismo anula; un clic en otro reemplaza.",
     "removeEvent": "Eliminar este evento",
     "saveAt": "Guardar a las {{time}}: {{summary}}",
     "saveAtLive": "Guardar ahora: {{summary}}",
-    "breakoutUpBody": "Ruptura ↑ · cuerpo",
-    "breakoutUpWick": "Ruptura ↑ · mecha",
-    "breakoutUpWickFakeout": "Ruptura ↑ · mecha + reentrada",
-    "breakoutDownBody": "Ruptura ↓ · cuerpo",
-    "breakoutDownWick": "Ruptura ↓ · mecha",
-    "breakoutDownWickFakeout": "Ruptura ↓ · mecha + reentrada",
-    "wickSweepHigh": "Mecha por encima del rango",
-    "wickSweepLow": "Mecha por debajo del rango",
-    "reentry": "Reentrada al rango",
+    "breakoutUpBody": "↑ Cuerpo",
+    "breakoutUpWick": "↑ Mecha",
+    "breakoutDownBody": "↓ Cuerpo",
+    "breakoutDownWick": "↓ Mecha",
+    "wickSweepHigh": "↑ Sweep",
+    "wickSweepLow": "↓ Sweep",
+    "reentry": "Reentrada",
     "savePreview": {
       "breakoutUpBody": "Ruptura alcista del rango — cuerpo de vela, mantenimiento",
       "breakoutUpWick": "Ruptura alcista del rango — solo mecha",
-      "breakoutUpWickFakeout": "Ruptura alcista del rango — mecha, reentrada (fakeout)",
       "breakoutDownBody": "Ruptura bajista del rango — cuerpo de vela, mantenimiento",
       "breakoutDownWick": "Ruptura bajista del rango — solo mecha",
-      "breakoutDownWickFakeout": "Ruptura bajista del rango — mecha, reentrada (fakeout)",
       "wickSweepHigh": "Mecha por encima del rango — barrido de liquidez",
       "wickSweepLow": "Mecha por debajo del rango — barrido de liquidez",
       "reentry": "Reentrada al rango"
@@ -61,6 +57,11 @@
       "range_reentry": "Reentrada al rango",
       "wick_sweep_high": "Mecha por encima del rango",
       "wick_sweep_low": "Mecha por debajo del rango"
+    },
+    "directionGroup": {
+      "up": "↑",
+      "down": "↓",
+      "neutral": "·"
     }
   },
   "eventMeta": {
@@ -94,8 +95,8 @@
     }
   },
   "analytics": {
-    "title": "Fases de mercado × rendimiento",
-    "assetProfileTab": "Perfil del activo",
+    "title": "Observatorio Range × rendimiento",
+    "assetProfileTab": "Perfil Range",
     "periodProfileTab": "Tramos × rendimiento",
     "dominantRegime": "Régimen dominante",
     "winRate": "Tasa de acierto",
@@ -118,7 +119,11 @@
     "deleteSelected": "Eliminar selección",
     "deleteMultipleTitle": "Eliminar tramos",
     "confirmDeleteMultiple": "¿Eliminar todas las capturas documentadas de {{count}} tramo(s) en el rango filtrado? Esta acción no se puede deshacer.",
-    "selectAll": "Seleccionar todo"
+    "selectAll": "Seleccionar todo",
+    "rangeBoundPct": "% sesiones en Range",
+    "breakoutBodyVsWick": "Rupturas cuerpo / mecha",
+    "fakeoutRate": "Tasa fakeout (mecha)",
+    "reentryRate": "Tasa de reentrada"
   },
   "replay": {
     "slotsTitle": "Fases por tramo horario",

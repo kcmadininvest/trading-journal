@@ -157,7 +157,25 @@ export const SessionClockInput: React.FC<SessionClockInputProps> = ({
 
   const adjustParts = useCallback(
     (type: 'hours' | 'minutes', delta: number) => {
-      const { hours, minutes } = getCurrentParts();
+      let { hours, minutes } = getCurrentParts();
+
+      // Si un champ est en saisie libre, baser le step dessus puis quitter l’édition —
+      // sinon l’affichage reste figé (bordure bleue) alors que la valeur change.
+      if (editingHours !== null) {
+        const parsed = parseInt(editingHours, 10);
+        if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 23) {
+          hours = parsed;
+        }
+        setEditingHours(null);
+      }
+      if (editingMinutes !== null) {
+        const parsed = parseInt(editingMinutes, 10);
+        if (!Number.isNaN(parsed) && parsed >= 0 && parsed <= 59) {
+          minutes = parsed;
+        }
+        setEditingMinutes(null);
+      }
+
       // Pas de clamp minTime sur le stepper : sinon les flèches « bas » semblent HS
       // quand la valeur affichée est déjà au plancher (ex. fin vide = maintenant ≈ début).
       if (type === 'hours') {
@@ -166,7 +184,7 @@ export const SessionClockInput: React.FC<SessionClockInputProps> = ({
         updateParts(hours, minutes + delta, { enforceMin: false });
       }
     },
-    [getCurrentParts, updateParts],
+    [editingHours, editingMinutes, getCurrentParts, updateParts],
   );
 
   useEffect(() => {

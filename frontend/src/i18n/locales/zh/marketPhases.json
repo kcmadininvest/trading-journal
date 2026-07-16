@@ -37,20 +37,16 @@
     "saveAtLive": "立即保存：{{summary}}",
     "breakoutUpBody": "向上突破 ↑ · 实体",
     "breakoutUpWick": "向上突破 ↑ · 影线",
-    "breakoutUpWickFakeout": "向上突破 ↑ · 影线 + 重回",
     "breakoutDownBody": "向下突破 ↓ · 实体",
     "breakoutDownWick": "向下突破 ↓ · 影线",
-    "breakoutDownWickFakeout": "向下突破 ↓ · 影线 + 重回",
     "wickSweepHigh": "区间上方影线",
     "wickSweepLow": "区间下方影线",
     "reentry": "重回区间",
     "savePreview": {
       "breakoutUpBody": "区间向上突破 — 蜡烛实体，维持",
       "breakoutUpWick": "区间向上突破 — 仅影线",
-      "breakoutUpWickFakeout": "区间向上突破 — 影线，重回（假突破）",
       "breakoutDownBody": "区间向下突破 — 蜡烛实体，维持",
       "breakoutDownWick": "区间向下突破 — 仅影线",
-      "breakoutDownWickFakeout": "区间向下突破 — 影线，重回（假突破）",
       "wickSweepHigh": "区间上方影线 — 流动性扫荡",
       "wickSweepLow": "区间下方影线 — 流动性扫荡",
       "reentry": "重回区间"
@@ -118,7 +114,11 @@
     "deleteSelected": "删除所选",
     "deleteMultipleTitle": "删除时段",
     "confirmDeleteMultiple": "删除筛选日期范围内 {{count}} 个时段的所有记录？此操作无法撤销。",
-    "selectAll": "全选"
+    "selectAll": "全选",
+    "rangeBoundPct": "区间会话占比",
+    "breakoutBodyVsWick": "突破 实体 / 影线",
+    "fakeoutRate": "假突破率（影线）",
+    "reentryRate": "回撤率"
   },
   "replay": {
     "slotsTitle": "按时段划分阶段",

@@ -58,7 +58,7 @@
   "viewModalSections": "Strategiebereiche",
   "selectTradingAccount": "Wählen Sie ein Handelskonto in der oberen Leiste.",
   "marketPhasesIntroTitle": "Marktphasen",
-  "marketPhasesIntroDescription": "Dokumentieren Sie das Marktverhalten nach Zeitfenstern während Ihrer Session: dominante Phase, Kontext und Schlüsselereignisse. Diese Notizen speisen das Marktphasen-Observatorium in Analytics.",
+  "marketPhasesIntroDescription": "Dokumentieren Sie das Marktverhalten nach Zeitfenster: Phase (z. B. Range), Kontext und Ereignisfolge (Ausbrüche, Reentries). Diese Notizen speisen das Observatorium in Analytics.",
   "rulesFollowed": "{{checked}} / {{total}} Regeln befolgt",
   "allRulesFollowed": "Alle Regeln werden eingehalten!",
   "exampleScreenshot": "Beispiel-Screenshot",
@@ -67,4 +67,3 @@
   "exampleVisual": "Visuelles Beispiel",
   "enlargeImage": "Bild vergrößern"
 }
-

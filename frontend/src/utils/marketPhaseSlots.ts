@@ -36,8 +36,22 @@ function minutesToHHMM(minutes: number): string {
   return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }
 
+/** Normalise `HH:MM` ou `HH:MM:SS` (réponse API) vers `HH:MM`. */
+export function normalizeTimeHHMM(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split(':');
+  if (parts.length < 2) return trimmed;
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (Number.isNaN(h) || Number.isNaN(m)) return trimmed;
+  return minutesToHHMM(h * 60 + m);
+}
+
 function timeToMinutes(hhmm: string): number {
-  const [h, m] = hhmm.split(':').map((x) => parseInt(x, 10));
+  const normalized = normalizeTimeHHMM(hhmm) ?? hhmm;
+  const [h, m] = normalized.split(':').map((x) => parseInt(x, 10));
   return (h || 0) * 60 + (m || 0);
 }
 
@@ -196,7 +210,9 @@ export function normalizeSlotPeriod(
 }
 
 export function blockMatchesSlot(block: { range_start: string; range_end: string | null }, slot: AnalyticalPeriod): boolean {
-  return block.range_start === slot.start && block.range_end === slot.end;
+  const start = normalizeTimeHHMM(block.range_start);
+  const end = block.range_end == null ? null : normalizeTimeHHMM(block.range_end);
+  return start === slot.start && end === slot.end;
 }
 
 export function isSlotBoundBlock(
@@ -221,4 +237,34 @@ export function eventInPeriod(occurredAt: string, periodStart: string, periodEnd
     return t >= ps || t < pe;
   }
   return t >= ps && t < pe;
+}
+
+/**
+ * Contexte à reporter pour un nouveau créneau :
+ * 1. dernier bloc chronologiquement avant le créneau qui a un contexte
+ * 2. sinon dernier contexte connu de la session
+ * 3. sinon « none »
+ */
+export function resolveInheritedContext(
+  blocks: Array<{ range_start: string; preceding_context?: string | null }>,
+  slotStart: string,
+): string {
+  const sorted = [...blocks].sort(
+    (a, b) => timeToMinutes(a.range_start) - timeToMinutes(b.range_start),
+  );
+  const slotMins = timeToMinutes(slotStart);
+
+  for (let i = sorted.length - 1; i >= 0; i -= 1) {
+    const block = sorted[i];
+    if (timeToMinutes(block.range_start) >= slotMins) continue;
+    const ctx = block.preceding_context;
+    if (ctx != null && ctx !== '') return ctx;
+  }
+
+  for (let i = sorted.length - 1; i >= 0; i -= 1) {
+    const ctx = sorted[i].preceding_context;
+    if (ctx != null && ctx !== '') return ctx;
+  }
+
+  return 'none';
 }

@@ -96,6 +96,54 @@ class MarketPhaseAnalyticsTests(TestCase):
         )
         self.assertEqual(profile['fakeout_rate'], 100.0)
         self.assertEqual(profile['breakout_body_vs_wick'], {'body': 0, 'wick': 2})
+        self.assertEqual(profile['range_bound_session_pct'], 100.0)
+
+    def test_reentry_rate_from_range_reentry_events(self):
+        bulk_upsert_capture(
+            user=self.user,
+            trading_account=self.account,
+            session_date=date(2026, 7, 11),
+            instrument_key='nasdaq',
+            blocks_data=[{
+                'phase_code': 'range_bound',
+                'range_start': time(12, 0),
+                'range_end': time(14, 0),
+            }],
+            events_data=[
+                {
+                    'event_type_code': 'range_breakout_up',
+                    'occurred_at': time(12, 20),
+                    'candle_part': 'body',
+                    'outcome': 'hold',
+                    'direction': 'up',
+                },
+                {
+                    'event_type_code': 'range_breakout_down',
+                    'occurred_at': time(12, 40),
+                    'candle_part': 'wick',
+                    'outcome': 'reentry',
+                    'direction': 'down',
+                },
+                {
+                    'event_type_code': 'range_reentry',
+                    'occurred_at': time(12, 42),
+                    'candle_part': 'unknown',
+                    'outcome': 'reentry',
+                    'direction': 'neutral',
+                },
+            ],
+        )
+        from trades.market_phases.models import SessionMarketPhaseBlock, SessionMarketPhaseEvent
+        period = parse_period_key('12:00-14:00')
+        assert period is not None
+        profile = build_asset_market_profile(
+            blocks_qs=SessionMarketPhaseBlock.objects.filter(user=self.user),
+            events_qs=SessionMarketPhaseEvent.objects.filter(user=self.user),
+            period=period,
+            instrument_key='nasdaq',
+        )
+        self.assertEqual(profile['reentry_count'], 1)
+        self.assertEqual(profile['reentry_rate'], 50.0)
 
     def test_delete_period_captures(self):
         from trades.market_phases.capture_service import delete_period_captures

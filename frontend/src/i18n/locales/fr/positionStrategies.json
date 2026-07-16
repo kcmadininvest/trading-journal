@@ -58,7 +58,7 @@
   "viewModalSections": "Sections de la stratégie",
   "selectTradingAccount": "Sélectionnez un compte de trading dans la barre supérieure.",
   "marketPhasesIntroTitle": "Phases de marché",
-  "marketPhasesIntroDescription": "Documentez le comportement du marché par tranche horaire pendant votre session : phase dominante, contexte et événements clés. Ces notes alimentent l'observatoire des phases de marché dans Analytique.",
+  "marketPhasesIntroDescription": "Documentez le comportement du marché par tranche horaire : phase (ex. Range), contexte et enchaînement d'événements (cassures, réintégrations). Ces notes alimentent l'observatoire dans Analytique.",
   "rulesFollowed": "{{checked}} / {{total}} règles suivies",
   "allRulesFollowed": "Toutes les règles sont respectées !",
   "exampleScreenshot": "Capture d'écran d'exemple",
@@ -67,4 +67,3 @@
   "exampleVisual": "Exemple visuel",
   "enlargeImage": "Agrandir l'image"
 }
-

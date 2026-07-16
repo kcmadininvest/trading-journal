@@ -288,22 +288,44 @@ export const MarketPhaseAnalyticsSection: React.FC<MarketPhaseAnalyticsSectionPr
               <tr className="text-left text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                 <th className="pb-2 pr-3 w-8">{selectAllCheckbox}</th>
                 <th className="pb-2 pr-4 font-medium">{t('analytics.period')}</th>
+                <th className="pb-2 pr-4 font-medium">{t('analytics.rangeBoundPct')}</th>
                 <th className="pb-2 pr-4 font-medium">{t('analytics.dominantRegime')}</th>
-                <th className="pb-2 pr-4 font-medium">{t('analytics.regimePct')}</th>
+                <th className="pb-2 pr-4 font-medium">{t('analytics.breakoutBodyVsWick')}</th>
+                <th className="pb-2 pr-4 font-medium">{t('analytics.fakeoutRate')}</th>
+                <th className="pb-2 pr-4 font-medium">{t('analytics.reentryRate')}</th>
                 <th className="pb-2 pr-4 font-medium">{t('analytics.sampleSessions')}</th>
                 <th className="pb-2 w-10" aria-hidden="true" />
               </tr>
             </thead>
             <tbody>
-              {assetProfiles.map((row) => (
+              {assetProfiles.map((row) => {
+                const body = row.breakout_body_vs_wick?.body ?? 0;
+                const wick = row.breakout_body_vs_wick?.wick ?? 0;
+                return (
                 <tr
                   key={row.period.key}
                   className="border-b border-gray-100 dark:border-gray-700/80 last:border-0"
                 >
                   <td className="py-2 pr-3">{rowCheckbox(row.period.key, row.period.label)}</td>
                   <td className="py-2 pr-4 text-gray-800 dark:text-gray-200">{row.period.label}</td>
-                  <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatRegime(row.dominant_regime)}</td>
-                  <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatPct(row.dominant_regime_pct)}</td>
+                  <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">
+                    {row.range_bound_session_pct != null
+                      ? formatPct(row.range_bound_session_pct)
+                      : '—'}
+                  </td>
+                  <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">
+                    {formatRegime(row.dominant_regime)}
+                    {row.dominant_regime ? ` · ${formatPct(row.dominant_regime_pct)}` : ''}
+                  </td>
+                  <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">
+                    {formatCount(body)} / {formatCount(wick)}
+                  </td>
+                  <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">
+                    {row.fakeout_rate != null ? formatPct(row.fakeout_rate) : '—'}
+                  </td>
+                  <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">
+                    {row.reentry_rate != null ? formatPct(row.reentry_rate) : '—'}
+                  </td>
                   <td className="py-2 pr-4 text-gray-700 dark:text-gray-300">{formatCount(row.sample_sessions)}</td>
                   <td className="py-2 text-right">
                     <TradingActivityLedgerDeleteAction
@@ -313,10 +335,11 @@ export const MarketPhaseAnalyticsSection: React.FC<MarketPhaseAnalyticsSectionPr
                     />
                   </td>
                 </tr>
-              ))}
+              );
+              })}
               {assetProfiles.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-4 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={9} className="py-4 text-center text-gray-500 dark:text-gray-400">
                     {t('analytics.noRanking')}
                   </td>
                 </tr>

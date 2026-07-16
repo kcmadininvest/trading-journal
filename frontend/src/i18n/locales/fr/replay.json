@@ -68,7 +68,7 @@
   },
   "marketPhasesIntro": {
     "title": "À quoi sert cet onglet ?",
-    "description": "Pendant ou après une session, documentez le comportement du marché par tranche horaire : phase dominante (range, tendance, news…), contexte et événements clés (cassures, réintégrations). Ces notes alimentent l'observatoire des phases de marché et le croisement avec vos résultats dans Analytique — pour repérer les créneaux à privilégier ou à éviter."
+    "description": "Documentez manuellement le comportement du marché par tranche horaire : phase (ex. Range), contexte et enchaînement d'événements (cassures corps/mèche, réintégrations, sweeps). Ces notes alimentent l'observatoire dans Analytique — fréquence des ranges, horaires typiques et schémas de sortie."
   },
   "noInsights": "Aucune alerte détectée",
   "journalDraftTitle": "Brouillon journal",

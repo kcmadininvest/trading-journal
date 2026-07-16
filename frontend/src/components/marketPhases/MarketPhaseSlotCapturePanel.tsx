@@ -22,14 +22,28 @@ import {
   generateHourlyPeriods,
   getReplayCaptureSlots,
   normalizeSlotPeriod,
+  resolveInheritedContext,
   slotMidpoint,
   sortSlotsByStart,
 } from '../../utils/marketPhaseSlots';
 
-function eventsForSlot(slot: AnalyticalPeriod, allEvents: MarketPhaseEvent[]): MarketPhaseEvent[] {
-  return allEvents
-    .filter((ev) => eventInPeriod(ev.occurred_at, slot.start, slot.end))
-    .sort((a, b) => (a.occurred_at || '').localeCompare(b.occurred_at || ''));
+function eventsForSlot(
+  slot: AnalyticalPeriod,
+  block: MarketPhaseBlock | undefined,
+  allEvents: MarketPhaseEvent[],
+): MarketPhaseEvent[] {
+  if (!block) return [];
+  if (block.id != null) {
+    return allEvents
+      .filter((ev) => ev.parent_block === block.id)
+      .sort((a, b) => (a.occurred_at || '').localeCompare(b.occurred_at || ''));
+  }
+  const nested = block.events || [];
+  if (nested.length > 0) {
+    return [...nested].sort((a, b) => (a.occurred_at || '').localeCompare(b.occurred_at || ''));
+  }
+  // Bloc local tout neuf : aucun événement tant qu’on n’en a pas saisi sur cette tranche.
+  return [];
 }
 
 export interface MarketPhaseSlotCapturePanelProps {
@@ -37,7 +51,6 @@ export interface MarketPhaseSlotCapturePanelProps {
   sessionDate?: string;
   instrumentKey?: string;
   tradingSessionId?: number;
-  onSelectTimestamp?: (time: string) => void;
   className?: string;
 }
 
@@ -50,7 +63,6 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
   sessionDate,
   instrumentKey,
   tradingSessionId,
-  onSelectTimestamp,
   className = '',
 }) => {
   const { t } = useTranslation(['marketPhases', 'common']);
@@ -142,24 +154,31 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
   const handleSlotPhaseChange = useCallback(
     (slot: AnalyticalPeriod, phaseCode: string) => {
       const others = capture.blocks.filter((b) => !blockMatchesSlot(b, slot));
+      const existing = getBlockForSlot(slot);
       const eventsOutsideSlot = capture.allEvents.filter(
         (ev) => !eventInPeriod(ev.occurred_at, slot.start, slot.end),
       );
+      const existingSlotEvents = existing
+        ? eventsForSlot(slot, existing, capture.allEvents)
+        : [];
       if (!phaseCode) {
         capture.setBlocksAndPersist(others, eventsOutsideSlot);
         return;
       }
-      const existing = getBlockForSlot(slot);
+      const precedingContext =
+        existing?.preceding_context ?? resolveInheritedContext(others, slot.start);
       const updated: MarketPhaseBlock = {
         ...existing,
         instrument_key: capture.instrumentKey,
         range_start: slot.start,
         range_end: slot.end,
         phase_code: phaseCode,
-        preceding_context: existing?.preceding_context || 'none',
+        preceding_context: precedingContext,
         source: 'replay',
+        events: existingSlotEvents,
       };
-      capture.setBlocksAndPersist([...others, updated], capture.allEvents);
+      // Ne pas réinjecter les orphelins / événements d’autres tranches dans ce créneau.
+      capture.setBlocksAndPersist([...others, updated], [...eventsOutsideSlot, ...existingSlotEvents]);
     },
     [capture, getBlockForSlot],
   );
@@ -237,7 +256,7 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
   if (!tradingAccountId) return null;
 
   return (
-    <div className={`${className}`}>
+    <div className={`font-sans ${className}`}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('replay.slotsTitle')}</h3>
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -346,26 +365,26 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
       </div>
 
       <div className="max-h-[28rem] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
-        <table className="min-w-full text-sm">
+        <table className="w-full table-fixed text-sm">
           <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
             <tr className="text-left text-gray-500">
-              <th className="px-3 py-2">{t('replay.columnPeriod')}</th>
-              <th className="px-3 py-2 min-w-[12rem]">{t('selectPhase')}</th>
-              <th className="px-3 py-2 min-w-[14rem]">{t('context')}</th>
-              <th className="px-3 py-2 min-w-[11rem]">{t('replay.columnEvents')}</th>
+              <th className="w-[12%] px-3 py-2">{t('replay.columnPeriod')}</th>
+              <th className="w-[18%] px-3 py-2">{t('selectPhase')}</th>
+              <th className="w-[20%] px-3 py-2">{t('context')}</th>
+              <th className="w-[50%] px-3 py-2">{t('replay.columnEvents')}</th>
             </tr>
           </thead>
           <tbody>
             {slots.map((slot) => {
               const block = getBlockForSlot(slot);
-              const slotEvents = eventsForSlot(slot, capture.allEvents);
+              const slotEvents = eventsForSlot(slot, block, capture.allEvents);
               return (
                 <tr key={slot.key} className={`border-t border-gray-100 dark:border-gray-800 ${block ? 'bg-violet-50/50 dark:bg-violet-950/20' : ''}`}>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <button type="button" className="font-medium text-gray-800 hover:underline dark:text-gray-200" onClick={() => onSelectTimestamp?.(slot.start)}>
+                  <td className="px-3 py-2 align-middle text-left">
+                    <div className="flex items-center justify-start gap-2">
+                      <span className="font-medium text-gray-800 dark:text-gray-200">
                         {slot.label || `${slot.start} – ${slot.end}`}
-                      </button>
+                      </span>
                       <button
                         type="button"
                         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-base font-semibold leading-none text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
@@ -377,41 +396,40 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
                       </button>
                     </div>
                   </td>
-                  <td className="px-3 py-2 min-w-[12rem]">
+                  <td className="px-3 py-2 align-top">
                     <CustomSelect
                       value={block?.phase_code || ''}
                       onChange={(value) => handleSlotPhaseChange(slot, String(value ?? ''))}
                       options={phaseOptions}
                       variant="compact"
-                      className="!max-w-none w-full min-w-[12rem]"
+                      className="!max-w-none w-full"
                     />
                   </td>
-                  <td className="px-3 py-2 min-w-[14rem]">
+                  <td className="px-3 py-2 align-top">
                     <CustomSelect
                       value={block?.preceding_context || 'none'}
                       onChange={(value) => handleSlotContextChange(slot, String(value ?? 'none'))}
                       options={contextOptions}
                       variant="compact"
-                      className="!max-w-none w-full min-w-[14rem]"
+                      className="!max-w-none w-full"
                       disabled={!block}
                     />
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 align-top">
                     {!block ? (
                       <p className="text-xs text-gray-400 dark:text-gray-500">{t('replay.selectPhaseFirst')}</p>
                     ) : (
                       <MarketPhaseEventButtons
                         mode="replay"
                         occurredAt={slotMidpoint(slot)}
-                        recordedEvent={slotEvents[0] ?? null}
-                        onRemoveEvent={capture.handleRemoveEvent}
-                        onSelectTimestamp={onSelectTimestamp}
-                        onRecord={(action, at) =>
-                          capture.handleQuickEvent(
+                        events={slotEvents}
+                        onToggle={(action, at) =>
+                          capture.handleToggleExclusiveEvent(
                             action.code,
                             action.direction,
                             action.candlePart,
                             action.outcome,
+                            slotEvents,
                             at,
                           )
                         }

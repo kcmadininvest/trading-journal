@@ -12,6 +12,7 @@ import {
   overlapMinutes,
   parsePeriodKey,
   periodsFromConfig,
+  resolveInheritedContext,
   slotMidpoint,
   suggestSlotEndFromStart,
 } from './marketPhaseSlots';
@@ -116,6 +117,7 @@ describe('marketPhaseSlots', () => {
   it('blockMatchesSlot exact boundaries', () => {
     const slot = { key: '12:00-14:00', label: 'Midi', start: '12:00', end: '14:00' };
     expect(blockMatchesSlot({ range_start: '12:00', range_end: '14:00' }, slot)).toBe(true);
+    expect(blockMatchesSlot({ range_start: '12:00:00', range_end: '14:00:00' }, slot)).toBe(true);
     expect(blockMatchesSlot({ range_start: '12:18', range_end: '13:24' }, slot)).toBe(false);
   });
 
@@ -127,5 +129,36 @@ describe('marketPhaseSlots', () => {
 
   it('slotMidpoint', () => {
     expect(slotMidpoint({ key: '12:00-14:00', label: '', start: '12:00', end: '14:00' })).toBe('13:00');
+  });
+
+  it('resolveInheritedContext from previous slot then session fallback', () => {
+    expect(resolveInheritedContext([], '10:30')).toBe('none');
+    expect(
+      resolveInheritedContext(
+        [{ range_start: '10:00', preceding_context: 'after_news' }],
+        '10:30',
+      ),
+    ).toBe('after_news');
+    expect(
+      resolveInheritedContext(
+        [
+          { range_start: '09:30', preceding_context: 'after_bullish_push' },
+          { range_start: '10:00', preceding_context: 'after_news' },
+        ],
+        '10:30',
+      ),
+    ).toBe('after_news');
+    expect(
+      resolveInheritedContext(
+        [{ range_start: '11:00', preceding_context: 'after_range' }],
+        '10:00',
+      ),
+    ).toBe('after_range');
+    expect(
+      resolveInheritedContext(
+        [{ range_start: '10:00', preceding_context: 'none' }],
+        '10:30',
+      ),
+    ).toBe('none');
   });
 });

@@ -37,20 +37,16 @@
     "saveAtLive": "지금 저장: {{summary}}",
     "breakoutUpBody": "상향 돌파 ↑ · 몸통",
     "breakoutUpWick": "상향 돌파 ↑ · 꼬리",
-    "breakoutUpWickFakeout": "상향 돌파 ↑ · 꼬리 + 재진입",
     "breakoutDownBody": "하향 돌파 ↓ · 몸통",
     "breakoutDownWick": "하향 돌파 ↓ · 꼬리",
-    "breakoutDownWickFakeout": "하향 돌파 ↓ · 꼬리 + 재진입",
     "wickSweepHigh": "레인지 위 꼬리",
     "wickSweepLow": "레인지 아래 꼬리",
     "reentry": "레인지 재진입",
     "savePreview": {
       "breakoutUpBody": "레인지 상향 돌파 — 캔들 몸통, 유지",
       "breakoutUpWick": "레인지 상향 돌파 — 꼬리만",
-      "breakoutUpWickFakeout": "레인지 상향 돌파 — 꼬리, 재진입 (페이크아웃)",
       "breakoutDownBody": "레인지 하향 돌파 — 캔들 몸통, 유지",
       "breakoutDownWick": "레인지 하향 돌파 — 꼬리만",
-      "breakoutDownWickFakeout": "레인지 하향 돌파 — 꼬리, 재진입 (페이크아웃)",
       "wickSweepHigh": "레인지 위 꼬리 — 유동성 스윕",
       "wickSweepLow": "레인지 아래 꼬리 — 유동성 스윕",
       "reentry": "레인지 재진입"
@@ -118,7 +114,11 @@
     "deleteSelected": "선택 삭제",
     "deleteMultipleTitle": "구간 삭제",
     "confirmDeleteMultiple": "필터된 기간에서 {{count}}개 구간의 기록된 캡처를 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다.",
-    "selectAll": "전체 선택"
+    "selectAll": "전체 선택",
+    "rangeBoundPct": "레인지 세션 %",
+    "breakoutBodyVsWick": "돌파 몸통 / 꼬리",
+    "fakeoutRate": "페이크아웃 비율 (꼬리)",
+    "reentryRate": "재진입 비율"
   },
   "replay": {
     "slotsTitle": "시간대별 단계",

@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { MarketPhaseEvent } from '../services/marketPhases';
 
+/** Actions atomiques — pas de fakeout composé (séquence cassure puis réintégration). */
 export const MARKET_PHASE_EVENT_ACTIONS = [
   {
     code: 'range_breakout_up',
@@ -19,14 +20,6 @@ export const MARKET_PHASE_EVENT_ACTIONS = [
     previewKey: 'events.savePreview.breakoutUpWick',
   },
   {
-    code: 'range_breakout_up',
-    direction: 'up',
-    candlePart: 'wick',
-    outcome: 'reentry',
-    labelKey: 'events.breakoutUpWickFakeout',
-    previewKey: 'events.savePreview.breakoutUpWickFakeout',
-  },
-  {
     code: 'range_breakout_down',
     direction: 'down',
     candlePart: 'body',
@@ -41,14 +34,6 @@ export const MARKET_PHASE_EVENT_ACTIONS = [
     outcome: 'unknown',
     labelKey: 'events.breakoutDownWick',
     previewKey: 'events.savePreview.breakoutDownWick',
-  },
-  {
-    code: 'range_breakout_down',
-    direction: 'down',
-    candlePart: 'wick',
-    outcome: 'reentry',
-    labelKey: 'events.breakoutDownWickFakeout',
-    previewKey: 'events.savePreview.breakoutDownWickFakeout',
   },
   {
     code: 'wick_sweep_high',
@@ -132,4 +117,8 @@ export function formatMarketPhaseEventSummary(
 
 export function formatMarketPhaseEventActionPreview(t: TFunction, action: MarketPhaseEventAction): string {
   return t(action.previewKey);
+}
+
+export function formatMarketPhaseEventActionLabel(t: TFunction, action: MarketPhaseEventAction): string {
+  return t(action.labelKey);
 }

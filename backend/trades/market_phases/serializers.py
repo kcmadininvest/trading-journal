@@ -49,6 +49,7 @@ class MarketPhaseSlotConfigSerializer(serializers.ModelSerializer):
 class SessionMarketPhaseEventSerializer(serializers.ModelSerializer):
     event_type_code = serializers.CharField(source='event_type.code', read_only=True)
     event_type_label = serializers.CharField(source='event_type.label', read_only=True)
+    occurred_at = serializers.TimeField(format='%H:%M')
 
     class Meta:
         model = SessionMarketPhaseEvent
@@ -72,6 +73,8 @@ class SessionMarketPhaseBlockSerializer(serializers.ModelSerializer):
     phase_label = serializers.CharField(source='phase.label', read_only=True)
     phase_color = serializers.CharField(source='phase.color', read_only=True)
     events = SessionMarketPhaseEventSerializer(many=True, read_only=True)
+    range_start = serializers.TimeField(format='%H:%M')
+    range_end = serializers.TimeField(format='%H:%M', allow_null=True, required=False)
 
     class Meta:
         model = SessionMarketPhaseBlock

@@ -37,20 +37,16 @@
     "saveAtLive": "Salva ora: {{summary}}",
     "breakoutUpBody": "Rottura ↑ · corpo",
     "breakoutUpWick": "Rottura ↑ · ombra",
-    "breakoutUpWickFakeout": "Rottura ↑ · ombra + reingresso",
     "breakoutDownBody": "Rottura ↓ · corpo",
     "breakoutDownWick": "Rottura ↓ · ombra",
-    "breakoutDownWickFakeout": "Rottura ↓ · ombra + reingresso",
     "wickSweepHigh": "Ombra sopra il range",
     "wickSweepLow": "Ombra sotto il range",
     "reentry": "Reingresso nel range",
     "savePreview": {
       "breakoutUpBody": "Rottura rialzista del range — corpo candela, mantenimento",
       "breakoutUpWick": "Rottura rialzista del range — solo ombra",
-      "breakoutUpWickFakeout": "Rottura rialzista del range — ombra, reingresso (fakeout)",
       "breakoutDownBody": "Rottura ribassista del range — corpo candela, mantenimento",
       "breakoutDownWick": "Rottura ribassista del range — solo ombra",
-      "breakoutDownWickFakeout": "Rottura ribassista del range — ombra, reingresso (fakeout)",
       "wickSweepHigh": "Ombra sopra il range — sweep di liquidità",
       "wickSweepLow": "Ombra sotto il range — sweep di liquidità",
       "reentry": "Reingresso nel range"
@@ -118,7 +114,11 @@
     "deleteSelected": "Elimina selezione",
     "deleteMultipleTitle": "Elimina fasce",
     "confirmDeleteMultiple": "Eliminare tutte le catture documentate per {{count}} fascia/e nell’intervallo filtrato? L’azione è irreversibile.",
-    "selectAll": "Seleziona tutto"
+    "selectAll": "Seleziona tutto",
+    "rangeBoundPct": "% sessioni in Range",
+    "breakoutBodyVsWick": "Rotture corpo / ombra",
+    "fakeoutRate": "Tasso fakeout (ombra)",
+    "reentryRate": "Tasso di reingresso"
   },
   "replay": {
     "slotsTitle": "Fasi per fascia oraria",

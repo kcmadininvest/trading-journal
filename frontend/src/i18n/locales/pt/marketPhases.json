@@ -37,20 +37,16 @@
     "saveAtLive": "Guardar agora: {{summary}}",
     "breakoutUpBody": "Rompimento ↑ · corpo",
     "breakoutUpWick": "Rompimento ↑ · pavio",
-    "breakoutUpWickFakeout": "Rompimento ↑ · pavio + reentrada",
     "breakoutDownBody": "Rompimento ↓ · corpo",
     "breakoutDownWick": "Rompimento ↓ · pavio",
-    "breakoutDownWickFakeout": "Rompimento ↓ · pavio + reentrada",
     "wickSweepHigh": "Pavio acima do range",
     "wickSweepLow": "Pavio abaixo do range",
     "reentry": "Reentrada no range",
     "savePreview": {
       "breakoutUpBody": "Rompimento altista do range — corpo da vela, manutenção",
       "breakoutUpWick": "Rompimento altista do range — apenas pavio",
-      "breakoutUpWickFakeout": "Rompimento altista do range — pavio, reentrada (fakeout)",
       "breakoutDownBody": "Rompimento baixista do range — corpo da vela, manutenção",
       "breakoutDownWick": "Rompimento baixista do range — apenas pavio",
-      "breakoutDownWickFakeout": "Rompimento baixista do range — pavio, reentrada (fakeout)",
       "wickSweepHigh": "Pavio acima do range — varredura de liquidez",
       "wickSweepLow": "Pavio abaixo do range — varredura de liquidez",
       "reentry": "Reentrada no range"
@@ -118,7 +114,11 @@
     "deleteSelected": "Eliminar seleção",
     "deleteMultipleTitle": "Eliminar intervalos",
     "confirmDeleteMultiple": "Eliminar todas as capturas documentadas de {{count}} intervalo(s) no período filtrado? Esta ação é irreversível.",
-    "selectAll": "Selecionar tudo"
+    "selectAll": "Selecionar tudo",
+    "rangeBoundPct": "% sessões em Range",
+    "breakoutBodyVsWick": "Rompimentos corpo / pavio",
+    "fakeoutRate": "Taxa de fakeout (pavio)",
+    "reentryRate": "Taxa de reentrada"
   },
   "replay": {
     "slotsTitle": "Fases por intervalo horário",

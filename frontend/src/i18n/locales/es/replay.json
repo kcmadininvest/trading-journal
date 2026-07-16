@@ -67,7 +67,7 @@
   },
   "marketPhasesIntro": {
     "title": "¿Para qué sirve esta pestaña?",
-    "description": "Durante o después de una sesión, documente el comportamiento del mercado por tramo horario: fase dominante (rango, tendencia, noticias…), contexto y eventos clave (rupturas, reentradas). Estas notas alimentan el observatorio de fases de mercado y el cruce con sus resultados en Analítica, para identificar tramos favorables o a evitar."
+    "description": "Documente manualmente el comportamiento del mercado por tramo horario: fase (p. ej. Range), contexto y secuencia de eventos (rupturas cuerpo/mecha, reentradas, sweeps). Estas notas alimentan el observatorio en Analítica — frecuencia de rangos, horas típicas y patrones de salida."
   },
   "insightsTitle": "Alertas",
   "noInsights": "Ninguna alerta detectada",

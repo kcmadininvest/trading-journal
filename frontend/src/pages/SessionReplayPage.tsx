@@ -595,27 +595,6 @@ const SessionReplayPage: React.FC = () => {
     setCurrentIndex(idx >= 0 ? idx : events.length - 1);
   };
 
-  const jumpToSessionClock = useCallback(
-    (clock: string) => {
-      const [h, m] = clock.split(':').map((x) => parseInt(x, 10) || 0);
-      const targetMinutes = h * 60 + m;
-      const idx = events.findIndex((e) => {
-        const formatter = new Intl.DateTimeFormat('en-GB', {
-          timeZone: preferences.timezone,
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        });
-        const parts = formatter.formatToParts(new Date(e.occurred_at));
-        const eh = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
-        const em = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
-        return eh * 60 + em >= targetMinutes;
-      });
-      setCurrentIndex(idx >= 0 ? idx : events.length - 1);
-    },
-    [events, preferences.timezone],
-  );
-
   const hasBuiltSession = session?.status === 'built';
 
   const visibleEventIndices = useMemo(
@@ -874,10 +853,6 @@ const SessionReplayPage: React.FC = () => {
               tradingAccountId={accountId}
               sessionDate={sessionDate}
               tradingSessionId={session?.id}
-              onSelectTimestamp={(clock) => {
-                jumpToSessionClock(clock);
-                setPageTab('replay');
-              }}
             />
           </div>
         )
