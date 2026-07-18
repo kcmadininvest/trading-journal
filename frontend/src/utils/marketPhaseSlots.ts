@@ -209,6 +209,44 @@ export function normalizeSlotPeriod(
   return { key: `${start}-${end}`, label, start, end };
 }
 
+function autoSlotLabel(start: string, end: string): string {
+  return `${start} – ${end}`;
+}
+
+/**
+ * Met à jour début/fin d’un créneau dans la liste.
+ * - rejette si bornes invalides ou clé déjà prise par un autre créneau
+ * - régénère le label auto ; conserve un label custom
+ */
+export function updateSlotInList(
+  slots: AnalyticalPeriod[],
+  oldSlot: AnalyticalPeriod,
+  nextTimes: Pick<AnalyticalPeriod, 'start' | 'end'>,
+): { slots: AnalyticalPeriod[]; nextSlot: AnalyticalPeriod } | null {
+  const oldAutoLabel = autoSlotLabel(oldSlot.start, oldSlot.end);
+  const keepCustomLabel =
+    Boolean(oldSlot.label?.trim()) && oldSlot.label.trim() !== oldAutoLabel;
+  const normalized = normalizeSlotPeriod({
+    label: keepCustomLabel ? oldSlot.label : '',
+    start: nextTimes.start,
+    end: nextTimes.end,
+  });
+  if (!normalized) return null;
+  if (normalized.key === oldSlot.key) {
+    return { slots, nextSlot: oldSlot };
+  }
+  if (slots.some((slot) => slot.key !== oldSlot.key && slot.key === normalized.key)) {
+    return null;
+  }
+  const nextSlot: AnalyticalPeriod = keepCustomLabel
+    ? { ...normalized, label: oldSlot.label.trim() }
+    : normalized;
+  const nextSlots = sortSlotsByStart(
+    slots.map((slot) => (slot.key === oldSlot.key ? nextSlot : slot)),
+  );
+  return { slots: nextSlots, nextSlot };
+}
+
 export function blockMatchesSlot(block: { range_start: string; range_end: string | null }, slot: AnalyticalPeriod): boolean {
   const start = normalizeTimeHHMM(block.range_start);
   const end = block.range_end == null ? null : normalizeTimeHHMM(block.range_end);

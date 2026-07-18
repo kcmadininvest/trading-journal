@@ -2,15 +2,17 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   formatMarketPhaseEventActionLabel,
+  getMarketPhaseEventActionByKey,
   MARKET_PHASE_EVENT_ACTIONS,
+  marketPhaseEventActionKey,
   type MarketPhaseEventAction,
 } from '../../utils/marketPhaseEventDisplay';
-import { activeExclusiveSlotEvent } from '../../utils/marketPhaseEventCapture';
+import { activeSlotEvents, isRangeReentryEvent } from '../../utils/marketPhaseEventCapture';
 import type { MarketPhaseEvent } from '../../services/marketPhases';
+import { CustomSelect } from '../common/CustomSelect';
+import { SettingsStyleToggle } from '../ui/SettingsStyleToggle';
 
 type EventDirection = 'up' | 'down' | 'neutral';
-
-const DIRECTION_GROUPS: EventDirection[] = ['up', 'down', 'neutral'];
 
 const ACTION_ORDER: Record<string, number> = {
   'range_breakout_up:body': 0,
@@ -21,6 +23,8 @@ const ACTION_ORDER: Record<string, number> = {
   'wick_sweep_low:wick': 2,
   'range_reentry:unknown': 0,
 };
+
+const NONE_VALUE = '';
 
 function actionSortKey(action: MarketPhaseEventAction): number {
   return ACTION_ORDER[`${action.code}:${action.candlePart}`] ?? 99;
@@ -41,34 +45,6 @@ export function findEventForAction(
   return events.find((ev) => eventMatchesAction(ev, action));
 }
 
-function buttonClassForDirection(direction: EventDirection, selected: boolean): string {
-  const base =
-    'inline-flex h-10 min-h-10 max-h-10 min-w-0 flex-1 items-center justify-center rounded-lg border px-2.5 font-sans text-sm font-medium leading-none transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white dark:focus-visible:ring-offset-gray-900';
-  if (direction === 'up') {
-    return selected
-      ? `${base} border-emerald-500/80 bg-emerald-600 text-white shadow-[0_0_0_3px_rgba(16,185,129,0.28)] dark:border-emerald-400 dark:bg-emerald-500 dark:shadow-[0_0_0_3px_rgba(52,211,153,0.28)] focus-visible:ring-emerald-400`
-      : `${base} border-emerald-200/90 bg-emerald-50/90 text-emerald-800 shadow-sm hover:border-emerald-400 hover:bg-emerald-100 hover:shadow dark:border-emerald-800/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:hover:border-emerald-600 dark:hover:bg-emerald-900/50 focus-visible:ring-emerald-400`;
-  }
-  if (direction === 'down') {
-    return selected
-      ? `${base} border-rose-500/80 bg-rose-600 text-white shadow-[0_0_0_3px_rgba(244,63,94,0.28)] dark:border-rose-400 dark:bg-rose-500 dark:shadow-[0_0_0_3px_rgba(251,113,133,0.28)] focus-visible:ring-rose-400`
-      : `${base} border-rose-200/90 bg-rose-50/90 text-rose-800 shadow-sm hover:border-rose-400 hover:bg-rose-100 hover:shadow dark:border-rose-800/80 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:border-rose-600 dark:hover:bg-rose-900/50 focus-visible:ring-rose-400`;
-  }
-  return selected
-    ? `${base} border-sky-500/80 bg-sky-600 text-white shadow-[0_0_0_3px_rgba(14,165,233,0.28)] dark:border-sky-400 dark:bg-sky-500 dark:shadow-[0_0_0_3px_rgba(56,189,248,0.28)] focus-visible:ring-sky-400`
-    : `${base} border-gray-200/90 bg-white text-gray-700 shadow-sm hover:border-sky-300 hover:bg-sky-50/80 hover:shadow dark:border-gray-600/80 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-sky-600 dark:hover:bg-gray-700 focus-visible:ring-sky-400`;
-}
-
-function groupLabelClass(direction: EventDirection): string {
-  if (direction === 'up') {
-    return 'font-sans text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300';
-  }
-  if (direction === 'down') {
-    return 'font-sans text-[10px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300';
-  }
-  return 'font-sans text-[10px] font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400';
-}
-
 /** Direction d’affichage pour un événement enregistré (champ ou code). */
 export function resolveEventDisplayDirection(ev: MarketPhaseEvent): EventDirection {
   if (ev.direction === 'up' || ev.direction === 'down' || ev.direction === 'neutral') {
@@ -84,7 +60,7 @@ export interface MarketPhaseEventButtonsProps {
   occurredAt: string;
   mode: 'live' | 'replay';
   events?: MarketPhaseEvent[];
-  /** Sélection exclusive : sélectionne, annule (reclic) ou remplace l’événement de la tranche. */
+  /** Sélection : primaire et/ou réintégration (max 2) ; « Aucun » / radio Non annule. */
   onToggle: (action: MarketPhaseEventAction, occurredAt?: string) => void;
   className?: string;
 }
@@ -98,58 +74,129 @@ export const MarketPhaseEventButtons: React.FC<MarketPhaseEventButtonsProps> = (
 }) => {
   const { t } = useTranslation('marketPhases');
 
-  const groupedActions = useMemo(() => {
-    const map: Record<EventDirection, MarketPhaseEventAction[]> = {
-      up: [],
-      down: [],
-      neutral: [],
-    };
+  const { upActions, downActions, reentryAction } = useMemo(() => {
+    const up: MarketPhaseEventAction[] = [];
+    const down: MarketPhaseEventAction[] = [];
+    let reentry: MarketPhaseEventAction | undefined;
     for (const action of MARKET_PHASE_EVENT_ACTIONS) {
-      map[action.direction].push(action);
+      if (action.code === 'range_reentry') {
+        reentry = action;
+        continue;
+      }
+      if (action.direction === 'up') up.push(action);
+      else if (action.direction === 'down') down.push(action);
     }
-    for (const dir of DIRECTION_GROUPS) {
-      map[dir].sort((a, b) => actionSortKey(a) - actionSortKey(b));
-    }
-    return map;
+    up.sort((a, b) => actionSortKey(a) - actionSortKey(b));
+    down.sort((a, b) => actionSortKey(a) - actionSortKey(b));
+    return { upActions: up, downActions: down, reentryAction: reentry };
   }, []);
 
-  const handleToggle = (action: MarketPhaseEventAction) => {
+  const activeEvents = useMemo(() => activeSlotEvents(events), [events]);
+  const primaryEvent = useMemo(
+    () => activeEvents.find((ev) => !isRangeReentryEvent(ev)),
+    [activeEvents],
+  );
+  const hasReentry = useMemo(
+    () => activeEvents.some((ev) => isRangeReentryEvent(ev)),
+    [activeEvents],
+  );
+
+  const selectedUpKey = useMemo(() => {
+    if (!primaryEvent) return NONE_VALUE;
+    const match = upActions.find((action) => eventMatchesAction(primaryEvent, action));
+    return match ? marketPhaseEventActionKey(match) : NONE_VALUE;
+  }, [primaryEvent, upActions]);
+
+  const selectedDownKey = useMemo(() => {
+    if (!primaryEvent) return NONE_VALUE;
+    const match = downActions.find((action) => eventMatchesAction(primaryEvent, action));
+    return match ? marketPhaseEventActionKey(match) : NONE_VALUE;
+  }, [primaryEvent, downActions]);
+
+  const emitToggle = (action: MarketPhaseEventAction) => {
     onToggle(action, mode === 'replay' ? occurredAt : undefined);
   };
 
-  const activeEvent = useMemo(() => activeExclusiveSlotEvent(events), [events]);
+  const handlePrimaryCategoryChange = (
+    categoryActions: MarketPhaseEventAction[],
+    nextKey: string,
+    currentKey: string,
+  ) => {
+    if (nextKey === NONE_VALUE) {
+      if (!currentKey) return;
+      const current = getMarketPhaseEventActionByKey(currentKey);
+      if (current) emitToggle(current);
+      return;
+    }
+    if (nextKey === currentKey) return;
+    const next = getMarketPhaseEventActionByKey(nextKey);
+    if (!next || !categoryActions.some((a) => marketPhaseEventActionKey(a) === nextKey)) return;
+    emitToggle(next);
+  };
+
+  const handleReentryChange = (wantReentry: boolean) => {
+    if (!reentryAction) return;
+    if (wantReentry === hasReentry) return;
+    emitToggle(reentryAction);
+  };
+
+  const upOptions = useMemo(
+    () => [
+      { value: NONE_VALUE, label: t('events.none', { defaultValue: 'Aucun' }) },
+      ...upActions.map((action) => ({
+        value: marketPhaseEventActionKey(action),
+        label: formatMarketPhaseEventActionLabel(t, action),
+      })),
+    ],
+    [t, upActions],
+  );
+
+  const downOptions = useMemo(
+    () => [
+      { value: NONE_VALUE, label: t('events.none', { defaultValue: 'Aucun' }) },
+      ...downActions.map((action) => ({
+        value: marketPhaseEventActionKey(action),
+        label: formatMarketPhaseEventActionLabel(t, action),
+      })),
+    ],
+    [t, downActions],
+  );
 
   return (
     <div className={`w-full font-sans ${className}`}>
-      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_minmax(6rem,0.7fr)]">
-        {DIRECTION_GROUPS.map((direction) => {
-          const actions = groupedActions[direction];
-          if (actions.length === 0) return null;
-          return (
-            <div key={direction} className="flex h-10 min-w-0 items-center gap-1">
-              <span className={`shrink-0 ${groupLabelClass(direction)}`} title={t(`events.directionGroup.${direction}`)}>
-                {t(`events.directionGroup.${direction}`)}
-              </span>
-              <div className="flex h-10 min-w-0 flex-1 gap-1.5">
-                {actions.map((action) => {
-                  const selected = Boolean(activeEvent && eventMatchesAction(activeEvent, action));
-                  return (
-                    <button
-                      key={`${action.code}:${action.candlePart}:${action.outcome}`}
-                      type="button"
-                      aria-pressed={selected}
-                      className={buttonClassForDirection(direction, selected)}
-                      title={t(action.previewKey)}
-                      onClick={() => handleToggle(action)}
-                    >
-                      <span className="truncate">{formatMarketPhaseEventActionLabel(t, action)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+      <div className="flex min-w-0 items-center gap-1.5">
+        <div className="min-w-0 flex-1 basis-0">
+          <CustomSelect
+            value={selectedUpKey}
+            onChange={(value) =>
+              handlePrimaryCategoryChange(upActions, String(value ?? NONE_VALUE), selectedUpKey)
+            }
+            options={upOptions}
+            variant="compact"
+            className="!max-w-none w-full"
+            placeholder={t('events.categoryUp', { defaultValue: 'Hausse' })}
+          />
+        </div>
+        <div className="min-w-0 flex-1 basis-0">
+          <CustomSelect
+            value={selectedDownKey}
+            onChange={(value) =>
+              handlePrimaryCategoryChange(downActions, String(value ?? NONE_VALUE), selectedDownKey)
+            }
+            options={downOptions}
+            variant="compact"
+            className="!max-w-none w-full"
+            placeholder={t('events.categoryDown', { defaultValue: 'Baisse' })}
+          />
+        </div>
+        <div className="inline-flex h-10 w-[7.5rem] shrink-0 items-center justify-center">
+          <div className="-ml-2">
+            <SettingsStyleToggle
+              pressed={hasReentry}
+              onPressedChange={handleReentryChange}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

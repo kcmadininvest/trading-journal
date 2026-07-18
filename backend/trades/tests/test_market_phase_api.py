@@ -33,35 +33,14 @@ class MarketPhaseApiTests(APITestCase):
         codes = [p['code'] for p in data]
         self.assertIn('consolidation', codes)
 
-    def test_instruments_from_portfolio_trades(self):
-        from decimal import Decimal
-        from django.utils import timezone as dj_tz
-
-        entered = dj_tz.make_aware(__import__('datetime').datetime(2026, 7, 10, 12, 30))
-        exited = dj_tz.make_aware(__import__('datetime').datetime(2026, 7, 10, 12, 45))
-        TopStepTrade.objects.create(
-            user=self.user,
-            trading_account=self.account,
-            topstep_id='inst-t1',
-            contract_name='NQM6',
-            entered_at=entered,
-            exited_at=exited,
-            entry_price=Decimal('100'),
-            exit_price=Decimal('101'),
-            size=Decimal('1'),
-            trade_type='Long',
-            net_pnl=Decimal('50'),
-            pnl=Decimal('50'),
-            trade_day=date(2026, 7, 10),
-        )
+    def test_instruments_catalog(self):
         url = reverse('trades:market-phase-instruments')
         res = self.client.get(url)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         keys = [item['key'] for item in res.data['instruments']]
-        self.assertEqual(keys, ['nasdaq'])
-
-        res_account = self.client.get(url, {'trading_account': self.account.id})
-        self.assertEqual([item['key'] for item in res_account.data['instruments']], ['nasdaq'])
+        self.assertIn('nasdaq', keys)
+        self.assertIn('sp500', keys)
+        self.assertGreaterEqual(len(keys), 3)
 
     def test_capture_bulk_and_get(self):
         bulk_upsert_capture(

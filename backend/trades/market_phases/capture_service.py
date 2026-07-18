@@ -103,12 +103,16 @@ def bulk_upsert_capture(
     source: str = 'live',
     trading_session_id: int | None = None,
 ) -> tuple[list[SessionMarketPhaseBlock], list[SessionMarketPhaseEvent]]:
-    SessionMarketPhaseBlock.objects.filter(
-        user=user,
-        trading_account=trading_account,
-        session_date=session_date,
-        instrument_key=instrument_key,
-    ).delete()
+    # Remplacement complet du scope : supprimer d’abord les events (sinon SET_NULL
+    # laisse des orphelins qui s’accumulent à chaque sauvegarde).
+    scope = {
+        'user': user,
+        'trading_account': trading_account,
+        'session_date': session_date,
+        'instrument_key': instrument_key,
+    }
+    SessionMarketPhaseEvent.objects.filter(**scope).delete()
+    SessionMarketPhaseBlock.objects.filter(**scope).delete()
 
     blocks: list[SessionMarketPhaseBlock] = []
     for item in blocks_data:

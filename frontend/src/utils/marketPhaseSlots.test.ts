@@ -15,6 +15,7 @@ import {
   resolveInheritedContext,
   slotMidpoint,
   suggestSlotEndFromStart,
+  updateSlotInList,
 } from './marketPhaseSlots';
 
 describe('marketPhaseSlots', () => {
@@ -88,6 +89,33 @@ describe('marketPhaseSlots', () => {
   it('normalizeSlotPeriod', () => {
     expect(normalizeSlotPeriod({ label: '', start: '09:30', end: '10:00' })?.key).toBe('09:30-10:00');
     expect(normalizeSlotPeriod({ label: 'x', start: '', end: '10:00' })).toBeNull();
+  });
+
+  it('updateSlotInList regenerates auto label and sorts', () => {
+    const slots = [
+      { key: '09:30-10:00', label: '09:30 – 10:00', start: '09:30', end: '10:00' },
+      { key: '11:00-11:30', label: '11:00 – 11:30', start: '11:00', end: '11:30' },
+    ];
+    const result = updateSlotInList(slots, slots[0], { start: '10:15', end: '10:45' });
+    expect(result).not.toBeNull();
+    expect(result!.nextSlot).toEqual({
+      key: '10:15-10:45',
+      label: '10:15 – 10:45',
+      start: '10:15',
+      end: '10:45',
+    });
+    expect(result!.slots.map((s) => s.key)).toEqual(['10:15-10:45', '11:00-11:30']);
+  });
+
+  it('updateSlotInList keeps custom label and rejects duplicates', () => {
+    const slots = [
+      { key: '09:30-10:00', label: 'Open', start: '09:30', end: '10:00' },
+      { key: '11:00-11:30', label: '11:00 – 11:30', start: '11:00', end: '11:30' },
+    ];
+    const kept = updateSlotInList(slots, slots[0], { start: '09:45', end: '10:15' });
+    expect(kept?.nextSlot.label).toBe('Open');
+    expect(updateSlotInList(slots, slots[0], { start: '11:00', end: '11:30' })).toBeNull();
+    expect(updateSlotInList(slots, slots[0], { start: '09:30', end: '10:00' })?.nextSlot).toBe(slots[0]);
   });
 
   it('createEmptySlotDraft uses start and leaves end empty', () => {

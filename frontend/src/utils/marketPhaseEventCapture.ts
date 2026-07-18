@@ -59,6 +59,13 @@ function isWickBreakout(ev: MarketPhaseEvent): boolean {
   );
 }
 
+/** Réintégration du range (bouton dédié) — pas un outcome reporté sur une cassure. */
+export function isRangeReentryEvent(
+  ev: Pick<MarketPhaseEvent, 'event_type_code'>,
+): boolean {
+  return ev.event_type_code === 'range_reentry';
+}
+
 /**
  * Ajoute un événement (append). Si c’est une réintégration, marque le dernier
  * breakout mèche du même bloc en outcome=reentry (compat analytics fakeout).
@@ -103,44 +110,103 @@ function eventMatchesToggleTarget(
   );
 }
 
+function sortByOccurredAt(events: MarketPhaseEvent[]): MarketPhaseEvent[] {
+  return [...events].sort((a, b) =>
+    (a.occurred_at || '').localeCompare(b.occurred_at || ''),
+  );
+}
+
 /**
- * Sélection exclusive sur une tranche :
- * - reclic sur le même → retire tous les événements de la tranche
- * - clic sur un autre → remplace tous les événements de la tranche
+ * Sélection par tranche : au plus 1 événement primaire + 1 réintégration.
+ * - reclic sur le même → retire cet événement seulement
+ * - clic sur un autre primaire → remplace le primaire, conserve la réintégration
+ * - clic réintégration → ajoute/retire sans toucher au primaire
  */
-export function toggleExclusiveSlotEvent(
+export function toggleSlotEvent(
   allEvents: MarketPhaseEvent[],
   slotEvents: MarketPhaseEvent[],
   candidate: MarketPhaseEvent,
   blocks: MarketPhaseBlock[],
 ): MarketPhaseEvent[] {
   const matching = slotEvents.find((ev) => eventMatchesToggleTarget(ev, candidate));
-  let next = allEvents;
-  for (const ev of slotEvents) {
-    next = removeMarketPhaseEvent(next, ev);
-  }
   if (matching) {
-    return next;
+    // Retirer tous les événements de la tranche qui correspondent à l’action
+    // (évite les échecs de match id/clé après sync API).
+    const slotKeys = new Set(slotEvents.map((ev) => marketPhaseEventKey(ev)));
+    return allEvents.filter((ev) => {
+      const inSlot =
+        slotKeys.has(marketPhaseEventKey(ev)) ||
+        slotEvents.some(
+          (se) =>
+            se.id != null &&
+            ev.id != null &&
+            se.id === ev.id,
+        ) ||
+        slotEvents.some(
+          (se) =>
+            se.occurred_at === ev.occurred_at &&
+            eventMatchesToggleTarget(se, ev),
+        );
+      if (!inSlot) return true;
+      return !eventMatchesToggleTarget(ev, candidate);
+    });
   }
+
+  const candidateIsReentry = isRangeReentryEvent(candidate);
+  let next = allEvents;
+
+  if (candidateIsReentry) {
+    for (const ev of slotEvents) {
+      if (isRangeReentryEvent(ev)) {
+        next = removeMarketPhaseEvent(next, ev);
+      }
+    }
+  } else {
+    for (const ev of slotEvents) {
+      if (!isRangeReentryEvent(ev)) {
+        next = removeMarketPhaseEvent(next, ev);
+      }
+    }
+  }
+
   return appendMarketPhaseEvent(next, candidate, blocks);
 }
 
-/** Un seul événement actif par tranche (le plus récent) — affichage exclusif. */
+/** @deprecated Utiliser toggleSlotEvent — conservé pour compat tests anciens. */
+export function toggleExclusiveSlotEvent(
+  allEvents: MarketPhaseEvent[],
+  slotEvents: MarketPhaseEvent[],
+  candidate: MarketPhaseEvent,
+  blocks: MarketPhaseBlock[],
+): MarketPhaseEvent[] {
+  return toggleSlotEvent(allEvents, slotEvents, candidate, blocks);
+}
+
+/** Événements actifs d’une tranche (primaire + réintégration éventuelle). */
+export function activeSlotEvents(slotEvents: MarketPhaseEvent[]): MarketPhaseEvent[] {
+  if (slotEvents.length === 0) return [];
+  const sorted = sortByOccurredAt(slotEvents);
+  const reentries = sorted.filter((ev) => isRangeReentryEvent(ev));
+  const primaries = sorted.filter((ev) => !isRangeReentryEvent(ev));
+  const result: MarketPhaseEvent[] = [];
+  if (primaries.length > 0) result.push(primaries[primaries.length - 1]);
+  if (reentries.length > 0) result.push(reentries[reentries.length - 1]);
+  return result;
+}
+
+/** @deprecated Un seul événement — préférer activeSlotEvents. */
 export function activeExclusiveSlotEvent(
   slotEvents: MarketPhaseEvent[],
 ): MarketPhaseEvent | undefined {
-  if (slotEvents.length === 0) return undefined;
-  if (slotEvents.length === 1) return slotEvents[0];
-  return [...slotEvents].sort((a, b) =>
-    (a.occurred_at || '').localeCompare(b.occurred_at || ''),
-  ).at(-1);
+  const active = activeSlotEvents(slotEvents);
+  return active[active.length - 1];
 }
 
 /**
- * Garde au plus un événement par bloc (le plus récent).
+ * Garde au plus 1 primaire + 1 réintégration par bloc.
  * Les orphelins hors bloc sont conservés.
  */
-export function pruneToExclusiveEventPerBlock(
+export function pruneToPrimaryPlusReentryPerBlock(
   blocks: MarketPhaseBlock[],
   allEvents: MarketPhaseEvent[],
 ): { events: MarketPhaseEvent[]; pruned: boolean } {
@@ -157,10 +223,9 @@ export function pruneToExclusiveEventPerBlock(
       inBlockKeys.add(marketPhaseEventKey(ev));
     }
     if (members.length === 0) continue;
-    const last = [...members].sort((a, b) =>
-      (a.occurred_at || '').localeCompare(b.occurred_at || ''),
-    ).at(-1);
-    if (last) keepKeys.add(marketPhaseEventKey(last));
+    for (const ev of activeSlotEvents(members)) {
+      keepKeys.add(marketPhaseEventKey(ev));
+    }
   }
 
   const events = allEvents.filter((ev) => {
@@ -170,4 +235,12 @@ export function pruneToExclusiveEventPerBlock(
   });
 
   return { events, pruned: events.length !== allEvents.length };
+}
+
+/** @deprecated Utiliser pruneToPrimaryPlusReentryPerBlock. */
+export function pruneToExclusiveEventPerBlock(
+  blocks: MarketPhaseBlock[],
+  allEvents: MarketPhaseEvent[],
+): { events: MarketPhaseEvent[]; pruned: boolean } {
+  return pruneToPrimaryPlusReentryPerBlock(blocks, allEvents);
 }

@@ -21,7 +21,6 @@ from .analytics import (
 )
 from .capture_service import bulk_upsert_capture, delete_period_captures
 from trades.contract_utils.market_quote_mapping import (
-    instruments_from_contract_names,
     market_quote_instrument_label,
     resolve_market_quote_instrument_key,
 )
@@ -345,17 +344,13 @@ class MarketPhaseInstrumentsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        trading_account_id = request.query_params.get('trading_account')
-        trades = TopStepTrade.objects.filter(user=request.user)
-        if trading_account_id:
-            try:
-                trades = trades.filter(trading_account_id=int(trading_account_id))
-            except (ValueError, TypeError):
-                pass
-        contract_names = list(
-            trades.values_list('contract_name', flat=True).distinct().order_by('contract_name')
-        )
-        instruments = instruments_from_contract_names(contract_names)
+        """Catalogue fixe des instruments marché — instantané (pas de scan trades)."""
+        from integrations.market_quotes_config import MARKET_QUOTE_INSTRUMENTS
+
+        instruments = [
+            {'key': item.key, 'label': item.label, 'name': item.label}
+            for item in MARKET_QUOTE_INSTRUMENTS
+        ]
         return Response({
             'instruments': instruments,
             'valid_keys': [item['key'] for item in instruments],

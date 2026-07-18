@@ -42,6 +42,12 @@
     "wickSweepHigh": "↑ Sweep",
     "wickSweepLow": "↓ Sweep",
     "reentry": "Réintégration",
+    "none": "Aucun",
+    "reentryNone": "Non",
+    "reentryYes": "Oui",
+    "categoryUp": "Hausse",
+    "categoryDown": "Baisse",
+    "categoryReentry": "Réintégration",
     "directionGroup": {
       "up": "↑",
       "down": "↓",

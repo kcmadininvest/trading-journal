@@ -25,7 +25,10 @@ import {
   resolveInheritedContext,
   slotMidpoint,
   sortSlotsByStart,
+  updateSlotInList,
 } from '../../utils/marketPhaseSlots';
+import { nextDistinctEventTime } from '../../utils/marketPhaseEventCapture';
+import { marketPhaseEventKey } from '../../utils/marketPhaseEventDisplay';
 
 function eventsForSlot(
   slot: AnalyticalPeriod,
@@ -33,17 +36,29 @@ function eventsForSlot(
   allEvents: MarketPhaseEvent[],
 ): MarketPhaseEvent[] {
   if (!block) return [];
+  const sortFn = (a: MarketPhaseEvent, b: MarketPhaseEvent) =>
+    (a.occurred_at || '').localeCompare(b.occurred_at || '');
+
+  // 1) Events explicitement liés à ce bloc (source de vérité API)
   if (block.id != null) {
-    return allEvents
-      .filter((ev) => ev.parent_block === block.id)
-      .sort((a, b) => (a.occurred_at || '').localeCompare(b.occurred_at || ''));
+    const linked = allEvents.filter((ev) => ev.parent_block === block.id);
+    if (linked.length > 0) return linked.sort(sortFn);
   }
-  const nested = block.events || [];
-  if (nested.length > 0) {
-    return [...nested].sort((a, b) => (a.occurred_at || '').localeCompare(b.occurred_at || ''));
+
+  // 2) Events déjà projetés sur le bloc
+  if (block.events && block.events.length > 0) {
+    return [...block.events].sort(sortFn);
   }
-  // Bloc local tout neuf : aucun événement tant qu’on n’en a pas saisi sur cette tranche.
-  return [];
+
+  // 3) Fallback plage horaire (événements locaux sans parent_block)
+  return allEvents
+    .filter((ev) => {
+      if (ev.parent_block != null && block.id != null && ev.parent_block !== block.id) {
+        return false;
+      }
+      return eventInPeriod(ev.occurred_at, slot.start, slot.end);
+    })
+    .sort(sortFn);
 }
 
 export interface MarketPhaseSlotCapturePanelProps {
@@ -75,7 +90,16 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
     tradingSessionId,
   });
 
-  const [sessionSlotOverrides, setSessionSlotOverrides] = useState<AnalyticalPeriod[] | null | undefined>(undefined);
+  const [sessionSlotOverrides, setSessionSlotOverrides] = useState<AnalyticalPeriod[] | null | undefined>(() => {
+    if (!tradingAccountId || !sessionDate) return undefined;
+    try {
+      const raw = sessionStorage.getItem(sessionSlotsStorageKey(tradingAccountId, sessionDate));
+      if (raw === null) return null;
+      return JSON.parse(raw) as AnalyticalPeriod[];
+    } catch {
+      return null;
+    }
+  });
   const [newSlotDraft, setNewSlotDraft] = useState(() =>
     createEmptySlotDraft(nowTimeInTz(preferences.timezone)),
   );
@@ -232,6 +256,68 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
     [capture, persistSessionSlots, slots],
   );
 
+  const handleSlotTimeChange = useCallback(
+    (slot: AnalyticalPeriod, nextTimes: Pick<AnalyticalPeriod, 'start' | 'end'>) => {
+      if (nextTimes.start === slot.start && nextTimes.end === slot.end) return;
+
+      const updated = updateSlotInList(slots, slot, nextTimes);
+      if (!updated) {
+        const normalized = normalizeSlotPeriod({
+          label: slot.label,
+          start: nextTimes.start,
+          end: nextTimes.end,
+        });
+        setSlotFormError(
+          normalized ? t('replay.duplicateSlot') : t('replay.invalidSlotTimes'),
+        );
+        return;
+      }
+
+      setSlotFormError(null);
+      persistSessionSlots(updated.slots);
+
+      const existing = capture.blocks.find((b) => blockMatchesSlot(b, slot));
+      if (!existing) return;
+
+      const slotEvents = eventsForSlot(slot, existing, capture.allEvents);
+      const slotIds = new Set(
+        slotEvents.map((ev) => ev.id).filter((id): id is number => id != null),
+      );
+      const slotKeys = new Set(slotEvents.map((ev) => marketPhaseEventKey(ev)));
+
+      const midpoint = slotMidpoint(updated.nextSlot);
+      const usedTimes: string[] = [];
+      const remappedSlotEvents = slotEvents.map((ev) => {
+        const occurredAt = nextDistinctEventTime(
+          midpoint,
+          usedTimes,
+          updated.nextSlot.end,
+        );
+        usedTimes.push(occurredAt);
+        return { ...ev, occurred_at: occurredAt };
+      });
+
+      const eventsOutsideSlot = capture.allEvents.filter((ev) => {
+        if (ev.id != null && slotIds.has(ev.id)) return false;
+        if (slotKeys.has(marketPhaseEventKey(ev))) return false;
+        return true;
+      });
+
+      const others = capture.blocks.filter((b) => !blockMatchesSlot(b, slot));
+      const migrated: MarketPhaseBlock = {
+        ...existing,
+        range_start: updated.nextSlot.start,
+        range_end: updated.nextSlot.end,
+        events: remappedSlotEvents,
+      };
+      capture.setBlocksAndPersist(
+        [...others, migrated],
+        [...eventsOutsideSlot, ...remappedSlotEvents],
+      );
+    },
+    [capture, persistSessionSlots, slots, t],
+  );
+
   const handleQuickFill = useCallback(
     (mode: string) => {
       let generated: AnalyticalPeriod[] = [];
@@ -260,10 +346,6 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('replay.slotsTitle')}</h3>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="text-gray-500">
-            {capture.saveState === 'saving' && t('saving')}
-            {capture.saveState === 'saved' && t('saved')}
-          </span>
           <button
             type="button"
             className="text-sky-600 hover:underline dark:text-sky-400"
@@ -364,14 +446,38 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
         )}
       </div>
 
-      <div className="max-h-[28rem] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
-        <table className="w-full table-fixed text-sm">
+      <div className="relative max-h-[28rem] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        {capture.loading && (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-gray-900/70"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <div className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-sm text-gray-600 shadow-sm dark:bg-gray-800 dark:text-gray-300">
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
+              {t('common:loading')}
+            </div>
+          </div>
+        )}
+        <table className={`w-full table-fixed text-sm ${capture.loading ? 'pointer-events-none opacity-60' : ''}`}>
           <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
             <tr className="text-left text-gray-500">
-              <th className="w-[12%] px-3 py-2">{t('replay.columnPeriod')}</th>
-              <th className="w-[18%] px-3 py-2">{t('selectPhase')}</th>
-              <th className="w-[20%] px-3 py-2">{t('context')}</th>
-              <th className="w-[50%] px-3 py-2">{t('replay.columnEvents')}</th>
+              <th className="w-[16.5rem] px-2 py-2 pr-1">{t('replay.columnPeriod')}</th>
+              <th className="w-[22%] px-2 py-2 pl-1">{t('selectPhase')}</th>
+              <th className="w-[16%] px-2 py-2">{t('context')}</th>
+              <th className="w-auto px-2 py-2">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span className="min-w-0 flex-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                    {t('events.categoryUp', { defaultValue: 'Hausse' })}
+                  </span>
+                  <span className="min-w-0 flex-1 text-[10px] font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">
+                    {t('events.categoryDown', { defaultValue: 'Baisse' })}
+                  </span>
+                  <span className="inline-flex w-[7.5rem] shrink-0 justify-center text-center text-[10px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                    {t('events.categoryReentry', { defaultValue: 'Réintégration' })}
+                  </span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -380,11 +486,30 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
               const slotEvents = eventsForSlot(slot, block, capture.allEvents);
               return (
                 <tr key={slot.key} className={`border-t border-gray-100 dark:border-gray-800 ${block ? 'bg-violet-50/50 dark:bg-violet-950/20' : ''}`}>
-                  <td className="px-3 py-2 align-middle text-left">
-                    <div className="flex items-center justify-start gap-2">
-                      <span className="font-medium text-gray-800 dark:text-gray-200">
-                        {slot.label || `${slot.start} – ${slot.end}`}
+                  <td className="w-[16.5rem] px-2 py-2 pr-1 align-middle text-left">
+                    <div className="flex min-w-0 items-center justify-start gap-1">
+                      <div className="w-[6.25rem] shrink-0">
+                        <SessionClockInput
+                          value={slot.start}
+                          onChange={(start) =>
+                            handleSlotTimeChange(slot, { start, end: slot.end })
+                          }
+                          className={MARKET_PHASE_FORM_CLOCK_CLASS}
+                        />
+                      </div>
+                      <span className="shrink-0 text-gray-400 dark:text-gray-500" aria-hidden="true">
+                        –
                       </span>
+                      <div className="w-[6.25rem] shrink-0">
+                        <SessionClockInput
+                          value={slot.end}
+                          onChange={(end) =>
+                            handleSlotTimeChange(slot, { start: slot.start, end })
+                          }
+                          minTime={slot.start || undefined}
+                          className={MARKET_PHASE_FORM_CLOCK_CLASS}
+                        />
+                      </div>
                       <button
                         type="button"
                         className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-base font-semibold leading-none text-rose-600 transition-colors hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-900/30 dark:hover:text-rose-300"
@@ -396,7 +521,7 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
                       </button>
                     </div>
                   </td>
-                  <td className="px-3 py-2 align-top">
+                  <td className="px-2 py-2 pl-1 align-middle">
                     <CustomSelect
                       value={block?.phase_code || ''}
                       onChange={(value) => handleSlotPhaseChange(slot, String(value ?? ''))}
@@ -405,7 +530,7 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
                       className="!max-w-none w-full"
                     />
                   </td>
-                  <td className="px-3 py-2 align-top">
+                  <td className="px-2 py-2 align-middle">
                     <CustomSelect
                       value={block?.preceding_context || 'none'}
                       onChange={(value) => handleSlotContextChange(slot, String(value ?? 'none'))}
@@ -415,7 +540,7 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
                       disabled={!block}
                     />
                   </td>
-                  <td className="px-3 py-2 align-top">
+                  <td className="px-2 py-2 align-middle">
                     {!block ? (
                       <p className="text-xs text-gray-400 dark:text-gray-500">{t('replay.selectPhaseFirst')}</p>
                     ) : (

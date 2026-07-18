@@ -120,21 +120,40 @@ async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+/** Cache session : définitions quasi-statiques + instruments (TTL court). */
+let phaseDefinitionsCache: MarketPhaseDefinition[] | null = null;
+const instrumentsCache = new Map<
+  string,
+  { at: number; data: { instruments: MarketInstrument[] } }
+>();
+const INSTRUMENTS_CACHE_TTL_MS = 60_000;
+
 class MarketPhasesService {
   async getInstruments(tradingAccountId?: number | null): Promise<{ instruments: MarketInstrument[] }> {
+    const cacheKey = tradingAccountId != null ? String(tradingAccountId) : 'all';
+    const cached = instrumentsCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < INSTRUMENTS_CACHE_TTL_MS) {
+      return cached.data;
+    }
     const params = new URLSearchParams();
     if (tradingAccountId != null) {
       params.set('trading_account', String(tradingAccountId));
     }
     const qs = params.toString();
-    return fetchJson(`${BASE}/instruments/${qs ? `?${qs}` : ''}`);
+    const data = await fetchJson<{ instruments: MarketInstrument[] }>(
+      `${BASE}/instruments/${qs ? `?${qs}` : ''}`,
+    );
+    instrumentsCache.set(cacheKey, { at: Date.now(), data });
+    return data;
   }
 
   async getPhaseDefinitions(): Promise<MarketPhaseDefinition[]> {
+    if (phaseDefinitionsCache) return phaseDefinitionsCache;
     const data = await fetchJson<{ results?: MarketPhaseDefinition[] } | MarketPhaseDefinition[]>(
       `${BASE}/definitions/phases/`,
     );
-    return Array.isArray(data) ? data : data.results || [];
+    phaseDefinitionsCache = Array.isArray(data) ? data : data.results || [];
+    return phaseDefinitionsCache;
   }
 
   async getEventDefinitions(): Promise<MarketPhaseEventDefinition[]> {

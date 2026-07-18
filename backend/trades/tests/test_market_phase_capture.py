@@ -97,6 +97,48 @@ class MarketPhaseCaptureTests(TestCase):
         with self.assertRaises(ValidationError):
             validate_no_block_overlap([b1, b2])
 
+    def test_bulk_upsert_does_not_accumulate_orphan_events(self):
+        from trades.market_phases.models import SessionMarketPhaseEvent
+
+        payload = dict(
+            user=self.user,
+            trading_account=self.account,
+            session_date=date(2026, 7, 10),
+            instrument_key='nasdaq',
+            blocks_data=[{
+                'phase_code': 'consolidation',
+                'range_start': time(12, 0),
+                'range_end': time(13, 0),
+            }],
+            events_data=[{
+                'event_type_code': 'range_breakout_up',
+                'occurred_at': time(12, 30),
+                'candle_part': 'body',
+                'direction': 'up',
+            }],
+        )
+        bulk_upsert_capture(**payload)
+        bulk_upsert_capture(**payload)
+        bulk_upsert_capture(**payload)
+
+        self.assertEqual(
+            SessionMarketPhaseEvent.objects.filter(
+                user=self.user,
+                trading_account=self.account,
+                session_date=date(2026, 7, 10),
+                instrument_key='nasdaq',
+            ).count(),
+            1,
+        )
+        self.assertEqual(
+            SessionMarketPhaseEvent.objects.filter(
+                user=self.user,
+                trading_account=self.account,
+                parent_block__isnull=True,
+            ).count(),
+            0,
+        )
+
     def test_find_parent_block(self):
         block = SessionMarketPhaseBlock(
             range_start=time(12, 18),
