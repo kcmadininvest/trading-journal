@@ -340,6 +340,29 @@ const StrategyChecklistPopup: React.FC = () => {
 
       {/* Contenu scrollable */}
       <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5">
+        {/* Précharge les phases dès que le compte est connu (onglet checklist inclus). */}
+        {!accountLoading && accountId != null && (
+          <div
+            className={popupTab === 'marketPhases' ? 'space-y-3' : 'hidden'}
+            aria-hidden={popupTab !== 'marketPhases'}
+          >
+            <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-3 dark:border-sky-800/50 dark:bg-sky-950/20">
+              <h2 className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                {t('positionStrategies:marketPhasesIntroTitle', { defaultValue: 'Phases de marché' })}
+              </h2>
+              <p className="mt-1.5 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+                {t('positionStrategies:marketPhasesIntroDescription', {
+                  defaultValue: 'Documentez le comportement du marché par tranche horaire pendant votre session : phase dominante, contexte et événements clés. Ces notes alimentent l\'observatoire des phases de marché dans Analytique.',
+                })}
+              </p>
+            </div>
+            <MarketPhaseSlotCapturePanel
+              tradingAccountId={accountId}
+              sessionDate={toIsoCalendarDateInTimezone(new Date(), preferences.timezone)}
+            />
+          </div>
+        )}
+
         {popupTab === 'marketPhases' ? (
           accountLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -351,24 +374,7 @@ const StrategyChecklistPopup: React.FC = () => {
                 {t('positionStrategies:selectTradingAccount', { defaultValue: 'Sélectionnez un compte de trading dans la barre supérieure.' })}
               </p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-3 dark:border-sky-800/50 dark:bg-sky-950/20">
-                <h2 className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                  {t('positionStrategies:marketPhasesIntroTitle', { defaultValue: 'Phases de marché' })}
-                </h2>
-                <p className="mt-1.5 text-xs leading-relaxed text-gray-600 dark:text-gray-400">
-                  {t('positionStrategies:marketPhasesIntroDescription', {
-                    defaultValue: 'Documentez le comportement du marché par tranche horaire pendant votre session : phase dominante, contexte et événements clés. Ces notes alimentent l\'observatoire des phases de marché dans Analytique.',
-                  })}
-                </p>
-              </div>
-              <MarketPhaseSlotCapturePanel
-                tradingAccountId={accountId}
-                sessionDate={toIsoCalendarDateInTimezone(new Date(), preferences.timezone)}
-              />
-            </div>
-          )
+          ) : null
         ) : strategy.strategy_content?.sections && strategy.strategy_content.sections.length > 0 ? (
           strategy.strategy_content.sections.map((section, sectionIndex) => {
             // Compter directement sur les index originaux (corrige le bug indexOf avec doublons)

@@ -2225,6 +2225,28 @@ const PositionStrategiesPage: React.FC = () => {
 
               {/* Contenu scrollable */}
               <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+                {!accountLoading && accountId != null && (
+                  <div
+                    className={viewModalTab === 'marketPhases' ? 'space-y-4' : 'hidden'}
+                    aria-hidden={viewModalTab !== 'marketPhases'}
+                  >
+                    <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-800/50 dark:bg-sky-950/20">
+                      <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        {t('positionStrategies:marketPhasesIntroTitle', { defaultValue: 'Phases de marché' })}
+                      </h2>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                        {t('positionStrategies:marketPhasesIntroDescription', {
+                          defaultValue: 'Documentez le comportement du marché par tranche horaire pendant votre session : phase dominante, contexte et événements clés. Ces notes alimentent l\'observatoire des phases de marché dans Analytique.',
+                        })}
+                      </p>
+                    </div>
+                    <MarketPhaseSlotCapturePanel
+                      tradingAccountId={accountId}
+                      sessionDate={toIsoCalendarDateInTimezone(new Date(), preferences.timezone)}
+                    />
+                  </div>
+                )}
+
                 {viewModalTab === 'marketPhases' ? (
                   accountLoading ? (
                     <div className="flex items-center justify-center py-12">
@@ -2236,24 +2258,7 @@ const PositionStrategiesPage: React.FC = () => {
                         {t('positionStrategies:selectTradingAccount', { defaultValue: 'Sélectionnez un compte de trading dans la barre supérieure.' })}
                       </p>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="rounded-lg border border-sky-200 bg-sky-50/80 p-4 dark:border-sky-800/50 dark:bg-sky-950/20">
-                        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                          {t('positionStrategies:marketPhasesIntroTitle', { defaultValue: 'Phases de marché' })}
-                        </h2>
-                        <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                          {t('positionStrategies:marketPhasesIntroDescription', {
-                            defaultValue: 'Documentez le comportement du marché par tranche horaire pendant votre session : phase dominante, contexte et événements clés. Ces notes alimentent l\'observatoire des phases de marché dans Analytique.',
-                          })}
-                        </p>
-                      </div>
-                      <MarketPhaseSlotCapturePanel
-                        tradingAccountId={accountId}
-                        sessionDate={toIsoCalendarDateInTimezone(new Date(), preferences.timezone)}
-                      />
-                    </div>
-                  )
+                  ) : null
                 ) : (
                 <>
                 {/* Bandeau de comparaison avec version précédente (uniquement pour les versions archivées) */}

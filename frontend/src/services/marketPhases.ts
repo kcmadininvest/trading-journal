@@ -139,6 +139,19 @@ const instrumentsCache = new Map<
 >();
 const INSTRUMENTS_CACHE_TTL_MS = 60_000;
 
+export function peekCachedPhaseDefinitions(): MarketPhaseDefinition[] | null {
+  return phaseDefinitionsCache;
+}
+
+export function peekCachedInstruments(
+  tradingAccountId?: number | null,
+): MarketInstrument[] | null {
+  const cacheKey = tradingAccountId != null ? String(tradingAccountId) : 'all';
+  const cached = instrumentsCache.get(cacheKey);
+  if (!cached || Date.now() - cached.at >= INSTRUMENTS_CACHE_TTL_MS) return null;
+  return cached.data.instruments;
+}
+
 class MarketPhasesService {
   async getInstruments(tradingAccountId?: number | null): Promise<{ instruments: MarketInstrument[] }> {
     const cacheKey = tradingAccountId != null ? String(tradingAccountId) : 'all';

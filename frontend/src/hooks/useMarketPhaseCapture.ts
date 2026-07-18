@@ -6,6 +6,8 @@ import {
   MarketPhaseDefinition,
   MarketPhaseEvent,
   MarketInstrument,
+  peekCachedPhaseDefinitions,
+  peekCachedInstruments,
 } from '../services/marketPhases';
 import { toIsoCalendarDateInTimezone } from '../utils/dateFormat';
 import {
@@ -216,8 +218,12 @@ export function useMarketPhaseCapture({
     return 'nasdaq';
   }, [instrumentKeyProp, tradingAccountId]);
 
-  const [phases, setPhases] = useState<MarketPhaseDefinition[]>([]);
-  const [instruments, setInstruments] = useState<MarketInstrument[]>([]);
+  const [phases, setPhases] = useState<MarketPhaseDefinition[]>(
+    () => peekCachedPhaseDefinitions() ?? [],
+  );
+  const [instruments, setInstruments] = useState<MarketInstrument[]>(
+    () => peekCachedInstruments(tradingAccountId) ?? [],
+  );
   const [instrumentKey, setInstrumentKeyState] = useState(initialInstrument);
   const [blocks, setBlocks] = useState<MarketPhaseBlock[]>(() => {
     if (!tradingAccountId) return [];
@@ -324,6 +330,15 @@ export function useMarketPhaseCapture({
         });
         const phasesPromise = marketPhasesService.getPhaseDefinitions();
         const instrumentsPromise = marketPhasesService.getInstruments(tradingAccountId);
+
+        // Remplir les listes dès qu’elles arrivent (sans attendre la capture).
+        void phasesPromise.then((p) => {
+          if (!cancelled && requestId === captureRequestId.current) setPhases(p);
+        });
+        void instrumentsPromise.then((inst) => {
+          if (cancelled || requestId !== captureRequestId.current) return;
+          setInstruments(inst.instruments);
+        });
 
         const captureData = await capturePromise;
         if (cancelled || requestId !== captureRequestId.current) return;
