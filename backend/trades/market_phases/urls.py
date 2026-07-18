@@ -8,6 +8,7 @@ from .views import (
     MarketPhaseEventDefinitionViewSet,
     MarketPhaseInstrumentsView,
     MarketPhasePeriodCapturesDeleteView,
+    MarketPhaseSessionSlotsView,
     MarketPhaseSlotConfigView,
 )
 
@@ -17,6 +18,7 @@ router.register(r'definitions/events', MarketPhaseEventDefinitionViewSet, basena
 
 urlpatterns = [
     path('slot-config/', MarketPhaseSlotConfigView.as_view(), name='market-phase-slot-config'),
+    path('session-slots/', MarketPhaseSessionSlotsView.as_view(), name='market-phase-session-slots'),
     path('capture/', MarketPhaseCaptureView.as_view(), name='market-phase-capture'),
     path('instruments/', MarketPhaseInstrumentsView.as_view(), name='market-phase-instruments'),
     path(

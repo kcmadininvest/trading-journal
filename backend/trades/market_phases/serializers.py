@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 
 from django.utils.dateparse import parse_date, parse_time
@@ -44,6 +45,43 @@ class MarketPhaseSlotConfigSerializer(serializers.ModelSerializer):
             'custom_analytical_periods',
             'default_instrument_key',
         ]
+
+
+class SessionMarketPhaseSlotGridSerializer(serializers.Serializer):
+    session_date = serializers.DateField()
+    trading_account = serializers.IntegerField()
+    slots = serializers.ListField(child=serializers.DictField(), required=True)
+
+    def validate_slots(self, value):
+        normalized = []
+        seen_keys = set()
+        for item in value:
+            if not isinstance(item, dict):
+                raise serializers.ValidationError('Chaque créneau doit être un objet.')
+            start = str(item.get('start') or '').strip()
+            end = str(item.get('end') or '').strip()
+            start_m = re.fullmatch(r'(\d{1,2}):(\d{2})', start)
+            end_m = re.fullmatch(r'(\d{1,2}):(\d{2})', end)
+            if not start_m or not end_m:
+                raise serializers.ValidationError(f'Horaires invalides: {start}-{end}')
+            sh, sm = int(start_m.group(1)), int(start_m.group(2))
+            eh, em = int(end_m.group(1)), int(end_m.group(2))
+            if sh > 23 or sm > 59 or eh > 23 or em > 59:
+                raise serializers.ValidationError(f'Horaires invalides: {start}-{end}')
+            start_n = f'{sh:02d}:{sm:02d}'
+            end_n = f'{eh:02d}:{em:02d}'
+            key = str(item.get('key') or f'{start_n}-{end_n}').strip()
+            if key in seen_keys:
+                raise serializers.ValidationError(f'Créneau en double: {key}')
+            seen_keys.add(key)
+            label = str(item.get('label') or f'{start_n} – {end_n}').strip()
+            normalized.append({
+                'key': key,
+                'label': label,
+                'start': start_n,
+                'end': end_n,
+            })
+        return normalized
 
 
 class SessionMarketPhaseEventSerializer(serializers.ModelSerializer):

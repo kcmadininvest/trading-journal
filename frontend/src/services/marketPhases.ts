@@ -72,6 +72,17 @@ export interface MarketPhaseSlotConfig {
   default_instrument_key: string;
 }
 
+export interface MarketPhaseSessionSlots {
+  session_date: string;
+  trading_account: number;
+  slots: Array<{
+    key: string;
+    label: string;
+    start: string;
+    end: string;
+  }>;
+}
+
 export interface AssetMarketProfile {
   instrument_key: string;
   instrument_label: string;
@@ -171,6 +182,27 @@ class MarketPhasesService {
     return fetchJson(`${BASE}/slot-config/`, {
       method: 'PATCH',
       body: JSON.stringify(partial),
+    });
+  }
+
+  async getSessionSlots(params: {
+    session_date: string;
+    trading_account: number;
+  }): Promise<MarketPhaseSessionSlots> {
+    const q = new URLSearchParams();
+    q.set('session_date', params.session_date);
+    q.set('trading_account', String(params.trading_account));
+    return fetchJson(`${BASE}/session-slots/?${q}`);
+  }
+
+  async putSessionSlots(payload: {
+    session_date: string;
+    trading_account: number;
+    slots: Array<{ key: string; label: string; start: string; end: string }>;
+  }): Promise<MarketPhaseSessionSlots> {
+    return fetchJson(`${BASE}/session-slots/`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
     });
   }
 

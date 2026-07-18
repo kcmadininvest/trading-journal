@@ -260,6 +260,44 @@ export function isSlotBoundBlock(
   return slots.some((slot) => blockMatchesSlot(block, slot));
 }
 
+/**
+ * Après quick-fill / remplacement de grille : ne garder que les blocs encore
+ * liés à un créneau, et leurs événements (évite les orphelins invisibles).
+ */
+export function pruneCaptureToSlots<
+  TBlock extends { id?: number; range_start: string; range_end: string | null },
+  TEvent extends { id?: number; occurred_at: string; parent_block?: number | null },
+>(
+  nextSlots: AnalyticalPeriod[],
+  blocks: TBlock[],
+  allEvents: TEvent[],
+): { blocks: TBlock[]; events: TEvent[] } {
+  const keptBlocks = blocks.filter((block) => isSlotBoundBlock(block, nextSlots));
+  const keptIds = new Set(
+    keptBlocks.map((block) => block.id).filter((id): id is number => id != null),
+  );
+  const droppedIds = new Set(
+    blocks
+      .filter((block) => !isSlotBoundBlock(block, nextSlots))
+      .map((block) => block.id)
+      .filter((id): id is number => id != null),
+  );
+
+  const events = allEvents.filter((ev) => {
+    if (ev.parent_block != null) {
+      if (droppedIds.has(ev.parent_block)) return false;
+      if (keptIds.has(ev.parent_block)) return true;
+    }
+    return keptBlocks.some(
+      (block) =>
+        block.range_end != null &&
+        eventInPeriod(ev.occurred_at, block.range_start, block.range_end),
+    );
+  });
+
+  return { blocks: keptBlocks, events };
+}
+
 export function slotMidpoint(slot: AnalyticalPeriod): string {
   const start = timeToMinutes(slot.start);
   let end = timeToMinutes(slot.end);

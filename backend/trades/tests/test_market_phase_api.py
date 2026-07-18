@@ -110,3 +110,34 @@ class MarketPhaseApiTests(APITestCase):
         })
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertGreaterEqual(res.data.get('sample_sessions', 0), 1)
+
+    def test_session_slots_put_and_get(self):
+        url = reverse('trades:market-phase-session-slots')
+        payload = {
+            'session_date': '2026-07-10',
+            'trading_account': self.account.id,
+            'slots': [
+                {'key': '09:30-10:00', 'label': 'Open', 'start': '09:30', 'end': '10:00'},
+                {'start': '10:00', 'end': '10:30'},
+            ],
+        }
+        put_res = self.client.put(url, payload, format='json')
+        self.assertEqual(put_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(put_res.data['slots']), 2)
+        self.assertEqual(put_res.data['slots'][0]['label'], 'Open')
+        self.assertEqual(put_res.data['slots'][1]['key'], '10:00-10:30')
+
+        get_res = self.client.get(url, {
+            'session_date': '2026-07-10',
+            'trading_account': self.account.id,
+        })
+        self.assertEqual(get_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(get_res.data['slots'][0]['start'], '09:30')
+
+        empty = self.client.put(url, {
+            'session_date': '2026-07-10',
+            'trading_account': self.account.id,
+            'slots': [],
+        }, format='json')
+        self.assertEqual(empty.status_code, status.HTTP_200_OK)
+        self.assertEqual(empty.data['slots'], [])

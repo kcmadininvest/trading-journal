@@ -12,6 +12,7 @@ import {
   overlapMinutes,
   parsePeriodKey,
   periodsFromConfig,
+  pruneCaptureToSlots,
   resolveInheritedContext,
   slotMidpoint,
   suggestSlotEndFromStart,
@@ -153,6 +154,23 @@ describe('marketPhaseSlots', () => {
     const slots = [{ key: '12:00-14:00', label: 'Midi', start: '12:00', end: '14:00' }];
     expect(isSlotBoundBlock({ range_start: '12:00', range_end: '14:00' }, slots)).toBe(true);
     expect(isSlotBoundBlock({ range_start: '12:18', range_end: '13:24' }, slots)).toBe(false);
+  });
+
+  it('pruneCaptureToSlots drops unbound blocks and their events', () => {
+    const slots = [{ key: '09:30-10:00', label: '', start: '09:30', end: '10:00' }];
+    const blocks = [
+      { id: 1, range_start: '09:30', range_end: '10:00' },
+      { id: 2, range_start: '11:00', range_end: '11:30' },
+    ];
+    const events = [
+      { id: 10, occurred_at: '09:45', parent_block: 1 },
+      { id: 11, occurred_at: '11:15', parent_block: 2 },
+      { id: 12, occurred_at: '09:50', parent_block: null },
+    ];
+    const pruned = pruneCaptureToSlots(slots, blocks, events);
+    expect(pruned.blocks.map((b) => b.id)).toEqual([1]);
+    expect(pruned.events.map((e) => e.id)).toEqual([10, 12]);
+    expect(pruneCaptureToSlots([], blocks, events)).toEqual({ blocks: [], events: [] });
   });
 
   it('slotMidpoint', () => {

@@ -30,6 +30,7 @@ from .models import (
     MarketPhaseSlotConfig,
     SessionMarketPhaseBlock,
     SessionMarketPhaseEvent,
+    SessionMarketPhaseSlotGrid,
 )
 from .period_projection import parse_period_key, periods_from_captured_blocks
 from .serializers import (
@@ -40,6 +41,7 @@ from .serializers import (
     MarketPhaseSlotConfigSerializer,
     SessionMarketPhaseBlockSerializer,
     SessionMarketPhaseEventSerializer,
+    SessionMarketPhaseSlotGridSerializer,
 )
 
 
@@ -109,6 +111,54 @@ class MarketPhaseSlotConfigView(APIView):
         ser.is_valid(raise_exception=True)
         ser.save()
         return Response(ser.data)
+
+
+class MarketPhaseSessionSlotsView(APIView):
+    """Grille de créneaux UI pour une session (compte + date)."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        session_date_s = request.query_params.get('session_date')
+        account_id = request.query_params.get('trading_account')
+        if not session_date_s or not account_id:
+            return Response(
+                {'detail': 'session_date et trading_account sont requis.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        session_date = date.fromisoformat(session_date_s)
+        account = get_object_or_404(TradingAccount, pk=account_id, user=request.user)
+        grid = SessionMarketPhaseSlotGrid.objects.filter(
+            user=request.user,
+            trading_account=account,
+            session_date=session_date,
+        ).first()
+        return Response({
+            'session_date': session_date.isoformat(),
+            'trading_account': account.id,
+            'slots': list(grid.slots) if grid else [],
+        })
+
+    def put(self, request):
+        ser = SessionMarketPhaseSlotGridSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        data = ser.validated_data
+        account = get_object_or_404(
+            TradingAccount,
+            pk=data['trading_account'],
+            user=request.user,
+        )
+        grid, _ = SessionMarketPhaseSlotGrid.objects.update_or_create(
+            user=request.user,
+            trading_account=account,
+            session_date=data['session_date'],
+            defaults={'slots': data['slots']},
+        )
+        return Response({
+            'session_date': grid.session_date.isoformat(),
+            'trading_account': account.id,
+            'slots': list(grid.slots),
+        })
 
 
 class MarketPhaseCaptureView(APIView):

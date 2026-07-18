@@ -132,6 +132,45 @@ class MarketPhaseSlotConfig(models.Model):
         verbose_name_plural = 'Configs créneaux phases marché'
 
 
+class SessionMarketPhaseSlotGrid(models.Model):
+    """Grille de créneaux UI pour une session (compte + date), indépendante de l’instrument."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='market_phase_slot_grids',
+    )
+    trading_account = models.ForeignKey(
+        'TradingAccount',
+        on_delete=models.CASCADE,
+        related_name='market_phase_slot_grids',
+    )
+    session_date = models.DateField(db_index=True)
+    slots = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='[{"key":"09:30-10:00","label":"…","start":"09:30","end":"10:00"}]',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Grille créneaux session phases marché'
+        verbose_name_plural = 'Grilles créneaux session phases marché'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'trading_account', 'session_date'],
+                name='uniq_market_phase_slot_grid_session',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['trading_account', 'session_date']),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.session_date} ({len(self.slots or [])} créneaux)'
+
+
 class SessionMarketPhaseBlock(models.Model):
     """Bloc de phase sur une plage horaire flexible."""
 

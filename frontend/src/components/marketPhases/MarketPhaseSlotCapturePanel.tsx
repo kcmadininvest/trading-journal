@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CustomSelect } from '../common/CustomSelect';
 import {
@@ -12,7 +12,7 @@ import {
 import { nowTimeInTz, useMarketPhaseCapture } from '../../hooks/useMarketPhaseCapture';
 import { usePreferences } from '../../hooks/usePreferences';
 import { MarketPhaseEventButtons } from './MarketPhaseEventButtons';
-import { MarketPhaseBlock, MarketPhaseEvent } from '../../services/marketPhases';
+import { MarketPhaseBlock, MarketPhaseEvent, marketPhasesService } from '../../services/marketPhases';
 import {
   AnalyticalPeriod,
   blockMatchesSlot,
@@ -22,6 +22,7 @@ import {
   generateHourlyPeriods,
   getReplayCaptureSlots,
   normalizeSlotPeriod,
+  pruneCaptureToSlots,
   resolveInheritedContext,
   slotMidpoint,
   sortSlotsByStart,
@@ -29,6 +30,32 @@ import {
 } from '../../utils/marketPhaseSlots';
 import { nextDistinctEventTime } from '../../utils/marketPhaseEventCapture';
 import { marketPhaseEventKey } from '../../utils/marketPhaseEventDisplay';
+
+function sessionSlotsStorageKey(accountId: number, date: string): string {
+  return `replay-slots-${accountId}-${date}`;
+}
+
+function readLocalSessionSlots(accountId: number, date: string): AnalyticalPeriod[] | null {
+  try {
+    const raw = sessionStorage.getItem(sessionSlotsStorageKey(accountId, date));
+    if (raw === null) return null;
+    return JSON.parse(raw) as AnalyticalPeriod[];
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalSessionSlots(accountId: number, date: string, periods: AnalyticalPeriod[] | null): void {
+  try {
+    if (periods === null) {
+      sessionStorage.removeItem(sessionSlotsStorageKey(accountId, date));
+    } else {
+      sessionStorage.setItem(sessionSlotsStorageKey(accountId, date), JSON.stringify(periods));
+    }
+  } catch {
+    // quota / private mode
+  }
+}
 
 function eventsForSlot(
   slot: AnalyticalPeriod,
@@ -69,10 +96,6 @@ export interface MarketPhaseSlotCapturePanelProps {
   className?: string;
 }
 
-function sessionSlotsStorageKey(accountId: number, date: string): string {
-  return `replay-slots-${accountId}-${date}`;
-}
-
 export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelProps> = ({
   tradingAccountId,
   sessionDate,
@@ -92,18 +115,13 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
 
   const [sessionSlotOverrides, setSessionSlotOverrides] = useState<AnalyticalPeriod[] | null | undefined>(() => {
     if (!tradingAccountId || !sessionDate) return undefined;
-    try {
-      const raw = sessionStorage.getItem(sessionSlotsStorageKey(tradingAccountId, sessionDate));
-      if (raw === null) return null;
-      return JSON.parse(raw) as AnalyticalPeriod[];
-    } catch {
-      return null;
-    }
+    return readLocalSessionSlots(tradingAccountId, sessionDate);
   });
   const [newSlotDraft, setNewSlotDraft] = useState(() =>
     createEmptySlotDraft(nowTimeInTz(preferences.timezone)),
   );
   const [slotFormError, setSlotFormError] = useState<string | null>(null);
+  const slotsLoadIdRef = useRef(0);
 
   const instrumentOptions = useMemo(
     () => capture.instruments.map((i) => ({ value: i.key, label: i.label })),
@@ -145,27 +163,64 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
 
   useEffect(() => {
     if (!tradingAccountId || !sessionDate) return;
-    try {
-      const raw = sessionStorage.getItem(sessionSlotsStorageKey(tradingAccountId, sessionDate));
-      if (raw === null) {
-        setSessionSlotOverrides(null);
-        return;
-      }
-      setSessionSlotOverrides(JSON.parse(raw) as AnalyticalPeriod[]);
-    } catch {
-      setSessionSlotOverrides(null);
-    }
+    let cancelled = false;
+    const requestId = ++slotsLoadIdRef.current;
+    const local = readLocalSessionSlots(tradingAccountId, sessionDate);
+    setSessionSlotOverrides(local);
+
+    marketPhasesService
+      .getSessionSlots({
+        session_date: sessionDate,
+        trading_account: tradingAccountId,
+      })
+      .then(async (data) => {
+        if (cancelled || requestId !== slotsLoadIdRef.current) return;
+        const remote = Array.isArray(data.slots) ? data.slots : [];
+        // Migration ponctuelle : grille locale présente, serveur vide → pousser vers l’API.
+        if (remote.length === 0 && local && local.length > 0) {
+          try {
+            const saved = await marketPhasesService.putSessionSlots({
+              session_date: sessionDate,
+              trading_account: tradingAccountId,
+              slots: local,
+            });
+            if (cancelled || requestId !== slotsLoadIdRef.current) return;
+            const slots = Array.isArray(saved.slots) ? saved.slots : local;
+            writeLocalSessionSlots(tradingAccountId, sessionDate, slots);
+            setSessionSlotOverrides(slots);
+            return;
+          } catch {
+            // garde le cache local
+          }
+        }
+        if (cancelled || requestId !== slotsLoadIdRef.current) return;
+        writeLocalSessionSlots(tradingAccountId, sessionDate, remote);
+        setSessionSlotOverrides(remote);
+      })
+      .catch(() => {
+        // hors-ligne / erreur : conserver le cache sessionStorage
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [tradingAccountId, sessionDate]);
 
   const persistSessionSlots = useCallback(
     (periods: AnalyticalPeriod[] | null) => {
       if (!tradingAccountId || !sessionDate) return;
-      if (periods === null) {
-        sessionStorage.removeItem(sessionSlotsStorageKey(tradingAccountId, sessionDate));
-      } else {
-        sessionStorage.setItem(sessionSlotsStorageKey(tradingAccountId, sessionDate), JSON.stringify(periods));
-      }
-      setSessionSlotOverrides(periods);
+      // Invalide un GET en cours pour ne pas écraser une saisie locale.
+      slotsLoadIdRef.current += 1;
+      const next = periods ?? [];
+      writeLocalSessionSlots(tradingAccountId, sessionDate, periods === null ? null : next);
+      setSessionSlotOverrides(periods === null ? [] : next);
+      void marketPhasesService
+        .putSessionSlots({
+          session_date: sessionDate,
+          trading_account: tradingAccountId,
+          slots: next,
+        })
+        .catch(() => undefined);
     },
     [tradingAccountId, sessionDate],
   );
@@ -328,16 +383,27 @@ export const MarketPhaseSlotCapturePanel: React.FC<MarketPhaseSlotCapturePanelPr
       } else if (mode === 'hourly') {
         generated = generateHourlyPeriods();
       }
-      persistSessionSlots(sortSlotsByStart(generated));
+      const nextSlots = sortSlotsByStart(generated);
+      persistSessionSlots(nextSlots);
+      const pruned = pruneCaptureToSlots(nextSlots, capture.blocks, capture.allEvents);
+      if (
+        pruned.blocks.length !== capture.blocks.length ||
+        pruned.events.length !== capture.allEvents.length
+      ) {
+        capture.setBlocksAndPersist(pruned.blocks, pruned.events);
+      }
       setSlotFormError(null);
     },
-    [persistSessionSlots],
+    [capture, persistSessionSlots],
   );
 
   const handleClearSessionSlots = useCallback(() => {
     persistSessionSlots([]);
     setNewSlotDraft(createEmptySlotDraft(nowTimeInTz(preferences.timezone)));
-  }, [persistSessionSlots, preferences.timezone]);
+    if (capture.blocks.length > 0 || capture.allEvents.length > 0) {
+      capture.setBlocksAndPersist([], []);
+    }
+  }, [capture, persistSessionSlots, preferences.timezone]);
 
   if (!tradingAccountId) return null;
 
