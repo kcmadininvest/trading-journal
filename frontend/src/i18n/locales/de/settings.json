@@ -180,5 +180,13 @@
         "apiKey": "TopStepX API-Schlüssel"
       }
     }
-  }
+  },
+  "questions": "Fragen",
+  "questionsTemplates": "Fragenvorlagen",
+  "questionsTemplatesDesc": "Wiederverwendbare Bibliothek. Das Hinzufügen einer Vorlage zu einem Fragebogen erzeugt eine unabhängige Kopie.",
+  "questionsDay": "Tagesfragebogen",
+  "questionsDayDesc": "Fragen, die einmal pro Handelstag und Konto gestellt werden.",
+  "questionsPosition": "Positionsfragebogen",
+  "questionsPositionDesc": "Fragen zu jedem Trade / jeder Position.",
+  "questionnaire": "Fragebogen"
 }

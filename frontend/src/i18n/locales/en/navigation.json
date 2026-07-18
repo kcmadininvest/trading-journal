@@ -34,5 +34,6 @@
     "managementPrefix": "Management of",
     "logout": "Logout",
     "appName": "K&C Trading Journal"
-  }
+  },
+  "journalQuestions": "Daily questions"
 }

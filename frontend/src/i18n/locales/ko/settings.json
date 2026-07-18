@@ -170,5 +170,13 @@
         "apiKey": "TopStepX API 키"
       }
     }
-  }
+  },
+  "questions": "질문",
+  "questionsTemplates": "질문 템플릿",
+  "questionsTemplatesDesc": "재사용 가능한 라이브러리. 템플릿을 설문에 추가하면 독립 복사본이 생성됩니다.",
+  "questionsDay": "일일 설문",
+  "questionsDayDesc": "거래일과 계정당 한 번 묻는 질문.",
+  "questionsPosition": "포지션 설문",
+  "questionsPositionDesc": "각 거래/포지션에 대한 질문.",
+  "questionnaire": "설문"
 }

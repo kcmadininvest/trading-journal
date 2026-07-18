@@ -170,5 +170,13 @@
         "apiKey": "TopStepX API 密钥"
       }
     }
-  }
+  },
+  "questions": "问题",
+  "questionsTemplates": "问题模板",
+  "questionsTemplatesDesc": "可复用的题库。将模板添加到问卷会创建独立副本。",
+  "questionsDay": "当日问卷",
+  "questionsDayDesc": "每个交易日和账户询问一次的问题。",
+  "questionsPosition": "持仓问卷",
+  "questionsPositionDesc": "针对每笔交易/持仓的问题。",
+  "questionnaire": "问卷"
 }

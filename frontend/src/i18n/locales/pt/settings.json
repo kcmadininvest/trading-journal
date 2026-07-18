@@ -170,5 +170,13 @@
         "apiKey": "Chave API TopStepX"
       }
     }
-  }
+  },
+  "questions": "Perguntas",
+  "questionsTemplates": "Modelos de perguntas",
+  "questionsTemplatesDesc": "Biblioteca reutilizável. Adicionar um modelo a um questionário cria uma cópia independente.",
+  "questionsDay": "Questionário do dia",
+  "questionsDayDesc": "Perguntas feitas uma vez por dia de trading e conta.",
+  "questionsPosition": "Questionário de posições",
+  "questionsPositionDesc": "Perguntas feitas em cada trade / posição.",
+  "questionnaire": "Questionário"
 }

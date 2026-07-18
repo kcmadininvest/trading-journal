@@ -180,5 +180,13 @@
         "apiKey": "Clave API TopStepX"
       }
     }
-  }
+  },
+  "questions": "Preguntas",
+  "questionsTemplates": "Plantillas de preguntas",
+  "questionsTemplatesDesc": "Biblioteca reutilizable. Añadir una plantilla a un cuestionario crea una copia independiente.",
+  "questionsDay": "Cuestionario del día",
+  "questionsDayDesc": "Preguntas formuladas una vez por día de trading y cuenta.",
+  "questionsPosition": "Cuestionario de posiciones",
+  "questionsPositionDesc": "Preguntas formuladas en cada trade / posición.",
+  "questionnaire": "Cuestionario"
 }

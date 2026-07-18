@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import userService, { UserPreferences, ActiveSession, LoginHistoryEntry, PasswordChangeData } from '../services/userService';
 import { TRADING_CURRENCY_CODES } from '../constants/tradingCurrencies';
 import authService from '../services/auth';
@@ -19,6 +19,7 @@ import { SessionCard } from '../components/settings/SessionCard';
 import { DangerZoneCard } from '../components/settings/DangerZoneCard';
 import { SettingsToast } from '../components/settings/SettingsToast';
 import { IntegrationsSection } from '../components/settings/IntegrationsSection';
+import { JournalQuestionsSettings } from '../components/settings/JournalQuestionsSettings';
 import {
   AppFontFamily,
   applyAppFontFamily,
@@ -158,7 +159,8 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
 }) => {
   const { t } = useI18nTranslation();
   const { mergePreferences } = usePreferences();
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'trading' | 'display' | 'data'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'trading' | 'display' | 'questions' | 'data'>('profile');
+  const [questionsSection, setQuestionsSection] = useState<'templates' | 'day' | 'position'>('templates');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [initialData, setInitialData] = useState<SettingsInitialSnapshot | null>(null);
@@ -277,9 +279,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
     }
   };
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
+  const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
-  };
+  }, []);
 
   const handlePremiumRestrictionsToggle = async () => {
     if (!isAdmin || premiumToggleLoading) return;
@@ -569,6 +571,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
       icon: (
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      ),
+    },
+    {
+      id: 'questions' as const,
+      label: t('settings:questionnaire'),
+      icon: (
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
     },
@@ -1148,6 +1159,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({
               )}
             </div>
           </SettingsSection>
+        )}
+
+        {activeTab === 'questions' && (
+          <JournalQuestionsSettings
+            section={questionsSection}
+            onSectionChange={setQuestionsSection}
+            onMessage={showMessage}
+          />
         )}
 
         {/* Section Données */}

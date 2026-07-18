@@ -34,6 +34,7 @@ const LegalNoticePage = lazy(() => import('./pages/LegalNoticePage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const FeaturesPage = lazy(() => import('./pages/FeaturesPage'));
 const DailyJournalPage = lazy(() => import('./pages/DailyJournalPage'));
+const JournalQuestionsPage = lazy(() => import('./pages/JournalQuestionsPage'));
 const SessionReplayPage = lazy(() => import('./pages/SessionReplayPage'));
 const CalculatorPage = lazy(() => import('./pages/CalculatorPage'));
 const CalculatorPopup = lazy(() => import('./pages/CalculatorPopup'));
@@ -66,6 +67,7 @@ const ALWAYS_ACCESSIBLE_PAGES = new Set([
   'dashboard',
   'calendar',
   'daily-journal',
+  'journal-questions',
   'trades',
   'transactions',
   'settings',
@@ -75,6 +77,7 @@ const VALID_HASH_PAGES = [
   'dashboard',
   'calendar',
   'daily-journal',
+  'journal-questions',
   'session-replay',
   'trades',
   'statistics',
@@ -521,6 +524,8 @@ function App() {
             return <LazyPage><CalendarPage /></LazyPage>;
           case 'daily-journal':
             return <LazyPage><DailyJournalPage /></LazyPage>;
+          case 'journal-questions':
+            return <LazyPage><JournalQuestionsPage /></LazyPage>;
           case 'session-replay':
             if (lockedPremiumPages.has('session-replay')) {
               return <SubscriptionRequiredPage onBackToDashboard={() => {

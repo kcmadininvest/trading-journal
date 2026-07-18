@@ -138,23 +138,23 @@ export const DateInput: React.FC<DateInputProps> = ({
     return `${year}-${month}-${day}`;
   };
 
-  // Générer un placeholder selon le format préféré
+  // Placeholder générique (pas la date du jour — évite de confondre avec une valeur).
   const placeholderText = useMemo(() => {
-    const today = new Date();
-    const day = String(today.getDate()).padStart(2, '0');
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const year = today.getFullYear();
-
     if (preferences.date_format === 'US') {
-      return `${month}/${day}/${year}`;
-    } else {
-      return `${day}/${month}/${year}`;
+      return 'MM/DD/YYYY';
     }
+    return 'JJ/MM/AAAA';
   }, [preferences.date_format]);
 
   // Synchroniser le calendrier avec la date sélectionnée
   useEffect(() => {
     if (value) {
+      const match = String(value).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        setCalendarYear(Number(match[1]));
+        setCalendarMonth(Number(match[2]) - 1);
+        return;
+      }
       const date = new Date(value);
       if (!isNaN(date.getTime())) {
         setCalendarMonth(date.getMonth());
@@ -266,7 +266,20 @@ export const DateInput: React.FC<DateInputProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDisplayValue(e.target.value);
+    const raw = e.target.value;
+    setDisplayValue(raw);
+    // Propager dès qu'une date complète est saisie (sans attendre le blur),
+    // sinon « Enregistrer » peut partir avec l'ancienne valeur / null.
+    if (!raw.trim()) {
+      onChange('');
+      return;
+    }
+    const isoDate = parseToISO(raw);
+    if (isoDate) {
+      if (min && isoDate < min) return;
+      if (max && isoDate > max) return;
+      onChange(isoDate);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

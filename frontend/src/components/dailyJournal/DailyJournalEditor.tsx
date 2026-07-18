@@ -9,6 +9,7 @@ import { DeleteConfirmModal } from '../ui';
 import { ImageUploader } from './ImageUploader';
 import { JournalEditorToolbar } from './JournalEditorToolbar';
 import { ComplianceScreenshots } from './ComplianceScreenshots';
+import { JournalQuestionsStatusLink } from './JournalQuestionsStatusLink';
 
 interface DailyJournalEditorProps {
   date: string;
@@ -529,6 +530,8 @@ export const DailyJournalEditor: React.FC<DailyJournalEditorProps> = ({
           )}
         </div>
       )}
+
+      <JournalQuestionsStatusLink date={date} tradingAccountId={tradingAccountId} />
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">

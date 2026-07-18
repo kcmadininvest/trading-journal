@@ -182,5 +182,13 @@
         "apiKey": "TopStepX API key"
       }
     }
-  }
+  },
+  "questions": "Questions",
+  "questionsTemplates": "Question templates",
+  "questionsTemplatesDesc": "Reusable library. Adding a template to a questionnaire creates an independent copy.",
+  "questionsDay": "Daily questionnaire",
+  "questionsDayDesc": "Questions asked once per trading day and account.",
+  "questionsPosition": "Position questionnaire",
+  "questionsPositionDesc": "Questions asked on each trade / position.",
+  "questionnaire": "Questionnaire"
 }

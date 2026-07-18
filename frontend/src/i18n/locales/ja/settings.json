@@ -170,5 +170,13 @@
         "apiKey": "TopStepX APIキー"
       }
     }
-  }
+  },
+  "questions": "質問",
+  "questionsTemplates": "質問テンプレート",
+  "questionsTemplatesDesc": "再利用可能なライブラリ。テンプレートをアンケートに追加すると独立したコピーが作成されます。",
+  "questionsDay": "当日アンケート",
+  "questionsDayDesc": "取引日と口座ごとに1回尋ねる質問。",
+  "questionsPosition": "ポジションアンケート",
+  "questionsPositionDesc": "各トレード／ポジションに関する質問。",
+  "questionnaire": "アンケート"
 }

@@ -19,5 +19,6 @@
     "managementPrefix": "Gestion des",
     "logout": "Se déconnecter",
     "appName": "K&C Trading Journal"
-  }
+  },
+  "journalQuestions": "当日の質問"
 }

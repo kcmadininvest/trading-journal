@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface SettingsTab {
-  id: 'profile' | 'security' | 'trading' | 'display' | 'data';
+  id: 'profile' | 'security' | 'trading' | 'display' | 'questions' | 'data';
   label: string;
   icon: React.ReactNode;
   badge?: number;

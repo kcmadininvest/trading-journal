@@ -13,6 +13,7 @@ import { formatDateLong, formatTime } from '../../utils/dateFormat';
 import { openMediaUrl, isAppHostedImageUrl } from '../../utils/mediaUrl';
 import { useTranslation as useI18nTranslation } from 'react-i18next';
 import { parsePnlDisplayMode, getTradeDisplayPnlValue } from '../../utils/pnlDisplay';
+import { JournalQuestionsForm } from '../journalQuestions/JournalQuestionsForm';
 
 interface StrategyComplianceModalProps {
   open: boolean;
@@ -1560,6 +1561,13 @@ export const StrategyComplianceModal: React.FC<StrategyComplianceModalProps> = (
                       className="w-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-y"
                     />
                   </div>
+
+                  <JournalQuestionsForm
+                    scope="position"
+                    tradeId={trade.id}
+                    compact
+                    title={t('journalQuestions:positionTitle', { defaultValue: 'Questions position' })}
+                  />
                 </div>
               ))}
             </div>
